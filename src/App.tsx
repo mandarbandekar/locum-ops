@@ -14,6 +14,7 @@ import OutreachPage from "@/pages/OutreachPage";
 import ConfirmationsPage from "@/pages/ConfirmationsPage";
 import InvoicesPage from "@/pages/InvoicesPage";
 import InvoiceDetailPage from "@/pages/InvoiceDetailPage";
+import ReportsPage from "@/pages/ReportsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ function AuthGate() {
         <Route path="/confirmations" element={<ConfirmationsPage />} />
         <Route path="/invoices" element={<InvoicesPage />} />
         <Route path="/invoices/:id" element={<InvoiceDetailPage />} />
+        <Route path="/reports" element={<ReportsPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Layout>
