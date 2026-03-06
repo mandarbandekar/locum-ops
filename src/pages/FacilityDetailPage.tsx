@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge } from '@/components/StatusBadge';
-import { ArrowLeft, Plus, Trash2, Edit2, Save } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Edit2, Save, Pencil, Check, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { FacilityContact, ContactRole, TermsSnapshot } from '@/types';
 import { generateId } from '@/lib/businessLogic';
