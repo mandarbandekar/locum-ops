@@ -1,11 +1,14 @@
+import { useMemo } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CalendarDays, FileText, AlertTriangle, CheckCircle, Plus, Building2, Mail, Send } from 'lucide-react';
+import { CalendarDays, FileText, AlertTriangle, CheckCircle, Plus, Building2, Mail, Send, Calculator } from 'lucide-react';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
-import { format } from 'date-fns';
+import { aggregateQuarterlyIncome, calculateSetAside, getDefaultDueDates } from '@/lib/taxCalculations';
+import { format, differenceInDays } from 'date-fns';
 import { StatusBadge } from '@/components/StatusBadge';
+import { Badge } from '@/components/ui/badge';
 
 export default function DashboardPage() {
   const { shifts, invoices, facilities } = useData();
