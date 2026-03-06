@@ -71,6 +71,7 @@ function AuthGate() {
           <Route path="/invoices/:id" element={<InvoiceDetailPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/credentials" element={<CredentialsPage />} />
+          <Route path="/taxes" element={<TaxesPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Layout>
