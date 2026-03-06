@@ -369,14 +369,22 @@ function ShiftsTab({ shifts, facilityId, onAdd }: { shifts: any[]; facilityId: s
             <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
           </tr></thead>
           <tbody>
-            {shifts.map(s => (
-              <tr key={s.id} className="border-b last:border-0">
-                <td className="p-3">{format(new Date(s.start_datetime), 'MMM d, yyyy')}</td>
-                <td className="p-3 text-muted-foreground">{format(new Date(s.start_datetime), 'h:mm a')} - {format(new Date(s.end_datetime), 'h:mm a')}</td>
-                <td className="p-3">${s.rate_applied}</td>
-                <td className="p-3"><StatusBadge status={s.status} /></td>
-              </tr>
-            ))}
+            {shifts.map(s => {
+              const colorDef = SHIFT_COLORS.find(c => c.value === (s.color || 'blue')) || SHIFT_COLORS[0];
+              return (
+                <tr key={s.id} className="border-b last:border-0">
+                  <td className="p-3">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2.5 h-2.5 rounded-full ${s.color === 'blue' ? 'bg-blue-500' : s.color === 'green' ? 'bg-green-500' : s.color === 'red' ? 'bg-red-500' : s.color === 'orange' ? 'bg-orange-500' : s.color === 'purple' ? 'bg-purple-500' : s.color === 'pink' ? 'bg-pink-500' : s.color === 'teal' ? 'bg-teal-500' : s.color === 'yellow' ? 'bg-yellow-500' : 'bg-blue-500'}`} />
+                      {format(new Date(s.start_datetime), 'MMM d, yyyy')}
+                    </div>
+                  </td>
+                  <td className="p-3 text-muted-foreground">{format(new Date(s.start_datetime), 'h:mm a')} - {format(new Date(s.end_datetime), 'h:mm a')}</td>
+                  <td className="p-3">${s.rate_applied}</td>
+                  <td className="p-3"><StatusBadge status={s.status} /></td>
+                </tr>
+              );
+            })}
             {shifts.length === 0 && <tr><td colSpan={4} className="p-6 text-center text-muted-foreground">No shifts</td></tr>}
           </tbody>
         </table>
