@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { DataProvider } from "@/contexts/DataContext";
 import { Layout } from "@/components/Layout";
+import LandingPage from "@/pages/LandingPage";
 import LoginPage from "@/pages/LoginPage";
 import DashboardPage from "@/pages/DashboardPage";
 import ClinicsPage from "@/pages/ClinicsPage";
@@ -31,7 +32,14 @@ function AuthGate() {
     );
   }
 
-  if (!user && !isDemo) return <LoginPage />;
+  if (!user && !isDemo) {
+    return (
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="*" element={<LandingPage />} />
+      </Routes>
+    );
+  }
 
   return (
     <DataProvider isDemo={isDemo}>
