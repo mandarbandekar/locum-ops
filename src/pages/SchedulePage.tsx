@@ -200,6 +200,7 @@ function ShiftFormDialog({ open, onOpenChange, facilities, shifts, existing, onS
       status,
       rate_applied: Number(rate),
       notes,
+      color,
     };
     onSave(shift);
     onOpenChange(false);
