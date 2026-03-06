@@ -105,7 +105,7 @@ export default function TaxesPage() {
       const { data: settingsData } = await db('tax_settings')
         .select('*')
         .eq('tax_year', selectedYear)
-        .maybeSingle();
+        .maybeSingle() as { data: any };
 
       if (settingsData) {
         setSettings({
