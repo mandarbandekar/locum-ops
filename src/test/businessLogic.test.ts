@@ -38,7 +38,7 @@ describe('computeInvoiceStatus', () => {
   });
 
   it('returns paid for paid invoices', () => {
-    const inv: Invoice = { id: '1', clinic_id: 'c1', invoice_number: 'INV-001', period_start: '', period_end: '', total_amount: 100, status: 'paid', sent_at: '2026-01-01', paid_at: '2026-01-10', due_date: '2026-01-15' };
+    const inv: Invoice = { id: '1', facility_id: 'c1', invoice_number: 'INV-001', period_start: '', period_end: '', total_amount: 100, status: 'paid', sent_at: '2026-01-01', paid_at: '2026-01-10', due_date: '2026-01-15' };
     expect(computeInvoiceStatus(inv)).toBe('paid');
   });
 
