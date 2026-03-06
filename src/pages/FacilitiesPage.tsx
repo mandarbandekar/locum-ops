@@ -1,21 +1,47 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge } from '@/components/StatusBadge';
-import { Plus, Search, Trash2 } from 'lucide-react';
+import { Plus, Search, Trash2, MapPin, Loader2 } from 'lucide-react';
 import { AddFacilityDialog } from '@/components/AddFacilityDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
+import { useAddressSearch } from '@/hooks/useAddressSearch';
 
 export default function FacilitiesPage() {
-  const { facilities, deleteFacility } = useData();
+  const { facilities, addFacility, deleteFacility } = useData();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showAdd, setShowAdd] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const { results: addressResults, isLoading: isSearching } = useAddressSearch(search, showSuggestions);
+
+  const handleSelectAddress = (displayName: string) => {
+    setSearch(displayName);
+    setShowSuggestions(false);
+  };
+
+  const handleAddFromSearch = (displayName: string) => {
+    const parts = displayName.split(',');
+    const name = parts[0]?.trim() || displayName;
+    const facility = addFacility({
+      name,
+      address: displayName,
+      status: 'prospect',
+      timezone: 'America/Los_Angeles',
+      notes: '',
+      outreach_last_sent_at: null,
+    });
+    toast.success(`"${name}" added as a new facility`);
+    setSearch('');
+    setShowSuggestions(false);
+    navigate(`/facilities/${facility.id}`);
+  };
 
   const filtered = facilities.filter(c => {
     const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) || c.address.toLowerCase().includes(search.toLowerCase());
@@ -33,9 +59,41 @@ export default function FacilitiesPage() {
       </div>
 
       <div className="flex gap-3 mb-4">
-        <div className="relative flex-1 max-w-sm">
+        <div className="relative flex-1 max-w-sm" ref={searchRef}>
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search facilities..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+          <Input
+            placeholder="Search facilities or find address..."
+            value={search}
+            onChange={e => { setSearch(e.target.value); setShowSuggestions(true); }}
+            onFocus={() => setShowSuggestions(true)}
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+            className="pl-9 pr-9"
+          />
+          {isSearching && (
+            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground animate-spin" />
+          )}
+          {showSuggestions && addressResults.length > 0 && (
+            <div className="absolute z-50 top-full mt-1 w-full rounded-md border bg-popover shadow-lg overflow-hidden">
+              <div className="px-3 py-1.5 text-xs font-medium text-muted-foreground border-b bg-muted/50">
+                Address results (OpenStreetMap)
+              </div>
+              {addressResults.map((r) => (
+                <button
+                  key={r.place_id}
+                  className="w-full flex items-start gap-2 px-3 py-2 text-left text-sm hover:bg-accent transition-colors"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => handleAddFromSearch(r.display_name)}
+                >
+                  <MapPin className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{r.display_name.split(',')[0]}</p>
+                    <p className="truncate text-xs text-muted-foreground">{r.display_name}</p>
+                  </div>
+                  <span className="ml-auto shrink-0 text-xs text-primary whitespace-nowrap">+ Add</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-36">
