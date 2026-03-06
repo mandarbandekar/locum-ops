@@ -94,7 +94,7 @@ export default function DocumentsVaultTab() {
     setUploading(true);
     try {
       for (const file of Array.from(files)) {
-        await uploadDocument(file, uploadCredentialId || undefined, uploadCategory);
+        await uploadDocument(file, uploadCredentialId === 'none' ? undefined : uploadCredentialId, uploadCategory);
       }
       toast({ title: 'Upload complete', description: `${files.length} file(s) uploaded.` });
     } catch (e: any) {
