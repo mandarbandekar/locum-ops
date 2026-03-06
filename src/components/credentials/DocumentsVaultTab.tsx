@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useRef } from 'react';
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { useCredentials, CredentialDocument } from '@/hooks/useCredentials';
 import { DOCUMENT_CATEGORY_LABELS, CREDENTIAL_TYPE_LABELS } from '@/lib/credentialTypes';
 import { supabase } from '@/integrations/supabase/client';
@@ -53,7 +53,14 @@ export default function DocumentsVaultTab() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [replacingDocId, setReplacingDocId] = useState<string | null>(null);
   const [uploadCategory, setUploadCategory] = useState('custom');
-  const [uploadCredentialId, setUploadCredentialId] = useState('');
+  const [uploadCredentialId, setUploadCredentialId] = useState('none');
+
+  // Trigger file picker when replacingDocId is set
+  useEffect(() => {
+    if (replacingDocId) {
+      replaceInputRef.current?.click();
+    }
+  }, [replacingDocId]);
 
   const filtered = useMemo(() => {
     return documents.filter(d => {
@@ -87,7 +94,7 @@ export default function DocumentsVaultTab() {
     setUploading(true);
     try {
       for (const file of Array.from(files)) {
-        await uploadDocument(file, uploadCredentialId || undefined, uploadCategory);
+        await uploadDocument(file, uploadCredentialId === 'none' ? undefined : uploadCredentialId, uploadCategory);
       }
       toast({ title: 'Upload complete', description: `${files.length} file(s) uploaded.` });
     } catch (e: any) {
@@ -242,7 +249,7 @@ export default function DocumentsVaultTab() {
                 <SelectValue placeholder="Link to credential" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">None</SelectItem>
+                <SelectItem value="none">None</SelectItem>
                 {credentials.map(c => (
                   <SelectItem key={c.id} value={c.id}>{c.custom_title}</SelectItem>
                 ))}
@@ -505,11 +512,6 @@ export default function DocumentsVaultTab() {
           e.target.value = '';
         }}
       />
-      {replacingDocId && (() => {
-        // Trigger file input when replacingDocId is set
-        setTimeout(() => replaceInputRef.current?.click(), 0);
-        return null;
-      })()}
     </div>
   );
 }
