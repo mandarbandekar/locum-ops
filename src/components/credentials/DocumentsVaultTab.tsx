@@ -62,7 +62,7 @@ export default function DocumentsVaultTab() {
     }
   }, [replacingDocId]);
 
-
+  const filtered = useMemo(() => {
     return documents.filter(d => {
       if (search && !d.file_name.toLowerCase().includes(search.toLowerCase())) return false;
       if (filterCategory !== 'all' && d.document_category !== filterCategory) return false;
