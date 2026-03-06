@@ -80,16 +80,19 @@ export default function SchedulePage() {
                   <div className={`text-xs font-medium mb-1 ${isToday ? 'text-primary' : 'text-muted-foreground'}`}>
                     {format(day, 'd')}
                   </div>
-                  {dayShifts.map(s => (
-                    <div
-                      key={s.id}
-                      className="text-xs p-1 rounded mb-0.5 cursor-pointer truncate bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-                      onClick={() => setEditShift(s.id)}
-                      title={getFacilityName(s.facility_id)}
-                    >
-                      {format(new Date(s.start_datetime), 'ha')} {getFacilityName(s.facility_id).split(' ')[0]}
-                    </div>
-                  ))}
+                  {dayShifts.map(s => {
+                    const colorDef = SHIFT_COLORS.find(c => c.value === (s.color || 'blue')) || SHIFT_COLORS[0];
+                    return (
+                      <div
+                        key={s.id}
+                        className={`text-xs p-1 rounded mb-0.5 cursor-pointer truncate ${colorDef.bg} ${colorDef.text} hover:opacity-80 transition-opacity`}
+                        onClick={() => setEditShift(s.id)}
+                        title={getFacilityName(s.facility_id)}
+                      >
+                        {format(new Date(s.start_datetime), 'ha')} {getFacilityName(s.facility_id).split(' ')[0]}
+                      </div>
+                    );
+                  })}
                 </div>
               );
             })}
