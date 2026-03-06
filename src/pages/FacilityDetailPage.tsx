@@ -412,6 +412,22 @@ function ShiftsTab({ shifts, facilityId, onAdd }: { shifts: any[]; facilityId: s
               </Select>
             </div>
             <div><Label>Notes</Label><Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} rows={2} /></div>
+            <div>
+              <Label>Color</Label>
+              <div className="flex gap-2 mt-1.5 flex-wrap">
+                {SHIFT_COLORS.map(c => (
+                  <button
+                    key={c.value}
+                    type="button"
+                    onClick={() => setForm(p => ({ ...p, color: c.value }))}
+                    className={`w-7 h-7 rounded-full border-2 transition-all ${form.color === c.value ? 'border-foreground scale-110' : 'border-transparent hover:scale-105'}`}
+                    title={c.label}
+                  >
+                    <span className={`block w-full h-full rounded-full ${c.value === 'blue' ? 'bg-blue-500' : c.value === 'green' ? 'bg-green-500' : c.value === 'red' ? 'bg-red-500' : c.value === 'orange' ? 'bg-orange-500' : c.value === 'purple' ? 'bg-purple-500' : c.value === 'pink' ? 'bg-pink-500' : c.value === 'teal' ? 'bg-teal-500' : 'bg-yellow-500'}`} />
+                  </button>
+                ))}
+              </div>
+            </div>
             <Button onClick={handleAdd} className="w-full">Add Shift</Button>
           </div>
         </DialogContent>
