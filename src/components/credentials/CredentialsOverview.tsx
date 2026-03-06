@@ -40,8 +40,8 @@ export function CredentialsOverview({ onNavigate, onAddCredential }: Props) {
     const recentDocs = documents.slice(0, 5);
 
     // Checklist: count of credential types that have at least one active credential
-    const coveredTypes = new Set(enriched.filter(c => c.computedStatus === 'active').map(c => c.credential_type));
-    const essentialTypes = ['veterinary_license', 'dea_registration', 'malpractice_insurance', 'w9', 'business_license'];
+    const coveredTypes = new Set(enriched.filter(c => c.computedStatus === 'active').map(c => c.credential_type as string));
+    const essentialTypes: string[] = ['veterinary_license', 'dea_registration', 'malpractice_insurance', 'w9', 'business_license'];
     const checklistComplete = essentialTypes.filter(t => coveredTypes.has(t)).length;
     const checklistTotal = essentialTypes.length;
 
