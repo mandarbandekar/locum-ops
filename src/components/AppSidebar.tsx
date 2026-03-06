@@ -26,23 +26,23 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarContent>
+      <SidebarContent className="pt-4">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-primary font-bold tracking-wider text-xs uppercase">
+          <SidebarGroupLabel className="text-sidebar-primary font-bold tracking-wider text-xs uppercase mb-3 px-4">
             {!collapsed && 'Navigation'}
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="space-y-1.5 px-2">
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton asChild size="lg">
                     <NavLink
                       to={item.url}
                       end={item.url === '/'}
-                      className="hover:bg-sidebar-accent/50"
-                      activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                      className="hover:bg-sidebar-accent/50 rounded-lg px-3 py-2.5 text-[0.925rem]"
+                      activeClassName="bg-sidebar-accent text-sidebar-primary font-semibold"
                     >
-                      <item.icon className="mr-2 h-4 w-4" />
+                      <item.icon className="mr-3 h-5 w-5" />
                       {!collapsed && <span>{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
@@ -52,9 +52,9 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="p-2">
-        <Button variant="ghost" size="sm" onClick={signOut} className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary">
-          <LogOut className="mr-2 h-4 w-4" />
+      <SidebarFooter className="p-3">
+        <Button variant="ghost" size="lg" onClick={signOut} className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary rounded-lg">
+          <LogOut className="mr-3 h-5 w-5" />
           {!collapsed && 'Logout'}
         </Button>
       </SidebarFooter>
