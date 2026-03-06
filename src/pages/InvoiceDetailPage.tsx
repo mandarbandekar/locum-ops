@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { StatusBadge } from '@/components/StatusBadge';
-import { ArrowLeft, Send, CheckCircle, DollarSign, Trash2 } from 'lucide-react';
+import { ArrowLeft, Send, CheckCircle, DollarSign, Trash2, Pencil, Check, X } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
 import { toast } from 'sonner';
