@@ -19,7 +19,7 @@ import { toast } from 'sonner';
 export default function FacilityDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { facilities, contacts, terms, shifts, invoices, updateFacility, addContact, updateContact, deleteContact, updateTerms } = useData();
+  const { facilities, contacts, terms, shifts, invoices, updateFacility, addContact, updateContact, deleteContact, updateTerms, addShift } = useData();
 
   const facility = facilities.find(c => c.id === id);
   if (!facility) return <div className="p-6">Facility not found. <Button variant="link" onClick={() => navigate('/facilities')}>Back</Button></div>;
