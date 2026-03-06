@@ -8,6 +8,8 @@ import { DataProvider } from "@/contexts/DataContext";
 import { Layout } from "@/components/Layout";
 import LandingPage from "@/pages/LandingPage";
 import LoginPage from "@/pages/LoginPage";
+import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
+import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import DashboardPage from "@/pages/DashboardPage";
 import FacilitiesPage from "@/pages/FacilitiesPage";
 import FacilityDetailPage from "@/pages/FacilityDetailPage";

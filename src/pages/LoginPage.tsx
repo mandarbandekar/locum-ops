@@ -61,8 +61,16 @@ export default function LoginPage() {
                 <Input id="email" type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">Password</Label>
+                  {!isSignUp && (
+                    <button type="button" className="text-xs text-primary underline" onClick={() => navigate('/forgot-password')}>
+                      Forgot password?
+                    </button>
+                  )}
+                </div>
                 <Input id="password" type="password" required minLength={6} value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" />
+              </div>
               </div>
               {error && <p className="text-sm text-destructive">{error}</p>}
               {message && <p className="text-sm text-green-600">{message}</p>}
