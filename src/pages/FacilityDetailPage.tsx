@@ -342,16 +342,16 @@ function TermsTab({ terms, facilityId, onUpdate }: { terms?: TermsSnapshot; faci
 function ShiftsTab({ shifts, facilityId, onAdd }: { shifts: any[]; facilityId: string; onAdd: (s: any) => void }) {
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({
-    date: '', start_time: '08:00', end_time: '17:00', rate_applied: 0, status: 'proposed' as string, notes: ''
+    date: '', start_time: '08:00', end_time: '17:00', rate_applied: 0, status: 'proposed' as string, notes: '', color: 'blue' as ShiftColor
   });
 
   const handleAdd = () => {
     if (!form.date) return;
     const start_datetime = `${form.date}T${form.start_time}:00`;
     const end_datetime = `${form.date}T${form.end_time}:00`;
-    onAdd({ facility_id: facilityId, start_datetime, end_datetime, rate_applied: form.rate_applied, status: form.status, notes: form.notes });
+    onAdd({ facility_id: facilityId, start_datetime, end_datetime, rate_applied: form.rate_applied, status: form.status, notes: form.notes, color: form.color });
     setShowAdd(false);
-    setForm({ date: '', start_time: '08:00', end_time: '17:00', rate_applied: 0, status: 'proposed', notes: '' });
+    setForm({ date: '', start_time: '08:00', end_time: '17:00', rate_applied: 0, status: 'proposed', notes: '', color: 'blue' });
     toast.success('Shift added');
   };
 
