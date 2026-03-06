@@ -52,18 +52,20 @@ export default function LandingPage() {
       >
         <div className="max-w-6xl mx-auto flex items-center justify-between h-14 px-4">
           <span className="font-bold text-lg text-foreground tracking-tight">LocumOps</span>
-          <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
+          <nav className="hidden lg:flex items-center gap-6 text-sm text-muted-foreground">
             <button onClick={() => scrollTo('how')} className="hover:text-foreground transition-colors">How it works</button>
             <button onClick={() => scrollTo('features')} className="hover:text-foreground transition-colors">Features</button>
             <button onClick={() => scrollTo('pricing')} className="hover:text-foreground transition-colors">Pricing</button>
             <button onClick={() => scrollTo('faq')} className="hover:text-foreground transition-colors">FAQ</button>
           </nav>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => navigate('/login')}>Sign In</Button>
-            <Button variant="outline" size="sm" onClick={handleDemo}>Try Demo</Button>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <Button variant="ghost" size="sm" className="hidden sm:inline-flex" onClick={() => navigate('/login')}>Sign In</Button>
+            <Button variant="outline" size="sm" className="hidden sm:inline-flex" onClick={handleDemo}>Try Demo</Button>
             <Button size="sm" onClick={() => { console.log('cta_click', { location: 'nav' }); navigate('/waitlist'); }}>
               Join waitlist
             </Button>
+            {/* Mobile menu */}
+            <MobileMenu onNavigate={navigate} onScrollTo={scrollTo} onDemo={handleDemo} />
           </div>
         </div>
       </motion.header>
