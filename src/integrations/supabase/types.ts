@@ -630,6 +630,7 @@ export type Database = {
       }
       shifts: {
         Row: {
+          color: string
           created_at: string
           end_datetime: string
           facility_id: string
@@ -642,6 +643,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          color?: string
           created_at?: string
           end_datetime: string
           facility_id: string
@@ -654,6 +656,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          color?: string
           created_at?: string
           end_datetime?: string
           facility_id?: string
