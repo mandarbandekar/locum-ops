@@ -157,6 +157,7 @@ export default function SchedulePage() {
           shifts={shifts}
           existing={shifts.find(s => s.id === editShift)}
           onSave={(s) => { updateShift(s as any); toast.success('Shift updated'); }}
+          onDelete={(id) => { deleteShift(id); setEditShift(null); toast.success('Shift deleted'); }}
         />
       )}
     </div>
