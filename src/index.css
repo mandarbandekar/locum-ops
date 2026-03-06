@@ -93,15 +93,25 @@
 
 @layer components {
   .stat-card {
-    @apply bg-card rounded-lg border p-5 shadow-sm transition-shadow hover:shadow-md;
+    @apply bg-card rounded-lg border p-3 sm:p-5 shadow-sm transition-shadow hover:shadow-md;
   }
   .page-header {
-    @apply mb-6 flex items-center justify-between;
+    @apply mb-4 sm:mb-6 flex items-start sm:items-center justify-between;
   }
   .page-title {
-    @apply text-2xl font-semibold tracking-tight text-foreground;
+    @apply text-xl sm:text-2xl font-semibold tracking-tight text-foreground;
   }
   .status-badge {
     @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+}
+
+/* Mobile table horizontal scroll */
+@layer utilities {
+  .table-responsive {
+    @apply overflow-x-auto -mx-3 sm:mx-0;
+  }
+  .table-responsive table {
+    @apply min-w-[600px] sm:min-w-0;
   }
 }

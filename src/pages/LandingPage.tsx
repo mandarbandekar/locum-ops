@@ -303,3 +303,26 @@ function FaqItem({ q, a }: { q: string; a: string }) {
     </div>
   );
 }
+
+function MobileMenu({ onNavigate, onScrollTo, onDemo }: { onNavigate: (path: string) => void; onScrollTo: (id: string) => void; onDemo: () => void }) {
+  const [open, setOpen] = useState(false);
+  const go = (fn: () => void) => { fn(); setOpen(false); };
+  return (
+    <div className="sm:hidden">
+      <button onClick={() => setOpen(!open)} className="p-1.5 text-muted-foreground hover:text-foreground">
+        {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+      </button>
+      {open && (
+        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="absolute top-14 left-0 right-0 bg-card border-b shadow-lg z-40 px-4 py-4 space-y-3">
+          <button onClick={() => go(() => onScrollTo('how'))} className="block w-full text-left text-sm text-muted-foreground hover:text-foreground">How it works</button>
+          <button onClick={() => go(() => onScrollTo('features'))} className="block w-full text-left text-sm text-muted-foreground hover:text-foreground">Features</button>
+          <button onClick={() => go(() => onScrollTo('pricing'))} className="block w-full text-left text-sm text-muted-foreground hover:text-foreground">Pricing</button>
+          <button onClick={() => go(() => onScrollTo('faq'))} className="block w-full text-left text-sm text-muted-foreground hover:text-foreground">FAQ</button>
+          <hr className="border-border" />
+          <button onClick={() => go(() => onNavigate('/login'))} className="block w-full text-left text-sm text-foreground font-medium">Sign In</button>
+          <button onClick={() => go(onDemo)} className="block w-full text-left text-sm text-foreground font-medium">Try Demo</button>
+        </motion.div>
+      )}
+    </div>
+  );
+}
