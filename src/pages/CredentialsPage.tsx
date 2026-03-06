@@ -49,7 +49,7 @@ export default function CredentialsPage() {
         </TabsContent>
 
         <TabsContent value="renewals" className="mt-6">
-          <PlaceholderTab label="Renewals" description="Timeline, calendar, and renewal task management coming in Phase 3." />
+          <RenewalsTab />
         </TabsContent>
 
         <TabsContent value="documents" className="mt-6">
