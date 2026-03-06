@@ -19,6 +19,7 @@ import ConfirmationsPage from "@/pages/ConfirmationsPage";
 import InvoicesPage from "@/pages/InvoicesPage";
 import InvoiceDetailPage from "@/pages/InvoiceDetailPage";
 import ReportsPage from "@/pages/ReportsPage";
+import CredentialsPage from "@/pages/CredentialsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -58,6 +59,7 @@ function AuthGate() {
           <Route path="/invoices" element={<InvoicesPage />} />
           <Route path="/invoices/:id" element={<InvoiceDetailPage />} />
           <Route path="/reports" element={<ReportsPage />} />
+          <Route path="/credentials" element={<CredentialsPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Layout>
