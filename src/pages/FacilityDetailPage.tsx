@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge } from '@/components/StatusBadge';
-import { ArrowLeft, Plus, Trash2, Edit2, Save } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Edit2, Save, Pencil, Check, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { FacilityContact, ContactRole, TermsSnapshot } from '@/types';
 import { generateId } from '@/lib/businessLogic';
@@ -35,10 +35,7 @@ export default function FacilityDetailPage() {
         <Button variant="ghost" size="icon" onClick={() => navigate('/facilities')}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <div>
-          <h1 className="page-title">{facility.name}</h1>
-          <p className="text-sm text-muted-foreground">{facility.address}</p>
-        </div>
+        <EditableFacilityName facility={facility} onSave={(newName) => { updateFacility({ ...facility, name: newName }); toast.success('Facility name updated'); }} />
         <StatusBadge status={facility.status} className="ml-3" />
       </div>
 
@@ -150,6 +147,44 @@ function OverviewTab({ facility, shifts, onUpdate }: { facility: any; shifts: an
   );
 }
 
+function EditableFacilityName({ facility, onSave }: { facility: any; onSave: (name: string) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(facility.name);
+
+  const handleSave = () => {
+    if (value.trim()) {
+      onSave(value.trim());
+      setEditing(false);
+    }
+  };
+
+  if (!editing) {
+    return (
+      <div className="group">
+        <div className="flex items-center gap-2">
+          <h1 className="page-title">{facility.name}</h1>
+          <Button size="icon" variant="ghost" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => setEditing(true)}>
+            <Pencil className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+        <p className="text-sm text-muted-foreground">{facility.address}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="flex items-center gap-2">
+        <Input value={value} onChange={e => setValue(e.target.value)} autoFocus className="text-lg font-semibold h-9 w-64"
+          onKeyDown={e => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') { setValue(facility.name); setEditing(false); } }} />
+        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleSave}><Check className="h-4 w-4" /></Button>
+        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setValue(facility.name); setEditing(false); }}><X className="h-4 w-4" /></Button>
+      </div>
+      <p className="text-sm text-muted-foreground">{facility.address}</p>
+    </div>
+  );
+}
+
 function ContactsTab({ contacts, facilityId, onAdd, onUpdate, onDelete }: {
   contacts: FacilityContact[]; facilityId: string;
   onAdd: (c: Omit<FacilityContact, 'id'>) => void;
@@ -157,13 +192,34 @@ function ContactsTab({ contacts, facilityId, onAdd, onUpdate, onDelete }: {
   onDelete: (id: string) => void;
 }) {
   const [showAdd, setShowAdd] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', role: 'scheduler' as ContactRole, email: '', phone: '', is_primary: false });
+  const [editForm, setEditForm] = useState<FacilityContact | null>(null);
 
   const handleAdd = () => {
     onAdd({ ...form, facility_id: facilityId });
     setShowAdd(false);
     setForm({ name: '', role: 'scheduler', email: '', phone: '', is_primary: false });
     toast.success('Contact added');
+  };
+
+  const startEdit = (c: FacilityContact) => {
+    setEditingId(c.id);
+    setEditForm({ ...c });
+  };
+
+  const handleEditSave = () => {
+    if (editForm) {
+      onUpdate(editForm);
+      toast.success('Contact updated');
+      setEditingId(null);
+      setEditForm(null);
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditForm(null);
   };
 
   return (
@@ -174,16 +230,48 @@ function ContactsTab({ contacts, facilityId, onAdd, onUpdate, onDelete }: {
       <div className="space-y-2">
         {contacts.map(c => (
           <Card key={c.id} className="p-4">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="font-medium text-sm">{c.name} {c.is_primary && <span className="text-xs text-primary">(Primary)</span>}</p>
-                <p className="text-xs text-muted-foreground capitalize">{c.role}</p>
-                <p className="text-xs text-muted-foreground">{c.email} · {c.phone}</p>
+            {editingId === c.id && editForm ? (
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div><Label className="text-xs">Name</Label><Input value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} /></div>
+                  <div><Label className="text-xs">Role</Label>
+                    <Select value={editForm.role} onValueChange={v => setEditForm({ ...editForm, role: v as ContactRole })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="scheduler">Scheduler</SelectItem>
+                        <SelectItem value="billing">Billing</SelectItem>
+                        <SelectItem value="emergency">Emergency</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><Label className="text-xs">Email</Label><Input type="email" value={editForm.email} onChange={e => setEditForm({ ...editForm, email: e.target.value })} /></div>
+                  <div><Label className="text-xs">Phone</Label><Input value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} /></div>
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={handleEditSave}><Check className="mr-1 h-3 w-3" /> Save</Button>
+                  <Button size="sm" variant="ghost" onClick={cancelEdit}><X className="mr-1 h-3 w-3" /> Cancel</Button>
+                </div>
               </div>
-              <Button size="icon" variant="ghost" onClick={() => { if (confirm('Delete contact?')) { onDelete(c.id); toast.success('Deleted'); } }}>
-                <Trash2 className="h-3 w-3" />
-              </Button>
-            </div>
+            ) : (
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="font-medium text-sm">{c.name} {c.is_primary && <span className="text-xs text-primary">(Primary)</span>}</p>
+                  <p className="text-xs text-muted-foreground capitalize">{c.role}</p>
+                  <p className="text-xs text-muted-foreground">{c.email} · {c.phone}</p>
+                </div>
+                <div className="flex gap-1">
+                  <Button size="icon" variant="ghost" onClick={() => startEdit(c)}>
+                    <Pencil className="h-3 w-3" />
+                  </Button>
+                  <Button size="icon" variant="ghost" onClick={() => { if (confirm('Delete contact?')) { onDelete(c.id); toast.success('Deleted'); } }}>
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </Card>
         ))}
         {contacts.length === 0 && <p className="text-sm text-muted-foreground">No contacts yet</p>}
