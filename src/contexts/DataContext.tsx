@@ -11,9 +11,6 @@ interface DataContextType {
   invoices: Invoice[];
   lineItems: InvoiceLineItem[];
   emailLogs: EmailLog[];
-  isLoggedIn: boolean;
-  login: (email: string, password: string) => boolean;
-  logout: () => void;
   addClinic: (clinic: Omit<Clinic, 'id'>) => Clinic;
   updateClinic: (clinic: Clinic) => void;
   addContact: (contact: Omit<ClinicContact, 'id'>) => void;
@@ -34,7 +31,6 @@ interface DataContextType {
 const DataContext = createContext<DataContextType | null>(null);
 
 export function DataProvider({ children }: { children: ReactNode }) {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [clinics, setClinics] = useState<Clinic[]>(seedClinics);
   const [contacts, setContacts] = useState<ClinicContact[]>(seedContacts);
   const [contracts, setContracts] = useState<ContractSnapshot[]>(seedContracts);
@@ -42,13 +38,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [invoices, setInvoices] = useState<Invoice[]>(seedInvoices);
   const [lineItems, setLineItems] = useState<InvoiceLineItem[]>(seedLineItems);
   const [emailLogs, setEmailLogs] = useState<EmailLog[]>(seedEmailLogs);
-
-  const login = useCallback((email: string, _password: string) => {
-    if (email) { setIsLoggedIn(true); return true; }
-    return false;
-  }, []);
-
-  const logout = useCallback(() => setIsLoggedIn(false), []);
 
   const addClinic = useCallback((c: Omit<Clinic, 'id'>) => {
     const clinic = { ...c, id: generateId() };
@@ -125,7 +114,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
   return (
     <DataContext.Provider value={{
       clinics, contacts, contracts, shifts, invoices, lineItems, emailLogs,
-      isLoggedIn, login, logout,
       addClinic, updateClinic,
       addContact, updateContact, deleteContact,
       updateContract,

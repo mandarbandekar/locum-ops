@@ -2,8 +2,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { DataProvider, useData } from "@/contexts/DataContext";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { DataProvider } from "@/contexts/DataContext";
 import { Layout } from "@/components/Layout";
 import LoginPage from "@/pages/LoginPage";
 import DashboardPage from "@/pages/DashboardPage";
@@ -20,23 +21,35 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 function AuthGate() {
-  const { isLoggedIn } = useData();
-  if (!isLoggedIn) return <LoginPage />;
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted">
+        <p className="text-muted-foreground">Loading…</p>
+      </div>
+    );
+  }
+
+  if (!user) return <LoginPage />;
+
   return (
-    <Layout>
-      <Routes>
-        <Route path="/" element={<DashboardPage />} />
-        <Route path="/clinics" element={<ClinicsPage />} />
-        <Route path="/clinics/:id" element={<ClinicDetailPage />} />
-        <Route path="/schedule" element={<SchedulePage />} />
-        <Route path="/outreach" element={<OutreachPage />} />
-        <Route path="/confirmations" element={<ConfirmationsPage />} />
-        <Route path="/invoices" element={<InvoicesPage />} />
-        <Route path="/invoices/:id" element={<InvoiceDetailPage />} />
-        <Route path="/reports" element={<ReportsPage />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </Layout>
+    <DataProvider>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<DashboardPage />} />
+          <Route path="/clinics" element={<ClinicsPage />} />
+          <Route path="/clinics/:id" element={<ClinicDetailPage />} />
+          <Route path="/schedule" element={<SchedulePage />} />
+          <Route path="/outreach" element={<OutreachPage />} />
+          <Route path="/confirmations" element={<ConfirmationsPage />} />
+          <Route path="/invoices" element={<InvoicesPage />} />
+          <Route path="/invoices/:id" element={<InvoiceDetailPage />} />
+          <Route path="/reports" element={<ReportsPage />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Layout>
+    </DataProvider>
   );
 }
 
@@ -45,11 +58,11 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <DataProvider>
+      <AuthProvider>
         <BrowserRouter>
           <AuthGate />
         </BrowserRouter>
-      </DataProvider>
+      </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

@@ -1,7 +1,7 @@
 import { LayoutDashboard, Building2, CalendarDays, Mail, CheckCircle, FileText, BarChart3, LogOut } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useLocation } from 'react-router-dom';
-import { useData } from '@/contexts/DataContext';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarFooter, useSidebar,
@@ -22,7 +22,7 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
   const location = useLocation();
-  const { logout } = useData();
+  const { signOut } = useAuth();
 
   return (
     <Sidebar collapsible="icon">
@@ -53,7 +53,7 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="p-2">
-        <Button variant="ghost" size="sm" onClick={logout} className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary">
+        <Button variant="ghost" size="sm" onClick={signOut} className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary">
           <LogOut className="mr-2 h-4 w-4" />
           {!collapsed && 'Logout'}
         </Button>
