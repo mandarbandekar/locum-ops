@@ -2,24 +2,17 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import type { Database } from '@/integrations/supabase/types';
 
-export interface Credential {
-  id: string;
-  user_id: string;
-  credential_type: string;
-  custom_title: string;
-  jurisdiction: string | null;
-  issuing_authority: string | null;
-  credential_number: string | null;
-  issue_date: string | null;
-  expiration_date: string | null;
-  renewal_frequency: string | null;
-  status: string;
-  notes: string;
-  tags: string[];
-  created_at: string;
-  updated_at: string;
-}
+type CredentialRow = Database['public']['Tables']['credentials']['Row'];
+type CredentialInsert = Database['public']['Tables']['credentials']['Insert'];
+type CredentialUpdate = Database['public']['Tables']['credentials']['Update'];
+type DocumentInsert = Database['public']['Tables']['credential_documents']['Insert'];
+type CredentialTypeEnum = Database['public']['Enums']['credential_type'];
+type CredentialStatusEnum = Database['public']['Enums']['credential_status'];
+type DocumentCategoryEnum = Database['public']['Enums']['document_category'];
+
+export type Credential = CredentialRow;
 
 export interface CredentialDocument {
   id: string;
@@ -47,7 +40,7 @@ export function useCredentials() {
         .select('*')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return data as Credential[];
+      return data;
     },
     enabled: !!user,
   });
@@ -66,10 +59,36 @@ export function useCredentials() {
   });
 
   const addCredential = useMutation({
-    mutationFn: async (credential: Omit<Credential, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
+    mutationFn: async (credential: {
+      credential_type: string;
+      custom_title: string;
+      jurisdiction?: string | null;
+      issuing_authority?: string | null;
+      credential_number?: string | null;
+      issue_date?: string | null;
+      expiration_date?: string | null;
+      renewal_frequency?: string | null;
+      status?: string;
+      notes?: string;
+      tags?: string[];
+    }) => {
+      const insertData: CredentialInsert = {
+        user_id: user!.id,
+        credential_type: credential.credential_type as CredentialTypeEnum,
+        custom_title: credential.custom_title,
+        jurisdiction: credential.jurisdiction,
+        issuing_authority: credential.issuing_authority,
+        credential_number: credential.credential_number,
+        issue_date: credential.issue_date,
+        expiration_date: credential.expiration_date,
+        renewal_frequency: credential.renewal_frequency,
+        status: (credential.status || 'active') as CredentialStatusEnum,
+        notes: credential.notes || '',
+        tags: credential.tags || [],
+      };
       const { data, error } = await supabase
         .from('credentials')
-        .insert({ ...credential, user_id: user!.id })
+        .insert(insertData)
         .select()
         .single();
       if (error) throw error;
@@ -85,10 +104,23 @@ export function useCredentials() {
   });
 
   const updateCredential = useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<Credential> & { id: string }) => {
+    mutationFn: async ({ id, ...updates }: { id: string; [key: string]: unknown }) => {
+      const updateData: CredentialUpdate = {};
+      if (updates.credential_type !== undefined) updateData.credential_type = updates.credential_type as CredentialTypeEnum;
+      if (updates.custom_title !== undefined) updateData.custom_title = updates.custom_title as string;
+      if (updates.jurisdiction !== undefined) updateData.jurisdiction = updates.jurisdiction as string | null;
+      if (updates.issuing_authority !== undefined) updateData.issuing_authority = updates.issuing_authority as string | null;
+      if (updates.credential_number !== undefined) updateData.credential_number = updates.credential_number as string | null;
+      if (updates.issue_date !== undefined) updateData.issue_date = updates.issue_date as string | null;
+      if (updates.expiration_date !== undefined) updateData.expiration_date = updates.expiration_date as string | null;
+      if (updates.renewal_frequency !== undefined) updateData.renewal_frequency = updates.renewal_frequency as string | null;
+      if (updates.status !== undefined) updateData.status = updates.status as CredentialStatusEnum;
+      if (updates.notes !== undefined) updateData.notes = updates.notes as string;
+      if (updates.tags !== undefined) updateData.tags = updates.tags as string[];
+
       const { data, error } = await supabase
         .from('credentials')
-        .update(updates)
+        .update(updateData)
         .eq('id', id)
         .select()
         .single();
@@ -126,20 +158,18 @@ export function useCredentials() {
       .upload(filePath, file);
     if (uploadError) throw uploadError;
 
-    const { data: urlData } = supabase.storage
-      .from('credential-documents')
-      .getPublicUrl(filePath);
+    const insertData: DocumentInsert = {
+      user_id: user.id,
+      credential_id: credentialId || null,
+      file_name: file.name,
+      file_url: filePath,
+      file_type: file.type,
+      document_category: category as DocumentCategoryEnum,
+    };
 
     const { data, error } = await supabase
       .from('credential_documents')
-      .insert({
-        user_id: user.id,
-        credential_id: credentialId || null,
-        file_name: file.name,
-        file_url: filePath,
-        file_type: file.type,
-        document_category: category,
-      })
+      .insert(insertData)
       .select()
       .single();
     if (error) throw error;
