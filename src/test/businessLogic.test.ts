@@ -43,7 +43,7 @@ describe('computeInvoiceStatus', () => {
   });
 
   it('returns overdue when past due date and unpaid', () => {
-    const inv: Invoice = { id: '1', clinic_id: 'c1', invoice_number: 'INV-001', period_start: '', period_end: '', total_amount: 100, status: 'sent', sent_at: '2025-01-01', paid_at: null, due_date: '2025-01-15' };
+    const inv: Invoice = { id: '1', facility_id: 'c1', invoice_number: 'INV-001', period_start: '', period_end: '', total_amount: 100, status: 'sent', sent_at: '2025-01-01', paid_at: null, due_date: '2025-01-15' };
     expect(computeInvoiceStatus(inv)).toBe('overdue');
   });
 
