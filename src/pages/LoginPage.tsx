@@ -71,7 +71,6 @@ export default function LoginPage() {
                 </div>
                 <Input id="password" type="password" required minLength={6} value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" />
               </div>
-              </div>
               {error && <p className="text-sm text-destructive">{error}</p>}
               {message && <p className="text-sm text-green-600">{message}</p>}
               <Button type="submit" className="w-full" disabled={submitting}>
