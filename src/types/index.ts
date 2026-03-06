@@ -6,21 +6,21 @@ export interface User {
   created_at: string;
 }
 
-export type ClinicStatus = 'prospect' | 'active' | 'paused';
-export interface Clinic {
+export type FacilityStatus = 'prospect' | 'active' | 'paused';
+export interface Facility {
   id: string;
   name: string;
-  status: ClinicStatus;
+  status: FacilityStatus;
   address: string;
   timezone: string;
   notes: string;
   outreach_last_sent_at: string | null;
 }
 
-export type ContactRole = 'manager' | 'billing' | 'emergency' | 'other';
-export interface ClinicContact {
+export type ContactRole = 'scheduler' | 'billing' | 'emergency' | 'other';
+export interface FacilityContact {
   id: string;
-  clinic_id: string;
+  facility_id: string;
   name: string;
   role: ContactRole;
   email: string;
@@ -28,9 +28,9 @@ export interface ClinicContact {
   is_primary: boolean;
 }
 
-export interface ContractSnapshot {
+export interface TermsSnapshot {
   id: string;
-  clinic_id: string;
+  facility_id: string;
   weekday_rate: number;
   weekend_rate: number;
   cancellation_policy_text: string;
@@ -42,7 +42,7 @@ export interface ContractSnapshot {
 export type ShiftStatus = 'proposed' | 'booked' | 'completed' | 'canceled';
 export interface Shift {
   id: string;
-  clinic_id: string;
+  facility_id: string;
   start_datetime: string;
   end_datetime: string;
   status: ShiftStatus;
@@ -53,7 +53,7 @@ export interface Shift {
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue';
 export interface Invoice {
   id: string;
-  clinic_id: string;
+  facility_id: string;
   invoice_number: string;
   period_start: string;
   period_end: string;
@@ -77,7 +77,7 @@ export interface InvoiceLineItem {
 export type EmailLogType = 'outreach_open' | 'monthly_confirm' | 'invoice' | 'reminder';
 export interface EmailLog {
   id: string;
-  clinic_id: string;
+  facility_id: string;
   type: EmailLogType;
   subject: string;
   body: string;

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Stethoscope, Play } from 'lucide-react';
+import { Briefcase, Play } from 'lucide-react';
 
 export default function LoginPage() {
   const { signIn, signUp, enterDemo } = useAuth();
@@ -42,10 +42,10 @@ export default function LoginPage() {
         <Card>
           <CardHeader className="text-center space-y-2">
             <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-2">
-              <Stethoscope className="h-6 w-6 text-primary" />
+              <Briefcase className="h-6 w-6 text-primary" />
             </div>
-            <CardTitle className="text-2xl">ReliefOps</CardTitle>
-            <CardDescription>{isSignUp ? 'Create your account' : 'Relief veterinarian management'}</CardDescription>
+            <CardTitle className="text-2xl">LocumOps</CardTitle>
+            <CardDescription>{isSignUp ? 'Create your account' : 'Independent clinician management'}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">

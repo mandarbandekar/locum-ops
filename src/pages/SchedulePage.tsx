@@ -10,13 +10,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Plus, ChevronLeft, ChevronRight, List, CalendarDays, AlertTriangle, Trash2 } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, getDay } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, getDay } from 'date-fns';
 import { ShiftStatus } from '@/types';
 import { detectShiftConflicts } from '@/lib/businessLogic';
 import { toast } from 'sonner';
 
 export default function SchedulePage() {
-  const { shifts, clinics, addShift, updateShift, deleteShift } = useData();
+  const { shifts, facilities, addShift, updateShift, deleteShift } = useData();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [view, setView] = useState<'calendar' | 'list'>('calendar');
   const [showAdd, setShowAdd] = useState(false);
@@ -32,7 +32,7 @@ export default function SchedulePage() {
     return d >= monthStart && d <= monthEnd;
   }).sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime());
 
-  const getClinicName = (id: string) => clinics.find(c => c.id === id)?.name || 'Unknown';
+  const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
 
   return (
     <div>
@@ -85,9 +85,9 @@ export default function SchedulePage() {
                       key={s.id}
                       className="text-xs p-1 rounded mb-0.5 cursor-pointer truncate bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
                       onClick={() => setEditShift(s.id)}
-                      title={getClinicName(s.clinic_id)}
+                      title={getFacilityName(s.facility_id)}
                     >
-                      {format(new Date(s.start_datetime), 'ha')} {getClinicName(s.clinic_id).split(' ')[0]}
+                      {format(new Date(s.start_datetime), 'ha')} {getFacilityName(s.facility_id).split(' ')[0]}
                     </div>
                   ))}
                 </div>
@@ -100,7 +100,7 @@ export default function SchedulePage() {
           <table className="w-full text-sm">
             <thead><tr className="border-b bg-muted/50">
               <th className="text-left p-3 font-medium text-muted-foreground">Date</th>
-              <th className="text-left p-3 font-medium text-muted-foreground">Clinic</th>
+              <th className="text-left p-3 font-medium text-muted-foreground">Facility</th>
               <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Time</th>
               <th className="text-left p-3 font-medium text-muted-foreground">Rate</th>
               <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
@@ -110,7 +110,7 @@ export default function SchedulePage() {
               {monthShifts.map(s => (
                 <tr key={s.id} className="border-b last:border-0 hover:bg-muted/30 cursor-pointer" onClick={() => setEditShift(s.id)}>
                   <td className="p-3">{format(new Date(s.start_datetime), 'EEE, MMM d')}</td>
-                  <td className="p-3 font-medium">{getClinicName(s.clinic_id)}</td>
+                  <td className="p-3 font-medium">{getFacilityName(s.facility_id)}</td>
                   <td className="p-3 text-muted-foreground hidden md:table-cell">{format(new Date(s.start_datetime), 'h:mm a')} - {format(new Date(s.end_datetime), 'h:mm a')}</td>
                   <td className="p-3">${s.rate_applied}</td>
                   <td className="p-3"><StatusBadge status={s.status} /></td>
@@ -124,7 +124,7 @@ export default function SchedulePage() {
                       <AlertDialogContent>
                         <AlertDialogHeader>
                           <AlertDialogTitle>Delete this shift?</AlertDialogTitle>
-                          <AlertDialogDescription>{getClinicName(s.clinic_id)} — {format(new Date(s.start_datetime), 'MMM d, yyyy')}</AlertDialogDescription>
+                          <AlertDialogDescription>{getFacilityName(s.facility_id)} — {format(new Date(s.start_datetime), 'MMM d, yyyy')}</AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -144,7 +144,7 @@ export default function SchedulePage() {
       <ShiftFormDialog
         open={showAdd}
         onOpenChange={setShowAdd}
-        clinics={clinics}
+        facilities={facilities}
         shifts={shifts}
         onSave={(s) => { addShift(s); toast.success('Shift added'); }}
       />
@@ -153,7 +153,7 @@ export default function SchedulePage() {
         <ShiftFormDialog
           open={!!editShift}
           onOpenChange={() => setEditShift(null)}
-          clinics={clinics}
+          facilities={facilities}
           shifts={shifts}
           existing={shifts.find(s => s.id === editShift)}
           onSave={(s) => { updateShift(s as any); toast.success('Shift updated'); }}
@@ -164,13 +164,13 @@ export default function SchedulePage() {
   );
 }
 
-function ShiftFormDialog({ open, onOpenChange, clinics, shifts, existing, onSave, onDelete }: {
+function ShiftFormDialog({ open, onOpenChange, facilities, shifts, existing, onSave, onDelete }: {
   open: boolean; onOpenChange: (o: boolean) => void;
-  clinics: any[]; shifts: any[]; existing?: any;
+  facilities: any[]; shifts: any[]; existing?: any;
   onSave: (s: any) => void;
   onDelete?: (id: string) => void;
 }) {
-  const [clinicId, setClinicId] = useState(existing?.clinic_id || clinics[0]?.id || '');
+  const [facilityId, setFacilityId] = useState(existing?.facility_id || facilities[0]?.id || '');
   const [date, setDate] = useState(existing ? format(new Date(existing.start_datetime), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'));
   const [startTime, setStartTime] = useState(existing ? format(new Date(existing.start_datetime), 'HH:mm') : '08:00');
   const [endTime, setEndTime] = useState(existing ? format(new Date(existing.end_datetime), 'HH:mm') : '18:00');
@@ -190,7 +190,7 @@ function ShiftFormDialog({ open, onOpenChange, clinics, shifts, existing, onSave
     e.preventDefault();
     const shift = {
       ...(existing || {}),
-      clinic_id: clinicId,
+      facility_id: facilityId,
       start_datetime: new Date(startDt).toISOString(),
       end_datetime: new Date(endDt).toISOString(),
       status,
@@ -206,11 +206,11 @@ function ShiftFormDialog({ open, onOpenChange, clinics, shifts, existing, onSave
       <DialogContent>
         <DialogHeader><DialogTitle>{existing ? 'Edit Shift' : 'Add Shift'}</DialogTitle></DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div><Label>Clinic</Label>
-            <Select value={clinicId} onValueChange={setClinicId}>
+          <div><Label>Facility</Label>
+            <Select value={facilityId} onValueChange={setFacilityId}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {clinics.filter(c => c.status === 'active').map(c => (
+                {facilities.filter(c => c.status === 'active').map(c => (
                   <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                 ))}
               </SelectContent>
@@ -244,7 +244,7 @@ function ShiftFormDialog({ open, onOpenChange, clinics, shifts, existing, onSave
                 <p className="font-medium">Scheduling conflict!</p>
                 {conflicts.map(c => (
                   <p key={c.id} className="text-xs">
-                    {clinics.find(cl => cl.id === c.clinic_id)?.name}: {format(new Date(c.start_datetime), 'MMM d, h:mm a')} - {format(new Date(c.end_datetime), 'h:mm a')}
+                    {facilities.find(cl => cl.id === c.facility_id)?.name}: {format(new Date(c.start_datetime), 'MMM d, h:mm a')} - {format(new Date(c.end_datetime), 'h:mm a')}
                   </p>
                 ))}
               </div>

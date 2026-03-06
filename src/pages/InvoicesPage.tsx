@@ -14,7 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from 'sonner';
 
 export default function InvoicesPage() {
-  const { invoices, clinics, shifts, addInvoice, deleteInvoice } = useData();
+  const { invoices, facilities, shifts, addInvoice, deleteInvoice } = useData();
   const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState('all');
   const [showCreate, setShowCreate] = useState(false);
@@ -24,7 +24,7 @@ export default function InvoicesPage() {
     .filter(inv => statusFilter === 'all' || inv.computedStatus === statusFilter)
     .sort((a, b) => new Date(b.period_end).getTime() - new Date(a.period_end).getTime());
 
-  const getClinicName = (id: string) => clinics.find(c => c.id === id)?.name || 'Unknown';
+  const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
 
   return (
     <div>
@@ -52,7 +52,7 @@ export default function InvoicesPage() {
         <table className="w-full text-sm">
           <thead><tr className="border-b bg-muted/50">
             <th className="text-left p-3 font-medium text-muted-foreground">Invoice #</th>
-            <th className="text-left p-3 font-medium text-muted-foreground">Clinic</th>
+            <th className="text-left p-3 font-medium text-muted-foreground">Facility</th>
             <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Period</th>
             <th className="text-left p-3 font-medium text-muted-foreground">Amount</th>
             <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
@@ -62,7 +62,7 @@ export default function InvoicesPage() {
             {displayInvoices.map(inv => (
               <tr key={inv.id} className="border-b last:border-0 hover:bg-muted/30 cursor-pointer" onClick={() => navigate(`/invoices/${inv.id}`)}>
                 <td className="p-3 font-medium">{inv.invoice_number}</td>
-                <td className="p-3">{getClinicName(inv.clinic_id)}</td>
+                <td className="p-3">{getFacilityName(inv.facility_id)}</td>
                 <td className="p-3 text-muted-foreground hidden md:table-cell">
                   {format(new Date(inv.period_start), 'MMM d')} - {format(new Date(inv.period_end), 'MMM d, yyyy')}
                 </td>
@@ -100,16 +100,16 @@ export default function InvoicesPage() {
 }
 
 function CreateInvoiceDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
-  const { clinics, shifts, invoices, addInvoice } = useData();
+  const { facilities, shifts, invoices, addInvoice } = useData();
   const navigate = useNavigate();
-  const [clinicId, setClinicId] = useState(clinics[0]?.id || '');
+  const [facilityId, setFacilityId] = useState(facilities[0]?.id || '');
   const [periodStart, setPeriodStart] = useState(format(subDays(new Date(), 30), 'yyyy-MM-dd'));
   const [periodEnd, setPeriodEnd] = useState(format(new Date(), 'yyyy-MM-dd'));
 
   const handleCreate = () => {
-    if (!clinicId) return;
+    if (!facilityId) return;
     const completedShifts = shifts.filter(s =>
-      s.clinic_id === clinicId &&
+      s.facility_id === facilityId &&
       s.status === 'completed' &&
       new Date(s.start_datetime) >= new Date(periodStart) &&
       new Date(s.end_datetime) <= new Date(periodEnd + 'T23:59:59')
@@ -127,7 +127,7 @@ function CreateInvoiceDialog({ open, onOpenChange }: { open: boolean; onOpenChan
 
     const invoice = addInvoice(
       {
-        clinic_id: clinicId,
+        facility_id: facilityId,
         invoice_number: generateInvoiceNumber(invoices),
         period_start: new Date(periodStart).toISOString(),
         period_end: new Date(periodEnd).toISOString(),
@@ -150,11 +150,11 @@ function CreateInvoiceDialog({ open, onOpenChange }: { open: boolean; onOpenChan
       <DialogContent>
         <DialogHeader><DialogTitle>Create Invoice</DialogTitle></DialogHeader>
         <div className="space-y-4">
-          <div><Label>Clinic</Label>
-            <Select value={clinicId} onValueChange={setClinicId}>
+          <div><Label>Facility</Label>
+            <Select value={facilityId} onValueChange={setFacilityId}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {clinics.filter(c => c.status === 'active').map(c => (
+                {facilities.filter(c => c.status === 'active').map(c => (
                   <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                 ))}
               </SelectContent>

@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 
 const navItems = [
   { title: 'Dashboard', url: '/', icon: LayoutDashboard },
-  { title: 'Clinics', url: '/clinics', icon: Building2 },
+  { title: 'Facilities', url: '/facilities', icon: Building2 },
   { title: 'Schedule', url: '/schedule', icon: CalendarDays },
   { title: 'Outreach', url: '/outreach', icon: Mail },
   { title: 'Confirmations', url: '/confirmations', icon: CheckCircle },

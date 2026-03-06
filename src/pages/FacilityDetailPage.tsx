@@ -11,81 +11,81 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { StatusBadge } from '@/components/StatusBadge';
 import { ArrowLeft, Plus, Trash2, Edit2, Save } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ClinicContact, ContactRole, ContractSnapshot } from '@/types';
+import { FacilityContact, ContactRole, TermsSnapshot } from '@/types';
 import { generateId } from '@/lib/businessLogic';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
-export default function ClinicDetailPage() {
+export default function FacilityDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { clinics, contacts, contracts, shifts, invoices, updateClinic, addContact, updateContact, deleteContact, updateContract } = useData();
+  const { facilities, contacts, terms, shifts, invoices, updateFacility, addContact, updateContact, deleteContact, updateTerms } = useData();
 
-  const clinic = clinics.find(c => c.id === id);
-  if (!clinic) return <div className="p-6">Clinic not found. <Button variant="link" onClick={() => navigate('/clinics')}>Back</Button></div>;
+  const facility = facilities.find(c => c.id === id);
+  if (!facility) return <div className="p-6">Facility not found. <Button variant="link" onClick={() => navigate('/facilities')}>Back</Button></div>;
 
-  const clinicContacts = contacts.filter(c => c.clinic_id === id);
-  const clinicContract = contracts.find(c => c.clinic_id === id);
-  const clinicShifts = shifts.filter(s => s.clinic_id === id).sort((a, b) => new Date(b.start_datetime).getTime() - new Date(a.start_datetime).getTime());
-  const clinicInvoices = invoices.filter(i => i.clinic_id === id);
+  const facilityContacts = contacts.filter(c => c.facility_id === id);
+  const facilityTerms = terms.find(c => c.facility_id === id);
+  const facilityShifts = shifts.filter(s => s.facility_id === id).sort((a, b) => new Date(b.start_datetime).getTime() - new Date(a.start_datetime).getTime());
+  const facilityInvoices = invoices.filter(i => i.facility_id === id);
 
   return (
     <div>
       <div className="flex items-center gap-3 mb-6">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/clinics')}>
+        <Button variant="ghost" size="icon" onClick={() => navigate('/facilities')}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
-          <h1 className="page-title">{clinic.name}</h1>
-          <p className="text-sm text-muted-foreground">{clinic.address}</p>
+          <h1 className="page-title">{facility.name}</h1>
+          <p className="text-sm text-muted-foreground">{facility.address}</p>
         </div>
-        <StatusBadge status={clinic.status} className="ml-3" />
+        <StatusBadge status={facility.status} className="ml-3" />
       </div>
 
       <Tabs defaultValue="overview">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="contacts">Contacts ({clinicContacts.length})</TabsTrigger>
-          <TabsTrigger value="contract">Contract</TabsTrigger>
-          <TabsTrigger value="shifts">Shifts ({clinicShifts.length})</TabsTrigger>
-          <TabsTrigger value="invoices">Invoices ({clinicInvoices.length})</TabsTrigger>
+          <TabsTrigger value="contacts">Contacts ({facilityContacts.length})</TabsTrigger>
+          <TabsTrigger value="terms">Terms</TabsTrigger>
+          <TabsTrigger value="shifts">Shifts ({facilityShifts.length})</TabsTrigger>
+          <TabsTrigger value="invoices">Invoices ({facilityInvoices.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-4">
-          <OverviewTab clinic={clinic} shifts={clinicShifts} onUpdate={updateClinic} />
+          <OverviewTab facility={facility} shifts={facilityShifts} onUpdate={updateFacility} />
         </TabsContent>
 
         <TabsContent value="contacts" className="mt-4">
-          <ContactsTab contacts={clinicContacts} clinicId={clinic.id} onAdd={addContact} onUpdate={updateContact} onDelete={deleteContact} />
+          <ContactsTab contacts={facilityContacts} facilityId={facility.id} onAdd={addContact} onUpdate={updateContact} onDelete={deleteContact} />
         </TabsContent>
 
-        <TabsContent value="contract" className="mt-4">
-          <ContractTab contract={clinicContract} clinicId={clinic.id} onUpdate={updateContract} />
+        <TabsContent value="terms" className="mt-4">
+          <TermsTab terms={facilityTerms} facilityId={facility.id} onUpdate={updateTerms} />
         </TabsContent>
 
         <TabsContent value="shifts" className="mt-4">
-          <ShiftsTab shifts={clinicShifts} />
+          <ShiftsTab shifts={facilityShifts} />
         </TabsContent>
 
         <TabsContent value="invoices" className="mt-4">
-          <InvoicesTab invoices={clinicInvoices} onNavigate={(iid) => navigate(`/invoices/${iid}`)} />
+          <InvoicesTab invoices={facilityInvoices} onNavigate={(iid) => navigate(`/invoices/${iid}`)} />
         </TabsContent>
       </Tabs>
     </div>
   );
 }
 
-function OverviewTab({ clinic, shifts, onUpdate }: { clinic: any; shifts: any[]; onUpdate: any }) {
+function OverviewTab({ facility, shifts, onUpdate }: { facility: any; shifts: any[]; onUpdate: any }) {
   const [editing, setEditing] = useState(false);
-  const [notes, setNotes] = useState(clinic.notes);
-  const [status, setStatus] = useState(clinic.status);
+  const [notes, setNotes] = useState(facility.notes);
+  const [status, setStatus] = useState(facility.status);
 
   const upcoming = shifts.filter(s => new Date(s.start_datetime) > new Date() && s.status !== 'canceled').slice(0, 5);
 
   const handleSave = () => {
-    onUpdate({ ...clinic, notes, status });
+    onUpdate({ ...facility, notes, status });
     setEditing(false);
-    toast.success('Clinic updated');
+    toast.success('Facility updated');
   };
 
   return (
@@ -112,19 +112,19 @@ function OverviewTab({ clinic, shifts, onUpdate }: { clinic: any; shifts: any[];
                 </SelectContent>
               </Select>
             ) : (
-              <p><StatusBadge status={clinic.status} /></p>
+              <p><StatusBadge status={facility.status} /></p>
             )}
           </div>
           <div>
             <Label className="text-xs text-muted-foreground">Timezone</Label>
-            <p className="text-sm">{clinic.timezone}</p>
+            <p className="text-sm">{facility.timezone}</p>
           </div>
           <div>
             <Label className="text-xs text-muted-foreground">Notes</Label>
             {editing ? (
               <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3} />
             ) : (
-              <p className="text-sm">{clinic.notes || 'No notes'}</p>
+              <p className="text-sm">{facility.notes || 'No notes'}</p>
             )}
           </div>
         </CardContent>
@@ -150,20 +150,19 @@ function OverviewTab({ clinic, shifts, onUpdate }: { clinic: any; shifts: any[];
   );
 }
 
-function ContactsTab({ contacts, clinicId, onAdd, onUpdate, onDelete }: {
-  contacts: ClinicContact[]; clinicId: string;
-  onAdd: (c: Omit<ClinicContact, 'id'>) => void;
-  onUpdate: (c: ClinicContact) => void;
+function ContactsTab({ contacts, facilityId, onAdd, onUpdate, onDelete }: {
+  contacts: FacilityContact[]; facilityId: string;
+  onAdd: (c: Omit<FacilityContact, 'id'>) => void;
+  onUpdate: (c: FacilityContact) => void;
   onDelete: (id: string) => void;
 }) {
   const [showAdd, setShowAdd] = useState(false);
-  const [editId, setEditId] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: '', role: 'manager' as ContactRole, email: '', phone: '', is_primary: false });
+  const [form, setForm] = useState({ name: '', role: 'scheduler' as ContactRole, email: '', phone: '', is_primary: false });
 
   const handleAdd = () => {
-    onAdd({ ...form, clinic_id: clinicId });
+    onAdd({ ...form, facility_id: facilityId });
     setShowAdd(false);
-    setForm({ name: '', role: 'manager', email: '', phone: '', is_primary: false });
+    setForm({ name: '', role: 'scheduler', email: '', phone: '', is_primary: false });
     toast.success('Contact added');
   };
 
@@ -199,7 +198,7 @@ function ContactsTab({ contacts, clinicId, onAdd, onUpdate, onDelete }: {
               <Select value={form.role} onValueChange={v => setForm(p => ({ ...p, role: v as ContactRole }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="manager">Manager</SelectItem>
+                  <SelectItem value="scheduler">Scheduler</SelectItem>
                   <SelectItem value="billing">Billing</SelectItem>
                   <SelectItem value="emergency">Emergency</SelectItem>
                   <SelectItem value="other">Other</SelectItem>
@@ -216,15 +215,15 @@ function ContactsTab({ contacts, clinicId, onAdd, onUpdate, onDelete }: {
   );
 }
 
-function ContractTab({ contract, clinicId, onUpdate }: { contract?: ContractSnapshot; clinicId: string; onUpdate: (c: ContractSnapshot) => void }) {
-  const [form, setForm] = useState<ContractSnapshot>(contract || {
-    id: generateId(), clinic_id: clinicId, weekday_rate: 0, weekend_rate: 0,
+function TermsTab({ terms, facilityId, onUpdate }: { terms?: TermsSnapshot; facilityId: string; onUpdate: (c: TermsSnapshot) => void }) {
+  const [form, setForm] = useState<TermsSnapshot>(terms || {
+    id: generateId(), facility_id: facilityId, weekday_rate: 0, weekend_rate: 0,
     cancellation_policy_text: '', overtime_policy_text: '', late_payment_policy_text: '', special_notes: '',
   });
 
   const handleSave = () => {
     onUpdate(form);
-    toast.success('Contract saved');
+    toast.success('Terms saved');
   };
 
   return (
@@ -238,7 +237,7 @@ function ContractTab({ contract, clinicId, onUpdate }: { contract?: ContractSnap
         <div><Label>Overtime Policy</Label><Textarea value={form.overtime_policy_text} onChange={e => setForm(p => ({ ...p, overtime_policy_text: e.target.value }))} rows={2} /></div>
         <div><Label>Late Payment Policy</Label><Textarea value={form.late_payment_policy_text} onChange={e => setForm(p => ({ ...p, late_payment_policy_text: e.target.value }))} rows={2} /></div>
         <div><Label>Special Notes</Label><Textarea value={form.special_notes} onChange={e => setForm(p => ({ ...p, special_notes: e.target.value }))} rows={2} /></div>
-        <Button onClick={handleSave}>Save Contract</Button>
+        <Button onClick={handleSave}>Save Terms</Button>
       </CardContent>
     </Card>
   );

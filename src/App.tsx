@@ -9,8 +9,8 @@ import { Layout } from "@/components/Layout";
 import LandingPage from "@/pages/LandingPage";
 import LoginPage from "@/pages/LoginPage";
 import DashboardPage from "@/pages/DashboardPage";
-import ClinicsPage from "@/pages/ClinicsPage";
-import ClinicDetailPage from "@/pages/ClinicDetailPage";
+import FacilitiesPage from "@/pages/FacilitiesPage";
+import FacilityDetailPage from "@/pages/FacilityDetailPage";
 import SchedulePage from "@/pages/SchedulePage";
 import OutreachPage from "@/pages/OutreachPage";
 import ConfirmationsPage from "@/pages/ConfirmationsPage";
@@ -46,8 +46,8 @@ function AuthGate() {
       <Layout>
         <Routes>
           <Route path="/" element={<DashboardPage />} />
-          <Route path="/clinics" element={<ClinicsPage />} />
-          <Route path="/clinics/:id" element={<ClinicDetailPage />} />
+          <Route path="/facilities" element={<FacilitiesPage />} />
+          <Route path="/facilities/:id" element={<FacilityDetailPage />} />
           <Route path="/schedule" element={<SchedulePage />} />
           <Route path="/outreach" element={<OutreachPage />} />
           <Route path="/confirmations" element={<ConfirmationsPage />} />
