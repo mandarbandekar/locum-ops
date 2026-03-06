@@ -180,6 +180,7 @@ function ShiftFormDialog({ open, onOpenChange, facilities, shifts, existing, onS
   const [status, setStatus] = useState<ShiftStatus>(existing?.status || 'proposed');
   const [rate, setRate] = useState(existing?.rate_applied?.toString() || '850');
   const [notes, setNotes] = useState(existing?.notes || '');
+  const [color, setColor] = useState<ShiftColor>(existing?.color || 'blue');
 
   const startDt = `${date}T${startTime}:00`;
   const endDt = `${date}T${endTime}:00`;
