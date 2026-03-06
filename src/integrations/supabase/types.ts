@@ -370,6 +370,240 @@ export type Database = {
         }
         Relationships: []
       }
+      email_logs: {
+        Row: {
+          body: string
+          created_at: string
+          facility_id: string
+          id: string
+          recipients: string
+          sent_at: string
+          subject: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          body?: string
+          created_at?: string
+          facility_id: string
+          id?: string
+          recipients?: string
+          sent_at?: string
+          subject?: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          facility_id?: string
+          id?: string
+          recipients?: string
+          sent_at?: string
+          subject?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_logs_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      facilities: {
+        Row: {
+          address: string
+          created_at: string
+          id: string
+          name: string
+          notes: string
+          outreach_last_sent_at: string | null
+          status: string
+          timezone: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string
+          outreach_last_sent_at?: string | null
+          status?: string
+          timezone?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string
+          outreach_last_sent_at?: string | null
+          status?: string
+          timezone?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      facility_contacts: {
+        Row: {
+          created_at: string
+          email: string
+          facility_id: string
+          id: string
+          is_primary: boolean
+          name: string
+          phone: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string
+          facility_id: string
+          id?: string
+          is_primary?: boolean
+          name: string
+          phone?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          facility_id?: string
+          id?: string
+          is_primary?: boolean
+          name?: string
+          phone?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "facility_contacts_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoice_line_items: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          invoice_id: string
+          line_total: number
+          qty: number
+          shift_id: string | null
+          unit_rate: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          id?: string
+          invoice_id: string
+          line_total?: number
+          qty?: number
+          shift_id?: string | null
+          unit_rate?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          invoice_id?: string
+          line_total?: number
+          qty?: number
+          shift_id?: string | null
+          unit_rate?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_line_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "shifts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          created_at: string
+          due_date: string | null
+          facility_id: string
+          id: string
+          invoice_number: string
+          paid_at: string | null
+          period_end: string
+          period_start: string
+          sent_at: string | null
+          status: string
+          total_amount: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          due_date?: string | null
+          facility_id: string
+          id?: string
+          invoice_number: string
+          paid_at?: string | null
+          period_end: string
+          period_start: string
+          sent_at?: string | null
+          status?: string
+          total_amount?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          due_date?: string | null
+          facility_id?: string
+          id?: string
+          invoice_number?: string
+          paid_at?: string | null
+          period_end?: string
+          period_start?: string
+          sent_at?: string | null
+          status?: string
+          total_amount?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -393,6 +627,103 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      shifts: {
+        Row: {
+          created_at: string
+          end_datetime: string
+          facility_id: string
+          id: string
+          notes: string
+          rate_applied: number
+          start_datetime: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_datetime: string
+          facility_id: string
+          id?: string
+          notes?: string
+          rate_applied?: number
+          start_datetime: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          end_datetime?: string
+          facility_id?: string
+          id?: string
+          notes?: string
+          rate_applied?: number
+          start_datetime?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shifts_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      terms_snapshots: {
+        Row: {
+          cancellation_policy_text: string
+          created_at: string
+          facility_id: string
+          id: string
+          late_payment_policy_text: string
+          overtime_policy_text: string
+          special_notes: string
+          updated_at: string
+          user_id: string
+          weekday_rate: number
+          weekend_rate: number
+        }
+        Insert: {
+          cancellation_policy_text?: string
+          created_at?: string
+          facility_id: string
+          id?: string
+          late_payment_policy_text?: string
+          overtime_policy_text?: string
+          special_notes?: string
+          updated_at?: string
+          user_id: string
+          weekday_rate?: number
+          weekend_rate?: number
+        }
+        Update: {
+          cancellation_policy_text?: string
+          created_at?: string
+          facility_id?: string
+          id?: string
+          late_payment_policy_text?: string
+          overtime_policy_text?: string
+          special_notes?: string
+          updated_at?: string
+          user_id?: string
+          weekday_rate?: number
+          weekend_rate?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "terms_snapshots_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
