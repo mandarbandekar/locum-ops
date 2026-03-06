@@ -3,7 +3,7 @@ import { Facility, FacilityContact, TermsSnapshot, Shift, Invoice, InvoiceLineIt
 import {
   seedFacilities, seedContacts, seedTerms, seedShifts, seedInvoices, seedLineItems, seedEmailLogs,
 } from '@/data/seed';
-import { computeInvoiceStatus, generateId } from '@/lib/businessLogic';
+import { computeInvoiceStatus, generateId, generateInvoiceNumber } from '@/lib/businessLogic';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
