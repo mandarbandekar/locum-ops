@@ -40,6 +40,17 @@ export interface TermsSnapshot {
 }
 
 export type ShiftStatus = 'proposed' | 'booked' | 'completed' | 'canceled';
+export type ShiftColor = 'blue' | 'green' | 'red' | 'orange' | 'purple' | 'pink' | 'teal' | 'yellow';
+export const SHIFT_COLORS: { value: ShiftColor; label: string; bg: string; text: string }[] = [
+  { value: 'blue', label: 'Blue', bg: 'bg-blue-500/15', text: 'text-blue-700 dark:text-blue-400' },
+  { value: 'green', label: 'Green', bg: 'bg-green-500/15', text: 'text-green-700 dark:text-green-400' },
+  { value: 'red', label: 'Red', bg: 'bg-red-500/15', text: 'text-red-700 dark:text-red-400' },
+  { value: 'orange', label: 'Orange', bg: 'bg-orange-500/15', text: 'text-orange-700 dark:text-orange-400' },
+  { value: 'purple', label: 'Purple', bg: 'bg-purple-500/15', text: 'text-purple-700 dark:text-purple-400' },
+  { value: 'pink', label: 'Pink', bg: 'bg-pink-500/15', text: 'text-pink-700 dark:text-pink-400' },
+  { value: 'teal', label: 'Teal', bg: 'bg-teal-500/15', text: 'text-teal-700 dark:text-teal-400' },
+  { value: 'yellow', label: 'Yellow', bg: 'bg-yellow-500/15', text: 'text-yellow-700 dark:text-yellow-400' },
+];
 export interface Shift {
   id: string;
   facility_id: string;
@@ -48,6 +59,7 @@ export interface Shift {
   status: ShiftStatus;
   rate_applied: number;
   notes: string;
+  color: ShiftColor;
 }
 
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue';

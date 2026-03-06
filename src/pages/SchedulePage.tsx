@@ -11,7 +11,7 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { Plus, ChevronLeft, ChevronRight, List, CalendarDays, AlertTriangle, Trash2 } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, getDay } from 'date-fns';
-import { ShiftStatus } from '@/types';
+import { ShiftStatus, SHIFT_COLORS, ShiftColor } from '@/types';
 import { detectShiftConflicts } from '@/lib/businessLogic';
 import { toast } from 'sonner';
 
@@ -80,16 +80,19 @@ export default function SchedulePage() {
                   <div className={`text-xs font-medium mb-1 ${isToday ? 'text-primary' : 'text-muted-foreground'}`}>
                     {format(day, 'd')}
                   </div>
-                  {dayShifts.map(s => (
-                    <div
-                      key={s.id}
-                      className="text-xs p-1 rounded mb-0.5 cursor-pointer truncate bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-                      onClick={() => setEditShift(s.id)}
-                      title={getFacilityName(s.facility_id)}
-                    >
-                      {format(new Date(s.start_datetime), 'ha')} {getFacilityName(s.facility_id).split(' ')[0]}
-                    </div>
-                  ))}
+                  {dayShifts.map(s => {
+                    const colorDef = SHIFT_COLORS.find(c => c.value === (s.color || 'blue')) || SHIFT_COLORS[0];
+                    return (
+                      <div
+                        key={s.id}
+                        className={`text-xs p-1 rounded mb-0.5 cursor-pointer truncate ${colorDef.bg} ${colorDef.text} hover:opacity-80 transition-opacity`}
+                        onClick={() => setEditShift(s.id)}
+                        title={getFacilityName(s.facility_id)}
+                      >
+                        {format(new Date(s.start_datetime), 'ha')} {getFacilityName(s.facility_id).split(' ')[0]}
+                      </div>
+                    );
+                  })}
                 </div>
               );
             })}
@@ -177,6 +180,7 @@ function ShiftFormDialog({ open, onOpenChange, facilities, shifts, existing, onS
   const [status, setStatus] = useState<ShiftStatus>(existing?.status || 'proposed');
   const [rate, setRate] = useState(existing?.rate_applied?.toString() || '850');
   const [notes, setNotes] = useState(existing?.notes || '');
+  const [color, setColor] = useState<ShiftColor>(existing?.color || 'blue');
 
   const startDt = `${date}T${startTime}:00`;
   const endDt = `${date}T${endTime}:00`;
@@ -196,6 +200,7 @@ function ShiftFormDialog({ open, onOpenChange, facilities, shifts, existing, onS
       status,
       rate_applied: Number(rate),
       notes,
+      color,
     };
     onSave(shift);
     onOpenChange(false);
@@ -236,6 +241,22 @@ function ShiftFormDialog({ open, onOpenChange, facilities, shifts, existing, onS
             <div><Label>Rate ($)</Label><Input type="number" value={rate} onChange={e => setRate(e.target.value)} /></div>
           </div>
           <div><Label>Notes</Label><Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} /></div>
+          <div>
+            <Label>Color</Label>
+            <div className="flex gap-2 mt-1.5 flex-wrap">
+              {SHIFT_COLORS.map(c => (
+                <button
+                  key={c.value}
+                  type="button"
+                  onClick={() => setColor(c.value)}
+                  className={`w-7 h-7 rounded-full border-2 transition-all ${c.bg} ${color === c.value ? 'border-foreground scale-110' : 'border-transparent hover:scale-105'}`}
+                  title={c.label}
+                >
+                  <span className={`block w-full h-full rounded-full ${c.value === 'blue' ? 'bg-blue-500' : c.value === 'green' ? 'bg-green-500' : c.value === 'red' ? 'bg-red-500' : c.value === 'orange' ? 'bg-orange-500' : c.value === 'purple' ? 'bg-purple-500' : c.value === 'pink' ? 'bg-pink-500' : c.value === 'teal' ? 'bg-teal-500' : 'bg-yellow-500'}`} />
+                </button>
+              ))}
+            </div>
+          </div>
 
           {conflicts.length > 0 && (
             <div className="flex items-start gap-2 p-3 rounded-md bg-destructive/10 text-destructive text-sm">

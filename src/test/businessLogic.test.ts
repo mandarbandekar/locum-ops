@@ -4,9 +4,9 @@ import { Shift, Invoice } from '@/types';
 
 describe('detectShiftConflicts', () => {
   const baseShifts: Shift[] = [
-    { id: 's1', facility_id: 'c1', start_datetime: '2026-03-10T08:00:00Z', end_datetime: '2026-03-10T18:00:00Z', status: 'booked', rate_applied: 850, notes: '' },
-    { id: 's2', facility_id: 'c2', start_datetime: '2026-03-11T09:00:00Z', end_datetime: '2026-03-11T17:00:00Z', status: 'booked', rate_applied: 900, notes: '' },
-    { id: 's3', facility_id: 'c1', start_datetime: '2026-03-12T08:00:00Z', end_datetime: '2026-03-12T18:00:00Z', status: 'canceled', rate_applied: 850, notes: '' },
+    { id: 's1', facility_id: 'c1', start_datetime: '2026-03-10T08:00:00Z', end_datetime: '2026-03-10T18:00:00Z', status: 'booked', rate_applied: 850, notes: '', color: 'blue' },
+    { id: 's2', facility_id: 'c2', start_datetime: '2026-03-11T09:00:00Z', end_datetime: '2026-03-11T17:00:00Z', status: 'booked', rate_applied: 900, notes: '', color: 'blue' },
+    { id: 's3', facility_id: 'c1', start_datetime: '2026-03-12T08:00:00Z', end_datetime: '2026-03-12T18:00:00Z', status: 'canceled', rate_applied: 850, notes: '', color: 'blue' },
   ];
 
   it('detects overlapping shift', () => {
