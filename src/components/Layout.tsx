@@ -1,5 +1,6 @@
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -10,6 +11,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <header className="h-14 flex items-center border-b bg-card px-4 shrink-0">
             <SidebarTrigger className="mr-3" />
             <span className="text-lg font-semibold text-primary tracking-tight">LocumOps</span>
+            <div className="ml-auto">
+              <ThemeToggle />
+            </div>
           </header>
           <main className="flex-1 p-6 overflow-auto">
             {children}
