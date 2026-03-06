@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   ArrowRight, ChevronDown, Check, AlertTriangle,
-  Building2, CalendarDays, Mail, FileText, Users, HelpCircle, Menu, X,
+  Building2, CalendarDays, Mail, FileText, HelpCircle, Menu, X,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
@@ -95,28 +95,7 @@ export default function LandingPage() {
         </motion.p>
       </section>
 
-      {/* ── 2. PROBLEM → AGITATION ── */}
-      <motion.section variants={sectionFade} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.3 }}
-        className="max-w-3xl mx-auto px-4 pb-20">
-        <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-6">You're doing a full business in Google Sheets.</h2>
-        <ul className="space-y-3 mb-6">
-          {[
-            'Facility contacts + rates buried in tabs',
-            'Monthly "confirm my dates" emails done by hand',
-            'Invoices sent late → payments delayed',
-            'Follow-ups are easy to miss',
-            'Double bookings happen when life gets busy',
-          ].map((b, i) => (
-            <li key={i} className="flex items-start gap-3 text-muted-foreground">
-              <AlertTriangle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
-              <span>{b}</span>
-            </li>
-          ))}
-        </ul>
-        <p className="text-lg font-semibold text-foreground">Spreadsheets don't remind you. <span className="text-primary">LocumOps does.</span></p>
-      </motion.section>
-
-      {/* ── 3. VALUE PROPS ── */}
+      {/* ── VALUE PROPS ── */}
       <section className="max-w-5xl mx-auto px-4 pb-20">
         <div className="grid sm:grid-cols-3 gap-6">
           {[
@@ -190,41 +169,7 @@ export default function LandingPage() {
         </div>
       </motion.section>
 
-      {/* ── 6. OUTCOMES ── */}
-      <motion.section variants={sectionFade} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.3 }}
-        className="max-w-3xl mx-auto px-4 pb-20">
-        <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-6">What users can expect</h2>
-        <ul className="space-y-3">
-          {[
-            'Faster invoice sending (same day instead of "later this week")',
-            'Fewer missed confirmations',
-            'Clearer "who owes me what" every month',
-            'Less mental load switching between calendar, email, and spreadsheets',
-          ].map((b, i) => (
-            <li key={i} className="flex items-start gap-3 text-muted-foreground">
-              <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-              <span>{b}</span>
-            </li>
-          ))}
-        </ul>
-      </motion.section>
-
-      {/* ── 7. WHO IT'S FOR ── */}
-      <motion.section variants={sectionFade} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.3 }}
-        className="max-w-3xl mx-auto px-4 pb-20">
-        <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Who it's for</h2>
-        <p className="text-muted-foreground mb-6">Built for independent clinicians who work across facilities:</p>
-        <ul className="space-y-2 mb-4">
-          {['Relief veterinarians', 'PRN / per diem nurses', 'Locum physicians', 'Contract pharmacists', 'PT/OT contractors'].map((b, i) => (
-            <li key={i} className="flex items-center gap-2 text-foreground">
-              <Users className="h-4 w-4 text-primary" />{b}
-            </li>
-          ))}
-        </ul>
-        <p className="text-sm text-muted-foreground italic">Not for: staffing agencies or facility VMS teams (yet).</p>
-      </motion.section>
-
-      {/* ── 8. PRICING ── */}
+      {/* ── PRICING ── */}
       <motion.section id="pricing" variants={sectionFade} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.15 }}
         className="max-w-5xl mx-auto px-4 pb-20">
         <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-8 text-center">Pricing</h2>
