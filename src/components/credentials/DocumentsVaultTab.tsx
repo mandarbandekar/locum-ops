@@ -163,8 +163,7 @@ export default function DocumentsVaultTab() {
         .upload(filePath, file);
       if (uploadError) throw uploadError;
 
-      // Insert new version record
-      await supabase.from('credential_documents').insert({
+      const insertData = {
         user_id: doc.user_id,
         credential_id: doc.credential_id,
         file_name: file.name,
@@ -172,7 +171,10 @@ export default function DocumentsVaultTab() {
         file_type: file.type,
         document_category: doc.document_category,
         version_number: newVersion,
-      });
+      };
+
+      const { error } = await supabase.from('credential_documents').insert(insertData);
+      if (error) throw error;
 
       toast({ title: 'File replaced', description: `Version ${newVersion} uploaded.` });
       setReplacingDocId(null);
