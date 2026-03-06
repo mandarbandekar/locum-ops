@@ -21,7 +21,7 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 function AuthGate() {
-  const { user, loading } = useAuth();
+  const { user, loading, isDemo } = useAuth();
 
   if (loading) {
     return (
@@ -31,7 +31,7 @@ function AuthGate() {
     );
   }
 
-  if (!user) return <LoginPage />;
+  if (!user && !isDemo) return <LoginPage />;
 
   return (
     <DataProvider>
