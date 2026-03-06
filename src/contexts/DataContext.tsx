@@ -1,26 +1,26 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { Clinic, ClinicContact, ContractSnapshot, Shift, Invoice, InvoiceLineItem, EmailLog } from '@/types';
+import { Facility, FacilityContact, TermsSnapshot, Shift, Invoice, InvoiceLineItem, EmailLog } from '@/types';
 import {
-  seedClinics, seedContacts, seedContracts, seedShifts, seedInvoices, seedLineItems, seedEmailLogs,
-  starterClinics, starterContacts, starterContracts, starterShifts, starterInvoices, starterLineItems, starterEmailLogs,
+  seedFacilities, seedContacts, seedTerms, seedShifts, seedInvoices, seedLineItems, seedEmailLogs,
+  starterFacilities, starterContacts, starterTerms, starterShifts, starterInvoices, starterLineItems, starterEmailLogs,
 } from '@/data/seed';
 import { computeInvoiceStatus, generateId } from '@/lib/businessLogic';
 
 interface DataContextType {
-  clinics: Clinic[];
-  contacts: ClinicContact[];
-  contracts: ContractSnapshot[];
+  facilities: Facility[];
+  contacts: FacilityContact[];
+  terms: TermsSnapshot[];
   shifts: Shift[];
   invoices: Invoice[];
   lineItems: InvoiceLineItem[];
   emailLogs: EmailLog[];
-  addClinic: (clinic: Omit<Clinic, 'id'>) => Clinic;
-  updateClinic: (clinic: Clinic) => void;
-  deleteClinic: (id: string) => void;
-  addContact: (contact: Omit<ClinicContact, 'id'>) => void;
-  updateContact: (contact: ClinicContact) => void;
+  addFacility: (facility: Omit<Facility, 'id'>) => Facility;
+  updateFacility: (facility: Facility) => void;
+  deleteFacility: (id: string) => void;
+  addContact: (contact: Omit<FacilityContact, 'id'>) => void;
+  updateContact: (contact: FacilityContact) => void;
   deleteContact: (id: string) => void;
-  updateContract: (contract: ContractSnapshot) => void;
+  updateTerms: (terms: TermsSnapshot) => void;
   addShift: (shift: Omit<Shift, 'id'>) => Shift;
   updateShift: (shift: Shift) => void;
   deleteShift: (id: string) => void;
@@ -37,42 +37,42 @@ interface DataContextType {
 const DataContext = createContext<DataContextType | null>(null);
 
 export function DataProvider({ children, isDemo = false }: { children: ReactNode; isDemo?: boolean }) {
-  const [clinics, setClinics] = useState<Clinic[]>(isDemo ? seedClinics : starterClinics);
-  const [contacts, setContacts] = useState<ClinicContact[]>(isDemo ? seedContacts : starterContacts);
-  const [contracts, setContracts] = useState<ContractSnapshot[]>(isDemo ? seedContracts : starterContracts);
+  const [facilities, setFacilities] = useState<Facility[]>(isDemo ? seedFacilities : starterFacilities);
+  const [contacts, setContacts] = useState<FacilityContact[]>(isDemo ? seedContacts : starterContacts);
+  const [terms, setTerms] = useState<TermsSnapshot[]>(isDemo ? seedTerms : starterTerms);
   const [shifts, setShifts] = useState<Shift[]>(isDemo ? seedShifts : starterShifts);
   const [invoices, setInvoices] = useState<Invoice[]>(isDemo ? seedInvoices : starterInvoices);
   const [lineItems, setLineItems] = useState<InvoiceLineItem[]>(isDemo ? seedLineItems : starterLineItems);
   const [emailLogs, setEmailLogs] = useState<EmailLog[]>(isDemo ? seedEmailLogs : starterEmailLogs);
 
-  const addClinic = useCallback((c: Omit<Clinic, 'id'>) => {
-    const clinic = { ...c, id: generateId() };
-    setClinics(prev => [...prev, clinic]);
-    return clinic;
+  const addFacility = useCallback((c: Omit<Facility, 'id'>) => {
+    const facility = { ...c, id: generateId() };
+    setFacilities(prev => [...prev, facility]);
+    return facility;
   }, []);
 
-  const updateClinic = useCallback((c: Clinic) => {
-    setClinics(prev => prev.map(x => x.id === c.id ? c : x));
+  const updateFacility = useCallback((c: Facility) => {
+    setFacilities(prev => prev.map(x => x.id === c.id ? c : x));
   }, []);
 
-  const deleteClinic = useCallback((id: string) => {
-    setClinics(prev => prev.filter(x => x.id !== id));
-    setContacts(prev => prev.filter(x => x.clinic_id !== id));
-    setContracts(prev => prev.filter(x => x.clinic_id !== id));
-    setShifts(prev => prev.filter(x => x.clinic_id !== id));
+  const deleteFacility = useCallback((id: string) => {
+    setFacilities(prev => prev.filter(x => x.id !== id));
+    setContacts(prev => prev.filter(x => x.facility_id !== id));
+    setTerms(prev => prev.filter(x => x.facility_id !== id));
+    setShifts(prev => prev.filter(x => x.facility_id !== id));
     setInvoices(prev => {
-      const invoiceIds = prev.filter(x => x.clinic_id === id).map(x => x.id);
+      const invoiceIds = prev.filter(x => x.facility_id === id).map(x => x.id);
       setLineItems(li => li.filter(x => !invoiceIds.includes(x.invoice_id)));
-      return prev.filter(x => x.clinic_id !== id);
+      return prev.filter(x => x.facility_id !== id);
     });
-    setEmailLogs(prev => prev.filter(x => x.clinic_id !== id));
+    setEmailLogs(prev => prev.filter(x => x.facility_id !== id));
   }, []);
 
-  const addContact = useCallback((c: Omit<ClinicContact, 'id'>) => {
+  const addContact = useCallback((c: Omit<FacilityContact, 'id'>) => {
     setContacts(prev => [...prev, { ...c, id: generateId() }]);
   }, []);
 
-  const updateContact = useCallback((c: ClinicContact) => {
+  const updateContact = useCallback((c: FacilityContact) => {
     setContacts(prev => prev.map(x => x.id === c.id ? c : x));
   }, []);
 
@@ -80,8 +80,8 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     setContacts(prev => prev.filter(x => x.id !== id));
   }, []);
 
-  const updateContract = useCallback((c: ContractSnapshot) => {
-    setContracts(prev => {
+  const updateTerms = useCallback((c: TermsSnapshot) => {
+    setTerms(prev => {
       const exists = prev.find(x => x.id === c.id);
       if (exists) return prev.map(x => x.id === c.id ? c : x);
       return [...prev, c];
@@ -142,10 +142,10 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
 
   return (
     <DataContext.Provider value={{
-      clinics, contacts, contracts, shifts, invoices, lineItems, emailLogs,
-      addClinic, updateClinic, deleteClinic,
+      facilities, contacts, terms, shifts, invoices, lineItems, emailLogs,
+      addFacility, updateFacility, deleteFacility,
       addContact, updateContact, deleteContact,
-      updateContract,
+      updateTerms,
       addShift, updateShift, deleteShift,
       addInvoice, updateInvoice, deleteInvoice,
       addLineItem, updateLineItem, deleteLineItem,

@@ -8,7 +8,7 @@ import { format } from 'date-fns';
 import { StatusBadge } from '@/components/StatusBadge';
 
 export default function DashboardPage() {
-  const { shifts, invoices, clinics } = useData();
+  const { shifts, invoices, facilities } = useData();
   const navigate = useNavigate();
 
   const now = new Date();
@@ -23,7 +23,7 @@ export default function DashboardPage() {
   const overdueInvoices = invoices.filter(i => computeInvoiceStatus(i) === 'overdue');
   const proposedShifts = shifts.filter(s => s.status === 'proposed');
 
-  const getClinicName = (id: string) => clinics.find(c => c.id === id)?.name || 'Unknown';
+  const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
 
   return (
     <div>
@@ -33,8 +33,8 @@ export default function DashboardPage() {
           <Button size="sm" onClick={() => navigate('/schedule')}>
             <Plus className="mr-1 h-4 w-4" /> Add Shift
           </Button>
-          <Button size="sm" variant="outline" onClick={() => navigate('/clinics')}>
-            <Building2 className="mr-1 h-4 w-4" /> Add Clinic
+          <Button size="sm" variant="outline" onClick={() => navigate('/facilities')}>
+            <Building2 className="mr-1 h-4 w-4" /> Add Facility
           </Button>
           <Button size="sm" variant="outline" onClick={() => navigate('/outreach')}>
             <Mail className="mr-1 h-4 w-4" /> Outreach
@@ -108,7 +108,7 @@ export default function DashboardPage() {
                 {nextShifts.map(s => (
                   <div key={s.id} className="flex items-center justify-between p-3 rounded-md bg-muted/50">
                     <div>
-                      <p className="font-medium text-sm">{getClinicName(s.clinic_id)}</p>
+                      <p className="font-medium text-sm">{getFacilityName(s.facility_id)}</p>
                       <p className="text-xs text-muted-foreground">
                         {format(new Date(s.start_datetime), 'EEE, MMM d')} · {format(new Date(s.start_datetime), 'h:mm a')} - {format(new Date(s.end_datetime), 'h:mm a')}
                       </p>
@@ -138,7 +138,7 @@ export default function DashboardPage() {
                   >
                     <div>
                       <p className="font-medium text-sm">{inv.invoice_number}</p>
-                      <p className="text-xs text-muted-foreground">{getClinicName(inv.clinic_id)}</p>
+                      <p className="text-xs text-muted-foreground">{getFacilityName(inv.facility_id)}</p>
                     </div>
                     <div className="text-right">
                       <p className="font-semibold text-sm">${inv.total_amount.toLocaleString()}</p>

@@ -11,14 +11,14 @@ import { toast } from 'sonner';
 export default function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { invoices, lineItems, clinics, contacts, updateInvoice, addEmailLog, deleteLineItem } = useData();
+  const { invoices, lineItems, facilities, contacts, updateInvoice, addEmailLog, deleteLineItem } = useData();
 
   const invoice = invoices.find(i => i.id === id);
   if (!invoice) return <div className="p-6">Invoice not found. <Button variant="link" onClick={() => navigate('/invoices')}>Back</Button></div>;
 
   const items = lineItems.filter(li => li.invoice_id === id);
-  const clinic = clinics.find(c => c.id === invoice.clinic_id);
-  const contact = contacts.find(c => c.clinic_id === invoice.clinic_id && c.is_primary);
+  const facility = facilities.find(c => c.id === invoice.facility_id);
+  const contact = contacts.find(c => c.facility_id === invoice.facility_id && c.is_primary);
   const computedStatus = computeInvoiceStatus(invoice);
 
   const handleSendInvoice = () => {
@@ -26,7 +26,7 @@ export default function InvoiceDetailPage() {
     const dueDate = addDays(new Date(), 14).toISOString();
     updateInvoice({ ...invoice, status: 'sent', sent_at: now, due_date: dueDate });
     addEmailLog({
-      clinic_id: invoice.clinic_id,
+      facility_id: invoice.facility_id,
       type: 'invoice',
       subject: `Invoice ${invoice.invoice_number}`,
       body: `Invoice for $${invoice.total_amount} — due ${format(addDays(new Date(), 14), 'MMM d, yyyy')}`,
@@ -49,7 +49,7 @@ export default function InvoiceDetailPage() {
         </Button>
         <div>
           <h1 className="page-title">{invoice.invoice_number}</h1>
-          <p className="text-sm text-muted-foreground">{clinic?.name}</p>
+          <p className="text-sm text-muted-foreground">{facility?.name}</p>
         </div>
         <StatusBadge status={computedStatus} className="ml-3 text-sm" />
       </div>

@@ -3,7 +3,7 @@ import { useData } from '@/contexts/DataContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from 'recharts';
 import { format, parseISO, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths, isWithinInterval } from 'date-fns';
 import { DollarSign, TrendingUp, Calendar, Building2 } from 'lucide-react';
 
@@ -19,7 +19,7 @@ const COLORS = [
 ];
 
 export default function ReportsPage() {
-  const { shifts, invoices, clinics } = useData();
+  const { shifts, invoices, facilities } = useData();
   const [monthRange, setMonthRange] = useState('6');
 
   const months = useMemo(() => {
@@ -30,7 +30,6 @@ export default function ReportsPage() {
     });
   }, [monthRange]);
 
-  // Monthly revenue data from invoices
   const revenueData = useMemo(() => {
     return months.map(month => {
       const monthEnd = endOfMonth(month);
@@ -41,35 +40,28 @@ export default function ReportsPage() {
       const total = monthInvoices.reduce((sum, inv) => sum + inv.total_amount, 0);
       const paid = monthInvoices.filter(i => i.status === 'paid').reduce((sum, inv) => sum + inv.total_amount, 0);
       const outstanding = total - paid;
-      return {
-        month: format(month, 'MMM yyyy'),
-        total,
-        paid,
-        outstanding,
-      };
+      return { month: format(month, 'MMM yyyy'), total, paid, outstanding };
     });
   }, [months, invoices]);
 
-  // Shifts per clinic
-  const shiftsPerClinic = useMemo(() => {
+  const shiftsPerFacility = useMemo(() => {
     const counts: Record<string, number> = {};
     const rangeStart = months[0];
     const rangeEnd = endOfMonth(months[months.length - 1]);
     shifts.forEach(shift => {
       const shiftDate = parseISO(shift.start_datetime);
       if (isWithinInterval(shiftDate, { start: rangeStart, end: rangeEnd }) && shift.status !== 'canceled') {
-        counts[shift.clinic_id] = (counts[shift.clinic_id] || 0) + 1;
+        counts[shift.facility_id] = (counts[shift.facility_id] || 0) + 1;
       }
     });
     return Object.entries(counts)
-      .map(([clinicId, count]) => ({
-        name: clinics.find(c => c.id === clinicId)?.name || 'Unknown',
+      .map(([facilityId, count]) => ({
+        name: facilities.find(c => c.id === facilityId)?.name || 'Unknown',
         shifts: count,
       }))
       .sort((a, b) => b.shifts - a.shifts);
-  }, [months, shifts, clinics]);
+  }, [months, shifts, facilities]);
 
-  // Payment trends (paid vs sent vs overdue per month)
   const paymentTrends = useMemo(() => {
     return months.map(month => {
       const monthEnd = endOfMonth(month);
@@ -87,11 +79,10 @@ export default function ReportsPage() {
     });
   }, [months, invoices]);
 
-  // Summary stats
   const totalRevenue = revenueData.reduce((s, d) => s + d.total, 0);
   const totalPaid = revenueData.reduce((s, d) => s + d.paid, 0);
-  const totalShifts = shiftsPerClinic.reduce((s, d) => s + d.shifts, 0);
-  const activeClinics = shiftsPerClinic.length;
+  const totalShifts = shiftsPerFacility.reduce((s, d) => s + d.shifts, 0);
+  const activeFacilities = shiftsPerFacility.length;
 
   const revenueChartConfig = {
     paid: { label: 'Paid', color: 'hsl(142, 71%, 45%)' },
@@ -117,9 +108,7 @@ export default function ReportsPage() {
           <p className="text-muted-foreground mt-1">Track revenue, shifts, and payment performance</p>
         </div>
         <Select value={monthRange} onValueChange={setMonthRange}>
-          <SelectTrigger className="w-40">
-            <SelectValue />
-          </SelectTrigger>
+          <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="3">Last 3 months</SelectItem>
             <SelectItem value="6">Last 6 months</SelectItem>
@@ -128,7 +117,6 @@ export default function ReportsPage() {
         </Select>
       </div>
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -162,17 +150,16 @@ export default function ReportsPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Active Clinics</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Active Facilities</CardTitle>
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{activeClinics}</div>
+            <div className="text-2xl font-bold">{activeFacilities}</div>
             <p className="text-xs text-muted-foreground">With shifts in period</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Revenue Chart */}
       <Card>
         <CardHeader>
           <CardTitle>Monthly Revenue</CardTitle>
@@ -193,15 +180,14 @@ export default function ReportsPage() {
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Shifts per Clinic */}
         <Card>
           <CardHeader>
-            <CardTitle>Shifts per Clinic</CardTitle>
-            <CardDescription>Distribution of shifts across clinics</CardDescription>
+            <CardTitle>Shifts per Facility</CardTitle>
+            <CardDescription>Distribution of shifts across facilities</CardDescription>
           </CardHeader>
           <CardContent>
             <ChartContainer config={shiftsChartConfig} className="h-[300px] w-full">
-              <BarChart data={shiftsPerClinic} layout="vertical" margin={{ top: 5, right: 20, bottom: 5, left: 80 }}>
+              <BarChart data={shiftsPerFacility} layout="vertical" margin={{ top: 5, right: 20, bottom: 5, left: 80 }}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                 <XAxis type="number" fontSize={12} className="text-muted-foreground" />
                 <YAxis dataKey="name" type="category" fontSize={12} className="text-muted-foreground" width={75} />
@@ -212,7 +198,6 @@ export default function ReportsPage() {
           </CardContent>
         </Card>
 
-        {/* Payment Trends */}
         <Card>
           <CardHeader>
             <CardTitle>Payment Trends</CardTitle>

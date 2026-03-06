@@ -10,9 +10,9 @@ import { toast } from 'sonner';
 import { Send, CheckCircle } from 'lucide-react';
 
 export default function ConfirmationsPage() {
-  const { shifts, clinics, contacts, addEmailLog } = useData();
+  const { shifts, facilities, contacts, addEmailLog } = useData();
   const [selectedMonth, setSelectedMonth] = useState(format(addMonths(new Date(), 0), 'yyyy-MM'));
-  const [sentClinics, setSentClinics] = useState<string[]>([]);
+  const [sentFacilities, setSentFacilities] = useState<string[]>([]);
 
   const [year, month] = selectedMonth.split('-').map(Number);
   const mStart = startOfMonth(new Date(year, month - 1));
@@ -24,29 +24,29 @@ export default function ConfirmationsPage() {
     return d >= mStart && d <= mEnd && s.status === 'booked';
   });
 
-  const clinicGroups = bookedShifts.reduce<Record<string, typeof bookedShifts>>((acc, s) => {
-    if (!acc[s.clinic_id]) acc[s.clinic_id] = [];
-    acc[s.clinic_id].push(s);
+  const facilityGroups = bookedShifts.reduce<Record<string, typeof bookedShifts>>((acc, s) => {
+    if (!acc[s.facility_id]) acc[s.facility_id] = [];
+    acc[s.facility_id].push(s);
     return acc;
   }, {});
 
-  const handleSend = (clinicId: string) => {
-    const clinic = clinics.find(c => c.id === clinicId)!;
-    const contact = contacts.find(c => c.clinic_id === clinicId && c.is_primary);
-    const shiftList = clinicGroups[clinicId]
+  const handleSend = (facilityId: string) => {
+    const facility = facilities.find(c => c.id === facilityId)!;
+    const contact = contacts.find(c => c.facility_id === facilityId && c.is_primary);
+    const shiftList = facilityGroups[facilityId]
       .sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime())
       .map(s => `  • ${format(new Date(s.start_datetime), 'EEE, MMM d')}: ${format(new Date(s.start_datetime), 'h:mm a')} - ${format(new Date(s.end_datetime), 'h:mm a')}`)
       .join('\n');
 
     const body = confirmationTemplate
       .replace(/{{contact_name}}/g, contact?.name || 'Team')
-      .replace(/{{clinic_name}}/g, clinic.name)
+      .replace(/{{facility_name}}/g, facility.name)
       .replace(/{{month}}/g, format(mStart, 'MMMM'))
       .replace(/{{year}}/g, String(year))
       .replace(/{{shift_list}}/g, shiftList);
 
     addEmailLog({
-      clinic_id: clinicId,
+      facility_id: facilityId,
       type: 'monthly_confirm',
       subject: `Shift Confirmation - ${monthName}`,
       body,
@@ -54,8 +54,8 @@ export default function ConfirmationsPage() {
       sent_at: new Date().toISOString(),
     });
 
-    setSentClinics(prev => [...prev, clinicId]);
-    toast.success(`Confirmation sent to ${clinic.name}`);
+    setSentFacilities(prev => [...prev, facilityId]);
+    toast.success(`Confirmation sent to ${facility.name}`);
   };
 
   return (
@@ -69,33 +69,33 @@ export default function ConfirmationsPage() {
         <input
           type="month"
           value={selectedMonth}
-          onChange={e => { setSelectedMonth(e.target.value); setSentClinics([]); }}
+          onChange={e => { setSelectedMonth(e.target.value); setSentFacilities([]); }}
           className="flex h-10 w-full max-w-xs rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         />
       </div>
 
-      {Object.keys(clinicGroups).length === 0 ? (
+      {Object.keys(facilityGroups).length === 0 ? (
         <Card><CardContent className="py-8 text-center text-muted-foreground">No booked shifts for {monthName}</CardContent></Card>
       ) : (
         <div className="space-y-4">
-          {Object.entries(clinicGroups).map(([clinicId, cShifts]) => {
-            const clinic = clinics.find(c => c.id === clinicId);
-            const sent = sentClinics.includes(clinicId);
+          {Object.entries(facilityGroups).map(([facilityId, fShifts]) => {
+            const facility = facilities.find(c => c.id === facilityId);
+            const sent = sentFacilities.includes(facilityId);
             return (
-              <Card key={clinicId}>
+              <Card key={facilityId}>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-base">{clinic?.name}</CardTitle>
+                  <CardTitle className="text-base">{facility?.name}</CardTitle>
                   {sent ? (
                     <span className="flex items-center gap-1 text-sm text-success"><CheckCircle className="h-4 w-4" /> Sent</span>
                   ) : (
-                    <Button size="sm" onClick={() => handleSend(clinicId)}>
+                    <Button size="sm" onClick={() => handleSend(facilityId)}>
                       <Send className="mr-1 h-3 w-3" /> Send Confirmation
                     </Button>
                   )}
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-1">
-                    {cShifts
+                    {fShifts
                       .sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime())
                       .map(s => (
                         <div key={s.id} className="text-sm flex justify-between p-2 rounded bg-muted/50">

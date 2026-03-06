@@ -2,13 +2,13 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
-import { Stethoscope, Calendar, FileText, BarChart3, Play, ArrowRight } from 'lucide-react';
+import { Briefcase, Calendar, FileText, BarChart3, Play, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const features = [
-  { icon: Calendar, title: 'Smart Scheduling', desc: 'Manage shifts across multiple clinics with an intuitive calendar view.' },
+  { icon: Calendar, title: 'Smart Scheduling', desc: 'Manage shifts across multiple facilities with an intuitive calendar view.' },
   { icon: FileText, title: 'Invoicing', desc: 'Generate and track invoices automatically from completed shifts.' },
-  { icon: BarChart3, title: 'Reports & Insights', desc: 'See earnings, hours worked, and clinic activity at a glance.' },
+  { icon: BarChart3, title: 'Reports & Insights', desc: 'See earnings, hours worked, and facility activity at a glance.' },
 ];
 
 const fadeUp = {
@@ -41,9 +41,9 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto flex items-center justify-between h-14 px-4">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-              <Stethoscope className="h-4 w-4 text-primary" />
+              <Briefcase className="h-4 w-4 text-primary" />
             </div>
-            <span className="font-semibold text-foreground tracking-tight">ReliefOps</span>
+            <span className="font-semibold text-foreground tracking-tight">LocumOps</span>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={() => navigate('/login')}>
@@ -64,7 +64,7 @@ export default function LandingPage() {
           transition={{ duration: 0.6, delay: 0.1 }}
           className="text-4xl sm:text-5xl font-bold tracking-tight text-foreground mb-4"
         >
-          Relief vet scheduling,<br />
+          Locum scheduling,<br />
           <span className="text-primary">simplified.</span>
         </motion.h1>
         <motion.p
@@ -73,7 +73,7 @@ export default function LandingPage() {
           transition={{ duration: 0.6, delay: 0.25 }}
           className="text-lg text-muted-foreground max-w-xl mx-auto mb-8"
         >
-          Manage your clinics, shifts, confirmations, and invoices in one place — so you can focus on what matters.
+          Manage your facilities, shifts, confirmations, and invoices in one place — so you can focus on what matters.
         </motion.p>
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
@@ -124,7 +124,7 @@ export default function LandingPage() {
         transition={{ duration: 0.5 }}
         className="border-t py-6 text-center text-xs text-muted-foreground"
       >
-        © {new Date().getFullYear()} ReliefOps. Built for relief veterinarians.
+        © {new Date().getFullYear()} LocumOps. Built for independent clinicians.
       </motion.footer>
     </div>
   );
