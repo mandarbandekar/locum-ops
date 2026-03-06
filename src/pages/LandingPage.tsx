@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   ArrowRight, ChevronDown, Check, AlertTriangle,
-  Building2, CalendarDays, Mail, FileText, Users, HelpCircle,
+  Building2, CalendarDays, Mail, FileText, Users, HelpCircle, Menu, X,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
