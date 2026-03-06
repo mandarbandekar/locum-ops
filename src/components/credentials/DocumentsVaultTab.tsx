@@ -165,13 +165,13 @@ export default function DocumentsVaultTab() {
         .upload(filePath, file);
       if (uploadError) throw uploadError;
 
-      const insertData = {
+      const insertData: Database['public']['Tables']['credential_documents']['Insert'] = {
         user_id: doc.user_id,
         credential_id: doc.credential_id,
         file_name: file.name,
         file_url: filePath,
         file_type: file.type,
-        document_category: doc.document_category,
+        document_category: doc.document_category as Database['public']['Enums']['document_category'],
         version_number: newVersion,
       };
 
