@@ -173,7 +173,7 @@ export default function DocumentsVaultTab() {
         version_number: newVersion,
       };
 
-      const { error } = await supabase.from('credential_documents').insert(insertData);
+      const { error } = await supabase.from('credential_documents').insert([insertData]);
       if (error) throw error;
 
       toast({ title: 'File replaced', description: `Version ${newVersion} uploaded.` });
