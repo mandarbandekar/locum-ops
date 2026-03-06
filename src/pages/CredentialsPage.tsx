@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CredentialsOverview } from '@/components/credentials/CredentialsOverview';
 import CredentialsList from '@/components/credentials/CredentialsList';
 import RenewalsTab from '@/components/credentials/RenewalsTab';
+import DocumentsVaultTab from '@/components/credentials/DocumentsVaultTab';
 import { AddCredentialDialog } from '@/components/credentials/AddCredentialDialog';
 import { ShieldCheck } from 'lucide-react';
 
@@ -53,7 +54,7 @@ export default function CredentialsPage() {
         </TabsContent>
 
         <TabsContent value="documents" className="mt-6">
-          <PlaceholderTab label="Documents Vault" description="Drag-and-drop uploads, previews, and version history coming in Phase 4." />
+          <DocumentsVaultTab />
         </TabsContent>
 
         <TabsContent value="clinic-requirements" className="mt-6">
