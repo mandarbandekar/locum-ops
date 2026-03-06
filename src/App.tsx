@@ -20,6 +20,11 @@ import InvoicesPage from "@/pages/InvoicesPage";
 import InvoiceDetailPage from "@/pages/InvoiceDetailPage";
 import ReportsPage from "@/pages/ReportsPage";
 import CredentialsPage from "@/pages/CredentialsPage";
+import WaitlistPage from "@/pages/WaitlistPage";
+import QuizPage from "@/pages/QuizPage";
+import ResultsPage from "@/pages/ResultsPage";
+import ThanksPage from "@/pages/ThanksPage";
+import DebugPage from "@/pages/DebugPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -41,6 +46,11 @@ function AuthGate() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/waitlist" element={<WaitlistPage />} />
+        <Route path="/quiz" element={<QuizPage />} />
+        <Route path="/results" element={<ResultsPage />} />
+        <Route path="/thanks" element={<ThanksPage />} />
+        <Route path="/_debug" element={<DebugPage />} />
         <Route path="*" element={<LandingPage />} />
       </Routes>
     );
