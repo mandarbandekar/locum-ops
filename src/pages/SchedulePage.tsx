@@ -157,16 +157,18 @@ export default function SchedulePage() {
           shifts={shifts}
           existing={shifts.find(s => s.id === editShift)}
           onSave={(s) => { updateShift(s as any); toast.success('Shift updated'); }}
+          onDelete={(id) => { deleteShift(id); setEditShift(null); toast.success('Shift deleted'); }}
         />
       )}
     </div>
   );
 }
 
-function ShiftFormDialog({ open, onOpenChange, clinics, shifts, existing, onSave }: {
+function ShiftFormDialog({ open, onOpenChange, clinics, shifts, existing, onSave, onDelete }: {
   open: boolean; onOpenChange: (o: boolean) => void;
   clinics: any[]; shifts: any[]; existing?: any;
   onSave: (s: any) => void;
+  onDelete?: (id: string) => void;
 }) {
   const [clinicId, setClinicId] = useState(existing?.clinic_id || clinics[0]?.id || '');
   const [date, setDate] = useState(existing ? format(new Date(existing.start_datetime), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'));
@@ -249,7 +251,26 @@ function ShiftFormDialog({ open, onOpenChange, clinics, shifts, existing, onSave
             </div>
           )}
 
-          <Button type="submit" className="w-full">{existing ? 'Update Shift' : 'Add Shift'}</Button>
+          <div className="flex gap-2">
+            <Button type="submit" className="flex-1">{existing ? 'Update Shift' : 'Add Shift'}</Button>
+            {existing && onDelete && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button type="button" variant="destructive" size="icon"><Trash2 className="h-4 w-4" /></Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete this shift?</AlertDialogTitle>
+                    <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => onDelete(existing.id)}>Delete</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </div>
         </form>
       </DialogContent>
     </Dialog>
