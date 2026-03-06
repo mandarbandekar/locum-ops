@@ -147,15 +147,22 @@ function OverviewTab({ facility, shifts, onUpdate }: { facility: any; shifts: an
   );
 }
 
-function EditableFacilityName({ facility, onSave }: { facility: any; onSave: (name: string) => void }) {
+function EditableFacilityName({ facility, onSave }: { facility: any; onSave: (name: string, address: string) => void }) {
   const [editing, setEditing] = useState(false);
-  const [value, setValue] = useState(facility.name);
+  const [name, setName] = useState(facility.name);
+  const [address, setAddress] = useState(facility.address);
 
   const handleSave = () => {
-    if (value.trim()) {
-      onSave(value.trim());
+    if (name.trim()) {
+      onSave(name.trim(), address.trim());
       setEditing(false);
     }
+  };
+
+  const handleCancel = () => {
+    setName(facility.name);
+    setAddress(facility.address);
+    setEditing(false);
   };
 
   if (!editing) {
@@ -167,20 +174,21 @@ function EditableFacilityName({ facility, onSave }: { facility: any; onSave: (na
             <Pencil className="h-3.5 w-3.5" />
           </Button>
         </div>
-        <p className="text-sm text-muted-foreground">{facility.address}</p>
+        <p className="text-sm text-muted-foreground">{facility.address || 'No address'}</p>
       </div>
     );
   }
 
   return (
-    <div>
+    <div className="space-y-1.5">
       <div className="flex items-center gap-2">
-        <Input value={value} onChange={e => setValue(e.target.value)} autoFocus className="text-lg font-semibold h-9 w-64"
-          onKeyDown={e => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') { setValue(facility.name); setEditing(false); } }} />
+        <Input value={name} onChange={e => setName(e.target.value)} autoFocus className="text-lg font-semibold h-9 w-64"
+          onKeyDown={e => { if (e.key === 'Escape') handleCancel(); }} />
         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleSave}><Check className="h-4 w-4" /></Button>
-        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setValue(facility.name); setEditing(false); }}><X className="h-4 w-4" /></Button>
+        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleCancel}><X className="h-4 w-4" /></Button>
       </div>
-      <p className="text-sm text-muted-foreground">{facility.address}</p>
+      <Input value={address} onChange={e => setAddress(e.target.value)} placeholder="Address" className="text-sm h-8 w-80 text-muted-foreground"
+        onKeyDown={e => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') handleCancel(); }} />
     </div>
   );
 }
