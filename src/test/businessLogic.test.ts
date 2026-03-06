@@ -33,7 +33,7 @@ describe('detectShiftConflicts', () => {
 
 describe('computeInvoiceStatus', () => {
   it('returns draft for draft invoices', () => {
-    const inv: Invoice = { id: '1', clinic_id: 'c1', invoice_number: 'INV-001', period_start: '', period_end: '', total_amount: 100, status: 'draft', sent_at: null, paid_at: null, due_date: null };
+    const inv: Invoice = { id: '1', facility_id: 'c1', invoice_number: 'INV-001', period_start: '', period_end: '', total_amount: 100, status: 'draft', sent_at: null, paid_at: null, due_date: null };
     expect(computeInvoiceStatus(inv)).toBe('draft');
   });
 
