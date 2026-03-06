@@ -26,21 +26,23 @@ export default function FacilitiesPage() {
     setShowSuggestions(false);
   };
 
-  const handleAddFromSearch = (displayName: string) => {
+  const handleAddFromSearch = async (displayName: string) => {
     const parts = displayName.split(',');
     const name = parts[0]?.trim() || displayName;
-    const facility = addFacility({
-      name,
-      address: displayName,
-      status: 'prospect',
-      timezone: 'America/Los_Angeles',
-      notes: '',
-      outreach_last_sent_at: null,
-    });
-    toast.success(`"${name}" added as a new facility`);
-    setSearch('');
-    setShowSuggestions(false);
-    navigate(`/facilities/${facility.id}`);
+    try {
+      const facility = await addFacility({
+        name,
+        address: displayName,
+        status: 'prospect',
+        timezone: 'America/Los_Angeles',
+        notes: '',
+        outreach_last_sent_at: null,
+      });
+      toast.success(`"${name}" added as a new facility`);
+      setSearch('');
+      setShowSuggestions(false);
+      navigate(`/facilities/${facility.id}`);
+    } catch { /* error toast handled in DataContext */ }
   };
 
   const filtered = facilities.filter(c => {
