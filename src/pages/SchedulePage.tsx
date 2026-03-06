@@ -104,6 +104,7 @@ export default function SchedulePage() {
               <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Time</th>
               <th className="text-left p-3 font-medium text-muted-foreground">Rate</th>
               <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
+              <th className="w-10" />
             </tr></thead>
             <tbody>
               {monthShifts.map(s => (
