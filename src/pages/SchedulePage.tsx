@@ -164,10 +164,11 @@ export default function SchedulePage() {
   );
 }
 
-function ShiftFormDialog({ open, onOpenChange, clinics, shifts, existing, onSave }: {
+function ShiftFormDialog({ open, onOpenChange, clinics, shifts, existing, onSave, onDelete }: {
   open: boolean; onOpenChange: (o: boolean) => void;
   clinics: any[]; shifts: any[]; existing?: any;
   onSave: (s: any) => void;
+  onDelete?: (id: string) => void;
 }) {
   const [clinicId, setClinicId] = useState(existing?.clinic_id || clinics[0]?.id || '');
   const [date, setDate] = useState(existing ? format(new Date(existing.start_datetime), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'));
