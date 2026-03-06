@@ -5,6 +5,30 @@ const fmt = (d: Date) => d.toISOString();
 const addDays = (d: Date, n: number) => { const r = new Date(d); r.setDate(r.getDate() + n); return r; };
 const setTime = (d: Date, h: number, m = 0) => { const r = new Date(d); r.setHours(h, m, 0, 0); return r; };
 
+// === STARTER data (one example clinic for new sign-ups) ===
+
+export const starterClinics: Clinic[] = [
+  { id: 'c1', name: 'Pawsitive Care Veterinary', status: 'active', address: '123 Oak St, Portland, OR 97201', timezone: 'America/Los_Angeles', notes: 'Example clinic — edit or delete this anytime', outreach_last_sent_at: null },
+];
+
+export const starterContacts: ClinicContact[] = [
+  { id: 'ct1', clinic_id: 'c1', name: 'Sarah Johnson', role: 'manager', email: 'sarah@pawsitive.com', phone: '503-555-0101', is_primary: true },
+];
+
+export const starterContracts: ContractSnapshot[] = [
+  { id: 'cs1', clinic_id: 'c1', weekday_rate: 850, weekend_rate: 1100, cancellation_policy_text: '48-hour notice required for cancellation without penalty.', overtime_policy_text: 'Time-and-a-half after 10 hours.', late_payment_policy_text: '1.5% monthly interest on balances over 30 days.', special_notes: 'DEA license must be current.' },
+];
+
+export const starterShifts: Shift[] = [
+  { id: 's5', clinic_id: 'c1', start_datetime: fmt(setTime(addDays(today, 2), 8)), end_datetime: fmt(setTime(addDays(today, 2), 18)), status: 'booked', rate_applied: 850, notes: 'Example shift' },
+];
+
+export const starterInvoices: Invoice[] = [];
+export const starterLineItems: InvoiceLineItem[] = [];
+export const starterEmailLogs: EmailLog[] = [];
+
+// === DEMO data (full set for demo mode) ===
+
 export const seedClinics: Clinic[] = [
   { id: 'c1', name: 'Pawsitive Care Veterinary', status: 'active', address: '123 Oak St, Portland, OR 97201', timezone: 'America/Los_Angeles', notes: 'Great team, flexible scheduling', outreach_last_sent_at: fmt(addDays(today, -15)) },
   { id: 'c2', name: 'Evergreen Animal Hospital', status: 'active', address: '456 Pine Ave, Seattle, WA 98101', timezone: 'America/Los_Angeles', notes: 'Busy ER clinic, weekend shifts common', outreach_last_sent_at: fmt(addDays(today, -30)) },
@@ -30,16 +54,13 @@ export const seedContracts: ContractSnapshot[] = [
 ];
 
 export const seedShifts: Shift[] = [
-  // Past completed shifts
   { id: 's1', clinic_id: 'c1', start_datetime: fmt(setTime(addDays(today, -12), 8)), end_datetime: fmt(setTime(addDays(today, -12), 18)), status: 'completed', rate_applied: 850, notes: 'Regular day shift' },
   { id: 's2', clinic_id: 'c1', start_datetime: fmt(setTime(addDays(today, -5), 8)), end_datetime: fmt(setTime(addDays(today, -5), 18)), status: 'completed', rate_applied: 850, notes: '' },
   { id: 's3', clinic_id: 'c2', start_datetime: fmt(setTime(addDays(today, -8), 7)), end_datetime: fmt(setTime(addDays(today, -8), 19)), status: 'completed', rate_applied: 900, notes: 'ER coverage' },
   { id: 's4', clinic_id: 'c2', start_datetime: fmt(setTime(addDays(today, -3), 8)), end_datetime: fmt(setTime(addDays(today, -3), 16)), status: 'completed', rate_applied: 1200, notes: 'Weekend shift' },
-  // Upcoming booked
   { id: 's5', clinic_id: 'c1', start_datetime: fmt(setTime(addDays(today, 2), 8)), end_datetime: fmt(setTime(addDays(today, 2), 18)), status: 'booked', rate_applied: 850, notes: '' },
   { id: 's6', clinic_id: 'c4', start_datetime: fmt(setTime(addDays(today, 3), 9)), end_datetime: fmt(setTime(addDays(today, 3), 17)), status: 'booked', rate_applied: 800, notes: '' },
   { id: 's7', clinic_id: 'c2', start_datetime: fmt(setTime(addDays(today, 5), 7)), end_datetime: fmt(setTime(addDays(today, 5), 19)), status: 'booked', rate_applied: 900, notes: 'Full day ER' },
-  // Proposed
   { id: 's8', clinic_id: 'c4', start_datetime: fmt(setTime(addDays(today, 10), 9)), end_datetime: fmt(setTime(addDays(today, 10), 17)), status: 'proposed', rate_applied: 800, notes: 'Tentative' },
   { id: 's9', clinic_id: 'c1', start_datetime: fmt(setTime(addDays(today, 14), 8)), end_datetime: fmt(setTime(addDays(today, 14), 18)), status: 'proposed', rate_applied: 850, notes: '' },
 ];
