@@ -36,9 +36,9 @@ export default function SchedulePage() {
 
   return (
     <div>
-      <div className="page-header">
+      <div className="page-header flex-col sm:flex-row gap-3">
         <h1 className="page-title">Schedule</h1>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button size="sm" variant={view === 'calendar' ? 'default' : 'outline'} onClick={() => setView('calendar')}>
             <CalendarDays className="mr-1 h-4 w-4" /> Calendar
           </Button>

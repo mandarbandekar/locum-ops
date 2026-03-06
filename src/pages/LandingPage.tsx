@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   ArrowRight, ChevronDown, Check, AlertTriangle,
-  Building2, CalendarDays, Mail, FileText, Users, HelpCircle,
+  Building2, CalendarDays, Mail, FileText, Users, HelpCircle, Menu, X,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
@@ -52,18 +52,20 @@ export default function LandingPage() {
       >
         <div className="max-w-6xl mx-auto flex items-center justify-between h-14 px-4">
           <span className="font-bold text-lg text-foreground tracking-tight">LocumOps</span>
-          <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
+          <nav className="hidden lg:flex items-center gap-6 text-sm text-muted-foreground">
             <button onClick={() => scrollTo('how')} className="hover:text-foreground transition-colors">How it works</button>
             <button onClick={() => scrollTo('features')} className="hover:text-foreground transition-colors">Features</button>
             <button onClick={() => scrollTo('pricing')} className="hover:text-foreground transition-colors">Pricing</button>
             <button onClick={() => scrollTo('faq')} className="hover:text-foreground transition-colors">FAQ</button>
           </nav>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => navigate('/login')}>Sign In</Button>
-            <Button variant="outline" size="sm" onClick={handleDemo}>Try Demo</Button>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <Button variant="ghost" size="sm" className="hidden sm:inline-flex" onClick={() => navigate('/login')}>Sign In</Button>
+            <Button variant="outline" size="sm" className="hidden sm:inline-flex" onClick={handleDemo}>Try Demo</Button>
             <Button size="sm" onClick={() => { console.log('cta_click', { location: 'nav' }); navigate('/waitlist'); }}>
               Join waitlist
             </Button>
+            {/* Mobile menu */}
+            <MobileMenu onNavigate={navigate} onScrollTo={scrollTo} onDemo={handleDemo} />
           </div>
         </div>
       </motion.header>
@@ -298,6 +300,29 @@ function FaqItem({ q, a }: { q: string; a: string }) {
         <ChevronDown className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && <p className="px-5 pb-4 text-sm text-muted-foreground">{a}</p>}
+    </div>
+  );
+}
+
+function MobileMenu({ onNavigate, onScrollTo, onDemo }: { onNavigate: (path: string) => void; onScrollTo: (id: string) => void; onDemo: () => void }) {
+  const [open, setOpen] = useState(false);
+  const go = (fn: () => void) => { fn(); setOpen(false); };
+  return (
+    <div className="sm:hidden">
+      <button onClick={() => setOpen(!open)} className="p-1.5 text-muted-foreground hover:text-foreground">
+        {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+      </button>
+      {open && (
+        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="absolute top-14 left-0 right-0 bg-card border-b shadow-lg z-40 px-4 py-4 space-y-3">
+          <button onClick={() => go(() => onScrollTo('how'))} className="block w-full text-left text-sm text-muted-foreground hover:text-foreground">How it works</button>
+          <button onClick={() => go(() => onScrollTo('features'))} className="block w-full text-left text-sm text-muted-foreground hover:text-foreground">Features</button>
+          <button onClick={() => go(() => onScrollTo('pricing'))} className="block w-full text-left text-sm text-muted-foreground hover:text-foreground">Pricing</button>
+          <button onClick={() => go(() => onScrollTo('faq'))} className="block w-full text-left text-sm text-muted-foreground hover:text-foreground">FAQ</button>
+          <hr className="border-border" />
+          <button onClick={() => go(() => onNavigate('/login'))} className="block w-full text-left text-sm text-foreground font-medium">Sign In</button>
+          <button onClick={() => go(onDemo)} className="block w-full text-left text-sm text-foreground font-medium">Try Demo</button>
+        </motion.div>
+      )}
     </div>
   );
 }

@@ -27,25 +27,25 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <div className="page-header">
+      <div className="page-header flex-col sm:flex-row gap-3">
         <h1 className="page-title">Dashboard</h1>
         <div className="flex gap-2 flex-wrap">
           <Button size="sm" onClick={() => navigate('/schedule')}>
-            <Plus className="mr-1 h-4 w-4" /> Add Shift
+            <Plus className="mr-1 h-4 w-4" /> <span className="hidden xs:inline">Add</span> Shift
           </Button>
           <Button size="sm" variant="outline" onClick={() => navigate('/facilities')}>
-            <Building2 className="mr-1 h-4 w-4" /> Add Facility
+            <Building2 className="mr-1 h-4 w-4" /> <span className="hidden sm:inline">Add</span> Facility
           </Button>
-          <Button size="sm" variant="outline" onClick={() => navigate('/outreach')}>
+          <Button size="sm" variant="outline" className="hidden sm:inline-flex" onClick={() => navigate('/outreach')}>
             <Mail className="mr-1 h-4 w-4" /> Outreach
           </Button>
-          <Button size="sm" variant="outline" onClick={() => navigate('/confirmations')}>
+          <Button size="sm" variant="outline" className="hidden sm:inline-flex" onClick={() => navigate('/confirmations')}>
             <Send className="mr-1 h-4 w-4" /> Confirmations
           </Button>
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
+      <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4 mb-6 sm:mb-8">
         <Card className="stat-card border-l-4 border-l-primary">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
