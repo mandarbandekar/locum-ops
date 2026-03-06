@@ -55,7 +55,14 @@ export default function DocumentsVaultTab() {
   const [uploadCategory, setUploadCategory] = useState('custom');
   const [uploadCredentialId, setUploadCredentialId] = useState('');
 
-  const filtered = useMemo(() => {
+  // Trigger file picker when replacingDocId is set
+  useEffect(() => {
+    if (replacingDocId) {
+      replaceInputRef.current?.click();
+    }
+  }, [replacingDocId]);
+
+
     return documents.filter(d => {
       if (search && !d.file_name.toLowerCase().includes(search.toLowerCase())) return false;
       if (filterCategory !== 'all' && d.document_category !== filterCategory) return false;
