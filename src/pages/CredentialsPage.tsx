@@ -54,7 +54,7 @@ export default function CredentialsPage() {
         </TabsContent>
 
         <TabsContent value="documents" className="mt-6">
-          <PlaceholderTab label="Documents Vault" description="Drag-and-drop uploads, previews, and version history coming in Phase 4." />
+          <DocumentsVaultTab />
         </TabsContent>
 
         <TabsContent value="clinic-requirements" className="mt-6">
