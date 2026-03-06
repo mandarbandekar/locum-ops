@@ -61,7 +61,7 @@ export default function FacilityDetailPage() {
         </TabsContent>
 
         <TabsContent value="shifts" className="mt-4">
-          <ShiftsTab shifts={facilityShifts} />
+          <ShiftsTab shifts={facilityShifts} facilityId={facility.id} onAdd={addShift} />
         </TabsContent>
 
         <TabsContent value="invoices" className="mt-4">
