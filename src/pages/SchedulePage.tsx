@@ -241,6 +241,22 @@ function ShiftFormDialog({ open, onOpenChange, facilities, shifts, existing, onS
             <div><Label>Rate ($)</Label><Input type="number" value={rate} onChange={e => setRate(e.target.value)} /></div>
           </div>
           <div><Label>Notes</Label><Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} /></div>
+          <div>
+            <Label>Color</Label>
+            <div className="flex gap-2 mt-1.5 flex-wrap">
+              {SHIFT_COLORS.map(c => (
+                <button
+                  key={c.value}
+                  type="button"
+                  onClick={() => setColor(c.value)}
+                  className={`w-7 h-7 rounded-full border-2 transition-all ${c.bg} ${color === c.value ? 'border-foreground scale-110' : 'border-transparent hover:scale-105'}`}
+                  title={c.label}
+                >
+                  <span className={`block w-full h-full rounded-full ${c.value === 'blue' ? 'bg-blue-500' : c.value === 'green' ? 'bg-green-500' : c.value === 'red' ? 'bg-red-500' : c.value === 'orange' ? 'bg-orange-500' : c.value === 'purple' ? 'bg-purple-500' : c.value === 'pink' ? 'bg-pink-500' : c.value === 'teal' ? 'bg-teal-500' : 'bg-yellow-500'}`} />
+                </button>
+              ))}
+            </div>
+          </div>
 
           {conflicts.length > 0 && (
             <div className="flex items-start gap-2 p-3 rounded-md bg-destructive/10 text-destructive text-sm">
