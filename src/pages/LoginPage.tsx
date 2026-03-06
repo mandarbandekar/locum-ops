@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useData } from '@/contexts/DataContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,16 +7,30 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Stethoscope } from 'lucide-react';
 
 export default function LoginPage() {
-  const { login } = useData();
-  const [email, setEmail] = useState('dr.relief@example.com');
-  const [password, setPassword] = useState('password');
+  const { signIn, signUp } = useAuth();
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!login(email, password)) {
-      setError('Invalid credentials');
+    setError('');
+    setMessage('');
+    setSubmitting(true);
+
+    if (isSignUp) {
+      const { error } = await signUp(email, password, displayName || email);
+      if (error) setError(error);
+      else setMessage('Check your email to confirm your account before signing in.');
+    } else {
+      const { error } = await signIn(email, password);
+      if (error) setError(error);
     }
+    setSubmitting(false);
   };
 
   return (
@@ -27,21 +41,35 @@ export default function LoginPage() {
             <Stethoscope className="h-6 w-6 text-primary" />
           </div>
           <CardTitle className="text-2xl">ReliefOps</CardTitle>
-          <CardDescription>Relief veterinarian management</CardDescription>
+          <CardDescription>{isSignUp ? 'Create your account' : 'Relief veterinarian management'}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {isSignUp && (
+              <div className="space-y-2">
+                <Label htmlFor="displayName">Display Name</Label>
+                <Input id="displayName" value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Dr. Smith" />
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} />
+              <Input id="email" type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} />
+              <Input id="password" type="password" required minLength={6} value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" />
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
-            <Button type="submit" className="w-full">Sign In</Button>
-            <p className="text-xs text-muted-foreground text-center">Demo: any email/password works</p>
+            {message && <p className="text-sm text-green-600">{message}</p>}
+            <Button type="submit" className="w-full" disabled={submitting}>
+              {submitting ? 'Please wait…' : isSignUp ? 'Sign Up' : 'Sign In'}
+            </Button>
+            <p className="text-sm text-muted-foreground text-center">
+              {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
+              <button type="button" className="text-primary underline" onClick={() => { setIsSignUp(!isSignUp); setError(''); setMessage(''); }}>
+                {isSignUp ? 'Sign In' : 'Sign Up'}
+              </button>
+            </p>
           </form>
         </CardContent>
       </Card>
