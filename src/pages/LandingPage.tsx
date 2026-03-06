@@ -65,6 +65,7 @@ export default function LandingPage() {
               Join waitlist
             </Button>
           </div>
+        </div>
       </motion.header>
 
       {/* ── 1. HERO ── */}
