@@ -251,7 +251,26 @@ function ShiftFormDialog({ open, onOpenChange, clinics, shifts, existing, onSave
             </div>
           )}
 
-          <Button type="submit" className="w-full">{existing ? 'Update Shift' : 'Add Shift'}</Button>
+          <div className="flex gap-2">
+            <Button type="submit" className="flex-1">{existing ? 'Update Shift' : 'Add Shift'}</Button>
+            {existing && onDelete && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button type="button" variant="destructive" size="icon"><Trash2 className="h-4 w-4" /></Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete this shift?</AlertDialogTitle>
+                    <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => onDelete(existing.id)}>Delete</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </div>
         </form>
       </DialogContent>
     </Dialog>
