@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,7 @@ import { Briefcase, Play } from 'lucide-react';
 export default function LoginPage() {
   const { signIn, signUp, enterDemo } = useAuth();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [isSignUp, setIsSignUp] = useState(searchParams.get('signup') === '1');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,7 +29,7 @@ export default function LoginPage() {
     if (isSignUp) {
       const { error } = await signUp(email, password, displayName || email);
       if (error) setError(error);
-      else setMessage('Check your email to confirm your account before signing in.');
+      else navigate('/');
     } else {
       const { error } = await signIn(email, password);
       if (error) setError(error);
