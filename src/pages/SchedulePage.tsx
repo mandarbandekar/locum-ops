@@ -11,7 +11,7 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { Plus, ChevronLeft, ChevronRight, List, CalendarDays, AlertTriangle, Trash2 } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, getDay } from 'date-fns';
-import { ShiftStatus } from '@/types';
+import { ShiftStatus, SHIFT_COLORS, ShiftColor } from '@/types';
 import { detectShiftConflicts } from '@/lib/businessLogic';
 import { toast } from 'sonner';
 
