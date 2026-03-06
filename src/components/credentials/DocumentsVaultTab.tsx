@@ -505,11 +505,6 @@ export default function DocumentsVaultTab() {
           e.target.value = '';
         }}
       />
-      {replacingDocId && (() => {
-        // Trigger file input when replacingDocId is set
-        setTimeout(() => replaceInputRef.current?.click(), 0);
-        return null;
-      })()}
     </div>
   );
 }
