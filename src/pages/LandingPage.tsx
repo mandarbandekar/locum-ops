@@ -63,8 +63,8 @@ export default function LandingPage() {
             <Button variant="outline" size="sm" onClick={handleDemo}>Try Demo</Button>
             <Button size="sm" onClick={() => { console.log('cta_click', { location: 'nav' }); navigate('/waitlist'); }}>
               Join waitlist
-          </Button>
-        </div>
+            </Button>
+          </div>
       </motion.header>
 
       {/* ── 1. HERO ── */}
