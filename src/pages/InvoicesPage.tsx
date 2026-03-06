@@ -106,7 +106,7 @@ function CreateInvoiceDialog({ open, onOpenChange }: { open: boolean; onOpenChan
   const [periodStart, setPeriodStart] = useState(format(subDays(new Date(), 30), 'yyyy-MM-dd'));
   const [periodEnd, setPeriodEnd] = useState(format(new Date(), 'yyyy-MM-dd'));
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!facilityId) return;
     const completedShifts = shifts.filter(s =>
       s.facility_id === facilityId &&
@@ -125,24 +125,26 @@ function CreateInvoiceDialog({ open, onOpenChange }: { open: boolean; onOpenChan
 
     const total = lineItems.reduce((sum, li) => sum + li.line_total, 0);
 
-    const invoice = addInvoice(
-      {
-        facility_id: facilityId,
-        invoice_number: generateInvoiceNumber(invoices),
-        period_start: new Date(periodStart).toISOString(),
-        period_end: new Date(periodEnd).toISOString(),
-        total_amount: total,
-        status: 'draft',
-        sent_at: null,
-        paid_at: null,
-        due_date: null,
-      },
-      lineItems
-    );
+    try {
+      const invoice = await addInvoice(
+        {
+          facility_id: facilityId,
+          invoice_number: generateInvoiceNumber(invoices),
+          period_start: new Date(periodStart).toISOString(),
+          period_end: new Date(periodEnd).toISOString(),
+          total_amount: total,
+          status: 'draft',
+          sent_at: null,
+          paid_at: null,
+          due_date: null,
+        },
+        lineItems
+      );
 
-    toast.success(`Invoice created with ${lineItems.length} line items`);
-    onOpenChange(false);
-    navigate(`/invoices/${invoice.id}`);
+      toast.success(`Invoice created with ${lineItems.length} line items`);
+      onOpenChange(false);
+      navigate(`/invoices/${invoice.id}`);
+    } catch { /* error toast handled in DataContext */ }
   };
 
   return (
