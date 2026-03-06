@@ -675,6 +675,84 @@ export type Database = {
           },
         ]
       }
+      tax_quarter_statuses: {
+        Row: {
+          created_at: string
+          due_date: string
+          id: string
+          notes: string
+          quarter: number
+          status: string
+          tax_year: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          due_date: string
+          id?: string
+          notes?: string
+          quarter: number
+          status?: string
+          tax_year: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          due_date?: string
+          id?: string
+          notes?: string
+          quarter?: number
+          status?: string
+          tax_year?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      tax_settings: {
+        Row: {
+          created_at: string
+          disclaimer_accepted_at: string | null
+          filing_type_label: string
+          id: string
+          set_aside_fixed_monthly: number
+          set_aside_mode: string
+          set_aside_percent: number
+          state_label: string
+          tax_year: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          disclaimer_accepted_at?: string | null
+          filing_type_label?: string
+          id?: string
+          set_aside_fixed_monthly?: number
+          set_aside_mode?: string
+          set_aside_percent?: number
+          state_label?: string
+          tax_year: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          disclaimer_accepted_at?: string | null
+          filing_type_label?: string
+          id?: string
+          set_aside_fixed_monthly?: number
+          set_aside_mode?: string
+          set_aside_percent?: number
+          state_label?: string
+          tax_year?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       terms_snapshots: {
         Row: {
           cancellation_policy_text: string
