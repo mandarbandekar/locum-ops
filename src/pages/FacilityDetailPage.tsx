@@ -35,7 +35,7 @@ export default function FacilityDetailPage() {
         <Button variant="ghost" size="icon" onClick={() => navigate('/facilities')}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <EditableFacilityName facility={facility} onSave={(newName) => { updateFacility({ ...facility, name: newName }); toast.success('Facility name updated'); }} />
+        <EditableFacilityName facility={facility} onSave={(newName, newAddress) => { updateFacility({ ...facility, name: newName, address: newAddress }); toast.success('Facility updated'); }} />
         <StatusBadge status={facility.status} className="ml-3" />
       </div>
 
