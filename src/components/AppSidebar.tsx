@@ -1,4 +1,4 @@
-import { LayoutDashboard, Building2, CalendarDays, Mail, CheckCircle, FileText, BarChart3, LogOut } from 'lucide-react';
+import { LayoutDashboard, Building2, CalendarDays, Mail, CheckCircle, FileText, BarChart3, LogOut, ShieldCheck } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,6 +15,7 @@ const navItems = [
   { title: 'Outreach', url: '/outreach', icon: Mail },
   { title: 'Confirmations', url: '/confirmations', icon: CheckCircle },
   { title: 'Invoices', url: '/invoices', icon: FileText },
+  { title: 'Credentials', url: '/credentials', icon: ShieldCheck },
   { title: 'Reports', url: '/reports', icon: BarChart3 },
 ];
 

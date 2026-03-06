@@ -19,6 +19,7 @@ import ConfirmationsPage from "@/pages/ConfirmationsPage";
 import InvoicesPage from "@/pages/InvoicesPage";
 import InvoiceDetailPage from "@/pages/InvoiceDetailPage";
 import ReportsPage from "@/pages/ReportsPage";
+import CredentialsPage from "@/pages/CredentialsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
