@@ -95,28 +95,7 @@ export default function LandingPage() {
         </motion.p>
       </section>
 
-      {/* ── 2. PROBLEM → AGITATION ── */}
-      <motion.section variants={sectionFade} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.3 }}
-        className="max-w-3xl mx-auto px-4 pb-20">
-        <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-6">You're doing a full business in Google Sheets.</h2>
-        <ul className="space-y-3 mb-6">
-          {[
-            'Facility contacts + rates buried in tabs',
-            'Monthly "confirm my dates" emails done by hand',
-            'Invoices sent late → payments delayed',
-            'Follow-ups are easy to miss',
-            'Double bookings happen when life gets busy',
-          ].map((b, i) => (
-            <li key={i} className="flex items-start gap-3 text-muted-foreground">
-              <AlertTriangle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
-              <span>{b}</span>
-            </li>
-          ))}
-        </ul>
-        <p className="text-lg font-semibold text-foreground">Spreadsheets don't remind you. <span className="text-primary">LocumOps does.</span></p>
-      </motion.section>
-
-      {/* ── 3. VALUE PROPS ── */}
+      {/* ── VALUE PROPS ── */}
       <section className="max-w-5xl mx-auto px-4 pb-20">
         <div className="grid sm:grid-cols-3 gap-6">
           {[
