@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CredentialsOverview } from '@/components/credentials/CredentialsOverview';
 import CredentialsList from '@/components/credentials/CredentialsList';
 import RenewalsTab from '@/components/credentials/RenewalsTab';
+import DocumentsVaultTab from '@/components/credentials/DocumentsVaultTab';
 import { AddCredentialDialog } from '@/components/credentials/AddCredentialDialog';
 import { ShieldCheck } from 'lucide-react';
 
