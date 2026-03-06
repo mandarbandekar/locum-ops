@@ -16,7 +16,7 @@ import { detectShiftConflicts } from '@/lib/businessLogic';
 import { toast } from 'sonner';
 
 export default function SchedulePage() {
-  const { shifts, clinics, addShift, updateShift } = useData();
+  const { shifts, clinics, addShift, updateShift, deleteShift } = useData();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [view, setView] = useState<'calendar' | 'list'>('calendar');
   const [showAdd, setShowAdd] = useState(false);
