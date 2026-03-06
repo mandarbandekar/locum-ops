@@ -135,7 +135,7 @@ export default function SchedulePage() {
                   </td>
                 </tr>
               ))}
-              {monthShifts.length === 0 && <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">No shifts this month</td></tr>}
+              {monthShifts.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">No shifts this month</td></tr>}
             </tbody>
           </table>
         </div>
