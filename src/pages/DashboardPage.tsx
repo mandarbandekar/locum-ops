@@ -98,6 +98,11 @@ export default function DashboardPage() {
         </Card>
       </div>
 
+      <div className="grid gap-6 lg:grid-cols-3 mb-6">
+        <TaxDueDatesWidget invoices={invoices} navigate={navigate} />
+      </div>
+
+
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
