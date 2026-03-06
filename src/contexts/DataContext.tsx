@@ -234,53 +234,12 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
   }, [isDemo, user]);
 
   const updateShift = useCallback(async (s: Shift) => {
-    // Check if this shift is being marked completed and doesn't already have an invoice
-    const oldShift = shifts.find(x => x.id === s.id);
-    const justCompleted = s.status === 'completed' && oldShift?.status !== 'completed';
-
-    if (isDemo) { setShifts(prev => prev.map(x => x.id === s.id ? s : x)); } else {
-      const { id, ...rest } = s;
-      const { error } = await db('shifts').update(rest).eq('id', id);
-      if (error) { toast.error(error.message); return; }
-      setShifts(prev => prev.map(x => x.id === s.id ? s : x));
-    }
-
-    // Auto-create invoice for completed shift
-    if (justCompleted) {
-      const existingLineItem = lineItems.find(li => li.shift_id === s.id);
-      if (!existingLineItem) {
-        const facility = facilities.find(f => f.id === s.facility_id);
-        const invoiceNumber = generateInvoiceNumber(invoices);
-        const dueDate = new Date(s.end_datetime);
-        dueDate.setDate(dueDate.getDate() + 14);
-        try {
-          const newInvoice = await addInvoice(
-            {
-              facility_id: s.facility_id,
-              invoice_number: invoiceNumber,
-              period_start: s.start_datetime,
-              period_end: s.end_datetime,
-              total_amount: s.rate_applied,
-              status: 'draft' as Invoice['status'],
-              sent_at: null,
-              paid_at: null,
-              due_date: dueDate.toISOString(),
-            },
-            [{
-              shift_id: s.id,
-              description: `${facility?.name || 'Shift'} — ${new Date(s.start_datetime).toLocaleDateString()}`,
-              qty: 1,
-              unit_rate: s.rate_applied,
-              line_total: s.rate_applied,
-            }]
-          );
-          toast.success(`Draft invoice ${invoiceNumber} created`);
-        } catch {
-          // addInvoice already shows error toast
-        }
-      }
-    }
-  }, [isDemo, shifts, lineItems, facilities, invoices, addInvoice]);
+    if (isDemo) { setShifts(prev => prev.map(x => x.id === s.id ? s : x)); return; }
+    const { id, ...rest } = s;
+    const { error } = await db('shifts').update(rest).eq('id', id);
+    if (error) { toast.error(error.message); return; }
+    setShifts(prev => prev.map(x => x.id === s.id ? s : x));
+  }, [isDemo]);
 
   const deleteShift = useCallback(async (id: string) => {
     if (isDemo) {
