@@ -32,7 +32,14 @@ function AuthGate() {
     );
   }
 
-  if (!user && !isDemo) return <LoginPage />;
+  if (!user && !isDemo) {
+    return (
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="*" element={<LandingPage />} />
+      </Routes>
+    );
+  }
 
   return (
     <DataProvider isDemo={isDemo}>
