@@ -59,7 +59,7 @@ export default function CredentialsPage() {
         </TabsContent>
 
         <TabsContent value="clinic-requirements" className="mt-6">
-          <PlaceholderTab label="Clinic Requirements" description="Track what each clinic needs before onboarding — coming soon." />
+          <ClinicRequirementsTab />
         </TabsContent>
 
         <TabsContent value="packets" className="mt-6">
