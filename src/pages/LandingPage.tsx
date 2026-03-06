@@ -58,8 +58,11 @@ export default function LandingPage() {
             <button onClick={() => scrollTo('pricing')} className="hover:text-foreground transition-colors">Pricing</button>
             <button onClick={() => scrollTo('faq')} className="hover:text-foreground transition-colors">FAQ</button>
           </nav>
-          <Button size="sm" onClick={() => { console.log('cta_click', { location: 'nav' }); navigate('/waitlist'); }}>
-            Join waitlist
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/login')}>Sign In</Button>
+            <Button variant="outline" size="sm" onClick={handleDemo}>Try Demo</Button>
+            <Button size="sm" onClick={() => { console.log('cta_click', { location: 'nav' }); navigate('/waitlist'); }}>
+              Join waitlist
           </Button>
         </div>
       </motion.header>
