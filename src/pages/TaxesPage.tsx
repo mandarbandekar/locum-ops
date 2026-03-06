@@ -171,9 +171,9 @@ export default function TaxesPage() {
         await db('tax_settings').update({ disclaimer_accepted_at: now }).eq('id', settings.id);
       } else {
         const { data } = await db('tax_settings')
-          .insert({ user_id: user.id, ...newSettings })
+          .insert({ user_id: user.id, ...newSettings } as any)
           .select()
-          .single();
+          .single() as { data: any };
         if (data) setSettings((s) => ({ ...s, id: data.id }));
       }
     }
