@@ -149,3 +149,27 @@ export default function InvoiceDetailPage() {
     </div>
   );
 }
+
+function EditableInvoiceNumber({ invoice, onSave }: { invoice: { invoice_number: string }; onSave: (num: string) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(invoice.invoice_number);
+
+  if (!editing) {
+    return (
+      <div className="flex items-center gap-2 group">
+        <h1 className="page-title">{invoice.invoice_number}</h1>
+        <Button size="icon" variant="ghost" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => { setValue(invoice.invoice_number); setEditing(true); }}>
+          <Pencil className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <Input value={value} onChange={e => setValue(e.target.value)} className="h-9 w-48 text-lg font-bold" autoFocus onKeyDown={e => { if (e.key === 'Enter') { onSave(value); setEditing(false); } if (e.key === 'Escape') setEditing(false); }} />
+      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { onSave(value); setEditing(false); }}><Check className="h-4 w-4" /></Button>
+      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditing(false)}><X className="h-4 w-4" /></Button>
+    </div>
+  );
+}
