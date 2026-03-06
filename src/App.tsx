@@ -20,6 +20,7 @@ import InvoicesPage from "@/pages/InvoicesPage";
 import InvoiceDetailPage from "@/pages/InvoiceDetailPage";
 import ReportsPage from "@/pages/ReportsPage";
 import CredentialsPage from "@/pages/CredentialsPage";
+import TaxesPage from "@/pages/TaxesPage";
 import WaitlistPage from "@/pages/WaitlistPage";
 import QuizPage from "@/pages/QuizPage";
 import ResultsPage from "@/pages/ResultsPage";
