@@ -8,14 +8,15 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { StatusBadge } from '@/components/StatusBadge';
-import { Plus, ChevronLeft, ChevronRight, List, CalendarDays, AlertTriangle } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, List, CalendarDays, AlertTriangle, Trash2 } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, getDay } from 'date-fns';
 import { ShiftStatus } from '@/types';
 import { detectShiftConflicts } from '@/lib/businessLogic';
 import { toast } from 'sonner';
 
 export default function SchedulePage() {
-  const { shifts, clinics, addShift, updateShift } = useData();
+  const { shifts, clinics, addShift, updateShift, deleteShift } = useData();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [view, setView] = useState<'calendar' | 'list'>('calendar');
   const [showAdd, setShowAdd] = useState(false);
@@ -103,6 +104,7 @@ export default function SchedulePage() {
               <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Time</th>
               <th className="text-left p-3 font-medium text-muted-foreground">Rate</th>
               <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
+              <th className="w-10" />
             </tr></thead>
             <tbody>
               {monthShifts.map(s => (
@@ -112,9 +114,28 @@ export default function SchedulePage() {
                   <td className="p-3 text-muted-foreground hidden md:table-cell">{format(new Date(s.start_datetime), 'h:mm a')} - {format(new Date(s.end_datetime), 'h:mm a')}</td>
                   <td className="p-3">${s.rate_applied}</td>
                   <td className="p-3"><StatusBadge status={s.status} /></td>
+                  <td className="p-3" onClick={e => e.stopPropagation()}>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete this shift?</AlertDialogTitle>
+                          <AlertDialogDescription>{getClinicName(s.clinic_id)} — {format(new Date(s.start_datetime), 'MMM d, yyyy')}</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => { deleteShift(s.id); toast.success('Shift deleted'); }}>Delete</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </td>
                 </tr>
               ))}
-              {monthShifts.length === 0 && <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">No shifts this month</td></tr>}
+              {monthShifts.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">No shifts this month</td></tr>}
             </tbody>
           </table>
         </div>

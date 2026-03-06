@@ -5,11 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge } from '@/components/StatusBadge';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, Trash2 } from 'lucide-react';
 import { AddClinicDialog } from '@/components/AddClinicDialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { toast } from 'sonner';
 
 export default function ClinicsPage() {
-  const { clinics } = useData();
+  const { clinics, deleteClinic } = useData();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -56,6 +58,7 @@ export default function ClinicsPage() {
               <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Address</th>
               <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
               <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Last Outreach</th>
+              <th className="w-10" />
             </tr>
           </thead>
           <tbody>
@@ -71,10 +74,29 @@ export default function ClinicsPage() {
                 <td className="p-3 text-muted-foreground hidden lg:table-cell">
                   {c.outreach_last_sent_at ? new Date(c.outreach_last_sent_at).toLocaleDateString() : '—'}
                 </td>
+                <td className="p-3" onClick={e => e.stopPropagation()}>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete {c.name}?</AlertDialogTitle>
+                        <AlertDialogDescription>This will also delete all contacts, shifts, and invoices associated with this clinic.</AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => { deleteClinic(c.id); toast.success('Clinic deleted'); }}>Delete</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </td>
               </tr>
             ))}
             {filtered.length === 0 && (
-              <tr><td colSpan={4} className="p-6 text-center text-muted-foreground">No clinics found</td></tr>
+              <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">No clinics found</td></tr>
             )}
           </tbody>
         </table>

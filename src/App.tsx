@@ -34,7 +34,7 @@ function AuthGate() {
   if (!user && !isDemo) return <LoginPage />;
 
   return (
-    <DataProvider>
+    <DataProvider isDemo={isDemo}>
       <Layout>
         <Routes>
           <Route path="/" element={<DashboardPage />} />
