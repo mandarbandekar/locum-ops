@@ -63,7 +63,35 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
   useEffect(() => {
     if (isDemo || !user) return;
     fetchAll();
+
+    // Subscribe to realtime changes for cross-tab sync
+    const channel = supabase
+      .channel('data-sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'facilities' }, () => refetchTable('facilities'))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'facility_contacts' }, () => refetchTable('facility_contacts'))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'terms_snapshots' }, () => refetchTable('terms_snapshots'))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'shifts' }, () => refetchTable('shifts'))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'invoices' }, () => refetchTable('invoices'))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'invoice_line_items' }, () => refetchTable('invoice_line_items'))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'email_logs' }, () => refetchTable('email_logs'))
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [isDemo, user?.id]);
+
+  async function refetchTable(table: string) {
+    const { data } = await db(table).select('*').order('created_at');
+    const rows = (data || []).map(stripDbFields);
+    switch (table) {
+      case 'facilities': setFacilities(rows); break;
+      case 'facility_contacts': setContacts(rows); break;
+      case 'terms_snapshots': setTerms(rows); break;
+      case 'shifts': setShifts(rows); break;
+      case 'invoices': setInvoices(rows); break;
+      case 'invoice_line_items': setLineItems(rows); break;
+      case 'email_logs': setEmailLogs(rows); break;
+    }
+  }
 
   async function fetchAll() {
     try {
