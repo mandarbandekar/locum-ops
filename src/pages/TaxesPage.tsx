@@ -197,9 +197,9 @@ export default function TaxesPage() {
       }).eq('id', settings.id);
     } else {
       const { data } = await db('tax_settings')
-        .insert({ user_id: user.id, ...settings })
+        .insert({ user_id: user.id, ...settings } as any)
         .select()
-        .single();
+        .single() as { data: any };
       if (data) setSettings((s) => ({ ...s, id: data.id }));
     }
   }
