@@ -217,9 +217,9 @@ export default function TaxesPage() {
       }).eq('id', qs.id);
     } else {
       const { data } = await db('tax_quarter_statuses')
-        .insert({ user_id: user.id, tax_year: selectedYear, quarter: qs.quarter, due_date: qs.due_date, status: qs.status, notes: qs.notes })
+        .insert({ user_id: user.id, tax_year: selectedYear, quarter: qs.quarter, due_date: qs.due_date, status: qs.status, notes: qs.notes } as any)
         .select()
-        .single();
+        .single() as { data: any };
       if (data) {
         setQuarterStatuses((prev) =>
           prev.map((q) => (q.quarter === qs.quarter ? { ...q, id: data.id } : q))
