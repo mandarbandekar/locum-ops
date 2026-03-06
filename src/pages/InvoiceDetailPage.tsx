@@ -49,10 +49,8 @@ export default function InvoiceDetailPage() {
         <Button variant="ghost" size="icon" onClick={() => navigate('/invoices')}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <div>
-          <h1 className="page-title">{invoice.invoice_number}</h1>
-          <p className="text-sm text-muted-foreground">{facility?.name}</p>
-        </div>
+        <EditableInvoiceNumber invoice={invoice} onSave={(num) => { updateInvoice({ ...invoice, invoice_number: num }); toast.success('Invoice number updated'); }} />
+        <p className="text-sm text-muted-foreground">{facility?.name}</p>
         <StatusBadge status={computedStatus} className="ml-3 text-sm" />
       </div>
 
