@@ -249,7 +249,7 @@ export default function DocumentsVaultTab() {
                 <SelectValue placeholder="Link to credential" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">None</SelectItem>
+                <SelectItem value="none">None</SelectItem>
                 {credentials.map(c => (
                   <SelectItem key={c.id} value={c.id}>{c.custom_title}</SelectItem>
                 ))}
