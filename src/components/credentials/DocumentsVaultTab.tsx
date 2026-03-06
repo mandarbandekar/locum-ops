@@ -53,7 +53,7 @@ export default function DocumentsVaultTab() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [replacingDocId, setReplacingDocId] = useState<string | null>(null);
   const [uploadCategory, setUploadCategory] = useState('custom');
-  const [uploadCredentialId, setUploadCredentialId] = useState('');
+  const [uploadCredentialId, setUploadCredentialId] = useState('none');
 
   // Trigger file picker when replacingDocId is set
   useEffect(() => {
