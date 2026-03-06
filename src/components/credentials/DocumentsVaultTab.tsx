@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useRef } from 'react';
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { useCredentials, CredentialDocument } from '@/hooks/useCredentials';
 import { DOCUMENT_CATEGORY_LABELS, CREDENTIAL_TYPE_LABELS } from '@/lib/credentialTypes';
 import { supabase } from '@/integrations/supabase/client';
