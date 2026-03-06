@@ -20,6 +20,7 @@ import InvoicesPage from "@/pages/InvoicesPage";
 import InvoiceDetailPage from "@/pages/InvoiceDetailPage";
 import ReportsPage from "@/pages/ReportsPage";
 import CredentialsPage from "@/pages/CredentialsPage";
+import TaxesPage from "@/pages/TaxesPage";
 import WaitlistPage from "@/pages/WaitlistPage";
 import QuizPage from "@/pages/QuizPage";
 import ResultsPage from "@/pages/ResultsPage";
@@ -70,6 +71,7 @@ function AuthGate() {
           <Route path="/invoices/:id" element={<InvoiceDetailPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/credentials" element={<CredentialsPage />} />
+          <Route path="/taxes" element={<TaxesPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Layout>
