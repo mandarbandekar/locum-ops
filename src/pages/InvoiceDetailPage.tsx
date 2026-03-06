@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { StatusBadge } from '@/components/StatusBadge';
-import { ArrowLeft, Send, CheckCircle, DollarSign, Trash2 } from 'lucide-react';
+import { ArrowLeft, Send, CheckCircle, DollarSign, Trash2, Pencil, Check, X } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
 import { toast } from 'sonner';
@@ -47,10 +49,8 @@ export default function InvoiceDetailPage() {
         <Button variant="ghost" size="icon" onClick={() => navigate('/invoices')}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <div>
-          <h1 className="page-title">{invoice.invoice_number}</h1>
-          <p className="text-sm text-muted-foreground">{facility?.name}</p>
-        </div>
+        <EditableInvoiceNumber invoice={invoice} onSave={(num) => { updateInvoice({ ...invoice, invoice_number: num }); toast.success('Invoice number updated'); }} />
+        <p className="text-sm text-muted-foreground">{facility?.name}</p>
         <StatusBadge status={computedStatus} className="ml-3 text-sm" />
       </div>
 
@@ -146,6 +146,30 @@ export default function InvoiceDetailPage() {
           </Card>
         </div>
       </div>
+    </div>
+  );
+}
+
+function EditableInvoiceNumber({ invoice, onSave }: { invoice: { invoice_number: string }; onSave: (num: string) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(invoice.invoice_number);
+
+  if (!editing) {
+    return (
+      <div className="flex items-center gap-2 group">
+        <h1 className="page-title">{invoice.invoice_number}</h1>
+        <Button size="icon" variant="ghost" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => { setValue(invoice.invoice_number); setEditing(true); }}>
+          <Pencil className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <Input value={value} onChange={e => setValue(e.target.value)} className="h-9 w-48 text-lg font-bold" autoFocus onKeyDown={e => { if (e.key === 'Enter') { onSave(value); setEditing(false); } if (e.key === 'Escape') setEditing(false); }} />
+      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { onSave(value); setEditing(false); }}><Check className="h-4 w-4" /></Button>
+      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditing(false)}><X className="h-4 w-4" /></Button>
     </div>
   );
 }
