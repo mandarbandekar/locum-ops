@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CredentialsOverview } from '@/components/credentials/CredentialsOverview';
 import CredentialsList from '@/components/credentials/CredentialsList';
+import RenewalsTab from '@/components/credentials/RenewalsTab';
 import { AddCredentialDialog } from '@/components/credentials/AddCredentialDialog';
 import { ShieldCheck } from 'lucide-react';
 
@@ -48,7 +49,7 @@ export default function CredentialsPage() {
         </TabsContent>
 
         <TabsContent value="renewals" className="mt-6">
-          <PlaceholderTab label="Renewals" description="Timeline, calendar, and renewal task management coming in Phase 3." />
+          <RenewalsTab />
         </TabsContent>
 
         <TabsContent value="documents" className="mt-6">
