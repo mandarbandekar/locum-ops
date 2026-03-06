@@ -7,13 +7,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { StatusBadge } from '@/components/StatusBadge';
-import { Plus } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { format, subDays } from 'date-fns';
 import { computeInvoiceStatus, generateInvoiceNumber } from '@/lib/businessLogic';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 
 export default function InvoicesPage() {
-  const { invoices, clinics, shifts, addInvoice } = useData();
+  const { invoices, clinics, shifts, addInvoice, deleteInvoice } = useData();
   const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState('all');
   const [showCreate, setShowCreate] = useState(false);
@@ -55,6 +56,7 @@ export default function InvoicesPage() {
             <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Period</th>
             <th className="text-left p-3 font-medium text-muted-foreground">Amount</th>
             <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
+            <th className="w-10" />
           </tr></thead>
           <tbody>
             {displayInvoices.map(inv => (
@@ -66,9 +68,28 @@ export default function InvoicesPage() {
                 </td>
                 <td className="p-3 font-medium">${inv.total_amount.toLocaleString()}</td>
                 <td className="p-3"><StatusBadge status={inv.computedStatus} /></td>
+                <td className="p-3" onClick={e => e.stopPropagation()}>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete {inv.invoice_number}?</AlertDialogTitle>
+                        <AlertDialogDescription>This invoice and its line items will be permanently removed.</AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => { deleteInvoice(inv.id); toast.success('Invoice deleted'); }}>Delete</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </td>
               </tr>
             ))}
-            {displayInvoices.length === 0 && <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">No invoices</td></tr>}
+            {displayInvoices.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">No invoices</td></tr>}
           </tbody>
         </table>
       </div>
