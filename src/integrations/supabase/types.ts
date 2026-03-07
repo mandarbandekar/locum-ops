@@ -806,6 +806,63 @@ export type Database = {
           },
         ]
       }
+      user_profiles: {
+        Row: {
+          created_at: string
+          currency: string
+          current_tools: Json
+          email_tone: string
+          facilities_count_band: string
+          id: string
+          invoice_due_default_days: number
+          invoice_prefix: string
+          invoices_per_month_band: string
+          onboarding_completed_at: string | null
+          profession: string
+          terms_fields_enabled: Json
+          timezone: string
+          updated_at: string
+          user_id: string
+          work_style_label: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          current_tools?: Json
+          email_tone?: string
+          facilities_count_band?: string
+          id?: string
+          invoice_due_default_days?: number
+          invoice_prefix?: string
+          invoices_per_month_band?: string
+          onboarding_completed_at?: string | null
+          profession?: string
+          terms_fields_enabled?: Json
+          timezone?: string
+          updated_at?: string
+          user_id: string
+          work_style_label?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          current_tools?: Json
+          email_tone?: string
+          facilities_count_band?: string
+          id?: string
+          invoice_due_default_days?: number
+          invoice_prefix?: string
+          invoices_per_month_band?: string
+          onboarding_completed_at?: string | null
+          profession?: string
+          terms_fields_enabled?: Json
+          timezone?: string
+          updated_at?: string
+          user_id?: string
+          work_style_label?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
