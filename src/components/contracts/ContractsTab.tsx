@@ -8,10 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Plus, Trash2, Pencil, Save, ExternalLink, FileText, Download, AlertTriangle, Check, X, ClipboardList } from 'lucide-react';
+import { Plus, Trash2, Pencil, Save, ExternalLink, FileText, Download, AlertTriangle, Check, X, ClipboardList, Loader2 } from 'lucide-react';
 import { Contract, ContractTerms, ContractChecklistItem, ContractStatus, ChecklistItemType, getChecklistBadge, DEFAULT_CHECKLIST_ITEMS } from '@/types/contracts';
 import { useContracts } from '@/hooks/useContracts';
+import { useAuth } from '@/contexts/AuthContext';
 import { generateId } from '@/lib/businessLogic';
+import { uploadContractFile, getContractSignedUrl, deleteContractFile } from '@/lib/contractStorage';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -101,7 +103,11 @@ function ContractVault({ contracts, onAdd, onUpdate, onDelete }: {
                 </div>
                 <div className="flex items-center gap-1 ml-2">
                   {c.file_url && (
-                    <Button size="icon" variant="ghost" className="h-7 w-7" title="View/Download" onClick={() => window.open(c.file_url!, '_blank')}>
+                    <Button size="icon" variant="ghost" className="h-7 w-7" title="View/Download" onClick={async () => {
+                      const url = await getContractSignedUrl(c.file_url!);
+                      if (url) window.open(url, '_blank');
+                      else toast.error('Could not generate download link');
+                    }}>
                       <Download className="h-3 w-3" />
                     </Button>
                   )}
@@ -113,7 +119,13 @@ function ContractVault({ contracts, onAdd, onUpdate, onDelete }: {
                   <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditId(c.id)}>
                     <Pencil className="h-3 w-3" />
                   </Button>
-                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { if (confirm('Delete this contract?')) { onDelete(c.id); toast.success('Contract deleted'); } }}>
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={async () => {
+                    if (confirm('Delete this contract?')) {
+                      if (c.file_url) await deleteContractFile(c.file_url);
+                      onDelete(c.id);
+                      toast.success('Contract deleted');
+                    }
+                  }}>
                     <Trash2 className="h-3 w-3" />
                   </Button>
                 </div>
@@ -149,37 +161,42 @@ function AddContractDialog({ open, onOpenChange, onAdd, facilityId }: {
   open: boolean; onOpenChange: (o: boolean) => void;
   onAdd: (c: Omit<Contract, 'id'>) => Promise<Contract>; facilityId: string;
 }) {
+  const { user } = useAuth();
   const [form, setForm] = useState({
     title: '', status: 'draft' as ContractStatus, effective_date: '', end_date: '',
-    auto_renew: false, notes: '', file_url: '', external_link_url: '',
+    auto_renew: false, notes: '', external_link_url: '',
   });
-  const [fileName, setFileName] = useState('');
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setFileName(file.name);
-      setForm(p => ({ ...p, file_url: `/uploads/${file.name}` }));
-    }
-  };
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   const handleSubmit = async () => {
     if (!form.title.trim()) { toast.error('Title is required'); return; }
-    await onAdd({
-      facility_id: facilityId,
-      title: form.title.trim(),
-      status: form.status,
-      effective_date: form.effective_date || null,
-      end_date: form.end_date || null,
-      auto_renew: form.auto_renew,
-      file_url: form.file_url || null,
-      external_link_url: form.external_link_url || null,
-      notes: form.notes,
-    });
-    toast.success('Contract added');
-    onOpenChange(false);
-    setForm({ title: '', status: 'draft', effective_date: '', end_date: '', auto_renew: false, notes: '', file_url: '', external_link_url: '' });
-    setFileName('');
+    setUploading(true);
+    try {
+      let fileUrl: string | null = null;
+      if (file && user) {
+        fileUrl = await uploadContractFile(user.id, file);
+      }
+      await onAdd({
+        facility_id: facilityId,
+        title: form.title.trim(),
+        status: form.status,
+        effective_date: form.effective_date || null,
+        end_date: form.end_date || null,
+        auto_renew: form.auto_renew,
+        file_url: fileUrl,
+        external_link_url: form.external_link_url || null,
+        notes: form.notes,
+      });
+      toast.success('Contract added');
+      onOpenChange(false);
+      setForm({ title: '', status: 'draft', effective_date: '', end_date: '', auto_renew: false, notes: '', external_link_url: '' });
+      setFile(null);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to add contract');
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
@@ -208,12 +225,15 @@ function AddContractDialog({ open, onOpenChange, onAdd, facilityId }: {
           </div>
           <div>
             <Label>Attach File</Label>
-            <Input type="file" onChange={handleFileChange} accept=".pdf,.doc,.docx,.png,.jpg" />
-            {fileName && <p className="text-xs text-muted-foreground mt-1">Selected: {fileName}</p>}
+            <Input type="file" onChange={e => setFile(e.target.files?.[0] || null)} accept=".pdf,.doc,.docx,.png,.jpg" />
+            {file && <p className="text-xs text-muted-foreground mt-1">Selected: {file.name}</p>}
           </div>
           <div><Label>External Link (optional)</Label><Input value={form.external_link_url} onChange={e => setForm(p => ({ ...p, external_link_url: e.target.value }))} placeholder="https://..." /></div>
           <div><Label>Notes</Label><Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} rows={2} /></div>
-          <Button onClick={handleSubmit} className="w-full">Add Contract</Button>
+          <Button onClick={handleSubmit} className="w-full" disabled={uploading}>
+            {uploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {uploading ? 'Uploading…' : 'Add Contract'}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
