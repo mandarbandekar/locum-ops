@@ -122,9 +122,6 @@ export function CredentialsOverview({ onNavigate, onAddCredential }: Props) {
               <Button variant="outline" className="w-full justify-start" onClick={() => onNavigate('renewals')}>
                 <Bell className="mr-2 h-4 w-4" /> Set Renewal Reminder
               </Button>
-              <Button variant="outline" className="w-full justify-start" onClick={() => onNavigate('packets')}>
-                <FileText className="mr-2 h-4 w-4" /> Create Clinic Packet
-              </Button>
               <Button variant="outline" className="w-full justify-start" onClick={() => onNavigate('credentials')}>
                 <RefreshCw className="mr-2 h-4 w-4" /> Mark Credential Renewed
               </Button>
