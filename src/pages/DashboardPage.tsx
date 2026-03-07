@@ -3,7 +3,7 @@ import { useData } from '@/contexts/DataContext';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CalendarDays, FileText, AlertTriangle, CheckCircle, Plus, Building2, Send, Calculator } from 'lucide-react';
+import { CalendarDays, FileText, AlertTriangle, CheckCircle, Plus, Building2, Calculator } from 'lucide-react';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
 import { aggregateQuarterlyIncome, calculateSetAside, getDefaultDueDates } from '@/lib/taxCalculations';
 import { format, differenceInDays } from 'date-fns';
