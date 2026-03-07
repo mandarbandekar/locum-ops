@@ -111,6 +111,162 @@ export type Database = {
         }
         Relationships: []
       }
+      contract_checklist_items: {
+        Row: {
+          created_at: string
+          due_date: string | null
+          facility_id: string
+          id: string
+          notes: string | null
+          status: string
+          title: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          due_date?: string | null
+          facility_id: string
+          id?: string
+          notes?: string | null
+          status?: string
+          title: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          due_date?: string | null
+          facility_id?: string
+          id?: string
+          notes?: string | null
+          status?: string
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_checklist_items_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contract_terms: {
+        Row: {
+          cancellation_policy_text: string | null
+          contract_id: string
+          holiday_rate: number | null
+          id: string
+          invoicing_instructions_text: string | null
+          late_payment_policy_text: string | null
+          overtime_policy_text: string | null
+          payment_terms_days: number | null
+          updated_at: string
+          user_id: string
+          weekday_rate: number | null
+          weekend_rate: number | null
+        }
+        Insert: {
+          cancellation_policy_text?: string | null
+          contract_id: string
+          holiday_rate?: number | null
+          id?: string
+          invoicing_instructions_text?: string | null
+          late_payment_policy_text?: string | null
+          overtime_policy_text?: string | null
+          payment_terms_days?: number | null
+          updated_at?: string
+          user_id?: string
+          weekday_rate?: number | null
+          weekend_rate?: number | null
+        }
+        Update: {
+          cancellation_policy_text?: string | null
+          contract_id?: string
+          holiday_rate?: number | null
+          id?: string
+          invoicing_instructions_text?: string | null
+          late_payment_policy_text?: string | null
+          overtime_policy_text?: string | null
+          payment_terms_days?: number | null
+          updated_at?: string
+          user_id?: string
+          weekday_rate?: number | null
+          weekend_rate?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_terms_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contracts: {
+        Row: {
+          auto_renew: boolean
+          created_at: string
+          effective_date: string | null
+          end_date: string | null
+          external_link_url: string | null
+          facility_id: string
+          file_url: string | null
+          id: string
+          notes: string | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_renew?: boolean
+          created_at?: string
+          effective_date?: string | null
+          end_date?: string | null
+          external_link_url?: string | null
+          facility_id: string
+          file_url?: string | null
+          id?: string
+          notes?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          auto_renew?: boolean
+          created_at?: string
+          effective_date?: string | null
+          end_date?: string | null
+          external_link_url?: string | null
+          facility_id?: string
+          file_url?: string | null
+          id?: string
+          notes?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contracts_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       credential_documents: {
         Row: {
           credential_id: string | null
