@@ -9,7 +9,7 @@ const setTime = (d: Date, h: number, m = 0) => { const r = new Date(d); r.setHou
 // === STARTER data (one example facility for new sign-ups) ===
 
 export const starterFacilities: Facility[] = [
-  { id: 'c1', name: 'Greenfield Medical Center', status: 'active', address: '123 Oak St, Portland, OR 97201', timezone: 'America/Los_Angeles', notes: 'Example facility — edit or delete this anytime', outreach_last_sent_at: null },
+  { id: 'c1', name: 'Greenfield Medical Center', status: 'active', address: '123 Oak St, Portland, OR 97201', timezone: 'America/Los_Angeles', notes: 'Example facility — edit or delete this anytime', outreach_last_sent_at: null, tech_computer_info: '', tech_wifi_info: '', tech_pims_info: '', clinic_access_info: '' },
 ];
 
 export const starterContacts: FacilityContact[] = [
@@ -17,7 +17,7 @@ export const starterContacts: FacilityContact[] = [
 ];
 
 export const starterTerms: TermsSnapshot[] = [
-  { id: 'cs1', facility_id: 'c1', weekday_rate: 850, weekend_rate: 1100, cancellation_policy_text: '48-hour notice required for cancellation without penalty.', overtime_policy_text: 'Time-and-a-half after 10 hours.', late_payment_policy_text: '1.5% monthly interest on balances over 30 days.', special_notes: 'Current credentials required.' },
+  { id: 'cs1', facility_id: 'c1', weekday_rate: 850, weekend_rate: 1100, partial_day_rate: 500, holiday_rate: 1400, telemedicine_rate: 600, cancellation_policy_text: '48-hour notice required for cancellation without penalty.', overtime_policy_text: 'Time-and-a-half after 10 hours.', late_payment_policy_text: '1.5% monthly interest on balances over 30 days.', special_notes: 'Current credentials required.' },
 ];
 
 export const starterShifts: Shift[] = [
@@ -31,11 +31,11 @@ export const starterEmailLogs: EmailLog[] = [];
 // === DEMO data (full set for demo mode) ===
 
 export const seedFacilities: Facility[] = [
-  { id: 'c1', name: 'Greenfield Medical Center', status: 'active', address: '123 Oak St, Portland, OR 97201', timezone: 'America/Los_Angeles', notes: 'Great team, flexible scheduling', outreach_last_sent_at: fmt(addDays(today, -15)) },
-  { id: 'c2', name: 'Evergreen Health Clinic', status: 'active', address: '456 Pine Ave, Seattle, WA 98101', timezone: 'America/Los_Angeles', notes: 'Busy facility, weekend shifts common', outreach_last_sent_at: fmt(addDays(today, -30)) },
-  { id: 'c3', name: 'Sunrise Care Center', status: 'prospect', address: '789 Elm Dr, Boise, ID 83701', timezone: 'America/Boise', notes: 'Initial outreach sent, awaiting response', outreach_last_sent_at: null },
-  { id: 'c4', name: 'Mountain View Practice', status: 'active', address: '321 Birch Ln, Denver, CO 80201', timezone: 'America/Denver', notes: 'Monthly regular shifts', outreach_last_sent_at: fmt(addDays(today, -10)) },
-  { id: 'c5', name: 'Coastal Wellness Group', status: 'paused', address: '555 Beach Blvd, San Diego, CA 92101', timezone: 'America/Los_Angeles', notes: 'Paused due to staffing changes', outreach_last_sent_at: fmt(addDays(today, -60)) },
+  { id: 'c1', name: 'Greenfield Medical Center', status: 'active', address: '123 Oak St, Portland, OR 97201', timezone: 'America/Los_Angeles', notes: 'Great team, flexible scheduling', outreach_last_sent_at: fmt(addDays(today, -15)), tech_computer_info: 'Desktop login: locum1 / pass: Gr33nfield!', tech_wifi_info: 'Network: GFC-Staff, Password: wellness2026', tech_pims_info: 'Cornerstone — user: locum.vet / pass: temp1234', clinic_access_info: 'Front door code: 4521. Park in lot B. Keys at reception.' },
+  { id: 'c2', name: 'Evergreen Health Clinic', status: 'active', address: '456 Pine Ave, Seattle, WA 98101', timezone: 'America/Los_Angeles', notes: 'Busy facility, weekend shifts common', outreach_last_sent_at: fmt(addDays(today, -30)), tech_computer_info: '', tech_wifi_info: 'EHC-Guest / evergreen99', tech_pims_info: 'eVetPractice — ask front desk for temp login', clinic_access_info: 'Ring buzzer at side entrance. After hours use code 7890.' },
+  { id: 'c3', name: 'Sunrise Care Center', status: 'prospect', address: '789 Elm Dr, Boise, ID 83701', timezone: 'America/Boise', notes: 'Initial outreach sent, awaiting response', outreach_last_sent_at: null, tech_computer_info: '', tech_wifi_info: '', tech_pims_info: '', clinic_access_info: '' },
+  { id: 'c4', name: 'Mountain View Practice', status: 'active', address: '321 Birch Ln, Denver, CO 80201', timezone: 'America/Denver', notes: 'Monthly regular shifts', outreach_last_sent_at: fmt(addDays(today, -10)), tech_computer_info: 'Shared laptop in break room', tech_wifi_info: 'MVP-Clinic / mountain2026', tech_pims_info: 'Avimark — locum account pre-configured', clinic_access_info: 'Main entrance unlocked 7am–7pm. After hours call Rachel.' },
+  { id: 'c5', name: 'Coastal Wellness Group', status: 'paused', address: '555 Beach Blvd, San Diego, CA 92101', timezone: 'America/Los_Angeles', notes: 'Paused due to staffing changes', outreach_last_sent_at: fmt(addDays(today, -60)), tech_computer_info: '', tech_wifi_info: '', tech_pims_info: '', clinic_access_info: '' },
 ];
 
 export const seedContacts: FacilityContact[] = [
@@ -49,9 +49,9 @@ export const seedContacts: FacilityContact[] = [
 ];
 
 export const seedTerms: TermsSnapshot[] = [
-  { id: 'cs1', facility_id: 'c1', weekday_rate: 850, weekend_rate: 1100, cancellation_policy_text: '48-hour notice required for cancellation without penalty.', overtime_policy_text: 'Time-and-a-half after 10 hours.', late_payment_policy_text: '1.5% monthly interest on balances over 30 days.', special_notes: 'Current credentials required.' },
-  { id: 'cs2', facility_id: 'c2', weekday_rate: 900, weekend_rate: 1200, cancellation_policy_text: '72-hour cancellation notice.', overtime_policy_text: 'Flat rate, no overtime.', late_payment_policy_text: 'Net 30 terms.', special_notes: 'Prior experience preferred.' },
-  { id: 'cs4', facility_id: 'c4', weekday_rate: 800, weekend_rate: 1050, cancellation_policy_text: '24-hour notice.', overtime_policy_text: 'Standard overtime after 8 hours.', late_payment_policy_text: 'Net 14 terms.', special_notes: '' },
+  { id: 'cs1', facility_id: 'c1', weekday_rate: 850, weekend_rate: 1100, partial_day_rate: 500, holiday_rate: 1400, telemedicine_rate: 600, cancellation_policy_text: '48-hour notice required for cancellation without penalty.', overtime_policy_text: 'Time-and-a-half after 10 hours.', late_payment_policy_text: '1.5% monthly interest on balances over 30 days.', special_notes: 'Current credentials required.' },
+  { id: 'cs2', facility_id: 'c2', weekday_rate: 900, weekend_rate: 1200, partial_day_rate: 550, holiday_rate: 1500, telemedicine_rate: 650, cancellation_policy_text: '72-hour cancellation notice.', overtime_policy_text: 'Flat rate, no overtime.', late_payment_policy_text: 'Net 30 terms.', special_notes: 'Prior experience preferred.' },
+  { id: 'cs4', facility_id: 'c4', weekday_rate: 800, weekend_rate: 1050, partial_day_rate: 450, holiday_rate: 1300, telemedicine_rate: 0, cancellation_policy_text: '24-hour notice.', overtime_policy_text: 'Standard overtime after 8 hours.', late_payment_policy_text: 'Net 14 terms.', special_notes: '' },
 ];
 
 export const seedShifts: Shift[] = [

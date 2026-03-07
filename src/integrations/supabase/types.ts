@@ -423,36 +423,48 @@ export type Database = {
       facilities: {
         Row: {
           address: string
+          clinic_access_info: string
           created_at: string
           id: string
           name: string
           notes: string
           outreach_last_sent_at: string | null
           status: string
+          tech_computer_info: string
+          tech_pims_info: string
+          tech_wifi_info: string
           timezone: string
           updated_at: string
           user_id: string
         }
         Insert: {
           address?: string
+          clinic_access_info?: string
           created_at?: string
           id?: string
           name: string
           notes?: string
           outreach_last_sent_at?: string | null
           status?: string
+          tech_computer_info?: string
+          tech_pims_info?: string
+          tech_wifi_info?: string
           timezone?: string
           updated_at?: string
           user_id: string
         }
         Update: {
           address?: string
+          clinic_access_info?: string
           created_at?: string
           id?: string
           name?: string
           notes?: string
           outreach_last_sent_at?: string | null
           status?: string
+          tech_computer_info?: string
+          tech_pims_info?: string
+          tech_wifi_info?: string
           timezone?: string
           updated_at?: string
           user_id?: string
@@ -767,10 +779,13 @@ export type Database = {
           cancellation_policy_text: string
           created_at: string
           facility_id: string
+          holiday_rate: number
           id: string
           late_payment_policy_text: string
           overtime_policy_text: string
+          partial_day_rate: number
           special_notes: string
+          telemedicine_rate: number
           updated_at: string
           user_id: string
           weekday_rate: number
@@ -780,10 +795,13 @@ export type Database = {
           cancellation_policy_text?: string
           created_at?: string
           facility_id: string
+          holiday_rate?: number
           id?: string
           late_payment_policy_text?: string
           overtime_policy_text?: string
+          partial_day_rate?: number
           special_notes?: string
+          telemedicine_rate?: number
           updated_at?: string
           user_id: string
           weekday_rate?: number
@@ -793,10 +811,13 @@ export type Database = {
           cancellation_policy_text?: string
           created_at?: string
           facility_id?: string
+          holiday_rate?: number
           id?: string
           late_payment_policy_text?: string
           overtime_policy_text?: string
+          partial_day_rate?: number
           special_notes?: string
+          telemedicine_rate?: number
           updated_at?: string
           user_id?: string
           weekday_rate?: number

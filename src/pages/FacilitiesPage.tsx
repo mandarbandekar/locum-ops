@@ -37,8 +37,12 @@ export default function FacilitiesPage() {
         timezone: 'America/Los_Angeles',
         notes: '',
         outreach_last_sent_at: null,
+        tech_computer_info: '',
+        tech_wifi_info: '',
+        tech_pims_info: '',
+        clinic_access_info: '',
       });
-      toast.success(`"${name}" added as a new facility`);
+      toast.success(`"${name}" added as a new practice facility`);
       setSearch('');
       setShowSuggestions(false);
       navigate(`/facilities/${facility.id}`);
@@ -54,9 +58,9 @@ export default function FacilitiesPage() {
   return (
     <div>
       <div className="page-header">
-        <h1 className="page-title">Facilities</h1>
+        <h1 className="page-title">Practice Facilities</h1>
         <Button size="sm" onClick={() => setShowAdd(true)}>
-          <Plus className="mr-1 h-4 w-4" /> Add Facility
+          <Plus className="mr-1 h-4 w-4" /> Add Practice Facility
         </Button>
       </div>
 
@@ -64,7 +68,7 @@ export default function FacilitiesPage() {
         <div className="relative flex-1 max-w-sm" ref={searchRef}>
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search facilities or find address..."
+            placeholder="Search practice facilities or find address..."
             value={search}
             onChange={e => { setSearch(e.target.value); setShowSuggestions(true); }}
             onFocus={() => setShowSuggestions(true)}
@@ -156,7 +160,7 @@ export default function FacilitiesPage() {
               </tr>
             ))}
             {filtered.length === 0 && (
-              <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">No facilities found</td></tr>
+              <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">No practice facilities found</td></tr>
             )}
           </tbody>
         </table>

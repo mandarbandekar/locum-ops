@@ -15,6 +15,10 @@ export interface Facility {
   timezone: string;
   notes: string;
   outreach_last_sent_at: string | null;
+  tech_computer_info: string;
+  tech_wifi_info: string;
+  tech_pims_info: string;
+  clinic_access_info: string;
 }
 
 export type ContactRole = 'scheduler' | 'billing' | 'emergency' | 'other';
@@ -33,6 +37,9 @@ export interface TermsSnapshot {
   facility_id: string;
   weekday_rate: number;
   weekend_rate: number;
+  partial_day_rate: number;
+  holiday_rate: number;
+  telemedicine_rate: number;
   cancellation_policy_text: string;
   overtime_policy_text: string;
   late_payment_policy_text: string;
