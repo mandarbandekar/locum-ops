@@ -39,9 +39,6 @@ export default function DashboardPage() {
           <Button size="sm" variant="outline" onClick={() => navigate('/facilities')}>
             <Building2 className="mr-1 h-4 w-4" /> <span className="hidden sm:inline">Add</span> Facility
           </Button>
-          <Button size="sm" variant="outline" className="hidden sm:inline-flex" onClick={() => navigate('/outreach')}>
-            <Mail className="mr-1 h-4 w-4" /> Outreach
-          </Button>
           <Button size="sm" variant="outline" className="hidden sm:inline-flex" onClick={() => navigate('/confirmations')}>
             <Send className="mr-1 h-4 w-4" /> Confirmations
           </Button>
