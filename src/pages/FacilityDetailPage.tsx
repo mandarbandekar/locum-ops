@@ -72,6 +72,10 @@ export default function FacilityDetailPage() {
           <InvoicesTab invoices={facilityInvoices} onNavigate={(iid) => navigate(`/invoices/${iid}`)} />
         </TabsContent>
 
+        <TabsContent value="contracts" className="mt-4">
+          <ContractsTab facilityId={facility.id} />
+        </TabsContent>
+
         <TabsContent value="tech-access" className="mt-4">
           <TechAccessTab facility={facility} onUpdate={updateFacility} />
         </TabsContent>
