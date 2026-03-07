@@ -9,7 +9,7 @@ const setTime = (d: Date, h: number, m = 0) => { const r = new Date(d); r.setHou
 // === STARTER data (one example facility for new sign-ups) ===
 
 export const starterFacilities: Facility[] = [
-  { id: 'c1', name: 'Greenfield Medical Center', status: 'active', address: '123 Oak St, Portland, OR 97201', timezone: 'America/Los_Angeles', notes: 'Example facility — edit or delete this anytime', outreach_last_sent_at: null },
+  { id: 'c1', name: 'Greenfield Medical Center', status: 'active', address: '123 Oak St, Portland, OR 97201', timezone: 'America/Los_Angeles', notes: 'Example facility — edit or delete this anytime', outreach_last_sent_at: null, tech_computer_info: '', tech_wifi_info: '', tech_pims_info: '', clinic_access_info: '' },
 ];
 
 export const starterContacts: FacilityContact[] = [
