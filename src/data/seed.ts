@@ -1,5 +1,6 @@
 import { Facility, FacilityContact, TermsSnapshot, Shift, Invoice, InvoiceLineItem, EmailLog } from '@/types';
 import type { UserProfile } from '@/contexts/UserProfileContext';
+import { Contract, ContractTerms, ContractChecklistItem } from '@/types/contracts';
 
 const today = new Date();
 const fmt = (d: Date) => d.toISOString();
