@@ -156,7 +156,7 @@ export default function FacilitiesPage() {
               </tr>
             ))}
             {filtered.length === 0 && (
-              <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">No facilities found</td></tr>
+              <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">No practice facilities found</td></tr>
             )}
           </tbody>
         </table>

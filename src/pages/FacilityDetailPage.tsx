@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge } from '@/components/StatusBadge';
-import { ArrowLeft, Plus, Trash2, Edit2, Save, Pencil, Check, X } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Edit2, Save, Pencil, Check, X, Monitor, Wifi, KeyRound, DoorOpen } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { FacilityContact, ContactRole, TermsSnapshot, SHIFT_COLORS, ShiftColor } from '@/types';
 import { generateId } from '@/lib/businessLogic';
@@ -22,7 +22,7 @@ export default function FacilityDetailPage() {
   const { facilities, contacts, terms, shifts, invoices, updateFacility, addContact, updateContact, deleteContact, updateTerms, addShift } = useData();
 
   const facility = facilities.find(c => c.id === id);
-  if (!facility) return <div className="p-6">Facility not found. <Button variant="link" onClick={() => navigate('/facilities')}>Back</Button></div>;
+  if (!facility) return <div className="p-6">Practice facility not found. <Button variant="link" onClick={() => navigate('/facilities')}>Back</Button></div>;
 
   const facilityContacts = contacts.filter(c => c.facility_id === id);
   const facilityTerms = terms.find(c => c.facility_id === id);
@@ -35,17 +35,19 @@ export default function FacilityDetailPage() {
         <Button variant="ghost" size="icon" onClick={() => navigate('/facilities')}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <EditableFacilityName facility={facility} onSave={(newName, newAddress) => { updateFacility({ ...facility, name: newName, address: newAddress }); toast.success('Facility updated'); }} />
+        <EditableFacilityName facility={facility} onSave={(newName, newAddress) => { updateFacility({ ...facility, name: newName, address: newAddress }); toast.success('Practice facility updated'); }} />
         <StatusBadge status={facility.status} className="ml-3" />
       </div>
 
       <Tabs defaultValue="overview">
-        <TabsList>
+        <TabsList className="flex-wrap">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="contacts">Contacts ({facilityContacts.length})</TabsTrigger>
           <TabsTrigger value="terms">Terms</TabsTrigger>
           <TabsTrigger value="shifts">Shifts ({facilityShifts.length})</TabsTrigger>
           <TabsTrigger value="invoices">Invoices ({facilityInvoices.length})</TabsTrigger>
+          <TabsTrigger value="tech-access">Tech Access</TabsTrigger>
+          <TabsTrigger value="clinic-access">Clinic Access</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-4">
@@ -67,10 +69,20 @@ export default function FacilityDetailPage() {
         <TabsContent value="invoices" className="mt-4">
           <InvoicesTab invoices={facilityInvoices} onNavigate={(iid) => navigate(`/invoices/${iid}`)} />
         </TabsContent>
+
+        <TabsContent value="tech-access" className="mt-4">
+          <TechAccessTab facility={facility} onUpdate={updateFacility} />
+        </TabsContent>
+
+        <TabsContent value="clinic-access" className="mt-4">
+          <ClinicAccessTab facility={facility} onUpdate={updateFacility} />
+        </TabsContent>
       </Tabs>
     </div>
   );
 }
+
+// ─── Overview Tab ──────────────────────────────────────────
 
 function OverviewTab({ facility, shifts, onUpdate }: { facility: any; shifts: any[]; onUpdate: any }) {
   const [editing, setEditing] = useState(false);
@@ -82,7 +94,7 @@ function OverviewTab({ facility, shifts, onUpdate }: { facility: any; shifts: an
   const handleSave = () => {
     onUpdate({ ...facility, notes, status });
     setEditing(false);
-    toast.success('Facility updated');
+    toast.success('Practice facility updated');
   };
 
   return (
@@ -147,6 +159,8 @@ function OverviewTab({ facility, shifts, onUpdate }: { facility: any; shifts: an
   );
 }
 
+// ─── Editable Name ─────────────────────────────────────────
+
 function EditableFacilityName({ facility, onSave }: { facility: any; onSave: (name: string, address: string) => void }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(facility.name);
@@ -192,6 +206,8 @@ function EditableFacilityName({ facility, onSave }: { facility: any; onSave: (na
     </div>
   );
 }
+
+// ─── Contacts Tab ──────────────────────────────────────────
 
 function ContactsTab({ contacts, facilityId, onAdd, onUpdate, onDelete }: {
   contacts: FacilityContact[]; facilityId: string;
@@ -311,9 +327,12 @@ function ContactsTab({ contacts, facilityId, onAdd, onUpdate, onDelete }: {
   );
 }
 
+// ─── Terms Tab ─────────────────────────────────────────────
+
 function TermsTab({ terms, facilityId, onUpdate }: { terms?: TermsSnapshot; facilityId: string; onUpdate: (c: TermsSnapshot) => void }) {
   const [form, setForm] = useState<TermsSnapshot>(terms || {
     id: generateId(), facility_id: facilityId, weekday_rate: 0, weekend_rate: 0,
+    partial_day_rate: 0, holiday_rate: 0, telemedicine_rate: 0,
     cancellation_policy_text: '', overtime_policy_text: '', late_payment_policy_text: '', special_notes: '',
   });
 
@@ -329,6 +348,11 @@ function TermsTab({ terms, facilityId, onUpdate }: { terms?: TermsSnapshot; faci
           <div><Label>Weekday Rate ($)</Label><Input type="number" value={form.weekday_rate} onChange={e => setForm(p => ({ ...p, weekday_rate: Number(e.target.value) }))} /></div>
           <div><Label>Weekend Rate ($)</Label><Input type="number" value={form.weekend_rate} onChange={e => setForm(p => ({ ...p, weekend_rate: Number(e.target.value) }))} /></div>
         </div>
+        <div className="grid grid-cols-3 gap-4">
+          <div><Label>Partial Day Rate ($)</Label><Input type="number" value={form.partial_day_rate} onChange={e => setForm(p => ({ ...p, partial_day_rate: Number(e.target.value) }))} /></div>
+          <div><Label>Holiday Rate ($)</Label><Input type="number" value={form.holiday_rate} onChange={e => setForm(p => ({ ...p, holiday_rate: Number(e.target.value) }))} /></div>
+          <div><Label>Telemedicine Rate ($)</Label><Input type="number" value={form.telemedicine_rate} onChange={e => setForm(p => ({ ...p, telemedicine_rate: Number(e.target.value) }))} /></div>
+        </div>
         <div><Label>Cancellation Policy</Label><Textarea value={form.cancellation_policy_text} onChange={e => setForm(p => ({ ...p, cancellation_policy_text: e.target.value }))} rows={2} /></div>
         <div><Label>Overtime Policy</Label><Textarea value={form.overtime_policy_text} onChange={e => setForm(p => ({ ...p, overtime_policy_text: e.target.value }))} rows={2} /></div>
         <div><Label>Late Payment Policy</Label><Textarea value={form.late_payment_policy_text} onChange={e => setForm(p => ({ ...p, late_payment_policy_text: e.target.value }))} rows={2} /></div>
@@ -338,6 +362,119 @@ function TermsTab({ terms, facilityId, onUpdate }: { terms?: TermsSnapshot; faci
     </Card>
   );
 }
+
+// ─── Tech Access Tab ───────────────────────────────────────
+
+function TechAccessTab({ facility, onUpdate }: { facility: any; onUpdate: any }) {
+  const [editing, setEditing] = useState(false);
+  const [computer, setComputer] = useState(facility.tech_computer_info || '');
+  const [wifi, setWifi] = useState(facility.tech_wifi_info || '');
+  const [pims, setPims] = useState(facility.tech_pims_info || '');
+
+  const handleSave = () => {
+    onUpdate({ ...facility, tech_computer_info: computer, tech_wifi_info: wifi, tech_pims_info: pims });
+    setEditing(false);
+    toast.success('Tech access info saved');
+  };
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-3">
+      <Card>
+        <CardHeader className="flex flex-row items-center gap-2">
+          <Monitor className="h-4 w-4 text-primary" />
+          <CardTitle className="text-base">Computer / Login</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {editing ? (
+            <Textarea value={computer} onChange={e => setComputer(e.target.value)} rows={4} placeholder="Computer login, desktop credentials..." />
+          ) : (
+            <p className="text-sm whitespace-pre-wrap">{computer || <span className="text-muted-foreground italic">No info added</span>}</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center gap-2">
+          <Wifi className="h-4 w-4 text-primary" />
+          <CardTitle className="text-base">WiFi Passwords</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {editing ? (
+            <Textarea value={wifi} onChange={e => setWifi(e.target.value)} rows={4} placeholder="Network name, password..." />
+          ) : (
+            <p className="text-sm whitespace-pre-wrap">{wifi || <span className="text-muted-foreground italic">No info added</span>}</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center gap-2">
+          <KeyRound className="h-4 w-4 text-primary" />
+          <CardTitle className="text-base">PIMS Credentials</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {editing ? (
+            <Textarea value={pims} onChange={e => setPims(e.target.value)} rows={4} placeholder="PIMS system, username, password..." />
+          ) : (
+            <p className="text-sm whitespace-pre-wrap">{pims || <span className="text-muted-foreground italic">No info added</span>}</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <div className="lg:col-span-3">
+        {editing ? (
+          <div className="flex gap-2">
+            <Button onClick={handleSave}><Save className="mr-1 h-3 w-3" /> Save</Button>
+            <Button variant="ghost" onClick={() => { setComputer(facility.tech_computer_info || ''); setWifi(facility.tech_wifi_info || ''); setPims(facility.tech_pims_info || ''); setEditing(false); }}>Cancel</Button>
+          </div>
+        ) : (
+          <Button variant="outline" onClick={() => setEditing(true)}><Edit2 className="mr-1 h-3 w-3" /> Edit Tech Access</Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Clinic Access Tab ─────────────────────────────────────
+
+function ClinicAccessTab({ facility, onUpdate }: { facility: any; onUpdate: any }) {
+  const [editing, setEditing] = useState(false);
+  const [info, setInfo] = useState(facility.clinic_access_info || '');
+
+  const handleSave = () => {
+    onUpdate({ ...facility, clinic_access_info: info });
+    setEditing(false);
+    toast.success('Clinic access info saved');
+  };
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div className="flex items-center gap-2">
+          <DoorOpen className="h-4 w-4 text-primary" />
+          <CardTitle className="text-base">General Clinic Access Information</CardTitle>
+        </div>
+        {editing ? (
+          <div className="flex gap-2">
+            <Button size="sm" onClick={handleSave}><Save className="mr-1 h-3 w-3" /> Save</Button>
+            <Button size="sm" variant="ghost" onClick={() => { setInfo(facility.clinic_access_info || ''); setEditing(false); }}>Cancel</Button>
+          </div>
+        ) : (
+          <Button size="sm" variant="ghost" onClick={() => setEditing(true)}><Edit2 className="mr-1 h-3 w-3" /> Edit</Button>
+        )}
+      </CardHeader>
+      <CardContent>
+        {editing ? (
+          <Textarea value={info} onChange={e => setInfo(e.target.value)} rows={6} placeholder="Door codes, parking instructions, key pickup, building access hours, after-hours protocols..." />
+        ) : (
+          <p className="text-sm whitespace-pre-wrap">{info || <span className="text-muted-foreground italic">No clinic access info added. Click Edit to add door codes, parking info, key details, etc.</span>}</p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Shifts Tab ────────────────────────────────────────────
 
 function ShiftsTab({ shifts, facilityId, onAdd }: { shifts: any[]; facilityId: string; onAdd: (s: any) => void }) {
   const [showAdd, setShowAdd] = useState(false);
@@ -435,6 +572,8 @@ function ShiftsTab({ shifts, facilityId, onAdd }: { shifts: any[]; facilityId: s
     </div>
   );
 }
+
+// ─── Invoices Tab ──────────────────────────────────────────
 
 function InvoicesTab({ invoices, onNavigate }: { invoices: any[]; onNavigate: (id: string) => void }) {
   return (
