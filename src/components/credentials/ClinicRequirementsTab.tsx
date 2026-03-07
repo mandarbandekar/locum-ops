@@ -116,11 +116,13 @@ export default function ClinicRequirementsTab() {
   // Setup default requirements for a clinic
   const setupClinic = useMutation({
     mutationFn: async (clinicId: string) => {
+      if (!user) throw new Error('Not authenticated');
       const inserts = DEFAULT_REQUIREMENTS.map(r => ({
         clinic_id: clinicId,
         requirement_name: r.name,
         requirement_type: r.type,
         required: true,
+        user_id: user.id,
       }));
       const { error } = await supabase.from('clinic_requirements').insert(inserts);
       if (error) throw error;
@@ -135,6 +137,7 @@ export default function ClinicRequirementsTab() {
           clinic_id: clinicId,
           requirement_id: r.id,
           status: 'pending' as RequirementStatusEnum,
+          user_id: user.id,
         }));
         await supabase.from('clinic_requirement_mappings').insert(mapInserts);
       }
@@ -153,9 +156,10 @@ export default function ClinicRequirementsTab() {
   // Add custom requirement
   const addRequirement = useMutation({
     mutationFn: async (data: { clinic_id: string; requirement_name: string; requirement_type: CredentialTypeEnum; notes?: string }) => {
+      if (!user) throw new Error('Not authenticated');
       const { data: req, error } = await supabase
         .from('clinic_requirements')
-        .insert(data)
+        .insert({ ...data, user_id: user.id })
         .select()
         .single();
       if (error) throw error;
@@ -164,6 +168,7 @@ export default function ClinicRequirementsTab() {
         clinic_id: data.clinic_id,
         requirement_id: req.id,
         status: 'pending' as RequirementStatusEnum,
+        user_id: user.id,
       });
       return req;
     },
