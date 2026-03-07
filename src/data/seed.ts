@@ -49,9 +49,9 @@ export const seedContacts: FacilityContact[] = [
 ];
 
 export const seedTerms: TermsSnapshot[] = [
-  { id: 'cs1', facility_id: 'c1', weekday_rate: 850, weekend_rate: 1100, cancellation_policy_text: '48-hour notice required for cancellation without penalty.', overtime_policy_text: 'Time-and-a-half after 10 hours.', late_payment_policy_text: '1.5% monthly interest on balances over 30 days.', special_notes: 'Current credentials required.' },
-  { id: 'cs2', facility_id: 'c2', weekday_rate: 900, weekend_rate: 1200, cancellation_policy_text: '72-hour cancellation notice.', overtime_policy_text: 'Flat rate, no overtime.', late_payment_policy_text: 'Net 30 terms.', special_notes: 'Prior experience preferred.' },
-  { id: 'cs4', facility_id: 'c4', weekday_rate: 800, weekend_rate: 1050, cancellation_policy_text: '24-hour notice.', overtime_policy_text: 'Standard overtime after 8 hours.', late_payment_policy_text: 'Net 14 terms.', special_notes: '' },
+  { id: 'cs1', facility_id: 'c1', weekday_rate: 850, weekend_rate: 1100, partial_day_rate: 500, holiday_rate: 1400, telemedicine_rate: 600, cancellation_policy_text: '48-hour notice required for cancellation without penalty.', overtime_policy_text: 'Time-and-a-half after 10 hours.', late_payment_policy_text: '1.5% monthly interest on balances over 30 days.', special_notes: 'Current credentials required.' },
+  { id: 'cs2', facility_id: 'c2', weekday_rate: 900, weekend_rate: 1200, partial_day_rate: 550, holiday_rate: 1500, telemedicine_rate: 650, cancellation_policy_text: '72-hour cancellation notice.', overtime_policy_text: 'Flat rate, no overtime.', late_payment_policy_text: 'Net 30 terms.', special_notes: 'Prior experience preferred.' },
+  { id: 'cs4', facility_id: 'c4', weekday_rate: 800, weekend_rate: 1050, partial_day_rate: 450, holiday_rate: 1300, telemedicine_rate: 0, cancellation_policy_text: '24-hour notice.', overtime_policy_text: 'Standard overtime after 8 hours.', late_payment_policy_text: 'Net 14 terms.', special_notes: '' },
 ];
 
 export const seedShifts: Shift[] = [

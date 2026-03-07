@@ -37,8 +37,12 @@ export default function FacilitiesPage() {
         timezone: 'America/Los_Angeles',
         notes: '',
         outreach_last_sent_at: null,
+        tech_computer_info: '',
+        tech_wifi_info: '',
+        tech_pims_info: '',
+        clinic_access_info: '',
       });
-      toast.success(`"${name}" added as a new facility`);
+      toast.success(`"${name}" added as a new practice facility`);
       setSearch('');
       setShowSuggestions(false);
       navigate(`/facilities/${facility.id}`);
