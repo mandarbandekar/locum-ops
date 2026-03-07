@@ -1,5 +1,6 @@
 import { Facility, FacilityContact, TermsSnapshot, Shift, Invoice, InvoiceLineItem, EmailLog } from '@/types';
 import type { UserProfile } from '@/contexts/UserProfileContext';
+import { Contract, ContractTerms, ContractChecklistItem } from '@/types/contracts';
 
 const today = new Date();
 const fmt = (d: Date) => d.toISOString();
@@ -84,6 +85,33 @@ export const seedLineItems: InvoiceLineItem[] = [
 export const seedEmailLogs: EmailLog[] = [
   { id: 'e1', facility_id: 'c1', type: 'invoice', subject: 'Invoice INV-2026-001', body: 'Please find attached invoice for services rendered.', recipients: 'billing@greenfield.com', sent_at: fmt(addDays(today, -14)) },
   { id: 'e2', facility_id: 'c2', type: 'outreach_open', subject: 'Locum Availability - March 2026', body: 'I am available for locum shifts next month.', recipients: 'emily@evergreen-hc.com', sent_at: fmt(addDays(today, -30)) },
+];
+
+// === CONTRACTS seed data ===
+
+export const seedContracts: Contract[] = [
+  { id: 'con1', facility_id: 'c1', title: 'MSA 2026', status: 'active', effective_date: '2026-01-01', end_date: '2026-12-31', auto_renew: true, file_url: null, external_link_url: null, notes: 'Master service agreement for 2026' },
+  { id: 'con2', facility_id: 'c1', title: 'MSA 2025', status: 'expired', effective_date: '2025-01-01', end_date: '2025-12-31', auto_renew: false, file_url: null, external_link_url: null, notes: 'Previous year agreement' },
+  { id: 'con3', facility_id: 'c2', title: 'Locum Agreement 2026', status: 'active', effective_date: '2026-02-01', end_date: '2027-01-31', auto_renew: false, file_url: null, external_link_url: null, notes: '' },
+  { id: 'con4', facility_id: 'c4', title: 'Service Contract Q1-Q2', status: 'draft', effective_date: '2026-03-01', end_date: '2026-06-30', auto_renew: false, file_url: null, external_link_url: null, notes: 'Pending review' },
+];
+
+export const seedContractTerms: ContractTerms[] = [
+  { id: 'ct1', contract_id: 'con1', weekday_rate: 850, weekend_rate: 1100, holiday_rate: 1400, payment_terms_days: 14, cancellation_policy_text: '48-hour notice required.', overtime_policy_text: 'Time-and-a-half after 10 hours.', late_payment_policy_text: '1.5% monthly interest after 30 days.', invoicing_instructions_text: 'Submit invoices to billing@greenfield.com by the 15th.' },
+  { id: 'ct2', contract_id: 'con3', weekday_rate: 900, weekend_rate: 1200, holiday_rate: 1500, payment_terms_days: 30, cancellation_policy_text: '72-hour notice.', overtime_policy_text: 'Flat rate, no overtime.', late_payment_policy_text: 'Net 30 terms.', invoicing_instructions_text: 'Email PDF invoice to accounts@evergreen-hc.com.' },
+];
+
+export const seedChecklistItems: ContractChecklistItem[] = [
+  { id: 'cli1', facility_id: 'c1', type: 'w9', title: 'W-9', status: 'done', due_date: null, notes: 'Filed Jan 2026' },
+  { id: 'cli2', facility_id: 'c1', type: 'coi', title: 'Certificate of Insurance (COI)', status: 'needed', due_date: fmt(addDays(today, 20)), notes: 'Renewal needed' },
+  { id: 'cli3', facility_id: 'c1', type: 'direct_deposit', title: 'Direct Deposit Form', status: 'done', due_date: null, notes: '' },
+  { id: 'cli4', facility_id: 'c1', type: 'credentialing', title: 'Credentialing Packet', status: 'in_progress', due_date: fmt(addDays(today, 10)), notes: 'Waiting on references' },
+  { id: 'cli5', facility_id: 'c2', type: 'w9', title: 'W-9', status: 'done', due_date: null, notes: '' },
+  { id: 'cli6', facility_id: 'c2', type: 'coi', title: 'Certificate of Insurance (COI)', status: 'needed', due_date: fmt(addDays(today, -5)), notes: 'Overdue!' },
+  { id: 'cli7', facility_id: 'c2', type: 'direct_deposit', title: 'Direct Deposit Form', status: 'needed', due_date: fmt(addDays(today, 45)), notes: '' },
+  { id: 'cli8', facility_id: 'c2', type: 'credentialing', title: 'Credentialing Packet', status: 'done', due_date: null, notes: '' },
+  { id: 'cli9', facility_id: 'c4', type: 'w9', title: 'W-9', status: 'needed', due_date: fmt(addDays(today, 15)), notes: '' },
+  { id: 'cli10', facility_id: 'c4', type: 'coi', title: 'Certificate of Insurance (COI)', status: 'needed', due_date: fmt(addDays(today, 15)), notes: '' },
 ];
 
 export const seedUserProfile: UserProfile = {

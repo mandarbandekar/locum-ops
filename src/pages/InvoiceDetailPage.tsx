@@ -9,6 +9,7 @@ import { ArrowLeft, Send, CheckCircle, DollarSign, Trash2, Pencil, Check, X } fr
 import { format, addDays } from 'date-fns';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
 import { toast } from 'sonner';
+import { ContractTermsPill } from '@/components/contracts/ContractsTab';
 
 export default function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -52,6 +53,7 @@ export default function InvoiceDetailPage() {
         <EditableInvoiceNumber invoice={invoice} onSave={(num) => { updateInvoice({ ...invoice, invoice_number: num }); toast.success('Invoice number updated'); }} />
         <p className="text-sm text-muted-foreground">{facility?.name}</p>
         <StatusBadge status={computedStatus} className="ml-3 text-sm" />
+        <ContractTermsPill facilityId={invoice.facility_id} onClick={() => navigate(`/facilities/${invoice.facility_id}?tab=contracts`)} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">

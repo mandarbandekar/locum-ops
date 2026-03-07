@@ -15,6 +15,7 @@ import { FacilityContact, ContactRole, TermsSnapshot, SHIFT_COLORS, ShiftColor }
 import { generateId } from '@/lib/businessLogic';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { ContractsTab } from '@/components/contracts/ContractsTab';
 
 export default function FacilityDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -46,6 +47,7 @@ export default function FacilityDetailPage() {
           <TabsTrigger value="terms">Terms</TabsTrigger>
           <TabsTrigger value="shifts">Shifts ({facilityShifts.length})</TabsTrigger>
           <TabsTrigger value="invoices">Invoices ({facilityInvoices.length})</TabsTrigger>
+          <TabsTrigger value="contracts">Contracts</TabsTrigger>
           <TabsTrigger value="tech-access">Tech Access</TabsTrigger>
           <TabsTrigger value="clinic-access">Clinic Access</TabsTrigger>
         </TabsList>
@@ -68,6 +70,10 @@ export default function FacilityDetailPage() {
 
         <TabsContent value="invoices" className="mt-4">
           <InvoicesTab invoices={facilityInvoices} onNavigate={(iid) => navigate(`/invoices/${iid}`)} />
+        </TabsContent>
+
+        <TabsContent value="contracts" className="mt-4">
+          <ContractsTab facilityId={facility.id} />
         </TabsContent>
 
         <TabsContent value="tech-access" className="mt-4">
@@ -357,6 +363,7 @@ function TermsTab({ terms, facilityId, onUpdate }: { terms?: TermsSnapshot; faci
         <div><Label>Overtime Policy</Label><Textarea value={form.overtime_policy_text} onChange={e => setForm(p => ({ ...p, overtime_policy_text: e.target.value }))} rows={2} /></div>
         <div><Label>Late Payment Policy</Label><Textarea value={form.late_payment_policy_text} onChange={e => setForm(p => ({ ...p, late_payment_policy_text: e.target.value }))} rows={2} /></div>
         <div><Label>Special Notes</Label><Textarea value={form.special_notes} onChange={e => setForm(p => ({ ...p, special_notes: e.target.value }))} rows={2} /></div>
+        <p className="text-xs text-muted-foreground italic">Saved terms for reference. Verify against the signed contract.</p>
         <Button onClick={handleSave}>Save Terms</Button>
       </CardContent>
     </Card>

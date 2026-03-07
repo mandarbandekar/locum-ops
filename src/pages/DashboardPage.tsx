@@ -3,12 +3,14 @@ import { useData } from '@/contexts/DataContext';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CalendarDays, FileText, AlertTriangle, CheckCircle, Plus, Building2, Calculator } from 'lucide-react';
+import { CalendarDays, FileText, AlertTriangle, CheckCircle, Plus, Building2, Calculator, ShieldAlert, FolderOpen } from 'lucide-react';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
 import { aggregateQuarterlyIncome, calculateSetAside, getDefaultDueDates } from '@/lib/taxCalculations';
 import { format, differenceInDays } from 'date-fns';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Badge } from '@/components/ui/badge';
+import { seedChecklistItems } from '@/data/seed';
+import { getChecklistBadge } from '@/types/contracts';
 
 export default function DashboardPage() {
   const { shifts, invoices, facilities } = useData();
@@ -96,6 +98,9 @@ export default function DashboardPage() {
         <TaxDueDatesWidget invoices={invoices} navigate={navigate} />
       </div>
 
+      {/* Docs Expiring Soon Card - uses demo seed data for now */}
+      <DocsExpiringCard navigate={navigate} />
+
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
@@ -153,6 +158,47 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+    </div>
+  );
+}
+
+function DocsExpiringCard({ navigate }: { navigate: (path: string) => void }) {
+  const dueSoon = seedChecklistItems
+    .filter(item => {
+      const badge = getChecklistBadge(item);
+      return badge === 'due_soon' || badge === 'overdue';
+    })
+    .sort((a, b) => new Date(a.due_date!).getTime() - new Date(b.due_date!).getTime())
+    .slice(0, 5);
+
+  if (dueSoon.length === 0) return null;
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-2 mb-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <ShieldAlert className="h-4 w-4" /> Docs Expiring Soon
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            {dueSoon.map(item => {
+              const badge = getChecklistBadge(item);
+              return (
+                <div key={item.id} className="flex items-center justify-between p-2 rounded-md bg-muted/50 text-sm">
+                  <div>
+                    <p className="font-medium">{item.title}</p>
+                    <p className="text-xs text-muted-foreground">Due {item.due_date ? format(new Date(item.due_date), 'MMM d, yyyy') : '—'}</p>
+                  </div>
+                  {badge === 'overdue' && <Badge className="bg-red-500/15 text-red-700 dark:text-red-400 text-xs">Overdue</Badge>}
+                  {badge === 'due_soon' && <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-400 text-xs">Due soon</Badge>}
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
