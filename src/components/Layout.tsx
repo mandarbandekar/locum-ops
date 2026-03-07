@@ -1,8 +1,12 @@
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function Layout({ children }: { children: React.ReactNode }) {
+  const { user, isDemo } = useAuth();
+  const company = isDemo ? 'Demo Practice' : (user?.user_metadata?.company || '');
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
@@ -11,6 +15,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <header className="h-14 flex items-center border-b bg-card px-3 sm:px-4 shrink-0">
             <SidebarTrigger className="mr-2 sm:mr-3" />
             <span className="text-base sm:text-lg font-semibold text-primary tracking-tight truncate">LocumOps</span>
+            {company && (
+              <span className="ml-2 text-sm text-muted-foreground truncate hidden sm:inline">
+                — {company}
+              </span>
+            )}
             <div className="ml-auto">
               <ThemeToggle />
             </div>
