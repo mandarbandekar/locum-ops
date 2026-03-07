@@ -15,7 +15,7 @@ import DashboardPage from "@/pages/DashboardPage";
 import FacilitiesPage from "@/pages/FacilitiesPage";
 import FacilityDetailPage from "@/pages/FacilityDetailPage";
 import SchedulePage from "@/pages/SchedulePage";
-import OutreachPage from "@/pages/OutreachPage";
+
 import ConfirmationsPage from "@/pages/ConfirmationsPage";
 import InvoicesPage from "@/pages/InvoicesPage";
 import InvoiceDetailPage from "@/pages/InvoiceDetailPage";
