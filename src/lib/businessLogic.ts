@@ -22,14 +22,20 @@ export function computeInvoiceStatus(invoice: Invoice): Invoice['status'] {
   return invoice.status;
 }
 
-export function generateInvoiceNumber(existingInvoices: Invoice[]): string {
+export function generateInvoiceNumber(existingInvoices: Invoice[], prefix: string = 'INV'): string {
   const year = new Date().getFullYear();
   const existing = existingInvoices
     .map(i => i.invoice_number)
-    .filter(n => n.startsWith(`INV-${year}`))
+    .filter(n => n.startsWith(`${prefix}-${year}`))
     .map(n => parseInt(n.split('-')[2]) || 0);
   const next = existing.length > 0 ? Math.max(...existing) + 1 : 1;
-  return `INV-${year}-${String(next).padStart(3, '0')}`;
+  return `${prefix}-${year}-${String(next).padStart(3, '0')}`;
+}
+
+export function getDefaultDueDate(days: number = 14): Date {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d;
 }
 
 export function generateId(): string {

@@ -1,4 +1,23 @@
-export const outreachTemplate = `Hi {{contact_name}},
+import type { EmailTone } from '@/contexts/UserProfileContext';
+
+const TONE_INTROS: Record<EmailTone, { greeting: string; closing: string }> = {
+  friendly: {
+    greeting: 'Hi {{contact_name}}! 😊',
+    closing: 'Warmly,\nYour Locum Clinician',
+  },
+  neutral: {
+    greeting: 'Hi {{contact_name}},',
+    closing: 'Best regards,\nYour Locum Clinician',
+  },
+  direct: {
+    greeting: '{{contact_name}},',
+    closing: 'Regards,\nYour Locum Clinician',
+  },
+};
+
+export function getOutreachTemplate(tone: EmailTone = 'neutral') {
+  const t = TONE_INTROS[tone];
+  return `${t.greeting}
 
 I hope this message finds you well! I'm reaching out to let you know about my availability for locum shifts in {{month}} {{year}}.
 
@@ -6,10 +25,12 @@ I'd love to continue supporting {{facility_name}} and am happy to discuss schedu
 
 Please let me know if you have any upcoming needs — I'm flexible with both weekday and weekend shifts.
 
-Best regards,
-Your Locum Clinician`;
+${t.closing}`;
+}
 
-export const confirmationTemplate = `Hi {{contact_name}},
+export function getConfirmationTemplate(tone: EmailTone = 'neutral') {
+  const t = TONE_INTROS[tone];
+  return `${t.greeting}
 
 I'm writing to confirm my upcoming shifts at {{facility_name}} for {{month}} {{year}}:
 
@@ -17,10 +38,12 @@ I'm writing to confirm my upcoming shifts at {{facility_name}} for {{month}} {{y
 
 Please let me know if any changes are needed. Looking forward to working with your team!
 
-Best regards,
-Your Locum Clinician`;
+${t.closing}`;
+}
 
-export const invoiceTemplate = `Hi {{contact_name}},
+export function getInvoiceTemplate(tone: EmailTone = 'neutral') {
+  const t = TONE_INTROS[tone];
+  return `${t.greeting}
 
 Please find the attached invoice {{invoice_number}} for locum services provided at {{facility_name}} from {{period_start}} to {{period_end}}.
 
@@ -31,5 +54,10 @@ Payment can be made via check or bank transfer. Please don't hesitate to reach o
 
 Thank you for your continued partnership!
 
-Best regards,
-Your Locum Clinician`;
+${t.closing}`;
+}
+
+// Legacy exports for backward compat
+export const outreachTemplate = getOutreachTemplate('neutral');
+export const confirmationTemplate = getConfirmationTemplate('neutral');
+export const invoiceTemplate = getInvoiceTemplate('neutral');
