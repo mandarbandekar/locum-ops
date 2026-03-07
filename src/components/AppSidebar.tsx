@@ -1,4 +1,4 @@
-import { LayoutDashboard, Building2, CalendarDays, Mail, CheckCircle, FileText, BarChart3, LogOut, ShieldCheck, Calculator } from 'lucide-react';
+import { LayoutDashboard, Building2, CalendarDays, Mail, CheckCircle, FileText, BarChart3, LogOut, ShieldCheck, Calculator, Settings } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -18,6 +18,7 @@ const navItems = [
   { title: 'Credentials', url: '/credentials', icon: ShieldCheck },
   { title: 'Taxes', url: '/taxes', icon: Calculator },
   { title: 'Reports', url: '/reports', icon: BarChart3 },
+  { title: 'Settings', url: '/settings/profile', icon: Settings },
 ];
 
 export function AppSidebar() {

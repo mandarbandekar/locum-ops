@@ -1,4 +1,5 @@
 import { Facility, FacilityContact, TermsSnapshot, Shift, Invoice, InvoiceLineItem, EmailLog } from '@/types';
+import type { UserProfile } from '@/contexts/UserProfileContext';
 
 const today = new Date();
 const fmt = (d: Date) => d.toISOString();
@@ -84,3 +85,23 @@ export const seedEmailLogs: EmailLog[] = [
   { id: 'e1', facility_id: 'c1', type: 'invoice', subject: 'Invoice INV-2026-001', body: 'Please find attached invoice for services rendered.', recipients: 'billing@greenfield.com', sent_at: fmt(addDays(today, -14)) },
   { id: 'e2', facility_id: 'c2', type: 'outreach_open', subject: 'Locum Availability - March 2026', body: 'I am available for locum shifts next month.', recipients: 'emily@evergreen-hc.com', sent_at: fmt(addDays(today, -30)) },
 ];
+
+export const seedUserProfile: UserProfile = {
+  id: 'demo-profile',
+  user_id: 'demo-user',
+  profession: 'vet',
+  work_style_label: 'Independent contractor (1099)',
+  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  currency: 'USD',
+  current_tools: ['sheets_excel', 'calendar'],
+  facilities_count_band: 'band_4_8',
+  invoices_per_month_band: 'inv_4_10',
+  invoice_due_default_days: 14,
+  invoice_prefix: 'INV',
+  email_tone: 'neutral',
+  terms_fields_enabled: {
+    weekday_rate: true, weekend_rate: true, cancellation_policy: true,
+    overtime_policy: true, late_payment_policy: true, special_notes: true,
+  },
+  onboarding_completed_at: new Date().toISOString(),
+};
