@@ -2,8 +2,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { UserProfileProvider, useUserProfile } from "@/contexts/UserProfileContext";
 import { DataProvider } from "@/contexts/DataContext";
 import { Layout } from "@/components/Layout";
 import LandingPage from "@/pages/LandingPage";
@@ -26,9 +27,59 @@ import QuizPage from "@/pages/QuizPage";
 import ResultsPage from "@/pages/ResultsPage";
 import ThanksPage from "@/pages/ThanksPage";
 import DebugPage from "@/pages/DebugPage";
+import OnboardingPage from "@/pages/OnboardingPage";
+import SettingsProfilePage from "@/pages/SettingsProfilePage";
+import ImportPage from "@/pages/ImportPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
+
+function AuthenticatedApp() {
+  const { isDemo } = useAuth();
+  const { needsOnboarding, profileLoading } = useUserProfile();
+
+  if (profileLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted">
+        <p className="text-muted-foreground">Loading…</p>
+      </div>
+    );
+  }
+
+  // Redirect to onboarding if not completed (skip for demo)
+  if (needsOnboarding && !isDemo) {
+    return (
+      <Routes>
+        <Route path="/onboarding" element={<OnboardingPage />} />
+        <Route path="*" element={<Navigate to="/onboarding" replace />} />
+      </Routes>
+    );
+  }
+
+  return (
+    <DataProvider isDemo={isDemo}>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<DashboardPage />} />
+          <Route path="/facilities" element={<FacilitiesPage />} />
+          <Route path="/facilities/:id" element={<FacilityDetailPage />} />
+          <Route path="/schedule" element={<SchedulePage />} />
+          <Route path="/outreach" element={<OutreachPage />} />
+          <Route path="/confirmations" element={<ConfirmationsPage />} />
+          <Route path="/invoices" element={<InvoicesPage />} />
+          <Route path="/invoices/:id" element={<InvoiceDetailPage />} />
+          <Route path="/reports" element={<ReportsPage />} />
+          <Route path="/credentials" element={<CredentialsPage />} />
+          <Route path="/taxes" element={<TaxesPage />} />
+          <Route path="/settings/profile" element={<SettingsProfilePage />} />
+          <Route path="/import" element={<ImportPage />} />
+          <Route path="/onboarding" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Layout>
+    </DataProvider>
+  );
+}
 
 function AuthGate() {
   const { user, loading, isDemo } = useAuth();
@@ -58,24 +109,9 @@ function AuthGate() {
   }
 
   return (
-    <DataProvider isDemo={isDemo}>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/facilities" element={<FacilitiesPage />} />
-          <Route path="/facilities/:id" element={<FacilityDetailPage />} />
-          <Route path="/schedule" element={<SchedulePage />} />
-          <Route path="/outreach" element={<OutreachPage />} />
-          <Route path="/confirmations" element={<ConfirmationsPage />} />
-          <Route path="/invoices" element={<InvoicesPage />} />
-          <Route path="/invoices/:id" element={<InvoiceDetailPage />} />
-          <Route path="/reports" element={<ReportsPage />} />
-          <Route path="/credentials" element={<CredentialsPage />} />
-          <Route path="/taxes" element={<TaxesPage />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Layout>
-    </DataProvider>
+    <UserProfileProvider isDemo={isDemo}>
+      <AuthenticatedApp />
+    </UserProfileProvider>
   );
 }
 

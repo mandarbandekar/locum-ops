@@ -105,42 +105,43 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
       }
 
       if (data) {
+        const d = data as any;
         setProfile({
-          id: data.id,
-          user_id: data.user_id,
-          profession: data.profession,
-          work_style_label: data.work_style_label,
-          timezone: data.timezone,
-          currency: data.currency,
-          current_tools: (data.current_tools as CurrentTool[]) || [],
-          facilities_count_band: data.facilities_count_band,
-          invoices_per_month_band: data.invoices_per_month_band,
-          invoice_due_default_days: data.invoice_due_default_days,
-          invoice_prefix: data.invoice_prefix,
-          email_tone: data.email_tone,
-          terms_fields_enabled: (data.terms_fields_enabled as TermsFieldsEnabled) || DEFAULT_TERMS_FIELDS,
-          onboarding_completed_at: data.onboarding_completed_at,
+          id: d.id,
+          user_id: d.user_id,
+          profession: d.profession,
+          work_style_label: d.work_style_label,
+          timezone: d.timezone,
+          currency: d.currency,
+          current_tools: (d.current_tools as CurrentTool[]) || [],
+          facilities_count_band: d.facilities_count_band,
+          invoices_per_month_band: d.invoices_per_month_band,
+          invoice_due_default_days: d.invoice_due_default_days,
+          invoice_prefix: d.invoice_prefix,
+          email_tone: d.email_tone,
+          terms_fields_enabled: (d.terms_fields_enabled as TermsFieldsEnabled) || DEFAULT_TERMS_FIELDS,
+          onboarding_completed_at: d.onboarding_completed_at,
         });
       } else {
-        // Profile doesn't exist yet (trigger may not have fired), create one
         const { data: newData, error: insertErr } = await db('user_profiles')
           .insert({ user_id: user!.id, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone })
           .select()
           .single();
         if (!insertErr && newData) {
+          const nd = newData as any;
           setProfile({
-            id: newData.id,
-            user_id: newData.user_id,
-            profession: newData.profession,
-            work_style_label: newData.work_style_label,
-            timezone: newData.timezone,
-            currency: newData.currency,
+            id: nd.id,
+            user_id: nd.user_id,
+            profession: nd.profession || 'other',
+            work_style_label: nd.work_style_label || '',
+            timezone: nd.timezone,
+            currency: nd.currency || 'USD',
             current_tools: [],
-            facilities_count_band: newData.facilities_count_band,
-            invoices_per_month_band: newData.invoices_per_month_band,
-            invoice_due_default_days: newData.invoice_due_default_days,
-            invoice_prefix: newData.invoice_prefix,
-            email_tone: newData.email_tone,
+            facilities_count_band: nd.facilities_count_band || 'band_1_3',
+            invoices_per_month_band: nd.invoices_per_month_band || 'inv_1_3',
+            invoice_due_default_days: nd.invoice_due_default_days || 14,
+            invoice_prefix: nd.invoice_prefix || 'INV',
+            email_tone: nd.email_tone || 'neutral',
             terms_fields_enabled: DEFAULT_TERMS_FIELDS,
             onboarding_completed_at: null,
           });
