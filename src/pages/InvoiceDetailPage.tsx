@@ -9,6 +9,7 @@ import { ArrowLeft, Send, CheckCircle, DollarSign, Trash2, Pencil, Check, X } fr
 import { format, addDays } from 'date-fns';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
 import { toast } from 'sonner';
+import { ContractTermsPill } from '@/components/contracts/ContractsTab';
 
 export default function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
