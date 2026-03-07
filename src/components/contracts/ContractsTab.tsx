@@ -103,7 +103,11 @@ function ContractVault({ contracts, onAdd, onUpdate, onDelete }: {
                 </div>
                 <div className="flex items-center gap-1 ml-2">
                   {c.file_url && (
-                    <Button size="icon" variant="ghost" className="h-7 w-7" title="View/Download" onClick={() => window.open(c.file_url!, '_blank')}>
+                    <Button size="icon" variant="ghost" className="h-7 w-7" title="View/Download" onClick={async () => {
+                      const url = await getContractSignedUrl(c.file_url!);
+                      if (url) window.open(url, '_blank');
+                      else toast.error('Could not generate download link');
+                    }}>
                       <Download className="h-3 w-3" />
                     </Button>
                   )}
@@ -115,7 +119,13 @@ function ContractVault({ contracts, onAdd, onUpdate, onDelete }: {
                   <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditId(c.id)}>
                     <Pencil className="h-3 w-3" />
                   </Button>
-                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { if (confirm('Delete this contract?')) { onDelete(c.id); toast.success('Contract deleted'); } }}>
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={async () => {
+                    if (confirm('Delete this contract?')) {
+                      if (c.file_url) await deleteContractFile(c.file_url);
+                      onDelete(c.id);
+                      toast.success('Contract deleted');
+                    }
+                  }}>
                     <Trash2 className="h-3 w-3" />
                   </Button>
                 </div>
