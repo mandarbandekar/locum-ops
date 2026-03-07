@@ -16,7 +16,7 @@ import FacilitiesPage from "@/pages/FacilitiesPage";
 import FacilityDetailPage from "@/pages/FacilityDetailPage";
 import SchedulePage from "@/pages/SchedulePage";
 
-import ConfirmationsPage from "@/pages/ConfirmationsPage";
+
 import InvoicesPage from "@/pages/InvoicesPage";
 import InvoiceDetailPage from "@/pages/InvoiceDetailPage";
 import ReportsPage from "@/pages/ReportsPage";
