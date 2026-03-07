@@ -162,6 +162,47 @@ export default function DashboardPage() {
   );
 }
 
+function DocsExpiringCard({ navigate }: { navigate: (path: string) => void }) {
+  const dueSoon = seedChecklistItems
+    .filter(item => {
+      const badge = getChecklistBadge(item);
+      return badge === 'due_soon' || badge === 'overdue';
+    })
+    .sort((a, b) => new Date(a.due_date!).getTime() - new Date(b.due_date!).getTime())
+    .slice(0, 5);
+
+  if (dueSoon.length === 0) return null;
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-2 mb-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <ShieldAlert className="h-4 w-4" /> Docs Expiring Soon
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            {dueSoon.map(item => {
+              const badge = getChecklistBadge(item);
+              return (
+                <div key={item.id} className="flex items-center justify-between p-2 rounded-md bg-muted/50 text-sm">
+                  <div>
+                    <p className="font-medium">{item.title}</p>
+                    <p className="text-xs text-muted-foreground">Due {item.due_date ? format(new Date(item.due_date), 'MMM d, yyyy') : '—'}</p>
+                  </div>
+                  {badge === 'overdue' && <Badge className="bg-red-500/15 text-red-700 dark:text-red-400 text-xs">Overdue</Badge>}
+                  {badge === 'due_soon' && <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-400 text-xs">Due soon</Badge>}
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 function TaxDueDatesWidget({ invoices, navigate }: { invoices: any[]; navigate: (path: string) => void }) {
   const currentYear = new Date().getFullYear();
   const now = new Date();
