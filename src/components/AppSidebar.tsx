@@ -12,7 +12,7 @@ const navItems = [
   { title: 'Dashboard', url: '/', icon: LayoutDashboard },
   { title: 'Practice Facilities', url: '/facilities', icon: Building2 },
   { title: 'Schedule', url: '/schedule', icon: CalendarDays },
-  { title: 'Outreach', url: '/outreach', icon: Mail },
+  
   { title: 'Confirmations', url: '/confirmations', icon: CheckCircle },
   { title: 'Invoices', url: '/invoices', icon: FileText },
   { title: 'Credentials', url: '/credentials', icon: ShieldCheck },
