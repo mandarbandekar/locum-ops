@@ -98,6 +98,9 @@ export default function DashboardPage() {
         <TaxDueDatesWidget invoices={invoices} navigate={navigate} />
       </div>
 
+      {/* Docs Expiring Soon Card - uses demo seed data for now */}
+      <DocsExpiringCard navigate={navigate} />
+
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
