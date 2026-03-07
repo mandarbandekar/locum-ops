@@ -3,7 +3,7 @@ import { useData } from '@/contexts/DataContext';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CalendarDays, FileText, AlertTriangle, CheckCircle, Plus, Building2, Mail, Send, Calculator } from 'lucide-react';
+import { CalendarDays, FileText, AlertTriangle, CheckCircle, Plus, Building2, Send, Calculator } from 'lucide-react';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
 import { aggregateQuarterlyIncome, calculateSetAside, getDefaultDueDates } from '@/lib/taxCalculations';
 import { format, differenceInDays } from 'date-fns';
@@ -38,9 +38,6 @@ export default function DashboardPage() {
           </Button>
           <Button size="sm" variant="outline" onClick={() => navigate('/facilities')}>
             <Building2 className="mr-1 h-4 w-4" /> <span className="hidden sm:inline">Add</span> Facility
-          </Button>
-          <Button size="sm" variant="outline" className="hidden sm:inline-flex" onClick={() => navigate('/outreach')}>
-            <Mail className="mr-1 h-4 w-4" /> Outreach
           </Button>
           <Button size="sm" variant="outline" className="hidden sm:inline-flex" onClick={() => navigate('/confirmations')}>
             <Send className="mr-1 h-4 w-4" /> Confirmations
