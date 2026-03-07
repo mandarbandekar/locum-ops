@@ -363,6 +363,7 @@ function TermsTab({ terms, facilityId, onUpdate }: { terms?: TermsSnapshot; faci
         <div><Label>Overtime Policy</Label><Textarea value={form.overtime_policy_text} onChange={e => setForm(p => ({ ...p, overtime_policy_text: e.target.value }))} rows={2} /></div>
         <div><Label>Late Payment Policy</Label><Textarea value={form.late_payment_policy_text} onChange={e => setForm(p => ({ ...p, late_payment_policy_text: e.target.value }))} rows={2} /></div>
         <div><Label>Special Notes</Label><Textarea value={form.special_notes} onChange={e => setForm(p => ({ ...p, special_notes: e.target.value }))} rows={2} /></div>
+        <p className="text-xs text-muted-foreground italic">Saved terms for reference. Verify against the signed contract.</p>
         <Button onClick={handleSave}>Save Terms</Button>
       </CardContent>
     </Card>
