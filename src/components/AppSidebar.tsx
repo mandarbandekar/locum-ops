@@ -1,4 +1,4 @@
-import { LayoutDashboard, Building2, CalendarDays, Mail, CheckCircle, FileText, BarChart3, LogOut, ShieldCheck, Calculator, Settings } from 'lucide-react';
+import { LayoutDashboard, Building2, CalendarDays, CheckCircle, FileText, BarChart3, LogOut, ShieldCheck, Calculator, Settings } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
