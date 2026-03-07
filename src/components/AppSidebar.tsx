@@ -1,4 +1,4 @@
-import { LayoutDashboard, Building2, CalendarDays, CheckCircle, FileText, BarChart3, LogOut, ShieldCheck, Calculator, Settings } from 'lucide-react';
+import { LayoutDashboard, Building2, CalendarDays, FileText, BarChart3, LogOut, ShieldCheck, Calculator, Settings } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,7 +13,7 @@ const navItems = [
   { title: 'Practice Facilities', url: '/facilities', icon: Building2 },
   { title: 'Schedule', url: '/schedule', icon: CalendarDays },
   
-  { title: 'Confirmations', url: '/confirmations', icon: CheckCircle },
+  
   { title: 'Invoices', url: '/invoices', icon: FileText },
   { title: 'Credentials', url: '/credentials', icon: ShieldCheck },
   { title: 'Taxes', url: '/taxes', icon: Calculator },

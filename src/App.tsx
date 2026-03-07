@@ -16,7 +16,7 @@ import FacilitiesPage from "@/pages/FacilitiesPage";
 import FacilityDetailPage from "@/pages/FacilityDetailPage";
 import SchedulePage from "@/pages/SchedulePage";
 
-import ConfirmationsPage from "@/pages/ConfirmationsPage";
+
 import InvoicesPage from "@/pages/InvoicesPage";
 import InvoiceDetailPage from "@/pages/InvoiceDetailPage";
 import ReportsPage from "@/pages/ReportsPage";
@@ -65,7 +65,7 @@ function AuthenticatedApp() {
           <Route path="/facilities/:id" element={<FacilityDetailPage />} />
           <Route path="/schedule" element={<SchedulePage />} />
           
-          <Route path="/confirmations" element={<ConfirmationsPage />} />
+          
           <Route path="/invoices" element={<InvoicesPage />} />
           <Route path="/invoices/:id" element={<InvoiceDetailPage />} />
           <Route path="/reports" element={<ReportsPage />} />
