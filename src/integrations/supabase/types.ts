@@ -26,6 +26,7 @@ export type Database = {
           requirement_id: string
           status: Database["public"]["Enums"]["requirement_status"]
           submitted_at: string | null
+          user_id: string
         }
         Insert: {
           clinic_id: string
@@ -38,6 +39,7 @@ export type Database = {
           requirement_id: string
           status?: Database["public"]["Enums"]["requirement_status"]
           submitted_at?: string | null
+          user_id?: string
         }
         Update: {
           clinic_id?: string
@@ -50,6 +52,7 @@ export type Database = {
           requirement_id?: string
           status?: Database["public"]["Enums"]["requirement_status"]
           submitted_at?: string | null
+          user_id?: string
         }
         Relationships: [
           {
@@ -84,6 +87,7 @@ export type Database = {
           required: boolean
           requirement_name: string
           requirement_type: Database["public"]["Enums"]["credential_type"]
+          user_id: string
         }
         Insert: {
           clinic_id: string
@@ -93,6 +97,7 @@ export type Database = {
           required?: boolean
           requirement_name: string
           requirement_type?: Database["public"]["Enums"]["credential_type"]
+          user_id?: string
         }
         Update: {
           clinic_id?: string
@@ -102,6 +107,7 @@ export type Database = {
           required?: boolean
           requirement_name?: string
           requirement_type?: Database["public"]["Enums"]["credential_type"]
+          user_id?: string
         }
         Relationships: []
       }
