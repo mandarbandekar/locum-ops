@@ -15,6 +15,7 @@ import { FacilityContact, ContactRole, TermsSnapshot, SHIFT_COLORS, ShiftColor }
 import { generateId } from '@/lib/businessLogic';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { ContractsTab } from '@/components/contracts/ContractsTab';
 
 export default function FacilityDetailPage() {
   const { id } = useParams<{ id: string }>();
