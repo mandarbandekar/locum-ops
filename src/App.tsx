@@ -74,6 +74,7 @@ function AuthenticatedApp() {
           <Route path="/settings/profile" element={<SettingsProfilePage />} />
           <Route path="/import" element={<ImportPage />} />
           <Route path="/onboarding" element={<Navigate to="/" replace />} />
+          <Route path="/login" element={<Navigate to="/" replace />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Layout>
