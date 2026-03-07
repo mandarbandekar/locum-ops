@@ -47,6 +47,7 @@ export default function FacilityDetailPage() {
           <TabsTrigger value="terms">Terms</TabsTrigger>
           <TabsTrigger value="shifts">Shifts ({facilityShifts.length})</TabsTrigger>
           <TabsTrigger value="invoices">Invoices ({facilityInvoices.length})</TabsTrigger>
+          <TabsTrigger value="contracts">Contracts</TabsTrigger>
           <TabsTrigger value="tech-access">Tech Access</TabsTrigger>
           <TabsTrigger value="clinic-access">Clinic Access</TabsTrigger>
         </TabsList>
