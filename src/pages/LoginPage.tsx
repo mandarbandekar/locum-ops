@@ -6,7 +6,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Briefcase, Play } from 'lucide-react';
+
+const PROFESSIONS = [
+  { value: 'vet', label: 'Veterinarian' },
+  { value: 'nurse', label: 'Nurse' },
+  { value: 'physician', label: 'Physician' },
+  { value: 'pharmacist', label: 'Pharmacist' },
+  { value: 'pt_ot', label: 'PT / OT' },
+  { value: 'other', label: 'Other' },
+];
 
 export default function LoginPage() {
   const { signIn, signUp, enterDemo } = useAuth();
@@ -15,7 +25,10 @@ export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(searchParams.get('signup') === '1');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [displayName, setDisplayName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [company, setCompany] = useState('');
+  const [profession, setProfession] = useState('');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -27,7 +40,9 @@ export default function LoginPage() {
     setSubmitting(true);
 
     if (isSignUp) {
-      const { error } = await signUp(email, password, displayName || email);
+      if (!firstName.trim()) { setError('First name is required'); setSubmitting(false); return; }
+      if (!profession) { setError('Please select a profession'); setSubmitting(false); return; }
+      const { error } = await signUp(email, password, { firstName, lastName, company, profession });
       if (error) setError(error);
       else navigate('/');
     } else {
@@ -35,6 +50,12 @@ export default function LoginPage() {
       if (error) setError(error);
     }
     setSubmitting(false);
+  };
+
+  const resetForm = () => {
+    setIsSignUp(!isSignUp);
+    setError('');
+    setMessage('');
   };
 
   return (
@@ -51,18 +72,43 @@ export default function LoginPage() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               {isSignUp && (
-                <div className="space-y-2">
-                  <Label htmlFor="displayName">Display Name</Label>
-                  <Input id="displayName" value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Dr. Smith" />
-                </div>
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="firstName">First Name *</Label>
+                      <Input id="firstName" value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Jane" required />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="lastName">Last Name</Label>
+                      <Input id="lastName" value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Smith" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="company">Company / Practice</Label>
+                    <Input id="company" value={company} onChange={e => setCompany(e.target.value)} placeholder="Smith Veterinary LLC" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="profession">Profession *</Label>
+                    <Select value={profession} onValueChange={setProfession}>
+                      <SelectTrigger id="profession">
+                        <SelectValue placeholder="Select your profession" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PROFESSIONS.map(p => (
+                          <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
               )}
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">Email *</Label>
                 <Input id="email" type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" />
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password">Password *</Label>
                   {!isSignUp && (
                     <button type="button" className="text-xs text-primary underline" onClick={() => navigate('/forgot-password')}>
                       Forgot password?
@@ -74,11 +120,11 @@ export default function LoginPage() {
               {error && <p className="text-sm text-destructive">{error}</p>}
               {message && <p className="text-sm text-green-600">{message}</p>}
               <Button type="submit" className="w-full" disabled={submitting}>
-                {submitting ? 'Please wait…' : isSignUp ? 'Sign Up' : 'Sign In'}
+                {submitting ? 'Please wait…' : isSignUp ? 'Create Account' : 'Sign In'}
               </Button>
               <p className="text-sm text-muted-foreground text-center">
                 {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
-                <button type="button" className="text-primary underline" onClick={() => { setIsSignUp(!isSignUp); setError(''); setMessage(''); }}>
+                <button type="button" className="text-primary underline" onClick={resetForm}>
                   {isSignUp ? 'Sign In' : 'Sign Up'}
                 </button>
               </p>
