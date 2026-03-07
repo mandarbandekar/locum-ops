@@ -76,7 +76,7 @@ export function ConfirmationsPanel() {
     const facility = facilities.find(c => c.id === facilityId)!;
     const contact = contacts.find(c => c.facility_id === facilityId && c.is_primary);
     const fShifts = facilityGroups[facilityId] || [];
-    const tone = (profile?.emailTone as any) || 'neutral';
+    const tone = (profile?.email_tone as any) || 'neutral';
 
     const shiftList = fShifts
       .sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime())
