@@ -15,6 +15,10 @@ export interface Facility {
   timezone: string;
   notes: string;
   outreach_last_sent_at: string | null;
+  tech_computer_info: string;
+  tech_wifi_info: string;
+  tech_pims_info: string;
+  clinic_access_info: string;
 }
 
 export type ContactRole = 'scheduler' | 'billing' | 'emergency' | 'other';
