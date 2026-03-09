@@ -35,7 +35,11 @@ export function InvoiceTimeline({ events }: { events: TimelineEvent[] }) {
               </div>
               <div className="pb-1">
                 <p className="text-sm">{event.description}</p>
-                <p className="text-xs text-muted-foreground">{format(new Date(event.created_at), 'MMM d, yyyy · h:mm a')}</p>
+                <p className="text-xs text-muted-foreground">
+                  {isValid(new Date(event.created_at))
+                    ? format(new Date(event.created_at), 'MMM d, yyyy · h:mm a')
+                    : 'Unknown date'}
+                </p>
               </div>
             </div>
           );
