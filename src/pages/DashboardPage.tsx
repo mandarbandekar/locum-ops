@@ -165,8 +165,8 @@ export default function DashboardPage() {
       lines.push({ text: `Contracts: ${dueSoonChecklist.length} item${dueSoonChecklist.length > 1 ? 's' : ''} due soon`, link: '/facilities' });
     }
 
-    retuchecklistItemsrn lines;
-  }, []);
+    return lines;
+  }, [checklistItems]);
 
   const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
   const getInvoiceForPayment = (invoiceId: string) => invoices.find(i => i.id === invoiceId);
