@@ -352,6 +352,23 @@ function DraftForm({ invoice, items, facility, billingContact, profile, onUpdate
     </div>
   );
 }
+function DraftPdfButton({ invoiceId, invoiceNumber }: { invoiceId: string; invoiceNumber: string }) {
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const handleDownloadPdf = async () => {
+    setPdfLoading(true);
+    try {
+      await downloadInvoicePdf(invoiceId, invoiceNumber);
+      toast.success('PDF downloaded');
+    } catch { toast.error('PDF generation failed'); }
+    finally { setPdfLoading(false); }
+  };
+  return (
+    <Button variant="outline" className="w-full" onClick={handleDownloadPdf} disabled={pdfLoading}>
+      {pdfLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+      {pdfLoading ? 'Generating PDF…' : 'Download PDF'}
+    </Button>
+  );
+}
 
 // ─── Sent View ─────────────────────────────────────────────
 
