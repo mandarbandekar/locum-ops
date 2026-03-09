@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Send, DollarSign, Trash2, Plus, CheckCircle, AlertTriangle, Download, Link2, Copy, RefreshCw, Loader2, Pencil, Check, X } from 'lucide-react';
+import { ArrowLeft, Send, DollarSign, Trash2, Plus, CheckCircle, AlertTriangle, Download, Link2, Copy, RefreshCw, Loader2, Pencil, Check, X, Undo2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { computeInvoiceStatus, generateId } from '@/lib/businessLogic';
 import { toast } from 'sonner';
@@ -17,6 +17,13 @@ import { InvoicePreview } from '@/components/invoice/InvoicePreview';
 import { InvoiceTimeline } from '@/components/invoice/InvoiceTimeline';
 import { RecordPaymentDialog } from '@/components/invoice/RecordPaymentDialog';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 
 async function downloadInvoicePdf(invoiceId: string, invoiceNumber: string) {
   const { data: { session } } = await supabase.auth.getSession();
@@ -39,8 +46,9 @@ async function downloadInvoicePdf(invoiceId: string, invoiceNumber: string) {
 export default function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { invoices, lineItems, facilities, contacts, payments, activities, updateInvoice, addLineItem, updateLineItem, deleteLineItem, addPayment, addActivity } = useData();
+  const { invoices, lineItems, facilities, contacts, payments, activities, updateInvoice, deleteInvoice, addLineItem, updateLineItem, deleteLineItem, addPayment, addActivity } = useData();
   const { profile } = useUserProfile();
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const invoice = invoices.find(i => i.id === id);
   if (!invoice) return <div className="p-6">Invoice not found. <Button variant="link" onClick={() => navigate('/invoices')}>Back</Button></div>;
@@ -54,6 +62,24 @@ export default function InvoiceDetailPage() {
   const isDraft = invoice.status === 'draft';
   const isSent = invoice.status === 'sent' || computedStatus === 'overdue' || invoice.status === 'partial';
 
+  const handleDelete = async () => {
+    await deleteInvoice(invoice.id);
+    toast.success('Invoice deleted');
+    navigate('/invoices');
+  };
+
+  const handleMoveToDraft = async () => {
+    await updateInvoice({ ...invoice, status: 'draft', sent_at: null, paid_at: null });
+    await addActivity({ invoice_id: invoice.id, action: 'reverted_to_draft', description: 'Invoice reverted to draft' });
+    toast.success('Invoice moved back to Draft');
+  };
+
+  const handleMoveToSent = async () => {
+    await updateInvoice({ ...invoice, status: 'sent', sent_at: invoice.sent_at || new Date().toISOString(), paid_at: null });
+    await addActivity({ invoice_id: invoice.id, action: 'reverted_to_sent', description: 'Invoice moved back to Sent' });
+    toast.success('Invoice moved back to Sent');
+  };
+
   // PDF download removed from top level — handled in SentView
 
   return (
@@ -64,6 +90,52 @@ export default function InvoiceDetailPage() {
         </Button>
         <h1 className="page-title">{invoice.invoice_number}</h1>
         <span className="text-sm text-muted-foreground">{facility?.name}</span>
+
+        <div className="ml-auto flex items-center gap-2">
+          {/* Status transition dropdown */}
+          {invoice.status !== 'draft' && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Undo2 className="mr-1.5 h-3.5 w-3.5" /> Move to…
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleMoveToDraft}>
+                  <Undo2 className="mr-2 h-3.5 w-3.5" /> Draft & Review
+                </DropdownMenuItem>
+                {invoice.status === 'paid' && (
+                  <DropdownMenuItem onClick={handleMoveToSent}>
+                    <Send className="mr-2 h-3.5 w-3.5" /> Sent
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
+          {/* Delete invoice */}
+          <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
+                <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Delete
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Invoice {invoice.invoice_number}?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete this invoice and all its line items. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </div>
 
       {/* Stepper */}
