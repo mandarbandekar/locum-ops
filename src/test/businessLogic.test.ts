@@ -32,31 +32,34 @@ describe('detectShiftConflicts', () => {
 });
 
 describe('computeInvoiceStatus', () => {
+  const base = { invoice_date: '', balance_due: 0, notes: '', share_token: null, share_token_created_at: null, share_token_revoked_at: null };
+
   it('returns draft for draft invoices', () => {
-    const inv: Invoice = { id: '1', facility_id: 'c1', invoice_number: 'INV-001', period_start: '', period_end: '', total_amount: 100, status: 'draft', sent_at: null, paid_at: null, due_date: null };
+    const inv: Invoice = { id: '1', facility_id: 'c1', invoice_number: 'INV-001', period_start: '', period_end: '', total_amount: 100, status: 'draft', sent_at: null, paid_at: null, due_date: null, ...base };
     expect(computeInvoiceStatus(inv)).toBe('draft');
   });
 
   it('returns paid for paid invoices', () => {
-    const inv: Invoice = { id: '1', facility_id: 'c1', invoice_number: 'INV-001', period_start: '', period_end: '', total_amount: 100, status: 'paid', sent_at: '2026-01-01', paid_at: '2026-01-10', due_date: '2026-01-15' };
+    const inv: Invoice = { id: '1', facility_id: 'c1', invoice_number: 'INV-001', period_start: '', period_end: '', total_amount: 100, status: 'paid', sent_at: '2026-01-01', paid_at: '2026-01-10', due_date: '2026-01-15', ...base };
     expect(computeInvoiceStatus(inv)).toBe('paid');
   });
 
   it('returns overdue when past due date and unpaid', () => {
-    const inv: Invoice = { id: '1', facility_id: 'c1', invoice_number: 'INV-001', period_start: '', period_end: '', total_amount: 100, status: 'sent', sent_at: '2025-01-01', paid_at: null, due_date: '2025-01-15' };
+    const inv: Invoice = { id: '1', facility_id: 'c1', invoice_number: 'INV-001', period_start: '', period_end: '', total_amount: 100, status: 'sent', sent_at: '2025-01-01', paid_at: null, due_date: '2025-01-15', ...base, balance_due: 100 };
     expect(computeInvoiceStatus(inv)).toBe('overdue');
   });
 
   it('returns sent when due date is in the future', () => {
-    const inv: Invoice = { id: '1', facility_id: 'c1', invoice_number: 'INV-001', period_start: '', period_end: '', total_amount: 100, status: 'sent', sent_at: '2026-01-01', paid_at: null, due_date: '2099-01-15' };
+    const inv: Invoice = { id: '1', facility_id: 'c1', invoice_number: 'INV-001', period_start: '', period_end: '', total_amount: 100, status: 'sent', sent_at: '2026-01-01', paid_at: null, due_date: '2099-01-15', ...base, balance_due: 100 };
     expect(computeInvoiceStatus(inv)).toBe('sent');
   });
 });
 
 describe('generateInvoiceNumber', () => {
+  const base = { invoice_date: '', balance_due: 0, notes: '', share_token: null, share_token_created_at: null, share_token_revoked_at: null };
   it('generates sequential numbers', () => {
     const existing: Invoice[] = [
-      { id: '1', facility_id: 'c1', invoice_number: `INV-${new Date().getFullYear()}-001`, period_start: '', period_end: '', total_amount: 0, status: 'draft', sent_at: null, paid_at: null, due_date: null },
+      { id: '1', facility_id: 'c1', invoice_number: `INV-${new Date().getFullYear()}-001`, period_start: '', period_end: '', total_amount: 0, status: 'draft', sent_at: null, paid_at: null, due_date: null, ...base },
     ];
     const next = generateInvoiceNumber(existing);
     expect(next).toBe(`INV-${new Date().getFullYear()}-002`);
