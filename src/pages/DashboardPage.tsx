@@ -12,7 +12,7 @@ import { format, differenceInDays } from 'date-fns';
 import { getChecklistBadge } from '@/types/contracts';
 
 export default function DashboardPage() {
-  const { shifts, invoices, facilities, payments } = useData();
+  const { shifts, invoices, facilities, payments, checklistItems } = useData();
   const navigate = useNavigate();
   const now = new Date();
 
