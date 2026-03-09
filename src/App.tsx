@@ -29,6 +29,7 @@ import ThanksPage from "@/pages/ThanksPage";
 import DebugPage from "@/pages/DebugPage";
 import OnboardingPage from "@/pages/OnboardingPage";
 import SettingsProfilePage from "@/pages/SettingsProfilePage";
+import SettingsInvoiceProfilePage from "@/pages/SettingsInvoiceProfilePage";
 import ImportPage from "@/pages/ImportPage";
 import NotFound from "./pages/NotFound";
 
