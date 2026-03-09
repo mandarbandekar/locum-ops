@@ -71,8 +71,9 @@ export function useCredentials() {
       status?: string;
       notes?: string;
       tags?: string[];
+      ce_required_hours?: number | null;
     }) => {
-      const insertData: CredentialInsert = {
+      const insertData: any = {
         user_id: user!.id,
         credential_type: credential.credential_type as CredentialTypeEnum,
         custom_title: credential.custom_title,
@@ -85,6 +86,7 @@ export function useCredentials() {
         status: (credential.status || 'active') as CredentialStatusEnum,
         notes: credential.notes || '',
         tags: credential.tags || [],
+        ce_required_hours: credential.ce_required_hours ?? null,
       };
       const { data, error } = await supabase
         .from('credentials')
@@ -105,7 +107,7 @@ export function useCredentials() {
 
   const updateCredential = useMutation({
     mutationFn: async ({ id, ...updates }: { id: string; [key: string]: unknown }) => {
-      const updateData: CredentialUpdate = {};
+      const updateData: any = {};
       if (updates.credential_type !== undefined) updateData.credential_type = updates.credential_type as CredentialTypeEnum;
       if (updates.custom_title !== undefined) updateData.custom_title = updates.custom_title as string;
       if (updates.jurisdiction !== undefined) updateData.jurisdiction = updates.jurisdiction as string | null;
@@ -117,6 +119,7 @@ export function useCredentials() {
       if (updates.status !== undefined) updateData.status = updates.status as CredentialStatusEnum;
       if (updates.notes !== undefined) updateData.notes = updates.notes as string;
       if (updates.tags !== undefined) updateData.tags = updates.tags as string[];
+      if (updates.ce_required_hours !== undefined) updateData.ce_required_hours = updates.ce_required_hours;
 
       const { data, error } = await supabase
         .from('credentials')
