@@ -140,6 +140,76 @@ export default function InvoiceDetailPage() {
   );
 }
 
+// ─── Editable Line Item Row ───────────────────────────────
+
+function EditableLineItemRow({ item, onUpdate, onDelete }: { item: any; onUpdate: (updated: any) => Promise<void>; onDelete: () => Promise<void> }) {
+  const [editing, setEditing] = useState(false);
+  const [desc, setDesc] = useState(item.description);
+  const [date, setDate] = useState(item.service_date || '');
+  const [qty, setQty] = useState(item.qty);
+  const [rate, setRate] = useState(item.unit_rate);
+
+  const handleSave = async () => {
+    const lineTotal = qty * rate;
+    await onUpdate({ ...item, description: desc, service_date: date || null, qty, unit_rate: rate, line_total: lineTotal });
+    setEditing(false);
+    toast.success('Line item updated');
+  };
+
+  const handleCancel = () => {
+    setDesc(item.description);
+    setDate(item.service_date || '');
+    setQty(item.qty);
+    setRate(item.unit_rate);
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <tr className="border-b last:border-0 bg-muted/30">
+        <td className="py-1.5 pr-1">
+          <Input value={desc} onChange={e => setDesc(e.target.value)} className="h-7 text-sm" />
+        </td>
+        <td className="py-1.5 px-1">
+          <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="h-7 text-sm" />
+        </td>
+        <td className="py-1.5 px-1">
+          <Input type="number" value={qty} onChange={e => setQty(Number(e.target.value))} className="h-7 text-sm text-right w-16" min={1} />
+        </td>
+        <td className="py-1.5 px-1">
+          <Input type="number" value={rate} onChange={e => setRate(Number(e.target.value))} className="h-7 text-sm text-right w-20" min={0} step="0.01" />
+        </td>
+        <td className="py-1.5 text-right font-medium text-sm">${(qty * rate).toLocaleString()}</td>
+        <td className="py-1.5">
+          <div className="flex gap-0.5">
+            <Button size="icon" variant="ghost" className="h-5 w-5" onClick={handleSave}><Check className="h-3 w-3" /></Button>
+            <Button size="icon" variant="ghost" className="h-5 w-5" onClick={handleCancel}><X className="h-3 w-3" /></Button>
+          </div>
+        </td>
+      </tr>
+    );
+  }
+
+  return (
+    <tr className="border-b last:border-0 group hover:bg-muted/20 cursor-pointer" onClick={() => setEditing(true)}>
+      <td className="py-1.5">
+        {item.description}
+        {item.shift_id && <span className="text-xs text-primary ml-1">↗ shift</span>}
+      </td>
+      <td className="py-1.5 text-muted-foreground text-xs">{item.service_date ? format(new Date(item.service_date + 'T00:00:00'), 'MMM d') : '—'}</td>
+      <td className="py-1.5 text-right">{item.qty}</td>
+      <td className="py-1.5 text-right">${item.unit_rate}</td>
+      <td className="py-1.5 text-right font-medium">${item.line_total}</td>
+      <td className="py-1.5">
+        <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button size="icon" variant="ghost" className="h-5 w-5" onClick={e => { e.stopPropagation(); setEditing(true); }}><Pencil className="h-3 w-3" /></Button>
+          <Button size="icon" variant="ghost" className="h-5 w-5" onClick={async e => { e.stopPropagation(); await onDelete(); }}><Trash2 className="h-3 w-3" /></Button>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
 // ─── Draft Form ────────────────────────────────────────────
 
 function DraftForm({ invoice, items, facility, billingContact, profile, onUpdateInvoice, onAddLineItem, onUpdateLineItem, onDeleteLineItem, onAddActivity }: any) {
