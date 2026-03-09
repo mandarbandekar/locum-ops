@@ -6,10 +6,11 @@ import RenewalsTab from '@/components/credentials/RenewalsTab';
 import DocumentsVaultTab from '@/components/credentials/DocumentsVaultTab';
 import CEEntriesTab from '@/components/credentials/CEEntriesTab';
 import { AddCredentialDialog } from '@/components/credentials/AddCredentialDialog';
-import { ShieldCheck } from 'lucide-react';
+import { ShieldCheck, GraduationCap } from 'lucide-react';
 
 export default function CredentialsPage() {
-  const [tab, setTab] = useState('overview');
+  const [primaryTab, setPrimaryTab] = useState<'credentials' | 'ce-tracker'>('credentials');
+  const [credSubTab, setCredSubTab] = useState('overview');
   const [dialogOpen, setDialogOpen] = useState(false);
 
   return (
@@ -26,42 +27,72 @@ export default function CredentialsPage() {
         </div>
       </div>
 
-      <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="w-full justify-start border-b rounded-none bg-transparent p-0 h-auto">
-          {['overview', 'credentials', 'ce-entries', 'renewals', 'documents'].map(t => (
-            <TabsTrigger
-              key={t}
-              value={t}
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2.5 capitalize"
-            >
-              {t === 'ce-entries' ? 'CE Entries' : t}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+      {/* Primary 2-tab selector */}
+      <div className="flex gap-3">
+        <button
+          onClick={() => setPrimaryTab('credentials')}
+          className={`flex items-center gap-2.5 px-5 py-3 rounded-xl border-2 font-semibold text-sm transition-all flex-1 sm:flex-none ${
+            primaryTab === 'credentials'
+              ? 'border-primary bg-primary/5 text-primary shadow-sm'
+              : 'border-border bg-card text-muted-foreground hover:border-primary/30 hover:bg-muted/50'
+          }`}
+        >
+          <ShieldCheck className="h-5 w-5" />
+          Credentials
+        </button>
+        <button
+          onClick={() => setPrimaryTab('ce-tracker')}
+          className={`flex items-center gap-2.5 px-5 py-3 rounded-xl border-2 font-semibold text-sm transition-all flex-1 sm:flex-none ${
+            primaryTab === 'ce-tracker'
+              ? 'border-primary bg-primary/5 text-primary shadow-sm'
+              : 'border-border bg-card text-muted-foreground hover:border-primary/30 hover:bg-muted/50'
+          }`}
+        >
+          <GraduationCap className="h-5 w-5" />
+          CE Tracker
+        </button>
+      </div>
 
-        <TabsContent value="overview" className="mt-6">
-          <CredentialsOverview
-            onNavigate={setTab}
-            onAddCredential={() => setDialogOpen(true)}
-          />
-        </TabsContent>
+      {/* Credentials section */}
+      {primaryTab === 'credentials' && (
+        <Tabs value={credSubTab} onValueChange={setCredSubTab}>
+          <TabsList className="w-full justify-start border-b rounded-none bg-transparent p-0 h-auto">
+            {['overview', 'credentials', 'renewals', 'documents'].map(t => (
+              <TabsTrigger
+                key={t}
+                value={t}
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2.5 capitalize"
+              >
+                {t}
+              </TabsTrigger>
+            ))}
+          </TabsList>
 
-        <TabsContent value="credentials" className="mt-6">
-          <CredentialsList />
-        </TabsContent>
+          <TabsContent value="overview" className="mt-6">
+            <CredentialsOverview
+              onNavigate={setCredSubTab}
+              onAddCredential={() => setDialogOpen(true)}
+            />
+          </TabsContent>
 
-        <TabsContent value="ce-entries" className="mt-6">
-          <CEEntriesTab />
-        </TabsContent>
+          <TabsContent value="credentials" className="mt-6">
+            <CredentialsList />
+          </TabsContent>
 
-        <TabsContent value="renewals" className="mt-6">
-          <RenewalsTab />
-        </TabsContent>
+          <TabsContent value="renewals" className="mt-6">
+            <RenewalsTab />
+          </TabsContent>
 
-        <TabsContent value="documents" className="mt-6">
-          <DocumentsVaultTab />
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="documents" className="mt-6">
+            <DocumentsVaultTab />
+          </TabsContent>
+        </Tabs>
+      )}
+
+      {/* CE Tracker section */}
+      {primaryTab === 'ce-tracker' && (
+        <CEEntriesTab />
+      )}
 
       <AddCredentialDialog open={dialogOpen} onOpenChange={setDialogOpen} />
     </div>
