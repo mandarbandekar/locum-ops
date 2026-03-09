@@ -239,7 +239,7 @@ function ShiftFormDialog({ open, onOpenChange, facilities, shifts, existing, onS
             <Select value={facilityId} onValueChange={setFacilityId}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {facilities.filter(c => c.status === 'active').map(c => (
+                {facilities.map(c => (
                   <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                 ))}
               </SelectContent>
