@@ -18,7 +18,7 @@ import { ConfirmationsPanel } from '@/components/schedule/ConfirmationsPanel';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function SchedulePage() {
-  const { shifts, facilities, addShift, updateShift, deleteShift } = useData();
+  const { shifts, facilities, addShift, updateShift, deleteShift, updateFacility } = useData();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [view, setView] = useState<'calendar' | 'list'>('calendar');
   const [showAdd, setShowAdd] = useState(false);
