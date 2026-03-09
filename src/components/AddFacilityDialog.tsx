@@ -71,6 +71,7 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
               <TabsTrigger value="rates">Shift Rates</TabsTrigger>
               <TabsTrigger value="tech">Tech Access</TabsTrigger>
               <TabsTrigger value="access">Clinic Access</TabsTrigger>
+              <TabsTrigger value="invoicing">Invoice Settings</TabsTrigger>
             </TabsList>
 
             <TabsContent value="general" className="space-y-3 mt-3">
@@ -92,17 +93,6 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
               <div className="space-y-2">
                 <Label>Address</Label>
                 <Input value={address} onChange={e => setAddress(e.target.value)} placeholder="Full address" />
-              </div>
-              <div className="space-y-2">
-                <Label>Invoice Prefix</Label>
-                <Input
-                  value={invoicePrefix}
-                  onChange={e => setInvoicePrefix(e.target.value.toUpperCase())}
-                  placeholder={name ? getInitials(name) : 'INV'}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Defaults to facility initials. e.g. {invoicePrefix || (name ? getInitials(name) : 'INV')}-2026-001
-                </p>
               </div>
               <div className="space-y-2">
                 <Label>Notes</Label>
