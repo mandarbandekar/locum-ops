@@ -40,13 +40,11 @@ export const seedFacilities: Facility[] = [
 ];
 
 export const seedContacts: FacilityContact[] = [
-  { id: 'ct1', facility_id: 'c1', name: 'Sarah Johnson', role: 'scheduler', email: 'sarah@greenfield.com', phone: '503-555-0101', is_primary: true },
-  { id: 'ct2', facility_id: 'c1', name: 'Mike Chen', role: 'billing', email: 'billing@greenfield.com', phone: '503-555-0102', is_primary: false },
-  { id: 'ct3', facility_id: 'c2', name: 'Dr. Emily Park', role: 'scheduler', email: 'emily@evergreen-hc.com', phone: '206-555-0201', is_primary: true },
-  { id: 'ct4', facility_id: 'c2', name: 'Lisa Wong', role: 'emergency', email: 'lisa@evergreen-hc.com', phone: '206-555-0202', is_primary: false },
-  { id: 'ct5', facility_id: 'c3', name: 'Tom Harris', role: 'scheduler', email: 'tom@sunrisecare.com', phone: '208-555-0301', is_primary: true },
-  { id: 'ct6', facility_id: 'c4', name: 'Rachel Kim', role: 'scheduler', email: 'rachel@mtviewpractice.com', phone: '303-555-0401', is_primary: true },
-  { id: 'ct7', facility_id: 'c5', name: 'Dave Martinez', role: 'scheduler', email: 'dave@coastalwg.com', phone: '619-555-0501', is_primary: true },
+  { id: 'ct1', facility_id: 'c1', name: 'Sarah Johnson', role: 'practice_manager', email: 'sarah@greenfield.com', phone: '503-555-0101', is_primary: true },
+  { id: 'ct3', facility_id: 'c2', name: 'Dr. Emily Park', role: 'practice_manager', email: 'emily@evergreen-hc.com', phone: '206-555-0201', is_primary: true },
+  { id: 'ct5', facility_id: 'c3', name: 'Tom Harris', role: 'practice_manager', email: 'tom@sunrisecare.com', phone: '208-555-0301', is_primary: true },
+  { id: 'ct6', facility_id: 'c4', name: 'Rachel Kim', role: 'practice_manager', email: 'rachel@mtviewpractice.com', phone: '303-555-0401', is_primary: true },
+  { id: 'ct7', facility_id: 'c5', name: 'Dave Martinez', role: 'practice_manager', email: 'dave@coastalwg.com', phone: '619-555-0501', is_primary: true },
 ];
 
 export const seedTerms: TermsSnapshot[] = [
