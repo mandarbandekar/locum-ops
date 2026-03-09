@@ -50,6 +50,7 @@ export default function FacilityDetailPage() {
           <TabsTrigger value="contracts">Contracts</TabsTrigger>
           <TabsTrigger value="tech-access">Tech Access</TabsTrigger>
           <TabsTrigger value="clinic-access">Clinic Access</TabsTrigger>
+          <TabsTrigger value="invoice-settings">Invoice Settings</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-4">
@@ -82,6 +83,10 @@ export default function FacilityDetailPage() {
 
         <TabsContent value="clinic-access" className="mt-4">
           <ClinicAccessTab facility={facility} onUpdate={updateFacility} />
+        </TabsContent>
+
+        <TabsContent value="invoice-settings" className="mt-4">
+          <InvoiceSettingsTab facility={facility} onUpdate={updateFacility} />
         </TabsContent>
       </Tabs>
     </div>
@@ -605,5 +610,55 @@ function InvoicesTab({ invoices, onNavigate }: { invoices: any[]; onNavigate: (i
         </tbody>
       </table>
     </div>
+  );
+}
+
+// ─── Invoice Settings Tab ──────────────────────────────────
+
+function InvoiceSettingsTab({ facility, onUpdate }: { facility: any; onUpdate: (f: any) => void }) {
+  const [prefix, setPrefix] = useState(facility.invoice_prefix || 'INV');
+  const [dueDays, setDueDays] = useState(facility.invoice_due_days ?? 15);
+  const [dirty, setDirty] = useState(false);
+
+  const handleSave = () => {
+    onUpdate({ ...facility, invoice_prefix: prefix, invoice_due_days: dueDays });
+    setDirty(false);
+    toast.success('Invoice settings saved');
+  };
+
+  return (
+    <Card className="max-w-lg">
+      <CardHeader>
+        <CardTitle className="text-base">Invoice Settings</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Label>Invoice Prefix</Label>
+          <Input
+            value={prefix}
+            onChange={e => { setPrefix(e.target.value.toUpperCase()); setDirty(true); }}
+            placeholder="INV"
+          />
+          <p className="text-xs text-muted-foreground">
+            Used for invoice numbering. e.g. {prefix}-2026-001
+          </p>
+        </div>
+        <div className="space-y-2">
+          <Label>Invoice Due (days)</Label>
+          <Input
+            type="number"
+            value={dueDays}
+            onChange={e => { setDueDays(Number(e.target.value)); setDirty(true); }}
+            min={1}
+          />
+          <p className="text-xs text-muted-foreground">
+            Number of days after invoice date that payment is due.
+          </p>
+        </div>
+        <Button onClick={handleSave} disabled={!dirty} size="sm">
+          <Save className="mr-1 h-4 w-4" /> Save
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
