@@ -18,7 +18,7 @@ import { ConfirmationsPanel } from '@/components/schedule/ConfirmationsPanel';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function SchedulePage() {
-  const { shifts, facilities, addShift, updateShift, deleteShift } = useData();
+  const { shifts, facilities, addShift, updateShift, deleteShift, updateFacility } = useData();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [view, setView] = useState<'calendar' | 'list'>('calendar');
   const [showAdd, setShowAdd] = useState(false);
@@ -157,7 +157,16 @@ export default function SchedulePage() {
           onOpenChange={setShowAdd}
           facilities={facilities}
           shifts={shifts}
-          onSave={(s) => { addShift(s); toast.success('Shift added'); }}
+          onSave={(s) => {
+            addShift(s);
+            const facility = facilities.find(f => f.id === s.facility_id);
+            if (facility && facility.status !== 'active') {
+              updateFacility({ ...facility, status: 'active' });
+              toast.success(`Shift added — "${facility.name}" has been set to Active`);
+            } else {
+              toast.success('Shift added');
+            }
+          }}
         />
 
         {editShift && (
