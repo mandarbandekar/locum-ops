@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Send, DollarSign, Trash2, Plus, CheckCircle, AlertTriangle, Download, Link2, Copy, RefreshCw, Loader2, Pencil, Check, X, Undo2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { ArrowLeft, Send, DollarSign, Trash2, Plus, CheckCircle, AlertTriangle, Download, Link2, Copy, RefreshCw, Loader2, Pencil, Check, X, ArrowRight, Undo2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { computeInvoiceStatus, generateId } from '@/lib/businessLogic';
 import { toast } from 'sonner';
@@ -22,8 +23,8 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu';
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
 
 async function downloadInvoicePdf(invoiceId: string, invoiceNumber: string) {
   const { data: { session } } = await supabase.auth.getSession();
@@ -43,12 +44,22 @@ async function downloadInvoicePdf(invoiceId: string, invoiceNumber: string) {
   URL.revokeObjectURL(link.href);
 }
 
+const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
+  draft: { label: 'Draft', variant: 'secondary' },
+  sent: { label: 'Sent', variant: 'default' },
+  partial: { label: 'Partial', variant: 'outline' },
+  overdue: { label: 'Overdue', variant: 'destructive' },
+  paid: { label: 'Paid', variant: 'default' },
+};
+
 export default function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { invoices, lineItems, facilities, contacts, payments, activities, updateInvoice, deleteInvoice, addLineItem, updateLineItem, deleteLineItem, addPayment, addActivity } = useData();
   const { profile } = useUserProfile();
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [moveDialogOpen, setMoveDialogOpen] = useState(false);
+  const [moveTarget, setMoveTarget] = useState<string | null>(null);
 
   const invoice = invoices.find(i => i.id === id);
   if (!invoice) return <div className="p-6">Invoice not found. <Button variant="link" onClick={() => navigate('/invoices')}>Back</Button></div>;
@@ -61,6 +72,7 @@ export default function InvoiceDetailPage() {
   const computedStatus = computeInvoiceStatus(invoice);
   const isDraft = invoice.status === 'draft';
   const isSent = invoice.status === 'sent' || computedStatus === 'overdue' || invoice.status === 'partial';
+  const statusConfig = STATUS_CONFIG[computedStatus] || STATUS_CONFIG.draft;
 
   const handleDelete = async () => {
     await deleteInvoice(invoice.id);
@@ -68,56 +80,74 @@ export default function InvoiceDetailPage() {
     navigate('/invoices');
   };
 
-  const handleMoveToDraft = async () => {
-    await updateInvoice({ ...invoice, status: 'draft', sent_at: null, paid_at: null });
-    await addActivity({ invoice_id: invoice.id, action: 'reverted_to_draft', description: 'Invoice reverted to draft' });
-    toast.success('Invoice moved back to Draft');
+  // Unified status transition handler
+  const handleStatusTransition = async (targetStatus: string) => {
+    switch (targetStatus) {
+      case 'draft':
+        await updateInvoice({ ...invoice, status: 'draft', sent_at: null, paid_at: null });
+        await addActivity({ invoice_id: invoice.id, action: 'reverted_to_draft', description: 'Invoice reverted to draft' });
+        toast.success('Invoice moved back to Draft');
+        break;
+      case 'sent':
+        if (invoice.status === 'paid' || invoice.status === 'partial') {
+          // Moving backward from paid
+          await updateInvoice({ ...invoice, status: 'sent', paid_at: null });
+          await addActivity({ invoice_id: invoice.id, action: 'reverted_to_sent', description: 'Invoice moved back to Sent' });
+          toast.success('Invoice moved back to Sent');
+        }
+        break;
+      case 'paid':
+        // This opens the record payment dialog instead
+        break;
+    }
+    setMoveDialogOpen(false);
+    setMoveTarget(null);
   };
 
-  const handleMoveToSent = async () => {
-    await updateInvoice({ ...invoice, status: 'sent', sent_at: invoice.sent_at || new Date().toISOString(), paid_at: null });
-    await addActivity({ invoice_id: invoice.id, action: 'reverted_to_sent', description: 'Invoice moved back to Sent' });
-    toast.success('Invoice moved back to Sent');
+  const handleStepClick = (stepKey: string) => {
+    if (stepKey === 'paid' && invoice.status !== 'paid') {
+      // Don't allow direct jump to paid - must record payment
+      toast.info('Record a payment to mark this invoice as paid');
+      return;
+    }
+    setMoveTarget(stepKey);
+    setMoveDialogOpen(true);
   };
 
-  // PDF download removed from top level — handled in SentView
+  const getMoveDescription = (target: string): string => {
+    const currentLabel = STATUS_CONFIG[computedStatus]?.label || computedStatus;
+    const targetLabel = STATUS_CONFIG[target]?.label || target;
+    const isBackward = getStepOrder(target) < getStepOrder(computedStatus);
+    if (isBackward) {
+      return `This will move the invoice from "${currentLabel}" back to "${targetLabel}". ${
+        target === 'draft' ? 'The sent date will be cleared and you can edit the invoice again.' :
+        'The payment status will be reset.'
+      }`;
+    }
+    return `This will move the invoice from "${currentLabel}" to "${targetLabel}".`;
+  };
 
   return (
     <div>
+      {/* Header */}
       <div className="flex items-center gap-3 mb-4 print:hidden">
         <Button variant="ghost" size="icon" onClick={() => navigate('/invoices')}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <h1 className="page-title">{invoice.invoice_number}</h1>
+        <div className="flex items-center gap-2.5">
+          <h1 className="page-title">{invoice.invoice_number}</h1>
+          <Badge variant={statusConfig.variant} className="text-xs">
+            {statusConfig.label}
+          </Badge>
+        </div>
         <span className="text-sm text-muted-foreground">{facility?.name}</span>
 
         <div className="ml-auto flex items-center gap-2">
-          {/* Status transition dropdown */}
-          {invoice.status !== 'draft' && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Undo2 className="mr-1.5 h-3.5 w-3.5" /> Move to…
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleMoveToDraft}>
-                  <Undo2 className="mr-2 h-3.5 w-3.5" /> Draft & Review
-                </DropdownMenuItem>
-                {invoice.status === 'paid' && (
-                  <DropdownMenuItem onClick={handleMoveToSent}>
-                    <Send className="mr-2 h-3.5 w-3.5" /> Sent
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-
           {/* Delete invoice */}
           <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
             <AlertDialogTrigger asChild>
-              <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
-                <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Delete
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive">
+                <Trash2 className="h-3.5 w-3.5" />
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
@@ -138,15 +168,25 @@ export default function InvoiceDetailPage() {
         </div>
       </div>
 
-      {/* Stepper */}
+      {/* Stepper — clickable for status transitions */}
       <div className="mb-6 max-w-2xl print:hidden">
-        <InvoiceStepper status={computedStatus} />
+        <InvoiceStepper status={computedStatus} onStepClick={handleStepClick} />
       </div>
 
       {/* Checklist for drafts */}
       {isDraft && (
         <div className="mb-6 max-w-2xl print:hidden">
           <ReadyToSendChecklist items={buildChecklistItems(profile, invoice, items, billingContact, facility)} />
+        </div>
+      )}
+
+      {/* Overdue warning */}
+      {computedStatus === 'overdue' && (
+        <div className="mb-4 rounded-md border border-destructive/50 bg-destructive/5 p-3 flex items-center gap-2 max-w-2xl print:hidden">
+          <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />
+          <p className="text-sm text-destructive font-medium">
+            This invoice is overdue. Due date was {invoice.due_date ? format(new Date(invoice.due_date), 'MMM d, yyyy') : 'not set'}.
+          </p>
         </div>
       )}
 
@@ -208,8 +248,40 @@ export default function InvoiceDetailPage() {
           />
         </div>
       </div>
+
+      {/* Move Status Confirmation Dialog */}
+      <Dialog open={moveDialogOpen} onOpenChange={setMoveDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {moveTarget && getStepOrder(moveTarget) < getStepOrder(computedStatus) ? (
+                <Undo2 className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <ArrowRight className="h-4 w-4 text-muted-foreground" />
+              )}
+              Move to {STATUS_CONFIG[moveTarget || '']?.label || moveTarget}?
+            </DialogTitle>
+            <DialogDescription>
+              {moveTarget ? getMoveDescription(moveTarget) : ''}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setMoveDialogOpen(false)}>Cancel</Button>
+            <Button onClick={() => moveTarget && handleStatusTransition(moveTarget)}>
+              Confirm
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
+}
+
+function getStepOrder(status: string): number {
+  if (status === 'draft') return 0;
+  if (status === 'sent' || status === 'partial' || status === 'overdue') return 1;
+  if (status === 'paid') return 2;
+  return 0;
 }
 
 // ─── Editable Line Item Row ───────────────────────────────
@@ -474,21 +546,22 @@ function DraftForm({ invoice, items, facility, billingContact, profile, onUpdate
         </CardContent>
       </Card>
 
-      {/* Actions */}
+      {/* Actions — improved hierarchy */}
       <div className="space-y-2">
+        <Button onClick={handleProceedToSend} className="w-full" size="lg">
+          <Send className="mr-2 h-4 w-4" /> Mark as Sent
+        </Button>
         <div className="flex gap-2">
           <Button onClick={handleSave} variant="outline" disabled={saving} className="flex-1">
             {saving ? 'Saving…' : 'Save Draft'}
           </Button>
-          <Button onClick={handleProceedToSend} className="flex-1">
-            <Send className="mr-1 h-4 w-4" /> Save & Send
-          </Button>
+          <DraftPdfButton invoiceId={invoice.id} invoiceNumber={invoice.invoice_number} />
         </div>
-        <DraftPdfButton invoiceId={invoice.id} invoiceNumber={invoice.invoice_number} />
       </div>
     </div>
   );
 }
+
 function DraftPdfButton({ invoiceId, invoiceNumber }: { invoiceId: string; invoiceNumber: string }) {
   const [pdfLoading, setPdfLoading] = useState(false);
   const handleDownloadPdf = async () => {
@@ -500,9 +573,9 @@ function DraftPdfButton({ invoiceId, invoiceNumber }: { invoiceId: string; invoi
     finally { setPdfLoading(false); }
   };
   return (
-    <Button variant="outline" className="w-full" onClick={handleDownloadPdf} disabled={pdfLoading}>
+    <Button variant="outline" className="flex-1" onClick={handleDownloadPdf} disabled={pdfLoading}>
       {pdfLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-      {pdfLoading ? 'Generating PDF…' : 'Download PDF'}
+      {pdfLoading ? 'Generating…' : 'PDF'}
     </Button>
   );
 }
@@ -600,29 +673,59 @@ function SentView({ invoice, items, invoicePayments, onUpdateInvoice, onAddPayme
 
   return (
     <div className="space-y-4">
-      {/* Status */}
+      {/* Status + Balance — consolidated */}
       <Card>
         <CardContent className="pt-4 space-y-3 text-sm">
-          <div className="flex justify-between"><span className="text-muted-foreground">Status</span>
-            <span className={`font-semibold ${computedStatus === 'overdue' ? 'text-destructive' : computedStatus === 'paid' ? 'text-primary' : ''}`}>
-              {computedStatus.charAt(0).toUpperCase() + computedStatus.slice(1)}
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">Balance Due</span>
+            <span className={`font-bold text-xl ${computedStatus === 'overdue' ? 'text-destructive' : computedStatus === 'paid' ? 'text-primary' : 'text-foreground'}`}>
+              ${invoice.balance_due.toLocaleString()}
             </span>
           </div>
-          <div className="flex justify-between"><span className="text-muted-foreground">Invoice Date</span><span>{format(new Date(invoice.invoice_date), 'MMM d, yyyy')}</span></div>
-          <div className="flex justify-between"><span className="text-muted-foreground">Due Date</span><span>{invoice.due_date ? format(new Date(invoice.due_date), 'MMM d, yyyy') : '—'}</span></div>
-          <div className="flex justify-between"><span className="text-muted-foreground">Sent</span><span>{invoice.sent_at ? format(new Date(invoice.sent_at), 'MMM d, yyyy') : '—'}</span></div>
-          <div className="flex justify-between border-t pt-2"><span className="font-medium">Balance Due</span><span className="font-bold text-lg">${invoice.balance_due.toLocaleString()}</span></div>
+          <div className="grid grid-cols-3 gap-3 pt-1 border-t text-xs">
+            <div>
+              <p className="text-muted-foreground mb-0.5">Invoice Date</p>
+              <p className="font-medium">{format(new Date(invoice.invoice_date), 'MMM d, yyyy')}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground mb-0.5">Due Date</p>
+              <p className="font-medium">{invoice.due_date ? format(new Date(invoice.due_date), 'MMM d, yyyy') : '—'}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground mb-0.5">Sent</p>
+              <p className="font-medium">{invoice.sent_at ? format(new Date(invoice.sent_at), 'MMM d, yyyy') : '—'}</p>
+            </div>
+          </div>
+
+          {/* Primary action */}
+          {!isPaid && (
+            <Button className="w-full" size="lg" onClick={() => setShowPayment(true)}>
+              <DollarSign className="mr-2 h-4 w-4" /> Record Payment
+            </Button>
+          )}
+          {isPaid && (
+            <div className="flex items-center justify-center gap-2 p-3 rounded-md bg-primary/10 text-primary text-sm font-medium">
+              <CheckCircle className="h-4 w-4" /> Paid in full
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Send / Share Actions */}
+      {/* Send & Share Actions */}
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-sm">Send & Share</CardTitle></CardHeader>
         <CardContent className="space-y-3">
-          <Button variant="outline" className="w-full" onClick={handleDownloadPdf} disabled={pdfLoading}>
-            {pdfLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-            {pdfLoading ? 'Generating PDF…' : 'Download PDF'}
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" className="flex-1" onClick={handleDownloadPdf} disabled={pdfLoading}>
+              {pdfLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+              {pdfLoading ? 'Generating…' : 'PDF'}
+            </Button>
+            {invoice.sent_at && (
+              <Button variant="outline" className="flex-1" onClick={handleResend}>
+                <Send className="mr-2 h-4 w-4" /> Resend
+              </Button>
+            )}
+          </div>
 
           {/* Share Link */}
           {hasShareLink ? (
@@ -647,32 +750,6 @@ function SentView({ invoice, items, invoicePayments, onUpdateInvoice, onAddPayme
             <Button variant="outline" className="w-full" onClick={handleCreateShareLink} disabled={shareLoading}>
               <Link2 className="mr-2 h-4 w-4" /> Create Share Link
             </Button>
-          )}
-
-          <p className="text-xs text-muted-foreground text-center">You can share this invoice by PDF or secure link.</p>
-
-          {/* Resend */}
-          {invoice.sent_at && (
-            <Button variant="outline" className="w-full" onClick={handleResend}>
-              <Send className="mr-2 h-4 w-4" /> Resend (Update Sent Date)
-            </Button>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Payment */}
-      <Card>
-        <CardHeader className="pb-2"><CardTitle className="text-sm">Payment</CardTitle></CardHeader>
-        <CardContent className="space-y-2">
-          {!isPaid && (
-            <Button className="w-full" onClick={() => setShowPayment(true)}>
-              <DollarSign className="mr-2 h-4 w-4" /> Record Payment
-            </Button>
-          )}
-          {isPaid && (
-            <div className="flex items-center justify-center gap-2 p-3 rounded-md bg-primary/10 text-primary text-sm">
-              <CheckCircle className="h-4 w-4" /> Paid in full
-            </div>
           )}
         </CardContent>
       </Card>
