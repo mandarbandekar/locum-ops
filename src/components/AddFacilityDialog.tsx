@@ -26,6 +26,8 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
   const [techPims, setTechPims] = useState('');
   // Clinic access
   const [clinicAccess, setClinicAccess] = useState('');
+  // Invoice prefix
+  const [invoicePrefix, setInvoicePrefix] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
