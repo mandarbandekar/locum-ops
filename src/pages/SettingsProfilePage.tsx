@@ -167,10 +167,6 @@ export default function SettingsProfilePage() {
                 <Label>Invoice due (days)</Label>
                 <Input type="number" value={dueDays} onChange={e => setDueDays(Number(e.target.value))} min={1} />
               </div>
-              <div>
-                <Label>Invoice prefix</Label>
-                <Input value={invoicePrefix} onChange={e => setInvoicePrefix(e.target.value.toUpperCase())} />
-              </div>
             </div>
             <div>
               <Label>Email tone</Label>
