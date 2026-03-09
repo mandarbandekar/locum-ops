@@ -97,7 +97,7 @@ export default function OnboardingPage() {
     console.log('onboarding_step_submit', { step: 3 });
     await updateProfile({
       invoice_due_default_days: dueDays,
-      invoice_prefix: invoicePrefix,
+      
       email_tone: emailTone,
       terms_fields_enabled: termsFields,
     });
