@@ -63,6 +63,8 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
   const [invoices, setInvoices] = useState<Invoice[]>(isDemo ? seedInvoices : []);
   const [lineItems, setLineItems] = useState<InvoiceLineItem[]>(isDemo ? seedLineItems : []);
   const [emailLogs, setEmailLogs] = useState<EmailLog[]>(isDemo ? seedEmailLogs : []);
+  const [payments, setPayments] = useState<InvoicePayment[]>([]);
+  const [activities, setActivities] = useState<InvoiceActivity[]>([]);
 
   useEffect(() => {
     if (isDemo || !user) return;
