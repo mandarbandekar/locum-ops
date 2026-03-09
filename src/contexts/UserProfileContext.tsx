@@ -32,6 +32,12 @@ export interface UserProfile {
   email_tone: EmailTone;
   terms_fields_enabled: TermsFieldsEnabled;
   onboarding_completed_at: string | null;
+  first_name: string;
+  last_name: string;
+  company_name: string;
+  company_address: string;
+  invoice_email: string | null;
+  invoice_phone: string | null;
 }
 
 const DEFAULT_TERMS_FIELDS: TermsFieldsEnabled = {
