@@ -68,18 +68,18 @@ export const seedShifts: Shift[] = [
 ];
 
 export const seedInvoices: Invoice[] = [
-  { id: 'i1', facility_id: 'c1', invoice_number: 'INV-2026-001', period_start: fmt(addDays(today, -30)), period_end: fmt(addDays(today, -16)), total_amount: 850, status: 'paid', sent_at: fmt(addDays(today, -14)), paid_at: fmt(addDays(today, -7)), due_date: fmt(addDays(today, 0)) },
-  { id: 'i2', facility_id: 'c2', invoice_number: 'INV-2026-002', period_start: fmt(addDays(today, -15)), period_end: fmt(addDays(today, -1)), total_amount: 2100, status: 'sent', sent_at: fmt(addDays(today, -1)), paid_at: null, due_date: fmt(addDays(today, 13)) },
-  { id: 'i3', facility_id: 'c1', invoice_number: 'INV-2026-003', period_start: fmt(addDays(today, -14)), period_end: fmt(addDays(today, -1)), total_amount: 850, status: 'draft', sent_at: null, paid_at: null, due_date: null },
-  { id: 'i4', facility_id: 'c4', invoice_number: 'INV-2025-042', period_start: fmt(addDays(today, -60)), period_end: fmt(addDays(today, -46)), total_amount: 1600, status: 'sent', sent_at: fmt(addDays(today, -44)), paid_at: null, due_date: fmt(addDays(today, -30)) },
+  { id: 'i1', facility_id: 'c1', invoice_number: 'GMC-2026-001', invoice_date: fmt(addDays(today, -15)), period_start: fmt(addDays(today, -30)), period_end: fmt(addDays(today, -16)), total_amount: 850, balance_due: 0, status: 'paid', sent_at: fmt(addDays(today, -14)), paid_at: fmt(addDays(today, -7)), due_date: fmt(addDays(today, 0)), notes: '', share_token: null, share_token_created_at: null, share_token_revoked_at: null },
+  { id: 'i2', facility_id: 'c2', invoice_number: 'EHC-2026-001', invoice_date: fmt(addDays(today, -2)), period_start: fmt(addDays(today, -15)), period_end: fmt(addDays(today, -1)), total_amount: 2100, balance_due: 2100, status: 'sent', sent_at: fmt(addDays(today, -1)), paid_at: null, due_date: fmt(addDays(today, 13)), notes: '', share_token: null, share_token_created_at: null, share_token_revoked_at: null },
+  { id: 'i3', facility_id: 'c1', invoice_number: 'GMC-2026-002', invoice_date: fmt(today), period_start: fmt(addDays(today, -14)), period_end: fmt(addDays(today, -1)), total_amount: 850, balance_due: 850, status: 'draft', sent_at: null, paid_at: null, due_date: null, notes: '', share_token: null, share_token_created_at: null, share_token_revoked_at: null },
+  { id: 'i4', facility_id: 'c4', invoice_number: 'MVP-2025-042', invoice_date: fmt(addDays(today, -45)), period_start: fmt(addDays(today, -60)), period_end: fmt(addDays(today, -46)), total_amount: 1600, balance_due: 1600, status: 'sent', sent_at: fmt(addDays(today, -44)), paid_at: null, due_date: fmt(addDays(today, -30)), notes: '', share_token: null, share_token_created_at: null, share_token_revoked_at: null },
 ];
 
 export const seedLineItems: InvoiceLineItem[] = [
-  { id: 'li1', invoice_id: 'i1', shift_id: 's1', description: 'Weekday shift - Greenfield Medical Center', qty: 1, unit_rate: 850, line_total: 850 },
-  { id: 'li2', invoice_id: 'i2', shift_id: 's3', description: 'Weekday shift - Evergreen Health Clinic', qty: 1, unit_rate: 900, line_total: 900 },
-  { id: 'li3', invoice_id: 'i2', shift_id: 's4', description: 'Weekend shift - Evergreen Health Clinic', qty: 1, unit_rate: 1200, line_total: 1200 },
-  { id: 'li4', invoice_id: 'i3', shift_id: 's2', description: 'Weekday shift - Greenfield Medical Center', qty: 1, unit_rate: 850, line_total: 850 },
-  { id: 'li5', invoice_id: 'i4', shift_id: null, description: 'Weekday shifts x2 - Mountain View Practice', qty: 2, unit_rate: 800, line_total: 1600 },
+  { id: 'li1', invoice_id: 'i1', shift_id: 's1', description: 'Weekday shift - Greenfield Medical Center', service_date: addDays(today, -12).toISOString().split('T')[0], qty: 1, unit_rate: 850, line_total: 850 },
+  { id: 'li2', invoice_id: 'i2', shift_id: 's3', description: 'Weekday shift - Evergreen Health Clinic', service_date: addDays(today, -8).toISOString().split('T')[0], qty: 1, unit_rate: 900, line_total: 900 },
+  { id: 'li3', invoice_id: 'i2', shift_id: 's4', description: 'Weekend shift - Evergreen Health Clinic', service_date: addDays(today, -3).toISOString().split('T')[0], qty: 1, unit_rate: 1200, line_total: 1200 },
+  { id: 'li4', invoice_id: 'i3', shift_id: 's2', description: 'Weekday shift - Greenfield Medical Center', service_date: addDays(today, -5).toISOString().split('T')[0], qty: 1, unit_rate: 850, line_total: 850 },
+  { id: 'li5', invoice_id: 'i4', shift_id: null, description: 'Weekday shifts x2 - Mountain View Practice', service_date: null, qty: 2, unit_rate: 800, line_total: 1600 },
 ];
 
 export const seedEmailLogs: EmailLog[] = [
@@ -132,4 +132,10 @@ export const seedUserProfile: UserProfile = {
     overtime_policy: true, late_payment_policy: true, special_notes: true,
   },
   onboarding_completed_at: new Date().toISOString(),
+  first_name: 'Dr. Jane',
+  last_name: 'Smith',
+  company_name: 'Smith Veterinary Services LLC',
+  company_address: '100 Main St, Suite 200\nPortland, OR 97201',
+  invoice_email: 'jane@smithvet.com',
+  invoice_phone: '503-555-1234',
 };

@@ -32,6 +32,12 @@ export interface UserProfile {
   email_tone: EmailTone;
   terms_fields_enabled: TermsFieldsEnabled;
   onboarding_completed_at: string | null;
+  first_name: string;
+  last_name: string;
+  company_name: string;
+  company_address: string;
+  invoice_email: string | null;
+  invoice_phone: string | null;
 }
 
 const DEFAULT_TERMS_FIELDS: TermsFieldsEnabled = {
@@ -56,6 +62,12 @@ export const DEFAULT_PROFILE: Omit<UserProfile, 'id' | 'user_id'> = {
   email_tone: 'neutral',
   terms_fields_enabled: DEFAULT_TERMS_FIELDS,
   onboarding_completed_at: null,
+  first_name: '',
+  last_name: '',
+  company_name: '',
+  company_address: '',
+  invoice_email: null,
+  invoice_phone: null,
 };
 
 interface UserProfileContextType {
@@ -121,6 +133,12 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
           email_tone: d.email_tone,
           terms_fields_enabled: (d.terms_fields_enabled as TermsFieldsEnabled) || DEFAULT_TERMS_FIELDS,
           onboarding_completed_at: d.onboarding_completed_at,
+          first_name: d.first_name || '',
+          last_name: d.last_name || '',
+          company_name: d.company_name || '',
+          company_address: d.company_address || '',
+          invoice_email: d.invoice_email || null,
+          invoice_phone: d.invoice_phone || null,
         });
       } else {
         const { data: newData, error: insertErr } = await db('user_profiles')
@@ -144,6 +162,12 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
             email_tone: nd.email_tone || 'neutral',
             terms_fields_enabled: DEFAULT_TERMS_FIELDS,
             onboarding_completed_at: null,
+            first_name: nd.first_name || '',
+            last_name: nd.last_name || '',
+            company_name: nd.company_name || '',
+            company_address: nd.company_address || '',
+            invoice_email: nd.invoice_email || null,
+            invoice_phone: nd.invoice_phone || null,
           });
         }
       }

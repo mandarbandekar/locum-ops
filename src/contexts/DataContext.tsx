@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
-import { Facility, FacilityContact, TermsSnapshot, Shift, Invoice, InvoiceLineItem, EmailLog } from '@/types';
+import { Facility, FacilityContact, TermsSnapshot, Shift, Invoice, InvoiceLineItem, InvoicePayment, InvoiceActivity, EmailLog } from '@/types';
 import {
   seedFacilities, seedContacts, seedTerms, seedShifts, seedInvoices, seedLineItems, seedEmailLogs,
 } from '@/data/seed';
@@ -24,6 +24,8 @@ interface DataContextType {
   shifts: Shift[];
   invoices: Invoice[];
   lineItems: InvoiceLineItem[];
+  payments: InvoicePayment[];
+  activities: InvoiceActivity[];
   emailLogs: EmailLog[];
   dataLoading: boolean;
   addFacility: (facility: Omit<Facility, 'id'>) => Promise<Facility>;
@@ -42,6 +44,8 @@ interface DataContextType {
   addLineItem: (item: Omit<InvoiceLineItem, 'id'>) => Promise<void>;
   updateLineItem: (item: InvoiceLineItem) => Promise<void>;
   deleteLineItem: (id: string) => Promise<void>;
+  addPayment: (payment: Omit<InvoicePayment, 'id'>) => Promise<void>;
+  addActivity: (activity: Omit<InvoiceActivity, 'id' | 'created_at'>) => Promise<void>;
   addEmailLog: (log: Omit<EmailLog, 'id'>) => Promise<void>;
   getComputedInvoiceStatus: (invoice: Invoice) => Invoice['status'];
 }
@@ -59,6 +63,8 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
   const [invoices, setInvoices] = useState<Invoice[]>(isDemo ? seedInvoices : []);
   const [lineItems, setLineItems] = useState<InvoiceLineItem[]>(isDemo ? seedLineItems : []);
   const [emailLogs, setEmailLogs] = useState<EmailLog[]>(isDemo ? seedEmailLogs : []);
+  const [payments, setPayments] = useState<InvoicePayment[]>([]);
+  const [activities, setActivities] = useState<InvoiceActivity[]>([]);
 
   useEffect(() => {
     if (isDemo || !user) return;
@@ -89,13 +95,15 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
       case 'shifts': setShifts(rows); break;
       case 'invoices': setInvoices(rows); break;
       case 'invoice_line_items': setLineItems(rows); break;
+      case 'invoice_payments': setPayments(rows); break;
+      case 'invoice_activity': setActivities(rows); break;
       case 'email_logs': setEmailLogs(rows); break;
     }
   }
 
   async function fetchAll() {
     try {
-      const [fRes, cRes, tRes, sRes, iRes, liRes, eRes] = await Promise.all([
+      const [fRes, cRes, tRes, sRes, iRes, liRes, eRes, pRes, aRes] = await Promise.all([
         db('facilities').select('*').order('created_at'),
         db('facility_contacts').select('*').order('created_at'),
         db('terms_snapshots').select('*').order('created_at'),
@@ -103,6 +111,8 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
         db('invoices').select('*').order('created_at'),
         db('invoice_line_items').select('*').order('created_at'),
         db('email_logs').select('*').order('sent_at'),
+        db('invoice_payments').select('*').order('created_at'),
+        db('invoice_activity').select('*').order('created_at'),
       ]);
       setFacilities((fRes.data || []).map(stripDbFields));
       setContacts((cRes.data || []).map(stripDbFields));
@@ -111,6 +121,8 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
       setInvoices((iRes.data || []).map(stripDbFields));
       setLineItems((liRes.data || []).map(stripDbFields));
       setEmailLogs((eRes.data || []).map(stripDbFields));
+      setPayments((pRes.data || []).map(stripDbFields));
+      setActivities((aRes.data || []).map(stripDbFields));
     } catch (err: any) {
       console.error('Failed to load data:', err);
       toast.error('Failed to load data');
@@ -332,6 +344,22 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     setEmailLogs(prev => [...prev, stripDbFields(data) as EmailLog]);
   }, [isDemo, user]);
 
+  // ─── Payments ────────────────────────────────────────────
+  const addPayment = useCallback(async (p: Omit<InvoicePayment, 'id'>) => {
+    if (isDemo) { setPayments(prev => [...prev, { ...p, id: generateId() }]); return; }
+    const { data, error } = await db('invoice_payments').insert({ user_id: user!.id, ...p }).select().single();
+    if (error) { toast.error(error.message); return; }
+    setPayments(prev => [...prev, stripDbFields(data) as InvoicePayment]);
+  }, [isDemo, user]);
+
+  // ─── Activity ────────────────────────────────────────────
+  const addActivity = useCallback(async (a: Omit<InvoiceActivity, 'id' | 'created_at'>) => {
+    if (isDemo) { setActivities(prev => [...prev, { ...a, id: generateId(), created_at: new Date().toISOString() }]); return; }
+    const { data, error } = await db('invoice_activity').insert({ user_id: user!.id, ...a }).select().single();
+    if (error) { console.error(error); return; }
+    setActivities(prev => [...prev, stripDbFields(data) as InvoiceActivity]);
+  }, [isDemo, user]);
+
   // ─── Auto-invoice on shift completion ─────────────────────
   const updateShiftWithAutoInvoice = useCallback(async (s: Shift) => {
     const oldShift = shifts.find(x => x.id === s.id);
@@ -342,24 +370,32 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
       if (!alreadyInvoiced) {
         const facility = facilities.find(f => f.id === s.facility_id);
         const invoiceNumber = generateInvoiceNumber(invoices, facility?.invoice_prefix || 'INV');
+        const dueDays = (facility as any)?.invoice_due_days || 15;
         const dueDate = new Date(s.end_datetime);
-        dueDate.setDate(dueDate.getDate() + 14);
+        dueDate.setDate(dueDate.getDate() + dueDays);
         try {
           await addInvoice(
             {
               facility_id: s.facility_id,
               invoice_number: invoiceNumber,
+              invoice_date: new Date().toISOString(),
               period_start: s.start_datetime,
               period_end: s.end_datetime,
               total_amount: s.rate_applied,
+              balance_due: s.rate_applied,
               status: 'draft' as Invoice['status'],
               sent_at: null,
               paid_at: null,
               due_date: dueDate.toISOString(),
+              notes: '',
+              share_token: null,
+              share_token_created_at: null,
+              share_token_revoked_at: null,
             },
             [{
               shift_id: s.id,
               description: `${facility?.name || 'Shift'} — ${new Date(s.start_datetime).toLocaleDateString()}`,
+              service_date: new Date(s.start_datetime).toISOString().split('T')[0],
               qty: 1,
               unit_rate: s.rate_applied,
               line_total: s.rate_applied,
@@ -389,13 +425,14 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
 
   return (
     <DataContext.Provider value={{
-      facilities, contacts, terms, shifts, invoices, lineItems, emailLogs, dataLoading,
+      facilities, contacts, terms, shifts, invoices, lineItems, payments, activities, emailLogs, dataLoading,
       addFacility, updateFacility, deleteFacility,
       addContact, updateContact, deleteContact,
       updateTerms,
       addShift, updateShift: updateShiftWithAutoInvoice, deleteShift,
       addInvoice, updateInvoice, deleteInvoice,
       addLineItem, updateLineItem, deleteLineItem,
+      addPayment, addActivity,
       addEmailLog,
       getComputedInvoiceStatus,
     }}>

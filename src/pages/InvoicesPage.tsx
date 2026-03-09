@@ -6,15 +6,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { StatusBadge } from '@/components/StatusBadge';
-import { Plus, Trash2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Plus } from 'lucide-react';
 import { format, subDays } from 'date-fns';
 import { computeInvoiceStatus, generateInvoiceNumber } from '@/lib/businessLogic';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 
 export default function InvoicesPage() {
-  const { invoices, facilities, shifts, addInvoice, deleteInvoice } = useData();
+  const { invoices, facilities, shifts, addInvoice } = useData();
   const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState('all');
   const [showCreate, setShowCreate] = useState(false);
@@ -22,9 +21,27 @@ export default function InvoicesPage() {
   const displayInvoices = invoices
     .map(inv => ({ ...inv, computedStatus: computeInvoiceStatus(inv) }))
     .filter(inv => statusFilter === 'all' || inv.computedStatus === statusFilter)
-    .sort((a, b) => new Date(b.period_end).getTime() - new Date(a.period_end).getTime());
+    .sort((a, b) => new Date(b.invoice_date || b.period_end).getTime() - new Date(a.invoice_date || a.period_end).getTime());
 
   const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
+
+  const getStatusBadge = (status: string) => {
+    const styles: Record<string, string> = {
+      draft: 'bg-muted text-muted-foreground',
+      sent: 'bg-blue-500/15 text-blue-700 dark:text-blue-400',
+      partial: 'bg-amber-500/15 text-amber-700 dark:text-amber-400',
+      paid: 'bg-primary/15 text-primary',
+      overdue: 'bg-destructive/15 text-destructive',
+    };
+    const labels: Record<string, string> = {
+      draft: 'Draft',
+      sent: 'Sent',
+      partial: 'Partially Paid',
+      paid: 'Paid',
+      overdue: 'Overdue',
+    };
+    return <Badge className={`${styles[status] || styles.draft} text-xs font-medium`}>{labels[status] || status}</Badge>;
+  };
 
   return (
     <div>
@@ -35,61 +52,63 @@ export default function InvoicesPage() {
         </Button>
       </div>
 
-      <div className="flex gap-3 mb-4">
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-36"><SelectValue placeholder="Status" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All</SelectItem>
-            <SelectItem value="draft">Draft</SelectItem>
-            <SelectItem value="sent">Sent</SelectItem>
-            <SelectItem value="paid">Paid</SelectItem>
-            <SelectItem value="overdue">Overdue</SelectItem>
-          </SelectContent>
-        </Select>
+      <div className="flex gap-2 mb-4 flex-wrap">
+        {['all', 'draft', 'sent', 'partial', 'paid', 'overdue'].map(s => (
+          <Button
+            key={s}
+            size="sm"
+            variant={statusFilter === s ? 'default' : 'outline'}
+            onClick={() => setStatusFilter(s)}
+            className="h-7 text-xs"
+          >
+            {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
+            {s !== 'all' && (
+              <span className="ml-1 opacity-60">
+                ({invoices.filter(i => (s === 'overdue' ? computeInvoiceStatus(i) : i.status) === s).length})
+              </span>
+            )}
+          </Button>
+        ))}
       </div>
 
       <div className="rounded-lg border bg-card overflow-hidden">
         <table className="w-full text-sm">
-          <thead><tr className="border-b bg-muted/50">
-            <th className="text-left p-3 font-medium text-muted-foreground">Invoice #</th>
-            <th className="text-left p-3 font-medium text-muted-foreground">Facility</th>
-            <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Period</th>
-            <th className="text-left p-3 font-medium text-muted-foreground">Amount</th>
-            <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
-            <th className="w-10" />
-          </tr></thead>
+          <thead>
+            <tr className="border-b bg-muted/50">
+              <th className="text-left p-3 font-medium text-muted-foreground">Invoice #</th>
+              <th className="text-left p-3 font-medium text-muted-foreground">Facility</th>
+              <th className="text-left p-3 font-medium text-muted-foreground hidden sm:table-cell">Invoice Date</th>
+              <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Due Date</th>
+              <th className="text-right p-3 font-medium text-muted-foreground">Total</th>
+              <th className="text-right p-3 font-medium text-muted-foreground hidden sm:table-cell">Balance</th>
+              <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
+            </tr>
+          </thead>
           <tbody>
             {displayInvoices.map(inv => (
-              <tr key={inv.id} className="border-b last:border-0 hover:bg-muted/30 cursor-pointer" onClick={() => navigate(`/invoices/${inv.id}`)}>
+              <tr
+                key={inv.id}
+                className="border-b last:border-0 hover:bg-muted/30 cursor-pointer transition-colors"
+                onClick={() => navigate(`/invoices/${inv.id}`)}
+              >
                 <td className="p-3 font-medium">{inv.invoice_number}</td>
                 <td className="p-3">{getFacilityName(inv.facility_id)}</td>
+                <td className="p-3 text-muted-foreground hidden sm:table-cell">
+                  {inv.invoice_date ? format(new Date(inv.invoice_date), 'MMM d, yyyy') : '—'}
+                </td>
                 <td className="p-3 text-muted-foreground hidden md:table-cell">
-                  {format(new Date(inv.period_start), 'MMM d')} - {format(new Date(inv.period_end), 'MMM d, yyyy')}
+                  {inv.due_date ? format(new Date(inv.due_date), 'MMM d, yyyy') : '—'}
                 </td>
-                <td className="p-3 font-medium">${inv.total_amount.toLocaleString()}</td>
-                <td className="p-3"><StatusBadge status={inv.computedStatus} /></td>
-                <td className="p-3" onClick={e => e.stopPropagation()}>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete {inv.invoice_number}?</AlertDialogTitle>
-                        <AlertDialogDescription>This invoice and its line items will be permanently removed.</AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => { deleteInvoice(inv.id); toast.success('Invoice deleted'); }}>Delete</AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                <td className="p-3 text-right font-medium">${inv.total_amount.toLocaleString()}</td>
+                <td className="p-3 text-right hidden sm:table-cell">
+                  {inv.balance_due > 0 ? <span className="font-medium">${inv.balance_due.toLocaleString()}</span> : <span className="text-muted-foreground">—</span>}
                 </td>
+                <td className="p-3">{getStatusBadge(inv.computedStatus)}</td>
               </tr>
             ))}
-            {displayInvoices.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">No invoices</td></tr>}
+            {displayInvoices.length === 0 && (
+              <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">No invoices</td></tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -118,6 +137,7 @@ function CreateInvoiceDialog({ open, onOpenChange }: { open: boolean; onOpenChan
     const lineItems = completedShifts.map(s => ({
       shift_id: s.id,
       description: `Shift - ${format(new Date(s.start_datetime), 'MMM d, yyyy')} (${format(new Date(s.start_datetime), 'h:mm a')} - ${format(new Date(s.end_datetime), 'h:mm a')})`,
+      service_date: new Date(s.start_datetime).toISOString().split('T')[0],
       qty: 1,
       unit_rate: s.rate_applied,
       line_total: s.rate_applied,
@@ -126,17 +146,25 @@ function CreateInvoiceDialog({ open, onOpenChange }: { open: boolean; onOpenChan
     const total = lineItems.reduce((sum, li) => sum + li.line_total, 0);
 
     try {
+      const facility = facilities.find(f => f.id === facilityId);
+      const dueDays = (facility as any)?.invoice_due_days || 15;
       const invoice = await addInvoice(
         {
           facility_id: facilityId,
-          invoice_number: generateInvoiceNumber(invoices, facilities.find(f => f.id === facilityId)?.invoice_prefix || 'INV'),
+          invoice_number: generateInvoiceNumber(invoices, facility?.invoice_prefix || 'INV'),
+          invoice_date: new Date().toISOString(),
           period_start: new Date(periodStart).toISOString(),
           period_end: new Date(periodEnd).toISOString(),
           total_amount: total,
+          balance_due: total,
           status: 'draft',
           sent_at: null,
           paid_at: null,
-          due_date: new Date(new Date(periodEnd).getTime() + (facilities.find(f => f.id === facilityId)?.invoice_due_days || 15) * 86400000).toISOString(),
+          due_date: new Date(new Date(periodEnd).getTime() + dueDays * 86400000).toISOString(),
+          notes: '',
+          share_token: null,
+          share_token_created_at: null,
+          share_token_revoked_at: null,
         },
         lineItems
       );
