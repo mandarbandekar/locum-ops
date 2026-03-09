@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect, Rea
 import { Facility, FacilityContact, TermsSnapshot, Shift, Invoice, InvoiceLineItem, InvoicePayment, InvoiceActivity, EmailLog } from '@/types';
 import { ContractChecklistItem } from '@/types/contracts';
 import {
-  seedFacilities, seedContacts, seedTerms, seedShifts, seedInvoices, seedLineItems, seedEmailLogs, seedChecklistItems,
+  seedFacilities, seedContacts, seedTerms, seedShifts, seedInvoices, seedLineItems, seedEmailLogs, seedChecklistItems, seedChecklistItems,
 } from '@/data/seed';
 import { computeInvoiceStatus, generateId, generateInvoiceNumber } from '@/lib/businessLogic';
 import { supabase } from '@/integrations/supabase/client';
@@ -67,7 +67,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
   const [emailLogs, setEmailLogs] = useState<EmailLog[]>(isDemo ? seedEmailLogs : []);
   const [payments, setPayments] = useState<InvoicePayment[]>([]);
   const [activities, setActivities] = useState<InvoiceActivity[]>([]);
-  const [checklistItems, setChecklistItems] = useState<ContractChecklistItem[]>([]);
+  const [checklistItems, setChecklistItems] = useState<ContrisDemo ? seedChecklistItems : actChecklistItem[]>([]);
 
   useEffect(() => {
     if (isDemo || !user) return;
