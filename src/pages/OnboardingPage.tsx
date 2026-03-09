@@ -94,8 +94,6 @@ export default function OnboardingPage() {
   const saveStep3 = async () => {
     console.log('onboarding_step_submit', { step: 3 });
     await updateProfile({
-      invoice_due_default_days: dueDays,
-      
       email_tone: emailTone,
       terms_fields_enabled: termsFields,
     });
