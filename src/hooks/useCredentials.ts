@@ -71,8 +71,9 @@ export function useCredentials() {
       status?: string;
       notes?: string;
       tags?: string[];
+      ce_required_hours?: number | null;
     }) => {
-      const insertData: CredentialInsert = {
+      const insertData: any = {
         user_id: user!.id,
         credential_type: credential.credential_type as CredentialTypeEnum,
         custom_title: credential.custom_title,
@@ -85,6 +86,7 @@ export function useCredentials() {
         status: (credential.status || 'active') as CredentialStatusEnum,
         notes: credential.notes || '',
         tags: credential.tags || [],
+        ce_required_hours: credential.ce_required_hours ?? null,
       };
       const { data, error } = await supabase
         .from('credentials')
