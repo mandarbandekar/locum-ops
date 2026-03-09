@@ -176,7 +176,16 @@ export default function SchedulePage() {
             facilities={facilities}
             shifts={shifts}
             existing={shifts.find(s => s.id === editShift)}
-            onSave={(s) => { updateShift(s as any); toast.success('Shift updated'); }}
+            onSave={(s) => {
+              updateShift(s as any);
+              const facility = facilities.find(f => f.id === s.facility_id);
+              if (facility && facility.status !== 'active') {
+                updateFacility({ ...facility, status: 'active' });
+                toast.success(`Shift updated — "${facility.name}" has been set to Active`);
+              } else {
+                toast.success('Shift updated');
+              }
+            }}
             onDelete={(id) => { deleteShift(id); setEditShift(null); toast.success('Shift deleted'); }}
           />
         )}
