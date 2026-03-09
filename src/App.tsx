@@ -107,7 +107,7 @@ function AuthGate() {
         <Route path="/quiz" element={<QuizPage />} />
         <Route path="/results" element={<ResultsPage />} />
         <Route path="/thanks" element={<ThanksPage />} />
-        <Route path="/_debug" element={<DebugPage Page />} />
+        
       </Routes>
     );
   }
