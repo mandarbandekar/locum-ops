@@ -110,7 +110,7 @@ export default function DashboardPage() {
       });
 
     // 8) Contract checklist items due soon
-    seedChecklistItems
+    checklistItems
       .filter(item => getChecklistBadge(item) === 'due_soon' || getChecklistBadge(item) === 'overdue')
       .forEach(item => {
         const badge = getChecklistBadge(item);
