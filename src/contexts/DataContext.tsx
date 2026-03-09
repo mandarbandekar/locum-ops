@@ -344,6 +344,22 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     setEmailLogs(prev => [...prev, stripDbFields(data) as EmailLog]);
   }, [isDemo, user]);
 
+  // ─── Payments ────────────────────────────────────────────
+  const addPayment = useCallback(async (p: Omit<InvoicePayment, 'id'>) => {
+    if (isDemo) { setPayments(prev => [...prev, { ...p, id: generateId() }]); return; }
+    const { data, error } = await db('invoice_payments').insert({ user_id: user!.id, ...p }).select().single();
+    if (error) { toast.error(error.message); return; }
+    setPayments(prev => [...prev, stripDbFields(data) as InvoicePayment]);
+  }, [isDemo, user]);
+
+  // ─── Activity ────────────────────────────────────────────
+  const addActivity = useCallback(async (a: Omit<InvoiceActivity, 'id' | 'created_at'>) => {
+    if (isDemo) { setActivities(prev => [...prev, { ...a, id: generateId(), created_at: new Date().toISOString() }]); return; }
+    const { data, error } = await db('invoice_activity').insert({ user_id: user!.id, ...a }).select().single();
+    if (error) { console.error(error); return; }
+    setActivities(prev => [...prev, stripDbFields(data) as InvoiceActivity]);
+  }, [isDemo, user]);
+
   // ─── Auto-invoice on shift completion ─────────────────────
   const updateShiftWithAutoInvoice = useCallback(async (s: Shift) => {
     const oldShift = shifts.find(x => x.id === s.id);
