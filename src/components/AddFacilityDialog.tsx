@@ -48,6 +48,7 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
   const resetForm = () => {
     setStep(0);
     setName(''); setAddress(''); setNotes(''); setStatus('prospect');
+    setWeekdayRate(''); setWeekendRate('');
     setPartialDayRate(''); setHolidayRate(''); setTelemedicineRate('');
     setTechComputer(''); setTechWifi(''); setTechPims('');
     setClinicAccess(''); setInvoicePrefix(''); setInvoiceDueDays(15);
