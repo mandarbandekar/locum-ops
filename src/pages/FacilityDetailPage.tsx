@@ -84,6 +84,10 @@ export default function FacilityDetailPage() {
         <TabsContent value="clinic-access" className="mt-4">
           <ClinicAccessTab facility={facility} onUpdate={updateFacility} />
         </TabsContent>
+
+        <TabsContent value="invoice-settings" className="mt-4">
+          <InvoiceSettingsTab facility={facility} onUpdate={updateFacility} />
+        </TabsContent>
       </Tabs>
     </div>
   );
