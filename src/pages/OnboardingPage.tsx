@@ -64,7 +64,7 @@ export default function OnboardingPage() {
   // Step 3 state
   const [dueDays, setDueDays] = useState(profile?.invoice_due_default_days || 14);
   const [duePreset, setDuePreset] = useState<'14' | '30' | 'custom'>(profile?.invoice_due_default_days === 30 ? '30' : profile?.invoice_due_default_days === 14 ? '14' : 'custom');
-  const [invoicePrefix, setInvoicePrefix] = useState(profile?.invoice_prefix || 'INV');
+  
   const [emailTone, setEmailTone] = useState<EmailTone>(profile?.email_tone || 'neutral');
   const [termsFields, setTermsFields] = useState<TermsFieldsEnabled>(
     profile?.terms_fields_enabled || {
@@ -97,7 +97,7 @@ export default function OnboardingPage() {
     console.log('onboarding_step_submit', { step: 3 });
     await updateProfile({
       invoice_due_default_days: dueDays,
-      invoice_prefix: invoicePrefix,
+      
       email_tone: emailTone,
       terms_fields_enabled: termsFields,
     });
@@ -302,11 +302,6 @@ export default function OnboardingPage() {
                       )}
                     </div>
                   </RadioGroup>
-                </div>
-                <div>
-                  <Label>Invoice prefix</Label>
-                  <Input value={invoicePrefix} onChange={e => setInvoicePrefix(e.target.value.toUpperCase())} placeholder="INV" className="w-32" />
-                  <p className="text-xs text-muted-foreground mt-1">e.g. {invoicePrefix}-2026-001</p>
                 </div>
                 <div>
                   <Label>Email template tone</Label>

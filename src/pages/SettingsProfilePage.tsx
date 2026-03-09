@@ -49,7 +49,7 @@ export default function SettingsProfilePage() {
   const [facilitiesBand, setFacilitiesBand] = useState<FacilitiesCountBand>(profile?.facilities_count_band || 'band_1_3');
   const [invoicesBand, setInvoicesBand] = useState<InvoicesPerMonthBand>(profile?.invoices_per_month_band || 'inv_1_3');
   const [dueDays, setDueDays] = useState(profile?.invoice_due_default_days || 14);
-  const [invoicePrefix, setInvoicePrefix] = useState(profile?.invoice_prefix || 'INV');
+  
   const [emailTone, setEmailTone] = useState<EmailTone>(profile?.email_tone || 'neutral');
   const [termsFields, setTermsFields] = useState<TermsFieldsEnabled>(
     profile?.terms_fields_enabled || { weekday_rate: true, weekend_rate: true, cancellation_policy: true, overtime_policy: true, late_payment_policy: true, special_notes: true }
@@ -65,7 +65,7 @@ export default function SettingsProfilePage() {
     await updateProfile({
       profession, work_style_label: workStyle, timezone, currency, current_tools: currentTools,
       facilities_count_band: facilitiesBand, invoices_per_month_band: invoicesBand,
-      invoice_due_default_days: dueDays, invoice_prefix: invoicePrefix, email_tone: emailTone,
+      invoice_due_default_days: dueDays, email_tone: emailTone,
       terms_fields_enabled: termsFields,
     });
     setSaving(false);
@@ -166,10 +166,6 @@ export default function SettingsProfilePage() {
               <div>
                 <Label>Invoice due (days)</Label>
                 <Input type="number" value={dueDays} onChange={e => setDueDays(Number(e.target.value))} min={1} />
-              </div>
-              <div>
-                <Label>Invoice prefix</Label>
-                <Input value={invoicePrefix} onChange={e => setInvoicePrefix(e.target.value.toUpperCase())} />
               </div>
             </div>
             <div>

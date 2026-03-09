@@ -129,7 +129,7 @@ function CreateInvoiceDialog({ open, onOpenChange }: { open: boolean; onOpenChan
       const invoice = await addInvoice(
         {
           facility_id: facilityId,
-          invoice_number: generateInvoiceNumber(invoices),
+          invoice_number: generateInvoiceNumber(invoices, facilities.find(f => f.id === facilityId)?.invoice_prefix || 'INV'),
           period_start: new Date(periodStart).toISOString(),
           period_end: new Date(periodEnd).toISOString(),
           total_amount: total,

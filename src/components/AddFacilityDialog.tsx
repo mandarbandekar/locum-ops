@@ -26,10 +26,13 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
   const [techPims, setTechPims] = useState('');
   // Clinic access
   const [clinicAccess, setClinicAccess] = useState('');
+  // Invoice prefix
+  const [invoicePrefix, setInvoicePrefix] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
+    const prefix = invoicePrefix || getInitials(name);
     addFacility({
       name, status, address, timezone: 'America/Los_Angeles', notes,
       outreach_last_sent_at: null,
@@ -37,6 +40,7 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
       tech_wifi_info: techWifi,
       tech_pims_info: techPims,
       clinic_access_info: clinicAccess,
+      invoice_prefix: prefix,
     });
     toast.success('Practice facility added');
     resetForm();
@@ -47,8 +51,12 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
     setName(''); setAddress(''); setNotes('');
     setPartialDayRate(''); setHolidayRate(''); setTelemedicineRate('');
     setTechComputer(''); setTechWifi(''); setTechPims('');
-    setClinicAccess('');
+    setClinicAccess(''); setInvoicePrefix('');
   };
+
+  function getInitials(text: string): string {
+    return text.split(/\s+/).map(w => w[0]).filter(Boolean).join('').toUpperCase().slice(0, 4) || 'INV';
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -82,6 +90,17 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
               <div className="space-y-2">
                 <Label>Address</Label>
                 <Input value={address} onChange={e => setAddress(e.target.value)} placeholder="Full address" />
+              </div>
+              <div className="space-y-2">
+                <Label>Invoice Prefix</Label>
+                <Input
+                  value={invoicePrefix}
+                  onChange={e => setInvoicePrefix(e.target.value.toUpperCase())}
+                  placeholder={name ? getInitials(name) : 'INV'}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Defaults to facility initials. e.g. {invoicePrefix || (name ? getInitials(name) : 'INV')}-2026-001
+                </p>
               </div>
               <div className="space-y-2">
                 <Label>Notes</Label>

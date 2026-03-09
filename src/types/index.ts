@@ -19,6 +19,7 @@ export interface Facility {
   tech_wifi_info: string;
   tech_pims_info: string;
   clinic_access_info: string;
+  invoice_prefix: string;
 }
 
 export type ContactRole = 'scheduler' | 'billing' | 'emergency' | 'other';

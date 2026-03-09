@@ -30,6 +30,7 @@ export default function FacilitiesPage() {
     const parts = displayName.split(',');
     const name = parts[0]?.trim() || displayName;
     try {
+      const initials = name.split(/\s+/).map(w => w[0]).filter(Boolean).join('').toUpperCase().slice(0, 4) || 'INV';
       const facility = await addFacility({
         name,
         address: displayName,
@@ -41,6 +42,7 @@ export default function FacilitiesPage() {
         tech_wifi_info: '',
         tech_pims_info: '',
         clinic_access_info: '',
+        invoice_prefix: initials,
       });
       toast.success(`"${name}" added as a new practice facility`);
       setSearch('');
