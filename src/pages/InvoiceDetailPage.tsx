@@ -462,8 +462,9 @@ function SentView({ invoice, items, invoicePayments, onUpdateInvoice, onAddPayme
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-sm">Send & Share</CardTitle></CardHeader>
         <CardContent className="space-y-3">
-          <Button variant="outline" className="w-full" onClick={handlePrint}>
-            <Printer className="mr-2 h-4 w-4" /> Download / Print PDF
+          <Button variant="outline" className="w-full" onClick={handleDownloadPdf} disabled={pdfLoading}>
+            {pdfLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+            {pdfLoading ? 'Generating PDF…' : 'Download PDF'}
           </Button>
 
           {/* Share Link */}
