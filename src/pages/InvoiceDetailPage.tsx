@@ -101,11 +101,9 @@ export default function InvoiceDetailPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                {invoice.status !== 'draft' && (
-                  <DropdownMenuItem onClick={handleMoveToDraft}>
-                    <Undo2 className="mr-2 h-3.5 w-3.5" /> Draft & Review
-                  </DropdownMenuItem>
-                )}
+                <DropdownMenuItem onClick={handleMoveToDraft}>
+                  <Undo2 className="mr-2 h-3.5 w-3.5" /> Draft & Review
+                </DropdownMenuItem>
                 {invoice.status === 'paid' && (
                   <DropdownMenuItem onClick={handleMoveToSent}>
                     <Send className="mr-2 h-3.5 w-3.5" /> Sent
