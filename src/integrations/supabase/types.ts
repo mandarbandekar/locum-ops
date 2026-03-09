@@ -677,6 +677,41 @@ export type Database = {
           },
         ]
       }
+      invoice_activity: {
+        Row: {
+          action: string
+          created_at: string
+          description: string
+          id: string
+          invoice_id: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          description?: string
+          id?: string
+          invoice_id: string
+          user_id?: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          description?: string
+          id?: string
+          invoice_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_activity_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoice_line_items: {
         Row: {
           created_at: string
@@ -685,6 +720,7 @@ export type Database = {
           invoice_id: string
           line_total: number
           qty: number
+          service_date: string | null
           shift_id: string | null
           unit_rate: number
           user_id: string
@@ -696,6 +732,7 @@ export type Database = {
           invoice_id: string
           line_total?: number
           qty?: number
+          service_date?: string | null
           shift_id?: string | null
           unit_rate?: number
           user_id: string
@@ -707,6 +744,7 @@ export type Database = {
           invoice_id?: string
           line_total?: number
           qty?: number
+          service_date?: string | null
           shift_id?: string | null
           unit_rate?: number
           user_id?: string
@@ -728,47 +766,109 @@ export type Database = {
           },
         ]
       }
+      invoice_payments: {
+        Row: {
+          account: string
+          amount: number
+          created_at: string
+          id: string
+          invoice_id: string
+          memo: string
+          method: string
+          payment_date: string
+          user_id: string
+        }
+        Insert: {
+          account?: string
+          amount?: number
+          created_at?: string
+          id?: string
+          invoice_id: string
+          memo?: string
+          method?: string
+          payment_date?: string
+          user_id?: string
+        }
+        Update: {
+          account?: string
+          amount?: number
+          created_at?: string
+          id?: string
+          invoice_id?: string
+          memo?: string
+          method?: string
+          payment_date?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_payments_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoices: {
         Row: {
+          balance_due: number
           created_at: string
           due_date: string | null
           facility_id: string
           id: string
+          invoice_date: string
           invoice_number: string
+          notes: string
           paid_at: string | null
           period_end: string
           period_start: string
           sent_at: string | null
+          share_token: string | null
+          share_token_created_at: string | null
+          share_token_revoked_at: string | null
           status: string
           total_amount: number
           updated_at: string
           user_id: string
         }
         Insert: {
+          balance_due?: number
           created_at?: string
           due_date?: string | null
           facility_id: string
           id?: string
+          invoice_date?: string
           invoice_number: string
+          notes?: string
           paid_at?: string | null
           period_end: string
           period_start: string
           sent_at?: string | null
+          share_token?: string | null
+          share_token_created_at?: string | null
+          share_token_revoked_at?: string | null
           status?: string
           total_amount?: number
           updated_at?: string
           user_id: string
         }
         Update: {
+          balance_due?: number
           created_at?: string
           due_date?: string | null
           facility_id?: string
           id?: string
+          invoice_date?: string
           invoice_number?: string
+          notes?: string
           paid_at?: string | null
           period_end?: string
           period_start?: string
           sent_at?: string | null
+          share_token?: string | null
+          share_token_created_at?: string | null
+          share_token_revoked_at?: string | null
           status?: string
           total_amount?: number
           updated_at?: string
@@ -997,15 +1097,21 @@ export type Database = {
       }
       user_profiles: {
         Row: {
+          company_address: string
+          company_name: string
           created_at: string
           currency: string
           current_tools: Json
           email_tone: string
           facilities_count_band: string
+          first_name: string
           id: string
           invoice_due_default_days: number
+          invoice_email: string | null
+          invoice_phone: string | null
           invoice_prefix: string
           invoices_per_month_band: string
+          last_name: string
           onboarding_completed_at: string | null
           profession: string
           terms_fields_enabled: Json
@@ -1015,15 +1121,21 @@ export type Database = {
           work_style_label: string
         }
         Insert: {
+          company_address?: string
+          company_name?: string
           created_at?: string
           currency?: string
           current_tools?: Json
           email_tone?: string
           facilities_count_band?: string
+          first_name?: string
           id?: string
           invoice_due_default_days?: number
+          invoice_email?: string | null
+          invoice_phone?: string | null
           invoice_prefix?: string
           invoices_per_month_band?: string
+          last_name?: string
           onboarding_completed_at?: string | null
           profession?: string
           terms_fields_enabled?: Json
@@ -1033,15 +1145,21 @@ export type Database = {
           work_style_label?: string
         }
         Update: {
+          company_address?: string
+          company_name?: string
           created_at?: string
           currency?: string
           current_tools?: Json
           email_tone?: string
           facilities_count_band?: string
+          first_name?: string
           id?: string
           invoice_due_default_days?: number
+          invoice_email?: string | null
+          invoice_phone?: string | null
           invoice_prefix?: string
           invoices_per_month_band?: string
+          last_name?: string
           onboarding_completed_at?: string | null
           profession?: string
           terms_fields_enabled?: Json
