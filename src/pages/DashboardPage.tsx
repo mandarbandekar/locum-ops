@@ -9,11 +9,10 @@ import {
 } from 'lucide-react';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
 import { format, differenceInDays } from 'date-fns';
-import { seedChecklistItems } from '@/data/seed';
 import { getChecklistBadge } from '@/types/contracts';
 
 export default function DashboardPage() {
-  const { shifts, invoices, facilities, payments } = useData();
+  const { shifts, invoices, facilities, payments, checklistItems } = useData();
   const navigate = useNavigate();
   const now = new Date();
 
@@ -39,7 +38,7 @@ export default function DashboardPage() {
     const partialCount = unpaidInvoices.filter(i => i.status === 'partial').length;
 
     // Due soon items
-    const dueSoonChecklist = seedChecklistItems.filter(item => {
+    const dueSoonChecklist = checklistItems.filter(item => {
       const badge = getChecklistBadge(item);
       return badge === 'due_soon' || badge === 'overdue';
     });
@@ -66,7 +65,7 @@ export default function DashboardPage() {
       overdueCount, sentCount, partialCount, dueSoonTotal, dueSoonExamples,
       nextShiftLabel, getFacilityName,
     };
-  }, [shifts, invoices, facilities, now]);
+  }, [shifts, invoices, facilities, checklistItems, now]);
 
   // ── Today's Priorities ──
   const priorities = useMemo(() => {
@@ -111,7 +110,7 @@ export default function DashboardPage() {
       });
 
     // 8) Contract checklist items due soon
-    seedChecklistItems
+    checklistItems
       .filter(item => getChecklistBadge(item) === 'due_soon' || getChecklistBadge(item) === 'overdue')
       .forEach(item => {
         const badge = getChecklistBadge(item);
@@ -126,7 +125,7 @@ export default function DashboardPage() {
       });
 
     return items.sort((a, b) => a.urgency - b.urgency).slice(0, 6);
-  }, [invoices, shifts, facilities, now]);
+  }, [invoices, shifts, facilities, checklistItems, checklistItems, now]);
 
   // ── This Period ──
   const periodData = useMemo(() => {
@@ -158,7 +157,7 @@ export default function DashboardPage() {
   const trackingLines = useMemo(() => {
     const lines: { text: string; link: string }[] = [];
 
-    const dueSoonChecklist = seedChecklistItems.filter(item => {
+    const dueSoonChecklist = checklistItems.filter(item => {
       const badge = getChecklistBadge(item);
       return badge === 'due_soon' || badge === 'overdue';
     });
@@ -167,7 +166,7 @@ export default function DashboardPage() {
     }
 
     return lines;
-  }, []);
+  }, [checklistItems]);
 
   const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
   const getInvoiceForPayment = (invoiceId: string) => invoices.find(i => i.id === invoiceId);
