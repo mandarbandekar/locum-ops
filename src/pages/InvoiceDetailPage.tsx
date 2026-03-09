@@ -338,13 +338,16 @@ function DraftForm({ invoice, items, facility, billingContact, profile, onUpdate
       </Card>
 
       {/* Actions */}
-      <div className="flex gap-2">
-        <Button onClick={handleSave} variant="outline" disabled={saving} className="flex-1">
-          {saving ? 'Saving…' : 'Save Draft'}
-        </Button>
-        <Button onClick={handleProceedToSend} className="flex-1">
-          <Send className="mr-1 h-4 w-4" /> Save & Send
-        </Button>
+      <div className="space-y-2">
+        <div className="flex gap-2">
+          <Button onClick={handleSave} variant="outline" disabled={saving} className="flex-1">
+            {saving ? 'Saving…' : 'Save Draft'}
+          </Button>
+          <Button onClick={handleProceedToSend} className="flex-1">
+            <Send className="mr-1 h-4 w-4" /> Save & Send
+          </Button>
+        </div>
+        <DraftPdfButton invoiceId={invoice.id} invoiceNumber={invoice.invoice_number} />
       </div>
     </div>
   );
