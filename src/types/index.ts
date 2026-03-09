@@ -23,7 +23,7 @@ export interface Facility {
   invoice_due_days: number;
 }
 
-export type ContactRole = 'scheduler' | 'billing' | 'emergency' | 'other';
+export type ContactRole = 'practice_manager' | 'other';
 export interface FacilityContact {
   id: string;
   facility_id: string;

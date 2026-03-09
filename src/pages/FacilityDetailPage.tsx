@@ -43,7 +43,6 @@ export default function FacilityDetailPage() {
       <Tabs defaultValue="overview">
         <TabsList className="flex-wrap">
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="contacts">Contacts ({facilityContacts.length})</TabsTrigger>
           <TabsTrigger value="terms">Terms</TabsTrigger>
           <TabsTrigger value="shifts">Shifts ({facilityShifts.length})</TabsTrigger>
           <TabsTrigger value="invoices">Invoices ({facilityInvoices.length})</TabsTrigger>
@@ -54,11 +53,7 @@ export default function FacilityDetailPage() {
         </TabsList>
 
         <TabsContent value="overview" className="mt-4">
-          <OverviewTab facility={facility} shifts={facilityShifts} onUpdate={updateFacility} />
-        </TabsContent>
-
-        <TabsContent value="contacts" className="mt-4">
-          <ContactsTab contacts={facilityContacts} facilityId={facility.id} onAdd={addContact} onUpdate={updateContact} onDelete={deleteContact} />
+          <OverviewTab facility={facility} shifts={facilityShifts} contact={facilityContacts[0] || null} onUpdate={updateFacility} onAddContact={addContact} onUpdateContact={updateContact} onDeleteContact={deleteContact} facilityId={facility.id} />
         </TabsContent>
 
         <TabsContent value="terms" className="mt-4">
@@ -95,10 +90,24 @@ export default function FacilityDetailPage() {
 
 // ─── Overview Tab ──────────────────────────────────────────
 
-function OverviewTab({ facility, shifts, onUpdate }: { facility: any; shifts: any[]; onUpdate: any }) {
+function OverviewTab({ facility, shifts, contact, onUpdate, onAddContact, onUpdateContact, onDeleteContact, facilityId }: {
+  facility: any; shifts: any[]; contact: FacilityContact | null; onUpdate: any;
+  onAddContact: (c: Omit<FacilityContact, 'id'>) => void;
+  onUpdateContact: (c: FacilityContact) => void;
+  onDeleteContact: (id: string) => void;
+  facilityId: string;
+}) {
   const [editing, setEditing] = useState(false);
   const [notes, setNotes] = useState(facility.notes);
   const [status, setStatus] = useState(facility.status);
+
+  // Contact editing
+  const [editingContact, setEditingContact] = useState(false);
+  const [contactForm, setContactForm] = useState({
+    name: contact?.name || '',
+    email: contact?.email || '',
+    phone: contact?.phone || '',
+  });
 
   const upcoming = shifts.filter(s => new Date(s.start_datetime) > new Date() && s.status !== 'canceled').slice(0, 5);
 
@@ -106,6 +115,25 @@ function OverviewTab({ facility, shifts, onUpdate }: { facility: any; shifts: an
     onUpdate({ ...facility, notes, status });
     setEditing(false);
     toast.success('Practice facility updated');
+  };
+
+  const handleSaveContact = () => {
+    if (!contactForm.name.trim()) return;
+    if (contact) {
+      onUpdateContact({ ...contact, name: contactForm.name, email: contactForm.email, phone: contactForm.phone });
+    } else {
+      onAddContact({ facility_id: facilityId, name: contactForm.name, role: 'practice_manager' as ContactRole, email: contactForm.email, phone: contactForm.phone, is_primary: true });
+    }
+    setEditingContact(false);
+    toast.success('Contact saved');
+  };
+
+  const handleDeleteContact = () => {
+    if (contact && confirm('Remove practice manager contact?')) {
+      onDeleteContact(contact.id);
+      setContactForm({ name: '', email: '', phone: '' });
+      toast.success('Contact removed');
+    }
   };
 
   return (
@@ -149,23 +177,63 @@ function OverviewTab({ facility, shifts, onUpdate }: { facility: any; shifts: an
           </div>
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader><CardTitle className="text-base">Upcoming Shifts</CardTitle></CardHeader>
-        <CardContent>
-          {upcoming.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No upcoming shifts</p>
-          ) : (
-            <div className="space-y-2">
-              {upcoming.map(s => (
-                <div key={s.id} className="flex justify-between items-center p-2 rounded bg-muted/50 text-sm">
-                  <span>{format(new Date(s.start_datetime), 'EEE, MMM d · h:mm a')}</span>
-                  <StatusBadge status={s.status} />
+
+      <div className="space-y-4">
+        {/* Practice Manager Contact */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-base">Practice Manager</CardTitle>
+            {contact && !editingContact ? (
+              <div className="flex gap-1">
+                <Button size="sm" variant="ghost" onClick={() => { setContactForm({ name: contact.name, email: contact.email, phone: contact.phone }); setEditingContact(true); }}><Pencil className="mr-1 h-3 w-3" /> Edit</Button>
+                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={handleDeleteContact}><Trash2 className="h-3 w-3" /></Button>
+              </div>
+            ) : !editingContact ? (
+              <Button size="sm" variant="ghost" onClick={() => setEditingContact(true)}><Plus className="mr-1 h-3 w-3" /> Add</Button>
+            ) : null}
+          </CardHeader>
+          <CardContent>
+            {editingContact ? (
+              <div className="space-y-3">
+                <div><Label className="text-xs">Name</Label><Input value={contactForm.name} onChange={e => setContactForm(p => ({ ...p, name: e.target.value }))} placeholder="Contact name" /></div>
+                <div><Label className="text-xs">Email</Label><Input type="email" value={contactForm.email} onChange={e => setContactForm(p => ({ ...p, email: e.target.value }))} placeholder="email@example.com" /></div>
+                <div><Label className="text-xs">Phone</Label><Input value={contactForm.phone} onChange={e => setContactForm(p => ({ ...p, phone: e.target.value }))} placeholder="555-0100" /></div>
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={handleSaveContact}><Check className="mr-1 h-3 w-3" /> Save</Button>
+                  <Button size="sm" variant="ghost" onClick={() => setEditingContact(false)}><X className="mr-1 h-3 w-3" /> Cancel</Button>
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+              </div>
+            ) : contact ? (
+              <div className="space-y-1">
+                <p className="text-sm font-medium">{contact.name}</p>
+                {contact.email && <p className="text-xs text-muted-foreground">{contact.email}</p>}
+                {contact.phone && <p className="text-xs text-muted-foreground">{contact.phone}</p>}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No practice manager added yet. This contact is used for invoicing.</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Upcoming Shifts */}
+        <Card>
+          <CardHeader><CardTitle className="text-base">Upcoming Shifts</CardTitle></CardHeader>
+          <CardContent>
+            {upcoming.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No upcoming shifts</p>
+            ) : (
+              <div className="space-y-2">
+                {upcoming.map(s => (
+                  <div key={s.id} className="flex justify-between items-center p-2 rounded bg-muted/50 text-sm">
+                    <span>{format(new Date(s.start_datetime), 'EEE, MMM d · h:mm a')}</span>
+                    <StatusBadge status={s.status} />
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
@@ -218,125 +286,7 @@ function EditableFacilityName({ facility, onSave }: { facility: any; onSave: (na
   );
 }
 
-// ─── Contacts Tab ──────────────────────────────────────────
-
-function ContactsTab({ contacts, facilityId, onAdd, onUpdate, onDelete }: {
-  contacts: FacilityContact[]; facilityId: string;
-  onAdd: (c: Omit<FacilityContact, 'id'>) => void;
-  onUpdate: (c: FacilityContact) => void;
-  onDelete: (id: string) => void;
-}) {
-  const [showAdd, setShowAdd] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: '', role: 'scheduler' as ContactRole, email: '', phone: '', is_primary: false });
-  const [editForm, setEditForm] = useState<FacilityContact | null>(null);
-
-  const handleAdd = () => {
-    onAdd({ ...form, facility_id: facilityId });
-    setShowAdd(false);
-    setForm({ name: '', role: 'scheduler', email: '', phone: '', is_primary: false });
-    toast.success('Contact added');
-  };
-
-  const startEdit = (c: FacilityContact) => {
-    setEditingId(c.id);
-    setEditForm({ ...c });
-  };
-
-  const handleEditSave = () => {
-    if (editForm) {
-      onUpdate(editForm);
-      toast.success('Contact updated');
-      setEditingId(null);
-      setEditForm(null);
-    }
-  };
-
-  const cancelEdit = () => {
-    setEditingId(null);
-    setEditForm(null);
-  };
-
-  return (
-    <div>
-      <div className="flex justify-end mb-3">
-        <Button size="sm" onClick={() => setShowAdd(true)}><Plus className="mr-1 h-3 w-3" /> Add Contact</Button>
-      </div>
-      <div className="space-y-2">
-        {contacts.map(c => (
-          <Card key={c.id} className="p-4">
-            {editingId === c.id && editForm ? (
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div><Label className="text-xs">Name</Label><Input value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} /></div>
-                  <div><Label className="text-xs">Role</Label>
-                    <Select value={editForm.role} onValueChange={v => setEditForm({ ...editForm, role: v as ContactRole })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="scheduler">Scheduler</SelectItem>
-                        <SelectItem value="billing">Billing</SelectItem>
-                        <SelectItem value="emergency">Emergency</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><Label className="text-xs">Email</Label><Input type="email" value={editForm.email} onChange={e => setEditForm({ ...editForm, email: e.target.value })} /></div>
-                  <div><Label className="text-xs">Phone</Label><Input value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} /></div>
-                </div>
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={handleEditSave}><Check className="mr-1 h-3 w-3" /> Save</Button>
-                  <Button size="sm" variant="ghost" onClick={cancelEdit}><X className="mr-1 h-3 w-3" /> Cancel</Button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="font-medium text-sm">{c.name} {c.is_primary && <span className="text-xs text-primary">(Primary)</span>}</p>
-                  <p className="text-xs text-muted-foreground capitalize">{c.role}</p>
-                  <p className="text-xs text-muted-foreground">{c.email} · {c.phone}</p>
-                </div>
-                <div className="flex gap-1">
-                  <Button size="icon" variant="ghost" onClick={() => startEdit(c)}>
-                    <Pencil className="h-3 w-3" />
-                  </Button>
-                  <Button size="icon" variant="ghost" onClick={() => { if (confirm('Delete contact?')) { onDelete(c.id); toast.success('Deleted'); } }}>
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                </div>
-              </div>
-            )}
-          </Card>
-        ))}
-        {contacts.length === 0 && <p className="text-sm text-muted-foreground">No contacts yet</p>}
-      </div>
-
-      <Dialog open={showAdd} onOpenChange={setShowAdd}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Add Contact</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <div><Label>Name</Label><Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} /></div>
-            <div><Label>Role</Label>
-              <Select value={form.role} onValueChange={v => setForm(p => ({ ...p, role: v as ContactRole }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="scheduler">Scheduler</SelectItem>
-                  <SelectItem value="billing">Billing</SelectItem>
-                  <SelectItem value="emergency">Emergency</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div><Label>Email</Label><Input type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} /></div>
-            <div><Label>Phone</Label><Input value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} /></div>
-            <Button onClick={handleAdd} className="w-full">Add Contact</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
+// (ContactsTab removed — contact is now managed in OverviewTab)
 
 // ─── Terms Tab ─────────────────────────────────────────────
 

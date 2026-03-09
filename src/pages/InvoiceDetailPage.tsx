@@ -47,7 +47,7 @@ export default function InvoiceDetailPage() {
 
   const items = lineItems.filter(li => li.invoice_id === id);
   const facility = facilities.find(c => c.id === invoice.facility_id);
-  const billingContact = contacts.find(c => c.facility_id === invoice.facility_id && (c.role === 'billing' || c.is_primary));
+  const billingContact = contacts.find(c => c.facility_id === invoice.facility_id);
   const invoicePayments = payments.filter(p => p.invoice_id === id);
   const invoiceActivities = activities.filter(a => a.invoice_id === id).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   const computedStatus = computeInvoiceStatus(invoice);
@@ -82,7 +82,7 @@ export default function InvoiceDetailPage() {
       {!billingContact?.email && invoice.status !== 'paid' && (
         <div className="mb-4 rounded-md border border-warning/50 bg-warning/5 p-3 flex items-center gap-2 max-w-2xl print:hidden">
           <AlertTriangle className="h-4 w-4 text-warning shrink-0" />
-          <p className="text-sm">Billing contact missing — <Button variant="link" size="sm" className="h-auto p-0" onClick={() => navigate(`/facilities/${invoice.facility_id}`)}>add one in Facility Contacts</Button> to send faster.</p>
+          <p className="text-sm">Billing contact missing — <Button variant="link" size="sm" className="h-auto p-0" onClick={() => navigate(`/facilities/${invoice.facility_id}`)}>add one in Facility Overview</Button> to send faster.</p>
         </div>
       )}
 
