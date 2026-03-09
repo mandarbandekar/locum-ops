@@ -67,7 +67,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
   const [emailLogs, setEmailLogs] = useState<EmailLog[]>(isDemo ? seedEmailLogs : []);
   const [payments, setPayments] = useState<InvoicePayment[]>([]);
   const [activities, setActivities] = useState<InvoiceActivity[]>([]);
-  const [checklistItems, setChecklistItems] = useState<ContrisDemo ? seedChecklistItems : actChecklistItem[]>([]);
+  const [checklistItems, setChecklistItems] = useState<ContractChecklistItem[]>(isDemo ? seedChecklistItems : []);
 
   useEffect(() => {
     if (isDemo || !user) return;
