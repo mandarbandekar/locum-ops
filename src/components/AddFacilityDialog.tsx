@@ -5,34 +5,58 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Progress } from '@/components/ui/progress';
 import { useData } from '@/contexts/DataContext';
 import { FacilityStatus } from '@/types';
 import { toast } from 'sonner';
+import { ArrowLeft, ArrowRight, SkipForward } from 'lucide-react';
+
+const STEPS = [
+  { label: 'General', description: 'Name & basic info' },
+  { label: 'Shift Rates', description: 'Rate configuration' },
+  { label: 'Tech Access', description: 'Logins & credentials' },
+  { label: 'Clinic Access', description: 'Door codes & parking' },
+  { label: 'Invoice Settings', description: 'Prefix & terms' },
+];
 
 export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const { addFacility } = useData();
+  const [step, setStep] = useState(0);
   const [name, setName] = useState('');
   const [status, setStatus] = useState<FacilityStatus>('prospect');
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
-  // Shift rates
   const [partialDayRate, setPartialDayRate] = useState('');
   const [holidayRate, setHolidayRate] = useState('');
   const [telemedicineRate, setTelemedicineRate] = useState('');
-  // Tech access
   const [techComputer, setTechComputer] = useState('');
   const [techWifi, setTechWifi] = useState('');
   const [techPims, setTechPims] = useState('');
-  // Clinic access
   const [clinicAccess, setClinicAccess] = useState('');
-  // Invoice settings
   const [invoicePrefix, setInvoicePrefix] = useState('');
   const [invoiceDueDays, setInvoiceDueDays] = useState(15);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim()) return;
+  const totalSteps = STEPS.length;
+  const progress = ((step + 1) / totalSteps) * 100;
+
+  function getInitials(text: string): string {
+    return text.split(/\s+/).map(w => w[0]).filter(Boolean).join('').toUpperCase().slice(0, 4) || 'INV';
+  }
+
+  const resetForm = () => {
+    setStep(0);
+    setName(''); setAddress(''); setNotes(''); setStatus('prospect');
+    setPartialDayRate(''); setHolidayRate(''); setTelemedicineRate('');
+    setTechComputer(''); setTechWifi(''); setTechPims('');
+    setClinicAccess(''); setInvoicePrefix(''); setInvoiceDueDays(15);
+  };
+
+  const handleSubmit = () => {
+    if (!name.trim()) {
+      toast.error('Please enter a facility name');
+      setStep(0);
+      return;
+    }
     const prefix = invoicePrefix || getInitials(name);
     addFacility({
       name, status, address, timezone: 'America/Los_Angeles', notes,
@@ -49,35 +73,64 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
     onOpenChange(false);
   };
 
-  const resetForm = () => {
-    setName(''); setAddress(''); setNotes('');
-    setPartialDayRate(''); setHolidayRate(''); setTelemedicineRate('');
-    setTechComputer(''); setTechWifi(''); setTechPims('');
-    setClinicAccess(''); setInvoicePrefix(''); setInvoiceDueDays(15);
+  const handleSkipAndAdd = () => {
+    if (!name.trim()) {
+      toast.error('Please enter a facility name first');
+      setStep(0);
+      return;
+    }
+    handleSubmit();
   };
 
-  function getInitials(text: string): string {
-    return text.split(/\s+/).map(w => w[0]).filter(Boolean).join('').toUpperCase().slice(0, 4) || 'INV';
-  }
+  const handleNext = () => {
+    if (step === 0 && !name.trim()) {
+      toast.error('Please enter a facility name');
+      return;
+    }
+    if (step < totalSteps - 1) {
+      setStep(step + 1);
+    } else {
+      handleSubmit();
+    }
+  };
+
+  const handleBack = () => {
+    if (step > 0) setStep(step - 1);
+  };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) resetForm(); onOpenChange(o); }}>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>Add Practice Facility</DialogTitle></DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Tabs defaultValue="general">
-            <TabsList className="w-full justify-start">
-              <TabsTrigger value="general">General</TabsTrigger>
-              <TabsTrigger value="rates">Shift Rates</TabsTrigger>
-              <TabsTrigger value="tech">Tech Access</TabsTrigger>
-              <TabsTrigger value="access">Clinic Access</TabsTrigger>
-              <TabsTrigger value="invoicing">Invoice Settings</TabsTrigger>
-            </TabsList>
+        <DialogHeader>
+          <DialogTitle>Add Practice Facility</DialogTitle>
+        </DialogHeader>
 
-            <TabsContent value="general" className="space-y-3 mt-3">
+        {/* Progress section */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>Step {step + 1} of {totalSteps} — {STEPS[step].label}</span>
+            {step > 0 && (
+              <button
+                type="button"
+                onClick={handleSkipAndAdd}
+                className="flex items-center gap-1 text-xs text-primary hover:underline transition-colors"
+              >
+                <SkipForward className="h-3 w-3" />
+                Skip & add now
+              </button>
+            )}
+          </div>
+          <Progress value={progress} className="h-2" />
+          <p className="text-xs text-muted-foreground">{STEPS[step].description}</p>
+        </div>
+
+        {/* Step content */}
+        <div className="space-y-3 min-h-[200px]">
+          {step === 0 && (
+            <>
               <div className="space-y-2">
-                <Label>Name</Label>
-                <Input value={name} onChange={e => setName(e.target.value)} placeholder="Practice facility name" required />
+                <Label>Name <span className="text-destructive">*</span></Label>
+                <Input value={name} onChange={e => setName(e.target.value)} placeholder="Practice facility name" autoFocus />
               </div>
               <div className="space-y-2">
                 <Label>Status</Label>
@@ -98,10 +151,12 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
                 <Label>Notes</Label>
                 <Textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Any notes..." rows={3} />
               </div>
-            </TabsContent>
+            </>
+          )}
 
-            <TabsContent value="rates" className="space-y-3 mt-3">
-              <p className="text-sm text-muted-foreground">Set shift rates for this facility. You can also configure these later in the Terms tab.</p>
+          {step === 1 && (
+            <>
+              <p className="text-sm text-muted-foreground">Set shift rates for this facility. You can also configure these later.</p>
               <div className="space-y-2">
                 <Label>Partial Day Rate ($)</Label>
                 <Input type="number" value={partialDayRate} onChange={e => setPartialDayRate(e.target.value)} placeholder="0" />
@@ -114,9 +169,11 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
                 <Label>Telemedicine Rate ($)</Label>
                 <Input type="number" value={telemedicineRate} onChange={e => setTelemedicineRate(e.target.value)} placeholder="0" />
               </div>
-            </TabsContent>
+            </>
+          )}
 
-            <TabsContent value="tech" className="space-y-3 mt-3">
+          {step === 2 && (
+            <>
               <p className="text-sm text-muted-foreground">Store login credentials and tech access info for this facility.</p>
               <div className="space-y-2">
                 <Label>Computer / Login Info</Label>
@@ -130,17 +187,21 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
                 <Label>PIMS Credentials</Label>
                 <Textarea value={techPims} onChange={e => setTechPims(e.target.value)} placeholder="PIMS system, username, password..." rows={2} />
               </div>
-            </TabsContent>
+            </>
+          )}
 
-            <TabsContent value="access" className="space-y-3 mt-3">
+          {step === 3 && (
+            <>
               <p className="text-sm text-muted-foreground">General clinic access details — door codes, parking, key info, etc.</p>
               <div className="space-y-2">
                 <Label>Clinic Access Information</Label>
                 <Textarea value={clinicAccess} onChange={e => setClinicAccess(e.target.value)} placeholder="Door codes, parking instructions, key pickup, building access..." rows={5} />
               </div>
-            </TabsContent>
+            </>
+          )}
 
-            <TabsContent value="invoicing" className="space-y-3 mt-3">
+          {step === 4 && (
+            <>
               <p className="text-sm text-muted-foreground">Invoice numbering and payment terms for this facility.</p>
               <div className="space-y-2">
                 <Label>Invoice Prefix</Label>
@@ -166,11 +227,27 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
                   Number of days after invoice date that payment is due. Default: Net 15.
                 </p>
               </div>
-            </TabsContent>
-          </Tabs>
+            </>
+          )}
+        </div>
 
-          <Button type="submit" className="w-full">Add Practice Facility</Button>
-        </form>
+        {/* Navigation buttons */}
+        <div className="flex items-center justify-between pt-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleBack}
+            disabled={step === 0}
+          >
+            <ArrowLeft className="mr-1 h-4 w-4" /> Back
+          </Button>
+          <Button type="button" size="sm" onClick={handleNext}>
+            {step === totalSteps - 1 ? 'Add Facility' : (
+              <>Next <ArrowRight className="ml-1 h-4 w-4" /></>
+            )}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
