@@ -582,6 +582,7 @@ export type Database = {
           clinic_access_info: string
           created_at: string
           id: string
+          invoice_due_days: number
           invoice_prefix: string
           name: string
           notes: string
@@ -599,6 +600,7 @@ export type Database = {
           clinic_access_info?: string
           created_at?: string
           id?: string
+          invoice_due_days?: number
           invoice_prefix?: string
           name: string
           notes?: string
@@ -616,6 +618,7 @@ export type Database = {
           clinic_access_info?: string
           created_at?: string
           id?: string
+          invoice_due_days?: number
           invoice_prefix?: string
           name?: string
           notes?: string
