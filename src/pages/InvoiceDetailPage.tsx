@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Send, DollarSign, Trash2, Plus, CheckCircle, AlertTriangle, Printer, Link2, Copy, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Send, DollarSign, Trash2, Plus, CheckCircle, AlertTriangle, Download, Link2, Copy, RefreshCw, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { computeInvoiceStatus, generateId } from '@/lib/businessLogic';
 import { toast } from 'sonner';
@@ -16,6 +16,25 @@ import { ReadyToSendChecklist, buildChecklistItems } from '@/components/invoice/
 import { InvoicePreview } from '@/components/invoice/InvoicePreview';
 import { InvoiceTimeline } from '@/components/invoice/InvoiceTimeline';
 import { RecordPaymentDialog } from '@/components/invoice/RecordPaymentDialog';
+import { supabase } from '@/integrations/supabase/client';
+
+async function downloadInvoicePdf(invoiceId: string, invoiceNumber: string) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-invoice-pdf?invoice_id=${encodeURIComponent(invoiceId)}`;
+  const res = await fetch(url, {
+    headers: {
+      'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      'Authorization': `Bearer ${session?.access_token || ''}`,
+    },
+  });
+  if (!res.ok) throw new Error('Failed to generate PDF');
+  const blob = await res.blob();
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `${invoiceNumber || 'invoice'}.pdf`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
 
 export default function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -35,7 +54,7 @@ export default function InvoiceDetailPage() {
   const isDraft = invoice.status === 'draft';
   const isSent = invoice.status === 'sent' || computedStatus === 'overdue' || invoice.status === 'partial';
 
-  const handlePrint = () => window.print();
+  // PDF download removed from top level — handled in SentView
 
   return (
     <div>
@@ -342,7 +361,19 @@ function SentView({ invoice, items, invoicePayments, onUpdateInvoice, onAddPayme
 
   const shareUrl = hasShareLink ? `${window.location.origin}/invoice/public/${invoice.share_token}` : '';
 
-  const handlePrint = () => window.print();
+  const [pdfLoading, setPdfLoading] = useState(false);
+
+  const handleDownloadPdf = async () => {
+    setPdfLoading(true);
+    try {
+      await downloadInvoicePdf(invoice.id, invoice.invoice_number);
+      toast.success('PDF downloaded');
+    } catch {
+      toast.error('Failed to generate PDF');
+    } finally {
+      setPdfLoading(false);
+    }
+  };
 
   const handleCreateShareLink = async () => {
     setShareLoading(true);
@@ -431,8 +462,9 @@ function SentView({ invoice, items, invoicePayments, onUpdateInvoice, onAddPayme
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-sm">Send & Share</CardTitle></CardHeader>
         <CardContent className="space-y-3">
-          <Button variant="outline" className="w-full" onClick={handlePrint}>
-            <Printer className="mr-2 h-4 w-4" /> Download / Print PDF
+          <Button variant="outline" className="w-full" onClick={handleDownloadPdf} disabled={pdfLoading}>
+            {pdfLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+            {pdfLoading ? 'Generating PDF…' : 'Download PDF'}
           </Button>
 
           {/* Share Link */}
