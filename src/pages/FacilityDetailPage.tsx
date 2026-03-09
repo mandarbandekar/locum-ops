@@ -90,10 +90,24 @@ export default function FacilityDetailPage() {
 
 // ─── Overview Tab ──────────────────────────────────────────
 
-function OverviewTab({ facility, shifts, onUpdate }: { facility: any; shifts: any[]; onUpdate: any }) {
+function OverviewTab({ facility, shifts, contact, onUpdate, onAddContact, onUpdateContact, onDeleteContact, facilityId }: {
+  facility: any; shifts: any[]; contact: FacilityContact | null; onUpdate: any;
+  onAddContact: (c: Omit<FacilityContact, 'id'>) => void;
+  onUpdateContact: (c: FacilityContact) => void;
+  onDeleteContact: (id: string) => void;
+  facilityId: string;
+}) {
   const [editing, setEditing] = useState(false);
   const [notes, setNotes] = useState(facility.notes);
   const [status, setStatus] = useState(facility.status);
+
+  // Contact editing
+  const [editingContact, setEditingContact] = useState(false);
+  const [contactForm, setContactForm] = useState({
+    name: contact?.name || '',
+    email: contact?.email || '',
+    phone: contact?.phone || '',
+  });
 
   const upcoming = shifts.filter(s => new Date(s.start_datetime) > new Date() && s.status !== 'canceled').slice(0, 5);
 
@@ -101,6 +115,25 @@ function OverviewTab({ facility, shifts, onUpdate }: { facility: any; shifts: an
     onUpdate({ ...facility, notes, status });
     setEditing(false);
     toast.success('Practice facility updated');
+  };
+
+  const handleSaveContact = () => {
+    if (!contactForm.name.trim()) return;
+    if (contact) {
+      onUpdateContact({ ...contact, name: contactForm.name, email: contactForm.email, phone: contactForm.phone });
+    } else {
+      onAddContact({ facility_id: facilityId, name: contactForm.name, role: 'practice_manager' as ContactRole, email: contactForm.email, phone: contactForm.phone, is_primary: true });
+    }
+    setEditingContact(false);
+    toast.success('Contact saved');
+  };
+
+  const handleDeleteContact = () => {
+    if (contact && confirm('Remove practice manager contact?')) {
+      onDeleteContact(contact.id);
+      setContactForm({ name: '', email: '', phone: '' });
+      toast.success('Contact removed');
+    }
   };
 
   return (
@@ -144,23 +177,63 @@ function OverviewTab({ facility, shifts, onUpdate }: { facility: any; shifts: an
           </div>
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader><CardTitle className="text-base">Upcoming Shifts</CardTitle></CardHeader>
-        <CardContent>
-          {upcoming.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No upcoming shifts</p>
-          ) : (
-            <div className="space-y-2">
-              {upcoming.map(s => (
-                <div key={s.id} className="flex justify-between items-center p-2 rounded bg-muted/50 text-sm">
-                  <span>{format(new Date(s.start_datetime), 'EEE, MMM d · h:mm a')}</span>
-                  <StatusBadge status={s.status} />
+
+      <div className="space-y-4">
+        {/* Practice Manager Contact */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-base">Practice Manager</CardTitle>
+            {contact && !editingContact ? (
+              <div className="flex gap-1">
+                <Button size="sm" variant="ghost" onClick={() => { setContactForm({ name: contact.name, email: contact.email, phone: contact.phone }); setEditingContact(true); }}><Pencil className="mr-1 h-3 w-3" /> Edit</Button>
+                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={handleDeleteContact}><Trash2 className="h-3 w-3" /></Button>
+              </div>
+            ) : !editingContact ? (
+              <Button size="sm" variant="ghost" onClick={() => setEditingContact(true)}><Plus className="mr-1 h-3 w-3" /> Add</Button>
+            ) : null}
+          </CardHeader>
+          <CardContent>
+            {editingContact ? (
+              <div className="space-y-3">
+                <div><Label className="text-xs">Name</Label><Input value={contactForm.name} onChange={e => setContactForm(p => ({ ...p, name: e.target.value }))} placeholder="Contact name" /></div>
+                <div><Label className="text-xs">Email</Label><Input type="email" value={contactForm.email} onChange={e => setContactForm(p => ({ ...p, email: e.target.value }))} placeholder="email@example.com" /></div>
+                <div><Label className="text-xs">Phone</Label><Input value={contactForm.phone} onChange={e => setContactForm(p => ({ ...p, phone: e.target.value }))} placeholder="555-0100" /></div>
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={handleSaveContact}><Check className="mr-1 h-3 w-3" /> Save</Button>
+                  <Button size="sm" variant="ghost" onClick={() => setEditingContact(false)}><X className="mr-1 h-3 w-3" /> Cancel</Button>
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+              </div>
+            ) : contact ? (
+              <div className="space-y-1">
+                <p className="text-sm font-medium">{contact.name}</p>
+                {contact.email && <p className="text-xs text-muted-foreground">{contact.email}</p>}
+                {contact.phone && <p className="text-xs text-muted-foreground">{contact.phone}</p>}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No practice manager added yet. This contact is used for invoicing.</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Upcoming Shifts */}
+        <Card>
+          <CardHeader><CardTitle className="text-base">Upcoming Shifts</CardTitle></CardHeader>
+          <CardContent>
+            {upcoming.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No upcoming shifts</p>
+            ) : (
+              <div className="space-y-2">
+                {upcoming.map(s => (
+                  <div key={s.id} className="flex justify-between items-center p-2 rounded bg-muted/50 text-sm">
+                    <span>{format(new Date(s.start_datetime), 'EEE, MMM d · h:mm a')}</span>
+                    <StatusBadge status={s.status} />
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
