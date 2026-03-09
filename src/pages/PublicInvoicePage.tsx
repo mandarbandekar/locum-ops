@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { InvoicePreview } from '@/components/invoice/InvoicePreview';
+import { Download, Loader2 } from 'lucide-react';
 
 export default function PublicInvoicePage() {
   const { token } = useParams<{ token: string }>();
@@ -11,6 +11,7 @@ export default function PublicInvoicePage() {
   const [senderProfile, setSenderProfile] = useState<any>(null);
   const [billingContact, setBillingContact] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [pdfLoading, setPdfLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -20,7 +21,6 @@ export default function PublicInvoicePage() {
 
   async function loadInvoice() {
     try {
-      // Fetch invoice by share_token — requires a public-facing edge function
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/public-invoice?token=${encodeURIComponent(token!)}`,
         { headers: { 'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY } }
@@ -43,7 +43,27 @@ export default function PublicInvoicePage() {
     }
   }
 
-  const handlePrint = () => window.print();
+  const handleDownloadPdf = async () => {
+    setPdfLoading(true);
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-invoice-pdf?token=${encodeURIComponent(token!)}`,
+        { headers: { 'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY } }
+      );
+      if (!res.ok) throw new Error('Failed');
+      const blob = await res.blob();
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `${invoice?.invoice_number || 'invoice'}.pdf`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    } catch {
+      // fallback to print
+      window.print();
+    } finally {
+      setPdfLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -70,10 +90,12 @@ export default function PublicInvoicePage() {
         <div className="flex justify-between items-center mb-6 print:hidden">
           <h1 className="text-lg font-semibold text-foreground">Invoice {invoice.invoice_number}</h1>
           <button
-            onClick={handlePrint}
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            onClick={handleDownloadPdf}
+            disabled={pdfLoading}
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
           >
-            Download PDF
+            {pdfLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+            {pdfLoading ? 'Generating…' : 'Download PDF'}
           </button>
         </div>
         <div id="invoice-print-area">

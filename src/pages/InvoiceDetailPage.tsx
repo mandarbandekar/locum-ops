@@ -54,7 +54,7 @@ export default function InvoiceDetailPage() {
   const isDraft = invoice.status === 'draft';
   const isSent = invoice.status === 'sent' || computedStatus === 'overdue' || invoice.status === 'partial';
 
-  const handlePrint = () => window.print();
+  // PDF download removed from top level — handled in SentView
 
   return (
     <div>
