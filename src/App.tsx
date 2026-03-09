@@ -25,7 +25,7 @@ import WaitlistPage from "@/pages/WaitlistPage";
 import QuizPage from "@/pages/QuizPage";
 import ResultsPage from "@/pages/ResultsPage";
 import ThanksPage from "@/pages/ThanksPage";
-rdingPage";
+import OnboardingPage from "@/pages/OnboardingPage";
 import SettingsProfilePage from "@/pages/SettingsProfilePage";
 import SettingsInvoiceProfilePage from "@/pages/SettingsInvoiceProfilePage";
 import ImportPage from "@/pages/ImportPage";
