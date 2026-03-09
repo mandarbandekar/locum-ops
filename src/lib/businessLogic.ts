@@ -41,3 +41,7 @@ export function getDefaultDueDate(days: number = 14): Date {
 export function generateId(): string {
   return Math.random().toString(36).substring(2, 11);
 }
+
+export function generateSecureToken(): string {
+  return crypto.randomUUID().replace(/-/g, '');
+}

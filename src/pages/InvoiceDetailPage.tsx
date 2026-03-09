@@ -607,7 +607,7 @@ function SentView({ invoice, items, invoicePayments, onUpdateInvoice, onAddPayme
 
   const handleCreateShareLink = async () => {
     setShareLoading(true);
-    const token = generateId() + '-' + generateId();
+    const token = crypto.randomUUID();
     await onUpdateInvoice({
       ...invoice,
       share_token: token,
@@ -635,7 +635,7 @@ function SentView({ invoice, items, invoicePayments, onUpdateInvoice, onAddPayme
 
   const handleRegenerateShareLink = async () => {
     setShareLoading(true);
-    const token = generateId() + '-' + generateId();
+    const token = crypto.randomUUID();
     await onUpdateInvoice({
       ...invoice,
       share_token: token,
