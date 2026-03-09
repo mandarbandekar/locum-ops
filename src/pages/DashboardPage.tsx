@@ -125,7 +125,7 @@ export default function DashboardPage() {
       });
 
     return items.sort((a, b) => a.urgency - b.urgency).slice(0, 6);
-  }, [invoices, shifts, facilities, now]);
+  }, [invoices, shifts, facilities, checklistItems, now]);
 
   // ── This Period ──
   const periodData = useMemo(() => {
