@@ -16,6 +16,8 @@ export function ReadyToSendChecklist({ items, onFix }: { items: ChecklistItem[];
   const allComplete = items.every(i => i.complete);
   const navigate = useNavigate();
 
+  if (allComplete) return null;
+
   return (
     <Card className={`border ${allRequired ? 'border-primary/30 bg-primary/5' : 'border-warning/30 bg-warning/5'}`}>
       <CardHeader className="pb-2">
