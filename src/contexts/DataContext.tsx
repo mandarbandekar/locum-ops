@@ -106,7 +106,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
 
   async function fetchAll() {
     try {
-      const [fRes, cRes, tRes, sRes, iRes, liRes, eRes, pRes, aRes] = await Promise.all([
+      const [fRes, cRes, tRes, sRes, iRes, liRes, eRes, pRes, aRes, clRes] = await Promise.all([
         db('facilities').select('*').order('created_at'),
         db('facility_contacts').select('*').order('created_at'),
         db('terms_snapshots').select('*').order('created_at'),
@@ -116,6 +116,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
         db('email_logs').select('*').order('sent_at'),
         db('invoice_payments').select('*').order('created_at'),
         db('invoice_activity').select('*').order('created_at'),
+        db('contract_checklist_items').select('*').order('created_at'),
       ]);
       setFacilities((fRes.data || []).map(stripDbFields));
       setContacts((cRes.data || []).map(stripDbFields));
@@ -126,6 +127,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
       setEmailLogs((eRes.data || []).map(stripDbFields));
       setPayments((pRes.data || []).map(stripDbFields));
       setActivities((aRes.data || []).map(stripDbFields));
+      setChecklistItems((clRes.data || []).map(stripDbFields));
     } catch (err: any) {
       console.error('Failed to load data:', err);
       toast.error('Failed to load data');
