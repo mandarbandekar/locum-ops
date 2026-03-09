@@ -430,7 +430,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
 
   return (
     <DataContext.Provider value={{
-      facilities, contacts, terms, shifts, invoices, lineItems, payments, activities, emailLogs, dataLoading,
+      facilities, contacts, terms, shifts, invoices, lineItems, payments, activities, emailLogs, checklistItems, dataLoading,
       addFacility, updateFacility, deleteFacility,
       addContact, updateContact, deleteContact,
       updateTerms,
