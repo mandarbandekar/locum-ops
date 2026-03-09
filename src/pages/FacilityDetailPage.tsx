@@ -50,6 +50,7 @@ export default function FacilityDetailPage() {
           <TabsTrigger value="contracts">Contracts</TabsTrigger>
           <TabsTrigger value="tech-access">Tech Access</TabsTrigger>
           <TabsTrigger value="clinic-access">Clinic Access</TabsTrigger>
+          <TabsTrigger value="invoice-settings">Invoice Settings</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-4">
