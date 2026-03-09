@@ -119,7 +119,7 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
                 className="flex items-center gap-1 text-xs text-primary hover:underline transition-colors"
               >
                 <SkipForward className="h-3 w-3" />
-                Skip & add now
+                Skip & add later
               </button>
             )}
           </div>
