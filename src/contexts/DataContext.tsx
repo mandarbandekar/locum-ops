@@ -24,6 +24,8 @@ interface DataContextType {
   shifts: Shift[];
   invoices: Invoice[];
   lineItems: InvoiceLineItem[];
+  payments: InvoicePayment[];
+  activities: InvoiceActivity[];
   emailLogs: EmailLog[];
   dataLoading: boolean;
   addFacility: (facility: Omit<Facility, 'id'>) => Promise<Facility>;
@@ -42,6 +44,8 @@ interface DataContextType {
   addLineItem: (item: Omit<InvoiceLineItem, 'id'>) => Promise<void>;
   updateLineItem: (item: InvoiceLineItem) => Promise<void>;
   deleteLineItem: (id: string) => Promise<void>;
+  addPayment: (payment: Omit<InvoicePayment, 'id'>) => Promise<void>;
+  addActivity: (activity: Omit<InvoiceActivity, 'id' | 'created_at'>) => Promise<void>;
   addEmailLog: (log: Omit<EmailLog, 'id'>) => Promise<void>;
   getComputedInvoiceStatus: (invoice: Invoice) => Invoice['status'];
 }
