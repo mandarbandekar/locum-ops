@@ -7,6 +7,7 @@ import {
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarFooter, useSidebar,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
+import locumOpsLogo from '@/assets/locumops-logo.png';
 
 const navItems = [
   { title: 'Dashboard', url: '/', icon: LayoutDashboard },
@@ -29,7 +30,12 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarContent className="pt-4">
+      <SidebarContent className="pt-2">
+        {/* Logo */}
+        <div className={`flex items-center gap-2.5 px-4 py-3 ${collapsed ? 'justify-center' : ''}`}>
+          <img src={locumOpsLogo} alt="LocumOps" className="h-8 w-8 rounded-md" />
+          {!collapsed && <span className="font-bold text-base tracking-tight text-sidebar-foreground">LocumOps</span>}
+        </div>
         <SidebarGroup>
           <SidebarGroupLabel className="text-sidebar-primary font-bold tracking-wider text-xs uppercase mb-3 px-4">
             {!collapsed && 'Navigation'}
