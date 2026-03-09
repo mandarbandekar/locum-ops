@@ -347,6 +347,7 @@ export default function CredentialsList() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         editingCredential={editingCredential}
+        onAddCEEntry={handleAddCE}
       />
 
       <AddCEEntryDialog
