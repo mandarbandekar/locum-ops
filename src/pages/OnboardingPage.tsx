@@ -64,7 +64,7 @@ export default function OnboardingPage() {
   // Step 3 state
   const [dueDays, setDueDays] = useState(profile?.invoice_due_default_days || 14);
   const [duePreset, setDuePreset] = useState<'14' | '30' | 'custom'>(profile?.invoice_due_default_days === 30 ? '30' : profile?.invoice_due_default_days === 14 ? '14' : 'custom');
-  const [invoicePrefix, setInvoicePrefix] = useState(profile?.invoice_prefix || 'INV');
+  
   const [emailTone, setEmailTone] = useState<EmailTone>(profile?.email_tone || 'neutral');
   const [termsFields, setTermsFields] = useState<TermsFieldsEnabled>(
     profile?.terms_fields_enabled || {
