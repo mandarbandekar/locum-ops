@@ -28,6 +28,7 @@ interface DataContextType {
   payments: InvoicePayment[];
   activities: InvoiceActivity[];
   emailLogs: EmailLog[];
+  checklistItems: ContractChecklistItem[];
   dataLoading: boolean;
   addFacility: (facility: Omit<Facility, 'id'>) => Promise<Facility>;
   updateFacility: (facility: Facility) => Promise<void>;
