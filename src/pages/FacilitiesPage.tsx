@@ -124,7 +124,6 @@ export default function FacilitiesPage() {
               <th className="text-left p-3 font-medium text-muted-foreground">Name</th>
               <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Address</th>
               <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
-              <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Last Outreach</th>
               <th className="w-10" />
             </tr>
           </thead>
