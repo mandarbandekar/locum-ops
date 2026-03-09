@@ -26,6 +26,8 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
   const [status, setStatus] = useState<FacilityStatus>('prospect');
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
+  const [weekdayRate, setWeekdayRate] = useState('');
+  const [weekendRate, setWeekendRate] = useState('');
   const [partialDayRate, setPartialDayRate] = useState('');
   const [holidayRate, setHolidayRate] = useState('');
   const [telemedicineRate, setTelemedicineRate] = useState('');
