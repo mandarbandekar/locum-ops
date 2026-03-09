@@ -38,7 +38,7 @@ export default function DashboardPage() {
     const partialCount = unpaidInvoices.filter(i => i.status === 'partial').length;
 
     // Due soon items
-    const dueSoonChecklist = seedChecklistItems.filter(item => {
+    const dueSoonChecklist = checklistItems.filter(item => {
       const badge = getChecklistBadge(item);
       return badge === 'due_soon' || badge === 'overdue';
     });
