@@ -161,12 +161,6 @@ export default function SettingsProfilePage() {
         <Card>
           <CardHeader><CardTitle className="text-base">Defaults</CardTitle></CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Invoice due (days)</Label>
-                <Input type="number" value={dueDays} onChange={e => setDueDays(Number(e.target.value))} min={1} />
-              </div>
-            </div>
             <div>
               <Label>Email tone</Label>
               <RadioGroup value={emailTone} onValueChange={v => setEmailTone(v as EmailTone)} className="flex gap-4 mt-1">

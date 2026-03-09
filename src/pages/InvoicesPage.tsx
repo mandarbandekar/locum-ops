@@ -136,7 +136,7 @@ function CreateInvoiceDialog({ open, onOpenChange }: { open: boolean; onOpenChan
           status: 'draft',
           sent_at: null,
           paid_at: null,
-          due_date: null,
+          due_date: new Date(new Date(periodEnd).getTime() + (facilities.find(f => f.id === facilityId)?.invoice_due_days || 15) * 86400000).toISOString(),
         },
         lineItems
       );

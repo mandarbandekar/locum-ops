@@ -20,6 +20,7 @@ export interface Facility {
   tech_pims_info: string;
   clinic_access_info: string;
   invoice_prefix: string;
+  invoice_due_days: number;
 }
 
 export type ContactRole = 'scheduler' | 'billing' | 'emergency' | 'other';

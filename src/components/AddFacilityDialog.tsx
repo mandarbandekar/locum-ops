@@ -139,6 +139,34 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
                 <Textarea value={clinicAccess} onChange={e => setClinicAccess(e.target.value)} placeholder="Door codes, parking instructions, key pickup, building access..." rows={5} />
               </div>
             </TabsContent>
+
+            <TabsContent value="invoicing" className="space-y-3 mt-3">
+              <p className="text-sm text-muted-foreground">Invoice numbering and payment terms for this facility.</p>
+              <div className="space-y-2">
+                <Label>Invoice Prefix</Label>
+                <Input
+                  value={invoicePrefix}
+                  onChange={e => setInvoicePrefix(e.target.value.toUpperCase())}
+                  placeholder={name ? getInitials(name) : 'INV'}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Defaults to facility initials. e.g. {invoicePrefix || (name ? getInitials(name) : 'INV')}-2026-001
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label>Invoice Due (days)</Label>
+                <Input
+                  type="number"
+                  value={invoiceDueDays}
+                  onChange={e => setInvoiceDueDays(Number(e.target.value))}
+                  min={1}
+                  placeholder="15"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Number of days after invoice date that payment is due. Default: Net 15.
+                </p>
+              </div>
+            </TabsContent>
           </Tabs>
 
           <Button type="submit" className="w-full">Add Practice Facility</Button>

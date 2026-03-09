@@ -282,24 +282,6 @@ export default function OnboardingPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label>Invoice default due date</Label>
-                  <RadioGroup value={duePreset} onValueChange={v => {
-                    setDuePreset(v as any);
-                    if (v === '14') setDueDays(14);
-                    if (v === '30') setDueDays(30);
-                  }}>
-                    <div className="flex items-center gap-2"><RadioGroupItem value="14" id="d14" /><Label htmlFor="d14">Net 14</Label></div>
-                    <div className="flex items-center gap-2"><RadioGroupItem value="30" id="d30" /><Label htmlFor="d30">Net 30</Label></div>
-                    <div className="flex items-center gap-2">
-                      <RadioGroupItem value="custom" id="dc" />
-                      <Label htmlFor="dc">Custom</Label>
-                      {duePreset === 'custom' && (
-                        <Input type="number" className="w-20 ml-2" value={dueDays} onChange={e => setDueDays(Number(e.target.value))} min={1} />
-                      )}
-                    </div>
-                  </RadioGroup>
-                </div>
-                <div>
                   <Label>Email template tone</Label>
                   <RadioGroup value={emailTone} onValueChange={v => setEmailTone(v as EmailTone)} className="flex gap-4 mt-1">
                     {TONES.map(t => (
