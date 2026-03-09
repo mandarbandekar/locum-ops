@@ -338,15 +338,35 @@ function DraftForm({ invoice, items, facility, billingContact, profile, onUpdate
       </Card>
 
       {/* Actions */}
-      <div className="flex gap-2">
-        <Button onClick={handleSave} variant="outline" disabled={saving} className="flex-1">
-          {saving ? 'Saving…' : 'Save Draft'}
-        </Button>
-        <Button onClick={handleProceedToSend} className="flex-1">
-          <Send className="mr-1 h-4 w-4" /> Save & Send
-        </Button>
+      <div className="space-y-2">
+        <div className="flex gap-2">
+          <Button onClick={handleSave} variant="outline" disabled={saving} className="flex-1">
+            {saving ? 'Saving…' : 'Save Draft'}
+          </Button>
+          <Button onClick={handleProceedToSend} className="flex-1">
+            <Send className="mr-1 h-4 w-4" /> Save & Send
+          </Button>
+        </div>
+        <DraftPdfButton invoiceId={invoice.id} invoiceNumber={invoice.invoice_number} />
       </div>
     </div>
+  );
+}
+function DraftPdfButton({ invoiceId, invoiceNumber }: { invoiceId: string; invoiceNumber: string }) {
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const handleDownloadPdf = async () => {
+    setPdfLoading(true);
+    try {
+      await downloadInvoicePdf(invoiceId, invoiceNumber);
+      toast.success('PDF downloaded');
+    } catch { toast.error('PDF generation failed'); }
+    finally { setPdfLoading(false); }
+  };
+  return (
+    <Button variant="outline" className="w-full" onClick={handleDownloadPdf} disabled={pdfLoading}>
+      {pdfLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+      {pdfLoading ? 'Generating PDF…' : 'Download PDF'}
+    </Button>
   );
 }
 
