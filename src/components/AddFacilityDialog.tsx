@@ -53,7 +53,7 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
     setName(''); setAddress(''); setNotes('');
     setPartialDayRate(''); setHolidayRate(''); setTelemedicineRate('');
     setTechComputer(''); setTechWifi(''); setTechPims('');
-    setClinicAccess(''); setInvoicePrefix('');
+    setClinicAccess(''); setInvoicePrefix(''); setInvoiceDueDays(15);
   };
 
   function getInitials(text: string): string {
