@@ -361,7 +361,19 @@ function SentView({ invoice, items, invoicePayments, onUpdateInvoice, onAddPayme
 
   const shareUrl = hasShareLink ? `${window.location.origin}/invoice/public/${invoice.share_token}` : '';
 
-  const handlePrint = () => window.print();
+  const [pdfLoading, setPdfLoading] = useState(false);
+
+  const handleDownloadPdf = async () => {
+    setPdfLoading(true);
+    try {
+      await downloadInvoicePdf(invoice.id, invoice.invoice_number);
+      toast.success('PDF downloaded');
+    } catch {
+      toast.error('Failed to generate PDF');
+    } finally {
+      setPdfLoading(false);
+    }
+  };
 
   const handleCreateShareLink = async () => {
     setShareLoading(true);
