@@ -32,6 +32,7 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
+    const prefix = invoicePrefix || getInitials(name);
     addFacility({
       name, status, address, timezone: 'America/Los_Angeles', notes,
       outreach_last_sent_at: null,
@@ -39,6 +40,7 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
       tech_wifi_info: techWifi,
       tech_pims_info: techPims,
       clinic_access_info: clinicAccess,
+      invoice_prefix: prefix,
     });
     toast.success('Practice facility added');
     resetForm();
