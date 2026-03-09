@@ -441,7 +441,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
   );
 }
 
-export function useData() {
+export function useData(): DataContextType {
   const ctx = useContext(DataContext);
   if (!ctx) throw new Error('useData must be used within DataProvider');
   return ctx;
