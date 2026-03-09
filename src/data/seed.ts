@@ -132,4 +132,10 @@ export const seedUserProfile: UserProfile = {
     overtime_policy: true, late_payment_policy: true, special_notes: true,
   },
   onboarding_completed_at: new Date().toISOString(),
+  first_name: 'Dr. Jane',
+  last_name: 'Smith',
+  company_name: 'Smith Veterinary Services LLC',
+  company_address: '100 Main St, Suite 200\nPortland, OR 97201',
+  invoice_email: 'jane@smithvet.com',
+  invoice_phone: '503-555-1234',
 };
