@@ -124,7 +124,6 @@ export default function FacilitiesPage() {
               <th className="text-left p-3 font-medium text-muted-foreground">Name</th>
               <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Address</th>
               <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
-              <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Last Outreach</th>
               <th className="w-10" />
             </tr>
           </thead>
@@ -138,9 +137,6 @@ export default function FacilitiesPage() {
                 <td className="p-3 font-medium">{c.name}</td>
                 <td className="p-3 text-muted-foreground hidden md:table-cell">{c.address}</td>
                 <td className="p-3"><StatusBadge status={c.status} /></td>
-                <td className="p-3 text-muted-foreground hidden lg:table-cell">
-                  {c.outreach_last_sent_at ? new Date(c.outreach_last_sent_at).toLocaleDateString() : '—'}
-                </td>
                 <td className="p-3" onClick={e => e.stopPropagation()}>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
