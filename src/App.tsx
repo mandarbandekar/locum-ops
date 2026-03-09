@@ -99,6 +99,7 @@ function AuthGate() {
   if (!user && !isDemo) {
     return (
       <Routes>
+        <Route path="/invoice/public/:token" element={<PublicInvoicePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
