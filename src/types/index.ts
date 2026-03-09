@@ -71,18 +71,24 @@ export interface Shift {
   color: ShiftColor;
 }
 
-export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue';
+export type InvoiceStatus = 'draft' | 'sent' | 'partial' | 'paid' | 'overdue';
 export interface Invoice {
   id: string;
   facility_id: string;
   invoice_number: string;
+  invoice_date: string;
   period_start: string;
   period_end: string;
   total_amount: number;
+  balance_due: number;
   status: InvoiceStatus;
   sent_at: string | null;
   paid_at: string | null;
   due_date: string | null;
+  notes: string;
+  share_token: string | null;
+  share_token_created_at: string | null;
+  share_token_revoked_at: string | null;
 }
 
 export interface InvoiceLineItem {
@@ -90,9 +96,28 @@ export interface InvoiceLineItem {
   invoice_id: string;
   shift_id: string | null;
   description: string;
+  service_date: string | null;
   qty: number;
   unit_rate: number;
   line_total: number;
+}
+
+export interface InvoicePayment {
+  id: string;
+  invoice_id: string;
+  payment_date: string;
+  amount: number;
+  method: string;
+  account: string;
+  memo: string;
+}
+
+export interface InvoiceActivity {
+  id: string;
+  invoice_id: string;
+  action: string;
+  description: string;
+  created_at: string;
 }
 
 export type EmailLogType = 'outreach_open' | 'monthly_confirm' | 'invoice' | 'reminder';
