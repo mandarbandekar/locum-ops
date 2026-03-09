@@ -95,6 +95,8 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
       case 'shifts': setShifts(rows); break;
       case 'invoices': setInvoices(rows); break;
       case 'invoice_line_items': setLineItems(rows); break;
+      case 'invoice_payments': setPayments(rows); break;
+      case 'invoice_activity': setActivities(rows); break;
       case 'email_logs': setEmailLogs(rows); break;
     }
   }
