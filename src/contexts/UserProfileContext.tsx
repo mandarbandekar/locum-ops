@@ -62,6 +62,12 @@ export const DEFAULT_PROFILE: Omit<UserProfile, 'id' | 'user_id'> = {
   email_tone: 'neutral',
   terms_fields_enabled: DEFAULT_TERMS_FIELDS,
   onboarding_completed_at: null,
+  first_name: '',
+  last_name: '',
+  company_name: '',
+  company_address: '',
+  invoice_email: null,
+  invoice_phone: null,
 };
 
 interface UserProfileContextType {
