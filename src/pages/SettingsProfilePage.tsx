@@ -48,7 +48,6 @@ export default function SettingsProfilePage() {
   const [currentTools, setCurrentTools] = useState<CurrentTool[]>(profile?.current_tools || []);
   const [facilitiesBand, setFacilitiesBand] = useState<FacilitiesCountBand>(profile?.facilities_count_band || 'band_1_3');
   const [invoicesBand, setInvoicesBand] = useState<InvoicesPerMonthBand>(profile?.invoices_per_month_band || 'inv_1_3');
-  const [dueDays, setDueDays] = useState(profile?.invoice_due_default_days || 14);
   
   const [emailTone, setEmailTone] = useState<EmailTone>(profile?.email_tone || 'neutral');
   const [termsFields, setTermsFields] = useState<TermsFieldsEnabled>(
