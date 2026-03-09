@@ -157,7 +157,7 @@ export default function DashboardPage() {
   const trackingLines = useMemo(() => {
     const lines: { text: string; link: string }[] = [];
 
-    const dueSoonChecklist = seedChecklistItems.filter(item => {
+    const dueSoonChecklist = checklistItems.filter(item => {
       const badge = getChecklistBadge(item);
       return badge === 'due_soon' || badge === 'overdue';
     });
