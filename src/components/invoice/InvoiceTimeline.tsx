@@ -1,4 +1,4 @@
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import { FileText, Send, DollarSign, CheckCircle, Link, Eye } from 'lucide-react';
 
 interface TimelineEvent {
