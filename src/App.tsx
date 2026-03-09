@@ -31,6 +31,7 @@ import OnboardingPage from "@/pages/OnboardingPage";
 import SettingsProfilePage from "@/pages/SettingsProfilePage";
 import SettingsInvoiceProfilePage from "@/pages/SettingsInvoiceProfilePage";
 import ImportPage from "@/pages/ImportPage";
+import PublicInvoicePage from "@/pages/PublicInvoicePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -69,6 +70,7 @@ function AuthenticatedApp() {
           
           <Route path="/invoices" element={<InvoicesPage />} />
           <Route path="/invoices/:id" element={<InvoiceDetailPage />} />
+          <Route path="/invoice/public/:token" element={<PublicInvoicePage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/credentials" element={<CredentialsPage />} />
           <Route path="/taxes" element={<TaxesPage />} />
@@ -98,6 +100,7 @@ function AuthGate() {
   if (!user && !isDemo) {
     return (
       <Routes>
+        <Route path="/invoice/public/:token" element={<PublicInvoicePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />

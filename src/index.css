@@ -115,3 +115,39 @@
     @apply min-w-[600px] sm:min-w-0;
   }
 }
+
+/* Print styles for invoice PDF */
+@media print {
+  body {
+    background: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .print\:hidden,
+  nav,
+  aside,
+  header,
+  [data-sidebar],
+  .sidebar,
+  [role="navigation"] {
+    display: none !important;
+  }
+
+  #invoice-print-area {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    margin: 0;
+    padding: 24px;
+    box-shadow: none;
+    border: none;
+  }
+
+  #invoice-print-area .rounded-lg {
+    border-radius: 0;
+    box-shadow: none;
+    border: none;
+  }
+}
