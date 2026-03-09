@@ -549,7 +549,7 @@ function DraftForm({ invoice, items, facility, billingContact, profile, onUpdate
       {/* Actions — improved hierarchy */}
       <div className="space-y-2">
         <Button onClick={handleProceedToSend} className="w-full" size="lg">
-          <Send className="mr-2 h-4 w-4" /> Mark as Sent
+          <ArrowRight className="mr-2 h-4 w-4" /> Save and Continue
         </Button>
         <div className="flex gap-2">
           <Button onClick={handleSave} variant="outline" disabled={saving} className="flex-1">
