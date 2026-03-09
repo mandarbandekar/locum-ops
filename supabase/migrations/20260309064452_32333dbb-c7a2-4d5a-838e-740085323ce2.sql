@@ -1,0 +1,1 @@
+ALTER TABLE public.facilities ADD COLUMN invoice_prefix text NOT NULL DEFAULT 'INV';

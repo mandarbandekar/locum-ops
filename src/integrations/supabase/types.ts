@@ -582,6 +582,7 @@ export type Database = {
           clinic_access_info: string
           created_at: string
           id: string
+          invoice_prefix: string
           name: string
           notes: string
           outreach_last_sent_at: string | null
@@ -598,6 +599,7 @@ export type Database = {
           clinic_access_info?: string
           created_at?: string
           id?: string
+          invoice_prefix?: string
           name: string
           notes?: string
           outreach_last_sent_at?: string | null
@@ -614,6 +616,7 @@ export type Database = {
           clinic_access_info?: string
           created_at?: string
           id?: string
+          invoice_prefix?: string
           name?: string
           notes?: string
           outreach_last_sent_at?: string | null
