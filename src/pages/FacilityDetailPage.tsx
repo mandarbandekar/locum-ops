@@ -43,7 +43,6 @@ export default function FacilityDetailPage() {
       <Tabs defaultValue="overview">
         <TabsList className="flex-wrap">
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="contacts">Contacts ({facilityContacts.length})</TabsTrigger>
           <TabsTrigger value="terms">Terms</TabsTrigger>
           <TabsTrigger value="shifts">Shifts ({facilityShifts.length})</TabsTrigger>
           <TabsTrigger value="invoices">Invoices ({facilityInvoices.length})</TabsTrigger>
@@ -54,11 +53,7 @@ export default function FacilityDetailPage() {
         </TabsList>
 
         <TabsContent value="overview" className="mt-4">
-          <OverviewTab facility={facility} shifts={facilityShifts} onUpdate={updateFacility} />
-        </TabsContent>
-
-        <TabsContent value="contacts" className="mt-4">
-          <ContactsTab contacts={facilityContacts} facilityId={facility.id} onAdd={addContact} onUpdate={updateContact} onDelete={deleteContact} />
+          <OverviewTab facility={facility} shifts={facilityShifts} contact={facilityContacts[0] || null} onUpdate={updateFacility} onAddContact={addContact} onUpdateContact={updateContact} onDeleteContact={deleteContact} facilityId={facility.id} />
         </TabsContent>
 
         <TabsContent value="terms" className="mt-4">
