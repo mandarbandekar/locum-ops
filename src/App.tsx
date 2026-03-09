@@ -25,8 +25,7 @@ import WaitlistPage from "@/pages/WaitlistPage";
 import QuizPage from "@/pages/QuizPage";
 import ResultsPage from "@/pages/ResultsPage";
 import ThanksPage from "@/pages/ThanksPage";
-
-import OnboardingPage from "@/pages/OnboardingPage";
+rdingPage";
 import SettingsProfilePage from "@/pages/SettingsProfilePage";
 import SettingsInvoiceProfilePage from "@/pages/SettingsInvoiceProfilePage";
 import ImportPage from "@/pages/ImportPage";
@@ -108,8 +107,7 @@ function AuthGate() {
         <Route path="/quiz" element={<QuizPage />} />
         <Route path="/results" element={<ResultsPage />} />
         <Route path="/thanks" element={<ThanksPage />} />
-        <Route path="/_debug" element={<DebugPage />} />
-        <Route path="*" element={<LandingPage />} />
+        <Route path="/_debug" element={<DebugPage Page />} />
       </Routes>
     );
   }
