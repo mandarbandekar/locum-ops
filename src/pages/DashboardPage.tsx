@@ -125,7 +125,7 @@ export default function DashboardPage() {
       });
 
     return items.sort((a, b) => a.urgency - b.urgency).slice(0, 6);
-  }, [invoices, shifts, facilities, checklistItems, now]);
+  }, [invoices, shifts, facilities, checklistItems, checklistItems, now]);
 
   // ── This Period ──
   const periodData = useMemo(() => {
@@ -165,7 +165,7 @@ export default function DashboardPage() {
       lines.push({ text: `Contracts: ${dueSoonChecklist.length} item${dueSoonChecklist.length > 1 ? 's' : ''} due soon`, link: '/facilities' });
     }
 
-    return lines;
+    retuchecklistItemsrn lines;
   }, []);
 
   const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
