@@ -162,6 +162,12 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
             email_tone: nd.email_tone || 'neutral',
             terms_fields_enabled: DEFAULT_TERMS_FIELDS,
             onboarding_completed_at: null,
+            first_name: nd.first_name || '',
+            last_name: nd.last_name || '',
+            company_name: nd.company_name || '',
+            company_address: nd.company_address || '',
+            invoice_email: nd.invoice_email || null,
+            invoice_phone: nd.invoice_phone || null,
           });
         }
       }
