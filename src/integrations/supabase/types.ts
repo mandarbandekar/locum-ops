@@ -14,6 +14,84 @@ export type Database = {
   }
   public: {
     Tables: {
+      ce_credential_links: {
+        Row: {
+          ce_entry_id: string
+          credential_id: string
+          id: string
+        }
+        Insert: {
+          ce_entry_id: string
+          credential_id: string
+          id?: string
+        }
+        Update: {
+          ce_entry_id?: string
+          credential_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ce_credential_links_ce_entry_id_fkey"
+            columns: ["ce_entry_id"]
+            isOneToOne: false
+            referencedRelation: "ce_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ce_credential_links_credential_id_fkey"
+            columns: ["credential_id"]
+            isOneToOne: false
+            referencedRelation: "credentials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ce_entries: {
+        Row: {
+          category: string
+          certificate_file_name: string | null
+          certificate_file_url: string | null
+          completion_date: string
+          created_at: string
+          hours: number
+          id: string
+          notes: string | null
+          provider: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string
+          certificate_file_name?: string | null
+          certificate_file_url?: string | null
+          completion_date: string
+          created_at?: string
+          hours?: number
+          id?: string
+          notes?: string | null
+          provider?: string
+          title: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          category?: string
+          certificate_file_name?: string | null
+          certificate_file_url?: string | null
+          completion_date?: string
+          created_at?: string
+          hours?: number
+          id?: string
+          notes?: string | null
+          provider?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       clinic_requirement_mappings: {
         Row: {
           clinic_id: string
@@ -480,6 +558,7 @@ export type Database = {
       }
       credentials: {
         Row: {
+          ce_required_hours: number | null
           created_at: string
           credential_number: string | null
           credential_type: Database["public"]["Enums"]["credential_type"]
@@ -497,6 +576,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          ce_required_hours?: number | null
           created_at?: string
           credential_number?: string | null
           credential_type?: Database["public"]["Enums"]["credential_type"]
@@ -514,6 +594,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          ce_required_hours?: number | null
           created_at?: string
           credential_number?: string | null
           credential_type?: Database["public"]["Enums"]["credential_type"]
@@ -1175,6 +1256,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      owns_ce_entry: {
+        Args: { _ce_entry_id: string; _user_id: string }
+        Returns: boolean
+      }
       owns_credential: {
         Args: { _credential_id: string; _user_id: string }
         Returns: boolean
