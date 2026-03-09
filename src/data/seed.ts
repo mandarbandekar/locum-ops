@@ -14,7 +14,7 @@ export const starterFacilities: Facility[] = [
 ];
 
 export const starterContacts: FacilityContact[] = [
-  { id: 'ct1', facility_id: 'c1', name: 'Sarah Johnson', role: 'scheduler', email: 'sarah@greenfield.com', phone: '503-555-0101', is_primary: true },
+  { id: 'ct1', facility_id: 'c1', name: 'Sarah Johnson', role: 'practice_manager', email: 'sarah@greenfield.com', phone: '503-555-0101', is_primary: true },
 ];
 
 export const starterTerms: TermsSnapshot[] = [
