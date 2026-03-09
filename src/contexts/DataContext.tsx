@@ -101,6 +101,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
       case 'invoice_payments': setPayments(rows); break;
       case 'invoice_activity': setActivities(rows); break;
       case 'email_logs': setEmailLogs(rows); break;
+      case 'contract_checklist_items': setChecklistItems(rows); break;
     }
   }
 
