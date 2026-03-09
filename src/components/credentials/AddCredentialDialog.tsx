@@ -5,15 +5,22 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
 import { CREDENTIAL_TYPE_LABELS, RENEWAL_FREQUENCIES } from '@/lib/credentialTypes';
 import { useCredentials, Credential } from '@/hooks/useCredentials';
-import { Upload } from 'lucide-react';
+import { useCEEntries } from '@/hooks/useCEEntries';
+import { Upload, GraduationCap, FileCheck, AlertCircle, Clock, BookOpen } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
+import { getDaysUntilExpiration } from '@/lib/credentialTypes';
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   editingCredential?: Credential | null;
+  onAddCEEntry?: (credentialId: string) => void;
 }
 
 const US_STATES = [
@@ -23,14 +30,18 @@ const US_STATES = [
   'VA','WA','WV','WI','WY','DC','Federal','N/A',
 ];
 
-export function AddCredentialDialog({ open, onOpenChange, editingCredential }: Props) {
+export function AddCredentialDialog({ open, onOpenChange, editingCredential, onAddCEEntry }: Props) {
   const { addCredential, updateCredential, uploadDocument } = useCredentials();
+  const { getCredentialCEStats } = useCEEntries();
   const { toast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
   const [submitting, setSubmitting] = useState(false);
   const [file, setFile] = useState<File | null>(null);
 
   const isEditing = !!editingCredential;
+  const ceStats = isEditing ? getCredentialCEStats(editingCredential.id) : null;
+  const requiredHours = isEditing ? (editingCredential as any).ce_required_hours as number | null : null;
+  const daysLeft = isEditing ? getDaysUntilExpiration(editingCredential.expiration_date) : null;
 
   const [form, setForm] = useState({
     credential_type: editingCredential?.credential_type || 'custom',
@@ -43,6 +54,7 @@ export function AddCredentialDialog({ open, onOpenChange, editingCredential }: P
     renewal_frequency: editingCredential?.renewal_frequency || 'annually',
     notes: editingCredential?.notes || '',
     tags: editingCredential?.tags?.join(', ') || '',
+    ce_required_hours: (editingCredential as any)?.ce_required_hours?.toString() || '',
   });
 
   const update = (field: string, value: string) => setForm(prev => ({ ...prev, [field]: value }));
@@ -65,6 +77,7 @@ export function AddCredentialDialog({ open, onOpenChange, editingCredential }: P
         status: 'active' as const,
         notes: form.notes,
         tags: form.tags ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
+        ce_required_hours: form.ce_required_hours ? parseFloat(form.ce_required_hours) : null,
       };
 
       let credentialId: string;
@@ -95,7 +108,7 @@ export function AddCredentialDialog({ open, onOpenChange, editingCredential }: P
     setForm({
       credential_type: 'custom', custom_title: '', jurisdiction: '', issuing_authority: '',
       credential_number: '', issue_date: '', expiration_date: '', renewal_frequency: 'annually',
-      notes: '', tags: '',
+      notes: '', tags: '', ce_required_hours: '',
     });
     setFile(null);
   };
@@ -106,6 +119,81 @@ export function AddCredentialDialog({ open, onOpenChange, editingCredential }: P
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Edit Credential' : 'Add Credential'}</DialogTitle>
         </DialogHeader>
+
+        {/* CE Tracker Summary (edit mode only) */}
+        {isEditing && ceStats && (
+          <div className="space-y-4 border rounded-lg p-4 bg-muted/30">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold flex items-center gap-2">
+                <GraduationCap className="h-4 w-4" /> CE Tracker
+              </h3>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                onClick={() => {
+                  onOpenChange(false);
+                  onAddCEEntry?.(editingCredential.id);
+                }}
+              >
+                <GraduationCap className="h-3.5 w-3.5" /> Add CE Entry
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">Log a CE course for this credential.</p>
+
+            {/* Mini tracker cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <MiniCard label="Hours Logged" value={`${ceStats.completedHours}`} />
+              <MiniCard label="Hours Remaining" value={requiredHours ? `${Math.max(0, requiredHours - ceStats.completedHours)}` : '—'} />
+              <MiniCard label="CE Entries" value={`${ceStats.linkedCount}`} />
+              <MiniCard label="Certs Missing" value={`${ceStats.missingCerts}`} alert={ceStats.missingCerts > 0} />
+            </div>
+
+            {/* Progress bar */}
+            {requiredHours && requiredHours > 0 && (
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>{ceStats.completedHours} of {requiredHours} hours logged</span>
+                  <span>{Math.min(100, Math.round((ceStats.completedHours / requiredHours) * 100))}%</span>
+                </div>
+                <Progress value={Math.min(100, Math.round((ceStats.completedHours / requiredHours) * 100))} className="h-2" />
+              </div>
+            )}
+
+            {daysLeft !== null && daysLeft > 0 && daysLeft <= 90 && (
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Clock className="h-3 w-3" /> Renewal due in {daysLeft} days
+              </p>
+            )}
+
+            {/* Recent linked CE entries */}
+            {ceStats.linkedEntries.length > 0 ? (
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-muted-foreground">Recent CE Entries</p>
+                {ceStats.linkedEntries.slice(0, 4).map(entry => (
+                  <div key={entry.id} className="flex items-center justify-between text-xs p-2 rounded border bg-background">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <BookOpen className="h-3 w-3 text-muted-foreground shrink-0" />
+                      <span className="truncate">{entry.title}</span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                      <span className="text-muted-foreground">{entry.hours} hrs</span>
+                      {entry.certificate_file_url ? (
+                        <FileCheck className="h-3 w-3 text-emerald-500" />
+                      ) : (
+                        <AlertCircle className="h-3 w-3 text-amber-500" />
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground text-center py-2">No CE logged for this credential yet.</p>
+            )}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -156,7 +244,7 @@ export function AddCredentialDialog({ open, onOpenChange, editingCredential }: P
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>Renewal Frequency</Label>
               <Select value={form.renewal_frequency} onValueChange={v => update('renewal_frequency', v)}>
@@ -165,6 +253,10 @@ export function AddCredentialDialog({ open, onOpenChange, editingCredential }: P
                   {RENEWAL_FREQUENCIES.map(f => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>CE Required Hours</Label>
+              <Input type="number" step="0.5" min="0" value={form.ce_required_hours} onChange={e => update('ce_required_hours', e.target.value)} placeholder="e.g. 30" />
             </div>
             <div className="space-y-2">
               <Label>Tags (comma-separated)</Label>
@@ -208,5 +300,14 @@ export function AddCredentialDialog({ open, onOpenChange, editingCredential }: P
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function MiniCard({ label, value, alert }: { label: string; value: string; alert?: boolean }) {
+  return (
+    <div className={`rounded-lg border p-2.5 text-center bg-background ${alert ? 'border-amber-300 dark:border-amber-700' : ''}`}>
+      <p className="text-lg font-bold">{value}</p>
+      <p className="text-[10px] text-muted-foreground leading-tight">{label}</p>
+    </div>
   );
 }
