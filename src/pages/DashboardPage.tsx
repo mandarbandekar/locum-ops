@@ -65,7 +65,7 @@ export default function DashboardPage() {
       overdueCount, sentCount, partialCount, dueSoonTotal, dueSoonExamples,
       nextShiftLabel, getFacilityName,
     };
-  }, [shifts, invoices, facilities, now]);
+  }, [shifts, invoices, facilities, checklistItems, now]);
 
   // ── Today's Priorities ──
   const priorities = useMemo(() => {
