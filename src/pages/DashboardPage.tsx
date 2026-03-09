@@ -3,7 +3,7 @@ import { useData } from '@/contexts/DataContext';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CalendarDays, FileText, AlertTriangle, CheckCircle, Plus, Building2, Calculator, ShieldAlert, FolderOpen } from 'lucide-react';
+import { CalendarDays, FileText, AlertTriangle, CheckCircle, Plus, Building2, Calculator, ShieldAlert, DollarSign, Clock, Send } from 'lucide-react';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
 import { aggregateQuarterlyIncome, calculateSetAside, getDefaultDueDates } from '@/lib/taxCalculations';
 import { format, differenceInDays } from 'date-fns';
@@ -13,7 +13,7 @@ import { seedChecklistItems } from '@/data/seed';
 import { getChecklistBadge } from '@/types/contracts';
 
 export default function DashboardPage() {
-  const { shifts, invoices, facilities } = useData();
+  const { shifts, invoices, facilities, payments } = useData();
   const navigate = useNavigate();
 
   const now = new Date();
@@ -26,9 +26,17 @@ export default function DashboardPage() {
 
   const draftInvoices = invoices.filter(i => i.status === 'draft');
   const overdueInvoices = invoices.filter(i => computeInvoiceStatus(i) === 'overdue');
+  const sentAwaitingPayment = invoices.filter(i => i.status === 'sent' || i.status === 'partial');
   const proposedShifts = shifts.filter(s => s.status === 'proposed');
 
+  const recentPayments = useMemo(() => {
+    return [...payments]
+      .sort((a, b) => new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime())
+      .slice(0, 5);
+  }, [payments]);
+
   const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
+  const getInvoiceForPayment = (invoiceId: string) => invoices.find(i => i.id === invoiceId);
 
   return (
     <div>
@@ -45,7 +53,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4 mb-6 sm:mb-8">
-        <Card className="stat-card border-l-4 border-l-primary">
+        <Card className="stat-card border-l-4 border-l-primary cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => navigate('/schedule')}>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <CalendarDays className="h-4 w-4" /> Next 7 Days
@@ -57,10 +65,10 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="stat-card border-l-4 border-l-warning">
+        <Card className="stat-card border-l-4 border-l-warning cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => navigate('/invoices')}>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <FileText className="h-4 w-4" /> Invoices to Send
+              <FileText className="h-4 w-4" /> To Review
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -69,7 +77,19 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="stat-card border-l-4 border-l-destructive">
+        <Card className="stat-card border-l-4 border-l-blue-500 cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => navigate('/invoices')}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <Send className="h-4 w-4" /> Awaiting Payment
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">{sentAwaitingPayment.length}</div>
+            <p className="text-xs text-muted-foreground">sent invoices</p>
+          </CardContent>
+        </Card>
+
+        <Card className="stat-card border-l-4 border-l-destructive cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => navigate('/invoices')}>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <AlertTriangle className="h-4 w-4" /> Overdue
@@ -80,27 +100,71 @@ export default function DashboardPage() {
             <p className="text-xs text-muted-foreground">overdue invoices</p>
           </CardContent>
         </Card>
-
-        <Card className="stat-card border-l-4 border-l-accent-foreground">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <CheckCircle className="h-4 w-4" /> Confirmations
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{proposedShifts.length}</div>
-            <p className="text-xs text-muted-foreground">proposed shifts</p>
-          </CardContent>
-        </Card>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3 mb-6">
         <TaxDueDatesWidget invoices={invoices} navigate={navigate} />
       </div>
 
-      {/* Docs Expiring Soon Card - uses demo seed data for now */}
+      {/* Docs Expiring Soon */}
       <DocsExpiringCard navigate={navigate} />
 
+      <div className="grid gap-6 lg:grid-cols-2 mb-6">
+        {/* Draft Invoices to Review */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-base flex items-center gap-2"><FileText className="h-4 w-4" /> Invoices to Review</CardTitle>
+            {draftInvoices.length > 0 && <Button variant="ghost" size="sm" onClick={() => navigate('/invoices')}>View all →</Button>}
+          </CardHeader>
+          <CardContent>
+            {draftInvoices.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No draft invoices to review 🎉</p>
+            ) : (
+              <div className="space-y-2">
+                {draftInvoices.slice(0, 5).map(inv => (
+                  <div key={inv.id} className="flex items-center justify-between p-3 rounded-md bg-warning/5 border border-warning/20 cursor-pointer hover:bg-warning/10 transition-colors" onClick={() => navigate(`/invoices/${inv.id}`)}>
+                    <div>
+                      <p className="font-medium text-sm">{inv.invoice_number}</p>
+                      <p className="text-xs text-muted-foreground">{getFacilityName(inv.facility_id)}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold text-sm">${inv.total_amount.toLocaleString()}</p>
+                      <Badge className="bg-muted text-muted-foreground text-xs">Draft</Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Recent Payments */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2"><DollarSign className="h-4 w-4" /> Recent Payments</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {recentPayments.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No payments recorded yet</p>
+            ) : (
+              <div className="space-y-2">
+                {recentPayments.map(p => {
+                  const inv = getInvoiceForPayment(p.invoice_id);
+                  return (
+                    <div key={p.id} className="flex items-center justify-between p-2 rounded-md bg-muted/50 text-sm cursor-pointer hover:bg-muted transition-colors" onClick={() => inv && navigate(`/invoices/${inv.id}`)}>
+                      <div>
+                        <p className="font-medium">${p.amount.toLocaleString()} via {p.method}</p>
+                        <p className="text-xs text-muted-foreground">{inv?.invoice_number || 'Unknown'}</p>
+                      </div>
+                      <span className="text-xs text-muted-foreground">{format(new Date(p.payment_date), 'MMM d')}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>

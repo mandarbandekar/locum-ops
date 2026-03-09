@@ -7,9 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Send, DollarSign, Trash2, Plus, CheckCircle, AlertTriangle, ExternalLink, Printer } from 'lucide-react';
+import { ArrowLeft, Send, DollarSign, Trash2, Plus, CheckCircle, AlertTriangle, Printer, Link2, Copy, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
-import { computeInvoiceStatus } from '@/lib/businessLogic';
+import { computeInvoiceStatus, generateId } from '@/lib/businessLogic';
 import { toast } from 'sonner';
 import { InvoiceStepper } from '@/components/invoice/InvoiceStepper';
 import { ReadyToSendChecklist, buildChecklistItems } from '@/components/invoice/ReadyToSendChecklist';
@@ -35,9 +35,11 @@ export default function InvoiceDetailPage() {
   const isDraft = invoice.status === 'draft';
   const isSent = invoice.status === 'sent' || computedStatus === 'overdue' || invoice.status === 'partial';
 
+  const handlePrint = () => window.print();
+
   return (
     <div>
-      <div className="flex items-center gap-3 mb-4">
+      <div className="flex items-center gap-3 mb-4 print:hidden">
         <Button variant="ghost" size="icon" onClick={() => navigate('/invoices')}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
@@ -46,20 +48,20 @@ export default function InvoiceDetailPage() {
       </div>
 
       {/* Stepper */}
-      <div className="mb-6 max-w-2xl">
+      <div className="mb-6 max-w-2xl print:hidden">
         <InvoiceStepper status={computedStatus} />
       </div>
 
       {/* Checklist for drafts */}
       {isDraft && (
-        <div className="mb-6 max-w-2xl">
+        <div className="mb-6 max-w-2xl print:hidden">
           <ReadyToSendChecklist items={buildChecklistItems(profile, invoice, items, billingContact, facility)} />
         </div>
       )}
 
       {/* Missing billing email warning */}
       {!billingContact?.email && invoice.status !== 'paid' && (
-        <div className="mb-4 rounded-md border border-warning/50 bg-warning/5 p-3 flex items-center gap-2 max-w-2xl">
+        <div className="mb-4 rounded-md border border-warning/50 bg-warning/5 p-3 flex items-center gap-2 max-w-2xl print:hidden">
           <AlertTriangle className="h-4 w-4 text-warning shrink-0" />
           <p className="text-sm">Billing contact missing — <Button variant="link" size="sm" className="h-auto p-0" onClick={() => navigate(`/facilities/${invoice.facility_id}`)}>add one in Facility Contacts</Button> to send faster.</p>
         </div>
@@ -67,7 +69,7 @@ export default function InvoiceDetailPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* LEFT: Editable Form */}
-        <div className="space-y-4">
+        <div className="space-y-4 print:hidden">
           {isDraft ? (
             <DraftForm invoice={invoice} items={items} facility={facility} billingContact={billingContact} profile={profile}
               onUpdateInvoice={updateInvoice} onAddLineItem={addLineItem} onUpdateLineItem={updateLineItem}
@@ -89,7 +91,7 @@ export default function InvoiceDetailPage() {
         </div>
 
         {/* RIGHT: Live Preview */}
-        <div className="lg:sticky lg:top-6 self-start">
+        <div className="lg:sticky lg:top-6 self-start" id="invoice-print-area">
           <InvoicePreview
             sender={{
               firstName: profile?.first_name || '',
@@ -128,8 +130,6 @@ function DraftForm({ invoice, items, facility, billingContact, profile, onUpdate
   const [dueDate, setDueDate] = useState(invoice.due_date?.split('T')[0] || '');
   const [notes, setNotes] = useState(invoice.notes || '');
   const [saving, setSaving] = useState(false);
-
-  // New line item
   const [showAddLine, setShowAddLine] = useState(false);
   const [newDesc, setNewDesc] = useState('');
   const [newDate, setNewDate] = useState('');
@@ -156,10 +156,10 @@ function DraftForm({ invoice, items, facility, billingContact, profile, onUpdate
 
   const handleProceedToSend = async () => {
     const checklist = buildChecklistItems(profile, { ...invoice, due_date: dueDate || invoice.due_date }, items, billingContact, facility);
-    const required = checklist.filter(i => i.required);
-    const incomplete = required.filter(i => !i.complete);
+    const required = checklist.filter((i: any) => i.required);
+    const incomplete = required.filter((i: any) => !i.complete);
     if (incomplete.length > 0) {
-      toast.error(`Complete required items: ${incomplete.map(i => i.label).join(', ')}`);
+      toast.error(`Complete required items: ${incomplete.map((i: any) => i.label).join(', ')}`);
       return;
     }
     await handleSave();
@@ -191,7 +191,6 @@ function DraftForm({ invoice, items, facility, billingContact, profile, onUpdate
       line_total: lineTotal,
     });
     setNewDesc(''); setNewDate(''); setNewQty(1); setNewRate(0); setShowAddLine(false);
-    // Update total
     const newTotal = total + lineTotal;
     await onUpdateInvoice({ ...invoice, total_amount: newTotal, balance_due: newTotal });
   };
@@ -269,11 +268,7 @@ function DraftForm({ invoice, items, facility, billingContact, profile, onUpdate
                 <tr key={li.id} className="border-b last:border-0">
                   <td className="py-1.5">
                     {li.description}
-                    {li.shift_id && (
-                      <span className="text-xs text-primary ml-1 cursor-pointer" onClick={() => {}}>
-                        ↗ shift
-                      </span>
-                    )}
+                    {li.shift_id && <span className="text-xs text-primary ml-1">↗ shift</span>}
                   </td>
                   <td className="py-1.5 text-muted-foreground text-xs">{li.service_date ? format(new Date(li.service_date + 'T00:00:00'), 'MMM d') : '—'}</td>
                   <td className="py-1.5 text-right">{li.qty}</td>
@@ -340,11 +335,61 @@ function DraftForm({ invoice, items, facility, billingContact, profile, onUpdate
 
 function SentView({ invoice, items, invoicePayments, onUpdateInvoice, onAddPayment, onAddActivity }: any) {
   const [showPayment, setShowPayment] = useState(false);
+  const [shareLoading, setShareLoading] = useState(false);
   const computedStatus = computeInvoiceStatus(invoice);
   const isPaid = invoice.status === 'paid';
+  const hasShareLink = !!invoice.share_token && !invoice.share_token_revoked_at;
 
-  const handlePrint = () => {
-    window.print();
+  const shareUrl = hasShareLink ? `${window.location.origin}/invoice/public/${invoice.share_token}` : '';
+
+  const handlePrint = () => window.print();
+
+  const handleCreateShareLink = async () => {
+    setShareLoading(true);
+    const token = generateId() + '-' + generateId();
+    await onUpdateInvoice({
+      ...invoice,
+      share_token: token,
+      share_token_created_at: new Date().toISOString(),
+      share_token_revoked_at: null,
+    });
+    await onAddActivity({ invoice_id: invoice.id, action: 'share_link_created', description: 'Share link created' });
+    setShareLoading(false);
+    toast.success('Share link created');
+  };
+
+  const handleRevokeShareLink = async () => {
+    await onUpdateInvoice({
+      ...invoice,
+      share_token_revoked_at: new Date().toISOString(),
+    });
+    await onAddActivity({ invoice_id: invoice.id, action: 'share_link_revoked', description: 'Share link revoked' });
+    toast.success('Share link revoked');
+  };
+
+  const handleCopyShareLink = () => {
+    navigator.clipboard.writeText(shareUrl);
+    toast.success('Link copied to clipboard');
+  };
+
+  const handleRegenerateShareLink = async () => {
+    setShareLoading(true);
+    const token = generateId() + '-' + generateId();
+    await onUpdateInvoice({
+      ...invoice,
+      share_token: token,
+      share_token_created_at: new Date().toISOString(),
+      share_token_revoked_at: null,
+    });
+    await onAddActivity({ invoice_id: invoice.id, action: 'share_link_regenerated', description: 'Share link regenerated (old link invalidated)' });
+    setShareLoading(false);
+    toast.success('New share link generated');
+  };
+
+  const handleResend = async () => {
+    await onUpdateInvoice({ ...invoice, sent_at: new Date().toISOString() });
+    await onAddActivity({ invoice_id: invoice.id, action: 'resent', description: 'Invoice resent' });
+    toast.success('Sent date updated');
   };
 
   const handleRecordPayment = async (payment: any) => {
@@ -382,13 +427,54 @@ function SentView({ invoice, items, invoicePayments, onUpdateInvoice, onAddPayme
         </CardContent>
       </Card>
 
-      {/* Actions */}
+      {/* Send / Share Actions */}
       <Card>
-        <CardHeader className="pb-2"><CardTitle className="text-sm">Actions</CardTitle></CardHeader>
-        <CardContent className="space-y-2">
+        <CardHeader className="pb-2"><CardTitle className="text-sm">Send & Share</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
           <Button variant="outline" className="w-full" onClick={handlePrint}>
             <Printer className="mr-2 h-4 w-4" /> Download / Print PDF
           </Button>
+
+          {/* Share Link */}
+          {hasShareLink ? (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 p-2 rounded-md bg-muted text-xs font-mono break-all">
+                <Link2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                <span className="flex-1 truncate">{shareUrl}</span>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="flex-1" onClick={handleCopyShareLink}>
+                  <Copy className="mr-1 h-3.5 w-3.5" /> Copy Link
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleRegenerateShareLink} disabled={shareLoading}>
+                  <RefreshCw className="mr-1 h-3.5 w-3.5" /> Regenerate
+                </Button>
+              </div>
+              <Button variant="ghost" size="sm" className="w-full text-destructive hover:text-destructive" onClick={handleRevokeShareLink}>
+                Revoke Link
+              </Button>
+            </div>
+          ) : (
+            <Button variant="outline" className="w-full" onClick={handleCreateShareLink} disabled={shareLoading}>
+              <Link2 className="mr-2 h-4 w-4" /> Create Share Link
+            </Button>
+          )}
+
+          <p className="text-xs text-muted-foreground text-center">You can share this invoice by PDF or secure link.</p>
+
+          {/* Resend */}
+          {invoice.sent_at && (
+            <Button variant="outline" className="w-full" onClick={handleResend}>
+              <Send className="mr-2 h-4 w-4" /> Resend (Update Sent Date)
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Payment */}
+      <Card>
+        <CardHeader className="pb-2"><CardTitle className="text-sm">Payment</CardTitle></CardHeader>
+        <CardContent className="space-y-2">
           {!isPaid && (
             <Button className="w-full" onClick={() => setShowPayment(true)}>
               <DollarSign className="mr-2 h-4 w-4" /> Record Payment
