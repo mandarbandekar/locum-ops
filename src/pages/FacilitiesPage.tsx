@@ -43,6 +43,7 @@ export default function FacilitiesPage() {
         tech_pims_info: '',
         clinic_access_info: '',
         invoice_prefix: initials,
+        invoice_due_days: 15,
       });
       toast.success(`"${name}" added as a new practice facility`);
       setSearch('');

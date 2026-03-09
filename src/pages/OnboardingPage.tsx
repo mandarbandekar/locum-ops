@@ -62,8 +62,6 @@ export default function OnboardingPage() {
   const [invoicesBand, setInvoicesBand] = useState<InvoicesPerMonthBand>(profile?.invoices_per_month_band || 'inv_1_3');
 
   // Step 3 state
-  const [dueDays, setDueDays] = useState(profile?.invoice_due_default_days || 14);
-  const [duePreset, setDuePreset] = useState<'14' | '30' | 'custom'>(profile?.invoice_due_default_days === 30 ? '30' : profile?.invoice_due_default_days === 14 ? '14' : 'custom');
   
   const [emailTone, setEmailTone] = useState<EmailTone>(profile?.email_tone || 'neutral');
   const [termsFields, setTermsFields] = useState<TermsFieldsEnabled>(
@@ -96,8 +94,6 @@ export default function OnboardingPage() {
   const saveStep3 = async () => {
     console.log('onboarding_step_submit', { step: 3 });
     await updateProfile({
-      invoice_due_default_days: dueDays,
-      
       email_tone: emailTone,
       terms_fields_enabled: termsFields,
     });
@@ -285,24 +281,6 @@ export default function OnboardingPage() {
                 <CardDescription>You can change these anytime in Settings</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <Label>Invoice default due date</Label>
-                  <RadioGroup value={duePreset} onValueChange={v => {
-                    setDuePreset(v as any);
-                    if (v === '14') setDueDays(14);
-                    if (v === '30') setDueDays(30);
-                  }}>
-                    <div className="flex items-center gap-2"><RadioGroupItem value="14" id="d14" /><Label htmlFor="d14">Net 14</Label></div>
-                    <div className="flex items-center gap-2"><RadioGroupItem value="30" id="d30" /><Label htmlFor="d30">Net 30</Label></div>
-                    <div className="flex items-center gap-2">
-                      <RadioGroupItem value="custom" id="dc" />
-                      <Label htmlFor="dc">Custom</Label>
-                      {duePreset === 'custom' && (
-                        <Input type="number" className="w-20 ml-2" value={dueDays} onChange={e => setDueDays(Number(e.target.value))} min={1} />
-                      )}
-                    </div>
-                  </RadioGroup>
-                </div>
                 <div>
                   <Label>Email template tone</Label>
                   <RadioGroup value={emailTone} onValueChange={v => setEmailTone(v as EmailTone)} className="flex gap-4 mt-1">

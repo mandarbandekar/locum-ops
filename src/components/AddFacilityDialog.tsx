@@ -26,8 +26,9 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
   const [techPims, setTechPims] = useState('');
   // Clinic access
   const [clinicAccess, setClinicAccess] = useState('');
-  // Invoice prefix
+  // Invoice settings
   const [invoicePrefix, setInvoicePrefix] = useState('');
+  const [invoiceDueDays, setInvoiceDueDays] = useState(15);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,6 +42,7 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
       tech_pims_info: techPims,
       clinic_access_info: clinicAccess,
       invoice_prefix: prefix,
+      invoice_due_days: invoiceDueDays,
     });
     toast.success('Practice facility added');
     resetForm();
@@ -51,7 +53,7 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
     setName(''); setAddress(''); setNotes('');
     setPartialDayRate(''); setHolidayRate(''); setTelemedicineRate('');
     setTechComputer(''); setTechWifi(''); setTechPims('');
-    setClinicAccess(''); setInvoicePrefix('');
+    setClinicAccess(''); setInvoicePrefix(''); setInvoiceDueDays(15);
   };
 
   function getInitials(text: string): string {
@@ -69,6 +71,7 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
               <TabsTrigger value="rates">Shift Rates</TabsTrigger>
               <TabsTrigger value="tech">Tech Access</TabsTrigger>
               <TabsTrigger value="access">Clinic Access</TabsTrigger>
+              <TabsTrigger value="invoicing">Invoice Settings</TabsTrigger>
             </TabsList>
 
             <TabsContent value="general" className="space-y-3 mt-3">
@@ -90,17 +93,6 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
               <div className="space-y-2">
                 <Label>Address</Label>
                 <Input value={address} onChange={e => setAddress(e.target.value)} placeholder="Full address" />
-              </div>
-              <div className="space-y-2">
-                <Label>Invoice Prefix</Label>
-                <Input
-                  value={invoicePrefix}
-                  onChange={e => setInvoicePrefix(e.target.value.toUpperCase())}
-                  placeholder={name ? getInitials(name) : 'INV'}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Defaults to facility initials. e.g. {invoicePrefix || (name ? getInitials(name) : 'INV')}-2026-001
-                </p>
               </div>
               <div className="space-y-2">
                 <Label>Notes</Label>
@@ -145,6 +137,34 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
               <div className="space-y-2">
                 <Label>Clinic Access Information</Label>
                 <Textarea value={clinicAccess} onChange={e => setClinicAccess(e.target.value)} placeholder="Door codes, parking instructions, key pickup, building access..." rows={5} />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="invoicing" className="space-y-3 mt-3">
+              <p className="text-sm text-muted-foreground">Invoice numbering and payment terms for this facility.</p>
+              <div className="space-y-2">
+                <Label>Invoice Prefix</Label>
+                <Input
+                  value={invoicePrefix}
+                  onChange={e => setInvoicePrefix(e.target.value.toUpperCase())}
+                  placeholder={name ? getInitials(name) : 'INV'}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Defaults to facility initials. e.g. {invoicePrefix || (name ? getInitials(name) : 'INV')}-2026-001
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label>Invoice Due (days)</Label>
+                <Input
+                  type="number"
+                  value={invoiceDueDays}
+                  onChange={e => setInvoiceDueDays(Number(e.target.value))}
+                  min={1}
+                  placeholder="15"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Number of days after invoice date that payment is due. Default: Net 15.
+                </p>
               </div>
             </TabsContent>
           </Tabs>

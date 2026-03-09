@@ -48,7 +48,6 @@ export default function SettingsProfilePage() {
   const [currentTools, setCurrentTools] = useState<CurrentTool[]>(profile?.current_tools || []);
   const [facilitiesBand, setFacilitiesBand] = useState<FacilitiesCountBand>(profile?.facilities_count_band || 'band_1_3');
   const [invoicesBand, setInvoicesBand] = useState<InvoicesPerMonthBand>(profile?.invoices_per_month_band || 'inv_1_3');
-  const [dueDays, setDueDays] = useState(profile?.invoice_due_default_days || 14);
   
   const [emailTone, setEmailTone] = useState<EmailTone>(profile?.email_tone || 'neutral');
   const [termsFields, setTermsFields] = useState<TermsFieldsEnabled>(
@@ -65,7 +64,7 @@ export default function SettingsProfilePage() {
     await updateProfile({
       profession, work_style_label: workStyle, timezone, currency, current_tools: currentTools,
       facilities_count_band: facilitiesBand, invoices_per_month_band: invoicesBand,
-      invoice_due_default_days: dueDays, email_tone: emailTone,
+      email_tone: emailTone,
       terms_fields_enabled: termsFields,
     });
     setSaving(false);
@@ -162,12 +161,6 @@ export default function SettingsProfilePage() {
         <Card>
           <CardHeader><CardTitle className="text-base">Defaults</CardTitle></CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Invoice due (days)</Label>
-                <Input type="number" value={dueDays} onChange={e => setDueDays(Number(e.target.value))} min={1} />
-              </div>
-            </div>
             <div>
               <Label>Email tone</Label>
               <RadioGroup value={emailTone} onValueChange={v => setEmailTone(v as EmailTone)} className="flex gap-4 mt-1">
