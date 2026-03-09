@@ -121,6 +121,8 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
       setInvoices((iRes.data || []).map(stripDbFields));
       setLineItems((liRes.data || []).map(stripDbFields));
       setEmailLogs((eRes.data || []).map(stripDbFields));
+      setPayments((pRes.data || []).map(stripDbFields));
+      setActivities((aRes.data || []).map(stripDbFields));
     } catch (err: any) {
       console.error('Failed to load data:', err);
       toast.error('Failed to load data');
