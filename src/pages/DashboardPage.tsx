@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
 import { format, differenceInDays } from 'date-fns';
-import { seedChecklistItems } from '@/data/seed';
 import { getChecklistBadge } from '@/types/contracts';
 
 export default function DashboardPage() {
