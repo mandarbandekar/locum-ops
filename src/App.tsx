@@ -70,9 +70,9 @@ function AuthenticatedApp() {
           <Route path="/invoices" element={<InvoicesPage />} />
           <Route path="/invoices/:id" element={<InvoiceDetailPage />} />
           <Route path="/invoice/public/:token" element={<PublicInvoicePage />} />
-          <Route path="/reports" element={<ReportsPage />} />
-          <Route path="/credentials" element={<CredentialsPage />} />
-          <Route path="/taxes" element={<TaxesPage />} />
+          <Route path="/business" element={<BusinessPage />} />
+          <Route path="/reports" element={<Navigate to="/business?tab=reports" replace />} />
+          <Route path="/taxes" element={<Navigate to="/business?tab=taxes" replace />} />
           <Route path="/settings/profile" element={<SettingsProfilePage />} />
           <Route path="/settings/invoice-profile" element={<SettingsInvoiceProfilePage />} />
           <Route path="/import" element={<ImportPage />} />
