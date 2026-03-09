@@ -126,17 +126,25 @@ function CreateInvoiceDialog({ open, onOpenChange }: { open: boolean; onOpenChan
     const total = lineItems.reduce((sum, li) => sum + li.line_total, 0);
 
     try {
+      const facility = facilities.find(f => f.id === facilityId);
+      const dueDays = (facility as any)?.invoice_due_days || 15;
       const invoice = await addInvoice(
         {
           facility_id: facilityId,
-          invoice_number: generateInvoiceNumber(invoices, facilities.find(f => f.id === facilityId)?.invoice_prefix || 'INV'),
+          invoice_number: generateInvoiceNumber(invoices, facility?.invoice_prefix || 'INV'),
+          invoice_date: new Date().toISOString(),
           period_start: new Date(periodStart).toISOString(),
           period_end: new Date(periodEnd).toISOString(),
           total_amount: total,
+          balance_due: total,
           status: 'draft',
           sent_at: null,
           paid_at: null,
-          due_date: new Date(new Date(periodEnd).getTime() + (facilities.find(f => f.id === facilityId)?.invoice_due_days || 15) * 86400000).toISOString(),
+          due_date: new Date(new Date(periodEnd).getTime() + dueDays * 86400000).toISOString(),
+          notes: '',
+          share_token: null,
+          share_token_created_at: null,
+          share_token_revoked_at: null,
         },
         lineItems
       );

@@ -342,24 +342,32 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
       if (!alreadyInvoiced) {
         const facility = facilities.find(f => f.id === s.facility_id);
         const invoiceNumber = generateInvoiceNumber(invoices, facility?.invoice_prefix || 'INV');
+        const dueDays = (facility as any)?.invoice_due_days || 15;
         const dueDate = new Date(s.end_datetime);
-        dueDate.setDate(dueDate.getDate() + 14);
+        dueDate.setDate(dueDate.getDate() + dueDays);
         try {
           await addInvoice(
             {
               facility_id: s.facility_id,
               invoice_number: invoiceNumber,
+              invoice_date: new Date().toISOString(),
               period_start: s.start_datetime,
               period_end: s.end_datetime,
               total_amount: s.rate_applied,
+              balance_due: s.rate_applied,
               status: 'draft' as Invoice['status'],
               sent_at: null,
               paid_at: null,
               due_date: dueDate.toISOString(),
+              notes: '',
+              share_token: null,
+              share_token_created_at: null,
+              share_token_revoked_at: null,
             },
             [{
               shift_id: s.id,
               description: `${facility?.name || 'Shift'} — ${new Date(s.start_datetime).toLocaleDateString()}`,
+              service_date: new Date(s.start_datetime).toISOString().split('T')[0],
               qty: 1,
               unit_rate: s.rate_applied,
               line_total: s.rate_applied,
