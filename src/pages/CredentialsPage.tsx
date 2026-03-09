@@ -4,6 +4,7 @@ import { CredentialsOverview } from '@/components/credentials/CredentialsOvervie
 import CredentialsList from '@/components/credentials/CredentialsList';
 import RenewalsTab from '@/components/credentials/RenewalsTab';
 import DocumentsVaultTab from '@/components/credentials/DocumentsVaultTab';
+import CEEntriesTab from '@/components/credentials/CEEntriesTab';
 import { AddCredentialDialog } from '@/components/credentials/AddCredentialDialog';
 import { ShieldCheck } from 'lucide-react';
 
@@ -27,13 +28,13 @@ export default function CredentialsPage() {
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="w-full justify-start border-b rounded-none bg-transparent p-0 h-auto">
-          {['overview', 'credentials', 'renewals', 'documents'].map(t => (
+          {['overview', 'credentials', 'ce-entries', 'renewals', 'documents'].map(t => (
             <TabsTrigger
               key={t}
               value={t}
               className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2.5 capitalize"
             >
-              {t}
+              {t === 'ce-entries' ? 'CE Entries' : t}
             </TabsTrigger>
           ))}
         </TabsList>
@@ -47,6 +48,10 @@ export default function CredentialsPage() {
 
         <TabsContent value="credentials" className="mt-6">
           <CredentialsList />
+        </TabsContent>
+
+        <TabsContent value="ce-entries" className="mt-6">
+          <CEEntriesTab />
         </TabsContent>
 
         <TabsContent value="renewals" className="mt-6">
