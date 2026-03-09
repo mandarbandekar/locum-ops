@@ -133,6 +133,12 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
           email_tone: d.email_tone,
           terms_fields_enabled: (d.terms_fields_enabled as TermsFieldsEnabled) || DEFAULT_TERMS_FIELDS,
           onboarding_completed_at: d.onboarding_completed_at,
+          first_name: d.first_name || '',
+          last_name: d.last_name || '',
+          company_name: d.company_name || '',
+          company_address: d.company_address || '',
+          invoice_email: d.invoice_email || null,
+          invoice_phone: d.invoice_phone || null,
         });
       } else {
         const { data: newData, error: insertErr } = await db('user_profiles')
