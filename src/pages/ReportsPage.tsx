@@ -103,10 +103,6 @@ export default function ReportsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Reports & Analytics</h1>
-          <p className="text-muted-foreground mt-1">Track revenue, shifts, and payment performance</p>
-        </div>
         <Select value={monthRange} onValueChange={setMonthRange}>
           <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
           <SelectContent>
