@@ -26,6 +26,8 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
   const [status, setStatus] = useState<FacilityStatus>('prospect');
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
+  const [weekdayRate, setWeekdayRate] = useState('');
+  const [weekendRate, setWeekendRate] = useState('');
   const [partialDayRate, setPartialDayRate] = useState('');
   const [holidayRate, setHolidayRate] = useState('');
   const [telemedicineRate, setTelemedicineRate] = useState('');
@@ -46,6 +48,7 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
   const resetForm = () => {
     setStep(0);
     setName(''); setAddress(''); setNotes(''); setStatus('prospect');
+    setWeekdayRate(''); setWeekendRate('');
     setPartialDayRate(''); setHolidayRate(''); setTelemedicineRate('');
     setTechComputer(''); setTechWifi(''); setTechPims('');
     setClinicAccess(''); setInvoicePrefix(''); setInvoiceDueDays(15);
@@ -116,7 +119,7 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
                 className="flex items-center gap-1 text-xs text-primary hover:underline transition-colors"
               >
                 <SkipForward className="h-3 w-3" />
-                Skip & add now
+                Skip & add later
               </button>
             )}
           </div>
@@ -157,6 +160,14 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
           {step === 1 && (
             <>
               <p className="text-sm text-muted-foreground">Set shift rates for this facility. You can also configure these later.</p>
+              <div className="space-y-2">
+                <Label>Weekday Rate ($)</Label>
+                <Input type="number" value={weekdayRate} onChange={e => setWeekdayRate(e.target.value)} placeholder="0" />
+              </div>
+              <div className="space-y-2">
+                <Label>Weekend Rate ($)</Label>
+                <Input type="number" value={weekendRate} onChange={e => setWeekendRate(e.target.value)} placeholder="0" />
+              </div>
               <div className="space-y-2">
                 <Label>Partial Day Rate ($)</Label>
                 <Input type="number" value={partialDayRate} onChange={e => setPartialDayRate(e.target.value)} placeholder="0" />
