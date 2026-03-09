@@ -7,6 +7,7 @@ import {
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarFooter, useSidebar,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
+import locumOpsLogo from '@/assets/locumops-logo.png';
 
 const navItems = [
   { title: 'Dashboard', url: '/', icon: LayoutDashboard },
