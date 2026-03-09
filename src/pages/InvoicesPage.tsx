@@ -118,6 +118,7 @@ function CreateInvoiceDialog({ open, onOpenChange }: { open: boolean; onOpenChan
     const lineItems = completedShifts.map(s => ({
       shift_id: s.id,
       description: `Shift - ${format(new Date(s.start_datetime), 'MMM d, yyyy')} (${format(new Date(s.start_datetime), 'h:mm a')} - ${format(new Date(s.end_datetime), 'h:mm a')})`,
+      service_date: new Date(s.start_datetime).toISOString().split('T')[0],
       qty: 1,
       unit_rate: s.rate_applied,
       line_total: s.rate_applied,
