@@ -26,8 +26,9 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
   const [techPims, setTechPims] = useState('');
   // Clinic access
   const [clinicAccess, setClinicAccess] = useState('');
-  // Invoice prefix
+  // Invoice settings
   const [invoicePrefix, setInvoicePrefix] = useState('');
+  const [invoiceDueDays, setInvoiceDueDays] = useState(15);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,6 +42,7 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
       tech_pims_info: techPims,
       clinic_access_info: clinicAccess,
       invoice_prefix: prefix,
+      invoice_due_days: invoiceDueDays,
     });
     toast.success('Practice facility added');
     resetForm();
