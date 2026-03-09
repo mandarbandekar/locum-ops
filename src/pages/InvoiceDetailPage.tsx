@@ -47,7 +47,7 @@ export default function InvoiceDetailPage() {
 
   const items = lineItems.filter(li => li.invoice_id === id);
   const facility = facilities.find(c => c.id === invoice.facility_id);
-  const billingContact = contacts.find(c => c.facility_id === invoice.facility_id && (c.role === 'billing' || c.is_primary));
+  const billingContact = contacts.find(c => c.facility_id === invoice.facility_id);
   const invoicePayments = payments.filter(p => p.invoice_id === id);
   const invoiceActivities = activities.filter(a => a.invoice_id === id).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   const computedStatus = computeInvoiceStatus(invoice);
