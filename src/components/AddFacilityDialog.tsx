@@ -51,8 +51,12 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
     setName(''); setAddress(''); setNotes('');
     setPartialDayRate(''); setHolidayRate(''); setTelemedicineRate('');
     setTechComputer(''); setTechWifi(''); setTechPims('');
-    setClinicAccess('');
+    setClinicAccess(''); setInvoicePrefix('');
   };
+
+  function getInitials(text: string): string {
+    return text.split(/\s+/).map(w => w[0]).filter(Boolean).join('').toUpperCase().slice(0, 4) || 'INV';
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
