@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect, Rea
 import { Facility, FacilityContact, TermsSnapshot, Shift, Invoice, InvoiceLineItem, InvoicePayment, InvoiceActivity, EmailLog } from '@/types';
 import { ContractChecklistItem } from '@/types/contracts';
 import {
-  seedFacilities, seedContacts, seedTerms, seedShifts, seedInvoices, seedLineItems, seedEmailLogs, seedChecklistItems, seedChecklistItems,
+  seedFacilities, seedContacts, seedTerms, seedShifts, seedInvoices, seedLineItems, seedEmailLogs, seedChecklistItems,
 } from '@/data/seed';
 import { computeInvoiceStatus, generateId, generateInvoiceNumber } from '@/lib/businessLogic';
 import { supabase } from '@/integrations/supabase/client';
