@@ -49,7 +49,7 @@ export default function SettingsProfilePage() {
   const [facilitiesBand, setFacilitiesBand] = useState<FacilitiesCountBand>(profile?.facilities_count_band || 'band_1_3');
   const [invoicesBand, setInvoicesBand] = useState<InvoicesPerMonthBand>(profile?.invoices_per_month_band || 'inv_1_3');
   const [dueDays, setDueDays] = useState(profile?.invoice_due_default_days || 14);
-  const [invoicePrefix, setInvoicePrefix] = useState(profile?.invoice_prefix || 'INV');
+  
   const [emailTone, setEmailTone] = useState<EmailTone>(profile?.email_tone || 'neutral');
   const [termsFields, setTermsFields] = useState<TermsFieldsEnabled>(
     profile?.terms_fields_enabled || { weekday_rate: true, weekend_rate: true, cancellation_policy: true, overtime_policy: true, late_payment_policy: true, special_notes: true }
