@@ -341,7 +341,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
       const alreadyInvoiced = lineItems.find(li => li.shift_id === s.id);
       if (!alreadyInvoiced) {
         const facility = facilities.find(f => f.id === s.facility_id);
-        const invoiceNumber = generateInvoiceNumber(invoices);
+        const invoiceNumber = generateInvoiceNumber(invoices, facility?.invoice_prefix || 'INV');
         const dueDate = new Date(s.end_datetime);
         dueDate.setDate(dueDate.getDate() + 14);
         try {

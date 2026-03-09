@@ -304,11 +304,6 @@ export default function OnboardingPage() {
                   </RadioGroup>
                 </div>
                 <div>
-                  <Label>Invoice prefix</Label>
-                  <Input value={invoicePrefix} onChange={e => setInvoicePrefix(e.target.value.toUpperCase())} placeholder="INV" className="w-32" />
-                  <p className="text-xs text-muted-foreground mt-1">e.g. {invoicePrefix}-2026-001</p>
-                </div>
-                <div>
                   <Label>Email template tone</Label>
                   <RadioGroup value={emailTone} onValueChange={v => setEmailTone(v as EmailTone)} className="flex gap-4 mt-1">
                     {TONES.map(t => (

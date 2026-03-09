@@ -92,6 +92,17 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
                 <Input value={address} onChange={e => setAddress(e.target.value)} placeholder="Full address" />
               </div>
               <div className="space-y-2">
+                <Label>Invoice Prefix</Label>
+                <Input
+                  value={invoicePrefix}
+                  onChange={e => setInvoicePrefix(e.target.value.toUpperCase())}
+                  placeholder={name ? getInitials(name) : 'INV'}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Defaults to facility initials. e.g. {invoicePrefix || (name ? getInitials(name) : 'INV')}-2026-001
+                </p>
+              </div>
+              <div className="space-y-2">
                 <Label>Notes</Label>
                 <Textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Any notes..." rows={3} />
               </div>

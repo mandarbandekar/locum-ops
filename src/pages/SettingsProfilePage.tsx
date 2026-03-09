@@ -65,7 +65,7 @@ export default function SettingsProfilePage() {
     await updateProfile({
       profession, work_style_label: workStyle, timezone, currency, current_tools: currentTools,
       facilities_count_band: facilitiesBand, invoices_per_month_band: invoicesBand,
-      invoice_due_default_days: dueDays, invoice_prefix: invoicePrefix, email_tone: emailTone,
+      invoice_due_default_days: dueDays, email_tone: emailTone,
       terms_fields_enabled: termsFields,
     });
     setSaving(false);
