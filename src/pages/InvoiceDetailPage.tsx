@@ -276,33 +276,28 @@ function DraftForm({ invoice, items, facility, billingContact, profile, onUpdate
           <table className="w-full text-sm">
             <thead><tr className="border-b text-left">
               <th className="pb-1.5 font-medium text-muted-foreground text-xs">Description</th>
-              <th className="pb-1.5 font-medium text-muted-foreground text-xs w-20">Date</th>
-              <th className="pb-1.5 font-medium text-muted-foreground text-xs w-12 text-right">Qty</th>
-              <th className="pb-1.5 font-medium text-muted-foreground text-xs w-16 text-right">Rate</th>
-              <th className="pb-1.5 font-medium text-muted-foreground text-xs w-16 text-right">Total</th>
+              <th className="pb-1.5 font-medium text-muted-foreground text-xs w-24">Date</th>
+              <th className="pb-1.5 font-medium text-muted-foreground text-xs w-16 text-right">Qty</th>
+              <th className="pb-1.5 font-medium text-muted-foreground text-xs w-20 text-right">Rate</th>
+              <th className="pb-1.5 font-medium text-muted-foreground text-xs w-20 text-right">Total</th>
               <th className="w-8" />
             </tr></thead>
             <tbody>
               {items.map((li: any) => (
-                <tr key={li.id} className="border-b last:border-0">
-                  <td className="py-1.5">
-                    {li.description}
-                    {li.shift_id && <span className="text-xs text-primary ml-1">↗ shift</span>}
-                  </td>
-                  <td className="py-1.5 text-muted-foreground text-xs">{li.service_date ? format(new Date(li.service_date + 'T00:00:00'), 'MMM d') : '—'}</td>
-                  <td className="py-1.5 text-right">{li.qty}</td>
-                  <td className="py-1.5 text-right">${li.unit_rate}</td>
-                  <td className="py-1.5 text-right font-medium">${li.line_total}</td>
-                  <td className="py-1.5">
-                    <Button size="icon" variant="ghost" className="h-5 w-5" onClick={async () => {
-                      await onDeleteLineItem(li.id);
-                      const newTotal = total - li.line_total;
-                      await onUpdateInvoice({ ...invoice, total_amount: newTotal, balance_due: newTotal });
-                    }}>
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </td>
-                </tr>
+                <EditableLineItemRow
+                  key={li.id}
+                  item={li}
+                  onUpdate={async (updated: any) => {
+                    await onUpdateLineItem(updated);
+                    const newTotal = items.reduce((s: number, x: any) => s + (x.id === updated.id ? updated.line_total : x.line_total), 0);
+                    await onUpdateInvoice({ ...invoice, total_amount: newTotal, balance_due: newTotal });
+                  }}
+                  onDelete={async () => {
+                    await onDeleteLineItem(li.id);
+                    const newTotal = total - li.line_total;
+                    await onUpdateInvoice({ ...invoice, total_amount: newTotal, balance_due: newTotal });
+                  }}
+                />
               ))}
               {items.length === 0 && <tr><td colSpan={6} className="py-3 text-center text-muted-foreground text-xs">No line items</td></tr>}
             </tbody>
