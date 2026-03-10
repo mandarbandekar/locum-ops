@@ -1,5 +1,7 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useData } from '@/contexts/DataContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,10 +13,29 @@ import { computeInvoiceStatus } from '@/lib/businessLogic';
 import { format, differenceInDays } from 'date-fns';
 import { getChecklistBadge } from '@/types/contracts';
 
+const dashDb = (table: string) => supabase.from(table as any);
+
 export default function DashboardPage() {
   const { shifts, invoices, facilities, payments, checklistItems } = useData();
+  const { user, isDemo } = useAuth();
   const navigate = useNavigate();
   const now = new Date();
+
+  // Tax readiness data for dashboard hooks
+  const [taxChecklist, setTaxChecklist] = useState<{ completed: boolean }[]>([]);
+  const [taxQuarters, setTaxQuarters] = useState<{ quarter: number; due_date: string; status: string }[]>([]);
+
+  useEffect(() => {
+    if (isDemo) return;
+    if (!user) return;
+    Promise.all([
+      dashDb('tax_checklist_items').select('completed'),
+      dashDb('tax_quarter_statuses').select('quarter,due_date,status').eq('tax_year', now.getFullYear()).order('quarter'),
+    ]).then(([clRes, qsRes]) => {
+      if (clRes.data) setTaxChecklist(clRes.data as any[]);
+      if (qsRes.data) setTaxQuarters(qsRes.data as any[]);
+    });
+  }, [user?.id, isDemo]);
 
   // ── Summary card data ──
   const summaryData = useMemo(() => {
@@ -165,8 +186,21 @@ export default function DashboardPage() {
       lines.push({ text: `Contracts: ${dueSoonChecklist.length} item${dueSoonChecklist.length > 1 ? 's' : ''} due soon`, link: '/facilities' });
     }
 
+    // Tax readiness hooks
+    if (taxChecklist.length > 0) {
+      const completed = taxChecklist.filter(c => c.completed).length;
+      const percent = Math.round((completed / taxChecklist.length) * 100);
+      lines.push({ text: `Tax readiness: ${percent}%`, link: '/business?tab=tax-strategy&subtab=tracker' });
+    }
+
+    const nextQuarter = taxQuarters.find(q => new Date(q.due_date) >= now && q.status !== 'paid');
+    if (nextQuarter) {
+      const daysUntil = differenceInDays(new Date(nextQuarter.due_date), now);
+      lines.push({ text: `Taxes: Q${nextQuarter.quarter} due in ${daysUntil} days`, link: '/business?tab=tax-strategy&subtab=tracker' });
+    }
+
     return lines;
-  }, [checklistItems]);
+  }, [checklistItems, taxChecklist, taxQuarters, now]);
 
   const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
   const getInvoiceForPayment = (invoiceId: string) => invoices.find(i => i.id === invoiceId);
