@@ -232,7 +232,7 @@ export function useTaxStrategy() {
   }, [isDemo, quarterStatuses.length, user, currentYear, loadData]);
 
   return {
-    loading, profile, categories, checklist, questions, quarterStatuses,
+    loading, profile, categories, checklist, questions, quarterStatuses, invoices,
     ytdPaidIncome, reserveAmount, readinessScore, nextQuarterDue, totalDeductions, currentYear,
     saveProfile, saveCategory, deleteCategory, toggleChecklistItem,
     initializeChecklist, initializeCategories, initializeQuarterStatuses,
