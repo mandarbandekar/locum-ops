@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -6,13 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { DollarSign, CalendarDays, CheckCircle2, Circle } from 'lucide-react';
+import { DollarSign, CalendarDays, CheckCircle2, AlertCircle, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   aggregateQuarterlyIncome,
@@ -29,19 +28,19 @@ const STATUS_OPTIONS = [
   { value: 'paid', label: 'Paid' },
 ];
 
-const DEFAULT_CHECKLIST_ITEMS = [
-  { key: 'entity_setup', label: 'Entity setup reviewed' },
-  { key: 'estimated_taxes', label: 'Estimated taxes reviewed this quarter' },
-  { key: 'cpa_consulted', label: 'CPA consulted this year' },
-  { key: 'payroll_reviewed', label: 'Payroll reviewed (if S-corp)' },
-  { key: 'reasonable_comp', label: 'Reasonable compensation discussed (if S-corp)' },
-  { key: 'accountable_plan', label: 'Accountable plan discussed (if S-corp)' },
-  { key: 'deductions_reviewed', label: 'Deduction categories reviewed' },
-  { key: 'receipts_organized', label: 'Receipts / docs organized' },
-  { key: 'mileage_tracking', label: 'Multi-clinic mileage tracking reviewed' },
-  { key: 'ce_licensing', label: 'CE / licensing costs organized' },
-  { key: 'travel_docs', label: 'Travel / lodging documentation reviewed' },
-  { key: 'cpa_packet', label: 'Year-end CPA packet ready' },
+const DEFAULT_CHECKLIST_ITEMS: { key: string; label: string; instruction: string; quarter?: number }[] = [
+  { key: 'entity_setup', label: 'Entity setup reviewed', instruction: 'Confirm your business entity type (sole prop, LLC, S-corp) is still the best fit. Discuss with your CPA if your relief income has changed significantly.' },
+  { key: 'estimated_taxes', label: 'Estimated taxes reviewed this quarter', instruction: 'Review your YTD income and reserve amount. Confirm quarterly payment amounts with your CPA before each due date.' },
+  { key: 'cpa_consulted', label: 'CPA consulted this year', instruction: 'Schedule at least one annual check-in with your CPA to review entity structure, deductions, and quarterly estimates.' },
+  { key: 'payroll_reviewed', label: 'Payroll reviewed (if S-corp)', instruction: 'If you operate as an S-corp, ensure payroll is set up and reasonable compensation is being paid. Confirm amounts with your CPA.' },
+  { key: 'reasonable_comp', label: 'Reasonable compensation discussed (if S-corp)', instruction: 'S-corp owners must pay themselves a reasonable salary. Discuss the appropriate amount based on your relief work volume and industry norms.' },
+  { key: 'accountable_plan', label: 'Accountable plan discussed (if S-corp)', instruction: 'An accountable plan lets your S-corp reimburse you for business expenses like mileage, CE, and licensing. Ask your CPA if this applies.' },
+  { key: 'deductions_reviewed', label: 'Deduction categories reviewed', instruction: 'Go to the Deductions tab and ensure all your business expense categories have accurate YTD totals and documentation status.' },
+  { key: 'receipts_organized', label: 'Receipts / docs organized', instruction: 'Gather and organize receipts for all business expenses. Digital copies are fine — ensure each category has supporting documentation.' },
+  { key: 'mileage_tracking', label: 'Multi-clinic mileage tracking reviewed', instruction: 'If you travel between multiple clinics or facilities, keep a mileage log with dates, destinations, and business purpose for each trip.' },
+  { key: 'ce_licensing', label: 'CE / licensing costs organized', instruction: 'Compile all continuing education fees, license renewals, DEA registrations, and professional certification costs for the year.' },
+  { key: 'travel_docs', label: 'Travel / lodging documentation reviewed', instruction: 'For out-of-town assignments, keep records of lodging, travel expenses, and per diem meals. Note the business purpose for each trip.' },
+  { key: 'cpa_packet', label: 'Year-end CPA packet ready', instruction: 'Visit the CPA Packet tab to generate a summary of your income, deductions, and questions. Share this with your CPA before year-end.' },
 ];
 
 interface TaxSettings {
@@ -66,6 +65,7 @@ interface ChecklistItem {
   label: string;
   completed: boolean;
   completed_at: string | null;
+  ignored?: boolean;
 }
 
 export default function TrackerTab() {
@@ -91,7 +91,7 @@ export default function TrackerTab() {
         quarter: q, tax_year: selectedYear, due_date: defaults[q], status: 'not_started', notes: '',
       })));
       setChecklist(DEFAULT_CHECKLIST_ITEMS.map(item => ({
-        item_key: item.key, label: item.label, completed: false, completed_at: null,
+        item_key: item.key, label: item.label, completed: false, completed_at: null, ignored: false,
       })));
       setLoading(false);
       return;
@@ -128,11 +128,11 @@ export default function TrackerTab() {
 
       if ((clRes.data as any)?.length > 0) {
         setChecklist((clRes.data as any[]).map((r: any) => ({
-          id: r.id, item_key: r.item_key, label: r.label, completed: r.completed, completed_at: r.completed_at,
+          id: r.id, item_key: r.item_key, label: r.label, completed: r.completed, completed_at: r.completed_at, ignored: false,
         })));
       } else {
         setChecklist(DEFAULT_CHECKLIST_ITEMS.map(item => ({
-          item_key: item.key, label: item.label, completed: false, completed_at: null,
+          item_key: item.key, label: item.label, completed: false, completed_at: null, ignored: false,
         })));
       }
     } catch (err) {
@@ -170,7 +170,7 @@ export default function TrackerTab() {
   async function toggleChecklist(idx: number) {
     const item = checklist[idx];
     const now = new Date().toISOString();
-    const updated = { ...item, completed: !item.completed, completed_at: !item.completed ? now : null };
+    const updated = { ...item, completed: !item.completed, completed_at: !item.completed ? now : null, ignored: false };
     setChecklist(prev => prev.map((c, i) => i === idx ? updated : c));
 
     if (isDemo || !user) return;
@@ -182,14 +182,21 @@ export default function TrackerTab() {
     }
   }
 
+  function toggleIgnore(idx: number) {
+    setChecklist(prev => prev.map((c, i) => i === idx ? { ...c, ignored: !c.ignored } : c));
+    const item = checklist[idx];
+    toast.success(item.ignored ? `"${item.label}" restored` : `"${item.label}" ignored`);
+  }
+
   const quarterlyIncome = useMemo(() => aggregateQuarterlyIncome(invoices, selectedYear), [invoices, selectedYear]);
   const setAsideData = useMemo(() => calculateSetAside(quarterlyIncome, settings.set_aside_mode, settings.set_aside_percent, settings.set_aside_fixed_monthly), [quarterlyIncome, settings]);
   const totalIncome = quarterlyIncome.reduce((s, q) => s + q.income, 0);
   const totalSetAside = setAsideData.reduce((s, q) => s + q.amount, 0);
 
-  const completedCount = checklist.filter(c => c.completed).length;
-  const readinessPercent = checklist.length > 0 ? Math.round((completedCount / checklist.length) * 100) : 0;
-  const nextTask = checklist.find(c => !c.completed);
+  const activeChecklist = checklist.filter(c => !c.ignored);
+  const completedCount = activeChecklist.filter(c => c.completed).length;
+  const readinessPercent = activeChecklist.length > 0 ? Math.round((completedCount / activeChecklist.length) * 100) : 0;
+  const incompleteItems = checklist.filter(c => !c.completed && !c.ignored);
 
   const nextDue = useMemo(() => {
     const now = new Date();
@@ -198,6 +205,11 @@ export default function TrackerTab() {
       .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
     return upcoming[0] || null;
   }, [quarterStatuses]);
+
+  // Get instruction text for a checklist item
+  function getInstruction(itemKey: string): string {
+    return DEFAULT_CHECKLIST_ITEMS.find(d => d.key === itemKey)?.instruction || '';
+  }
 
   if (loading) return <p className="text-muted-foreground py-8 text-center">Loading…</p>;
 
@@ -220,10 +232,9 @@ export default function TrackerTab() {
         </Card>
         <Card>
           <CardContent className="pt-4 pb-3 px-4">
-            <p className="text-xs text-muted-foreground">Reserve Preference</p>
-            <p className="text-xl font-bold">
-              {settings.set_aside_mode === 'percent' ? `${settings.set_aside_percent}%` : `$${settings.set_aside_fixed_monthly}/mo`}
-            </p>
+            <p className="text-xs text-muted-foreground">Tax Readiness</p>
+            <p className="text-xl font-bold">{readinessPercent}%</p>
+            <p className="text-xs text-muted-foreground">{completedCount}/{activeChecklist.length} tasks</p>
           </CardContent>
         </Card>
         <Card>
@@ -258,34 +269,65 @@ export default function TrackerTab() {
         </CardContent>
       </Card>
 
-      {/* Quarterly Statuses */}
+      {/* Overall Readiness Progress */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="text-base flex items-center gap-2"><CalendarDays className="h-4 w-4" /> Quarterly Planning</CardTitle>
+            <div>
+              <CardTitle className="text-base flex items-center gap-2"><CheckCircle2 className="h-4 w-4" /> Tax Readiness Overview</CardTitle>
+              <p className="text-xs text-muted-foreground mt-1">{completedCount} of {activeChecklist.length} tasks complete · {checklist.filter(c => c.ignored).length} ignored</p>
+            </div>
+            <div className="text-right">
+              <p className="text-2xl font-bold">{readinessPercent}%</p>
+              <p className="text-xs text-muted-foreground">Readiness</p>
+            </div>
+          </div>
+          <Progress value={readinessPercent} className="mt-2" />
+        </CardHeader>
+      </Card>
+
+      {/* Quarterly Statuses with Checklist */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base flex items-center gap-2"><CalendarDays className="h-4 w-4" /> Quarterly Planning & Readiness</CardTitle>
             <Select value={String(selectedYear)} onValueChange={v => setSelectedYear(Number(v))}>
               <SelectTrigger className="w-[100px]"><SelectValue /></SelectTrigger>
               <SelectContent>{[currentYear - 1, currentYear, currentYear + 1].map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
             </Select>
           </div>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-4">
           {quarterStatuses.map(qs => {
             const qi = quarterlyIncome.find(q => q.quarter === qs.quarter);
             const sa = setAsideData.find(q => q.quarter === qs.quarter);
+            const isPast = new Date(qs.due_date) < new Date();
+            const quarterCompletedCount = activeChecklist.filter(c => c.completed).length;
+            const quarterProgress = activeChecklist.length > 0 ? Math.round((quarterCompletedCount / activeChecklist.length) * 100) : 0;
+
             return (
               <Card key={qs.quarter} className="border">
-                <CardContent className="p-4 space-y-2">
+                <CardContent className="p-4 space-y-4">
+                  {/* Quarter Header */}
                   <div className="flex items-center justify-between">
-                    <p className="font-medium">Q{qs.quarter} — Due {new Date(qs.due_date).toLocaleDateString()}</p>
+                    <div>
+                      <p className="font-medium text-base">Q{qs.quarter} — Due {new Date(qs.due_date).toLocaleDateString()}</p>
+                      {isPast && qs.status !== 'paid' && (
+                        <p className="text-xs text-destructive flex items-center gap-1 mt-0.5"><AlertCircle className="h-3 w-3" /> Past due</p>
+                      )}
+                    </div>
                     <Badge variant={qs.status === 'paid' ? 'default' : 'secondary'}>
                       {STATUS_OPTIONS.find(o => o.value === qs.status)?.label || qs.status}
                     </Badge>
                   </div>
+
+                  {/* Income & Reserve */}
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <p className="text-muted-foreground">Income: <span className="font-medium text-foreground">${(qi?.income || 0).toLocaleString()}</span></p>
                     <p className="text-muted-foreground">Reserve: <span className="font-medium text-foreground">${(sa?.amount || 0).toLocaleString()}</span></p>
                   </div>
+
+                  {/* Status Selector */}
                   <div className="flex gap-2 items-end">
                     <div className="flex-1">
                       <Select value={qs.status} onValueChange={v => setQuarterStatuses(prev => prev.map(q => q.quarter === qs.quarter ? { ...q, status: v } : q))}>
@@ -295,43 +337,71 @@ export default function TrackerTab() {
                     </div>
                     <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => saveQuarterStatus(qs)}>Save</Button>
                   </div>
+
+                  {/* Readiness Progress Bar */}
+                  <div className="pt-2 border-t">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm font-medium text-muted-foreground">Readiness Checklist</p>
+                      <span className="text-xs text-muted-foreground">{quarterProgress}%</span>
+                    </div>
+                    <Progress value={quarterProgress} className="h-2 mb-3" />
+
+                    {/* Checklist Items */}
+                    <div className="space-y-1">
+                      {checklist.map((item, i) => {
+                        const instruction = getInstruction(item.item_key);
+                        if (item.ignored) {
+                          return (
+                            <div key={item.item_key} className="flex items-center gap-2 py-1 opacity-50">
+                              <EyeOff className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                              <span className="text-xs text-muted-foreground line-through flex-1">{item.label}</span>
+                              <Button size="sm" variant="ghost" className="h-6 px-2 text-xs text-muted-foreground" onClick={() => toggleIgnore(i)}>Restore</Button>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div key={item.item_key} className="rounded-md border px-3 py-2">
+                            <div className="flex items-start gap-3">
+                              <Checkbox checked={item.completed} onCheckedChange={() => toggleChecklist(i)} id={`q${qs.quarter}-${item.item_key}`} className="mt-0.5" />
+                              <div className="flex-1 min-w-0">
+                                <Label htmlFor={`q${qs.quarter}-${item.item_key}`} className={`text-sm cursor-pointer font-medium ${item.completed ? 'line-through text-muted-foreground' : ''}`}>
+                                  {item.label}
+                                </Label>
+                                {!item.completed && instruction && (
+                                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{instruction}</p>
+                                )}
+                              </div>
+                              {!item.completed && (
+                                <Button size="sm" variant="ghost" className="h-6 px-2 text-xs text-muted-foreground shrink-0" onClick={() => toggleIgnore(i)} title="Ignore this item">
+                                  <EyeOff className="h-3 w-3" />
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Incomplete Reminders */}
+                  {incompleteItems.length > 0 && qs.status !== 'paid' && (
+                    <div className="rounded-md bg-warning/10 border border-warning/20 p-3 mt-2">
+                      <p className="text-xs font-medium text-warning mb-1 flex items-center gap-1"><AlertCircle className="h-3 w-3" /> Reminders</p>
+                      <ul className="space-y-0.5">
+                        {incompleteItems.slice(0, 3).map(item => (
+                          <li key={item.item_key} className="text-xs text-muted-foreground">• {item.label}</li>
+                        ))}
+                        {incompleteItems.length > 3 && (
+                          <li className="text-xs text-muted-foreground">+ {incompleteItems.length - 3} more</li>
+                        )}
+                      </ul>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             );
           })}
-        </CardContent>
-      </Card>
-
-      {/* Tax Readiness Checklist */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-base flex items-center gap-2"><CheckCircle2 className="h-4 w-4" /> Tax Readiness Checklist</CardTitle>
-              <p className="text-xs text-muted-foreground mt-1">{completedCount} of {checklist.length} complete</p>
-            </div>
-            <div className="text-right">
-              <p className="text-2xl font-bold">{readinessPercent}%</p>
-              <p className="text-xs text-muted-foreground">Readiness score</p>
-            </div>
-          </div>
-          <Progress value={readinessPercent} className="mt-2" />
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {nextTask && (
-            <div className="rounded-md bg-primary/5 border border-primary/20 p-3 mb-3">
-              <p className="text-xs text-muted-foreground">Next recommended:</p>
-              <p className="text-sm font-medium">{nextTask.label}</p>
-            </div>
-          )}
-          {checklist.map((item, i) => (
-            <div key={item.item_key} className="flex items-center gap-3 py-1.5">
-              <Checkbox checked={item.completed} onCheckedChange={() => toggleChecklist(i)} id={`cl-${item.item_key}`} />
-              <Label htmlFor={`cl-${item.item_key}`} className={`text-sm cursor-pointer ${item.completed ? 'line-through text-muted-foreground' : ''}`}>
-                {item.label}
-              </Label>
-            </div>
-          ))}
         </CardContent>
       </Card>
     </div>
