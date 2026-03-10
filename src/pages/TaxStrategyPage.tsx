@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BookOpen, BarChart3, Receipt, FileText } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
@@ -8,13 +9,18 @@ import { DeductionsTab } from '@/components/tax-strategy/DeductionsTab';
 import { CPAPacketTab } from '@/components/tax-strategy/CPAPacketTab';
 import { useTaxStrategy } from '@/hooks/useTaxStrategy';
 
-export default function TaxStrategyPage() {
+export default function TaxStrategyPage({ embedded = false }: { embedded?: boolean }) {
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = searchParams.get('tab') || 'guidance';
+  const [localTab, setLocalTab] = useState('guidance');
+  const activeTab = embedded ? localTab : (searchParams.get('tab') || 'guidance');
   const taxStrategy = useTaxStrategy();
 
   const handleTabChange = (value: string) => {
-    setSearchParams({ tab: value }, { replace: true });
+    if (embedded) {
+      setLocalTab(value);
+    } else {
+      setSearchParams({ tab: value }, { replace: true });
+    }
   };
 
   if (taxStrategy.loading) {
@@ -27,10 +33,12 @@ export default function TaxStrategyPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Tax Strategy</h1>
-        <p className="text-muted-foreground mt-1">Educational tools, organization, and CPA preparation</p>
-      </div>
+      {!embedded && (
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Tax Strategy</h1>
+          <p className="text-muted-foreground mt-1">Educational tools, organization, and CPA preparation</p>
+        </div>
+      )}
 
       <TaxDisclaimer />
 
