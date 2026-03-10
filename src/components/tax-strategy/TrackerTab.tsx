@@ -353,42 +353,6 @@ export function TrackerTab({ data }: Props) {
         </div>
       </div>
 
-      {/* Readiness checklist */}
-      <div className="space-y-4">
-        <div>
-          <h2 className="text-lg font-semibold text-foreground">Tax Readiness Checklist</h2>
-          <p className="text-sm text-muted-foreground">
-            {completedCount} of {checklist.length} complete
-          </p>
-        </div>
-
-        {nextTask && (
-          <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
-            <p className="text-sm">
-              <span className="font-medium">Next recommended:</span> {nextTask.label}
-            </p>
-          </div>
-        )}
-
-        <Card>
-          <CardContent className="pt-4 space-y-2">
-            {checklist.map(item => (
-              <div key={item.item_key} className="flex items-center gap-3 py-1.5">
-                <Checkbox
-                  checked={item.completed}
-                  onCheckedChange={() => toggleChecklistItem(item)}
-                />
-                <span className={`text-sm ${item.completed ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
-                  {item.label}
-                </span>
-              </div>
-            ))}
-            {checklist.length === 0 && (
-              <p className="text-sm text-muted-foreground py-4 text-center">Loading checklist…</p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 }
