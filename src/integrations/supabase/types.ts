@@ -345,36 +345,6 @@ export type Database = {
           },
         ]
       }
-      cpa_questions: {
-        Row: {
-          created_at: string
-          id: string
-          question: string
-          resolved: boolean
-          source: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          question: string
-          resolved?: boolean
-          source?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          question?: string
-          resolved?: boolean
-          source?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       credential_documents: {
         Row: {
           credential_id: string | null
@@ -640,45 +610,6 @@ export type Database = {
           tags?: string[] | null
           updated_at?: string
           user_id?: string
-        }
-        Relationships: []
-      }
-      deduction_categories: {
-        Row: {
-          created_at: string
-          documentation_status: string
-          id: string
-          missing_docs_count: number
-          name: string
-          notes: string
-          receipt_completeness_percent: number
-          updated_at: string
-          user_id: string
-          ytd_amount: number
-        }
-        Insert: {
-          created_at?: string
-          documentation_status?: string
-          id?: string
-          missing_docs_count?: number
-          name: string
-          notes?: string
-          receipt_completeness_percent?: number
-          updated_at?: string
-          user_id?: string
-          ytd_amount?: number
-        }
-        Update: {
-          created_at?: string
-          documentation_status?: string
-          id?: string
-          missing_docs_count?: number
-          name?: string
-          notes?: string
-          receipt_completeness_percent?: number
-          updated_at?: string
-          user_id?: string
-          ytd_amount?: number
         }
         Relationships: []
       }
@@ -1107,90 +1038,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      tax_checklist_items: {
-        Row: {
-          completed: boolean
-          completed_at: string | null
-          created_at: string
-          id: string
-          item_key: string
-          label: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          completed?: boolean
-          completed_at?: string | null
-          created_at?: string
-          id?: string
-          item_key: string
-          label: string
-          updated_at?: string
-          user_id?: string
-        }
-        Update: {
-          completed?: boolean
-          completed_at?: string | null
-          created_at?: string
-          id?: string
-          item_key?: string
-          label?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      tax_profiles: {
-        Row: {
-          admin_complexity_ok: boolean | null
-          created_at: string
-          current_entity_type: string
-          id: string
-          income_up_this_year: boolean | null
-          multi_facility_work: boolean | null
-          payroll_active: boolean | null
-          projected_annual_profit: number | null
-          relief_income_major_source: boolean | null
-          reserve_percent: number | null
-          retirement_interest: boolean | null
-          stable_income: boolean | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          admin_complexity_ok?: boolean | null
-          created_at?: string
-          current_entity_type?: string
-          id?: string
-          income_up_this_year?: boolean | null
-          multi_facility_work?: boolean | null
-          payroll_active?: boolean | null
-          projected_annual_profit?: number | null
-          relief_income_major_source?: boolean | null
-          reserve_percent?: number | null
-          retirement_interest?: boolean | null
-          stable_income?: boolean | null
-          updated_at?: string
-          user_id?: string
-        }
-        Update: {
-          admin_complexity_ok?: boolean | null
-          created_at?: string
-          current_entity_type?: string
-          id?: string
-          income_up_this_year?: boolean | null
-          multi_facility_work?: boolean | null
-          payroll_active?: boolean | null
-          projected_annual_profit?: number | null
-          relief_income_major_source?: boolean | null
-          reserve_percent?: number | null
-          retirement_interest?: boolean | null
-          stable_income?: boolean | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
       }
       tax_quarter_statuses: {
         Row: {

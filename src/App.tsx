@@ -21,7 +21,6 @@ import InvoicesPage from "@/pages/InvoicesPage";
 import InvoiceDetailPage from "@/pages/InvoiceDetailPage";
 import CredentialsPage from "@/pages/CredentialsPage";
 import BusinessPage from "@/pages/BusinessPage";
-import TaxStrategyPage from "@/pages/TaxStrategyPage";
 import WaitlistPage from "@/pages/WaitlistPage";
 import QuizPage from "@/pages/QuizPage";
 import ResultsPage from "@/pages/ResultsPage";
@@ -72,10 +71,8 @@ function AuthenticatedApp() {
           <Route path="/invoice/public/:token" element={<PublicInvoicePage />} />
           <Route path="/business" element={<BusinessPage />} />
           <Route path="/credentials" element={<CredentialsPage />} />
-          <Route path="/tax-strategy" element={<Navigate to="/business?tab=tax-strategy" replace />} />
           <Route path="/reports" element={<Navigate to="/business?tab=reports" replace />} />
           <Route path="/taxes" element={<Navigate to="/business?tab=taxes" replace />} />
-          <Route path="/tax-strategy" element={<Navigate to="/business?tab=taxes" replace />} />
           <Route path="/settings/profile" element={<SettingsProfilePage />} />
           <Route path="/settings/invoice-profile" element={<SettingsInvoiceProfilePage />} />
           <Route path="/import" element={<ImportPage />} />
