@@ -186,8 +186,21 @@ export default function DashboardPage() {
       lines.push({ text: `Contracts: ${dueSoonChecklist.length} item${dueSoonChecklist.length > 1 ? 's' : ''} due soon`, link: '/facilities' });
     }
 
+    // Tax readiness hooks
+    if (taxChecklist.length > 0) {
+      const completed = taxChecklist.filter(c => c.completed).length;
+      const percent = Math.round((completed / taxChecklist.length) * 100);
+      lines.push({ text: `Tax readiness: ${percent}%`, link: '/business?tab=tax-strategy&subtab=tracker' });
+    }
+
+    const nextQuarter = taxQuarters.find(q => new Date(q.due_date) >= now && q.status !== 'paid');
+    if (nextQuarter) {
+      const daysUntil = differenceInDays(new Date(nextQuarter.due_date), now);
+      lines.push({ text: `Taxes: Q${nextQuarter.quarter} due in ${daysUntil} days`, link: '/business?tab=tax-strategy&subtab=tracker' });
+    }
+
     return lines;
-  }, [checklistItems]);
+  }, [checklistItems, taxChecklist, taxQuarters, now]);
 
   const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
   const getInvoiceForPayment = (invoiceId: string) => invoices.find(i => i.id === invoiceId);
