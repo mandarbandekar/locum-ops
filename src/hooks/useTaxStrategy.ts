@@ -77,11 +77,11 @@ export function useTaxStrategy() {
         db('tax_quarter_statuses').select('*').eq('user_id', user.id).eq('tax_year', currentYear).order('quarter'),
       ]);
 
-      setProfile(profileRes.data || null);
-      setCategories(catRes.data || []);
-      setChecklist(checkRes.data || []);
-      setQuestions(qRes.data || []);
-      setQuarterStatuses(qsRes.data || []);
+      if (profileRes.data) setProfile(profileRes.data as any);
+      setCategories((catRes.data || []) as any);
+      setChecklist((checkRes.data || []) as any);
+      setQuestions((qRes.data || []) as any);
+      setQuarterStatuses((qsRes.data || []) as any);
     } finally {
       setLoading(false);
     }
