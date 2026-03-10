@@ -10,11 +10,16 @@ import { useTaxStrategy } from '@/hooks/useTaxStrategy';
 
 export default function TaxStrategyPage({ embedded = false }: { embedded?: boolean }) {
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = searchParams.get('tab') || 'guidance';
+  const [localTab, setLocalTab] = useState('guidance');
+  const activeTab = embedded ? localTab : (searchParams.get('tab') || 'guidance');
   const taxStrategy = useTaxStrategy();
 
   const handleTabChange = (value: string) => {
-    setSearchParams({ tab: value }, { replace: true });
+    if (embedded) {
+      setLocalTab(value);
+    } else {
+      setSearchParams({ tab: value }, { replace: true });
+    }
   };
 
   if (taxStrategy.loading) {
