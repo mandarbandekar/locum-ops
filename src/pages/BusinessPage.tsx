@@ -1,7 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BarChart3, Calculator, BookOpen } from 'lucide-react';
+import { BarChart3, Calculator } from 'lucide-react';
 import ReportsPage from '@/pages/ReportsPage';
-import TaxesPage from '@/pages/TaxesPage';
 import TaxStrategyPage from '@/pages/TaxStrategyPage';
 import { useSearchParams } from 'react-router-dom';
 
@@ -17,7 +16,7 @@ export default function BusinessPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-foreground">Business</h1>
-        <p className="text-muted-foreground mt-1">Reports, analytics, and tax tracking</p>
+        <p className="text-muted-foreground mt-1">Reports, analytics, and tax planning</p>
       </div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange}>
@@ -30,10 +29,6 @@ export default function BusinessPage() {
             <Calculator className="h-4 w-4" />
             Taxes
           </TabsTrigger>
-          <TabsTrigger value="tax-strategy" className="gap-2">
-            <BookOpen className="h-4 w-4" />
-            Tax Strategy
-          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="reports" className="mt-6">
@@ -41,10 +36,6 @@ export default function BusinessPage() {
         </TabsContent>
 
         <TabsContent value="taxes" className="mt-6">
-          <TaxesPage />
-        </TabsContent>
-
-        <TabsContent value="tax-strategy" className="mt-6">
           <TaxStrategyPage embedded />
         </TabsContent>
       </Tabs>

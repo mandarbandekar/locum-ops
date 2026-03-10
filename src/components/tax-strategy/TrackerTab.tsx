@@ -1,14 +1,18 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DollarSign, Calendar, CheckCircle2, TrendingUp } from 'lucide-react';
+import { DollarSign, Calendar, CheckCircle2, TrendingUp, Download } from 'lucide-react';
 import { QUARTER_STATUS_OPTIONS } from '@/types/taxStrategy';
+import { aggregateQuarterlyIncome, calculateSetAside, generateTaxExportCSV } from '@/lib/taxCalculations';
+import { toast } from 'sonner';
 import type { TaxStrategyData } from '@/hooks/useTaxStrategy';
 
 interface Props {
@@ -22,21 +26,17 @@ const QUARTER_LABELS: Record<number, string> = {
   4: 'Q4 (Oct–Dec)',
 };
 
-const DEFAULT_DUE_DATES = (year: number): Record<number, string> => ({
-  1: `${year}-04-15`,
-  2: `${year}-06-15`,
-  3: `${year}-09-15`,
-  4: `${year + 1}-01-15`,
-});
-
 export function TrackerTab({ data }: Props) {
   const {
     ytdPaidIncome, reserveAmount, readinessScore, nextQuarterDue, checklist,
     quarterStatuses, profile, currentYear, saveProfile, toggleChecklistItem,
-    initializeChecklist, initializeQuarterStatuses, saveQuarterStatus,
+    initializeChecklist, initializeQuarterStatuses, saveQuarterStatus, invoices,
   } = data;
 
   const [reservePct, setReservePct] = useState(profile?.reserve_percent?.toString() || '30');
+  const [setAsideMode, setSetAsideMode] = useState<'percent' | 'fixed'>('percent');
+  const [fixedMonthly, setFixedMonthly] = useState(0);
+  const [selectedYear, setSelectedYear] = useState(currentYear);
 
   useEffect(() => {
     initializeChecklist();
@@ -50,15 +50,30 @@ export function TrackerTab({ data }: Props) {
   const handleReserveChange = () => {
     const pct = parseFloat(reservePct) || 30;
     saveProfile({ reserve_percent: pct });
+    toast.success('Reserve preference saved');
   };
 
   const getQuarterStatus = (q: number) => {
     return quarterStatuses.find(qs => qs.quarter === q) || {
       quarter: q, tax_year: currentYear,
-      due_date: DEFAULT_DUE_DATES(currentYear)[q],
+      due_date: `${currentYear}-${q === 1 ? '04' : q === 2 ? '06' : q === 3 ? '09' : '01'}-15`,
       status: 'not_started', notes: '',
     };
   };
+
+  // Quarterly income from invoices
+  const quarterlyIncome = useMemo(
+    () => aggregateQuarterlyIncome(invoices, selectedYear),
+    [invoices, selectedYear]
+  );
+
+  const setAsideData = useMemo(
+    () => calculateSetAside(quarterlyIncome, setAsideMode, parseFloat(reservePct) || 30, fixedMonthly),
+    [quarterlyIncome, setAsideMode, reservePct, fixedMonthly]
+  );
+
+  const totalIncome = quarterlyIncome.reduce((s, q) => s + q.income, 0);
+  const totalSetAside = setAsideData.reduce((s, q) => s + q.amount, 0);
 
   const daysUntilNextDue = Math.ceil(
     (new Date(nextQuarterDue.date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
@@ -67,34 +82,75 @@ export function TrackerTab({ data }: Props) {
   const completedCount = checklist.filter(i => i.completed).length;
   const nextTask = checklist.find(i => !i.completed);
 
+  const exportCSV = useCallback(() => {
+    const csv = generateTaxExportCSV(
+      selectedYear, quarterlyIncome, setAsideData,
+      setAsideMode, parseFloat(reservePct) || 30, fixedMonthly,
+      quarterStatuses.map(qs => ({ quarter: qs.quarter, due_date: qs.due_date, status: qs.status, notes: qs.notes || '' }))
+    );
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `LocumOps_Tax_Summary_${selectedYear}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('CSV exported');
+  }, [selectedYear, quarterlyIncome, setAsideData, setAsideMode, reservePct, fixedMonthly, quarterStatuses]);
+
   return (
     <div className="space-y-8">
+      {/* Header row with year selector + export */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <p className="text-xs text-muted-foreground max-w-xl">
+          Use this as a planning tracker for your relief / locum income. Confirm actual amounts and due dates with your CPA.
+        </p>
+        <div className="flex items-center gap-2">
+          <Select value={String(selectedYear)} onValueChange={v => setSelectedYear(Number(v))}>
+            <SelectTrigger className="w-[100px] h-8">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[currentYear - 1, currentYear, currentYear + 1].map(y => (
+                <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button variant="outline" size="sm" onClick={exportCSV}>
+            <Download className="mr-2 h-4 w-4" />
+            Export CSV
+          </Button>
+        </div>
+      </div>
+
       {/* Summary cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <DollarSign className="h-4 w-4" /> YTD Paid Income
+              <DollarSign className="h-4 w-4" /> Paid Income ({selectedYear})
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-foreground">
-              ${ytdPaidIncome.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ${totalIncome.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" /> Reserve Amount
+              <TrendingUp className="h-4 w-4" /> Est. Set-Aside
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-foreground">
-              ${reserveAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ${totalSetAside.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              Based on {profile?.reserve_percent ?? 30}% reserve preference
+              {setAsideMode === 'percent'
+                ? `Based on ${reservePct}% reserve`
+                : `$${fixedMonthly}/mo fixed`}
             </p>
           </CardContent>
         </Card>
@@ -124,53 +180,107 @@ export function TrackerTab({ data }: Props) {
         </Card>
       </div>
 
-      <p className="text-xs text-muted-foreground">
-        Use this as a planning tracker for your relief / locum income. Confirm actual amounts and due dates with your CPA.
-      </p>
-
-      {/* Reserve % editor */}
+      {/* Set-aside preferences */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Reserve Preference</CardTitle>
+          <CardTitle className="text-base flex items-center gap-2">
+            <DollarSign className="h-4 w-4" />
+            Set-Aside Preference
+          </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="flex items-end gap-3">
-            <div className="space-y-2">
-              <Label>Reserve %</Label>
-              <Input
-                type="number" className="w-24"
-                value={reservePct}
-                onChange={e => setReservePct(e.target.value)}
-                min={0} max={100}
-              />
+        <CardContent className="space-y-4">
+          <RadioGroup
+            value={setAsideMode}
+            onValueChange={v => setSetAsideMode(v as 'percent' | 'fixed')}
+            className="flex flex-col sm:flex-row gap-4"
+          >
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="percent" id="mode-percent" />
+              <Label htmlFor="mode-percent">Percent of paid income</Label>
             </div>
-            <Button variant="outline" onClick={handleReserveChange}>Update</Button>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="fixed" id="mode-fixed" />
+              <Label htmlFor="mode-fixed">Fixed $ per month</Label>
+            </div>
+          </RadioGroup>
+
+          <div className="flex flex-col sm:flex-row gap-4 items-end">
+            {setAsideMode === 'percent' ? (
+              <div className="space-y-2">
+                <Label>Reserve %</Label>
+                <Input
+                  type="number" className="w-24"
+                  value={reservePct}
+                  onChange={e => setReservePct(e.target.value)}
+                  min={0} max={100}
+                />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label>Monthly amount ($)</Label>
+                <Input
+                  type="number" className="w-32"
+                  value={fixedMonthly}
+                  onChange={e => setFixedMonthly(Number(e.target.value))}
+                  min={0}
+                />
+              </div>
+            )}
+            <Button variant="outline" onClick={handleReserveChange}>Save</Button>
           </div>
-          <p className="text-xs text-muted-foreground mt-2">
+          <p className="text-xs text-muted-foreground">
             This is your personal reserve preference for planning, not an actual tax calculation.
           </p>
         </CardContent>
       </Card>
 
-      {/* Quarterly statuses */}
+      {/* Quarterly breakdown */}
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-foreground">Quarterly Status</h2>
+        <h2 className="text-lg font-semibold text-foreground">Quarterly Estimated Tax Tracker</h2>
         <div className="grid gap-4 sm:grid-cols-2">
-          {[1, 2, 3, 4].map(q => {
-            const qs = getQuarterStatus(q);
+          {quarterlyIncome.map(q => {
+            const sa = setAsideData.find(s => s.quarter === q.quarter);
+            const qs = getQuarterStatus(q.quarter);
             return (
-              <Card key={q}>
+              <Card key={q.quarter}>
                 <CardContent className="pt-4 space-y-3">
                   <div className="flex items-center justify-between">
-                    <p className="font-medium">{QUARTER_LABELS[q]}</p>
+                    <p className="font-medium">{QUARTER_LABELS[q.quarter]}</p>
                     <Badge variant={qs.status === 'paid' ? 'default' : 'secondary'}>
                       {QUARTER_STATUS_OPTIONS.find(o => o.value === qs.status)?.label || qs.status}
                     </Badge>
                   </div>
+
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <span className="text-muted-foreground block text-xs">Paid Income</span>
+                      <span className="font-medium">${q.income.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block text-xs">Set-Aside</span>
+                      <span className="font-medium">${(sa?.amount ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                  </div>
+
+                  <details className="text-sm">
+                    <summary className="cursor-pointer text-muted-foreground hover:text-foreground text-xs">
+                      Monthly breakdown
+                    </summary>
+                    <div className="grid grid-cols-3 gap-2 mt-2">
+                      {q.monthlyBreakdown.map(m => (
+                        <div key={m.month} className="text-xs">
+                          <span className="text-muted-foreground">{m.monthLabel}:</span>{' '}
+                          <span className="font-medium">${m.income.toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+
                   <p className="text-xs text-muted-foreground">Due: {qs.due_date}</p>
+
                   <Select
                     value={qs.status}
-                    onValueChange={v => saveQuarterStatus({ ...qs, status: v, tax_year: currentYear })}
+                    onValueChange={v => saveQuarterStatus({ ...qs, status: v, tax_year: selectedYear })}
                   >
                     <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                     <SelectContent>
