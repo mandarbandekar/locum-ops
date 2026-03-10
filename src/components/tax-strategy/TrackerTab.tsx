@@ -167,15 +167,72 @@ export function TrackerTab({ data }: Props) {
             </p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4" /> Tax Readiness
-            </CardTitle>
+        <Card className="sm:col-span-2 lg:col-span-4">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4" /> Tax Readiness
+              </CardTitle>
+              <span className="text-2xl font-bold text-foreground">{readinessScore}%</span>
+            </div>
+            <Progress value={readinessScore} className="mt-1 h-2" />
+            <p className="text-xs text-muted-foreground mt-1">
+              {completedCount} of {checklist.length} complete
+            </p>
           </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-foreground">{readinessScore}%</p>
-            <Progress value={readinessScore} className="mt-2 h-2" />
+          <CardContent className="space-y-4">
+            {/* Quarterly due dates */}
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-2">Quarterly Due Dates</p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {[1, 2, 3, 4].map(q => {
+                  const qs = getQuarterStatus(q);
+                  const isPast = new Date(qs.due_date) < new Date();
+                  const isPaid = qs.status === 'paid';
+                  return (
+                    <div
+                      key={q}
+                      className={`rounded-lg border px-3 py-2 text-xs ${
+                        isPaid
+                          ? 'border-primary/30 bg-primary/5'
+                          : isPast
+                            ? 'border-destructive/30 bg-destructive/5'
+                            : 'border-border bg-muted/30'
+                      }`}
+                    >
+                      <span className="font-medium">Q{q}</span>
+                      <span className="text-muted-foreground ml-1">{qs.due_date}</span>
+                      {isPaid && <CheckCircle2 className="inline h-3 w-3 ml-1 text-primary" />}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Checklist */}
+            <div className="border-t border-border pt-3 space-y-1.5">
+              {nextTask && (
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-2 mb-2">
+                  <p className="text-xs">
+                    <span className="font-medium">Next:</span> {nextTask.label}
+                  </p>
+                </div>
+              )}
+              {checklist.map(item => (
+                <div key={item.item_key} className="flex items-center gap-3 py-1">
+                  <Checkbox
+                    checked={item.completed}
+                    onCheckedChange={() => toggleChecklistItem(item)}
+                  />
+                  <span className={`text-sm ${item.completed ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                    {item.label}
+                  </span>
+                </div>
+              ))}
+              {checklist.length === 0 && (
+                <p className="text-sm text-muted-foreground py-4 text-center">Loading checklist…</p>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -296,42 +353,6 @@ export function TrackerTab({ data }: Props) {
         </div>
       </div>
 
-      {/* Readiness checklist */}
-      <div className="space-y-4">
-        <div>
-          <h2 className="text-lg font-semibold text-foreground">Tax Readiness Checklist</h2>
-          <p className="text-sm text-muted-foreground">
-            {completedCount} of {checklist.length} complete
-          </p>
-        </div>
-
-        {nextTask && (
-          <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
-            <p className="text-sm">
-              <span className="font-medium">Next recommended:</span> {nextTask.label}
-            </p>
-          </div>
-        )}
-
-        <Card>
-          <CardContent className="pt-4 space-y-2">
-            {checklist.map(item => (
-              <div key={item.item_key} className="flex items-center gap-3 py-1.5">
-                <Checkbox
-                  checked={item.completed}
-                  onCheckedChange={() => toggleChecklistItem(item)}
-                />
-                <span className={`text-sm ${item.completed ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
-                  {item.label}
-                </span>
-              </div>
-            ))}
-            {checklist.length === 0 && (
-              <p className="text-sm text-muted-foreground py-4 text-center">Loading checklist…</p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 }
