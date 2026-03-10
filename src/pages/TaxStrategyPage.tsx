@@ -27,6 +27,11 @@ export default function TaxStrategyPage() {
 
   return (
     <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold text-foreground">Tax Strategy</h1>
+        <p className="text-muted-foreground mt-1">Educational tools, organization, and CPA preparation</p>
+      </div>
+
       <TaxDisclaimer />
 
       <Tabs value={activeTab} onValueChange={handleTabChange}>
