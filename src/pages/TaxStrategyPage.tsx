@@ -8,7 +8,7 @@ import { DeductionsTab } from '@/components/tax-strategy/DeductionsTab';
 import { CPAPacketTab } from '@/components/tax-strategy/CPAPacketTab';
 import { useTaxStrategy } from '@/hooks/useTaxStrategy';
 
-export default function TaxStrategyPage() {
+export default function TaxStrategyPage({ embedded = false }: { embedded?: boolean }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'guidance';
   const taxStrategy = useTaxStrategy();
