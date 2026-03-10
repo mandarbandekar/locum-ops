@@ -35,8 +35,8 @@ export default function TaxStrategyPage({ embedded = false }: { embedded?: boole
     <div className="space-y-6">
       {!embedded && (
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Tax Strategy</h1>
-          <p className="text-muted-foreground mt-1">Educational tools, organization, and CPA preparation</p>
+          <h1 className="text-3xl font-bold text-foreground">Taxes</h1>
+          <p className="text-muted-foreground mt-1">Tax guidance, tracking, deductions, and CPA preparation</p>
         </div>
       )}
 
