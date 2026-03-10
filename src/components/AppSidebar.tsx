@@ -18,7 +18,6 @@ const navItems = [
   { title: 'Invoices', url: '/invoices', icon: FileText },
   { title: 'Credentials', url: '/credentials', icon: ShieldCheck },
   { title: 'Business', url: '/business', icon: BarChart3 },
-  { title: 'Tax Strategy', url: '/tax-strategy', icon: BookOpen },
   { title: 'Settings', url: '/settings/profile', icon: Settings },
 ];
 
