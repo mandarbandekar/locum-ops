@@ -13,10 +13,29 @@ import { computeInvoiceStatus } from '@/lib/businessLogic';
 import { format, differenceInDays } from 'date-fns';
 import { getChecklistBadge } from '@/types/contracts';
 
+const dashDb = (table: string) => supabase.from(table as any);
+
 export default function DashboardPage() {
   const { shifts, invoices, facilities, payments, checklistItems } = useData();
+  const { user, isDemo } = useAuth();
   const navigate = useNavigate();
   const now = new Date();
+
+  // Tax readiness data for dashboard hooks
+  const [taxChecklist, setTaxChecklist] = useState<{ completed: boolean }[]>([]);
+  const [taxQuarters, setTaxQuarters] = useState<{ quarter: number; due_date: string; status: string }[]>([]);
+
+  useEffect(() => {
+    if (isDemo) return;
+    if (!user) return;
+    Promise.all([
+      dashDb('tax_checklist_items').select('completed'),
+      dashDb('tax_quarter_statuses').select('quarter,due_date,status').eq('tax_year', now.getFullYear()).order('quarter'),
+    ]).then(([clRes, qsRes]) => {
+      if (clRes.data) setTaxChecklist(clRes.data as any[]);
+      if (qsRes.data) setTaxQuarters(qsRes.data as any[]);
+    });
+  }, [user?.id, isDemo]);
 
   // ── Summary card data ──
   const summaryData = useMemo(() => {
