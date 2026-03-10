@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BookOpen, BarChart3, Receipt, FileText } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
