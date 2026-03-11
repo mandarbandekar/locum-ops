@@ -1,12 +1,12 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useCallback, DragEvent } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Plus, ChevronLeft, ChevronRight, List, CalendarDays, Trash2, PanelRightOpen, PanelRightClose, Calendar as CalendarIcon } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, getDay, startOfWeek, endOfWeek, addWeeks, subWeeks, getHours, getMinutes, differenceInMinutes } from 'date-fns';
-import { SHIFT_COLORS } from '@/types';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, getDay, startOfWeek, endOfWeek, addWeeks, subWeeks, differenceInMilliseconds } from 'date-fns';
+import { SHIFT_COLORS, Shift } from '@/types';
 import { toast } from 'sonner';
 import { ConfirmationsPanel } from '@/components/schedule/ConfirmationsPanel';
 import { ShiftFormDialog } from '@/components/schedule/ShiftFormDialog';
@@ -26,6 +26,7 @@ export default function SchedulePage() {
   const [showAdd, setShowAdd] = useState(false);
   const [editShift, setEditShift] = useState<string | null>(null);
   const [showPanel, setShowPanel] = useState(true);
+  const [dragOverDay, setDragOverDay] = useState<string | null>(null);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, view);
@@ -74,6 +75,56 @@ export default function SchedulePage() {
     }
   };
 
+  // Drag-and-drop: reschedule a shift to a new date (keeps same time-of-day)
+  const handleDropOnDay = useCallback((shiftId: string, targetDate: Date) => {
+    const shift = shifts.find(s => s.id === shiftId);
+    if (!shift) return;
+
+    const oldStart = new Date(shift.start_datetime);
+    const oldEnd = new Date(shift.end_datetime);
+    const duration = differenceInMilliseconds(oldEnd, oldStart);
+
+    // Build new start: target date + original time-of-day
+    const newStart = new Date(targetDate);
+    newStart.setHours(oldStart.getHours(), oldStart.getMinutes(), oldStart.getSeconds(), 0);
+    const newEnd = new Date(newStart.getTime() + duration);
+
+    if (newStart.getTime() === oldStart.getTime()) return; // no change
+
+    updateShift({
+      ...shift,
+      start_datetime: newStart.toISOString(),
+      end_datetime: newEnd.toISOString(),
+    } as any);
+    toast.success(`Shift moved to ${format(newStart, 'EEE, MMM d')}`);
+    setDragOverDay(null);
+  }, [shifts, updateShift]);
+
+  // Drag-and-drop: reschedule to a specific date + time (week view)
+  const handleDropOnTime = useCallback((shiftId: string, targetDate: Date, targetHour: number) => {
+    const shift = shifts.find(s => s.id === shiftId);
+    if (!shift) return;
+
+    const oldStart = new Date(shift.start_datetime);
+    const oldEnd = new Date(shift.end_datetime);
+    const duration = differenceInMilliseconds(oldEnd, oldStart);
+
+    const newStart = new Date(targetDate);
+    const fullHours = Math.floor(targetHour);
+    const minutes = Math.round((targetHour - fullHours) * 60 / 15) * 15; // snap to 15 min
+    newStart.setHours(fullHours, minutes, 0, 0);
+    const newEnd = new Date(newStart.getTime() + duration);
+
+    if (newStart.getTime() === oldStart.getTime()) return;
+
+    updateShift({
+      ...shift,
+      start_datetime: newStart.toISOString(),
+      end_datetime: newEnd.toISOString(),
+    } as any);
+    toast.success(`Shift moved to ${format(newStart, 'EEE, MMM d h:mm a')}`);
+  }, [shifts, updateShift]);
+
   const navigateBack = () => {
     if (view === 'week') setCurrentDate(subWeeks(currentDate, 1));
     else setCurrentDate(subMonths(currentDate, 1));
@@ -88,14 +139,46 @@ export default function SchedulePage() {
     ? `${format(weekStart, 'MMM d')} – ${format(weekEnd, 'MMM d, yyyy')}`
     : format(currentDate, 'MMMM yyyy');
 
+  // Drag handlers for month view
+  const onDragStart = (e: DragEvent, shiftId: string) => {
+    e.dataTransfer.setData('text/plain', shiftId);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const onDragOver = (e: DragEvent, dayKey: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverDay(dayKey);
+  };
+
+  const onDragLeave = () => {
+    setDragOverDay(null);
+  };
+
+  const onDrop = (e: DragEvent, day: Date) => {
+    e.preventDefault();
+    const shiftId = e.dataTransfer.getData('text/plain');
+    if (shiftId) handleDropOnDay(shiftId, day);
+    setDragOverDay(null);
+  };
+
   const renderDayCell = (day: Date, minHeight: string) => {
     const dayShifts = shifts.filter(s => isSameDay(new Date(s.start_datetime), day));
     const isToday = isSameDay(day, new Date());
     const markers = getMarkersForDay(day);
+    const dayKey = day.toISOString();
+    const isDragOver = dragOverDay === dayKey;
+
     return (
-      <div key={day.toISOString()} className={`${minHeight} border-t border-r p-1 ${isToday ? 'bg-primary/5' : ''}`}>
+      <div
+        key={dayKey}
+        className={`${minHeight} border-t border-r p-1 transition-colors ${isToday ? 'bg-primary/5' : ''} ${isDragOver ? 'bg-primary/10 ring-2 ring-inset ring-primary/30' : ''}`}
+        onDragOver={(e) => onDragOver(e, dayKey)}
+        onDragLeave={onDragLeave}
+        onDrop={(e) => onDrop(e, day)}
+      >
         <div className={`text-xs font-medium mb-1 ${isToday ? 'text-primary' : 'text-muted-foreground'}`}>
-          {view === 'week' ? format(day, 'EEE d') : format(day, 'd')}
+          {format(day, 'd')}
         </div>
         {markers.map(m => (
           <div
@@ -111,9 +194,11 @@ export default function SchedulePage() {
           return (
             <div
               key={s.id}
-              className={`text-xs p-1 rounded mb-0.5 cursor-pointer truncate ${colorDef.bg} ${colorDef.text} hover:opacity-80 transition-opacity`}
+              draggable
+              onDragStart={(e) => onDragStart(e, s.id)}
+              className={`text-xs p-1 rounded mb-0.5 cursor-grab active:cursor-grabbing truncate ${colorDef.bg} ${colorDef.text} hover:opacity-80 transition-opacity select-none`}
               onClick={() => setEditShift(s.id)}
-              title={getFacilityName(s.facility_id)}
+              title={`${getFacilityName(s.facility_id)} — drag to reschedule`}
             >
               {format(new Date(s.start_datetime), 'ha')} {getFacilityName(s.facility_id).split(' ')[0]}
             </div>
@@ -183,6 +268,7 @@ export default function SchedulePage() {
             shifts={shifts}
             getFacilityName={getFacilityName}
             onEditShift={setEditShift}
+            onDropOnTime={handleDropOnTime}
           />
         ) : (
           <div className="rounded-lg border bg-card overflow-hidden">

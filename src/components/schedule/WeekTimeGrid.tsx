@@ -1,3 +1,4 @@
+import { useState, useRef, useCallback, DragEvent } from 'react';
 import { format, isSameDay, getHours, getMinutes } from 'date-fns';
 import { SHIFT_COLORS } from '@/types';
 import { getMarkersForDay } from '@/lib/calendarMarkers';
@@ -12,9 +13,40 @@ interface WeekTimeGridProps {
   shifts: any[];
   getFacilityName: (id: string) => string;
   onEditShift: (id: string) => void;
+  onDropOnTime: (shiftId: string, targetDate: Date, targetHour: number) => void;
 }
 
-export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift }: WeekTimeGridProps) {
+export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, onDropOnTime }: WeekTimeGridProps) {
+  const [dragOverCell, setDragOverCell] = useState<string | null>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  const onDragStart = (e: DragEvent, shiftId: string) => {
+    e.dataTransfer.setData('text/plain', shiftId);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = useCallback((e: DragEvent, dayIndex: number, hour: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverCell(`${dayIndex}-${hour}`);
+  }, []);
+
+  const handleDrop = useCallback((e: DragEvent, dayIndex: number, hour: number) => {
+    e.preventDefault();
+    const shiftId = e.dataTransfer.getData('text/plain');
+    if (!shiftId) return;
+
+    // Calculate precise hour from mouse position within the cell
+    const target = e.currentTarget as HTMLElement;
+    const rect = target.getBoundingClientRect();
+    const yOffset = e.clientY - rect.top;
+    const fractionOfHour = yOffset / HOUR_HEIGHT;
+    const preciseHour = hour + Math.max(0, Math.min(fractionOfHour, 0.99));
+
+    onDropOnTime(shiftId, weekDays[dayIndex], preciseHour);
+    setDragOverCell(null);
+  }, [weekDays, onDropOnTime]);
+
   return (
     <div className="rounded-lg border bg-card overflow-hidden">
       {/* Day headers */}
@@ -38,8 +70,8 @@ export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift }:
 
       {/* Time grid body */}
       <ScrollArea className="h-[600px]">
-        <div className="relative" style={{ height: `${HOURS.length * HOUR_HEIGHT}px` }}>
-          {/* Hour rows – grid lines + labels */}
+        <div ref={gridRef} className="relative" style={{ height: `${HOURS.length * HOUR_HEIGHT}px` }}>
+          {/* Hour rows – grid lines + labels + drop zones */}
           {HOURS.map((hour, rowIdx) => (
             <div
               key={hour}
@@ -56,22 +88,30 @@ export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift }:
                 </span>
               </div>
 
-              {/* Day columns */}
+              {/* Day columns – each is a drop zone */}
               <div className="flex-1 grid grid-cols-7">
                 {weekDays.map((day, di) => {
                   const markers = getMarkersForDay(day);
+                  const cellKey = `${di}-${hour}`;
+                  const isDragOver = dragOverCell === cellKey;
                   return (
-                    <div key={di} className="border-t border-r last:border-r-0 relative">
+                    <div
+                      key={di}
+                      className={`border-t border-r last:border-r-0 relative transition-colors ${isDragOver ? 'bg-primary/10' : ''}`}
+                      onDragOver={(e) => handleDragOver(e, di, hour)}
+                      onDragLeave={() => setDragOverCell(null)}
+                      onDrop={(e) => handleDrop(e, di, hour)}
+                    >
                       {/* Half-hour dashed line */}
                       <div
-                        className="absolute left-0 right-0 border-t border-dashed border-muted/40"
+                        className="absolute left-0 right-0 border-t border-dashed border-muted/40 pointer-events-none"
                         style={{ top: `${HOUR_HEIGHT / 2}px` }}
                       />
                       {/* Holiday/tax markers in first hour slot */}
                       {hour === HOURS[0] && markers.map(m => (
                         <div
                           key={m.label}
-                          className={`absolute top-0.5 left-0.5 right-0.5 text-[9px] px-1 py-0.5 rounded truncate font-medium z-10 ${m.bg} ${m.text}`}
+                          className={`absolute top-0.5 left-0.5 right-0.5 text-[9px] px-1 py-0.5 rounded truncate font-medium z-10 pointer-events-none ${m.bg} ${m.text}`}
                           title={m.label}
                         >
                           {m.type === 'tax' ? '💰' : '🔴'} {m.label}
@@ -96,14 +136,15 @@ export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift }:
               const height = Math.max((endHour - startHour) * HOUR_HEIGHT, 24);
               const colorDef = SHIFT_COLORS.find(c => c.value === (s.color || 'blue')) || SHIFT_COLORS[0];
 
-              // Position: gutter + (dayIndex / 7) of remaining width
               const leftCalc = `calc(${GUTTER_WIDTH}px + (100% - ${GUTTER_WIDTH}px) * ${dayIndex} / 7 + 2px)`;
               const widthCalc = `calc((100% - ${GUTTER_WIDTH}px) / 7 - 4px)`;
 
               return (
                 <div
                   key={s.id}
-                  className={`absolute rounded-md cursor-pointer px-1.5 py-1 overflow-hidden text-xs leading-tight z-20 border border-background/20 shadow-sm hover:shadow-md hover:z-30 transition-all ${colorDef.bg} ${colorDef.text}`}
+                  draggable
+                  onDragStart={(e) => onDragStart(e, s.id)}
+                  className={`absolute rounded-md cursor-grab active:cursor-grabbing px-1.5 py-1 overflow-hidden text-xs leading-tight z-20 border border-background/20 shadow-sm hover:shadow-md hover:z-30 transition-all select-none ${colorDef.bg} ${colorDef.text}`}
                   style={{
                     top: `${topOffset}px`,
                     height: `${height}px`,
@@ -111,7 +152,7 @@ export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift }:
                     width: widthCalc,
                   }}
                   onClick={() => onEditShift(s.id)}
-                  title={`${getFacilityName(s.facility_id)}\n${format(start, 'h:mm a')} – ${format(end, 'h:mm a')}`}
+                  title={`${getFacilityName(s.facility_id)}\n${format(start, 'h:mm a')} – ${format(end, 'h:mm a')}\nDrag to reschedule`}
                 >
                   <div className="font-semibold truncate">{getFacilityName(s.facility_id)}</div>
                   {height >= 40 && (
