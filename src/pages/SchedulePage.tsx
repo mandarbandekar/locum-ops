@@ -177,18 +177,12 @@ export default function SchedulePage() {
             </div>
           </div>
         ) : view === 'week' ? (
-          <div className="rounded-lg border bg-card overflow-hidden">
-            <div className="grid grid-cols-7 bg-muted/50">
-              {weekDays.map(d => (
-                <div key={d.toISOString()} className={`p-2 text-center text-xs font-medium ${isSameDay(d, new Date()) ? 'text-primary font-bold' : 'text-muted-foreground'}`}>
-                  {format(d, 'EEE')}
-                </div>
-              ))}
-            </div>
-            <div className="grid grid-cols-7">
-              {weekDays.map(day => renderDayCell(day, 'min-h-[140px]'))}
-            </div>
-          </div>
+          <WeekTimeGrid
+            weekDays={weekDays}
+            shifts={shifts}
+            getFacilityName={getFacilityName}
+            onEditShift={setEditShift}
+          />
         ) : (
           <div className="rounded-lg border bg-card overflow-hidden">
             <table className="w-full text-sm">
