@@ -7,16 +7,23 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Plus, Trash2 } from 'lucide-react';
 import { format, subDays } from 'date-fns';
 import { computeInvoiceStatus, generateInvoiceNumber } from '@/lib/businessLogic';
 import { toast } from 'sonner';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 export default function InvoicesPage() {
-  const { invoices, facilities, shifts, addInvoice } = useData();
+  const { invoices, facilities, shifts, addInvoice, deleteInvoice } = useData();
   const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState('all');
   const [showCreate, setShowCreate] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const displayInvoices = invoices
     .map(inv => ({ ...inv, computedStatus: computeInvoiceStatus(inv) }))
@@ -43,13 +50,46 @@ export default function InvoicesPage() {
     return <Badge className={`${styles[status] || styles.draft} text-xs font-medium`}>{labels[status] || status}</Badge>;
   };
 
+  const toggleSelect = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (selected.size === displayInvoices.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(displayInvoices.map(i => i.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    for (const id of selected) {
+      await deleteInvoice(id);
+    }
+    toast.success(`${selected.size} invoice(s) deleted`);
+    setSelected(new Set());
+    setShowDeleteConfirm(false);
+  };
+
   return (
     <div>
       <div className="page-header">
         <h1 className="page-title">Invoices</h1>
-        <Button size="sm" onClick={() => setShowCreate(true)}>
-          <Plus className="mr-1 h-4 w-4" /> Create Invoice
-        </Button>
+        <div className="flex gap-2">
+          {selected.size > 0 && (
+            <Button size="sm" variant="destructive" onClick={() => setShowDeleteConfirm(true)}>
+              <Trash2 className="mr-1 h-4 w-4" /> Delete ({selected.size})
+            </Button>
+          )}
+          <Button size="sm" onClick={() => setShowCreate(true)}>
+            <Plus className="mr-1 h-4 w-4" /> Create Invoice
+          </Button>
+        </div>
       </div>
 
       <div className="flex gap-2 mb-4 flex-wrap">
@@ -75,6 +115,12 @@ export default function InvoicesPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-muted/50">
+              <th className="p-3 w-10">
+                <Checkbox
+                  checked={displayInvoices.length > 0 && selected.size === displayInvoices.length}
+                  onCheckedChange={toggleAll}
+                />
+              </th>
               <th className="text-left p-3 font-medium text-muted-foreground">Invoice #</th>
               <th className="text-left p-3 font-medium text-muted-foreground">Facility</th>
               <th className="text-left p-3 font-medium text-muted-foreground hidden sm:table-cell">Invoice Date</th>
@@ -82,15 +128,19 @@ export default function InvoicesPage() {
               <th className="text-right p-3 font-medium text-muted-foreground">Total</th>
               <th className="text-right p-3 font-medium text-muted-foreground hidden sm:table-cell">Balance</th>
               <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
+              <th className="w-10" />
             </tr>
           </thead>
           <tbody>
             {displayInvoices.map(inv => (
               <tr
                 key={inv.id}
-                className="border-b last:border-0 hover:bg-muted/30 cursor-pointer transition-colors"
+                className={`border-b last:border-0 hover:bg-muted/30 cursor-pointer transition-colors ${selected.has(inv.id) ? 'bg-primary/5' : ''}`}
                 onClick={() => navigate(`/invoices/${inv.id}`)}
               >
+                <td className="p-3" onClick={e => toggleSelect(inv.id, e)}>
+                  <Checkbox checked={selected.has(inv.id)} />
+                </td>
                 <td className="p-3 font-medium">{inv.invoice_number}</td>
                 <td className="p-3">{getFacilityName(inv.facility_id)}</td>
                 <td className="p-3 text-muted-foreground hidden sm:table-cell">
@@ -104,16 +154,43 @@ export default function InvoicesPage() {
                   {inv.balance_due > 0 ? <span className="font-medium">${inv.balance_due.toLocaleString()}</span> : <span className="text-muted-foreground">—</span>}
                 </td>
                 <td className="p-3">{getStatusBadge(inv.computedStatus)}</td>
+                <td className="p-3" onClick={e => e.stopPropagation()}>
+                  <AlertDialog>
+                    <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive" asChild>
+                      <AlertDialogAction className="bg-transparent hover:bg-transparent p-0" onClick={e => e.preventDefault()}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </AlertDialogAction>
+                    </Button>
+                  </AlertDialog>
+                </td>
               </tr>
             ))}
             {displayInvoices.length === 0 && (
-              <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">No invoices</td></tr>
+              <tr><td colSpan={9} className="p-6 text-center text-muted-foreground">No invoices</td></tr>
             )}
           </tbody>
         </table>
       </div>
 
       <CreateInvoiceDialog open={showCreate} onOpenChange={setShowCreate} />
+
+      {/* Bulk delete confirmation */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selected.size} invoice(s)?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the selected invoices and all their line items. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
