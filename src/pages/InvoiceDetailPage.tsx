@@ -711,6 +711,42 @@ function SentView({ invoice, items, invoicePayments, onUpdateInvoice, onAddPayme
         </CardContent>
       </Card>
 
+      {/* Quick Actions — make redraft/edit clearer */}
+      <Card className="border-dashed">
+        <CardHeader className="pb-2"><CardTitle className="text-sm">Quick Actions</CardTitle></CardHeader>
+        <CardContent className="space-y-2">
+          <p className="text-xs text-muted-foreground mb-2">
+            Need to make changes? Move the invoice back to edit line items, amounts, or dates.
+          </p>
+          <Button
+            variant="outline"
+            className="w-full justify-start"
+            onClick={async () => {
+              await onUpdateInvoice({ ...invoice, status: 'draft', sent_at: null, paid_at: null });
+              await onAddActivity({ invoice_id: invoice.id, action: 'reverted_to_draft', description: 'Invoice reverted to draft for editing' });
+              toast.success('Invoice moved to Draft — you can now edit it');
+            }}
+          >
+            <Undo2 className="mr-2 h-4 w-4" />
+            Revert to Draft & Edit
+          </Button>
+          {(invoice.status === 'paid' || invoice.status === 'partial') && (
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={async () => {
+                await onUpdateInvoice({ ...invoice, status: 'sent', paid_at: null });
+                await onAddActivity({ invoice_id: invoice.id, action: 'reverted_to_sent', description: 'Payment status reset — moved back to Sent' });
+                toast.success('Payment status reset — invoice moved to Sent');
+              }}
+            >
+              <Undo2 className="mr-2 h-4 w-4" />
+              Reset Payment Status
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Send & Share Actions */}
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-sm">Send & Share</CardTitle></CardHeader>

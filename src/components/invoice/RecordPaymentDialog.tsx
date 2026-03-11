@@ -7,8 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
 
-const METHODS = ['ACH', 'Check', 'Cash', 'Card', 'Zelle', 'Venmo', 'Other'];
-const ACCOUNTS = ['Business Checking', 'Business Savings', 'Other'];
+const METHODS = ['ACH', 'Check', 'Personal Check', 'Cash', 'Card', 'Zelle', 'Venmo', 'Other'];
+const ACCOUNTS = ['Business Checking', 'Business Savings', 'Personal Checking', 'Personal Savings', 'Other'];
 
 interface Props {
   open: boolean;
