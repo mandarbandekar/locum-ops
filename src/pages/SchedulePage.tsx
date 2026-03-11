@@ -1,15 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Plus, ChevronLeft, ChevronRight, List, CalendarDays, Trash2, PanelRightOpen, PanelRightClose, Calendar as CalendarIcon } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, getDay, startOfWeek, endOfWeek, addWeeks, subWeeks } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, getDay, startOfWeek, endOfWeek, addWeeks, subWeeks, getHours, getMinutes, differenceInMinutes } from 'date-fns';
 import { SHIFT_COLORS } from '@/types';
 import { toast } from 'sonner';
 import { ConfirmationsPanel } from '@/components/schedule/ConfirmationsPanel';
 import { ShiftFormDialog } from '@/components/schedule/ShiftFormDialog';
+import { WeekTimeGrid } from '@/components/schedule/WeekTimeGrid';
 import { getMarkersForDay } from '@/lib/calendarMarkers';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
@@ -177,18 +178,12 @@ export default function SchedulePage() {
             </div>
           </div>
         ) : view === 'week' ? (
-          <div className="rounded-lg border bg-card overflow-hidden">
-            <div className="grid grid-cols-7 bg-muted/50">
-              {weekDays.map(d => (
-                <div key={d.toISOString()} className={`p-2 text-center text-xs font-medium ${isSameDay(d, new Date()) ? 'text-primary font-bold' : 'text-muted-foreground'}`}>
-                  {format(d, 'EEE')}
-                </div>
-              ))}
-            </div>
-            <div className="grid grid-cols-7">
-              {weekDays.map(day => renderDayCell(day, 'min-h-[140px]'))}
-            </div>
-          </div>
+          <WeekTimeGrid
+            weekDays={weekDays}
+            shifts={shifts}
+            getFacilityName={getFacilityName}
+            onEditShift={setEditShift}
+          />
         ) : (
           <div className="rounded-lg border bg-card overflow-hidden">
             <table className="w-full text-sm">
