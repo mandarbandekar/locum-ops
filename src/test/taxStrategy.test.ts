@@ -36,11 +36,12 @@ describe('Tax Strategy Module', () => {
   describe('Readiness score', () => {
     it('updates when checklist items are completed', () => {
       const items = DEFAULT_CHECKLIST_ITEMS.map((item, i) => ({
-        ...item, completed: i < 6, completed_at: i < 6 ? '2026-01-01' : null,
+        ...item, completed: i < Math.ceil(DEFAULT_CHECKLIST_ITEMS.length / 2), completed_at: i < Math.ceil(DEFAULT_CHECKLIST_ITEMS.length / 2) ? '2026-01-01' : null,
       }));
       const completed = items.filter(c => c.completed).length;
       const percent = Math.round((completed / items.length) * 100);
-      expect(percent).toBe(50);
+      expect(percent).toBeGreaterThanOrEqual(45);
+      expect(percent).toBeLessThanOrEqual(55);
     });
   });
 

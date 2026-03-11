@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { DollarSign, CalendarDays, CheckCircle2, AlertCircle, EyeOff, ChevronDown } from 'lucide-react';
+import { DollarSign, CalendarDays, CheckCircle2, AlertCircle, EyeOff, ChevronDown, ListChecks } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
 import {
@@ -29,19 +29,31 @@ const STATUS_OPTIONS = [
   { value: 'paid', label: 'Paid' },
 ];
 
-const DEFAULT_CHECKLIST_ITEMS: { key: string; label: string; instruction: string; quarter?: number }[] = [
-  { key: 'entity_setup', label: 'Entity setup reviewed', instruction: 'Confirm your business entity type (sole prop, LLC, S-corp) is still the best fit. Discuss with your CPA if your relief income has changed significantly.' },
-  { key: 'estimated_taxes', label: 'Estimated taxes reviewed this quarter', instruction: 'Review your YTD income and reserve amount. Confirm quarterly payment amounts with your CPA before each due date.' },
-  { key: 'cpa_consulted', label: 'CPA consulted this year', instruction: 'Schedule at least one annual check-in with your CPA to review entity structure, deductions, and quarterly estimates.' },
-  { key: 'payroll_reviewed', label: 'Payroll reviewed (if S-corp)', instruction: 'If you operate as an S-corp, ensure payroll is set up and reasonable compensation is being paid. Confirm amounts with your CPA.' },
-  { key: 'reasonable_comp', label: 'Reasonable compensation discussed (if S-corp)', instruction: 'S-corp owners must pay themselves a reasonable salary. Discuss the appropriate amount based on your relief work volume and industry norms.' },
-  { key: 'accountable_plan', label: 'Accountable plan discussed (if S-corp)', instruction: 'An accountable plan lets your S-corp reimburse you for business expenses like mileage, CE, and licensing. Ask your CPA if this applies.' },
-  { key: 'deductions_reviewed', label: 'Deduction categories reviewed', instruction: 'Go to the Deductions tab and ensure all your business expense categories have accurate YTD totals and documentation status.' },
-  { key: 'receipts_organized', label: 'Receipts / docs organized', instruction: 'Gather and organize receipts for all business expenses. Digital copies are fine — ensure each category has supporting documentation.' },
-  { key: 'mileage_tracking', label: 'Multi-clinic mileage tracking reviewed', instruction: 'If you travel between multiple clinics or facilities, keep a mileage log with dates, destinations, and business purpose for each trip.' },
-  { key: 'ce_licensing', label: 'CE / licensing costs organized', instruction: 'Compile all continuing education fees, license renewals, DEA registrations, and professional certification costs for the year.' },
-  { key: 'travel_docs', label: 'Travel / lodging documentation reviewed', instruction: 'For out-of-town assignments, keep records of lodging, travel expenses, and per diem meals. Note the business purpose for each trip.' },
-  { key: 'cpa_packet', label: 'Year-end CPA packet ready', instruction: 'Visit the CPA Packet tab to generate a summary of your income, deductions, and questions. Share this with your CPA before year-end.' },
+const DEFAULT_CHECKLIST_ITEMS: { key: string; label: string; instruction: string; quarter: number }[] = [
+  // Q1: Start-of-year setup & prior-year wrap-up
+  { key: 'q1_entity_review', label: 'Entity type reviewed for the year', instruction: 'Confirm your business entity (sole prop, LLC, S-corp) is still the best fit. If income changed significantly, discuss with your CPA before filing.', quarter: 1 },
+  { key: 'q1_prior_year_filing', label: 'Prior-year tax return filed or extended', instruction: 'File your prior-year return by Apr 15 or submit an extension. Gather all 1099s and year-end statements.', quarter: 1 },
+  { key: 'q1_bookkeeping_setup', label: 'Bookkeeping & tracking set up for the year', instruction: 'Ensure your income tracking, mileage log, and expense categories are ready for the new tax year.', quarter: 1 },
+  { key: 'q1_estimated_payment', label: 'Q1 estimated tax payment reviewed', instruction: 'Review projected income and calculate your Q1 estimated payment. Due Apr 15. Confirm the amount with your CPA.', quarter: 1 },
+
+  // Q2: Mid-year check-in & Q2 payment
+  { key: 'q2_income_review', label: 'YTD income reviewed at mid-year', instruction: 'Compare actual income to projections. Adjust future quarterly estimates if income is higher or lower than expected.', quarter: 2 },
+  { key: 'q2_estimated_payment', label: 'Q2 estimated tax payment reviewed', instruction: 'Calculate and confirm your Q2 estimated payment. Due Jun 15. Adjust if income pace has changed.', quarter: 2 },
+  { key: 'q2_deductions_midyear', label: 'Deduction categories checked mid-year', instruction: 'Review your Deductions tab — make sure YTD amounts are entered and receipts are organized through June.', quarter: 2 },
+  { key: 'q2_mileage_tracking', label: 'Mileage log current through Q2', instruction: 'If you travel between clinics, verify your mileage log is up to date with dates, destinations, and business purpose.', quarter: 2 },
+
+  // Q3: Year-end prep begins
+  { key: 'q3_cpa_checkin', label: 'Mid-year CPA check-in completed', instruction: 'Schedule a check-in with your CPA to review YTD income, entity structure, and adjust estimates for the remainder of the year.', quarter: 3 },
+  { key: 'q3_estimated_payment', label: 'Q3 estimated tax payment reviewed', instruction: 'Calculate and confirm your Q3 estimated payment. Due Sep 15. Factor in any income changes from summer assignments.', quarter: 3 },
+  { key: 'q3_retirement', label: 'Retirement contributions reviewed', instruction: 'Review SEP-IRA, Solo 401(k), or other retirement plan contributions. Maximizing contributions can reduce taxable income.', quarter: 3 },
+  { key: 'q3_reasonable_comp', label: 'Reasonable compensation reviewed (if S-corp)', instruction: 'S-corp owners must pay themselves a reasonable salary. Confirm the amount with your CPA based on your relief work volume.', quarter: 3 },
+
+  // Q4: Year-end execution & CPA packet
+  { key: 'q4_estimated_payment', label: 'Q4 estimated tax payment reviewed', instruction: 'Calculate and confirm your Q4 estimated payment. Due Jan 15 of next year. This is your last chance to adjust for the year.', quarter: 4 },
+  { key: 'q4_deductions_final', label: 'Final deduction review & receipt sweep', instruction: 'Do a final pass on all deduction categories. Gather any missing receipts for CE, licensing, mileage, travel, and insurance.', quarter: 4 },
+  { key: 'q4_ce_licensing', label: 'CE & licensing costs compiled', instruction: 'Compile all continuing education fees, license renewals, DEA registrations, and professional certifications for the year.', quarter: 4 },
+  { key: 'q4_payroll_review', label: 'Payroll & accountable plan reviewed (if S-corp)', instruction: 'Confirm payroll is current and reasonable comp is met. If you have an accountable plan, submit all reimbursement requests before year-end.', quarter: 4 },
+  { key: 'q4_cpa_packet', label: 'Year-end CPA packet prepared', instruction: 'Visit the CPA Packet tab to generate a summary of your income, deductions, and questions. Share with your CPA before year-end.', quarter: 4 },
 ];
 
 interface TaxSettings {
@@ -305,9 +317,17 @@ export default function TrackerTab() {
             const qi = quarterlyIncome.find(q => q.quarter === qs.quarter);
             const sa = setAsideData.find(q => q.quarter === qs.quarter);
             const isPast = new Date(qs.due_date) < new Date();
-            const quarterCompletedCount = activeChecklist.filter(c => c.completed).length;
-            const quarterProgress = activeChecklist.length > 0 ? Math.round((quarterCompletedCount / activeChecklist.length) * 100) : 0;
             const isCurrentQuarter = selectedYear === currentYear && qs.quarter === currentQuarter;
+
+            // Filter checklist items for this specific quarter
+            const quarterChecklist = checklist.filter(c => {
+              const def = DEFAULT_CHECKLIST_ITEMS.find(d => d.key === c.item_key);
+              return def?.quarter === qs.quarter;
+            });
+            const activeQuarterChecklist = quarterChecklist.filter(c => !c.ignored);
+            const quarterCompletedCount = activeQuarterChecklist.filter(c => c.completed).length;
+            const quarterProgress = activeQuarterChecklist.length > 0 ? Math.round((quarterCompletedCount / activeQuarterChecklist.length) * 100) : 100;
+            const incompleteQuarterItems = quarterChecklist.filter(c => !c.completed && !c.ignored);
 
             const quarterHeader = (
               <div className="flex items-center justify-between w-full">
@@ -348,62 +368,73 @@ export default function TrackerTab() {
                   <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => saveQuarterStatus(qs)}>Save</Button>
                 </div>
 
-                {/* Readiness Progress Bar */}
+                {/* Collapsible Readiness Checklist */}
                 <div className="pt-2 border-t">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-muted-foreground">Readiness Checklist</p>
-                    <span className="text-xs text-muted-foreground">{quarterProgress}%</span>
-                  </div>
-                  <Progress value={quarterProgress} className="h-2 mb-3" />
-
-                  {/* Checklist Items */}
-                  <div className="space-y-1">
-                    {checklist.map((item, i) => {
-                      const instruction = getInstruction(item.item_key);
-                      if (item.ignored) {
-                        return (
-                          <div key={item.item_key} className="flex items-center gap-2 py-1 opacity-50">
-                            <EyeOff className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                            <span className="text-xs text-muted-foreground line-through flex-1">{item.label}</span>
-                            <Button size="sm" variant="ghost" className="h-6 px-2 text-xs text-muted-foreground" onClick={() => toggleIgnore(i)}>Restore</Button>
-                          </div>
-                        );
-                      }
-
-                      return (
-                        <div key={item.item_key} className="rounded-md border px-3 py-2">
-                          <div className="flex items-start gap-3">
-                            <Checkbox checked={item.completed} onCheckedChange={() => toggleChecklist(i)} id={`q${qs.quarter}-${item.item_key}`} className="mt-0.5" />
-                            <div className="flex-1 min-w-0">
-                              <Label htmlFor={`q${qs.quarter}-${item.item_key}`} className={`text-sm cursor-pointer font-medium ${item.completed ? 'line-through text-muted-foreground' : ''}`}>
-                                {item.label}
-                              </Label>
-                              {!item.completed && instruction && (
-                                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{instruction}</p>
-                              )}
-                            </div>
-                            {!item.completed && (
-                              <Button size="sm" variant="ghost" className="h-6 px-2 text-xs text-muted-foreground shrink-0" onClick={() => toggleIgnore(i)} title="Ignore this item">
-                                <EyeOff className="h-3 w-3" />
-                              </Button>
-                            )}
-                          </div>
+                  <Collapsible defaultOpen={isCurrentQuarter}>
+                    <CollapsibleTrigger asChild>
+                      <button className="flex items-center justify-between w-full py-1 group cursor-pointer">
+                        <div className="flex items-center gap-2">
+                          <ListChecks className="h-4 w-4 text-muted-foreground" />
+                          <p className="text-sm font-medium text-muted-foreground">Readiness Checklist</p>
                         </div>
-                      );
-                    })}
-                  </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">{quarterCompletedCount}/{activeQuarterChecklist.length} · {quarterProgress}%</span>
+                          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 group-[[data-state=closed]]:rotate-[-90deg]" />
+                        </div>
+                      </button>
+                    </CollapsibleTrigger>
+                    <Progress value={quarterProgress} className="h-2 mt-2 mb-3" />
+                    <CollapsibleContent>
+                      <div className="space-y-1">
+                        {quarterChecklist.map((item) => {
+                          const globalIdx = checklist.findIndex(c => c.item_key === item.item_key);
+                          const instruction = getInstruction(item.item_key);
+                          if (item.ignored) {
+                            return (
+                              <div key={item.item_key} className="flex items-center gap-2 py-1 opacity-50">
+                                <EyeOff className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                                <span className="text-xs text-muted-foreground line-through flex-1">{item.label}</span>
+                                <Button size="sm" variant="ghost" className="h-6 px-2 text-xs text-muted-foreground" onClick={() => toggleIgnore(globalIdx)}>Restore</Button>
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <div key={item.item_key} className="rounded-md border px-3 py-2">
+                              <div className="flex items-start gap-3">
+                                <Checkbox checked={item.completed} onCheckedChange={() => toggleChecklist(globalIdx)} id={`q${qs.quarter}-${item.item_key}`} className="mt-0.5" />
+                                <div className="flex-1 min-w-0">
+                                  <Label htmlFor={`q${qs.quarter}-${item.item_key}`} className={`text-sm cursor-pointer font-medium ${item.completed ? 'line-through text-muted-foreground' : ''}`}>
+                                    {item.label}
+                                  </Label>
+                                  {!item.completed && instruction && (
+                                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{instruction}</p>
+                                  )}
+                                </div>
+                                {!item.completed && (
+                                  <Button size="sm" variant="ghost" className="h-6 px-2 text-xs text-muted-foreground shrink-0" onClick={() => toggleIgnore(globalIdx)} title="Ignore this item">
+                                    <EyeOff className="h-3 w-3" />
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
                 </div>
 
                 {/* Incomplete Reminders */}
-                {incompleteItems.length > 0 && qs.status !== 'paid' && (
+                {incompleteQuarterItems.length > 0 && qs.status !== 'paid' && (
                   <div className="rounded-md bg-warning/10 border border-warning/20 p-3 mt-2">
                     <p className="text-xs font-medium text-warning mb-1 flex items-center gap-1"><AlertCircle className="h-3 w-3" /> Reminders</p>
                     <ul className="space-y-0.5">
-                      {incompleteItems.slice(0, 3).map(item => (
+                      {incompleteQuarterItems.slice(0, 3).map(item => (
                         <li key={item.item_key} className="text-xs text-muted-foreground">• {item.label}</li>
                       ))}
-                      {incompleteItems.length > 3 && (
-                        <li className="text-xs text-muted-foreground">+ {incompleteItems.length - 3} more</li>
+                      {incompleteQuarterItems.length > 3 && (
+                        <li className="text-xs text-muted-foreground">+ {incompleteQuarterItems.length - 3} more</li>
                       )}
                     </ul>
                   </div>
