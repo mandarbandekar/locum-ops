@@ -369,7 +369,7 @@ export default function LandingPage() {
           {[
             { icon: Clock, title: 'Save time', desc: 'Eliminate repetitive admin tasks by centralizing scheduling, invoicing, and credentialing into automated workflows.', stat: '10+ hrs', statLabel: 'saved per month' },
             { icon: FolderOpen, title: 'Stay organized', desc: 'One source of truth for contracts, credentials, rates, and facility details — always current, always accessible.', stat: '100%', statLabel: 'visibility' },
-            { icon: TrendingUp, title: 'Get paid with confidence', desc: 'Track every invoice from creation to payment. Know exactly what's outstanding and follow up faster.', stat: '<48h', statLabel: 'faster AR cycles' },
+            { icon: TrendingUp, title: 'Get paid with confidence', desc: 'Track every invoice from creation to payment. Know exactly what is outstanding and follow up faster.', stat: '<48h', statLabel: 'faster AR cycles' },
           ].map((o, i) => (
             <motion.div key={o.title} custom={i} variants={fadeUp}
               className="bg-card border border-border/60 rounded-xl p-8 text-center hover:shadow-lg transition-all duration-300"
