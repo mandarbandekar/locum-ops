@@ -312,7 +312,7 @@ export default function TrackerTab() {
             const quarterHeader = (
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center gap-2">
-                  {!isCurrentQuarter && <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [[data-state=closed]_&]:rotate-[-90deg]" />}
+                  {!isCurrentQuarter && <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-0 -rotate-90" />}
                   <div>
                     <p className="font-medium text-base">Q{qs.quarter} — Due {new Date(qs.due_date).toLocaleDateString()}</p>
                     {isPast && qs.status !== 'paid' && (
