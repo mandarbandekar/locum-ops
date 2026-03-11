@@ -229,7 +229,7 @@ export default function SchedulePage() {
                     </td>
                   </tr>
                 ))}
-                {rangeShifts.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">No shifts this {view === 'week' ? 'week' : 'month'}</td></tr>}
+                {rangeShifts.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">No shifts to display</td></tr>}
               </tbody>
             </table>
           </div>
