@@ -29,19 +29,31 @@ const STATUS_OPTIONS = [
   { value: 'paid', label: 'Paid' },
 ];
 
-const DEFAULT_CHECKLIST_ITEMS: { key: string; label: string; instruction: string; quarter?: number }[] = [
-  { key: 'entity_setup', label: 'Entity setup reviewed', instruction: 'Confirm your business entity type (sole prop, LLC, S-corp) is still the best fit. Discuss with your CPA if your relief income has changed significantly.' },
-  { key: 'estimated_taxes', label: 'Estimated taxes reviewed this quarter', instruction: 'Review your YTD income and reserve amount. Confirm quarterly payment amounts with your CPA before each due date.' },
-  { key: 'cpa_consulted', label: 'CPA consulted this year', instruction: 'Schedule at least one annual check-in with your CPA to review entity structure, deductions, and quarterly estimates.' },
-  { key: 'payroll_reviewed', label: 'Payroll reviewed (if S-corp)', instruction: 'If you operate as an S-corp, ensure payroll is set up and reasonable compensation is being paid. Confirm amounts with your CPA.' },
-  { key: 'reasonable_comp', label: 'Reasonable compensation discussed (if S-corp)', instruction: 'S-corp owners must pay themselves a reasonable salary. Discuss the appropriate amount based on your relief work volume and industry norms.' },
-  { key: 'accountable_plan', label: 'Accountable plan discussed (if S-corp)', instruction: 'An accountable plan lets your S-corp reimburse you for business expenses like mileage, CE, and licensing. Ask your CPA if this applies.' },
-  { key: 'deductions_reviewed', label: 'Deduction categories reviewed', instruction: 'Go to the Deductions tab and ensure all your business expense categories have accurate YTD totals and documentation status.' },
-  { key: 'receipts_organized', label: 'Receipts / docs organized', instruction: 'Gather and organize receipts for all business expenses. Digital copies are fine — ensure each category has supporting documentation.' },
-  { key: 'mileage_tracking', label: 'Multi-clinic mileage tracking reviewed', instruction: 'If you travel between multiple clinics or facilities, keep a mileage log with dates, destinations, and business purpose for each trip.' },
-  { key: 'ce_licensing', label: 'CE / licensing costs organized', instruction: 'Compile all continuing education fees, license renewals, DEA registrations, and professional certification costs for the year.' },
-  { key: 'travel_docs', label: 'Travel / lodging documentation reviewed', instruction: 'For out-of-town assignments, keep records of lodging, travel expenses, and per diem meals. Note the business purpose for each trip.' },
-  { key: 'cpa_packet', label: 'Year-end CPA packet ready', instruction: 'Visit the CPA Packet tab to generate a summary of your income, deductions, and questions. Share this with your CPA before year-end.' },
+const DEFAULT_CHECKLIST_ITEMS: { key: string; label: string; instruction: string; quarter: number }[] = [
+  // Q1: Start-of-year setup & prior-year wrap-up
+  { key: 'q1_entity_review', label: 'Entity type reviewed for the year', instruction: 'Confirm your business entity (sole prop, LLC, S-corp) is still the best fit. If income changed significantly, discuss with your CPA before filing.', quarter: 1 },
+  { key: 'q1_prior_year_filing', label: 'Prior-year tax return filed or extended', instruction: 'File your prior-year return by Apr 15 or submit an extension. Gather all 1099s and year-end statements.', quarter: 1 },
+  { key: 'q1_bookkeeping_setup', label: 'Bookkeeping & tracking set up for the year', instruction: 'Ensure your income tracking, mileage log, and expense categories are ready for the new tax year.', quarter: 1 },
+  { key: 'q1_estimated_payment', label: 'Q1 estimated tax payment reviewed', instruction: 'Review projected income and calculate your Q1 estimated payment. Due Apr 15. Confirm the amount with your CPA.', quarter: 1 },
+
+  // Q2: Mid-year check-in & Q2 payment
+  { key: 'q2_income_review', label: 'YTD income reviewed at mid-year', instruction: 'Compare actual income to projections. Adjust future quarterly estimates if income is higher or lower than expected.', quarter: 2 },
+  { key: 'q2_estimated_payment', label: 'Q2 estimated tax payment reviewed', instruction: 'Calculate and confirm your Q2 estimated payment. Due Jun 15. Adjust if income pace has changed.', quarter: 2 },
+  { key: 'q2_deductions_midyear', label: 'Deduction categories checked mid-year', instruction: 'Review your Deductions tab — make sure YTD amounts are entered and receipts are organized through June.', quarter: 2 },
+  { key: 'q2_mileage_tracking', label: 'Mileage log current through Q2', instruction: 'If you travel between clinics, verify your mileage log is up to date with dates, destinations, and business purpose.', quarter: 2 },
+
+  // Q3: Year-end prep begins
+  { key: 'q3_cpa_checkin', label: 'Mid-year CPA check-in completed', instruction: 'Schedule a check-in with your CPA to review YTD income, entity structure, and adjust estimates for the remainder of the year.', quarter: 3 },
+  { key: 'q3_estimated_payment', label: 'Q3 estimated tax payment reviewed', instruction: 'Calculate and confirm your Q3 estimated payment. Due Sep 15. Factor in any income changes from summer assignments.', quarter: 3 },
+  { key: 'q3_retirement', label: 'Retirement contributions reviewed', instruction: 'Review SEP-IRA, Solo 401(k), or other retirement plan contributions. Maximizing contributions can reduce taxable income.', quarter: 3 },
+  { key: 'q3_reasonable_comp', label: 'Reasonable compensation reviewed (if S-corp)', instruction: 'S-corp owners must pay themselves a reasonable salary. Confirm the amount with your CPA based on your relief work volume.', quarter: 3 },
+
+  // Q4: Year-end execution & CPA packet
+  { key: 'q4_estimated_payment', label: 'Q4 estimated tax payment reviewed', instruction: 'Calculate and confirm your Q4 estimated payment. Due Jan 15 of next year. This is your last chance to adjust for the year.', quarter: 4 },
+  { key: 'q4_deductions_final', label: 'Final deduction review & receipt sweep', instruction: 'Do a final pass on all deduction categories. Gather any missing receipts for CE, licensing, mileage, travel, and insurance.', quarter: 4 },
+  { key: 'q4_ce_licensing', label: 'CE & licensing costs compiled', instruction: 'Compile all continuing education fees, license renewals, DEA registrations, and professional certifications for the year.', quarter: 4 },
+  { key: 'q4_payroll_review', label: 'Payroll & accountable plan reviewed (if S-corp)', instruction: 'Confirm payroll is current and reasonable comp is met. If you have an accountable plan, submit all reimbursement requests before year-end.', quarter: 4 },
+  { key: 'q4_cpa_packet', label: 'Year-end CPA packet prepared', instruction: 'Visit the CPA Packet tab to generate a summary of your income, deductions, and questions. Share with your CPA before year-end.', quarter: 4 },
 ];
 
 interface TaxSettings {
