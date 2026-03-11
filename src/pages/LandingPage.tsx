@@ -211,7 +211,7 @@ export default function LandingPage() {
             <motion.div
               initial={{ opacity: 0, x: 40, scale: 0.96 }}
               animate={{ opacity: 1, x: 0, scale: 1 }}
-              transition={{ duration: 0.7, delay: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+              transition={{ duration: 0.7, delay: 0.4, ease: 'easeOut' }}
               className="hidden lg:block"
             >
               <ProductMockup />
