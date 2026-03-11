@@ -10,6 +10,7 @@ import { SHIFT_COLORS } from '@/types';
 import { toast } from 'sonner';
 import { ConfirmationsPanel } from '@/components/schedule/ConfirmationsPanel';
 import { ShiftFormDialog } from '@/components/schedule/ShiftFormDialog';
+import { WeekTimeGrid } from '@/components/schedule/WeekTimeGrid';
 import { getMarkersForDay } from '@/lib/calendarMarkers';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
