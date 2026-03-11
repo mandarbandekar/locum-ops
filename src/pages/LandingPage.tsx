@@ -63,59 +63,112 @@ function SectionHeader({ label, title, subtitle, center = true }: { label?: stri
   );
 }
 
+/* ─── Interactive stat card ─── */
+function StatCard({ label, value, color }: { label: string; value: string; color: string }) {
+  return (
+    <motion.div
+      whileHover={{ scale: 1.05, y: -2 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+      className="bg-muted/40 rounded-lg p-2.5 cursor-default group hover:bg-muted/60 hover:shadow-md transition-colors duration-200"
+    >
+      <p className="text-[9px] text-muted-foreground font-medium uppercase tracking-wider">{label}</p>
+      <p className={`text-lg font-bold ${color} transition-transform duration-200 group-hover:scale-110 origin-left`}>{value}</p>
+    </motion.div>
+  );
+}
+
 /* ─── Product mockup component ─── */
 function ProductMockup() {
+  const [hoveredDay, setHoveredDay] = useState<number | null>(null);
+
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+  const dayStates = [
+    { filled: true, label: 'Sunrise Animal', color: 'bg-primary/20 border-primary/30' },
+    { filled: false, label: '', color: 'bg-muted/50 border-transparent' },
+    { filled: true, label: 'Valley Pet Clinic', color: 'bg-warning/15 border-warning/25' },
+    { filled: true, label: 'Coastal Vet ER', color: 'bg-primary/20 border-primary/30' },
+    { filled: false, label: '', color: 'bg-muted/50 border-transparent' },
+  ];
+
   return (
     <div className="relative">
       {/* Glow effect */}
-      <div className="absolute -inset-4 bg-gradient-to-br from-primary/20 via-transparent to-primary/10 rounded-3xl blur-2xl" />
-      <div className="relative bg-card border border-border/60 rounded-2xl shadow-2xl overflow-hidden">
+      <motion.div
+        className="absolute -inset-4 bg-gradient-to-br from-primary/20 via-transparent to-primary/10 rounded-3xl blur-2xl"
+        animate={{ opacity: [0.6, 1, 0.6] }}
+        transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      <motion.div
+        whileHover={{ y: -4 }}
+        transition={{ type: 'spring', stiffness: 200, damping: 25 }}
+        className="relative bg-card border border-border/60 rounded-2xl shadow-2xl overflow-hidden"
+      >
         {/* Window chrome */}
         <div className="flex items-center gap-1.5 px-4 py-2.5 border-b border-border/40 bg-muted/30">
-          <div className="w-2.5 h-2.5 rounded-full bg-destructive/60" />
-          <div className="w-2.5 h-2.5 rounded-full bg-warning/60" />
-          <div className="w-2.5 h-2.5 rounded-full bg-success/60" />
+          <motion.div whileHover={{ scale: 1.4 }} className="w-2.5 h-2.5 rounded-full bg-destructive/60 cursor-pointer" />
+          <motion.div whileHover={{ scale: 1.4 }} className="w-2.5 h-2.5 rounded-full bg-warning/60 cursor-pointer" />
+          <motion.div whileHover={{ scale: 1.4 }} className="w-2.5 h-2.5 rounded-full bg-success/60 cursor-pointer" />
           <span className="ml-3 text-[10px] text-muted-foreground font-medium">Locum Ops — Dashboard</span>
         </div>
         {/* Dashboard content */}
         <div className="p-4 space-y-3">
           {/* Top row stats */}
           <div className="grid grid-cols-3 gap-2">
-            {[
-              { label: 'Upcoming Shifts', value: '12', color: 'text-primary' },
-              { label: 'Pending Invoices', value: '$8,420', color: 'text-warning' },
-              { label: 'Active Contracts', value: '6', color: 'text-success' },
-            ].map(s => (
-              <div key={s.label} className="bg-muted/40 rounded-lg p-2.5">
-                <p className="text-[9px] text-muted-foreground font-medium uppercase tracking-wider">{s.label}</p>
-                <p className={`text-lg font-bold ${s.color}`}>{s.value}</p>
-              </div>
-            ))}
+            <StatCard label="Upcoming Shifts" value="12" color="text-primary" />
+            <StatCard label="Pending Invoices" value="$8,420" color="text-warning" />
+            <StatCard label="Active Contracts" value="6" color="text-success" />
           </div>
           {/* Calendar preview */}
-          <div className="bg-muted/30 rounded-lg p-3">
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            className="bg-muted/30 rounded-lg p-3 cursor-default"
+          >
             <div className="flex items-center justify-between mb-2">
               <span className="text-[10px] font-semibold text-foreground">March 2026</span>
               <span className="text-[9px] text-muted-foreground">Week View</span>
             </div>
             <div className="grid grid-cols-5 gap-1">
-              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map((d, i) => (
-                <div key={d}>
+              {days.map((d, i) => (
+                <div key={d} onMouseEnter={() => setHoveredDay(i)} onMouseLeave={() => setHoveredDay(null)}>
                   <p className="text-[8px] text-muted-foreground text-center mb-1">{d}</p>
-                  <div className={`h-8 rounded ${i === 0 || i === 3 ? 'bg-primary/20 border border-primary/30' : i === 2 ? 'bg-orange-500/15 border border-orange-500/25' : 'bg-muted/50'}`} />
+                  <motion.div
+                    animate={{
+                      scale: hoveredDay === i ? 1.08 : 1,
+                      y: hoveredDay === i ? -2 : 0,
+                    }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                    className={`h-10 rounded border transition-shadow duration-200 ${dayStates[i].color} ${hoveredDay === i ? 'shadow-md' : ''}`}
+                  >
+                    {dayStates[i].filled && hoveredDay === i && (
+                      <motion.p
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="text-[7px] font-medium text-foreground/70 px-1 pt-1 truncate"
+                      >
+                        {dayStates[i].label}
+                      </motion.p>
+                    )}
+                  </motion.div>
                 </div>
               ))}
             </div>
-          </div>
+          </motion.div>
           {/* Credential status */}
-          <div className="flex items-center gap-2 bg-muted/30 rounded-lg p-2.5">
-            <Shield className="h-3.5 w-3.5 text-success" />
+          <motion.div
+            whileHover={{ scale: 1.02, x: 2 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            className="flex items-center gap-2 bg-muted/30 rounded-lg p-2.5 cursor-default group"
+          >
+            <motion.div animate={{ rotate: [0, 10, -10, 0] }} transition={{ duration: 2, repeat: Infinity, repeatDelay: 4 }}>
+              <Shield className="h-3.5 w-3.5 text-success" />
+            </motion.div>
             <span className="text-[10px] text-foreground font-medium">Credentialing</span>
             <div className="flex-1" />
-            <span className="text-[9px] bg-success/15 text-success px-2 py-0.5 rounded-full font-medium">8/9 Complete</span>
-          </div>
+            <span className="text-[9px] bg-success/15 text-success px-2 py-0.5 rounded-full font-medium group-hover:bg-success/25 transition-colors">8/9 Complete</span>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }
