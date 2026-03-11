@@ -188,6 +188,32 @@ function HeroSection({ onScrollTo, onNavigate }: { onScrollTo: (id: string) => v
       <motion.div style={{ y: bgY }} className="absolute inset-0 bg-gradient-to-b from-primary/[0.03] via-transparent to-transparent" />
       <motion.div style={{ y: bgY, scale: glowScale }} className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/[0.04] rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
 
+      {/* Dark mode animated gradient orbs */}
+      <motion.div
+        className="absolute top-1/4 left-1/4 w-[500px] h-[500px] rounded-full blur-[120px] opacity-0 dark:opacity-100"
+        style={{
+          background: 'radial-gradient(circle, hsl(var(--primary) / 0.12) 0%, transparent 70%)',
+        }}
+        animate={{ x: [0, 60, -30, 0], y: [0, -40, 30, 0], scale: [1, 1.15, 0.95, 1] }}
+        transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      <motion.div
+        className="absolute bottom-0 right-1/4 w-[400px] h-[400px] rounded-full blur-[100px] opacity-0 dark:opacity-100"
+        style={{
+          background: 'radial-gradient(circle, hsl(173 58% 39% / 0.08) 0%, hsl(215 25% 15% / 0.05) 60%, transparent 80%)',
+        }}
+        animate={{ x: [0, -50, 40, 0], y: [0, 30, -50, 0], scale: [1, 0.9, 1.1, 1] }}
+        transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
+      />
+      <motion.div
+        className="absolute top-0 right-0 w-[300px] h-[300px] rounded-full blur-[80px] opacity-0 dark:opacity-100"
+        style={{
+          background: 'radial-gradient(circle, hsl(173 58% 50% / 0.06) 0%, transparent 70%)',
+        }}
+        animate={{ x: [0, -30, 20, 0], y: [0, 50, -20, 0] }}
+        transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 4 }}
+      />
+
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-20 sm:pt-28 pb-20 sm:pb-28">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           {/* Left: Copy with parallax */}
