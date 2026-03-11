@@ -264,7 +264,7 @@ export default function LandingPage() {
               { icon: FolderOpen, title: 'Contracts scattered', desc: 'Across email threads and shared drives' },
               { icon: ClipboardCheck, title: 'Credentialing manual', desc: 'Tracked in spreadsheets or not at all' },
               { icon: Calendar, title: 'Scheduling fragmented', desc: 'Between texts, calls, and calendars' },
-              { icon: DollarSign, title: 'Invoicing easy to miss', desc: 'No system to track what's sent or owed' },
+              { icon: DollarSign, title: 'Invoicing easy to miss', desc: 'No system to track what is sent or owed' },
               { icon: Settings2, title: 'No unified system', desc: 'For rates, terms, and operations' },
             ].map((p, i) => (
               <motion.div key={p.title} custom={i} variants={fadeUp}
