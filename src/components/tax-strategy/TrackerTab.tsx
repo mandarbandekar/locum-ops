@@ -11,7 +11,8 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { DollarSign, CalendarDays, CheckCircle2, AlertCircle, EyeOff } from 'lucide-react';
+import { DollarSign, CalendarDays, CheckCircle2, AlertCircle, EyeOff, ChevronDown } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
 import {
   aggregateQuarterlyIncome,
@@ -71,7 +72,9 @@ interface ChecklistItem {
 export default function TrackerTab() {
   const { invoices } = useData();
   const { user, isDemo } = useAuth();
-  const currentYear = new Date().getFullYear();
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentQuarter = Math.ceil((now.getMonth() + 1) / 3);
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [loading, setLoading] = useState(!isDemo);
 
@@ -304,102 +307,139 @@ export default function TrackerTab() {
             const isPast = new Date(qs.due_date) < new Date();
             const quarterCompletedCount = activeChecklist.filter(c => c.completed).length;
             const quarterProgress = activeChecklist.length > 0 ? Math.round((quarterCompletedCount / activeChecklist.length) * 100) : 0;
+            const isCurrentQuarter = selectedYear === currentYear && qs.quarter === currentQuarter;
 
-            return (
-              <Card key={qs.quarter} className="border">
-                <CardContent className="p-4 space-y-4">
-                  {/* Quarter Header */}
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-base">Q{qs.quarter} — Due {new Date(qs.due_date).toLocaleDateString()}</p>
-                      {isPast && qs.status !== 'paid' && (
-                        <p className="text-xs text-destructive flex items-center gap-1 mt-0.5"><AlertCircle className="h-3 w-3" /> Past due</p>
-                      )}
-                    </div>
-                    <Badge variant={qs.status === 'paid' ? 'default' : 'secondary'}>
-                      {STATUS_OPTIONS.find(o => o.value === qs.status)?.label || qs.status}
-                    </Badge>
+            const quarterHeader = (
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2">
+                  {!isCurrentQuarter && <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [[data-state=closed]_&]:rotate-[-90deg]" />}
+                  <div>
+                    <p className="font-medium text-base">Q{qs.quarter} — Due {new Date(qs.due_date).toLocaleDateString()}</p>
+                    {isPast && qs.status !== 'paid' && (
+                      <p className="text-xs text-destructive flex items-center gap-1 mt-0.5"><AlertCircle className="h-3 w-3" /> Past due</p>
+                    )}
                   </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {!isCurrentQuarter && <span className="text-xs text-muted-foreground">{quarterProgress}%</span>}
+                  <Badge variant={qs.status === 'paid' ? 'default' : 'secondary'}>
+                    {STATUS_OPTIONS.find(o => o.value === qs.status)?.label || qs.status}
+                  </Badge>
+                </div>
+              </div>
+            );
 
-                  {/* Income & Reserve */}
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <p className="text-muted-foreground">Income: <span className="font-medium text-foreground">${(qi?.income || 0).toLocaleString()}</span></p>
-                    <p className="text-muted-foreground">Reserve: <span className="font-medium text-foreground">${(sa?.amount || 0).toLocaleString()}</span></p>
+            const quarterBody = (
+              <>
+                {/* Income & Reserve */}
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <p className="text-muted-foreground">Income: <span className="font-medium text-foreground">${(qi?.income || 0).toLocaleString()}</span></p>
+                  <p className="text-muted-foreground">Reserve: <span className="font-medium text-foreground">${(sa?.amount || 0).toLocaleString()}</span></p>
+                </div>
+
+                {/* Status Selector */}
+                <div className="flex gap-2 items-end">
+                  <div className="flex-1">
+                    <Select value={qs.status} onValueChange={v => setQuarterStatuses(prev => prev.map(q => q.quarter === qs.quarter ? { ...q, status: v } : q))}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>{STATUS_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                    </Select>
                   </div>
+                  <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => saveQuarterStatus(qs)}>Save</Button>
+                </div>
 
-                  {/* Status Selector */}
-                  <div className="flex gap-2 items-end">
-                    <div className="flex-1">
-                      <Select value={qs.status} onValueChange={v => setQuarterStatuses(prev => prev.map(q => q.quarter === qs.quarter ? { ...q, status: v } : q))}>
-                        <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                        <SelectContent>{STATUS_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </div>
-                    <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => saveQuarterStatus(qs)}>Save</Button>
+                {/* Readiness Progress Bar */}
+                <div className="pt-2 border-t">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium text-muted-foreground">Readiness Checklist</p>
+                    <span className="text-xs text-muted-foreground">{quarterProgress}%</span>
                   </div>
+                  <Progress value={quarterProgress} className="h-2 mb-3" />
 
-                  {/* Readiness Progress Bar */}
-                  <div className="pt-2 border-t">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-sm font-medium text-muted-foreground">Readiness Checklist</p>
-                      <span className="text-xs text-muted-foreground">{quarterProgress}%</span>
-                    </div>
-                    <Progress value={quarterProgress} className="h-2 mb-3" />
-
-                    {/* Checklist Items */}
-                    <div className="space-y-1">
-                      {checklist.map((item, i) => {
-                        const instruction = getInstruction(item.item_key);
-                        if (item.ignored) {
-                          return (
-                            <div key={item.item_key} className="flex items-center gap-2 py-1 opacity-50">
-                              <EyeOff className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                              <span className="text-xs text-muted-foreground line-through flex-1">{item.label}</span>
-                              <Button size="sm" variant="ghost" className="h-6 px-2 text-xs text-muted-foreground" onClick={() => toggleIgnore(i)}>Restore</Button>
-                            </div>
-                          );
-                        }
-
+                  {/* Checklist Items */}
+                  <div className="space-y-1">
+                    {checklist.map((item, i) => {
+                      const instruction = getInstruction(item.item_key);
+                      if (item.ignored) {
                         return (
-                          <div key={item.item_key} className="rounded-md border px-3 py-2">
-                            <div className="flex items-start gap-3">
-                              <Checkbox checked={item.completed} onCheckedChange={() => toggleChecklist(i)} id={`q${qs.quarter}-${item.item_key}`} className="mt-0.5" />
-                              <div className="flex-1 min-w-0">
-                                <Label htmlFor={`q${qs.quarter}-${item.item_key}`} className={`text-sm cursor-pointer font-medium ${item.completed ? 'line-through text-muted-foreground' : ''}`}>
-                                  {item.label}
-                                </Label>
-                                {!item.completed && instruction && (
-                                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{instruction}</p>
-                                )}
-                              </div>
-                              {!item.completed && (
-                                <Button size="sm" variant="ghost" className="h-6 px-2 text-xs text-muted-foreground shrink-0" onClick={() => toggleIgnore(i)} title="Ignore this item">
-                                  <EyeOff className="h-3 w-3" />
-                                </Button>
-                              )}
-                            </div>
+                          <div key={item.item_key} className="flex items-center gap-2 py-1 opacity-50">
+                            <EyeOff className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                            <span className="text-xs text-muted-foreground line-through flex-1">{item.label}</span>
+                            <Button size="sm" variant="ghost" className="h-6 px-2 text-xs text-muted-foreground" onClick={() => toggleIgnore(i)}>Restore</Button>
                           </div>
                         );
-                      })}
-                    </div>
-                  </div>
+                      }
 
-                  {/* Incomplete Reminders */}
-                  {incompleteItems.length > 0 && qs.status !== 'paid' && (
-                    <div className="rounded-md bg-warning/10 border border-warning/20 p-3 mt-2">
-                      <p className="text-xs font-medium text-warning mb-1 flex items-center gap-1"><AlertCircle className="h-3 w-3" /> Reminders</p>
-                      <ul className="space-y-0.5">
-                        {incompleteItems.slice(0, 3).map(item => (
-                          <li key={item.item_key} className="text-xs text-muted-foreground">• {item.label}</li>
-                        ))}
-                        {incompleteItems.length > 3 && (
-                          <li className="text-xs text-muted-foreground">+ {incompleteItems.length - 3} more</li>
-                        )}
-                      </ul>
+                      return (
+                        <div key={item.item_key} className="rounded-md border px-3 py-2">
+                          <div className="flex items-start gap-3">
+                            <Checkbox checked={item.completed} onCheckedChange={() => toggleChecklist(i)} id={`q${qs.quarter}-${item.item_key}`} className="mt-0.5" />
+                            <div className="flex-1 min-w-0">
+                              <Label htmlFor={`q${qs.quarter}-${item.item_key}`} className={`text-sm cursor-pointer font-medium ${item.completed ? 'line-through text-muted-foreground' : ''}`}>
+                                {item.label}
+                              </Label>
+                              {!item.completed && instruction && (
+                                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{instruction}</p>
+                              )}
+                            </div>
+                            {!item.completed && (
+                              <Button size="sm" variant="ghost" className="h-6 px-2 text-xs text-muted-foreground shrink-0" onClick={() => toggleIgnore(i)} title="Ignore this item">
+                                <EyeOff className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Incomplete Reminders */}
+                {incompleteItems.length > 0 && qs.status !== 'paid' && (
+                  <div className="rounded-md bg-warning/10 border border-warning/20 p-3 mt-2">
+                    <p className="text-xs font-medium text-warning mb-1 flex items-center gap-1"><AlertCircle className="h-3 w-3" /> Reminders</p>
+                    <ul className="space-y-0.5">
+                      {incompleteItems.slice(0, 3).map(item => (
+                        <li key={item.item_key} className="text-xs text-muted-foreground">• {item.label}</li>
+                      ))}
+                      {incompleteItems.length > 3 && (
+                        <li className="text-xs text-muted-foreground">+ {incompleteItems.length - 3} more</li>
+                      )}
+                    </ul>
+                  </div>
+                )}
+              </>
+            );
+
+            if (isCurrentQuarter) {
+              return (
+                <Card key={qs.quarter} className="border border-primary/30 shadow-sm">
+                  <CardContent className="p-4 space-y-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Badge variant="default" className="text-[10px] px-1.5 py-0">Current</Badge>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
+                    {quarterHeader}
+                    {quarterBody}
+                  </CardContent>
+                </Card>
+              );
+            }
+
+            return (
+              <Collapsible key={qs.quarter}>
+                <Card className="border">
+                  <CollapsibleTrigger asChild>
+                    <CardContent className="p-4 cursor-pointer hover:bg-muted/50 transition-colors">
+                      {quarterHeader}
+                    </CardContent>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <CardContent className="p-4 pt-0 space-y-4">
+                      {quarterBody}
+                    </CardContent>
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
             );
           })}
         </CardContent>
