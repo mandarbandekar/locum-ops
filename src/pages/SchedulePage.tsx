@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { StatusBadge } from '@/components/StatusBadge';
-import { Plus, ChevronLeft, ChevronRight, List, CalendarDays, Trash2, PanelRightOpen, PanelRightClose } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, List, CalendarDays, Trash2, PanelRightOpen, PanelRightClose, Calendar as CalendarIcon } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, getDay } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, getDay, startOfWeek, endOfWeek, addWeeks, subWeeks } from 'date-fns';
 import { SHIFT_COLORS } from '@/types';
 import { toast } from 'sonner';
 import { ConfirmationsPanel } from '@/components/schedule/ConfirmationsPanel';
@@ -13,22 +13,40 @@ import { ShiftFormDialog } from '@/components/schedule/ShiftFormDialog';
 import { getMarkersForDay } from '@/lib/calendarMarkers';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
+const STORAGE_KEY = 'schedule-view-pref';
+
 export default function SchedulePage() {
   const { shifts, facilities, addShift, updateShift, deleteShift, updateFacility } = useData();
-  const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [view, setView] = useState<'calendar' | 'list'>('calendar');
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [view, setView] = useState<'month' | 'week' | 'list'>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return (saved === 'month' || saved === 'week' || saved === 'list') ? saved : 'month';
+  });
   const [showAdd, setShowAdd] = useState(false);
   const [editShift, setEditShift] = useState<string | null>(null);
   const [showPanel, setShowPanel] = useState(true);
 
-  const monthStart = startOfMonth(currentMonth);
-  const monthEnd = endOfMonth(currentMonth);
-  const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, view);
+  }, [view]);
+
+  // Month calculations
+  const monthStart = startOfMonth(currentDate);
+  const monthEnd = endOfMonth(currentDate);
+  const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
   const startDow = getDay(monthStart);
 
-  const monthShifts = shifts.filter(s => {
+  // Week calculations
+  const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 });
+  const weekEnd = endOfWeek(currentDate, { weekStartsOn: 0 });
+  const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
+
+  const rangeStart = view === 'week' ? weekStart : monthStart;
+  const rangeEnd = view === 'week' ? weekEnd : monthEnd;
+
+  const rangeShifts = shifts.filter(s => {
     const d = new Date(s.start_datetime);
-    return d >= monthStart && d <= monthEnd;
+    return d >= rangeStart && d <= rangeEnd;
   }).sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime());
 
   const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
@@ -55,6 +73,55 @@ export default function SchedulePage() {
     }
   };
 
+  const navigateBack = () => {
+    if (view === 'week') setCurrentDate(subWeeks(currentDate, 1));
+    else setCurrentDate(subMonths(currentDate, 1));
+  };
+
+  const navigateForward = () => {
+    if (view === 'week') setCurrentDate(addWeeks(currentDate, 1));
+    else setCurrentDate(addMonths(currentDate, 1));
+  };
+
+  const headerLabel = view === 'week'
+    ? `${format(weekStart, 'MMM d')} – ${format(weekEnd, 'MMM d, yyyy')}`
+    : format(currentDate, 'MMMM yyyy');
+
+  const renderDayCell = (day: Date, minHeight: string) => {
+    const dayShifts = shifts.filter(s => isSameDay(new Date(s.start_datetime), day));
+    const isToday = isSameDay(day, new Date());
+    const markers = getMarkersForDay(day);
+    return (
+      <div key={day.toISOString()} className={`${minHeight} border-t border-r p-1 ${isToday ? 'bg-primary/5' : ''}`}>
+        <div className={`text-xs font-medium mb-1 ${isToday ? 'text-primary' : 'text-muted-foreground'}`}>
+          {view === 'week' ? format(day, 'EEE d') : format(day, 'd')}
+        </div>
+        {markers.map(m => (
+          <div
+            key={m.label}
+            className={`text-[10px] px-1 py-0.5 rounded mb-0.5 truncate font-medium ${m.bg} ${m.text}`}
+            title={m.label}
+          >
+            {m.type === 'tax' ? '💰' : '🔴'} {m.label}
+          </div>
+        ))}
+        {dayShifts.map(s => {
+          const colorDef = SHIFT_COLORS.find(c => c.value === (s.color || 'blue')) || SHIFT_COLORS[0];
+          return (
+            <div
+              key={s.id}
+              className={`text-xs p-1 rounded mb-0.5 cursor-pointer truncate ${colorDef.bg} ${colorDef.text} hover:opacity-80 transition-opacity`}
+              onClick={() => setEditShift(s.id)}
+              title={getFacilityName(s.facility_id)}
+            >
+              {format(new Date(s.start_datetime), 'ha')} {getFacilityName(s.facility_id).split(' ')[0]}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <div className="flex gap-4">
       {/* Main schedule area */}
@@ -62,8 +129,11 @@ export default function SchedulePage() {
         <div className="page-header flex-col sm:flex-row gap-3">
           <h1 className="page-title">Schedule</h1>
           <div className="flex gap-2 flex-wrap">
-            <Button size="sm" variant={view === 'calendar' ? 'default' : 'outline'} onClick={() => setView('calendar')}>
-              <CalendarDays className="mr-1 h-4 w-4" /> Calendar
+            <Button size="sm" variant={view === 'month' ? 'default' : 'outline'} onClick={() => setView('month')}>
+              <CalendarDays className="mr-1 h-4 w-4" /> Month
+            </Button>
+            <Button size="sm" variant={view === 'week' ? 'default' : 'outline'} onClick={() => setView('week')}>
+              <CalendarIcon className="mr-1 h-4 w-4" /> Week
             </Button>
             <Button size="sm" variant={view === 'list' ? 'default' : 'outline'} onClick={() => setView('list')}>
               <List className="mr-1 h-4 w-4" /> List
@@ -78,16 +148,21 @@ export default function SchedulePage() {
         </div>
 
         <div className="flex items-center justify-between mb-4">
-          <Button variant="ghost" size="icon" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
+          <Button variant="ghost" size="icon" onClick={navigateBack}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <h2 className="text-lg font-semibold">{format(currentMonth, 'MMMM yyyy')}</h2>
-          <Button variant="ghost" size="icon" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold">{headerLabel}</h2>
+            <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => setCurrentDate(new Date())}>
+              Today
+            </Button>
+          </div>
+          <Button variant="ghost" size="icon" onClick={navigateForward}>
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
 
-        {view === 'calendar' ? (
+        {view === 'month' ? (
           <div className="rounded-lg border bg-card overflow-hidden">
             <div className="grid grid-cols-7 bg-muted/50">
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
@@ -98,41 +173,20 @@ export default function SchedulePage() {
               {Array.from({ length: startDow }).map((_, i) => (
                 <div key={`empty-${i}`} className="min-h-[80px] border-t border-r bg-muted/20" />
               ))}
-              {days.map(day => {
-                const dayShifts = shifts.filter(s => isSameDay(new Date(s.start_datetime), day));
-                const isToday = isSameDay(day, new Date());
-                const markers = getMarkersForDay(day);
-                return (
-                  <div key={day.toISOString()} className={`min-h-[80px] border-t border-r p-1 ${isToday ? 'bg-primary/5' : ''}`}>
-                    <div className={`text-xs font-medium mb-1 ${isToday ? 'text-primary' : 'text-muted-foreground'}`}>
-                      {format(day, 'd')}
-                    </div>
-                    {/* Holidays & tax dates */}
-                    {markers.map(m => (
-                      <div
-                        key={m.label}
-                        className={`text-[10px] px-1 py-0.5 rounded mb-0.5 truncate font-medium ${m.bg} ${m.text}`}
-                        title={m.label}
-                      >
-                        {m.type === 'tax' ? '💰' : '🔴'} {m.label}
-                      </div>
-                    ))}
-                    {dayShifts.map(s => {
-                      const colorDef = SHIFT_COLORS.find(c => c.value === (s.color || 'blue')) || SHIFT_COLORS[0];
-                      return (
-                        <div
-                          key={s.id}
-                          className={`text-xs p-1 rounded mb-0.5 cursor-pointer truncate ${colorDef.bg} ${colorDef.text} hover:opacity-80 transition-opacity`}
-                          onClick={() => setEditShift(s.id)}
-                          title={getFacilityName(s.facility_id)}
-                        >
-                          {format(new Date(s.start_datetime), 'ha')} {getFacilityName(s.facility_id).split(' ')[0]}
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })}
+              {monthDays.map(day => renderDayCell(day, 'min-h-[80px]'))}
+            </div>
+          </div>
+        ) : view === 'week' ? (
+          <div className="rounded-lg border bg-card overflow-hidden">
+            <div className="grid grid-cols-7 bg-muted/50">
+              {weekDays.map(d => (
+                <div key={d.toISOString()} className={`p-2 text-center text-xs font-medium ${isSameDay(d, new Date()) ? 'text-primary font-bold' : 'text-muted-foreground'}`}>
+                  {format(d, 'EEE')}
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-7">
+              {weekDays.map(day => renderDayCell(day, 'min-h-[140px]'))}
             </div>
           </div>
         ) : (
@@ -147,7 +201,7 @@ export default function SchedulePage() {
                 <th className="w-10" />
               </tr></thead>
               <tbody>
-                {monthShifts.map(s => (
+                {rangeShifts.map(s => (
                   <tr key={s.id} className="border-b last:border-0 hover:bg-muted/30 cursor-pointer" onClick={() => setEditShift(s.id)}>
                     <td className="p-3">{format(new Date(s.start_datetime), 'EEE, MMM d')}</td>
                     <td className="p-3 font-medium">{getFacilityName(s.facility_id)}</td>
@@ -175,7 +229,7 @@ export default function SchedulePage() {
                     </td>
                   </tr>
                 ))}
-                {monthShifts.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">No shifts this month</td></tr>}
+                {rangeShifts.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">No shifts this {view === 'week' ? 'week' : 'month'}</td></tr>}
               </tbody>
             </table>
           </div>
