@@ -72,7 +72,9 @@ interface ChecklistItem {
 export default function TrackerTab() {
   const { invoices } = useData();
   const { user, isDemo } = useAuth();
-  const currentYear = new Date().getFullYear();
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentQuarter = Math.ceil((now.getMonth() + 1) / 3);
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [loading, setLoading] = useState(!isDemo);
 
