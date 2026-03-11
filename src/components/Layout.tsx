@@ -2,10 +2,12 @@ import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserProfile } from '@/contexts/UserProfileContext';
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const { user, isDemo } = useAuth();
-  const company = isDemo ? 'Demo Practice' : (user?.user_metadata?.company || '');
+  const { isDemo } = useAuth();
+  const { profile } = useUserProfile();
+  const company = isDemo ? 'Demo Practice' : (profile?.company_name || '');
 
   return (
     <SidebarProvider>
