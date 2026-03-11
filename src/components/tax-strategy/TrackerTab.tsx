@@ -429,7 +429,7 @@ export default function TrackerTab() {
               <Collapsible key={qs.quarter}>
                 <Card className="border">
                   <CollapsibleTrigger asChild>
-                    <CardContent className="p-4 cursor-pointer hover:bg-muted/50 transition-colors">
+                    <CardContent className="group p-4 cursor-pointer hover:bg-muted/50 transition-colors">
                       {quarterHeader}
                     </CardContent>
                   </CollapsibleTrigger>
