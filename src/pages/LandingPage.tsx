@@ -7,7 +7,7 @@ import {
   AlertTriangle, ChevronRight, Menu, X, Zap, TrendingUp, FolderOpen,
   ClipboardCheck, DollarSign, Settings2, BookOpen, FileSearch, CircleDollarSign,
 } from 'lucide-react';
-import { motion, useInView } from 'framer-motion';
+import { motion, useInView, useScroll, useTransform } from 'framer-motion';
 import { useState, useRef } from 'react';
 import locumOpsLogo from '@/assets/locumops-logo.png';
 
