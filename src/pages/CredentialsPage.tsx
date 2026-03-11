@@ -49,7 +49,7 @@ export default function CredentialsPage() {
           }`}
         >
           <GraduationCap className="h-5 w-5" />
-          CE Tracker
+          Continuing Education Hub
         </button>
       </div>
 
