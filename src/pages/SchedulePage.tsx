@@ -1,20 +1,16 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent } from '@/components/ui/card';
 import { StatusBadge } from '@/components/StatusBadge';
-import { Plus, ChevronLeft, ChevronRight, List, CalendarDays, AlertTriangle, Trash2, PanelRightOpen, PanelRightClose } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, List, CalendarDays, Trash2, PanelRightOpen, PanelRightClose } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, getDay } from 'date-fns';
-import { ShiftStatus, SHIFT_COLORS, ShiftColor } from '@/types';
-import { detectShiftConflicts } from '@/lib/businessLogic';
+import { SHIFT_COLORS } from '@/types';
 import { toast } from 'sonner';
 import { ConfirmationsPanel } from '@/components/schedule/ConfirmationsPanel';
+import { ShiftFormDialog } from '@/components/schedule/ShiftFormDialog';
+import { getMarkersForDay } from '@/lib/calendarMarkers';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function SchedulePage() {
@@ -36,6 +32,28 @@ export default function SchedulePage() {
   }).sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime());
 
   const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
+
+  const handleSaveShift = (s: any) => {
+    if (s.id) {
+      updateShift(s as any);
+      const facility = facilities.find(f => f.id === s.facility_id);
+      if (facility && facility.status !== 'active') {
+        updateFacility({ ...facility, status: 'active' });
+        toast.success(`Shift updated — "${facility.name}" has been set to Active`);
+      } else {
+        toast.success('Shift updated');
+      }
+    } else {
+      addShift(s);
+      const facility = facilities.find(f => f.id === s.facility_id);
+      if (facility && facility.status !== 'active') {
+        updateFacility({ ...facility, status: 'active' });
+        toast.success(`Shift added — "${facility.name}" has been set to Active`);
+      } else {
+        toast.success('Shift added');
+      }
+    }
+  };
 
   return (
     <div className="flex gap-4">
@@ -83,11 +101,22 @@ export default function SchedulePage() {
               {days.map(day => {
                 const dayShifts = shifts.filter(s => isSameDay(new Date(s.start_datetime), day));
                 const isToday = isSameDay(day, new Date());
+                const markers = getMarkersForDay(day);
                 return (
                   <div key={day.toISOString()} className={`min-h-[80px] border-t border-r p-1 ${isToday ? 'bg-primary/5' : ''}`}>
                     <div className={`text-xs font-medium mb-1 ${isToday ? 'text-primary' : 'text-muted-foreground'}`}>
                       {format(day, 'd')}
                     </div>
+                    {/* Holidays & tax dates */}
+                    {markers.map(m => (
+                      <div
+                        key={m.label}
+                        className={`text-[10px] px-1 py-0.5 rounded mb-0.5 truncate font-medium ${m.bg} ${m.text}`}
+                        title={m.label}
+                      >
+                        {m.type === 'tax' ? '💰' : '🔴'} {m.label}
+                      </div>
+                    ))}
                     {dayShifts.map(s => {
                       const colorDef = SHIFT_COLORS.find(c => c.value === (s.color || 'blue')) || SHIFT_COLORS[0];
                       return (
@@ -157,16 +186,7 @@ export default function SchedulePage() {
           onOpenChange={setShowAdd}
           facilities={facilities}
           shifts={shifts}
-          onSave={(s) => {
-            addShift(s);
-            const facility = facilities.find(f => f.id === s.facility_id);
-            if (facility && facility.status !== 'active') {
-              updateFacility({ ...facility, status: 'active' });
-              toast.success(`Shift added — "${facility.name}" has been set to Active`);
-            } else {
-              toast.success('Shift added');
-            }
-          }}
+          onSave={handleSaveShift}
         />
 
         {editShift && (
@@ -176,16 +196,7 @@ export default function SchedulePage() {
             facilities={facilities}
             shifts={shifts}
             existing={shifts.find(s => s.id === editShift)}
-            onSave={(s) => {
-              updateShift(s as any);
-              const facility = facilities.find(f => f.id === s.facility_id);
-              if (facility && facility.status !== 'active') {
-                updateFacility({ ...facility, status: 'active' });
-                toast.success(`Shift updated — "${facility.name}" has been set to Active`);
-              } else {
-                toast.success('Shift updated');
-              }
-            }}
+            onSave={handleSaveShift}
             onDelete={(id) => { deleteShift(id); setEditShift(null); toast.success('Shift deleted'); }}
           />
         )}
@@ -206,136 +217,5 @@ export default function SchedulePage() {
         </div>
       )}
     </div>
-  );
-}
-
-function ShiftFormDialog({ open, onOpenChange, facilities, shifts, existing, onSave, onDelete }: {
-  open: boolean; onOpenChange: (o: boolean) => void;
-  facilities: any[]; shifts: any[]; existing?: any;
-  onSave: (s: any) => void;
-  onDelete?: (id: string) => void;
-}) {
-  const [facilityId, setFacilityId] = useState(existing?.facility_id || facilities[0]?.id || '');
-  const [date, setDate] = useState(existing ? format(new Date(existing.start_datetime), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'));
-  const [startTime, setStartTime] = useState(existing ? format(new Date(existing.start_datetime), 'HH:mm') : '08:00');
-  const [endTime, setEndTime] = useState(existing ? format(new Date(existing.end_datetime), 'HH:mm') : '18:00');
-  const [status, setStatus] = useState<ShiftStatus>(existing?.status || 'proposed');
-  const [rate, setRate] = useState(existing?.rate_applied?.toString() || '850');
-  const [notes, setNotes] = useState(existing?.notes || '');
-  const [color, setColor] = useState<ShiftColor>(existing?.color || 'blue');
-
-  const startDt = `${date}T${startTime}:00`;
-  const endDt = `${date}T${endTime}:00`;
-
-  const conflicts = useMemo(() =>
-    detectShiftConflicts(shifts, { start_datetime: startDt, end_datetime: endDt, id: existing?.id }),
-    [shifts, startDt, endDt, existing?.id]
-  );
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const shift = {
-      ...(existing || {}),
-      facility_id: facilityId,
-      start_datetime: new Date(startDt).toISOString(),
-      end_datetime: new Date(endDt).toISOString(),
-      status,
-      rate_applied: Number(rate),
-      notes,
-      color,
-    };
-    onSave(shift);
-    onOpenChange(false);
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader><DialogTitle>{existing ? 'Edit Shift' : 'Add Shift'}</DialogTitle></DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div><Label>Facility</Label>
-            <Select value={facilityId} onValueChange={setFacilityId}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {facilities.map(c => (
-                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div><Label>Date</Label><Input type="date" value={date} onChange={e => setDate(e.target.value)} /></div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><Label>Start</Label><Input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} /></div>
-            <div><Label>End</Label><Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} /></div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><Label>Status</Label>
-              <Select value={status} onValueChange={v => setStatus(v as ShiftStatus)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="proposed">Proposed</SelectItem>
-                  <SelectItem value="booked">Booked</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="canceled">Canceled</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div><Label>Rate ($)</Label><Input type="number" value={rate} onChange={e => setRate(e.target.value)} /></div>
-          </div>
-          <div><Label>Notes</Label><Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} /></div>
-          <div>
-            <Label>Color</Label>
-            <div className="flex gap-2 mt-1.5 flex-wrap">
-              {SHIFT_COLORS.map(c => (
-                <button
-                  key={c.value}
-                  type="button"
-                  onClick={() => setColor(c.value)}
-                  className={`w-7 h-7 rounded-full border-2 transition-all ${c.bg} ${color === c.value ? 'border-foreground scale-110' : 'border-transparent hover:scale-105'}`}
-                  title={c.label}
-                >
-                  <span className={`block w-full h-full rounded-full ${c.value === 'blue' ? 'bg-blue-500' : c.value === 'green' ? 'bg-green-500' : c.value === 'red' ? 'bg-red-500' : c.value === 'orange' ? 'bg-orange-500' : c.value === 'purple' ? 'bg-purple-500' : c.value === 'pink' ? 'bg-pink-500' : c.value === 'teal' ? 'bg-teal-500' : 'bg-yellow-500'}`} />
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {conflicts.length > 0 && (
-            <div className="flex items-start gap-2 p-3 rounded-md bg-destructive/10 text-destructive text-sm">
-              <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
-              <div>
-                <p className="font-medium">Scheduling conflict!</p>
-                {conflicts.map(c => (
-                  <p key={c.id} className="text-xs">
-                    {facilities.find(cl => cl.id === c.facility_id)?.name}: {format(new Date(c.start_datetime), 'MMM d, h:mm a')} - {format(new Date(c.end_datetime), 'h:mm a')}
-                  </p>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="flex gap-2">
-            <Button type="submit" className="flex-1">{existing ? 'Update Shift' : 'Add Shift'}</Button>
-            {existing && onDelete && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button type="button" variant="destructive" size="icon"><Trash2 className="h-4 w-4" /></Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete this shift?</AlertDialogTitle>
-                    <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => onDelete(existing.id)}>Delete</AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
   );
 }
