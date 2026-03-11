@@ -7,7 +7,7 @@ import {
   AlertTriangle, ChevronRight, Menu, X, Zap, TrendingUp, FolderOpen,
   ClipboardCheck, DollarSign, Settings2, BookOpen, FileSearch, CircleDollarSign,
 } from 'lucide-react';
-import { motion, useInView } from 'framer-motion';
+import { motion, useInView, useScroll, useTransform } from 'framer-motion';
 import { useState, useRef } from 'react';
 import locumOpsLogo from '@/assets/locumops-logo.png';
 
@@ -63,60 +63,185 @@ function SectionHeader({ label, title, subtitle, center = true }: { label?: stri
   );
 }
 
+/* ─── Interactive stat card ─── */
+function StatCard({ label, value, color }: { label: string; value: string; color: string }) {
+  return (
+    <motion.div
+      whileHover={{ scale: 1.05, y: -2 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+      className="bg-muted/40 rounded-lg p-2.5 cursor-default group hover:bg-muted/60 hover:shadow-md transition-colors duration-200"
+    >
+      <p className="text-[9px] text-muted-foreground font-medium uppercase tracking-wider">{label}</p>
+      <p className={`text-lg font-bold ${color} transition-transform duration-200 group-hover:scale-110 origin-left`}>{value}</p>
+    </motion.div>
+  );
+}
+
 /* ─── Product mockup component ─── */
 function ProductMockup() {
+  const [hoveredDay, setHoveredDay] = useState<number | null>(null);
+
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+  const dayStates = [
+    { filled: true, label: 'Sunrise Animal', color: 'bg-primary/20 border-primary/30' },
+    { filled: false, label: '', color: 'bg-muted/50 border-transparent' },
+    { filled: true, label: 'Valley Pet Clinic', color: 'bg-warning/15 border-warning/25' },
+    { filled: true, label: 'Coastal Vet ER', color: 'bg-primary/20 border-primary/30' },
+    { filled: false, label: '', color: 'bg-muted/50 border-transparent' },
+  ];
+
   return (
     <div className="relative">
       {/* Glow effect */}
-      <div className="absolute -inset-4 bg-gradient-to-br from-primary/20 via-transparent to-primary/10 rounded-3xl blur-2xl" />
-      <div className="relative bg-card border border-border/60 rounded-2xl shadow-2xl overflow-hidden">
+      <motion.div
+        className="absolute -inset-4 bg-gradient-to-br from-primary/20 via-transparent to-primary/10 rounded-3xl blur-2xl"
+        animate={{ opacity: [0.6, 1, 0.6] }}
+        transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      <motion.div
+        whileHover={{ y: -4 }}
+        transition={{ type: 'spring', stiffness: 200, damping: 25 }}
+        className="relative bg-card border border-border/60 rounded-2xl shadow-2xl overflow-hidden"
+      >
         {/* Window chrome */}
         <div className="flex items-center gap-1.5 px-4 py-2.5 border-b border-border/40 bg-muted/30">
-          <div className="w-2.5 h-2.5 rounded-full bg-destructive/60" />
-          <div className="w-2.5 h-2.5 rounded-full bg-warning/60" />
-          <div className="w-2.5 h-2.5 rounded-full bg-success/60" />
+          <motion.div whileHover={{ scale: 1.4 }} className="w-2.5 h-2.5 rounded-full bg-destructive/60 cursor-pointer" />
+          <motion.div whileHover={{ scale: 1.4 }} className="w-2.5 h-2.5 rounded-full bg-warning/60 cursor-pointer" />
+          <motion.div whileHover={{ scale: 1.4 }} className="w-2.5 h-2.5 rounded-full bg-success/60 cursor-pointer" />
           <span className="ml-3 text-[10px] text-muted-foreground font-medium">Locum Ops — Dashboard</span>
         </div>
         {/* Dashboard content */}
         <div className="p-4 space-y-3">
           {/* Top row stats */}
           <div className="grid grid-cols-3 gap-2">
-            {[
-              { label: 'Upcoming Shifts', value: '12', color: 'text-primary' },
-              { label: 'Pending Invoices', value: '$8,420', color: 'text-warning' },
-              { label: 'Active Contracts', value: '6', color: 'text-success' },
-            ].map(s => (
-              <div key={s.label} className="bg-muted/40 rounded-lg p-2.5">
-                <p className="text-[9px] text-muted-foreground font-medium uppercase tracking-wider">{s.label}</p>
-                <p className={`text-lg font-bold ${s.color}`}>{s.value}</p>
-              </div>
-            ))}
+            <StatCard label="Upcoming Shifts" value="12" color="text-primary" />
+            <StatCard label="Pending Invoices" value="$8,420" color="text-warning" />
+            <StatCard label="Active Contracts" value="6" color="text-success" />
           </div>
           {/* Calendar preview */}
-          <div className="bg-muted/30 rounded-lg p-3">
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            className="bg-muted/30 rounded-lg p-3 cursor-default"
+          >
             <div className="flex items-center justify-between mb-2">
               <span className="text-[10px] font-semibold text-foreground">March 2026</span>
               <span className="text-[9px] text-muted-foreground">Week View</span>
             </div>
             <div className="grid grid-cols-5 gap-1">
-              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map((d, i) => (
-                <div key={d}>
+              {days.map((d, i) => (
+                <div key={d} onMouseEnter={() => setHoveredDay(i)} onMouseLeave={() => setHoveredDay(null)}>
                   <p className="text-[8px] text-muted-foreground text-center mb-1">{d}</p>
-                  <div className={`h-8 rounded ${i === 0 || i === 3 ? 'bg-primary/20 border border-primary/30' : i === 2 ? 'bg-orange-500/15 border border-orange-500/25' : 'bg-muted/50'}`} />
+                  <motion.div
+                    animate={{
+                      scale: hoveredDay === i ? 1.08 : 1,
+                      y: hoveredDay === i ? -2 : 0,
+                    }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                    className={`h-10 rounded border transition-shadow duration-200 ${dayStates[i].color} ${hoveredDay === i ? 'shadow-md' : ''}`}
+                  >
+                    {dayStates[i].filled && hoveredDay === i && (
+                      <motion.p
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="text-[7px] font-medium text-foreground/70 px-1 pt-1 truncate"
+                      >
+                        {dayStates[i].label}
+                      </motion.p>
+                    )}
+                  </motion.div>
                 </div>
               ))}
             </div>
-          </div>
+          </motion.div>
           {/* Credential status */}
-          <div className="flex items-center gap-2 bg-muted/30 rounded-lg p-2.5">
-            <Shield className="h-3.5 w-3.5 text-success" />
+          <motion.div
+            whileHover={{ scale: 1.02, x: 2 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            className="flex items-center gap-2 bg-muted/30 rounded-lg p-2.5 cursor-default group"
+          >
+            <motion.div animate={{ rotate: [0, 10, -10, 0] }} transition={{ duration: 2, repeat: Infinity, repeatDelay: 4 }}>
+              <Shield className="h-3.5 w-3.5 text-success" />
+            </motion.div>
             <span className="text-[10px] text-foreground font-medium">Credentialing</span>
             <div className="flex-1" />
-            <span className="text-[9px] bg-success/15 text-success px-2 py-0.5 rounded-full font-medium">8/9 Complete</span>
-          </div>
+            <span className="text-[9px] bg-success/15 text-success px-2 py-0.5 rounded-full font-medium group-hover:bg-success/25 transition-colors">8/9 Complete</span>
+          </motion.div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+/* ─── Hero with parallax ─── */
+function HeroSection({ onScrollTo, onNavigate }: { onScrollTo: (id: string) => void; onNavigate: (path: string) => void }) {
+  const heroRef = useRef(null);
+  const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
+  const bgY = useTransform(scrollYProgress, [0, 1], ['0%', '30%']);
+  const mockupY = useTransform(scrollYProgress, [0, 1], [0, -60]);
+  const glowScale = useTransform(scrollYProgress, [0, 0.5], [1, 1.3]);
+  const textY = useTransform(scrollYProgress, [0, 1], [0, 40]);
+
+  return (
+    <section ref={heroRef} className="relative overflow-hidden">
+      {/* Parallax gradient background */}
+      <motion.div style={{ y: bgY }} className="absolute inset-0 bg-gradient-to-b from-primary/[0.03] via-transparent to-transparent" />
+      <motion.div style={{ y: bgY, scale: glowScale }} className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/[0.04] rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
+
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-20 sm:pt-28 pb-20 sm:pb-28">
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+          {/* Left: Copy with parallax */}
+          <motion.div style={{ y: textY }}>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}>
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-primary mb-6 px-3 py-1.5 rounded-full bg-primary/8 border border-primary/15">
+                <Zap className="h-3 w-3" /> Now in Early Access
+              </span>
+            </motion.div>
+            <motion.h1
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="text-4xl sm:text-5xl lg:text-[3.5rem] font-extrabold tracking-tight text-foreground leading-[1.1] mb-6"
+            >
+              The operating system for{' '}
+              <span className="text-primary">locum work</span>
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.35 }}
+              className="text-lg text-muted-foreground leading-relaxed mb-8 max-w-lg"
+            >
+              Locum Ops helps locum professionals, clinics, and staffing groups simplify scheduling, contracts, rates, credentialing, invoicing, and everyday operations — all in one place.
+            </motion.p>
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45, delay: 0.5 }}
+              className="flex flex-col sm:flex-row items-start gap-3"
+            >
+              <Button size="lg" onClick={() => onScrollTo('platform')} className="shadow-md px-6">
+                Explore the Platform <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+              <Button size="lg" variant="outline" onClick={() => onScrollTo('segments')} className="px-6">
+                Find Your Segment <ChevronRight className="ml-1 h-4 w-4" />
+              </Button>
+            </motion.div>
+          </motion.div>
+
+          {/* Right: Product Mockup with parallax */}
+          <motion.div
+            initial={{ opacity: 0, x: 40, scale: 0.96 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            transition={{ duration: 0.7, delay: 0.4, ease: 'easeOut' }}
+            style={{ y: mockupY }}
+            className="hidden lg:block"
+          >
+            <ProductMockup />
+          </motion.div>
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -160,65 +285,7 @@ export default function LandingPage() {
         </div>
       </motion.header>
 
-      {/* ═══════════ 1. HERO ═══════════ */}
-      <section className="relative overflow-hidden">
-        {/* Subtle gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/[0.03] via-transparent to-transparent" />
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/[0.04] rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
-
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-20 sm:pt-28 pb-20 sm:pb-28">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            {/* Left: Copy */}
-            <div>
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}>
-                <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-primary mb-6 px-3 py-1.5 rounded-full bg-primary/8 border border-primary/15">
-                  <Zap className="h-3 w-3" /> Now in Early Access
-                </span>
-              </motion.div>
-              <motion.h1
-                initial={{ opacity: 0, y: 24 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-                className="text-4xl sm:text-5xl lg:text-[3.5rem] font-extrabold tracking-tight text-foreground leading-[1.1] mb-6"
-              >
-                The operating system for{' '}
-                <span className="text-primary">locum work</span>
-              </motion.h1>
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.35 }}
-                className="text-lg text-muted-foreground leading-relaxed mb-8 max-w-lg"
-              >
-                Locum Ops helps locum professionals, clinics, and staffing groups simplify scheduling, contracts, rates, credentialing, invoicing, and everyday operations — all in one place.
-              </motion.p>
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.45, delay: 0.5 }}
-                className="flex flex-col sm:flex-row items-start gap-3"
-              >
-                <Button size="lg" onClick={() => scrollTo('platform')} className="shadow-md px-6">
-                  Explore the Platform <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-                <Button size="lg" variant="outline" onClick={() => scrollTo('segments')} className="px-6">
-                  Find Your Segment <ChevronRight className="ml-1 h-4 w-4" />
-                </Button>
-              </motion.div>
-            </div>
-
-            {/* Right: Product Mockup */}
-            <motion.div
-              initial={{ opacity: 0, x: 40, scale: 0.96 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              transition={{ duration: 0.7, delay: 0.4, ease: 'easeOut' }}
-              className="hidden lg:block"
-            >
-              <ProductMockup />
-            </motion.div>
-          </div>
-        </div>
-      </section>
+      <HeroSection onScrollTo={scrollTo} onNavigate={navigate} />
 
       {/* ═══════════ 2. SEGMENT SELECTOR ═══════════ */}
       <AnimatedSection id="segments" className="max-w-7xl mx-auto px-4 sm:px-6 py-20 sm:py-28">
