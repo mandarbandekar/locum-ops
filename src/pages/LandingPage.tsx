@@ -285,65 +285,7 @@ export default function LandingPage() {
         </div>
       </motion.header>
 
-      {/* ═══════════ 1. HERO ═══════════ */}
-      <section className="relative overflow-hidden">
-        {/* Subtle gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/[0.03] via-transparent to-transparent" />
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/[0.04] rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
-
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-20 sm:pt-28 pb-20 sm:pb-28">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            {/* Left: Copy */}
-            <div>
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}>
-                <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-primary mb-6 px-3 py-1.5 rounded-full bg-primary/8 border border-primary/15">
-                  <Zap className="h-3 w-3" /> Now in Early Access
-                </span>
-              </motion.div>
-              <motion.h1
-                initial={{ opacity: 0, y: 24 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-                className="text-4xl sm:text-5xl lg:text-[3.5rem] font-extrabold tracking-tight text-foreground leading-[1.1] mb-6"
-              >
-                The operating system for{' '}
-                <span className="text-primary">locum work</span>
-              </motion.h1>
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.35 }}
-                className="text-lg text-muted-foreground leading-relaxed mb-8 max-w-lg"
-              >
-                Locum Ops helps locum professionals, clinics, and staffing groups simplify scheduling, contracts, rates, credentialing, invoicing, and everyday operations — all in one place.
-              </motion.p>
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.45, delay: 0.5 }}
-                className="flex flex-col sm:flex-row items-start gap-3"
-              >
-                <Button size="lg" onClick={() => scrollTo('platform')} className="shadow-md px-6">
-                  Explore the Platform <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-                <Button size="lg" variant="outline" onClick={() => scrollTo('segments')} className="px-6">
-                  Find Your Segment <ChevronRight className="ml-1 h-4 w-4" />
-                </Button>
-              </motion.div>
-            </div>
-
-            {/* Right: Product Mockup */}
-            <motion.div
-              initial={{ opacity: 0, x: 40, scale: 0.96 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              transition={{ duration: 0.7, delay: 0.4, ease: 'easeOut' }}
-              className="hidden lg:block"
-            >
-              <ProductMockup />
-            </motion.div>
-          </div>
-        </div>
-      </section>
+      <HeroSection onScrollTo={scrollTo} onNavigate={navigate} />
 
       {/* ═══════════ 2. SEGMENT SELECTOR ═══════════ */}
       <AnimatedSection id="segments" className="max-w-7xl mx-auto px-4 sm:px-6 py-20 sm:py-28">
