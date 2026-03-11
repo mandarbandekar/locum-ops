@@ -511,8 +511,105 @@ export default function LandingPage() {
         </Button>
       </AnimatedSection>
 
-      {/* ═══════════ 9. RESOURCES ═══════════ */}
+      {/* ═══════════ 9. FOUNDER STORY ═══════════ */}
       <div className="bg-muted/30">
+        <AnimatedSection className="max-w-5xl mx-auto px-4 sm:px-6 py-20 sm:py-28">
+          <div className="bg-card border border-border/60 rounded-2xl p-8 sm:p-12 relative overflow-hidden">
+            {/* Subtle accent line */}
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary/60 via-primary/30 to-transparent" />
+
+            <div className="flex flex-col lg:flex-row gap-10 items-start">
+              {/* Left: text content */}
+              <div className="flex-1 space-y-5">
+                <span className="text-xs font-semibold uppercase tracking-widest text-primary">Our Story</span>
+                <h2 className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">
+                  Founded by someone who knows the pain firsthand
+                </h2>
+                <div className="border-l-2 border-primary/30 pl-5 space-y-4">
+                  <p className="text-muted-foreground leading-relaxed text-[15px]">
+                    Locum Ops is being built by an independent locum medical professional who experiences the back-office burden of locum work every day.
+                  </p>
+                  <p className="text-muted-foreground leading-relaxed text-[15px]">
+                    Managing contracts, scheduling, credentialing, invoicing, and business operations often requires jumping between multiple apps, spreadsheets, emails, and documents just to keep everything moving.
+                  </p>
+                  <p className="text-foreground leading-relaxed text-[15px] font-medium">
+                    Locum Ops is being created from that firsthand frustration — to make the business side of locum work simpler, more organized, and built for the way locum professionals actually work.
+                  </p>
+                </div>
+              </div>
+
+              {/* Right: icon cluster graphic */}
+              <div className="lg:w-80 w-full shrink-0">
+                <div className="relative">
+                  {/* "Before" scattered tools */}
+                  <div className="grid grid-cols-3 gap-2.5 mb-4">
+                    {[
+                      { icon: FileText, label: 'Contracts' },
+                      { icon: Calendar, label: 'Calendars' },
+                      { icon: Shield, label: 'Credentials' },
+                      { icon: DollarSign, label: 'Invoices' },
+                      { icon: FolderOpen, label: 'Spreadsheets' },
+                      { icon: Settings2, label: 'Apps' },
+                    ].map((tool, i) => (
+                      <motion.div
+                        key={tool.label}
+                        initial={{ opacity: 0, y: 10 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: i * 0.06 + 0.2 }}
+                        className="bg-muted/60 border border-border/40 rounded-lg p-2.5 text-center hover:border-destructive/30 transition-colors"
+                      >
+                        <tool.icon className="h-4 w-4 text-muted-foreground mx-auto mb-1" />
+                        <span className="text-[10px] text-muted-foreground">{tool.label}</span>
+                      </motion.div>
+                    ))}
+                  </div>
+
+                  {/* Arrow / transition */}
+                  <div className="flex items-center justify-center gap-2 py-3">
+                    <div className="h-px flex-1 bg-border" />
+                    <motion.div
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      whileInView={{ scale: 1, opacity: 1 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 0.5 }}
+                      className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center"
+                    >
+                      <ArrowRight className="h-4 w-4 text-primary" />
+                    </motion.div>
+                    <div className="h-px flex-1 bg-border" />
+                  </div>
+
+                  {/* "After" unified platform */}
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.6 }}
+                    className="bg-gradient-to-br from-primary/8 to-primary/3 border border-primary/20 rounded-xl p-4 text-center"
+                  >
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <img src={locumOpsLogo} alt="Locum Ops" className="h-5 w-5" />
+                      <span className="font-bold text-foreground text-sm">Locum Ops</span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">Everything in one place</p>
+                    <div className="flex justify-center gap-1.5 mt-3">
+                      {[Calendar, FileCheck, Shield, DollarSign, BarChart3].map((Icon, i) => (
+                        <div key={i} className="w-6 h-6 rounded bg-card shadow-sm flex items-center justify-center">
+                          <Icon className="h-3 w-3 text-primary" />
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </AnimatedSection>
+      </div>
+
+      {/* ═══════════ 10. RESOURCES ═══════════ */}
+      <div className="border-t border-border/40">
         <AnimatedSection id="resources" className="max-w-7xl mx-auto px-4 sm:px-6 py-20 sm:py-28">
           <SectionHeader
             label="Resources"
