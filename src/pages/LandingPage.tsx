@@ -188,6 +188,32 @@ function HeroSection({ onScrollTo, onNavigate }: { onScrollTo: (id: string) => v
       <motion.div style={{ y: bgY }} className="absolute inset-0 bg-gradient-to-b from-primary/[0.03] via-transparent to-transparent" />
       <motion.div style={{ y: bgY, scale: glowScale }} className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/[0.04] rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
 
+      {/* Dark mode animated gradient orbs */}
+      <motion.div
+        className="absolute top-1/4 left-1/4 w-[500px] h-[500px] rounded-full blur-[120px] opacity-0 dark:opacity-100"
+        style={{
+          background: 'radial-gradient(circle, hsl(var(--primary) / 0.12) 0%, transparent 70%)',
+        }}
+        animate={{ x: [0, 60, -30, 0], y: [0, -40, 30, 0], scale: [1, 1.15, 0.95, 1] }}
+        transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      <motion.div
+        className="absolute bottom-0 right-1/4 w-[400px] h-[400px] rounded-full blur-[100px] opacity-0 dark:opacity-100"
+        style={{
+          background: 'radial-gradient(circle, hsl(173 58% 39% / 0.08) 0%, hsl(215 25% 15% / 0.05) 60%, transparent 80%)',
+        }}
+        animate={{ x: [0, -50, 40, 0], y: [0, 30, -50, 0], scale: [1, 0.9, 1.1, 1] }}
+        transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
+      />
+      <motion.div
+        className="absolute top-0 right-0 w-[300px] h-[300px] rounded-full blur-[80px] opacity-0 dark:opacity-100"
+        style={{
+          background: 'radial-gradient(circle, hsl(173 58% 50% / 0.06) 0%, transparent 70%)',
+        }}
+        animate={{ x: [0, -30, 20, 0], y: [0, 50, -20, 0] }}
+        transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 4 }}
+      />
+
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-20 sm:pt-28 pb-20 sm:pb-28">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           {/* Left: Copy with parallax */}
@@ -458,35 +484,32 @@ export default function LandingPage() {
         <AnimatedSection className="max-w-7xl mx-auto px-4 sm:px-6 py-20 sm:py-28">
           <SectionHeader
             label="Who It's For"
-            title="Designed for both independent professionals and locum organizations"
+            title="Purpose-built for independent locum professionals"
+            subtitle="Locum Ops is designed first and foremost for independent locums who run their own practice — giving you the back-office infrastructure you need without the overhead."
           />
           <div className="grid md:grid-cols-2 gap-6">
-            {[
-              {
-                title: 'For Independent Locums',
-                desc: 'Run the business side of your clinical career with professional-grade tools built for one.',
-                features: ['Manage your own schedule and availability', 'Track credentials and renewal deadlines', 'Generate invoices and follow up on payments', 'Store contracts and rate terms per facility'],
-                icon: UserCheck,
-                accent: 'from-primary/10 to-primary/5',
-              },
-              {
-                title: 'For Clinics & Groups',
-                desc: 'Coordinate locum coverage, standardize onboarding, and keep operations running smoothly.',
-                features: ['Coordinate multi-provider scheduling', 'Standardize credentialing and compliance', 'Manage contracts and rate structures', 'Streamline invoicing and payment workflows'],
-                icon: Building2,
-                accent: 'from-blue-500/10 to-blue-500/5',
-              },
-            ].map((side) => (
-              <div key={side.title} className={`bg-gradient-to-br ${side.accent} border border-border/60 rounded-xl p-8`}>
+            {/* Primary: Independent Locums — emphasized */}
+            <div className="bg-gradient-to-br from-primary/10 to-primary/5 border-2 border-primary/25 rounded-xl p-8 relative overflow-hidden md:row-span-1">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
+              <div className="relative">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-lg bg-card shadow-sm flex items-center justify-center">
-                    <side.icon className="h-5 w-5 text-foreground" />
+                  <div className="w-12 h-12 rounded-xl bg-primary/15 shadow-sm flex items-center justify-center">
+                    <UserCheck className="h-6 w-6 text-primary" />
                   </div>
-                  <h3 className="font-bold text-foreground text-lg">{side.title}</h3>
+                  <div>
+                    <h3 className="font-bold text-foreground text-lg">For Independent Locums</h3>
+                    <span className="text-xs text-primary font-semibold uppercase tracking-wider">Primary focus</span>
+                  </div>
                 </div>
-                <p className="text-sm text-muted-foreground mb-5">{side.desc}</p>
-                <ul className="space-y-2.5">
-                  {side.features.map((f) => (
+                <p className="text-sm text-muted-foreground mb-6">Run the business side of your clinical career with professional-grade tools built for one. No team required — just you and a smarter system.</p>
+                <ul className="space-y-3">
+                  {[
+                    'Manage your own schedule and availability',
+                    'Track credentials and renewal deadlines',
+                    'Auto generate invoices and follow up on payment',
+                    'Store contracts and rate terms per facility',
+                    'Track earnings, tax set-asides, and business metrics',
+                  ].map((f) => (
                     <li key={f} className="flex items-start gap-2.5 text-sm text-foreground">
                       <CheckCircle2 className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                       {f}
@@ -494,7 +517,34 @@ export default function LandingPage() {
                   ))}
                 </ul>
               </div>
-            ))}
+            </div>
+
+            {/* Secondary: Clinics & Groups */}
+            <div className="bg-gradient-to-br from-muted/40 to-muted/20 border border-border/60 rounded-xl p-8">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-lg bg-card shadow-sm flex items-center justify-center">
+                  <Building2 className="h-5 w-5 text-muted-foreground" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-foreground text-lg">For Clinics & Groups</h3>
+                  <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Coming soon</span>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground mb-5">Coordinate locum coverage, standardize onboarding, and keep operations running smoothly.</p>
+              <ul className="space-y-2.5">
+                {[
+                  'Coordinate multi-provider scheduling',
+                  'Standardize credentialing and compliance',
+                  'Manage contracts and rate structures',
+                  'Streamline invoicing and payment workflows',
+                ].map((f) => (
+                  <li key={f} className="flex items-start gap-2.5 text-sm text-foreground/70">
+                    <CheckCircle2 className="h-4 w-4 text-muted-foreground/60 shrink-0 mt-0.5" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </AnimatedSection>
       </div>
