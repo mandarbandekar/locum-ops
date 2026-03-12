@@ -525,7 +525,7 @@ export default function LandingPage() {
         <SectionHeader
           label="Our Mission"
           title="Locum work has evolved. The systems behind it haven't."
-          subtitle="Flexible clinical work is the fastest-growing segment in healthcare staffing. But the operational tools behind it haven't kept pace. Locum Ops is purpose-built to modernize the workflows behind flexible clinical work — for professionals, clinics, and staffing groups alike."
+          subtitle="Flexible clinical work is the fastest-growing segment in healthcare staffing. But the operational tools behind it haven't kept pace. Locum Ops is purpose-built to modernize the workflows behind flexible clinical work — for independent professionals who run their own practice."
         />
         <Button size="lg" variant="outline" onClick={() => navigate('/waitlist')} className="px-6">
           Join the Movement <ArrowRight className="ml-2 h-4 w-4" />
