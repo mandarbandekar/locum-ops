@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { motion, useInView, type Easing } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -169,7 +169,8 @@ function Navbar({ scrollTo }: { scrollTo: (id: string) => void }) {
               className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">{l.label}</button>
           ))}
         </nav>
-        <div className="hidden md:block">
+        <div className="hidden md:flex items-center gap-3">
+          <Link to="/login" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Sign In</Link>
           <button onClick={() => scrollTo('waitlist-cta')}
             className="h-10 px-5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-colors">
             Join Waitlist
@@ -185,6 +186,8 @@ function Navbar({ scrollTo }: { scrollTo: (id: string) => void }) {
             <button key={l.id} onClick={() => { scrollTo(l.id); setOpen(false); }}
               className="block w-full text-left py-3 text-sm font-medium text-muted-foreground hover:text-foreground">{l.label}</button>
           ))}
+          <Link to="/login" onClick={() => setOpen(false)}
+            className="block w-full text-left py-3 text-sm font-medium text-muted-foreground hover:text-foreground">Sign In</Link>
           <button onClick={() => { scrollTo('waitlist-cta'); setOpen(false); }}
             className="mt-2 w-full h-10 rounded-xl bg-primary text-primary-foreground font-semibold text-sm">Join Waitlist</button>
         </motion.div>
