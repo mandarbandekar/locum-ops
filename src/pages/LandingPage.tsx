@@ -170,7 +170,7 @@ function Navbar({ scrollTo }: { scrollTo: (id: string) => void }) {
           ))}
         </nav>
         <div className="hidden md:flex items-center gap-3">
-          <Link to="/login" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Sign In</Link>
+          <Link to="/login" className="text-base font-semibold text-muted-foreground hover:text-foreground transition-colors">Sign In</Link>
           <button onClick={() => scrollTo('waitlist-cta')}
             className="h-10 px-5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-colors">
             Join Waitlist
