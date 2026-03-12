@@ -485,9 +485,9 @@ export default function LandingPage() {
             title="Purpose-built for independent locum professionals"
             subtitle="Locum Ops is designed first and foremost for independent locums who run their own practice — giving you the back-office infrastructure you need without the overhead."
           />
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Primary: Independent Locums — emphasized */}
-            <div className="bg-gradient-to-br from-primary/10 to-primary/5 border-2 border-primary/25 rounded-xl p-8 relative overflow-hidden md:row-span-1">
+          <div className="max-w-2xl mx-auto">
+            {/* Independent Locums */}
+            <div className="bg-gradient-to-br from-primary/10 to-primary/5 border-2 border-primary/25 rounded-xl p-8 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
               <div className="relative">
                 <div className="flex items-center gap-3 mb-4">
@@ -496,11 +496,11 @@ export default function LandingPage() {
                   </div>
                   <div>
                     <h3 className="font-bold text-foreground text-lg">For Independent Locums</h3>
-                    <span className="text-xs text-primary font-semibold uppercase tracking-wider">Primary focus</span>
+                    <span className="text-xs text-primary font-semibold uppercase tracking-wider">Built for you</span>
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground mb-6">Run the business side of your clinical career with professional-grade tools built for one. No team required — just you and a smarter system.</p>
-                <ul className="space-y-3">
+                <ul className="space-y-3 sm:columns-2">
                   {[
                     'Manage your own schedule and availability',
                     'Track credentials and renewal deadlines',
@@ -508,40 +508,13 @@ export default function LandingPage() {
                     'Store contracts and rate terms per facility',
                     'Track earnings, tax set-asides, and business metrics',
                   ].map((f) => (
-                    <li key={f} className="flex items-start gap-2.5 text-sm text-foreground">
+                    <li key={f} className="flex items-start gap-2.5 text-sm text-foreground break-inside-avoid">
                       <CheckCircle2 className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                       {f}
                     </li>
                   ))}
                 </ul>
               </div>
-            </div>
-
-            {/* Secondary: Clinics & Groups */}
-            <div className="bg-gradient-to-br from-muted/40 to-muted/20 border border-border/60 rounded-xl p-8">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-lg bg-card shadow-sm flex items-center justify-center">
-                  <Building2 className="h-5 w-5 text-muted-foreground" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-foreground text-lg">For Clinics & Groups</h3>
-                  <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Coming soon</span>
-                </div>
-              </div>
-              <p className="text-sm text-muted-foreground mb-5">Coordinate locum coverage, standardize onboarding, and keep operations running smoothly.</p>
-              <ul className="space-y-2.5">
-                {[
-                  'Coordinate multi-provider scheduling',
-                  'Standardize credentialing and compliance',
-                  'Manage contracts and rate structures',
-                  'Streamline invoicing and payment workflows',
-                ].map((f) => (
-                  <li key={f} className="flex items-start gap-2.5 text-sm text-foreground/70">
-                    <CheckCircle2 className="h-4 w-4 text-muted-foreground/60 shrink-0 mt-0.5" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
             </div>
           </div>
         </AnimatedSection>
