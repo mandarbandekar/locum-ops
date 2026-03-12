@@ -323,7 +323,7 @@ export default function LandingPage() {
           className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4"
         >
           {[
-            { icon: UserCheck, title: 'Independent Locum Professionals', desc: 'Run your work like a business with tools built for one', color: 'text-primary' },
+            
             { icon: Stethoscope, title: 'Relief Veterinarians', desc: 'Organize shifts, rates, contracts, and payments', color: 'text-teal-600 dark:text-teal-400' },
             { icon: Briefcase, title: 'Nurse Practitioners & PAs', desc: 'Streamline assignments, credentialing, and billing', color: 'text-blue-600 dark:text-blue-400' },
             { icon: Heart, title: 'Physicians & Surgeons', desc: 'Manage locum contracts and operations across facilities', color: 'text-rose-600 dark:text-rose-400' },
