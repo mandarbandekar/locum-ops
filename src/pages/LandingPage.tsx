@@ -237,7 +237,7 @@ export default function LandingPage({ hideSignIn = false }: { hideSignIn?: boole
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <Navbar scrollTo={scrollTo} />
+      <Navbar scrollTo={scrollTo} hideSignIn={hideSignIn} />
 
       {/* ─── HERO ─── */}
       <Section className="pt-12 sm:pt-20 pb-12">
