@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import {
-  ArrowRight, Calendar, FileCheck, FileText, Shield, Clock, Users, Building2,
+  ArrowRight, Calendar, FileCheck, FileText, Shield, Clock,
   Briefcase, Stethoscope, UserCheck, BarChart3, Workflow, CheckCircle2,
   AlertTriangle, ChevronRight, Menu, X, Zap, TrendingUp, FolderOpen,
   ClipboardCheck, DollarSign, Settings2, BookOpen, FileSearch, CircleDollarSign,
