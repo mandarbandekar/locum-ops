@@ -29,7 +29,7 @@ export interface CredentialDocument {
 }
 
 export function useCredentials() {
-  const { user } = useAuth();
+  const { user, isDemo } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
