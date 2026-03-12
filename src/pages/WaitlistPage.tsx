@@ -29,16 +29,27 @@ export default function WaitlistPage() {
     setStep(2);
   };
 
-  const handleStepTwo = (e: React.FormEvent) => {
+  const handleStepTwo = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!facilityCount) { setError('Please select how many facilities you work with.'); return; }
     setError('');
 
-    const payload = { email, profession, facilityCount, headache, timestamp: new Date().toISOString() };
-    const existing = JSON.parse(localStorage.getItem('locumops_waitlist') || '[]');
-    existing.push(payload);
-    localStorage.setItem('locumops_waitlist', JSON.stringify(existing));
-    console.log('waitlist_submit', payload);
+    const { error: dbError } = await supabase.from('waitlist_leads').insert({
+      email,
+      persona: profession,
+      source_page: 'waitlist',
+      profession,
+      facility_count: facilityCount,
+      headache,
+    });
+
+    if (dbError) {
+      toast({ title: 'Something went wrong', description: 'Please try again.', variant: 'destructive' });
+      console.error('waitlist insert error', dbError);
+      return;
+    }
+
+    navigate('/quiz');
     navigate('/quiz');
   };
 
