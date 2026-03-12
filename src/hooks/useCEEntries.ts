@@ -180,10 +180,14 @@ export function useCEEntries() {
     return { url: filePath, name: file.name };
   };
 
+  const isDemo = !user && useAuth().isDemo;
+
   // Helpers for credential-level rollups
   function getCredentialCEStats(credentialId: string) {
-    const links = (linksQuery.data ?? []).filter(l => l.credential_id === credentialId);
-    const entries = (entriesQuery.data ?? []).filter(e => links.some(l => l.ce_entry_id === e.id));
+    const allLinks = isDemo ? demoCELinks : (linksQuery.data ?? []);
+    const allEntries = isDemo ? demoCEEntries : (entriesQuery.data ?? []);
+    const links = allLinks.filter(l => l.credential_id === credentialId);
+    const entries = allEntries.filter(e => links.some(l => l.ce_entry_id === e.id));
     const completedHours = entries.reduce((sum, e) => sum + Number(e.hours), 0);
     const missingCerts = entries.filter(e => !e.certificate_file_url).length;
     return {
@@ -195,9 +199,9 @@ export function useCEEntries() {
   }
 
   return {
-    entries: entriesWithLinks,
-    links: linksQuery.data ?? [],
-    isLoading: entriesQuery.isLoading || linksQuery.isLoading,
+    entries: isDemo ? demoCEEntriesWithLinks : entriesWithLinks,
+    links: isDemo ? demoCELinks : (linksQuery.data ?? []),
+    isLoading: isDemo ? false : (entriesQuery.isLoading || linksQuery.isLoading),
     addCEEntry,
     updateCEEntry,
     deleteCEEntry,

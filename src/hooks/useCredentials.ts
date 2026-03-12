@@ -182,10 +182,12 @@ export function useCredentials() {
     return data;
   };
 
+  const isDemo = !user && useAuth().isDemo;
+
   return {
-    credentials: credentialsQuery.data ?? [],
-    documents: documentsQuery.data ?? [],
-    isLoading: credentialsQuery.isLoading,
+    credentials: isDemo ? demoCredentials : (credentialsQuery.data ?? []),
+    documents: isDemo ? [] : (documentsQuery.data ?? []),
+    isLoading: isDemo ? false : credentialsQuery.isLoading,
     isDocumentsLoading: documentsQuery.isLoading,
     addCredential,
     updateCredential,
