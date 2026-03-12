@@ -238,7 +238,7 @@ function HeroSection({ onScrollTo, onNavigate }: { onScrollTo: (id: string) => v
               transition={{ duration: 0.5, delay: 0.35 }}
               className="text-lg text-muted-foreground leading-relaxed mb-8 max-w-lg"
             >
-              Locum Ops helps locum professionals, clinics, and staffing groups simplify scheduling, contracts, rates, credentialing, invoicing, and everyday operations — all in one place.
+              Locum Ops helps locum professionals and individual providers simplify scheduling, contracts, rates, credentialing, auto invoicing, and everyday operations — all in one place.
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 16 }}
