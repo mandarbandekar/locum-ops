@@ -31,6 +31,7 @@ import SettingsProfilePage from "@/pages/SettingsProfilePage";
 import SettingsInvoiceProfilePage from "@/pages/SettingsInvoiceProfilePage";
 import ImportPage from "@/pages/ImportPage";
 import PublicInvoicePage from "@/pages/PublicInvoicePage";
+import PublicConfirmationPage from "@/pages/PublicConfirmationPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
