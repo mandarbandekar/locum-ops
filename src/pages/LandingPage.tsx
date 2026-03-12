@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import {
-  ArrowRight, Calendar, FileCheck, FileText, Shield, Clock,
+  ArrowRight, Calendar, FileCheck, FileText, Shield, Clock, Heart, Syringe, SmilePlus,
   Briefcase, Stethoscope, UserCheck, BarChart3, Workflow, CheckCircle2,
   AlertTriangle, ChevronRight, Menu, X, Zap, TrendingUp, FolderOpen,
   ClipboardCheck, DollarSign, Settings2, BookOpen, FileSearch, CircleDollarSign,
@@ -320,12 +320,15 @@ export default function LandingPage() {
           title="Built for independent locum professionals"
         />
         <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }}
-          className="grid sm:grid-cols-3 gap-4 max-w-4xl mx-auto"
+          className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4"
         >
           {[
             { icon: UserCheck, title: 'Independent Locum Professionals', desc: 'Run your work like a business with tools built for one', color: 'text-primary' },
             { icon: Stethoscope, title: 'Relief Veterinarians', desc: 'Organize shifts, rates, contracts, and payments', color: 'text-teal-600 dark:text-teal-400' },
-            { icon: Briefcase, title: 'Physician & APP Locums', desc: 'Simplify operational overhead across assignments', color: 'text-orange-600 dark:text-orange-400' },
+            { icon: Briefcase, title: 'Nurse Practitioners & PAs', desc: 'Streamline assignments, credentialing, and billing', color: 'text-blue-600 dark:text-blue-400' },
+            { icon: Heart, title: 'Physicians & Surgeons', desc: 'Manage locum contracts and operations across facilities', color: 'text-rose-600 dark:text-rose-400' },
+            { icon: Syringe, title: 'CRNAs & Allied Health', desc: 'Track certifications, shifts, and invoicing in one place', color: 'text-purple-600 dark:text-purple-400' },
+            { icon: SmilePlus, title: 'Dentists', desc: 'Simplify scheduling, credentialing, and practice admin', color: 'text-orange-600 dark:text-orange-400' },
           ].map((s, i) => (
             <motion.div key={s.title} custom={i} variants={fadeUp}
               className="group relative bg-card border border-border/60 rounded-xl p-6 hover:shadow-lg hover:border-primary/20 transition-all duration-300 cursor-pointer"
