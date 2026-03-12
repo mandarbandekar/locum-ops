@@ -136,7 +136,7 @@ function ContractVault({ contracts, onAdd, onUpdate, onDelete, facilityId }: {
         )}
       </CardContent>
 
-      <AddContractDialog open={showAdd} onOpenChange={setShowAdd} onAdd={onAdd} facilityId={contracts[0]?.facility_id || ''} />
+      <AddContractDialog open={showAdd} onOpenChange={setShowAdd} onAdd={onAdd} facilityId={facilityId} />
       {editId && (
         <EditContractDialog
           contract={contracts.find(c => c.id === editId)!}
