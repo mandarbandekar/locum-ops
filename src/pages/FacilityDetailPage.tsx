@@ -53,7 +53,7 @@ export default function FacilityDetailPage() {
         </TabsList>
 
         <TabsContent value="overview" className="mt-4">
-          <OverviewTab facility={facility} shifts={facilityShifts} contact={facilityContacts[0] || null} onUpdate={updateFacility} onAddContact={addContact} onUpdateContact={updateContact} onDeleteContact={deleteContact} facilityId={facility.id} />
+          <OverviewTab facility={facility} shifts={facilityShifts} contacts={facilityContacts} onUpdate={updateFacility} onAddContact={addContact} onUpdateContact={updateContact} onDeleteContact={deleteContact} facilityId={facility.id} />
         </TabsContent>
 
         <TabsContent value="terms" className="mt-4">
