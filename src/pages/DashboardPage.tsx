@@ -297,7 +297,7 @@ export default function DashboardPage() {
           <CardTitle className="text-lg font-semibold">Today's Priorities</CardTitle>
         </CardHeader>
         <CardContent>
-          {priorities.length === 0 ? (
+          {allPriorities.length === 0 ? (
             <div className="py-8 text-center">
               <CheckCircle className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
               <p className="font-medium text-foreground">You're all caught up.</p>
@@ -305,7 +305,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="space-y-2">
-              {priorities.map((item, i) => (
+              {allPriorities.map((item, i) => (
                 <div
                   key={i}
                   className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer group"
