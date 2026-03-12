@@ -186,8 +186,8 @@ function Navbar({ scrollTo, hideSignIn = false }: { scrollTo: (id: string) => vo
             <button key={l.id} onClick={() => { scrollTo(l.id); setOpen(false); }}
               className="block w-full text-left py-3 text-sm font-medium text-muted-foreground hover:text-foreground">{l.label}</button>
           ))}
-          <Link to="/login" onClick={() => setOpen(false)}
-            className="block w-full text-left py-3 text-sm font-medium text-muted-foreground hover:text-foreground">Sign In</Link>
+          {!hideSignIn && <Link to="/login" onClick={() => setOpen(false)}
+            className="block w-full text-left py-3 text-sm font-medium text-muted-foreground hover:text-foreground">Sign In</Link>}
           <button onClick={() => { scrollTo('waitlist-cta'); setOpen(false); }}
             className="mt-2 w-full h-10 rounded-xl bg-primary text-primary-foreground font-semibold text-sm">Join Waitlist</button>
         </motion.div>
