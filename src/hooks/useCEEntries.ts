@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { demoCEEntriesWithLinks, demoCELinks, demoCEEntries } from '@/data/credentialsSeed';
 
 export interface CEEntry {
   id: string;
