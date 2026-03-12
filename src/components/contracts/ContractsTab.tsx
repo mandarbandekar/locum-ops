@@ -43,7 +43,7 @@ export function ContractsTab({ facilityId, isDemo = false }: ContractsTabProps) 
       </Alert>
 
       {/* A) Contract Vault */}
-      <ContractVault contracts={contracts} onAdd={addContract} onUpdate={updateContract} onDelete={deleteContract} />
+      <ContractVault contracts={contracts} onAdd={addContract} onUpdate={updateContract} onDelete={deleteContract} facilityId={facilityId} />
 
       {/* B) Key Terms Snapshot */}
       <KeyTermsSnapshot contracts={contracts} contractTerms={contractTerms} onUpsert={upsertTerms} />
