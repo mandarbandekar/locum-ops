@@ -199,6 +199,10 @@ export default function DashboardPage() {
   const trackingLines = useMemo(() => {
     const lines: { text: string; link: string }[] = [];
 
+    if (needingActionCount > 0) {
+      lines.push({ text: `Confirmations: ${needingActionCount} need${needingActionCount > 1 ? '' : 's'} action`, link: '/schedule' });
+    }
+
     const dueSoonChecklist = checklistItems.filter(item => {
       const badge = getChecklistBadge(item);
       return badge === 'due_soon' || badge === 'overdue';
