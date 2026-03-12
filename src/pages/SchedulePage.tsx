@@ -3,14 +3,14 @@ import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { StatusBadge } from '@/components/StatusBadge';
-import { Plus, ChevronLeft, ChevronRight, List, CalendarDays, Trash2, PanelRightOpen, PanelRightClose, Calendar as CalendarIcon } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, List, CalendarDays, Trash2, Calendar as CalendarIcon, CheckSquare } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, getDay, startOfWeek, endOfWeek, addWeeks, subWeeks, differenceInMilliseconds } from 'date-fns';
 import { SHIFT_COLORS, Shift } from '@/types';
 import { toast } from 'sonner';
-import { ConfirmationsPanel } from '@/components/schedule/ConfirmationsPanel';
 import { ShiftFormDialog } from '@/components/schedule/ShiftFormDialog';
 import { WeekTimeGrid } from '@/components/schedule/WeekTimeGrid';
+import { ConfirmationsTab } from '@/components/schedule/ConfirmationsTab';
 import { getMarkersForDay } from '@/lib/calendarMarkers';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
@@ -19,13 +19,12 @@ const STORAGE_KEY = 'schedule-view-pref';
 export default function SchedulePage() {
   const { shifts, facilities, addShift, updateShift, deleteShift, updateFacility } = useData();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [view, setView] = useState<'month' | 'week' | 'list'>(() => {
+  const [view, setView] = useState<'month' | 'week' | 'list' | 'confirmations'>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
-    return (saved === 'month' || saved === 'week' || saved === 'list') ? saved : 'month';
+    return (saved === 'month' || saved === 'week' || saved === 'list' || saved === 'confirmations') ? saved : 'month';
   });
   const [showAdd, setShowAdd] = useState(false);
   const [editShift, setEditShift] = useState<string | null>(null);
-  const [showPanel, setShowPanel] = useState(true);
   const [dragOverDay, setDragOverDay] = useState<string | null>(null);
 
   useEffect(() => {
@@ -75,53 +74,34 @@ export default function SchedulePage() {
     }
   };
 
-  // Drag-and-drop: reschedule a shift to a new date (keeps same time-of-day)
   const handleDropOnDay = useCallback((shiftId: string, targetDate: Date) => {
     const shift = shifts.find(s => s.id === shiftId);
     if (!shift) return;
-
     const oldStart = new Date(shift.start_datetime);
     const oldEnd = new Date(shift.end_datetime);
     const duration = differenceInMilliseconds(oldEnd, oldStart);
-
-    // Build new start: target date + original time-of-day
     const newStart = new Date(targetDate);
     newStart.setHours(oldStart.getHours(), oldStart.getMinutes(), oldStart.getSeconds(), 0);
     const newEnd = new Date(newStart.getTime() + duration);
-
-    if (newStart.getTime() === oldStart.getTime()) return; // no change
-
-    updateShift({
-      ...shift,
-      start_datetime: newStart.toISOString(),
-      end_datetime: newEnd.toISOString(),
-    } as any);
+    if (newStart.getTime() === oldStart.getTime()) return;
+    updateShift({ ...shift, start_datetime: newStart.toISOString(), end_datetime: newEnd.toISOString() } as any);
     toast.success(`Shift moved to ${format(newStart, 'EEE, MMM d')}`);
     setDragOverDay(null);
   }, [shifts, updateShift]);
 
-  // Drag-and-drop: reschedule to a specific date + time (week view)
   const handleDropOnTime = useCallback((shiftId: string, targetDate: Date, targetHour: number) => {
     const shift = shifts.find(s => s.id === shiftId);
     if (!shift) return;
-
     const oldStart = new Date(shift.start_datetime);
     const oldEnd = new Date(shift.end_datetime);
     const duration = differenceInMilliseconds(oldEnd, oldStart);
-
     const newStart = new Date(targetDate);
     const fullHours = Math.floor(targetHour);
-    const minutes = Math.round((targetHour - fullHours) * 60 / 15) * 15; // snap to 15 min
+    const minutes = Math.round((targetHour - fullHours) * 60 / 15) * 15;
     newStart.setHours(fullHours, minutes, 0, 0);
     const newEnd = new Date(newStart.getTime() + duration);
-
     if (newStart.getTime() === oldStart.getTime()) return;
-
-    updateShift({
-      ...shift,
-      start_datetime: newStart.toISOString(),
-      end_datetime: newEnd.toISOString(),
-    } as any);
+    updateShift({ ...shift, start_datetime: newStart.toISOString(), end_datetime: newEnd.toISOString() } as any);
     toast.success(`Shift moved to ${format(newStart, 'EEE, MMM d h:mm a')}`);
   }, [shifts, updateShift]);
 
@@ -139,7 +119,6 @@ export default function SchedulePage() {
     ? `${format(weekStart, 'MMM d')} – ${format(weekEnd, 'MMM d, yyyy')}`
     : format(currentDate, 'MMMM yyyy');
 
-  // Drag handlers for month view
   const onDragStart = (e: DragEvent, shiftId: string) => {
     e.dataTransfer.setData('text/plain', shiftId);
     e.dataTransfer.effectAllowed = 'move';
@@ -151,9 +130,7 @@ export default function SchedulePage() {
     setDragOverDay(dayKey);
   };
 
-  const onDragLeave = () => {
-    setDragOverDay(null);
-  };
+  const onDragLeave = () => { setDragOverDay(null); };
 
   const onDrop = (e: DragEvent, day: Date) => {
     e.preventDefault();
@@ -181,11 +158,7 @@ export default function SchedulePage() {
           {format(day, 'd')}
         </div>
         {markers.map(m => (
-          <div
-            key={m.label}
-            className={`text-[10px] px-1 py-0.5 rounded mb-0.5 truncate font-medium ${m.bg} ${m.text}`}
-            title={m.label}
-          >
+          <div key={m.label} className={`text-[10px] px-1 py-0.5 rounded mb-0.5 truncate font-medium ${m.bg} ${m.text}`} title={m.label}>
             {m.type === 'tax' ? '💰' : '🔴'} {m.label}
           </div>
         ))}
@@ -209,147 +182,137 @@ export default function SchedulePage() {
   };
 
   return (
-    <div className="flex gap-4">
-      {/* Main schedule area */}
-      <div className="flex-1 min-w-0">
-        <div className="page-header flex-col sm:flex-row gap-3">
-          <h1 className="page-title">Schedule</h1>
-          <div className="flex gap-2 flex-wrap">
-            <Button size="sm" variant={view === 'month' ? 'default' : 'outline'} onClick={() => setView('month')}>
-              <CalendarDays className="mr-1 h-4 w-4" /> Month
-            </Button>
-            <Button size="sm" variant={view === 'week' ? 'default' : 'outline'} onClick={() => setView('week')}>
-              <CalendarIcon className="mr-1 h-4 w-4" /> Week
-            </Button>
-            <Button size="sm" variant={view === 'list' ? 'default' : 'outline'} onClick={() => setView('list')}>
-              <List className="mr-1 h-4 w-4" /> List
-            </Button>
+    <div>
+      <div className="page-header flex-col sm:flex-row gap-3">
+        <h1 className="page-title">Schedule</h1>
+        <div className="flex gap-2 flex-wrap">
+          <Button size="sm" variant={view === 'month' ? 'default' : 'outline'} onClick={() => setView('month')}>
+            <CalendarDays className="mr-1 h-4 w-4" /> Month
+          </Button>
+          <Button size="sm" variant={view === 'week' ? 'default' : 'outline'} onClick={() => setView('week')}>
+            <CalendarIcon className="mr-1 h-4 w-4" /> Week
+          </Button>
+          <Button size="sm" variant={view === 'list' ? 'default' : 'outline'} onClick={() => setView('list')}>
+            <List className="mr-1 h-4 w-4" /> List
+          </Button>
+          <Button size="sm" variant={view === 'confirmations' ? 'default' : 'outline'} onClick={() => setView('confirmations')}>
+            <CheckSquare className="mr-1 h-4 w-4" /> Confirmations
+          </Button>
+          {view !== 'confirmations' && (
             <Button size="sm" onClick={() => setShowAdd(true)}>
               <Plus className="mr-1 h-4 w-4" /> Add Shift
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => setShowPanel(!showPanel)} className="ml-auto">
-              {showPanel ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
-            </Button>
-          </div>
+          )}
         </div>
-
-        <div className="flex items-center justify-between mb-4">
-          <Button variant="ghost" size="icon" onClick={navigateBack}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-semibold">{headerLabel}</h2>
-            <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => setCurrentDate(new Date())}>
-              Today
-            </Button>
-          </div>
-          <Button variant="ghost" size="icon" onClick={navigateForward}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-
-        {view === 'month' ? (
-          <div className="rounded-lg border bg-card overflow-hidden">
-            <div className="grid grid-cols-7 bg-muted/50">
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-                <div key={d} className="p-2 text-center text-xs font-medium text-muted-foreground">{d}</div>
-              ))}
-            </div>
-            <div className="grid grid-cols-7">
-              {Array.from({ length: startDow }).map((_, i) => (
-                <div key={`empty-${i}`} className="min-h-[80px] border-t border-r bg-muted/20" />
-              ))}
-              {monthDays.map(day => renderDayCell(day, 'min-h-[80px]'))}
-            </div>
-          </div>
-        ) : view === 'week' ? (
-          <WeekTimeGrid
-            weekDays={weekDays}
-            shifts={shifts}
-            getFacilityName={getFacilityName}
-            onEditShift={setEditShift}
-            onDropOnTime={handleDropOnTime}
-          />
-        ) : (
-          <div className="rounded-lg border bg-card overflow-hidden">
-            <table className="w-full text-sm">
-              <thead><tr className="border-b bg-muted/50">
-                <th className="text-left p-3 font-medium text-muted-foreground">Date</th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Facility</th>
-                <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Time</th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Rate</th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
-                <th className="w-10" />
-              </tr></thead>
-              <tbody>
-                {rangeShifts.map(s => (
-                  <tr key={s.id} className="border-b last:border-0 hover:bg-muted/30 cursor-pointer" onClick={() => setEditShift(s.id)}>
-                    <td className="p-3">{format(new Date(s.start_datetime), 'EEE, MMM d')}</td>
-                    <td className="p-3 font-medium">{getFacilityName(s.facility_id)}</td>
-                    <td className="p-3 text-muted-foreground hidden md:table-cell">{format(new Date(s.start_datetime), 'h:mm a')} - {format(new Date(s.end_datetime), 'h:mm a')}</td>
-                    <td className="p-3">${s.rate_applied}</td>
-                    <td className="p-3"><StatusBadge status={s.status} /></td>
-                    <td className="p-3" onClick={e => e.stopPropagation()}>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive">
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete this shift?</AlertDialogTitle>
-                            <AlertDialogDescription>{getFacilityName(s.facility_id)} — {format(new Date(s.start_datetime), 'MMM d, yyyy')}</AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => { deleteShift(s.id); toast.success('Shift deleted'); }}>Delete</AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </td>
-                  </tr>
-                ))}
-                {rangeShifts.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">No shifts to display</td></tr>}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        <ShiftFormDialog
-          open={showAdd}
-          onOpenChange={setShowAdd}
-          facilities={facilities}
-          shifts={shifts}
-          onSave={handleSaveShift}
-        />
-
-        {editShift && (
-          <ShiftFormDialog
-            open={!!editShift}
-            onOpenChange={() => setEditShift(null)}
-            facilities={facilities}
-            shifts={shifts}
-            existing={shifts.find(s => s.id === editShift)}
-            onSave={handleSaveShift}
-            onDelete={(id) => { deleteShift(id); setEditShift(null); toast.success('Shift deleted'); }}
-          />
-        )}
       </div>
 
-      {/* Right side confirmations panel */}
-      {showPanel && (
-        <div className="hidden lg:block w-72 xl:w-80 shrink-0">
-          <div className="sticky top-4">
-            <Card className="border">
-              <CardContent className="p-4">
-                <ScrollArea className="max-h-[calc(100vh-8rem)]">
-                  <ConfirmationsPanel />
-                </ScrollArea>
-              </CardContent>
-            </Card>
+      {view === 'confirmations' ? (
+        <ConfirmationsTab />
+      ) : (
+        <>
+          <div className="flex items-center justify-between mb-4">
+            <Button variant="ghost" size="icon" onClick={navigateBack}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-semibold">{headerLabel}</h2>
+              <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => setCurrentDate(new Date())}>
+                Today
+              </Button>
+            </div>
+            <Button variant="ghost" size="icon" onClick={navigateForward}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
           </div>
-        </div>
+
+          {view === 'month' ? (
+            <div className="rounded-lg border bg-card overflow-hidden">
+              <div className="grid grid-cols-7 bg-muted/50">
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+                  <div key={d} className="p-2 text-center text-xs font-medium text-muted-foreground">{d}</div>
+                ))}
+              </div>
+              <div className="grid grid-cols-7">
+                {Array.from({ length: startDow }).map((_, i) => (
+                  <div key={`empty-${i}`} className="min-h-[80px] border-t border-r bg-muted/20" />
+                ))}
+                {monthDays.map(day => renderDayCell(day, 'min-h-[80px]'))}
+              </div>
+            </div>
+          ) : view === 'week' ? (
+            <WeekTimeGrid
+              weekDays={weekDays}
+              shifts={shifts}
+              getFacilityName={getFacilityName}
+              onEditShift={setEditShift}
+              onDropOnTime={handleDropOnTime}
+            />
+          ) : (
+            <div className="rounded-lg border bg-card overflow-hidden">
+              <table className="w-full text-sm">
+                <thead><tr className="border-b bg-muted/50">
+                  <th className="text-left p-3 font-medium text-muted-foreground">Date</th>
+                  <th className="text-left p-3 font-medium text-muted-foreground">Facility</th>
+                  <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Time</th>
+                  <th className="text-left p-3 font-medium text-muted-foreground">Rate</th>
+                  <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
+                  <th className="w-10" />
+                </tr></thead>
+                <tbody>
+                  {rangeShifts.map(s => (
+                    <tr key={s.id} className="border-b last:border-0 hover:bg-muted/30 cursor-pointer" onClick={() => setEditShift(s.id)}>
+                      <td className="p-3">{format(new Date(s.start_datetime), 'EEE, MMM d')}</td>
+                      <td className="p-3 font-medium">{getFacilityName(s.facility_id)}</td>
+                      <td className="p-3 text-muted-foreground hidden md:table-cell">{format(new Date(s.start_datetime), 'h:mm a')} - {format(new Date(s.end_datetime), 'h:mm a')}</td>
+                      <td className="p-3">${s.rate_applied}</td>
+                      <td className="p-3"><StatusBadge status={s.status} /></td>
+                      <td className="p-3" onClick={e => e.stopPropagation()}>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive">
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete this shift?</AlertDialogTitle>
+                              <AlertDialogDescription>{getFacilityName(s.facility_id)} — {format(new Date(s.start_datetime), 'MMM d, yyyy')}</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => { deleteShift(s.id); toast.success('Shift deleted'); }}>Delete</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </td>
+                    </tr>
+                  ))}
+                  {rangeShifts.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">No shifts to display</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      )}
+
+      <ShiftFormDialog
+        open={showAdd}
+        onOpenChange={setShowAdd}
+        facilities={facilities}
+        shifts={shifts}
+        onSave={handleSaveShift}
+      />
+
+      {editShift && (
+        <ShiftFormDialog
+          open={!!editShift}
+          onOpenChange={() => setEditShift(null)}
+          facilities={facilities}
+          shifts={shifts}
+          existing={shifts.find(s => s.id === editShift)}
+          onSave={handleSaveShift}
+          onDelete={(id) => { deleteShift(id); setEditShift(null); toast.success('Shift deleted'); }}
+        />
       )}
     </div>
   );

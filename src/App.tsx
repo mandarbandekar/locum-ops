@@ -103,6 +103,7 @@ function AuthGate() {
     return (
       <Routes>
         <Route path="/invoice/public/:token" element={<PublicInvoicePage />} />
+        <Route path="/confirmations/public/:token" element={<PublicConfirmationPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
