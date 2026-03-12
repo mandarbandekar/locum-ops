@@ -43,7 +43,7 @@ export function ContractsTab({ facilityId, isDemo = false }: ContractsTabProps) 
       </Alert>
 
       {/* A) Contract Vault */}
-      <ContractVault contracts={contracts} onAdd={addContract} onUpdate={updateContract} onDelete={deleteContract} />
+      <ContractVault contracts={contracts} onAdd={addContract} onUpdate={updateContract} onDelete={deleteContract} facilityId={facilityId} />
 
       {/* B) Key Terms Snapshot */}
       <KeyTermsSnapshot contracts={contracts} contractTerms={contractTerms} onUpsert={upsertTerms} />
@@ -63,11 +63,12 @@ export function ContractsTab({ facilityId, isDemo = false }: ContractsTabProps) 
 
 // ─── Contract Vault ────────────────────────────────────────
 
-function ContractVault({ contracts, onAdd, onUpdate, onDelete }: {
+function ContractVault({ contracts, onAdd, onUpdate, onDelete, facilityId }: {
   contracts: Contract[];
   onAdd: (c: Omit<Contract, 'id'>) => Promise<Contract>;
   onUpdate: (c: Contract) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  facilityId: string;
 }) {
   const [showAdd, setShowAdd] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -135,7 +136,7 @@ function ContractVault({ contracts, onAdd, onUpdate, onDelete }: {
         )}
       </CardContent>
 
-      <AddContractDialog open={showAdd} onOpenChange={setShowAdd} onAdd={onAdd} facilityId={contracts[0]?.facility_id || ''} />
+      <AddContractDialog open={showAdd} onOpenChange={setShowAdd} onAdd={onAdd} facilityId={facilityId} />
       {editId && (
         <EditContractDialog
           contract={contracts.find(c => c.id === editId)!}
