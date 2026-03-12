@@ -199,9 +199,9 @@ export function useCEEntries() {
   }
 
   return {
-    entries: isDemo ? demoCEEntriesWithLinks : entriesWithLinks,
-    links: isDemo ? demoCELinks : (linksQuery.data ?? []),
-    isLoading: isDemo ? false : (entriesQuery.isLoading || linksQuery.isLoading),
+    entries: demoMode ? demoCEEntriesWithLinks : entriesWithLinks,
+    links: demoMode ? demoCELinks : (linksQuery.data ?? []),
+    isLoading: demoMode ? false : (entriesQuery.isLoading || linksQuery.isLoading),
     addCEEntry,
     updateCEEntry,
     deleteCEEntry,
