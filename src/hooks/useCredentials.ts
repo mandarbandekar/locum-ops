@@ -184,7 +184,7 @@ export function useCredentials() {
 
   return {
     credentials: isDemo ? demoCredentials : (credentialsQuery.data ?? []),
-    documents: isDemo ? [] : (documentsQuery.data ?? []),
+    documents: isDemo ? demoDocuments : (documentsQuery.data ?? []),
     isLoading: isDemo ? false : credentialsQuery.isLoading,
     isDocumentsLoading: documentsQuery.isLoading,
     addCredential,
