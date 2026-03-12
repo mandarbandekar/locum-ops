@@ -197,7 +197,7 @@ function Navbar({ scrollTo, hideSignIn = false }: { scrollTo: (id: string) => vo
 }
 
 /* ═══════════════════════════════════ PAGE ═══════════════════════════════════ */
-export default function LandingPage() {
+export default function LandingPage({ hideSignIn = false }: { hideSignIn?: boolean } = {}) {
   const scrollTo = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
