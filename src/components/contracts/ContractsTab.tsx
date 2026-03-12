@@ -63,11 +63,12 @@ export function ContractsTab({ facilityId, isDemo = false }: ContractsTabProps) 
 
 // ─── Contract Vault ────────────────────────────────────────
 
-function ContractVault({ contracts, onAdd, onUpdate, onDelete }: {
+function ContractVault({ contracts, onAdd, onUpdate, onDelete, facilityId }: {
   contracts: Contract[];
   onAdd: (c: Omit<Contract, 'id'>) => Promise<Contract>;
   onUpdate: (c: Contract) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  facilityId: string;
 }) {
   const [showAdd, setShowAdd] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
