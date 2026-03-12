@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import type { Database } from '@/integrations/supabase/types';
+import { demoCredentials } from '@/data/credentialsSeed';
 
 type CredentialRow = Database['public']['Tables']['credentials']['Row'];
 type CredentialInsert = Database['public']['Tables']['credentials']['Insert'];
@@ -28,7 +29,7 @@ export interface CredentialDocument {
 }
 
 export function useCredentials() {
-  const { user } = useAuth();
+  const { user, isDemo } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -182,9 +183,9 @@ export function useCredentials() {
   };
 
   return {
-    credentials: credentialsQuery.data ?? [],
-    documents: documentsQuery.data ?? [],
-    isLoading: credentialsQuery.isLoading,
+    credentials: isDemo ? demoCredentials : (credentialsQuery.data ?? []),
+    documents: isDemo ? [] : (documentsQuery.data ?? []),
+    isLoading: isDemo ? false : credentialsQuery.isLoading,
     isDocumentsLoading: documentsQuery.isLoading,
     addCredential,
     updateCredential,

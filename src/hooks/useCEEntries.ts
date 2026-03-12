@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { demoCEEntriesWithLinks, demoCELinks, demoCEEntries } from '@/data/credentialsSeed';
 
 export interface CEEntry {
   id: string;
@@ -29,7 +30,7 @@ export interface CEEntryWithLinks extends CEEntry {
 }
 
 export function useCEEntries() {
-  const { user } = useAuth();
+  const { user, isDemo } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -179,10 +180,14 @@ export function useCEEntries() {
     return { url: filePath, name: file.name };
   };
 
+  const demoMode = isDemo;
+
   // Helpers for credential-level rollups
   function getCredentialCEStats(credentialId: string) {
-    const links = (linksQuery.data ?? []).filter(l => l.credential_id === credentialId);
-    const entries = (entriesQuery.data ?? []).filter(e => links.some(l => l.ce_entry_id === e.id));
+    const allLinks = demoMode ? demoCELinks : (linksQuery.data ?? []);
+    const allEntries = demoMode ? demoCEEntries : (entriesQuery.data ?? []);
+    const links = allLinks.filter(l => l.credential_id === credentialId);
+    const entries = allEntries.filter(e => links.some(l => l.ce_entry_id === e.id));
     const completedHours = entries.reduce((sum, e) => sum + Number(e.hours), 0);
     const missingCerts = entries.filter(e => !e.certificate_file_url).length;
     return {
@@ -194,9 +199,9 @@ export function useCEEntries() {
   }
 
   return {
-    entries: entriesWithLinks,
-    links: linksQuery.data ?? [],
-    isLoading: entriesQuery.isLoading || linksQuery.isLoading,
+    entries: demoMode ? demoCEEntriesWithLinks : entriesWithLinks,
+    links: demoMode ? demoCELinks : (linksQuery.data ?? []),
+    isLoading: demoMode ? false : (entriesQuery.isLoading || linksQuery.isLoading),
     addCEEntry,
     updateCEEntry,
     deleteCEEntry,
