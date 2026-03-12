@@ -23,12 +23,12 @@ export interface Facility {
   invoice_due_days: number;
 }
 
-export type ContactRole = 'practice_manager' | 'other';
+export type ContactRole = string;
 export interface FacilityContact {
   id: string;
   facility_id: string;
   name: string;
-  role: ContactRole;
+  role: string;
   email: string;
   phone: string;
   is_primary: boolean;
