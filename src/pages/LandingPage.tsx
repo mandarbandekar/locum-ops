@@ -151,7 +151,7 @@ function Section({ children, className = '', id }: { children: React.ReactNode; 
 }
 
 /* ─── navbar ─── */
-function Navbar({ scrollTo }: { scrollTo: (id: string) => void }) {
+function Navbar({ scrollTo, hideSignIn = false }: { scrollTo: (id: string) => void; hideSignIn?: boolean }) {
   const [open, setOpen] = useState(false);
   const links = [
     { label: 'Product', id: 'features' },
@@ -170,7 +170,7 @@ function Navbar({ scrollTo }: { scrollTo: (id: string) => void }) {
           ))}
         </nav>
         <div className="hidden md:flex items-center gap-3">
-          <Link to="/login" className="text-base font-semibold text-muted-foreground hover:text-foreground transition-colors">Sign In</Link>
+          {!hideSignIn && <Link to="/login" className="text-base font-semibold text-muted-foreground hover:text-foreground transition-colors">Sign In</Link>}
           <button onClick={() => scrollTo('waitlist-cta')}
             className="h-10 px-5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-colors">
             Join Waitlist
@@ -186,8 +186,8 @@ function Navbar({ scrollTo }: { scrollTo: (id: string) => void }) {
             <button key={l.id} onClick={() => { scrollTo(l.id); setOpen(false); }}
               className="block w-full text-left py-3 text-sm font-medium text-muted-foreground hover:text-foreground">{l.label}</button>
           ))}
-          <Link to="/login" onClick={() => setOpen(false)}
-            className="block w-full text-left py-3 text-sm font-medium text-muted-foreground hover:text-foreground">Sign In</Link>
+          {!hideSignIn && <Link to="/login" onClick={() => setOpen(false)}
+            className="block w-full text-left py-3 text-sm font-medium text-muted-foreground hover:text-foreground">Sign In</Link>}
           <button onClick={() => { scrollTo('waitlist-cta'); setOpen(false); }}
             className="mt-2 w-full h-10 rounded-xl bg-primary text-primary-foreground font-semibold text-sm">Join Waitlist</button>
         </motion.div>
@@ -197,7 +197,7 @@ function Navbar({ scrollTo }: { scrollTo: (id: string) => void }) {
 }
 
 /* ═══════════════════════════════════ PAGE ═══════════════════════════════════ */
-export default function LandingPage() {
+export default function LandingPage({ hideSignIn = false }: { hideSignIn?: boolean } = {}) {
   const scrollTo = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
@@ -237,7 +237,7 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <Navbar scrollTo={scrollTo} />
+      <Navbar scrollTo={scrollTo} hideSignIn={hideSignIn} />
 
       {/* ─── HERO ─── */}
       <Section className="pt-12 sm:pt-20 pb-12">
