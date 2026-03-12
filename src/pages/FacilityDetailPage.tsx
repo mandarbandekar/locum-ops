@@ -53,7 +53,7 @@ export default function FacilityDetailPage() {
         </TabsList>
 
         <TabsContent value="overview" className="mt-4">
-          <OverviewTab facility={facility} shifts={facilityShifts} contact={facilityContacts[0] || null} onUpdate={updateFacility} onAddContact={addContact} onUpdateContact={updateContact} onDeleteContact={deleteContact} facilityId={facility.id} />
+          <OverviewTab facility={facility} shifts={facilityShifts} contacts={facilityContacts} onUpdate={updateFacility} onAddContact={addContact} onUpdateContact={updateContact} onDeleteContact={deleteContact} facilityId={facility.id} />
         </TabsContent>
 
         <TabsContent value="terms" className="mt-4">
@@ -90,8 +90,8 @@ export default function FacilityDetailPage() {
 
 // ─── Overview Tab ──────────────────────────────────────────
 
-function OverviewTab({ facility, shifts, contact, onUpdate, onAddContact, onUpdateContact, onDeleteContact, facilityId }: {
-  facility: any; shifts: any[]; contact: FacilityContact | null; onUpdate: any;
+function OverviewTab({ facility, shifts, contacts, onUpdate, onAddContact, onUpdateContact, onDeleteContact, facilityId }: {
+  facility: any; shifts: any[]; contacts: FacilityContact[]; onUpdate: any;
   onAddContact: (c: Omit<FacilityContact, 'id'>) => void;
   onUpdateContact: (c: FacilityContact) => void;
   onDeleteContact: (id: string) => void;
@@ -101,13 +101,10 @@ function OverviewTab({ facility, shifts, contact, onUpdate, onAddContact, onUpda
   const [notes, setNotes] = useState(facility.notes);
   const [status, setStatus] = useState(facility.status);
 
-  // Contact editing
-  const [editingContact, setEditingContact] = useState(false);
-  const [contactForm, setContactForm] = useState({
-    name: contact?.name || '',
-    email: contact?.email || '',
-    phone: contact?.phone || '',
-  });
+  // Contact add/edit state
+  const [showContactForm, setShowContactForm] = useState(false);
+  const [editingContactId, setEditingContactId] = useState<string | null>(null);
+  const [contactForm, setContactForm] = useState({ name: '', email: '', phone: '', role: '' });
 
   const upcoming = shifts.filter(s => new Date(s.start_datetime) > new Date() && s.status !== 'canceled').slice(0, 5);
 
@@ -117,21 +114,38 @@ function OverviewTab({ facility, shifts, contact, onUpdate, onAddContact, onUpda
     toast.success('Practice facility updated');
   };
 
+  const openAddContact = () => {
+    setEditingContactId(null);
+    setContactForm({ name: '', email: '', phone: '', role: '' });
+    setShowContactForm(true);
+  };
+
+  const openEditContact = (c: FacilityContact) => {
+    setEditingContactId(c.id);
+    setContactForm({ name: c.name, email: c.email, phone: c.phone, role: c.role });
+    setShowContactForm(true);
+  };
+
   const handleSaveContact = () => {
-    if (!contactForm.name.trim()) return;
-    if (contact) {
-      onUpdateContact({ ...contact, name: contactForm.name, email: contactForm.email, phone: contactForm.phone });
+    const trimmedName = contactForm.name.trim();
+    if (!trimmedName) return;
+    const role = contactForm.role.trim() || 'Other';
+    if (editingContactId) {
+      const existing = contacts.find(c => c.id === editingContactId);
+      if (existing) {
+        onUpdateContact({ ...existing, name: trimmedName, email: contactForm.email.trim(), phone: contactForm.phone.trim(), role });
+      }
     } else {
-      onAddContact({ facility_id: facilityId, name: contactForm.name, role: 'practice_manager' as ContactRole, email: contactForm.email, phone: contactForm.phone, is_primary: true });
+      onAddContact({ facility_id: facilityId, name: trimmedName, role, email: contactForm.email.trim(), phone: contactForm.phone.trim(), is_primary: contacts.length === 0 });
     }
-    setEditingContact(false);
+    setShowContactForm(false);
+    setEditingContactId(null);
     toast.success('Contact saved');
   };
 
-  const handleDeleteContact = () => {
-    if (contact && confirm('Remove practice manager contact?')) {
-      onDeleteContact(contact.id);
-      setContactForm({ name: '', email: '', phone: '' });
+  const handleDeleteContact = (id: string) => {
+    if (confirm('Remove this contact?')) {
+      onDeleteContact(id);
       toast.success('Contact removed');
     }
   };
@@ -179,39 +193,45 @@ function OverviewTab({ facility, shifts, contact, onUpdate, onAddContact, onUpda
       </Card>
 
       <div className="space-y-4">
-        {/* Practice Manager Contact */}
+        {/* Contacts */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-base">Practice Manager</CardTitle>
-            {contact && !editingContact ? (
-              <div className="flex gap-1">
-                <Button size="sm" variant="ghost" onClick={() => { setContactForm({ name: contact.name, email: contact.email, phone: contact.phone }); setEditingContact(true); }}><Pencil className="mr-1 h-3 w-3" /> Edit</Button>
-                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={handleDeleteContact}><Trash2 className="h-3 w-3" /></Button>
-              </div>
-            ) : !editingContact ? (
-              <Button size="sm" variant="ghost" onClick={() => setEditingContact(true)}><Plus className="mr-1 h-3 w-3" /> Add</Button>
-            ) : null}
+            <CardTitle className="text-base">Contacts</CardTitle>
+            <Button size="sm" variant="ghost" onClick={openAddContact}><Plus className="mr-1 h-3 w-3" /> Add</Button>
           </CardHeader>
           <CardContent>
-            {editingContact ? (
-              <div className="space-y-3">
-                <div><Label className="text-xs">Name</Label><Input value={contactForm.name} onChange={e => setContactForm(p => ({ ...p, name: e.target.value }))} placeholder="Contact name" /></div>
-                <div><Label className="text-xs">Email</Label><Input type="email" value={contactForm.email} onChange={e => setContactForm(p => ({ ...p, email: e.target.value }))} placeholder="email@example.com" /></div>
-                <div><Label className="text-xs">Phone</Label><Input value={contactForm.phone} onChange={e => setContactForm(p => ({ ...p, phone: e.target.value }))} placeholder="555-0100" /></div>
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={handleSaveContact}><Check className="mr-1 h-3 w-3" /> Save</Button>
-                  <Button size="sm" variant="ghost" onClick={() => setEditingContact(false)}><X className="mr-1 h-3 w-3" /> Cancel</Button>
-                </div>
-              </div>
-            ) : contact ? (
-              <div className="space-y-1">
-                <p className="text-sm font-medium">{contact.name}</p>
-                {contact.email && <p className="text-xs text-muted-foreground">{contact.email}</p>}
-                {contact.phone && <p className="text-xs text-muted-foreground">{contact.phone}</p>}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">No practice manager added yet. This contact is used for invoicing.</p>
+            {contacts.length === 0 && !showContactForm && (
+              <p className="text-sm text-muted-foreground">No contacts added yet.</p>
             )}
+            <div className="space-y-3">
+              {contacts.map(c => (
+                <div key={c.id} className="flex items-start justify-between p-2.5 rounded-md border border-border bg-muted/30">
+                  <div className="space-y-0.5">
+                    <p className="text-sm font-medium">{c.name}</p>
+                    <p className="text-xs text-muted-foreground">{c.role || 'Other'}</p>
+                    {c.email && <p className="text-xs text-muted-foreground">{c.email}</p>}
+                    {c.phone && <p className="text-xs text-muted-foreground">{c.phone}</p>}
+                  </div>
+                  <div className="flex gap-1 shrink-0">
+                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEditContact(c)}><Pencil className="h-3 w-3" /></Button>
+                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDeleteContact(c.id)}><Trash2 className="h-3 w-3" /></Button>
+                  </div>
+                </div>
+              ))}
+
+              {showContactForm && (
+                <div className="space-y-2.5 p-3 rounded-md border border-border bg-muted/20">
+                  <div><Label className="text-xs">Name</Label><Input value={contactForm.name} onChange={e => setContactForm(p => ({ ...p, name: e.target.value }))} placeholder="Contact name" /></div>
+                  <div><Label className="text-xs">Role / Type</Label><Input value={contactForm.role} onChange={e => setContactForm(p => ({ ...p, role: e.target.value }))} placeholder="e.g. Practice Manager, Office Manager, Receptionist" /></div>
+                  <div><Label className="text-xs">Email</Label><Input type="email" value={contactForm.email} onChange={e => setContactForm(p => ({ ...p, email: e.target.value }))} placeholder="email@example.com" /></div>
+                  <div><Label className="text-xs">Phone</Label><Input value={contactForm.phone} onChange={e => setContactForm(p => ({ ...p, phone: e.target.value }))} placeholder="555-0100" /></div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={handleSaveContact}><Check className="mr-1 h-3 w-3" /> Save</Button>
+                    <Button size="sm" variant="ghost" onClick={() => { setShowContactForm(false); setEditingContactId(null); }}><X className="mr-1 h-3 w-3" /> Cancel</Button>
+                  </div>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
 
