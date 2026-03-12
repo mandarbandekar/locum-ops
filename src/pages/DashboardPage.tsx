@@ -7,11 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
   CalendarDays, FileText, DollarSign, AlertTriangle, ArrowRight,
-  Clock, CheckCircle, Building2, Plus, Send, ShieldAlert,
+  Clock, CheckCircle, Building2, Plus, Send, ShieldAlert, CheckSquare,
 } from 'lucide-react';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
-import { format, differenceInDays } from 'date-fns';
+import { format, differenceInDays, addMonths } from 'date-fns';
 import { getChecklistBadge } from '@/types/contracts';
+import { useConfirmations } from '@/hooks/useConfirmations';
 
 const dashDb = (table: string) => supabase.from(table as any);
 
