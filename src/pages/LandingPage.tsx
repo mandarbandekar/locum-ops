@@ -1,6 +1,5 @@
 import { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
 import { motion, useInView, type Easing } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import {
