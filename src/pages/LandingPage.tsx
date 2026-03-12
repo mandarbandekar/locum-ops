@@ -495,7 +495,7 @@ export default function LandingPage({ hideSignIn = false }: { hideSignIn?: boole
                 Be first in line for the platform built to simplify and professionalize independent relief work.
               </p>
               <div className="max-w-md mx-auto">
-                <EmailCapture source="landing_cta" showPersona />
+                <EmailCapture source="landing_cta" />
               </div>
             </div>
           </Anim>
