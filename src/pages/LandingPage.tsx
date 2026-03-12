@@ -151,7 +151,7 @@ function Section({ children, className = '', id }: { children: React.ReactNode; 
 }
 
 /* ─── navbar ─── */
-function Navbar({ scrollTo }: { scrollTo: (id: string) => void }) {
+function Navbar({ scrollTo, hideSignIn = false }: { scrollTo: (id: string) => void; hideSignIn?: boolean }) {
   const [open, setOpen] = useState(false);
   const links = [
     { label: 'Product', id: 'features' },
