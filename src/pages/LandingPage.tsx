@@ -317,15 +317,13 @@ export default function LandingPage() {
       <AnimatedSection id="segments" className="max-w-7xl mx-auto px-4 sm:px-6 py-20 sm:py-28">
         <SectionHeader
           label="Solutions"
-          title="Built for every side of locum work"
+          title="Built for independent locum professionals"
         />
         <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }}
-          className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4"
+          className="grid sm:grid-cols-3 gap-4 max-w-4xl mx-auto"
         >
           {[
-            { icon: UserCheck, title: 'Independent Locum Professionals', desc: 'Run your work like a business', color: 'text-primary' },
-            { icon: Building2, title: 'Clinics & Practices', desc: 'Coordinate coverage with less admin', color: 'text-blue-600 dark:text-blue-400' },
-            { icon: Users, title: 'Staffing & Locum Groups', desc: 'Standardize workflows across teams', color: 'text-purple-600 dark:text-purple-400' },
+            { icon: UserCheck, title: 'Independent Locum Professionals', desc: 'Run your work like a business with tools built for one', color: 'text-primary' },
             { icon: Stethoscope, title: 'Relief Veterinarians', desc: 'Organize shifts, rates, contracts, and payments', color: 'text-teal-600 dark:text-teal-400' },
             { icon: Briefcase, title: 'Physician & APP Locums', desc: 'Simplify operational overhead across assignments', color: 'text-orange-600 dark:text-orange-400' },
           ].map((s, i) => (
