@@ -93,6 +93,12 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
           profession: 'vet',
           work_style_label: 'Independent contractor (1099)',
           onboarding_completed_at: new Date().toISOString(),
+          first_name: 'Sarah',
+          last_name: 'Mitchell',
+          company_name: 'Mitchell Veterinary Relief LLC',
+          company_address: '2480 NW Thurman St, Suite 3\nPortland, OR 97210',
+          invoice_email: 'sarah@mitchellvetrelief.com',
+          invoice_phone: '503-555-0147',
         }
       : null
   );
