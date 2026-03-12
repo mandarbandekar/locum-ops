@@ -8,6 +8,7 @@ import { UserProfileProvider, useUserProfile } from "@/contexts/UserProfileConte
 import { DataProvider } from "@/contexts/DataContext";
 import { Layout } from "@/components/Layout";
 import LandingPage from "@/pages/LandingPage";
+import PublicLandingPage from "@/pages/PublicLandingPage";
 import LoginPage from "@/pages/LoginPage";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
