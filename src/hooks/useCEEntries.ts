@@ -185,7 +185,7 @@ export function useCEEntries() {
   // Helpers for credential-level rollups
   function getCredentialCEStats(credentialId: string) {
     const allLinks = demoMode ? demoCELinks : (linksQuery.data ?? []);
-    const allEntries = isDemo ? demoCEEntries : (entriesQuery.data ?? []);
+    const allEntries = demoMode ? demoCEEntries : (entriesQuery.data ?? []);
     const links = allLinks.filter(l => l.credential_id === credentialId);
     const entries = allEntries.filter(e => links.some(l => l.ce_entry_id === e.id));
     const completedHours = entries.reduce((sum, e) => sum + Number(e.hours), 0);
