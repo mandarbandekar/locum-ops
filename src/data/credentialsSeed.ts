@@ -1,4 +1,4 @@
-import type { Credential } from '@/hooks/useCredentials';
+import type { Credential, CredentialDocument } from '@/hooks/useCredentials';
 import type { CEEntry, CECredentialLink, CEEntryWithLinks } from '@/hooks/useCEEntries';
 
 const today = new Date();
