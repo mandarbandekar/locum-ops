@@ -50,7 +50,6 @@ export default function WaitlistPage() {
     }
 
     navigate('/quiz');
-    navigate('/quiz');
   };
 
   return (
