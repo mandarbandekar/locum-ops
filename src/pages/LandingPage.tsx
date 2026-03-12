@@ -486,8 +486,6 @@ export default function LandingPage() {
     </div>
   );
 }
-import { useState, useRef } from 'react';
-import locumOpsLogo from '@/assets/locumops-logo.png';
 
 /* ─── Animation variants ─── */
 const fadeUp = {
