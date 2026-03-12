@@ -16,8 +16,8 @@ const navItems = [
   
   
   { title: 'Invoices', url: '/invoices', icon: FileText },
-  { title: 'Credentials', url: '/credentials', icon: ShieldCheck },
   { title: 'Business', url: '/business', icon: BarChart3 },
+  { title: 'Credentials', url: '/credentials', icon: ShieldCheck },
   { title: 'Settings', url: '/settings/profile', icon: Settings },
 ];
 
