@@ -110,6 +110,7 @@ function AuthGate() {
         <Route path="/results" element={<ResultsPage />} />
         <Route path="/thanks" element={<ThanksPage />} />
         <Route path="/" element={<LandingPage />} />
+        <Route path="/public" element={<PublicLandingPage />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     );
