@@ -180,11 +180,11 @@ export function useCEEntries() {
     return { url: filePath, name: file.name };
   };
 
-  const isDemo = !user && useAuth().isDemo;
+  const demoMode = isDemo;
 
   // Helpers for credential-level rollups
   function getCredentialCEStats(credentialId: string) {
-    const allLinks = isDemo ? demoCELinks : (linksQuery.data ?? []);
+    const allLinks = demoMode ? demoCELinks : (linksQuery.data ?? []);
     const allEntries = isDemo ? demoCEEntries : (entriesQuery.data ?? []);
     const links = allLinks.filter(l => l.credential_id === credentialId);
     const entries = allEntries.filter(e => links.some(l => l.ce_entry_id === e.id));

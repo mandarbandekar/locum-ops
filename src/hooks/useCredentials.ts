@@ -182,8 +182,6 @@ export function useCredentials() {
     return data;
   };
 
-  const isDemo = !user && useAuth().isDemo;
-
   return {
     credentials: isDemo ? demoCredentials : (credentialsQuery.data ?? []),
     documents: isDemo ? [] : (documentsQuery.data ?? []),
