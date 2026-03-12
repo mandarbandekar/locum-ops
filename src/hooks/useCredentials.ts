@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import type { Database } from '@/integrations/supabase/types';
-import { demoCredentials } from '@/data/credentialsSeed';
+import { demoCredentials, demoDocuments } from '@/data/credentialsSeed';
 
 type CredentialRow = Database['public']['Tables']['credentials']['Row'];
 type CredentialInsert = Database['public']['Tables']['credentials']['Insert'];
