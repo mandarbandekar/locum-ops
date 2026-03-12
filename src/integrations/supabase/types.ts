@@ -189,6 +189,139 @@ export type Database = {
         }
         Relationships: []
       }
+      confirmation_activity: {
+        Row: {
+          action: string
+          confirmation_record_id: string
+          created_at: string
+          description: string
+          id: string
+        }
+        Insert: {
+          action: string
+          confirmation_record_id: string
+          created_at?: string
+          description?: string
+          id?: string
+        }
+        Update: {
+          action?: string
+          confirmation_record_id?: string
+          created_at?: string
+          description?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "confirmation_activity_confirmation_record_id_fkey"
+            columns: ["confirmation_record_id"]
+            isOneToOne: false
+            referencedRelation: "confirmation_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      confirmation_records: {
+        Row: {
+          confirmed_at: string | null
+          created_at: string
+          facility_id: string
+          id: string
+          last_shift_snapshot_at: string | null
+          message_body: string | null
+          month_key: string
+          notes: string | null
+          sent_at: string | null
+          share_token: string | null
+          share_token_created_at: string | null
+          share_token_revoked_at: string | null
+          shift_count_snapshot: number | null
+          shift_hash_snapshot: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          confirmed_at?: string | null
+          created_at?: string
+          facility_id: string
+          id?: string
+          last_shift_snapshot_at?: string | null
+          message_body?: string | null
+          month_key: string
+          notes?: string | null
+          sent_at?: string | null
+          share_token?: string | null
+          share_token_created_at?: string | null
+          share_token_revoked_at?: string | null
+          shift_count_snapshot?: number | null
+          shift_hash_snapshot?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          confirmed_at?: string | null
+          created_at?: string
+          facility_id?: string
+          id?: string
+          last_shift_snapshot_at?: string | null
+          message_body?: string | null
+          month_key?: string
+          notes?: string | null
+          sent_at?: string | null
+          share_token?: string | null
+          share_token_created_at?: string | null
+          share_token_revoked_at?: string | null
+          shift_count_snapshot?: number | null
+          shift_hash_snapshot?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "confirmation_records_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      confirmation_shift_links: {
+        Row: {
+          confirmation_record_id: string
+          id: string
+          shift_id: string
+        }
+        Insert: {
+          confirmation_record_id: string
+          id?: string
+          shift_id: string
+        }
+        Update: {
+          confirmation_record_id?: string
+          id?: string
+          shift_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "confirmation_shift_links_confirmation_record_id_fkey"
+            columns: ["confirmation_record_id"]
+            isOneToOne: false
+            referencedRelation: "confirmation_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "confirmation_shift_links_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "shifts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contract_checklist_items: {
         Row: {
           created_at: string
@@ -1572,6 +1705,10 @@ export type Database = {
       }
       owns_ce_entry: {
         Args: { _ce_entry_id: string; _user_id: string }
+        Returns: boolean
+      }
+      owns_confirmation: {
+        Args: { _confirmation_id: string; _user_id: string }
         Returns: boolean
       }
       owns_credential: {

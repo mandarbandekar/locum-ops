@@ -7,11 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
   CalendarDays, FileText, DollarSign, AlertTriangle, ArrowRight,
-  Clock, CheckCircle, Building2, Plus, Send, ShieldAlert,
+  Clock, CheckCircle, Building2, Plus, Send, ShieldAlert, CheckSquare,
 } from 'lucide-react';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
-import { format, differenceInDays } from 'date-fns';
+import { format, differenceInDays, addMonths } from 'date-fns';
 import { getChecklistBadge } from '@/types/contracts';
+import { useConfirmations } from '@/hooks/useConfirmations';
 
 const dashDb = (table: string) => supabase.from(table as any);
 
@@ -146,7 +147,27 @@ export default function DashboardPage() {
       });
 
     return items.sort((a, b) => a.urgency - b.urgency).slice(0, 6);
-  }, [invoices, shifts, facilities, checklistItems, checklistItems, now]);
+  }, [invoices, shifts, facilities, checklistItems, now]);
+
+  // Confirmations needing action
+  const { needingActionCount } = useConfirmations();
+
+  const confirmationPriorities = useMemo(() => {
+    if (needingActionCount <= 0) return [];
+    return [{
+      title: `${needingActionCount} confirmation${needingActionCount > 1 ? 's' : ''} need action`,
+      context: 'Review and send monthly shift confirmations',
+      link: '/schedule',
+      icon: CheckSquare,
+      urgency: 4,
+    }];
+  }, [needingActionCount]);
+
+  const allPriorities = useMemo(() => {
+    return [...priorities, ...confirmationPriorities]
+      .sort((a, b) => a.urgency - b.urgency)
+      .slice(0, 7);
+  }, [priorities, confirmationPriorities]);
 
   // ── This Period ──
   const periodData = useMemo(() => {
@@ -178,6 +199,10 @@ export default function DashboardPage() {
   const trackingLines = useMemo(() => {
     const lines: { text: string; link: string }[] = [];
 
+    if (needingActionCount > 0) {
+      lines.push({ text: `Confirmations: ${needingActionCount} need${needingActionCount > 1 ? '' : 's'} action`, link: '/schedule' });
+    }
+
     const dueSoonChecklist = checklistItems.filter(item => {
       const badge = getChecklistBadge(item);
       return badge === 'due_soon' || badge === 'overdue';
@@ -200,7 +225,7 @@ export default function DashboardPage() {
     }
 
     return lines;
-  }, [checklistItems, taxChecklist, taxQuarters, now]);
+  }, [checklistItems, taxChecklist, taxQuarters, needingActionCount, now]);
 
   const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
   const getInvoiceForPayment = (invoiceId: string) => invoices.find(i => i.id === invoiceId);
@@ -276,7 +301,7 @@ export default function DashboardPage() {
           <CardTitle className="text-lg font-semibold">Today's Priorities</CardTitle>
         </CardHeader>
         <CardContent>
-          {priorities.length === 0 ? (
+          {allPriorities.length === 0 ? (
             <div className="py-8 text-center">
               <CheckCircle className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
               <p className="font-medium text-foreground">You're all caught up.</p>
@@ -284,7 +309,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="space-y-2">
-              {priorities.map((item, i) => (
+              {allPriorities.map((item, i) => (
                 <div
                   key={i}
                   className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer group"
