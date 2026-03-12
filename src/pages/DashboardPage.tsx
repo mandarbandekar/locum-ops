@@ -147,7 +147,27 @@ export default function DashboardPage() {
       });
 
     return items.sort((a, b) => a.urgency - b.urgency).slice(0, 6);
-  }, [invoices, shifts, facilities, checklistItems, checklistItems, now]);
+  }, [invoices, shifts, facilities, checklistItems, now]);
+
+  // Confirmations needing action
+  const { needingActionCount } = useConfirmations();
+
+  const confirmationPriorities = useMemo(() => {
+    if (needingActionCount <= 0) return [];
+    return [{
+      title: `${needingActionCount} confirmation${needingActionCount > 1 ? 's' : ''} need action`,
+      context: 'Review and send monthly shift confirmations',
+      link: '/schedule',
+      icon: CheckSquare,
+      urgency: 4,
+    }];
+  }, [needingActionCount]);
+
+  const allPriorities = useMemo(() => {
+    return [...priorities, ...confirmationPriorities]
+      .sort((a, b) => a.urgency - b.urgency)
+      .slice(0, 7);
+  }, [priorities, confirmationPriorities]);
 
   // ── This Period ──
   const periodData = useMemo(() => {
