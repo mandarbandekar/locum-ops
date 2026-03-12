@@ -1519,31 +1519,22 @@ export type Database = {
         Row: {
           created_at: string
           email: string
-          facility_count: string
-          headache: string
           id: string
           persona: string
-          profession: string
           source_page: string
         }
         Insert: {
           created_at?: string
           email: string
-          facility_count?: string
-          headache?: string
           id?: string
           persona?: string
-          profession?: string
           source_page?: string
         }
         Update: {
           created_at?: string
           email?: string
-          facility_count?: string
-          headache?: string
           id?: string
           persona?: string
-          profession?: string
           source_page?: string
         }
         Relationships: []
