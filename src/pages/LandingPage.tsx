@@ -29,19 +29,34 @@ function Anim({ children, className = '', delay = 0 }: { children: React.ReactNo
   );
 }
 
-/* ─── email capture ─── */
+/* ─── email capture (two-step) ─── */
 function EmailCapture({ source = 'landing_hero', showPersona = false }: { source?: string; showPersona?: boolean }) {
   const [email, setEmail] = useState('');
   const [persona, setPersona] = useState('');
+  const [facilityCount, setFacilityCount] = useState('');
+  const [headache, setHeadache] = useState('');
+  const [step, setStep] = useState<1 | 2>(1);
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errMsg, setErrMsg] = useState('');
 
-  const submit = async (e: React.FormEvent) => {
+  const handleStep1 = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setErrMsg('Please enter a valid email.'); return; }
+    setErrMsg('');
+    setStep(2);
+  };
+
+  const handleStep2 = async (e: React.FormEvent) => {
+    e.preventDefault();
     setStatus('loading');
     setErrMsg('');
-    const { error } = await supabase.from('waitlist_leads').insert({ email, persona, source_page: source });
+    const { error } = await supabase.from('waitlist_leads').insert({
+      email,
+      persona,
+      facility_count: facilityCount,
+      headache: headache.slice(0, 1000),
+      source_page: source,
+    });
     if (error) { setStatus('error'); setErrMsg('Something went wrong. Please try again.'); }
     else setStatus('success');
   };
@@ -59,14 +74,51 @@ function EmailCapture({ source = 'landing_hero', showPersona = false }: { source
     );
   }
 
+  if (step === 2) {
+    return (
+      <motion.form onSubmit={handleStep2} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
+        className="space-y-4">
+        <p className="text-sm font-medium text-foreground">Almost there! Two quick questions:</p>
+
+        <div className="space-y-2">
+          <p className="text-sm text-muted-foreground">How many facilities do you work with?</p>
+          <div className="flex gap-2">
+            {['1-3', '4-6', '6+'].map(opt => (
+              <button key={opt} type="button" onClick={() => setFacilityCount(opt)}
+                className={`h-10 px-5 rounded-lg border text-sm font-medium transition-colors ${facilityCount === opt
+                  ? 'border-primary bg-primary/10 text-primary'
+                  : 'border-input bg-background text-foreground hover:bg-muted'}`}>
+                {opt}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <p className="text-sm text-muted-foreground">What's the #1 admin headache of managing your own relief business you want solved?</p>
+          <textarea value={headache} onChange={e => setHeadache(e.target.value)} rows={3} maxLength={1000}
+            placeholder="e.g. chasing late payments, tracking credentials…"
+            className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none" />
+        </div>
+
+        {errMsg && <p className="text-sm text-destructive">{errMsg}</p>}
+
+        <button type="submit" disabled={status === 'loading'}
+          className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold text-base hover:bg-primary/90 transition-colors disabled:opacity-60">
+          {status === 'loading' ? 'Submitting…' : 'Join the Waitlist'}
+        </button>
+      </motion.form>
+    );
+  }
+
   return (
-    <form onSubmit={submit} className="space-y-3">
+    <form onSubmit={handleStep1} className="space-y-3">
       <div className="flex flex-col sm:flex-row gap-3">
         <input type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)}
           className="flex-1 h-12 rounded-xl border border-input bg-background px-4 text-base placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
-        <button type="submit" disabled={status === 'loading'}
-          className="h-12 px-6 rounded-xl bg-primary text-primary-foreground font-semibold text-base hover:bg-primary/90 transition-colors disabled:opacity-60 whitespace-nowrap">
-          {status === 'loading' ? 'Submitting…' : 'Join Early Access'}
+        <button type="submit"
+          className="h-12 px-6 rounded-xl bg-primary text-primary-foreground font-semibold text-base hover:bg-primary/90 transition-colors whitespace-nowrap">
+          Join Early Access
         </button>
       </div>
       {showPersona && (
