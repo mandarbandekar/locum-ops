@@ -71,6 +71,7 @@ function AuthenticatedApp() {
           <Route path="/invoices" element={<InvoicesPage />} />
           <Route path="/invoices/:id" element={<InvoiceDetailPage />} />
           <Route path="/invoice/public/:token" element={<PublicInvoicePage />} />
+          <Route path="/confirmations/public/:token" element={<PublicConfirmationPage />} />
           <Route path="/business" element={<BusinessPage />} />
           <Route path="/credentials" element={<CredentialsPage />} />
           <Route path="/reports" element={<Navigate to="/business?tab=reports" replace />} />
