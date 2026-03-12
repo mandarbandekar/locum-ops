@@ -225,7 +225,7 @@ export default function DashboardPage() {
     }
 
     return lines;
-  }, [checklistItems, taxChecklist, taxQuarters, now]);
+  }, [checklistItems, taxChecklist, taxQuarters, needingActionCount, now]);
 
   const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
   const getInvoiceForPayment = (invoiceId: string) => invoices.find(i => i.id === invoiceId);
