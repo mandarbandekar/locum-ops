@@ -181,26 +181,31 @@ export default function DashboardPage() {
       link: '/schedule',
       icon: CheckSquare,
       urgency: 4,
+      bucket: 'today' as const,
     }];
   }, [needingActionCount]);
 
-  // Credential renewal reminders
+  // Credential renewal reminders (only today/tomorrow/overdue)
   const credentialPriorities = useMemo(() => {
     if (!credentialsList) return [];
-    return generateCredentialReminders(credentialsList, now, 30).map(r => ({
+    return generateCredentialReminders(credentialsList, now, 1).map(r => ({
       title: r.title,
       context: r.body,
       link: r.link,
       icon: ShieldAlert,
       urgency: r.urgency,
+      bucket: 'today' as const,
     }));
   }, [credentialsList, now]);
 
   const allPriorities = useMemo(() => {
     return [...priorities, ...confirmationPriorities, ...credentialPriorities]
-      .sort((a, b) => a.urgency - b.urgency)
-      .slice(0, 7);
+      .sort((a, b) => a.urgency - b.urgency);
   }, [priorities, confirmationPriorities, credentialPriorities]);
+
+  const overduePriorities = allPriorities.filter(p => p.bucket === 'overdue');
+  const todayPriorities = allPriorities.filter(p => p.bucket === 'today');
+  const tomorrowPriorities = allPriorities.filter(p => p.bucket === 'tomorrow');
 
   // ── This Period ──
   const periodData = useMemo(() => {
