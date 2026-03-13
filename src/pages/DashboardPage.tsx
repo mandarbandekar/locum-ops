@@ -13,6 +13,8 @@ import { computeInvoiceStatus } from '@/lib/businessLogic';
 import { format, differenceInDays, addMonths } from 'date-fns';
 import { getChecklistBadge } from '@/types/contracts';
 import { useConfirmations } from '@/hooks/useConfirmations';
+import { useCredentials } from '@/hooks/useCredentials';
+import { generateCredentialReminders } from '@/lib/reminderEngine';
 
 const dashDb = (table: string) => supabase.from(table as any);
 
