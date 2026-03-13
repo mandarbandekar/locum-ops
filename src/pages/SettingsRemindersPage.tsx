@@ -65,6 +65,7 @@ export default function SettingsRemindersPage() {
 
   return (
     <div>
+      <SettingsNav />
       <div className="page-header">
         <h1 className="page-title">Reminder Settings</h1>
       </div>

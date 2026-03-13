@@ -38,6 +38,7 @@ export default function SettingsInvoiceProfilePage() {
 
   return (
     <div>
+      <SettingsNav />
       <div className="page-header">
         <h1 className="page-title">Invoice Profile</h1>
         <Button size="sm" onClick={handleSave} disabled={saving}>
