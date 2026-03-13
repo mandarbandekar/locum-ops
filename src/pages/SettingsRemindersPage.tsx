@@ -8,8 +8,10 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useReminderPreferences, CATEGORIES, type ReminderCategory } from '@/hooks/useReminderPreferences';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Save, Bell, Mail, MessageSquare, Smartphone, Clock } from 'lucide-react';
+import { Save, Bell, Mail, MessageSquare, Smartphone, Clock, Send, Loader2 } from 'lucide-react';
 
 const CATEGORY_LABELS: Record<ReminderCategory, string> = {
   invoices: 'Invoices',
@@ -31,7 +33,39 @@ const TIMING_OPTIONS = [
 
 export default function SettingsRemindersPage() {
   const { prefs, categories, loading, updatePrefs, updateCategory } = useReminderPreferences();
+  const { user, isDemo } = useAuth();
   const [saving, setSaving] = useState(false);
+  const [sendingReminders, setSendingReminders] = useState(false);
+
+  const handleSendRemindersNow = async () => {
+    if (isDemo) {
+      toast.info('Email sending is disabled in demo mode');
+      return;
+    }
+    setSendingReminders(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('You must be logged in');
+        return;
+      }
+      const { data, error } = await supabase.functions.invoke('send-reminder-emails', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (error) throw error;
+      const enqueued = data?.enqueued || 0;
+      if (enqueued > 0) {
+        toast.success(`${enqueued} reminder email${enqueued > 1 ? 's' : ''} queued for delivery`);
+      } else {
+        toast.info('No reminders to send right now — all caught up!');
+      }
+    } catch (err: any) {
+      console.error('Failed to send reminders:', err);
+      toast.error('Failed to send reminders');
+    } finally {
+      setSendingReminders(false);
+    }
+  };
 
   if (loading || !prefs) {
     return (
@@ -74,6 +108,31 @@ export default function SettingsRemindersPage() {
       </p>
 
       <div className="grid gap-6 max-w-2xl">
+        {/* Manual Send */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Send className="h-4 w-4 text-primary" /> Send Reminders Now
+            </CardTitle>
+            <CardDescription>
+              Manually trigger invoice reminder emails based on your current data
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              onClick={handleSendRemindersNow}
+              disabled={sendingReminders || isDemo}
+              className="gap-2"
+            >
+              {sendingReminders ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+              {sendingReminders ? 'Sending…' : 'Send invoice reminders now'}
+            </Button>
+            <p className="text-xs text-muted-foreground mt-2">
+              Checks for draft and overdue invoices and sends email reminders. Won't send duplicates for the same day.
+            </p>
+          </CardContent>
+        </Card>
+
         {/* Delivery Channels */}
         <Card>
           <CardHeader>
