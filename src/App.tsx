@@ -80,6 +80,7 @@ function AuthenticatedApp() {
           <Route path="/tax-strategy" element={<Navigate to="/business?tab=tax-strategy" replace />} />
           <Route path="/settings/profile" element={<SettingsProfilePage />} />
           <Route path="/settings/invoice-profile" element={<SettingsInvoiceProfilePage />} />
+          <Route path="/settings/reminders" element={<SettingsRemindersPage />} />
           <Route path="/import" element={<ImportPage />} />
           <Route path="/onboarding" element={<Navigate to="/" replace />} />
           <Route path="/login" element={<Navigate to="/" replace />} />
