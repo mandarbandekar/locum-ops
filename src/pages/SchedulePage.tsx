@@ -240,7 +240,10 @@ export default function SchedulePage() {
             </Button>
           </div>
 
-          {view === 'month' ? (
+          <div className="mb-4">
+            <CalendarFilters filters={calendarFilters} onToggle={toggleFilter} />
+          </div>
+
             <div className="rounded-lg border bg-card overflow-hidden">
               <div className="grid grid-cols-7 bg-muted/50">
                 {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
