@@ -502,20 +502,20 @@ function PriorityBucket({
 
   return (
     <div>
-      <p className={`text-xs font-semibold uppercase tracking-wider mb-2 ${labelClass}`}>{label}</p>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <p className={`text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${labelClass}`}>{label}</p>
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((item, i) => (
           <div
             key={i}
-            className="flex items-start gap-3 p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer group"
+            className="flex items-start gap-2 p-2.5 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer"
             onClick={() => navigate(item.link)}
           >
-            <div className={`p-2 rounded-md shrink-0 ${variant === 'destructive' ? 'bg-destructive/10' : 'bg-muted'}`}>
-              <item.icon className={`h-4 w-4 ${variant === 'destructive' ? 'text-destructive' : 'text-muted-foreground'}`} />
+            <div className={`p-1.5 rounded-md shrink-0 ${variant === 'destructive' ? 'bg-destructive/10' : 'bg-muted'}`}>
+              <item.icon className={`h-3.5 w-3.5 ${variant === 'destructive' ? 'text-destructive' : 'text-muted-foreground'}`} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium leading-tight">{item.title}</p>
-              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{item.context}</p>
+              <p className="text-xs font-medium leading-tight truncate">{item.title}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{item.context}</p>
             </div>
           </div>
         ))}
