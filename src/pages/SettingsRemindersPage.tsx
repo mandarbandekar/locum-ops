@@ -8,8 +8,10 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useReminderPreferences, CATEGORIES, type ReminderCategory } from '@/hooks/useReminderPreferences';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Save, Bell, Mail, MessageSquare, Smartphone, Clock } from 'lucide-react';
+import { Save, Bell, Mail, MessageSquare, Smartphone, Clock, Send, Loader2 } from 'lucide-react';
 
 const CATEGORY_LABELS: Record<ReminderCategory, string> = {
   invoices: 'Invoices',
