@@ -33,7 +33,39 @@ const TIMING_OPTIONS = [
 
 export default function SettingsRemindersPage() {
   const { prefs, categories, loading, updatePrefs, updateCategory } = useReminderPreferences();
+  const { user, isDemo } = useAuth();
   const [saving, setSaving] = useState(false);
+  const [sendingReminders, setSendingReminders] = useState(false);
+
+  const handleSendRemindersNow = async () => {
+    if (isDemo) {
+      toast.info('Email sending is disabled in demo mode');
+      return;
+    }
+    setSendingReminders(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('You must be logged in');
+        return;
+      }
+      const { data, error } = await supabase.functions.invoke('send-reminder-emails', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (error) throw error;
+      const enqueued = data?.enqueued || 0;
+      if (enqueued > 0) {
+        toast.success(`${enqueued} reminder email${enqueued > 1 ? 's' : ''} queued for delivery`);
+      } else {
+        toast.info('No reminders to send right now — all caught up!');
+      }
+    } catch (err: any) {
+      console.error('Failed to send reminders:', err);
+      toast.error('Failed to send reminders');
+    } finally {
+      setSendingReminders(false);
+    }
+  };
 
   if (loading || !prefs) {
     return (
