@@ -1,0 +1,165 @@
+/**
+ * Reminder engine: pure functions for generating reminders from application state.
+ * These functions can be used both client-side (for dashboard) and server-side (for scheduled jobs).
+ */
+
+import { computeInvoiceStatus } from '@/lib/businessLogic';
+import { differenceInDays } from 'date-fns';
+import type { Invoice, Facility } from '@/types';
+
+export interface GeneratedReminder {
+  module: string;
+  reminder_type: string;
+  title: string;
+  body: string;
+  link: string;
+  urgency: number;
+  related_entity_type?: string;
+  related_entity_id?: string;
+}
+
+export function generateInvoiceReminders(
+  invoices: Invoice[],
+  getFacilityName: (id: string) => string
+): GeneratedReminder[] {
+  const items: GeneratedReminder[] = [];
+
+  // Draft invoices not sent
+  const drafts = invoices.filter(i => i.status === 'draft');
+  if (drafts.length === 1) {
+    const inv = drafts[0];
+    items.push({
+      module: 'invoices',
+      reminder_type: 'invoice_draft_unsent',
+      title: `Send invoice draft ${inv.invoice_number}`,
+      body: `$${inv.total_amount.toLocaleString()} ready to bill · ${getFacilityName(inv.facility_id)}`,
+      link: `/invoices/${inv.id}`,
+      urgency: 2,
+      related_entity_type: 'invoice',
+      related_entity_id: inv.id,
+    });
+  } else if (drafts.length > 1) {
+    items.push({
+      module: 'invoices',
+      reminder_type: 'invoice_draft_unsent',
+      title: `You have ${drafts.length} invoice drafts ready to review and send`,
+      body: `$${drafts.reduce((s, i) => s + i.total_amount, 0).toLocaleString()} total`,
+      link: '/invoices',
+      urgency: 2,
+    });
+  }
+
+  // Overdue invoices
+  invoices.filter(i => computeInvoiceStatus(i) === 'overdue').forEach(inv => {
+    items.push({
+      module: 'invoices',
+      reminder_type: 'invoice_overdue',
+      title: `Invoice ${inv.invoice_number} is overdue`,
+      body: `$${inv.balance_due.toLocaleString()} is still outstanding · ${getFacilityName(inv.facility_id)}`,
+      link: `/invoices/${inv.id}`,
+      urgency: 1,
+      related_entity_type: 'invoice',
+      related_entity_id: inv.id,
+    });
+  });
+
+  return items;
+}
+
+export function generateConfirmationReminders(needingActionCount: number): GeneratedReminder[] {
+  if (needingActionCount <= 0) return [];
+  return [{
+    module: 'confirmations',
+    reminder_type: 'confirmation_not_sent',
+    title: `${needingActionCount} confirmation${needingActionCount > 1 ? 's' : ''} need action`,
+    body: 'Review and send monthly shift confirmations',
+    link: '/schedule',
+    urgency: 4,
+  }];
+}
+
+export function generateOutreachReminders(
+  facilities: Facility[],
+  now: Date
+): GeneratedReminder[] {
+  const items: GeneratedReminder[] = [];
+  facilities
+    .filter(f => f.status === 'prospect' || f.status === 'outreach')
+    .forEach(f => {
+      if (f.outreach_last_sent_at) {
+        const daysSince = differenceInDays(now, new Date(f.outreach_last_sent_at));
+        if (daysSince >= 7) {
+          items.push({
+            module: 'outreach',
+            reminder_type: 'outreach_followup',
+            title: `Follow up with ${f.name}`,
+            body: `Last outreach was ${daysSince} days ago`,
+            link: `/facilities/${f.id}`,
+            urgency: 7,
+            related_entity_type: 'facility',
+            related_entity_id: f.id,
+          });
+        }
+      }
+    });
+  return items;
+}
+
+export function generateCredentialReminders(
+  credentials: Array<{ id: string; custom_title: string; expiration_date: string | null }>,
+  now: Date,
+  windowDays = 30
+): GeneratedReminder[] {
+  const items: GeneratedReminder[] = [];
+  credentials.forEach(cred => {
+    if (!cred.expiration_date) return;
+    const daysUntil = differenceInDays(new Date(cred.expiration_date), now);
+    if (daysUntil >= 0 && daysUntil <= windowDays) {
+      items.push({
+        module: 'credentials',
+        reminder_type: 'credential_renewal_due',
+        title: `${cred.custom_title} renewal due`,
+        body: daysUntil === 0 ? 'Due today' : `Due in ${daysUntil} days`,
+        link: '/credentials',
+        urgency: daysUntil <= 7 ? 3 : 6,
+        related_entity_type: 'credential',
+        related_entity_id: cred.id,
+      });
+    }
+  });
+  return items;
+}
+
+/** Check if a send_at time falls within quiet hours */
+export function isInQuietHours(
+  sendAt: Date,
+  quietStart: string | null,
+  quietEnd: string | null
+): boolean {
+  if (!quietStart || !quietEnd) return false;
+  const [sh, sm] = quietStart.split(':').map(Number);
+  const [eh, em] = quietEnd.split(':').map(Number);
+  const h = sendAt.getHours();
+  const m = sendAt.getMinutes();
+  const sendMinutes = h * 60 + m;
+  const startMinutes = sh * 60 + sm;
+  const endMinutes = eh * 60 + em;
+
+  if (startMinutes <= endMinutes) {
+    return sendMinutes >= startMinutes && sendMinutes < endMinutes;
+  }
+  // Overnight range (e.g., 22:00 - 07:00)
+  return sendMinutes >= startMinutes || sendMinutes < endMinutes;
+}
+
+/** Filter reminders based on user preferences */
+export function filterByPreferences(
+  reminders: GeneratedReminder[],
+  categorySettings: Array<{ category: string; enabled: boolean; in_app_enabled: boolean }>,
+): GeneratedReminder[] {
+  return reminders.filter(r => {
+    const setting = categorySettings.find(c => c.category === r.module);
+    if (!setting) return true; // no setting = show by default
+    return setting.enabled && setting.in_app_enabled;
+  });
+}
