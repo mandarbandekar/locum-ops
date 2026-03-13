@@ -13,6 +13,9 @@ import { WeekTimeGrid } from '@/components/schedule/WeekTimeGrid';
 import { ConfirmationsTab } from '@/components/schedule/ConfirmationsTab';
 import { getMarkersForDay } from '@/lib/calendarMarkers';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { CalendarFilters, CalendarLayerFilters } from '@/components/schedule/CalendarFilters';
+import { useCalendarEvents } from '@/hooks/useCalendarEvents';
+import { CalendarEventStack } from '@/components/schedule/CalendarEventChip';
 
 const STORAGE_KEY = 'schedule-view-pref';
 
