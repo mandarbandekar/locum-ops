@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { toast } from 'sonner';
 import { Save, FileText } from 'lucide-react';
+import { SettingsNav } from '@/components/SettingsNav';
 
 export default function SettingsInvoiceProfilePage() {
   const { profile, updateProfile } = useUserProfile();
