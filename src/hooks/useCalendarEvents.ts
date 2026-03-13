@@ -15,7 +15,7 @@ export interface CalendarEvent {
 }
 
 function credentialStatus(cred: Credential): 'active' | 'due_soon' | 'expired' | null {
-  if (cred.status === 'expired' || cred.status === 'revoked') return 'expired';
+  if (cred.status === 'expired' || cred.status === 'archived') return 'expired';
   if (!cred.expiration_date) return 'active';
   const now = new Date();
   now.setHours(0, 0, 0, 0);
