@@ -21,6 +21,7 @@ const STORAGE_KEY = 'schedule-view-pref';
 
 export default function SchedulePage() {
   const { shifts, facilities, addShift, updateShift, deleteShift, updateFacility } = useData();
+  const { getEventsForDay } = useCalendarEvents();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<'month' | 'week' | 'list' | 'confirmations'>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -29,6 +30,15 @@ export default function SchedulePage() {
   const [showAdd, setShowAdd] = useState(false);
   const [editShift, setEditShift] = useState<string | null>(null);
   const [dragOverDay, setDragOverDay] = useState<string | null>(null);
+  const [calendarFilters, setCalendarFilters] = useState<CalendarLayerFilters>({
+    shifts: true,
+    credentials: false,
+    subscriptions: false,
+  });
+
+  const toggleFilter = (key: keyof CalendarLayerFilters) => {
+    setCalendarFilters(prev => ({ ...prev, [key]: !prev[key] }));
+  };
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, view);
