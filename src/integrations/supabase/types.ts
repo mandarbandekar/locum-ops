@@ -1278,6 +1278,141 @@ export type Database = {
         }
         Relationships: []
       }
+      reminder_category_settings: {
+        Row: {
+          category: string
+          created_at: string
+          email_enabled: boolean
+          enabled: boolean
+          id: string
+          in_app_enabled: boolean
+          sms_enabled: boolean
+          timing_config: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          email_enabled?: boolean
+          enabled?: boolean
+          id?: string
+          in_app_enabled?: boolean
+          sms_enabled?: boolean
+          timing_config?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          email_enabled?: boolean
+          enabled?: boolean
+          id?: string
+          in_app_enabled?: boolean
+          sms_enabled?: boolean
+          timing_config?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      reminder_preferences: {
+        Row: {
+          created_at: string
+          digest_frequency: string | null
+          email_enabled: boolean
+          id: string
+          in_app_enabled: boolean
+          phone_number: string | null
+          quiet_hours_end: string | null
+          quiet_hours_start: string | null
+          reminder_email: string | null
+          sms_enabled: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          digest_frequency?: string | null
+          email_enabled?: boolean
+          id?: string
+          in_app_enabled?: boolean
+          phone_number?: string | null
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
+          reminder_email?: string | null
+          sms_enabled?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          digest_frequency?: string | null
+          email_enabled?: boolean
+          id?: string
+          in_app_enabled?: boolean
+          phone_number?: string | null
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
+          reminder_email?: string | null
+          sms_enabled?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      reminders: {
+        Row: {
+          body: string
+          channel: string
+          created_at: string
+          dismissed_at: string | null
+          id: string
+          module: string
+          related_entity_id: string | null
+          related_entity_type: string | null
+          reminder_type: string
+          send_at: string
+          sent_at: string | null
+          status: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body?: string
+          channel?: string
+          created_at?: string
+          dismissed_at?: string | null
+          id?: string
+          module: string
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          reminder_type: string
+          send_at?: string
+          sent_at?: string | null
+          status?: string
+          title: string
+          user_id?: string
+        }
+        Update: {
+          body?: string
+          channel?: string
+          created_at?: string
+          dismissed_at?: string | null
+          id?: string
+          module?: string
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          reminder_type?: string
+          send_at?: string
+          sent_at?: string | null
+          status?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       shifts: {
         Row: {
           color: string

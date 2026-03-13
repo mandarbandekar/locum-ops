@@ -13,6 +13,8 @@ import { computeInvoiceStatus } from '@/lib/businessLogic';
 import { format, differenceInDays, addMonths } from 'date-fns';
 import { getChecklistBadge } from '@/types/contracts';
 import { useConfirmations } from '@/hooks/useConfirmations';
+import { useCredentials } from '@/hooks/useCredentials';
+import { generateCredentialReminders } from '@/lib/reminderEngine';
 
 const dashDb = (table: string) => supabase.from(table as any);
 
@@ -151,6 +153,7 @@ export default function DashboardPage() {
 
   // Confirmations needing action
   const { needingActionCount } = useConfirmations();
+  const { credentials: credentialsList } = useCredentials();
 
   const confirmationPriorities = useMemo(() => {
     if (needingActionCount <= 0) return [];
@@ -163,11 +166,23 @@ export default function DashboardPage() {
     }];
   }, [needingActionCount]);
 
+  // Credential renewal reminders
+  const credentialPriorities = useMemo(() => {
+    if (!credentialsList) return [];
+    return generateCredentialReminders(credentialsList, now, 30).map(r => ({
+      title: r.title,
+      context: r.body,
+      link: r.link,
+      icon: ShieldAlert,
+      urgency: r.urgency,
+    }));
+  }, [credentialsList, now]);
+
   const allPriorities = useMemo(() => {
-    return [...priorities, ...confirmationPriorities]
+    return [...priorities, ...confirmationPriorities, ...credentialPriorities]
       .sort((a, b) => a.urgency - b.urgency)
       .slice(0, 7);
-  }, [priorities, confirmationPriorities]);
+  }, [priorities, confirmationPriorities, credentialPriorities]);
 
   // ── This Period ──
   const periodData = useMemo(() => {

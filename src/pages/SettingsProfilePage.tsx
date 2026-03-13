@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { SettingsNav } from '@/components/SettingsNav';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -73,6 +74,7 @@ export default function SettingsProfilePage() {
 
   return (
     <div>
+      <SettingsNav />
       <div className="page-header">
         <h1 className="page-title">Profile Settings</h1>
         <Button size="sm" onClick={handleSave} disabled={saving}>
