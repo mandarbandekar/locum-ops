@@ -3,18 +3,23 @@ import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import {
   CalendarDays, FileText, DollarSign, AlertTriangle, ArrowRight,
-  Clock, CheckCircle, Building2, Plus, Send, ShieldAlert, CheckSquare,
+  Send, ShieldAlert, CheckSquare,
 } from 'lucide-react';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
-import { format, differenceInDays, addMonths } from 'date-fns';
+import { format, differenceInDays } from 'date-fns';
 import { getChecklistBadge } from '@/types/contracts';
 import { useConfirmations } from '@/hooks/useConfirmations';
 import { useCredentials } from '@/hooks/useCredentials';
 import { generateCredentialReminders } from '@/lib/reminderEngine';
+import { computeStatus as computeSubStatus } from '@/hooks/useSubscriptions';
+
+import { SummaryCard } from '@/components/dashboard/SummaryCards';
+import { PrioritiesCard, PriorityItem } from '@/components/dashboard/PrioritiesCard';
+import { ThisWeekCard } from '@/components/dashboard/ThisWeekCard';
+import { WorkReadinessStrip, ReadinessItem } from '@/components/dashboard/WorkReadinessStrip';
+import { QuickActions } from '@/components/dashboard/QuickActions';
 
 const dashDb = (table: string) => supabase.from(table as any);
 
@@ -24,30 +29,35 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const now = new Date();
 
-  // Tax readiness data for dashboard hooks
+  // Tax & subscription data
   const [taxChecklist, setTaxChecklist] = useState<{ completed: boolean }[]>([]);
   const [taxQuarters, setTaxQuarters] = useState<{ quarter: number; due_date: string; status: string }[]>([]);
+  const [subscriptions, setSubscriptions] = useState<{ name: string; renewal_date: string | null; status: string; archived_at: string | null }[]>([]);
 
   useEffect(() => {
-    if (isDemo) return;
-    if (!user) return;
+    if (isDemo || !user) return;
     Promise.all([
       dashDb('tax_checklist_items').select('completed'),
       dashDb('tax_quarter_statuses').select('quarter,due_date,status').eq('tax_year', now.getFullYear()).order('quarter'),
-    ]).then(([clRes, qsRes]) => {
+      dashDb('required_subscriptions').select('name,renewal_date,status,archived_at').is('archived_at', null),
+    ]).then(([clRes, qsRes, subRes]) => {
       if (clRes.data) setTaxChecklist(clRes.data as any[]);
       if (qsRes.data) setTaxQuarters(qsRes.data as any[]);
+      if (subRes.data) setSubscriptions(subRes.data as any[]);
     });
   }, [user?.id, isDemo]);
 
-  // ── Summary card data ──
-  const summaryData = useMemo(() => {
+  const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
+
+  // ── Summary data ──
+  const summary = useMemo(() => {
     const in7Days = new Date(now);
     in7Days.setDate(in7Days.getDate() + 7);
 
-    const upcomingShifts = shifts
-      .filter(s => new Date(s.start_datetime) >= now && new Date(s.start_datetime) <= in7Days && (s.status === 'booked' || s.status === 'proposed'))
-      .sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime());
+    const upcomingShifts = shifts.filter(s =>
+      new Date(s.start_datetime) >= now && new Date(s.start_datetime) <= in7Days &&
+      (s.status === 'booked' || s.status === 'proposed')
+    );
 
     const draftInvoices = invoices.filter(i => i.status === 'draft');
     const draftTotal = draftInvoices.reduce((s, i) => s + i.total_amount, 0);
@@ -57,68 +67,50 @@ export default function DashboardPage() {
       return status === 'sent' || status === 'partial' || status === 'overdue';
     });
     const outstandingTotal = unpaidInvoices.reduce((s, i) => s + i.balance_due, 0);
-    const overdueCount = unpaidInvoices.filter(i => computeInvoiceStatus(i) === 'overdue').length;
-    const sentCount = unpaidInvoices.filter(i => i.status === 'sent').length;
-    const partialCount = unpaidInvoices.filter(i => i.status === 'partial').length;
 
-    // Due soon items
     const dueSoonChecklist = checklistItems.filter(item => {
       const badge = getChecklistBadge(item);
       return badge === 'due_soon' || badge === 'overdue';
     });
 
-    const dueSoonTotal = dueSoonChecklist.length;
-    const dueSoonExamples: string[] = [];
-    if (dueSoonChecklist.length > 0) {
-      const sorted = [...dueSoonChecklist].sort((a, b) => new Date(a.due_date!).getTime() - new Date(b.due_date!).getTime());
-      const first = sorted[0];
-      const days = differenceInDays(new Date(first.due_date!), now);
-      dueSoonExamples.push(days < 0 ? `${first.title} overdue` : `${first.title} in ${days} days`);
-      if (sorted.length > 1) dueSoonExamples.push(`${sorted.length - 1} more item${sorted.length - 1 > 1 ? 's' : ''}`);
-    }
+    return { upcomingShifts, draftInvoices, draftTotal, unpaidInvoices, outstandingTotal, dueSoonChecklist };
+  }, [shifts, invoices, checklistItems, now]);
 
-    const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
+  // ── Priorities ──
+  const { needingActionCount } = useConfirmations();
+  const { credentials: credentialsList } = useCredentials();
 
-    const nextShift = upcomingShifts[0];
-    const nextShiftLabel = nextShift
-      ? `${format(new Date(nextShift.start_datetime), 'EEE, MMM d · h:mm a')} · ${getFacilityName(nextShift.facility_id)}`
-      : null;
+  const allPriorities = useMemo(() => {
+    const items: PriorityItem[] = [];
 
-    return {
-      upcomingShifts, draftInvoices, draftTotal, unpaidInvoices, outstandingTotal,
-      overdueCount, sentCount, partialCount, dueSoonTotal, dueSoonExamples,
-      nextShiftLabel, getFacilityName,
-    };
-  }, [shifts, invoices, facilities, checklistItems, now]);
-
-  // ── Today's Priorities ──
-  const priorities = useMemo(() => {
-    const items: { title: string; context: string; link: string; icon: React.ElementType; urgency: number }[] = [];
-    const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
-
-    // 1) Overdue invoices
+    // Overdue invoices
     invoices.filter(i => computeInvoiceStatus(i) === 'overdue').forEach(inv => {
       items.push({
         title: `Follow up on ${inv.invoice_number}`,
         context: `$${inv.balance_due.toLocaleString()} overdue · ${getFacilityName(inv.facility_id)}`,
-        link: `/invoices/${inv.id}`,
-        icon: AlertTriangle,
-        urgency: 1,
+        link: `/invoices/${inv.id}`, icon: AlertTriangle, urgency: 1,
       });
     });
 
-    // 2) Draft invoices ready to send
+    // Draft invoices
     invoices.filter(i => i.status === 'draft').forEach(inv => {
       items.push({
         title: `Review and send ${inv.invoice_number}`,
-        context: `$${inv.total_amount.toLocaleString()} ready to send · ${getFacilityName(inv.facility_id)}`,
-        link: `/invoices/${inv.id}`,
-        icon: Send,
-        urgency: 2,
+        context: `$${inv.total_amount.toLocaleString()} ready to send`,
+        link: `/invoices/${inv.id}`, icon: Send, urgency: 2,
       });
     });
 
-    // 5) Upcoming shifts in next 48 hours
+    // Confirmations
+    if (needingActionCount > 0) {
+      items.push({
+        title: `${needingActionCount} confirmation${needingActionCount > 1 ? 's' : ''} need action`,
+        context: 'Review and send monthly shift confirmations',
+        link: '/schedule', icon: CheckSquare, urgency: 4,
+      });
+    }
+
+    // Upcoming shifts in 48h
     const in48h = new Date(now);
     in48h.setHours(in48h.getHours() + 48);
     shifts
@@ -127,92 +119,55 @@ export default function DashboardPage() {
         items.push({
           title: `Shift at ${getFacilityName(s.facility_id)}`,
           context: format(new Date(s.start_datetime), 'EEE, MMM d · h:mm a'),
-          link: '/schedule',
-          icon: CalendarDays,
-          urgency: 5,
+          link: '/schedule', icon: CalendarDays, urgency: 5,
         });
       });
 
-    // 8) Contract checklist items due soon
+    // Checklist items
     checklistItems
       .filter(item => getChecklistBadge(item) === 'due_soon' || getChecklistBadge(item) === 'overdue')
       .forEach(item => {
         const badge = getChecklistBadge(item);
         const days = differenceInDays(new Date(item.due_date!), now);
         items.push({
-          title: `${item.title}`,
+          title: item.title,
           context: badge === 'overdue' ? 'Overdue' : `Due in ${days} days`,
-          link: `/facilities`,
-          icon: ShieldAlert,
-          urgency: badge === 'overdue' ? 3 : 8,
+          link: '/facilities', icon: ShieldAlert, urgency: badge === 'overdue' ? 3 : 8,
         });
       });
 
-    return items.sort((a, b) => a.urgency - b.urgency).slice(0, 6);
-  }, [invoices, shifts, facilities, checklistItems, now]);
+    // Credential renewals
+    if (credentialsList) {
+      generateCredentialReminders(credentialsList, now, 30).forEach(r => {
+        items.push({ title: r.title, context: r.body, link: r.link, icon: ShieldAlert, urgency: r.urgency });
+      });
+    }
 
-  // Confirmations needing action
-  const { needingActionCount } = useConfirmations();
-  const { credentials: credentialsList } = useCredentials();
+    return items.sort((a, b) => a.urgency - b.urgency).slice(0, 7);
+  }, [invoices, shifts, facilities, checklistItems, needingActionCount, credentialsList, now]);
 
-  const confirmationPriorities = useMemo(() => {
-    if (needingActionCount <= 0) return [];
-    return [{
-      title: `${needingActionCount} confirmation${needingActionCount > 1 ? 's' : ''} need action`,
-      context: 'Review and send monthly shift confirmations',
-      link: '/schedule',
-      icon: CheckSquare,
-      urgency: 4,
-    }];
-  }, [needingActionCount]);
-
-  // Credential renewal reminders
-  const credentialPriorities = useMemo(() => {
-    if (!credentialsList) return [];
-    return generateCredentialReminders(credentialsList, now, 30).map(r => ({
-      title: r.title,
-      context: r.body,
-      link: r.link,
-      icon: ShieldAlert,
-      urgency: r.urgency,
-    }));
-  }, [credentialsList, now]);
-
-  const allPriorities = useMemo(() => {
-    return [...priorities, ...confirmationPriorities, ...credentialPriorities]
-      .sort((a, b) => a.urgency - b.urgency)
-      .slice(0, 7);
-  }, [priorities, confirmationPriorities, credentialPriorities]);
-
-  // ── This Period ──
-  const periodData = useMemo(() => {
+  // ── This Week data ──
+  const thisWeek = useMemo(() => {
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
-
     const paidThisMonth = payments
-      .filter(p => {
-        const d = new Date(p.payment_date);
-        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
-      })
+      .filter(p => { const d = new Date(p.payment_date); return d.getMonth() === currentMonth && d.getFullYear() === currentYear; })
       .reduce((s, p) => s + p.amount, 0);
 
     const recentPayments = [...payments]
       .sort((a, b) => new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime())
       .slice(0, 3);
 
-    const in7Days = new Date(now);
-    in7Days.setDate(in7Days.getDate() + 7);
-    const upcomingShifts = shifts
-      .filter(s => new Date(s.start_datetime) >= now && new Date(s.start_datetime) <= in7Days && (s.status === 'booked' || s.status === 'proposed'))
-      .sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime())
-      .slice(0, 3);
+    const nextShift = shifts
+      .filter(s => new Date(s.start_datetime) >= now && (s.status === 'booked' || s.status === 'proposed'))
+      .sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime())[0] || null;
 
-    return { paidThisMonth, recentPayments, upcomingShifts };
+    return { paidThisMonth, recentPayments, nextShift };
   }, [payments, shifts, now]);
 
-  // ── Tracking Overview ──
-  const trackingLines = useMemo(() => {
-    const lines: { text: string; link: string }[] = [];
+  // ── Work Readiness ──
+  const readinessItems = useMemo(() => {
+    const lines: ReadinessItem[] = [];
 
     if (needingActionCount > 0) {
       lines.push({ text: `Confirmations: ${needingActionCount} need${needingActionCount > 1 ? '' : 's'} action`, link: '/schedule' });
@@ -226,11 +181,30 @@ export default function DashboardPage() {
       lines.push({ text: `Contracts: ${dueSoonChecklist.length} item${dueSoonChecklist.length > 1 ? 's' : ''} due soon`, link: '/facilities' });
     }
 
-    // Tax readiness hooks
+    // Credentials
+    if (credentialsList) {
+      const expiringSoon = credentialsList.filter(c => {
+        if (c.status === 'archived') return false;
+        if (!c.expiration_date) return false;
+        const days = differenceInDays(new Date(c.expiration_date), now);
+        return days >= 0 && days <= 30;
+      });
+      if (expiringSoon.length > 0) {
+        lines.push({ text: `Credentials: ${expiringSoon.length} renewal${expiringSoon.length > 1 ? 's' : ''} soon`, link: '/credentials' });
+      }
+    }
+
+    // Subscriptions
+    const dueSoonSubs = subscriptions.filter(s => computeSubStatus(s.renewal_date, s.status) === 'due_soon');
+    if (dueSoonSubs.length > 0) {
+      lines.push({ text: `Subscriptions: ${dueSoonSubs.length} renewal${dueSoonSubs.length > 1 ? 's' : ''} soon`, link: '/credentials?tab=subscriptions' });
+    }
+
+    // Tax readiness
     if (taxChecklist.length > 0) {
       const completed = taxChecklist.filter(c => c.completed).length;
       const percent = Math.round((completed / taxChecklist.length) * 100);
-      lines.push({ text: `Tax readiness: ${percent}%`, link: '/business?tab=tax-strategy&subtab=tracker' });
+      if (percent < 100) lines.push({ text: `Tax readiness: ${percent}%`, link: '/business?tab=tax-strategy&subtab=tracker' });
     }
 
     const nextQuarter = taxQuarters.find(q => new Date(q.due_date) >= now && q.status !== 'paid');
@@ -240,256 +214,81 @@ export default function DashboardPage() {
     }
 
     return lines;
-  }, [checklistItems, taxChecklist, taxQuarters, needingActionCount, now]);
-
-  const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
-  const getInvoiceForPayment = (invoiceId: string) => invoices.find(i => i.id === invoiceId);
-
-  const hasNoData = shifts.length === 0 && invoices.length === 0 && facilities.length === 0;
+  }, [checklistItems, taxChecklist, taxQuarters, needingActionCount, credentialsList, subscriptions, now]);
 
   return (
-    <div className="space-y-8">
-      <div className="page-header">
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
         <h1 className="page-title">Dashboard</h1>
+        <QuickActions />
       </div>
 
-      {/* ── TOP ROW: 4 Summary Cards ── */}
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        {/* Card 1: Upcoming Shifts */}
+      {/* Row 1: 4 Summary Cards */}
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
         <SummaryCard
           icon={CalendarDays}
           title="Upcoming Shifts"
-          value={summaryData.upcomingShifts.length}
-          subtitle={summaryData.nextShiftLabel || 'No upcoming shifts this week'}
-          cta="View Schedule"
+          value={summary.upcomingShifts.length}
+          subtitle={summary.upcomingShifts.length > 0
+            ? `${summary.upcomingShifts.length} in next 7 days`
+            : 'No upcoming shifts'}
           onClick={() => navigate('/schedule')}
           accentClass="text-primary"
           bgClass="bg-primary/10"
         />
-
-        {/* Card 2: Ready to Invoice */}
         <SummaryCard
           icon={FileText}
           title="Ready to Invoice"
-          value={`$${summaryData.draftTotal.toLocaleString()}`}
-          subtitle={summaryData.draftInvoices.length > 0
-            ? `${summaryData.draftInvoices.length} draft invoice${summaryData.draftInvoices.length > 1 ? 's' : ''} · Work completed and ready to bill`
-            : 'No invoices ready to send'}
-          cta="Review Invoices"
+          value={`$${summary.draftTotal.toLocaleString()}`}
+          subtitle={summary.draftInvoices.length > 0
+            ? `$${summary.draftTotal.toLocaleString()} across ${summary.draftInvoices.length} draft${summary.draftInvoices.length > 1 ? 's' : ''}`
+            : 'No drafts ready'}
           onClick={() => navigate('/invoices')}
-          accentClass="text-amber-600 dark:text-amber-400"
-          bgClass="bg-amber-500/10"
+          accentClass="text-warning"
+          bgClass="bg-warning/10"
         />
-
-        {/* Card 3: Outstanding Balance */}
         <SummaryCard
           icon={DollarSign}
-          title="Outstanding Balance"
-          value={`$${summaryData.outstandingTotal.toLocaleString()}`}
-          subtitle={summaryData.unpaidInvoices.length > 0
-            ? `${summaryData.unpaidInvoices.length} unpaid${summaryData.overdueCount > 0 ? ` · ${summaryData.overdueCount} overdue` : ''}`
-            : 'No unpaid invoices'}
-          cta="View Payments"
+          title="Outstanding"
+          value={`$${summary.outstandingTotal.toLocaleString()}`}
+          subtitle={summary.unpaidInvoices.length > 0
+            ? `${summary.unpaidInvoices.length} invoice${summary.unpaidInvoices.length > 1 ? 's' : ''} awaiting payment`
+            : '0 unpaid invoices'}
           onClick={() => navigate('/invoices')}
-          accentClass="text-emerald-600 dark:text-emerald-400"
-          bgClass="bg-emerald-500/10"
+          accentClass="text-success"
+          bgClass="bg-success/10"
         />
-
-        {/* Card 4: Due Soon */}
         <SummaryCard
           icon={ShieldAlert}
           title="Due Soon"
-          value={summaryData.dueSoonTotal}
-          subtitle={summaryData.dueSoonExamples.length > 0
-            ? summaryData.dueSoonExamples.join(' · ')
+          value={summary.dueSoonChecklist.length}
+          subtitle={summary.dueSoonChecklist.length > 0
+            ? `${summary.dueSoonChecklist.length} item${summary.dueSoonChecklist.length > 1 ? 's' : ''} need attention`
             : 'No urgent admin items'}
-          cta="View Details"
           onClick={() => navigate('/facilities')}
           accentClass="text-destructive"
           bgClass="bg-destructive/10"
         />
       </div>
 
-      {/* ── MIDDLE: Today's Priorities ── */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-semibold">Today's Priorities</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {allPriorities.length === 0 ? (
-            <div className="py-8 text-center">
-              <CheckCircle className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
-              <p className="font-medium text-foreground">You're all caught up.</p>
-              <p className="text-sm text-muted-foreground">No urgent actions right now.</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {allPriorities.map((item, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer group"
-                  onClick={() => navigate(item.link)}
-                >
-                  <div className="p-2 rounded-md bg-muted shrink-0">
-                    <item.icon className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{item.title}</p>
-                    <p className="text-xs text-muted-foreground truncate">{item.context}</p>
-                  </div>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* ── BOTTOM: This Period + Tracking Overview ── */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* This Period (2 cols) */}
-        <div className="lg:col-span-2 space-y-4">
-          <h2 className="text-lg font-semibold">This Period</h2>
-
-          {/* Paid This Month */}
-          <Card>
-            <CardContent className="p-4 flex items-center gap-4">
-              <div className="p-2.5 rounded-lg bg-emerald-500/10">
-                <DollarSign className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">${periodData.paidThisMonth.toLocaleString()}</p>
-                <p className="text-xs text-muted-foreground">Paid this month</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            {/* Recent Payments */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Recent Payments</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {periodData.recentPayments.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-2">No recent payments</p>
-                ) : (
-                  <div className="space-y-2">
-                    {periodData.recentPayments.map(p => {
-                      const inv = getInvoiceForPayment(p.invoice_id);
-                      return (
-                        <div key={p.id} className="flex items-center justify-between text-sm">
-                          <div className="min-w-0">
-                            <p className="font-medium truncate">{inv ? getFacilityName(inv.facility_id) : 'Unknown'}</p>
-                          </div>
-                          <div className="text-right shrink-0 ml-2">
-                            <p className="font-medium">${p.amount.toLocaleString()}</p>
-                            <p className="text-xs text-muted-foreground">{format(new Date(p.payment_date), 'MMM d')}</p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Upcoming Shifts */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Upcoming Shifts</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {periodData.upcomingShifts.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-2">No shifts scheduled</p>
-                ) : (
-                  <div className="space-y-2">
-                    {periodData.upcomingShifts.map(s => (
-                      <div key={s.id} className="text-sm">
-                        <p className="font-medium">{getFacilityName(s.facility_id)}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {format(new Date(s.start_datetime), 'EEE, MMM d · h:mm a')}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+      {/* Row 2: Priorities + This Week */}
+      <div className="grid gap-4 lg:grid-cols-12">
+        <div className="lg:col-span-8">
+          <PrioritiesCard items={allPriorities} maxVisible={5} />
         </div>
-
-        {/* Tracking Overview */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold">Tracking Overview</h2>
-          <Card>
-            <CardContent className="p-4">
-              {trackingLines.length === 0 && !hasNoData ? (
-                <p className="text-sm text-muted-foreground py-2">Everything looks good — no items needing attention.</p>
-              ) : hasNoData ? (
-                <div className="space-y-3 py-2">
-                  <p className="text-sm text-muted-foreground">Get started by setting up your practice.</p>
-                  <div className="space-y-2">
-                    <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate('/facilities')}>
-                      <Building2 className="mr-2 h-4 w-4" /> Add first facility
-                    </Button>
-                    <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate('/schedule')}>
-                      <CalendarDays className="mr-2 h-4 w-4" /> Add first shift
-                    </Button>
-                    <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate('/invoices')}>
-                      <FileText className="mr-2 h-4 w-4" /> Create first invoice
-                    </Button>
-                    <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate('/credentials')}>
-                      <ShieldAlert className="mr-2 h-4 w-4" /> Add first credential
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {trackingLines.map((line, i) => (
-                    <div
-                      key={i}
-                      className="text-sm py-1.5 cursor-pointer hover:text-primary transition-colors flex items-center justify-between"
-                      onClick={() => navigate(line.link)}
-                    >
-                      <span className="text-muted-foreground">{line.text}</span>
-                      <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+        <div className="lg:col-span-4">
+          <ThisWeekCard
+            paidThisMonth={thisWeek.paidThisMonth}
+            recentPayments={thisWeek.recentPayments}
+            nextShift={thisWeek.nextShift}
+            getFacilityName={getFacilityName}
+          />
         </div>
       </div>
-    </div>
-  );
-}
 
-function SummaryCard({
-  icon: Icon, title, value, subtitle, cta, onClick, accentClass, bgClass,
-}: {
-  icon: React.ElementType; title: string; value: string | number; subtitle: string;
-  cta: string; onClick: () => void; accentClass: string; bgClass: string;
-}) {
-  return (
-    <Card
-      className="cursor-pointer hover:bg-muted/30 transition-colors group"
-      onClick={onClick}
-    >
-      <CardContent className="p-4 space-y-3">
-        <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-lg ${bgClass}`}>
-            <Icon className={`h-4 w-4 ${accentClass}`} />
-          </div>
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{title}</p>
-        </div>
-        <p className="text-2xl font-bold">{value}</p>
-        <p className="text-xs text-muted-foreground line-clamp-2">{subtitle}</p>
-        <p className="text-xs font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-          {cta} <ArrowRight className="h-3 w-3" />
-        </p>
-      </CardContent>
-    </Card>
+      {/* Row 3: Work Readiness Strip */}
+      <WorkReadinessStrip items={readinessItems} />
+    </div>
   );
 }
