@@ -16,8 +16,6 @@ import DashboardPage from "@/pages/DashboardPage";
 import FacilitiesPage from "@/pages/FacilitiesPage";
 import FacilityDetailPage from "@/pages/FacilityDetailPage";
 import SchedulePage from "@/pages/SchedulePage";
-
-
 import InvoicesPage from "@/pages/InvoicesPage";
 import InvoiceDetailPage from "@/pages/InvoiceDetailPage";
 import CredentialsPage from "@/pages/CredentialsPage";
@@ -28,8 +26,13 @@ import ResultsPage from "@/pages/ResultsPage";
 import ThanksPage from "@/pages/ThanksPage";
 import OnboardingPage from "@/pages/OnboardingPage";
 import SettingsProfilePage from "@/pages/SettingsProfilePage";
-import SettingsInvoiceProfilePage from "@/pages/SettingsInvoiceProfilePage";
+import SettingsSchedulingPage from "@/pages/SettingsSchedulingPage";
+import SettingsInvoicingPage from "@/pages/SettingsInvoicingPage";
+import SettingsPaymentsPage from "@/pages/SettingsPaymentsPage";
 import SettingsRemindersPage from "@/pages/SettingsRemindersPage";
+import SettingsBusinessTaxesPage from "@/pages/SettingsBusinessTaxesPage";
+import SettingsSecurityPage from "@/pages/SettingsSecurityPage";
+import SettingsAccountPage from "@/pages/SettingsAccountPage";
 import ImportPage from "@/pages/ImportPage";
 import PublicInvoicePage from "@/pages/PublicInvoicePage";
 import PublicConfirmationPage from "@/pages/PublicConfirmationPage";
@@ -49,7 +52,6 @@ function AuthenticatedApp() {
     );
   }
 
-  // Redirect to onboarding if not completed (skip for demo)
   if (needsOnboarding && !isDemo) {
     return (
       <Routes>
@@ -67,8 +69,6 @@ function AuthenticatedApp() {
           <Route path="/facilities" element={<FacilitiesPage />} />
           <Route path="/facilities/:id" element={<FacilityDetailPage />} />
           <Route path="/schedule" element={<SchedulePage />} />
-          
-          
           <Route path="/invoices" element={<InvoicesPage />} />
           <Route path="/invoices/:id" element={<InvoiceDetailPage />} />
           <Route path="/invoice/public/:token" element={<PublicInvoicePage />} />
@@ -78,9 +78,17 @@ function AuthenticatedApp() {
           <Route path="/reports" element={<Navigate to="/business?tab=reports" replace />} />
           <Route path="/taxes" element={<Navigate to="/business?tab=taxes" replace />} />
           <Route path="/tax-strategy" element={<Navigate to="/business?tab=tax-strategy" replace />} />
+          {/* Settings */}
           <Route path="/settings/profile" element={<SettingsProfilePage />} />
-          <Route path="/settings/invoice-profile" element={<SettingsInvoiceProfilePage />} />
+          <Route path="/settings/scheduling" element={<SettingsSchedulingPage />} />
+          <Route path="/settings/invoicing" element={<SettingsInvoicingPage />} />
+          <Route path="/settings/payments" element={<SettingsPaymentsPage />} />
           <Route path="/settings/reminders" element={<SettingsRemindersPage />} />
+          <Route path="/settings/business-taxes" element={<SettingsBusinessTaxesPage />} />
+          <Route path="/settings/security" element={<SettingsSecurityPage />} />
+          <Route path="/settings/account" element={<SettingsAccountPage />} />
+          {/* Legacy redirects */}
+          <Route path="/settings/invoice-profile" element={<Navigate to="/settings/invoicing" replace />} />
           <Route path="/import" element={<ImportPage />} />
           <Route path="/onboarding" element={<Navigate to="/" replace />} />
           <Route path="/login" element={<Navigate to="/" replace />} />
