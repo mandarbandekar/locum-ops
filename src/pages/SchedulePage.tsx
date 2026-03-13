@@ -153,11 +153,12 @@ export default function SchedulePage() {
   };
 
   const renderDayCell = (day: Date, minHeight: string) => {
-    const dayShifts = shifts.filter(s => isSameDay(new Date(s.start_datetime), day));
+    const dayShifts = calendarFilters.shifts ? shifts.filter(s => isSameDay(new Date(s.start_datetime), day)) : [];
     const isToday = isSameDay(day, new Date());
     const markers = getMarkersForDay(day);
     const dayKey = day.toISOString();
     const isDragOver = dragOverDay === dayKey;
+    const calEvents = getEventsForDay(day, { credentials: calendarFilters.credentials, subscriptions: calendarFilters.subscriptions });
 
     return (
       <div
@@ -190,6 +191,7 @@ export default function SchedulePage() {
             </div>
           );
         })}
+        <CalendarEventStack events={calEvents} maxVisible={2} />
       </div>
     );
   };
