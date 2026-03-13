@@ -472,18 +472,15 @@ function SummaryCard({
       className="cursor-pointer hover:bg-muted/30 transition-colors group"
       onClick={onClick}
     >
-      <CardContent className="p-4 space-y-3">
-        <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-lg ${bgClass}`}>
-            <Icon className={`h-4 w-4 ${accentClass}`} />
+      <CardContent className="p-3 space-y-1.5">
+        <div className="flex items-center gap-2">
+          <div className={`p-1.5 rounded-md ${bgClass}`}>
+            <Icon className={`h-3.5 w-3.5 ${accentClass}`} />
           </div>
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{title}</p>
+          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">{title}</p>
         </div>
-        <p className="text-2xl font-bold">{value}</p>
-        <p className="text-xs text-muted-foreground line-clamp-2">{subtitle}</p>
-        <p className="text-xs font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-          {cta} <ArrowRight className="h-3 w-3" />
-        </p>
+        <p className="text-xl font-bold">{value}</p>
+        <p className="text-[11px] text-muted-foreground line-clamp-1">{subtitle}</p>
       </CardContent>
     </Card>
   );
