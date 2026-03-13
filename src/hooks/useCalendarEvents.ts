@@ -32,7 +32,7 @@ export function useCalendarEvents() {
 
   const credentialEvents: CalendarEvent[] = useMemo(() => {
     return (credentials || [])
-      .filter(c => c.expiration_date && c.status !== 'revoked')
+      .filter(c => c.expiration_date && c.status !== 'archived')
       .map(c => {
         const status = credentialStatus(c);
         if (!status) return null;
