@@ -271,14 +271,13 @@ export default function DashboardPage() {
   const hasNoData = shifts.length === 0 && invoices.length === 0 && facilities.length === 0;
 
   return (
-    <div className="space-y-8">
-      <div className="page-header">
+    <div className="h-[calc(100vh-3.5rem)] flex flex-col gap-3 overflow-hidden">
+      <div className="page-header shrink-0 !mb-0 !pb-0">
         <h1 className="page-title">Dashboard</h1>
       </div>
 
       {/* ── TOP ROW: 4 Summary Cards ── */}
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        {/* Card 1: Upcoming Shifts */}
+      <div className="grid gap-2 grid-cols-2 lg:grid-cols-4 shrink-0">
         <SummaryCard
           icon={CalendarDays}
           title="Upcoming Shifts"
@@ -289,25 +288,21 @@ export default function DashboardPage() {
           accentClass="text-primary"
           bgClass="bg-primary/10"
         />
-
-        {/* Card 2: Ready to Invoice */}
         <SummaryCard
           icon={FileText}
           title="Ready to Invoice"
           value={`$${summaryData.draftTotal.toLocaleString()}`}
           subtitle={summaryData.draftInvoices.length > 0
-            ? `${summaryData.draftInvoices.length} draft invoice${summaryData.draftInvoices.length > 1 ? 's' : ''} · Work completed and ready to bill`
+            ? `${summaryData.draftInvoices.length} draft${summaryData.draftInvoices.length > 1 ? 's' : ''} ready to bill`
             : 'No invoices ready to send'}
           cta="Review Invoices"
           onClick={() => navigate('/invoices')}
           accentClass="text-amber-600 dark:text-amber-400"
           bgClass="bg-amber-500/10"
         />
-
-        {/* Card 3: Outstanding Balance */}
         <SummaryCard
           icon={DollarSign}
-          title="Outstanding Balance"
+          title="Outstanding"
           value={`$${summaryData.outstandingTotal.toLocaleString()}`}
           subtitle={summaryData.unpaidInvoices.length > 0
             ? `${summaryData.unpaidInvoices.length} unpaid${summaryData.overdueCount > 0 ? ` · ${summaryData.overdueCount} overdue` : ''}`
@@ -317,8 +312,6 @@ export default function DashboardPage() {
           accentClass="text-emerald-600 dark:text-emerald-400"
           bgClass="bg-emerald-500/10"
         />
-
-        {/* Card 4: Due Soon */}
         <SummaryCard
           icon={ShieldAlert}
           title="Due Soon"
@@ -333,74 +326,69 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* ── MIDDLE: Today's Priorities (Block View) ── */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-semibold">Priorities</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {allPriorities.length === 0 ? (
-            <div className="py-8 text-center">
-              <CheckCircle className="h-8 w-8 text-primary mx-auto mb-2" />
-              <p className="font-medium text-foreground">You're all caught up.</p>
-              <p className="text-sm text-muted-foreground">No urgent actions right now.</p>
-            </div>
-          ) : (
-            <div className="space-y-5">
-              {overduePriorities.length > 0 && (
-                <PriorityBucket label="Overdue" items={overduePriorities} variant="destructive" navigate={navigate} />
-              )}
-              {todayPriorities.length > 0 && (
-                <PriorityBucket label="Today" items={todayPriorities} variant="default" navigate={navigate} />
-              )}
-              {tomorrowPriorities.length > 0 && (
-                <PriorityBucket label="Tomorrow" items={tomorrowPriorities} variant="muted" navigate={navigate} />
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* ── BOTTOM: Priorities + This Period + Tracking ── */}
+      <div className="grid gap-3 lg:grid-cols-3 flex-1 min-h-0">
+        {/* Priorities (spans 2 cols) */}
+        <Card className="lg:col-span-2 flex flex-col min-h-0">
+          <CardHeader className="pb-2 shrink-0 py-3">
+            <CardTitle className="text-base font-semibold">Priorities</CardTitle>
+          </CardHeader>
+          <CardContent className="flex-1 overflow-y-auto min-h-0 pb-3">
+            {allPriorities.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center">
+                <CheckCircle className="h-7 w-7 text-primary mb-2" />
+                <p className="font-medium text-foreground text-sm">You're all caught up.</p>
+                <p className="text-xs text-muted-foreground">No urgent actions right now.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {overduePriorities.length > 0 && (
+                  <PriorityBucket label="Overdue" items={overduePriorities} variant="destructive" navigate={navigate} />
+                )}
+                {todayPriorities.length > 0 && (
+                  <PriorityBucket label="Today" items={todayPriorities} variant="default" navigate={navigate} />
+                )}
+                {tomorrowPriorities.length > 0 && (
+                  <PriorityBucket label="Tomorrow" items={tomorrowPriorities} variant="muted" navigate={navigate} />
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-      {/* ── BOTTOM: This Period + Tracking Overview ── */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* This Period (2 cols) */}
-        <div className="lg:col-span-2 space-y-4">
-          <h2 className="text-lg font-semibold">This Period</h2>
-
+        {/* Right column: This Period + Tracking */}
+        <div className="flex flex-col gap-3 min-h-0">
           {/* Paid This Month */}
-          <Card>
-            <CardContent className="p-4 flex items-center gap-4">
-              <div className="p-2.5 rounded-lg bg-emerald-500/10">
-                <DollarSign className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+          <Card className="shrink-0">
+            <CardContent className="p-3 flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-emerald-500/10">
+                <DollarSign className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold">${periodData.paidThisMonth.toLocaleString()}</p>
-                <p className="text-xs text-muted-foreground">Paid this month</p>
+                <p className="text-xl font-bold">${periodData.paidThisMonth.toLocaleString()}</p>
+                <p className="text-[11px] text-muted-foreground">Paid this month</p>
               </div>
             </CardContent>
           </Card>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            {/* Recent Payments */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Recent Payments</CardTitle>
+          {/* Recent Payments + Upcoming Shifts */}
+          <div className="grid gap-3 grid-cols-2 flex-1 min-h-0">
+            <Card className="flex flex-col min-h-0">
+              <CardHeader className="pb-1 py-2">
+                <CardTitle className="text-xs font-medium text-muted-foreground">Recent Payments</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="flex-1 overflow-y-auto min-h-0 py-1">
                 {periodData.recentPayments.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-2">No recent payments</p>
+                  <p className="text-xs text-muted-foreground py-1">No recent payments</p>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     {periodData.recentPayments.map(p => {
                       const inv = getInvoiceForPayment(p.invoice_id);
                       return (
-                        <div key={p.id} className="flex items-center justify-between text-sm">
-                          <div className="min-w-0">
-                            <p className="font-medium truncate">{inv ? getFacilityName(inv.facility_id) : 'Unknown'}</p>
-                          </div>
-                          <div className="text-right shrink-0 ml-2">
+                        <div key={p.id} className="flex items-center justify-between text-xs">
+                          <p className="font-medium truncate">{inv ? getFacilityName(inv.facility_id) : 'Unknown'}</p>
+                          <div className="text-right shrink-0 ml-1">
                             <p className="font-medium">${p.amount.toLocaleString()}</p>
-                            <p className="text-xs text-muted-foreground">{format(new Date(p.payment_date), 'MMM d')}</p>
                           </div>
                         </div>
                       );
@@ -410,20 +398,19 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
-            {/* Upcoming Shifts */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Upcoming Shifts</CardTitle>
+            <Card className="flex flex-col min-h-0">
+              <CardHeader className="pb-1 py-2">
+                <CardTitle className="text-xs font-medium text-muted-foreground">Upcoming Shifts</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="flex-1 overflow-y-auto min-h-0 py-1">
                 {periodData.upcomingShifts.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-2">No shifts scheduled</p>
+                  <p className="text-xs text-muted-foreground py-1">No shifts scheduled</p>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     {periodData.upcomingShifts.map(s => (
-                      <div key={s.id} className="text-sm">
-                        <p className="font-medium">{getFacilityName(s.facility_id)}</p>
-                        <p className="text-xs text-muted-foreground">
+                      <div key={s.id} className="text-xs">
+                        <p className="font-medium truncate">{getFacilityName(s.facility_id)}</p>
+                        <p className="text-[11px] text-muted-foreground">
                           {format(new Date(s.start_datetime), 'EEE, MMM d · h:mm a')}
                         </p>
                       </div>
@@ -433,43 +420,35 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
           </div>
-        </div>
 
-        {/* Tracking Overview */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold">Tracking Overview</h2>
-          <Card>
-            <CardContent className="p-4">
+          {/* Tracking Overview */}
+          <Card className="shrink-0">
+            <CardHeader className="pb-1 py-2">
+              <CardTitle className="text-xs font-medium text-muted-foreground">Tracking Overview</CardTitle>
+            </CardHeader>
+            <CardContent className="pb-3 pt-0">
               {trackingLines.length === 0 && !hasNoData ? (
-                <p className="text-sm text-muted-foreground py-2">Everything looks good — no items needing attention.</p>
+                <p className="text-xs text-muted-foreground">Everything looks good.</p>
               ) : hasNoData ? (
-                <div className="space-y-3 py-2">
-                  <p className="text-sm text-muted-foreground">Get started by setting up your practice.</p>
-                  <div className="space-y-2">
-                    <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate('/facilities')}>
-                      <Building2 className="mr-2 h-4 w-4" /> Add first facility
-                    </Button>
-                    <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate('/schedule')}>
-                      <CalendarDays className="mr-2 h-4 w-4" /> Add first shift
-                    </Button>
-                    <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate('/invoices')}>
-                      <FileText className="mr-2 h-4 w-4" /> Create first invoice
-                    </Button>
-                    <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate('/credentials')}>
-                      <ShieldAlert className="mr-2 h-4 w-4" /> Add first credential
-                    </Button>
-                  </div>
+                <div className="space-y-1.5">
+                  <p className="text-xs text-muted-foreground">Get started:</p>
+                  <Button variant="outline" size="sm" className="w-full justify-start h-7 text-xs" onClick={() => navigate('/facilities')}>
+                    <Building2 className="mr-1.5 h-3 w-3" /> Add facility
+                  </Button>
+                  <Button variant="outline" size="sm" className="w-full justify-start h-7 text-xs" onClick={() => navigate('/schedule')}>
+                    <CalendarDays className="mr-1.5 h-3 w-3" /> Add shift
+                  </Button>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-1">
                   {trackingLines.map((line, i) => (
                     <div
                       key={i}
-                      className="text-sm py-1.5 cursor-pointer hover:text-primary transition-colors flex items-center justify-between"
+                      className="text-xs py-1 cursor-pointer hover:text-primary transition-colors flex items-center justify-between"
                       onClick={() => navigate(line.link)}
                     >
-                      <span className="text-muted-foreground">{line.text}</span>
-                      <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-muted-foreground truncate">{line.text}</span>
+                      <ArrowRight className="h-3 w-3 text-muted-foreground shrink-0" />
                     </div>
                   ))}
                 </div>
@@ -493,18 +472,15 @@ function SummaryCard({
       className="cursor-pointer hover:bg-muted/30 transition-colors group"
       onClick={onClick}
     >
-      <CardContent className="p-4 space-y-3">
-        <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-lg ${bgClass}`}>
-            <Icon className={`h-4 w-4 ${accentClass}`} />
+      <CardContent className="p-3 space-y-1.5">
+        <div className="flex items-center gap-2">
+          <div className={`p-1.5 rounded-md ${bgClass}`}>
+            <Icon className={`h-3.5 w-3.5 ${accentClass}`} />
           </div>
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{title}</p>
+          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">{title}</p>
         </div>
-        <p className="text-2xl font-bold">{value}</p>
-        <p className="text-xs text-muted-foreground line-clamp-2">{subtitle}</p>
-        <p className="text-xs font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-          {cta} <ArrowRight className="h-3 w-3" />
-        </p>
+        <p className="text-xl font-bold">{value}</p>
+        <p className="text-[11px] text-muted-foreground line-clamp-1">{subtitle}</p>
       </CardContent>
     </Card>
   );
@@ -526,20 +502,20 @@ function PriorityBucket({
 
   return (
     <div>
-      <p className={`text-xs font-semibold uppercase tracking-wider mb-2 ${labelClass}`}>{label}</p>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <p className={`text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${labelClass}`}>{label}</p>
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((item, i) => (
           <div
             key={i}
-            className="flex items-start gap-3 p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer group"
+            className="flex items-start gap-2 p-2.5 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer"
             onClick={() => navigate(item.link)}
           >
-            <div className={`p-2 rounded-md shrink-0 ${variant === 'destructive' ? 'bg-destructive/10' : 'bg-muted'}`}>
-              <item.icon className={`h-4 w-4 ${variant === 'destructive' ? 'text-destructive' : 'text-muted-foreground'}`} />
+            <div className={`p-1.5 rounded-md shrink-0 ${variant === 'destructive' ? 'bg-destructive/10' : 'bg-muted'}`}>
+              <item.icon className={`h-3.5 w-3.5 ${variant === 'destructive' ? 'text-destructive' : 'text-muted-foreground'}`} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium leading-tight">{item.title}</p>
-              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{item.context}</p>
+              <p className="text-xs font-medium leading-tight truncate">{item.title}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{item.context}</p>
             </div>
           </div>
         ))}
