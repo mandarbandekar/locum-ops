@@ -72,6 +72,21 @@ export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, o
         })}
       </div>
 
+      {/* All-day calendar events row */}
+      {calendarFilters && getEventsForDay && (calendarFilters.credentials || calendarFilters.subscriptions) && (
+        <div className="grid border-t" style={{ gridTemplateColumns: `${GUTTER_WIDTH}px repeat(7, 1fr)` }}>
+          <div className="p-1 border-r text-[9px] text-muted-foreground text-right pr-2">All day</div>
+          {weekDays.map(d => {
+            const events = getEventsForDay(d, calendarFilters);
+            return (
+              <div key={d.toISOString()} className="p-0.5 border-r last:border-r-0 min-h-[24px]">
+                <CalendarEventStack events={events} maxVisible={2} />
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* Time grid body */}
       <ScrollArea className="h-[600px]">
         <div ref={gridRef} className="relative" style={{ height: `${HOURS.length * HOUR_HEIGHT}px` }}>
