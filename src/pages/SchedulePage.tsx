@@ -13,11 +13,15 @@ import { WeekTimeGrid } from '@/components/schedule/WeekTimeGrid';
 import { ConfirmationsTab } from '@/components/schedule/ConfirmationsTab';
 import { getMarkersForDay } from '@/lib/calendarMarkers';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { CalendarFilters, CalendarLayerFilters } from '@/components/schedule/CalendarFilters';
+import { useCalendarEvents } from '@/hooks/useCalendarEvents';
+import { CalendarEventStack } from '@/components/schedule/CalendarEventChip';
 
 const STORAGE_KEY = 'schedule-view-pref';
 
 export default function SchedulePage() {
   const { shifts, facilities, addShift, updateShift, deleteShift, updateFacility } = useData();
+  const { getEventsForDay } = useCalendarEvents();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<'month' | 'week' | 'list' | 'confirmations'>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -26,6 +30,15 @@ export default function SchedulePage() {
   const [showAdd, setShowAdd] = useState(false);
   const [editShift, setEditShift] = useState<string | null>(null);
   const [dragOverDay, setDragOverDay] = useState<string | null>(null);
+  const [calendarFilters, setCalendarFilters] = useState<CalendarLayerFilters>({
+    shifts: true,
+    credentials: false,
+    subscriptions: false,
+  });
+
+  const toggleFilter = (key: keyof CalendarLayerFilters) => {
+    setCalendarFilters(prev => ({ ...prev, [key]: !prev[key] }));
+  };
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, view);
@@ -140,11 +153,12 @@ export default function SchedulePage() {
   };
 
   const renderDayCell = (day: Date, minHeight: string) => {
-    const dayShifts = shifts.filter(s => isSameDay(new Date(s.start_datetime), day));
+    const dayShifts = calendarFilters.shifts ? shifts.filter(s => isSameDay(new Date(s.start_datetime), day)) : [];
     const isToday = isSameDay(day, new Date());
     const markers = getMarkersForDay(day);
     const dayKey = day.toISOString();
     const isDragOver = dragOverDay === dayKey;
+    const calEvents = getEventsForDay(day, { credentials: calendarFilters.credentials, subscriptions: calendarFilters.subscriptions });
 
     return (
       <div
@@ -177,6 +191,7 @@ export default function SchedulePage() {
             </div>
           );
         })}
+        <CalendarEventStack events={calEvents} maxVisible={2} />
       </div>
     );
   };
@@ -225,6 +240,10 @@ export default function SchedulePage() {
             </Button>
           </div>
 
+          <div className="mb-4">
+            <CalendarFilters filters={calendarFilters} onToggle={toggleFilter} />
+          </div>
+
           {view === 'month' ? (
             <div className="rounded-lg border bg-card overflow-hidden">
               <div className="grid grid-cols-7 bg-muted/50">
@@ -242,10 +261,12 @@ export default function SchedulePage() {
           ) : view === 'week' ? (
             <WeekTimeGrid
               weekDays={weekDays}
-              shifts={shifts}
+              shifts={calendarFilters.shifts ? shifts : []}
               getFacilityName={getFacilityName}
               onEditShift={setEditShift}
               onDropOnTime={handleDropOnTime}
+              calendarFilters={{ credentials: calendarFilters.credentials, subscriptions: calendarFilters.subscriptions }}
+              getEventsForDay={getEventsForDay}
             />
           ) : (
             <div className="rounded-lg border bg-card overflow-hidden">

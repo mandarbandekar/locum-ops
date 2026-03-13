@@ -3,6 +3,8 @@ import { format, isSameDay, getHours, getMinutes } from 'date-fns';
 import { SHIFT_COLORS } from '@/types';
 import { getMarkersForDay } from '@/lib/calendarMarkers';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { CalendarEvent } from '@/hooks/useCalendarEvents';
+import { CalendarEventStack } from '@/components/schedule/CalendarEventChip';
 
 const HOURS = Array.from({ length: 18 }, (_, i) => i + 5); // 5 AM – 10 PM
 const HOUR_HEIGHT = 60; // px per hour
@@ -14,9 +16,11 @@ interface WeekTimeGridProps {
   getFacilityName: (id: string) => string;
   onEditShift: (id: string) => void;
   onDropOnTime: (shiftId: string, targetDate: Date, targetHour: number) => void;
+  calendarFilters?: { credentials: boolean; subscriptions: boolean };
+  getEventsForDay?: (day: Date, filters: { credentials: boolean; subscriptions: boolean }) => CalendarEvent[];
 }
 
-export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, onDropOnTime }: WeekTimeGridProps) {
+export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, onDropOnTime, calendarFilters, getEventsForDay }: WeekTimeGridProps) {
   const [dragOverCell, setDragOverCell] = useState<string | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 
@@ -67,6 +71,21 @@ export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, o
           );
         })}
       </div>
+
+      {/* All-day calendar events row */}
+      {calendarFilters && getEventsForDay && (calendarFilters.credentials || calendarFilters.subscriptions) && (
+        <div className="grid border-t" style={{ gridTemplateColumns: `${GUTTER_WIDTH}px repeat(7, 1fr)` }}>
+          <div className="p-1 border-r text-[9px] text-muted-foreground text-right pr-2">All day</div>
+          {weekDays.map(d => {
+            const events = getEventsForDay(d, calendarFilters);
+            return (
+              <div key={d.toISOString()} className="p-0.5 border-r last:border-r-0 min-h-[24px]">
+                <CalendarEventStack events={events} maxVisible={2} />
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Time grid body */}
       <ScrollArea className="h-[600px]">
