@@ -333,36 +333,29 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* ── MIDDLE: Today's Priorities ── */}
+      {/* ── MIDDLE: Today's Priorities (Block View) ── */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-semibold">Today's Priorities</CardTitle>
+          <CardTitle className="text-lg font-semibold">Priorities</CardTitle>
         </CardHeader>
         <CardContent>
           {allPriorities.length === 0 ? (
             <div className="py-8 text-center">
-              <CheckCircle className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
+              <CheckCircle className="h-8 w-8 text-primary mx-auto mb-2" />
               <p className="font-medium text-foreground">You're all caught up.</p>
               <p className="text-sm text-muted-foreground">No urgent actions right now.</p>
             </div>
           ) : (
-            <div className="space-y-2">
-              {allPriorities.map((item, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer group"
-                  onClick={() => navigate(item.link)}
-                >
-                  <div className="p-2 rounded-md bg-muted shrink-0">
-                    <item.icon className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{item.title}</p>
-                    <p className="text-xs text-muted-foreground truncate">{item.context}</p>
-                  </div>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-                </div>
-              ))}
+            <div className="space-y-5">
+              {overduePriorities.length > 0 && (
+                <PriorityBucket label="Overdue" items={overduePriorities} variant="destructive" navigate={navigate} />
+              )}
+              {todayPriorities.length > 0 && (
+                <PriorityBucket label="Today" items={todayPriorities} variant="default" navigate={navigate} />
+              )}
+              {tomorrowPriorities.length > 0 && (
+                <PriorityBucket label="Tomorrow" items={tomorrowPriorities} variant="muted" navigate={navigate} />
+              )}
             </div>
           )}
         </CardContent>
