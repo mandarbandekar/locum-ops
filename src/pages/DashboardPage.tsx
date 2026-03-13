@@ -509,3 +509,41 @@ function SummaryCard({
     </Card>
   );
 }
+
+function PriorityBucket({
+  label, items, variant, navigate,
+}: {
+  label: string;
+  items: Array<{ title: string; context: string; link: string; icon: React.ElementType }>;
+  variant: 'destructive' | 'default' | 'muted';
+  navigate: (path: string) => void;
+}) {
+  const labelClass = variant === 'destructive'
+    ? 'text-destructive'
+    : variant === 'default'
+      ? 'text-foreground'
+      : 'text-muted-foreground';
+
+  return (
+    <div>
+      <p className={`text-xs font-semibold uppercase tracking-wider mb-2 ${labelClass}`}>{label}</p>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {items.map((item, i) => (
+          <div
+            key={i}
+            className="flex items-start gap-3 p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer group"
+            onClick={() => navigate(item.link)}
+          >
+            <div className={`p-2 rounded-md shrink-0 ${variant === 'destructive' ? 'bg-destructive/10' : 'bg-muted'}`}>
+              <item.icon className={`h-4 w-4 ${variant === 'destructive' ? 'text-destructive' : 'text-muted-foreground'}`} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium leading-tight">{item.title}</p>
+              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{item.context}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
