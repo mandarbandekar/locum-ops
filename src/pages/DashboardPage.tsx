@@ -10,7 +10,7 @@ import {
   Clock, CheckCircle, Building2, Plus, Send, ShieldAlert, CheckSquare,
 } from 'lucide-react';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
-import { format, differenceInDays, addMonths } from 'date-fns';
+import { format, differenceInDays, addMonths, isToday, isTomorrow, isBefore, startOfDay } from 'date-fns';
 import { getChecklistBadge } from '@/types/contracts';
 import { useConfirmations } from '@/hooks/useConfirmations';
 import { useCredentials } from '@/hooks/useCredentials';
