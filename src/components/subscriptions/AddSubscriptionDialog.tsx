@@ -84,7 +84,7 @@ export function AddSubscriptionDialog({ open, onOpenChange, onSave, onUpdate, ed
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>{isEdit ? 'Edit Subscription' : 'Add Subscription'}</DialogTitle>
         </DialogHeader>
