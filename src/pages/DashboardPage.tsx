@@ -10,7 +10,7 @@ import {
   Clock, CheckCircle, Building2, Plus, Send, ShieldAlert, CheckSquare,
 } from 'lucide-react';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
-import { format, differenceInDays, addMonths } from 'date-fns';
+import { format, differenceInDays, addMonths, isToday, isTomorrow, isBefore, startOfDay } from 'date-fns';
 import { getChecklistBadge } from '@/types/contracts';
 import { useConfirmations } from '@/hooks/useConfirmations';
 import { useCredentials } from '@/hooks/useCredentials';
@@ -91,9 +91,12 @@ export default function DashboardPage() {
     };
   }, [shifts, invoices, facilities, checklistItems, now]);
 
-  // ── Today's Priorities ──
+  // ── Today's Priorities (today, tomorrow, overdue only) ──
+  const todayStart = startOfDay(now);
+
   const priorities = useMemo(() => {
-    const items: { title: string; context: string; link: string; icon: React.ElementType; urgency: number }[] = [];
+    type PriorityItem = { title: string; context: string; link: string; icon: React.ElementType; urgency: number; bucket: 'overdue' | 'today' | 'tomorrow' };
+    const items: PriorityItem[] = [];
     const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
 
     // 1) Overdue invoices
@@ -104,10 +107,11 @@ export default function DashboardPage() {
         link: `/invoices/${inv.id}`,
         icon: AlertTriangle,
         urgency: 1,
+        bucket: 'overdue',
       });
     });
 
-    // 2) Draft invoices ready to send
+    // 2) Draft invoices ready to send (treat as today)
     invoices.filter(i => i.status === 'draft').forEach(inv => {
       items.push({
         title: `Review and send ${inv.invoice_number}`,
@@ -115,40 +119,54 @@ export default function DashboardPage() {
         link: `/invoices/${inv.id}`,
         icon: Send,
         urgency: 2,
+        bucket: 'today',
       });
     });
 
-    // 5) Upcoming shifts in next 48 hours
-    const in48h = new Date(now);
-    in48h.setHours(in48h.getHours() + 48);
+    // 3) Shifts today or tomorrow
     shifts
-      .filter(s => new Date(s.start_datetime) >= now && new Date(s.start_datetime) <= in48h && (s.status === 'booked' || s.status === 'proposed'))
+      .filter(s => {
+        const d = new Date(s.start_datetime);
+        return (isToday(d) || isTomorrow(d)) && (s.status === 'booked' || s.status === 'proposed');
+      })
       .forEach(s => {
+        const d = new Date(s.start_datetime);
         items.push({
           title: `Shift at ${getFacilityName(s.facility_id)}`,
-          context: format(new Date(s.start_datetime), 'EEE, MMM d · h:mm a'),
+          context: format(d, 'EEE, MMM d · h:mm a'),
           link: '/schedule',
           icon: CalendarDays,
-          urgency: 5,
+          urgency: isToday(d) ? 3 : 5,
+          bucket: isToday(d) ? 'today' : 'tomorrow',
         });
       });
 
-    // 8) Contract checklist items due soon
+    // 4) Overdue contract checklist items
     checklistItems
-      .filter(item => getChecklistBadge(item) === 'due_soon' || getChecklistBadge(item) === 'overdue')
+      .filter(item => {
+        const badge = getChecklistBadge(item);
+        if (badge === 'overdue') return true;
+        if (badge === 'due_soon' && item.due_date) {
+          const d = new Date(item.due_date);
+          return isToday(d) || isTomorrow(d);
+        }
+        return false;
+      })
       .forEach(item => {
         const badge = getChecklistBadge(item);
-        const days = differenceInDays(new Date(item.due_date!), now);
+        const d = item.due_date ? new Date(item.due_date) : now;
+        const isOverdue = badge === 'overdue';
         items.push({
-          title: `${item.title}`,
-          context: badge === 'overdue' ? 'Overdue' : `Due in ${days} days`,
-          link: `/facilities`,
+          title: item.title,
+          context: isOverdue ? 'Overdue' : isToday(d) ? 'Due today' : 'Due tomorrow',
+          link: '/facilities',
           icon: ShieldAlert,
-          urgency: badge === 'overdue' ? 3 : 8,
+          urgency: isOverdue ? 1 : 4,
+          bucket: isOverdue ? 'overdue' : isToday(d) ? 'today' : 'tomorrow',
         });
       });
 
-    return items.sort((a, b) => a.urgency - b.urgency).slice(0, 6);
+    return items.sort((a, b) => a.urgency - b.urgency);
   }, [invoices, shifts, facilities, checklistItems, now]);
 
   // Confirmations needing action
@@ -163,26 +181,31 @@ export default function DashboardPage() {
       link: '/schedule',
       icon: CheckSquare,
       urgency: 4,
+      bucket: 'today' as const,
     }];
   }, [needingActionCount]);
 
-  // Credential renewal reminders
+  // Credential renewal reminders (only today/tomorrow/overdue)
   const credentialPriorities = useMemo(() => {
     if (!credentialsList) return [];
-    return generateCredentialReminders(credentialsList, now, 30).map(r => ({
+    return generateCredentialReminders(credentialsList, now, 1).map(r => ({
       title: r.title,
       context: r.body,
       link: r.link,
       icon: ShieldAlert,
       urgency: r.urgency,
+      bucket: 'today' as const,
     }));
   }, [credentialsList, now]);
 
   const allPriorities = useMemo(() => {
     return [...priorities, ...confirmationPriorities, ...credentialPriorities]
-      .sort((a, b) => a.urgency - b.urgency)
-      .slice(0, 7);
+      .sort((a, b) => a.urgency - b.urgency);
   }, [priorities, confirmationPriorities, credentialPriorities]);
+
+  const overduePriorities = allPriorities.filter(p => p.bucket === 'overdue');
+  const todayPriorities = allPriorities.filter(p => p.bucket === 'today');
+  const tomorrowPriorities = allPriorities.filter(p => p.bucket === 'tomorrow');
 
   // ── This Period ──
   const periodData = useMemo(() => {
@@ -310,36 +333,29 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* ── MIDDLE: Today's Priorities ── */}
+      {/* ── MIDDLE: Today's Priorities (Block View) ── */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-semibold">Today's Priorities</CardTitle>
+          <CardTitle className="text-lg font-semibold">Priorities</CardTitle>
         </CardHeader>
         <CardContent>
           {allPriorities.length === 0 ? (
             <div className="py-8 text-center">
-              <CheckCircle className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
+              <CheckCircle className="h-8 w-8 text-primary mx-auto mb-2" />
               <p className="font-medium text-foreground">You're all caught up.</p>
               <p className="text-sm text-muted-foreground">No urgent actions right now.</p>
             </div>
           ) : (
-            <div className="space-y-2">
-              {allPriorities.map((item, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer group"
-                  onClick={() => navigate(item.link)}
-                >
-                  <div className="p-2 rounded-md bg-muted shrink-0">
-                    <item.icon className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{item.title}</p>
-                    <p className="text-xs text-muted-foreground truncate">{item.context}</p>
-                  </div>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-                </div>
-              ))}
+            <div className="space-y-5">
+              {overduePriorities.length > 0 && (
+                <PriorityBucket label="Overdue" items={overduePriorities} variant="destructive" navigate={navigate} />
+              )}
+              {todayPriorities.length > 0 && (
+                <PriorityBucket label="Today" items={todayPriorities} variant="default" navigate={navigate} />
+              )}
+              {tomorrowPriorities.length > 0 && (
+                <PriorityBucket label="Tomorrow" items={tomorrowPriorities} variant="muted" navigate={navigate} />
+              )}
             </div>
           )}
         </CardContent>
@@ -491,5 +507,43 @@ function SummaryCard({
         </p>
       </CardContent>
     </Card>
+  );
+}
+
+function PriorityBucket({
+  label, items, variant, navigate,
+}: {
+  label: string;
+  items: Array<{ title: string; context: string; link: string; icon: React.ElementType }>;
+  variant: 'destructive' | 'default' | 'muted';
+  navigate: (path: string) => void;
+}) {
+  const labelClass = variant === 'destructive'
+    ? 'text-destructive'
+    : variant === 'default'
+      ? 'text-foreground'
+      : 'text-muted-foreground';
+
+  return (
+    <div>
+      <p className={`text-xs font-semibold uppercase tracking-wider mb-2 ${labelClass}`}>{label}</p>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {items.map((item, i) => (
+          <div
+            key={i}
+            className="flex items-start gap-3 p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer group"
+            onClick={() => navigate(item.link)}
+          >
+            <div className={`p-2 rounded-md shrink-0 ${variant === 'destructive' ? 'bg-destructive/10' : 'bg-muted'}`}>
+              <item.icon className={`h-4 w-4 ${variant === 'destructive' ? 'text-destructive' : 'text-muted-foreground'}`} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium leading-tight">{item.title}</p>
+              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{item.context}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
