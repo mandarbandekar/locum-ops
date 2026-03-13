@@ -3,15 +3,14 @@ import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
-  FileText, DollarSign, AlertTriangle, ArrowRight,
-  Clock, CheckCircle, Building2, Send, ShieldAlert, CheckSquare,
-  CalendarDays, TrendingUp,
+  CalendarDays, FileText, DollarSign, AlertTriangle, ArrowRight,
+  Clock, CheckCircle, Building2, Plus, Send, ShieldAlert, CheckSquare,
 } from 'lucide-react';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
-import { format, differenceInDays } from 'date-fns';
+import { format, differenceInDays, addMonths } from 'date-fns';
 import { getChecklistBadge } from '@/types/contracts';
 import { useConfirmations } from '@/hooks/useConfirmations';
 import { useCredentials } from '@/hooks/useCredentials';
@@ -25,11 +24,13 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const now = new Date();
 
+  // Tax readiness data for dashboard hooks
   const [taxChecklist, setTaxChecklist] = useState<{ completed: boolean }[]>([]);
   const [taxQuarters, setTaxQuarters] = useState<{ quarter: number; due_date: string; status: string }[]>([]);
 
   useEffect(() => {
-    if (isDemo || !user) return;
+    if (isDemo) return;
+    if (!user) return;
     Promise.all([
       dashDb('tax_checklist_items').select('completed'),
       dashDb('tax_quarter_statuses').select('quarter,due_date,status').eq('tax_year', now.getFullYear()).order('quarter'),
@@ -39,72 +40,15 @@ export default function DashboardPage() {
     });
   }, [user?.id, isDemo]);
 
-  const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
+  // ── Summary card data ──
+  const summaryData = useMemo(() => {
+    const in7Days = new Date(now);
+    in7Days.setDate(in7Days.getDate() + 7);
 
-  // ── Priorities: only overdue + due today ──
-  const { needingActionCount } = useConfirmations();
-  const { credentials: credentialsList } = useCredentials();
+    const upcomingShifts = shifts
+      .filter(s => new Date(s.start_datetime) >= now && new Date(s.start_datetime) <= in7Days && (s.status === 'booked' || s.status === 'proposed'))
+      .sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime());
 
-  const allPriorities = useMemo(() => {
-    const items: { title: string; context: string; link: string; icon: React.ElementType; urgency: number }[] = [];
-
-    // Overdue invoices
-    invoices.filter(i => computeInvoiceStatus(i) === 'overdue').forEach(inv => {
-      items.push({
-        title: `Follow up on ${inv.invoice_number}`,
-        context: `$${inv.balance_due.toLocaleString()} overdue · ${getFacilityName(inv.facility_id)}`,
-        link: `/invoices/${inv.id}`, icon: AlertTriangle, urgency: 1,
-      });
-    });
-
-    // Draft invoices
-    invoices.filter(i => i.status === 'draft').forEach(inv => {
-      items.push({
-        title: `Send ${inv.invoice_number}`,
-        context: `$${inv.total_amount.toLocaleString()} · ${getFacilityName(inv.facility_id)}`,
-        link: `/invoices/${inv.id}`, icon: Send, urgency: 2,
-      });
-    });
-
-    // Confirmations needing action
-    if (needingActionCount > 0) {
-      items.push({
-        title: `${needingActionCount} confirmation${needingActionCount > 1 ? 's' : ''} need action`,
-        context: 'Review and send shift confirmations',
-        link: '/schedule', icon: CheckSquare, urgency: 3,
-      });
-    }
-
-    // Overdue checklist items
-    checklistItems
-      .filter(item => {
-        const badge = getChecklistBadge(item);
-        return badge === 'overdue' || badge === 'due_soon';
-      })
-      .forEach(item => {
-        const badge = getChecklistBadge(item);
-        const days = item.due_date ? differenceInDays(new Date(item.due_date), now) : 0;
-        if (badge === 'overdue' || days === 0) {
-          items.push({
-            title: item.title,
-            context: badge === 'overdue' ? 'Overdue' : 'Due today',
-            link: '/facilities', icon: ShieldAlert, urgency: badge === 'overdue' ? 1 : 4,
-          });
-        }
-      });
-
-    // Credential renewals due
-    if (credentialsList) {
-      generateCredentialReminders(credentialsList, now, 14).forEach(r => {
-        items.push({ title: r.title, context: r.body, link: r.link, icon: ShieldAlert, urgency: r.urgency });
-      });
-    }
-
-    return items.sort((a, b) => a.urgency - b.urgency).slice(0, 6);
-  }, [invoices, shifts, facilities, checklistItems, needingActionCount, credentialsList, now]);
-
-  // ── Summary stats ──
-  const stats = useMemo(() => {
     const draftInvoices = invoices.filter(i => i.status === 'draft');
     const draftTotal = draftInvoices.reduce((s, i) => s + i.total_amount, 0);
 
@@ -114,9 +58,137 @@ export default function DashboardPage() {
     });
     const outstandingTotal = unpaidInvoices.reduce((s, i) => s + i.balance_due, 0);
     const overdueCount = unpaidInvoices.filter(i => computeInvoiceStatus(i) === 'overdue').length;
+    const sentCount = unpaidInvoices.filter(i => i.status === 'sent').length;
+    const partialCount = unpaidInvoices.filter(i => i.status === 'partial').length;
 
+    // Due soon items
+    const dueSoonChecklist = checklistItems.filter(item => {
+      const badge = getChecklistBadge(item);
+      return badge === 'due_soon' || badge === 'overdue';
+    });
+
+    const dueSoonTotal = dueSoonChecklist.length;
+    const dueSoonExamples: string[] = [];
+    if (dueSoonChecklist.length > 0) {
+      const sorted = [...dueSoonChecklist].sort((a, b) => new Date(a.due_date!).getTime() - new Date(b.due_date!).getTime());
+      const first = sorted[0];
+      const days = differenceInDays(new Date(first.due_date!), now);
+      dueSoonExamples.push(days < 0 ? `${first.title} overdue` : `${first.title} in ${days} days`);
+      if (sorted.length > 1) dueSoonExamples.push(`${sorted.length - 1} more item${sorted.length - 1 > 1 ? 's' : ''}`);
+    }
+
+    const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
+
+    const nextShift = upcomingShifts[0];
+    const nextShiftLabel = nextShift
+      ? `${format(new Date(nextShift.start_datetime), 'EEE, MMM d · h:mm a')} · ${getFacilityName(nextShift.facility_id)}`
+      : null;
+
+    return {
+      upcomingShifts, draftInvoices, draftTotal, unpaidInvoices, outstandingTotal,
+      overdueCount, sentCount, partialCount, dueSoonTotal, dueSoonExamples,
+      nextShiftLabel, getFacilityName,
+    };
+  }, [shifts, invoices, facilities, checklistItems, now]);
+
+  // ── Today's Priorities ──
+  const priorities = useMemo(() => {
+    const items: { title: string; context: string; link: string; icon: React.ElementType; urgency: number }[] = [];
+    const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
+
+    // 1) Overdue invoices
+    invoices.filter(i => computeInvoiceStatus(i) === 'overdue').forEach(inv => {
+      items.push({
+        title: `Follow up on ${inv.invoice_number}`,
+        context: `$${inv.balance_due.toLocaleString()} overdue · ${getFacilityName(inv.facility_id)}`,
+        link: `/invoices/${inv.id}`,
+        icon: AlertTriangle,
+        urgency: 1,
+      });
+    });
+
+    // 2) Draft invoices ready to send
+    invoices.filter(i => i.status === 'draft').forEach(inv => {
+      items.push({
+        title: `Review and send ${inv.invoice_number}`,
+        context: `$${inv.total_amount.toLocaleString()} ready to send · ${getFacilityName(inv.facility_id)}`,
+        link: `/invoices/${inv.id}`,
+        icon: Send,
+        urgency: 2,
+      });
+    });
+
+    // 5) Upcoming shifts in next 48 hours
+    const in48h = new Date(now);
+    in48h.setHours(in48h.getHours() + 48);
+    shifts
+      .filter(s => new Date(s.start_datetime) >= now && new Date(s.start_datetime) <= in48h && (s.status === 'booked' || s.status === 'proposed'))
+      .forEach(s => {
+        items.push({
+          title: `Shift at ${getFacilityName(s.facility_id)}`,
+          context: format(new Date(s.start_datetime), 'EEE, MMM d · h:mm a'),
+          link: '/schedule',
+          icon: CalendarDays,
+          urgency: 5,
+        });
+      });
+
+    // 8) Contract checklist items due soon
+    checklistItems
+      .filter(item => getChecklistBadge(item) === 'due_soon' || getChecklistBadge(item) === 'overdue')
+      .forEach(item => {
+        const badge = getChecklistBadge(item);
+        const days = differenceInDays(new Date(item.due_date!), now);
+        items.push({
+          title: `${item.title}`,
+          context: badge === 'overdue' ? 'Overdue' : `Due in ${days} days`,
+          link: `/facilities`,
+          icon: ShieldAlert,
+          urgency: badge === 'overdue' ? 3 : 8,
+        });
+      });
+
+    return items.sort((a, b) => a.urgency - b.urgency).slice(0, 6);
+  }, [invoices, shifts, facilities, checklistItems, now]);
+
+  // Confirmations needing action
+  const { needingActionCount } = useConfirmations();
+  const { credentials: credentialsList } = useCredentials();
+
+  const confirmationPriorities = useMemo(() => {
+    if (needingActionCount <= 0) return [];
+    return [{
+      title: `${needingActionCount} confirmation${needingActionCount > 1 ? 's' : ''} need action`,
+      context: 'Review and send monthly shift confirmations',
+      link: '/schedule',
+      icon: CheckSquare,
+      urgency: 4,
+    }];
+  }, [needingActionCount]);
+
+  // Credential renewal reminders
+  const credentialPriorities = useMemo(() => {
+    if (!credentialsList) return [];
+    return generateCredentialReminders(credentialsList, now, 30).map(r => ({
+      title: r.title,
+      context: r.body,
+      link: r.link,
+      icon: ShieldAlert,
+      urgency: r.urgency,
+    }));
+  }, [credentialsList, now]);
+
+  const allPriorities = useMemo(() => {
+    return [...priorities, ...confirmationPriorities, ...credentialPriorities]
+      .sort((a, b) => a.urgency - b.urgency)
+      .slice(0, 7);
+  }, [priorities, confirmationPriorities, credentialPriorities]);
+
+  // ── This Period ──
+  const periodData = useMemo(() => {
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
+
     const paidThisMonth = payments
       .filter(p => {
         const d = new Date(p.payment_date);
@@ -126,213 +198,262 @@ export default function DashboardPage() {
 
     const recentPayments = [...payments]
       .sort((a, b) => new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime())
-      .slice(0, 4);
+      .slice(0, 3);
 
-    return { draftInvoices, draftTotal, outstandingTotal, overdueCount, paidThisMonth, recentPayments };
-  }, [invoices, payments, now]);
+    const in7Days = new Date(now);
+    in7Days.setDate(in7Days.getDate() + 7);
+    const upcomingShifts = shifts
+      .filter(s => new Date(s.start_datetime) >= now && new Date(s.start_datetime) <= in7Days && (s.status === 'booked' || s.status === 'proposed'))
+      .sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime())
+      .slice(0, 3);
 
-  // ── Tracking lines ──
+    return { paidThisMonth, recentPayments, upcomingShifts };
+  }, [payments, shifts, now]);
+
+  // ── Tracking Overview ──
   const trackingLines = useMemo(() => {
-    const lines: { label: string; value: string; link: string }[] = [];
+    const lines: { text: string; link: string }[] = [];
 
     if (needingActionCount > 0) {
-      lines.push({ label: 'Confirmations', value: `${needingActionCount} pending`, link: '/schedule' });
+      lines.push({ text: `Confirmations: ${needingActionCount} need${needingActionCount > 1 ? '' : 's'} action`, link: '/schedule' });
     }
 
-    const dueChecklist = checklistItems.filter(item => {
+    const dueSoonChecklist = checklistItems.filter(item => {
       const badge = getChecklistBadge(item);
       return badge === 'due_soon' || badge === 'overdue';
     });
-    if (dueChecklist.length > 0) {
-      lines.push({ label: 'Contracts', value: `${dueChecklist.length} due`, link: '/facilities' });
+    if (dueSoonChecklist.length > 0) {
+      lines.push({ text: `Contracts: ${dueSoonChecklist.length} item${dueSoonChecklist.length > 1 ? 's' : ''} due soon`, link: '/facilities' });
     }
 
+    // Tax readiness hooks
     if (taxChecklist.length > 0) {
       const completed = taxChecklist.filter(c => c.completed).length;
       const percent = Math.round((completed / taxChecklist.length) * 100);
-      lines.push({ label: 'Tax readiness', value: `${percent}%`, link: '/business?tab=tax-strategy&subtab=tracker' });
+      lines.push({ text: `Tax readiness: ${percent}%`, link: '/business?tab=tax-strategy&subtab=tracker' });
     }
 
     const nextQuarter = taxQuarters.find(q => new Date(q.due_date) >= now && q.status !== 'paid');
     if (nextQuarter) {
       const daysUntil = differenceInDays(new Date(nextQuarter.due_date), now);
-      lines.push({ label: `Q${nextQuarter.quarter} taxes`, value: `${daysUntil}d`, link: '/business?tab=tax-strategy&subtab=tracker' });
+      lines.push({ text: `Taxes: Q${nextQuarter.quarter} due in ${daysUntil} days`, link: '/business?tab=tax-strategy&subtab=tracker' });
     }
 
     return lines;
   }, [checklistItems, taxChecklist, taxQuarters, needingActionCount, now]);
 
+  const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
   const getInvoiceForPayment = (invoiceId: string) => invoices.find(i => i.id === invoiceId);
+
   const hasNoData = shifts.length === 0 && invoices.length === 0 && facilities.length === 0;
 
   return (
-    <div className="h-[calc(100vh-theme(spacing.14)-theme(spacing.6)-theme(spacing.6))] flex flex-col gap-4 overflow-hidden">
-      {/* Row 1: Priority summary + stats */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 shrink-0">
-        {/* Priority summary pill bar */}
-        <div className="lg:col-span-5 flex items-center gap-3">
-          <h1 className="text-xl font-bold whitespace-nowrap">Dashboard</h1>
-          <div className="flex items-center gap-2 ml-2">
-            {allPriorities.length > 0 ? (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-destructive/15 text-destructive text-xs font-semibold">
-                <AlertTriangle className="h-3 w-3" />
-                {allPriorities.length} action{allPriorities.length > 1 ? 's' : ''} needed
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent text-accent-foreground text-xs font-semibold">
-                <CheckCircle className="h-3 w-3" />
-                All clear
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Top stat pills */}
-        <div className="lg:col-span-7 grid grid-cols-3 gap-3">
-          <StatPill
-            label="Ready to bill"
-            value={`$${stats.draftTotal.toLocaleString()}`}
-            sub={`${stats.draftInvoices.length} draft${stats.draftInvoices.length !== 1 ? 's' : ''}`}
-            icon={FileText}
-            onClick={() => navigate('/invoices')}
-            variant="warning"
-          />
-          <StatPill
-            label="Outstanding"
-            value={`$${stats.outstandingTotal.toLocaleString()}`}
-            sub={stats.overdueCount > 0 ? `${stats.overdueCount} overdue` : 'On track'}
-            icon={DollarSign}
-            onClick={() => navigate('/invoices')}
-            variant={stats.overdueCount > 0 ? 'danger' : 'success'}
-          />
-          <StatPill
-            label="Paid this month"
-            value={`$${stats.paidThisMonth.toLocaleString()}`}
-            sub={format(now, 'MMMM yyyy')}
-            icon={TrendingUp}
-            onClick={() => navigate('/invoices')}
-            variant="success"
-          />
-        </div>
+    <div className="space-y-8">
+      <div className="page-header">
+        <h1 className="page-title">Dashboard</h1>
       </div>
 
-      {/* Row 2: Main content grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1 min-h-0">
-        {/* Priorities block */}
-        <Card className="lg:col-span-5 flex flex-col min-h-0">
-          <div className="px-5 pt-4 pb-2 flex items-center justify-between shrink-0">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Priorities</h2>
-            <span className="text-xs text-muted-foreground">Today & overdue</span>
-          </div>
-          <CardContent className="flex-1 overflow-hidden px-5 pb-4">
-            {allPriorities.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-center">
-                <CheckCircle className="h-10 w-10 text-primary/60 mb-3" />
-                <p className="font-medium text-foreground">You're all caught up</p>
-                <p className="text-xs text-muted-foreground mt-1">No urgent actions right now</p>
-              </div>
-            ) : (
-              <div className="space-y-1.5">
-                {allPriorities.map((item, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted/60 transition-colors cursor-pointer group"
-                    onClick={() => navigate(item.link)}
-                  >
-                    <div className={`p-1.5 rounded-md shrink-0 ${
-                      item.urgency <= 2 ? 'bg-destructive/15 text-destructive' : 'bg-muted text-muted-foreground'
-                    }`}>
-                      <item.icon className="h-3.5 w-3.5" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{item.title}</p>
-                      <p className="text-[11px] text-muted-foreground truncate">{item.context}</p>
-                    </div>
-                    <ArrowRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+      {/* ── TOP ROW: 4 Summary Cards ── */}
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+        {/* Card 1: Upcoming Shifts */}
+        <SummaryCard
+          icon={CalendarDays}
+          title="Upcoming Shifts"
+          value={summaryData.upcomingShifts.length}
+          subtitle={summaryData.nextShiftLabel || 'No upcoming shifts this week'}
+          cta="View Schedule"
+          onClick={() => navigate('/schedule')}
+          accentClass="text-primary"
+          bgClass="bg-primary/10"
+        />
 
-        {/* Right column: Payments + Tracking */}
-        <div className="lg:col-span-7 grid grid-rows-2 gap-4 min-h-0">
-          {/* Recent payments */}
-          <Card className="flex flex-col min-h-0">
-            <div className="px-5 pt-4 pb-2 flex items-center justify-between shrink-0">
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Recent Payments</h2>
-              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => navigate('/invoices')}>
-                View all <ArrowRight className="ml-1 h-3 w-3" />
-              </Button>
+        {/* Card 2: Ready to Invoice */}
+        <SummaryCard
+          icon={FileText}
+          title="Ready to Invoice"
+          value={`$${summaryData.draftTotal.toLocaleString()}`}
+          subtitle={summaryData.draftInvoices.length > 0
+            ? `${summaryData.draftInvoices.length} draft invoice${summaryData.draftInvoices.length > 1 ? 's' : ''} · Work completed and ready to bill`
+            : 'No invoices ready to send'}
+          cta="Review Invoices"
+          onClick={() => navigate('/invoices')}
+          accentClass="text-amber-600 dark:text-amber-400"
+          bgClass="bg-amber-500/10"
+        />
+
+        {/* Card 3: Outstanding Balance */}
+        <SummaryCard
+          icon={DollarSign}
+          title="Outstanding Balance"
+          value={`$${summaryData.outstandingTotal.toLocaleString()}`}
+          subtitle={summaryData.unpaidInvoices.length > 0
+            ? `${summaryData.unpaidInvoices.length} unpaid${summaryData.overdueCount > 0 ? ` · ${summaryData.overdueCount} overdue` : ''}`
+            : 'No unpaid invoices'}
+          cta="View Payments"
+          onClick={() => navigate('/invoices')}
+          accentClass="text-emerald-600 dark:text-emerald-400"
+          bgClass="bg-emerald-500/10"
+        />
+
+        {/* Card 4: Due Soon */}
+        <SummaryCard
+          icon={ShieldAlert}
+          title="Due Soon"
+          value={summaryData.dueSoonTotal}
+          subtitle={summaryData.dueSoonExamples.length > 0
+            ? summaryData.dueSoonExamples.join(' · ')
+            : 'No urgent admin items'}
+          cta="View Details"
+          onClick={() => navigate('/facilities')}
+          accentClass="text-destructive"
+          bgClass="bg-destructive/10"
+        />
+      </div>
+
+      {/* ── MIDDLE: Today's Priorities ── */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg font-semibold">Today's Priorities</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {allPriorities.length === 0 ? (
+            <div className="py-8 text-center">
+              <CheckCircle className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
+              <p className="font-medium text-foreground">You're all caught up.</p>
+              <p className="text-sm text-muted-foreground">No urgent actions right now.</p>
             </div>
-            <CardContent className="flex-1 overflow-hidden px-5 pb-4">
-              {stats.recentPayments.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-4">No recent payments</p>
-              ) : (
-                <div className="grid grid-cols-2 gap-3">
-                  {stats.recentPayments.map(p => {
-                    const inv = getInvoiceForPayment(p.invoice_id);
-                    return (
-                      <div key={p.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/40">
-                        <div className="p-1.5 rounded-md bg-primary/10 shrink-0">
-                          <DollarSign className="h-3.5 w-3.5 text-primary" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-semibold">${p.amount.toLocaleString()}</p>
-                          <p className="text-[11px] text-muted-foreground truncate">
-                            {inv ? getFacilityName(inv.facility_id) : 'Unknown'} · {format(new Date(p.payment_date), 'MMM d')}
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })}
+          ) : (
+            <div className="space-y-2">
+              {allPriorities.map((item, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer group"
+                  onClick={() => navigate(item.link)}
+                >
+                  <div className="p-2 rounded-md bg-muted shrink-0">
+                    <item.icon className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{item.title}</p>
+                    <p className="text-xs text-muted-foreground truncate">{item.context}</p>
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                 </div>
-              )}
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ── BOTTOM: This Period + Tracking Overview ── */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* This Period (2 cols) */}
+        <div className="lg:col-span-2 space-y-4">
+          <h2 className="text-lg font-semibold">This Period</h2>
+
+          {/* Paid This Month */}
+          <Card>
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="p-2.5 rounded-lg bg-emerald-500/10">
+                <DollarSign className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">${periodData.paidThisMonth.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">Paid this month</p>
+              </div>
             </CardContent>
           </Card>
 
-          {/* Tracking overview */}
-          <Card className="flex flex-col min-h-0">
-            <div className="px-5 pt-4 pb-2 shrink-0">
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Tracking Overview</h2>
-            </div>
-            <CardContent className="flex-1 overflow-hidden px-5 pb-4">
-              {hasNoData ? (
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground mb-3">Get started by setting up your practice.</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button variant="outline" size="sm" className="justify-start" onClick={() => navigate('/facilities')}>
-                      <Building2 className="mr-2 h-3.5 w-3.5" /> Add facility
+          <div className="grid gap-4 sm:grid-cols-2">
+            {/* Recent Payments */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Recent Payments</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {periodData.recentPayments.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-2">No recent payments</p>
+                ) : (
+                  <div className="space-y-2">
+                    {periodData.recentPayments.map(p => {
+                      const inv = getInvoiceForPayment(p.invoice_id);
+                      return (
+                        <div key={p.id} className="flex items-center justify-between text-sm">
+                          <div className="min-w-0">
+                            <p className="font-medium truncate">{inv ? getFacilityName(inv.facility_id) : 'Unknown'}</p>
+                          </div>
+                          <div className="text-right shrink-0 ml-2">
+                            <p className="font-medium">${p.amount.toLocaleString()}</p>
+                            <p className="text-xs text-muted-foreground">{format(new Date(p.payment_date), 'MMM d')}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Upcoming Shifts */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Upcoming Shifts</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {periodData.upcomingShifts.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-2">No shifts scheduled</p>
+                ) : (
+                  <div className="space-y-2">
+                    {periodData.upcomingShifts.map(s => (
+                      <div key={s.id} className="text-sm">
+                        <p className="font-medium">{getFacilityName(s.facility_id)}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {format(new Date(s.start_datetime), 'EEE, MMM d · h:mm a')}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Tracking Overview */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold">Tracking Overview</h2>
+          <Card>
+            <CardContent className="p-4">
+              {trackingLines.length === 0 && !hasNoData ? (
+                <p className="text-sm text-muted-foreground py-2">Everything looks good — no items needing attention.</p>
+              ) : hasNoData ? (
+                <div className="space-y-3 py-2">
+                  <p className="text-sm text-muted-foreground">Get started by setting up your practice.</p>
+                  <div className="space-y-2">
+                    <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate('/facilities')}>
+                      <Building2 className="mr-2 h-4 w-4" /> Add first facility
                     </Button>
-                    <Button variant="outline" size="sm" className="justify-start" onClick={() => navigate('/schedule')}>
-                      <CalendarDays className="mr-2 h-3.5 w-3.5" /> Add shift
+                    <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate('/schedule')}>
+                      <CalendarDays className="mr-2 h-4 w-4" /> Add first shift
                     </Button>
-                    <Button variant="outline" size="sm" className="justify-start" onClick={() => navigate('/invoices')}>
-                      <FileText className="mr-2 h-3.5 w-3.5" /> Create invoice
+                    <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate('/invoices')}>
+                      <FileText className="mr-2 h-4 w-4" /> Create first invoice
                     </Button>
-                    <Button variant="outline" size="sm" className="justify-start" onClick={() => navigate('/credentials')}>
-                      <ShieldAlert className="mr-2 h-3.5 w-3.5" /> Add credential
+                    <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate('/credentials')}>
+                      <ShieldAlert className="mr-2 h-4 w-4" /> Add first credential
                     </Button>
                   </div>
                 </div>
-              ) : trackingLines.length === 0 ? (
-                <div className="h-full flex items-center justify-center">
-                  <p className="text-sm text-muted-foreground">Everything looks good — no items needing attention.</p>
-                </div>
               ) : (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
                   {trackingLines.map((line, i) => (
                     <div
                       key={i}
-                      className="flex items-center justify-between p-3 rounded-lg bg-muted/40 cursor-pointer hover:bg-muted/70 transition-colors group"
+                      className="text-sm py-1.5 cursor-pointer hover:text-primary transition-colors flex items-center justify-between"
                       onClick={() => navigate(line.link)}
                     >
-                      <div>
-                        <p className="text-[11px] text-muted-foreground uppercase tracking-wide">{line.label}</p>
-                        <p className="text-sm font-semibold mt-0.5">{line.value}</p>
-                      </div>
-                      <ArrowRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <span className="text-muted-foreground">{line.text}</span>
+                      <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
                     </div>
                   ))}
                 </div>
@@ -345,32 +466,29 @@ export default function DashboardPage() {
   );
 }
 
-function StatPill({
-  label, value, sub, icon: Icon, onClick, variant,
+function SummaryCard({
+  icon: Icon, title, value, subtitle, cta, onClick, accentClass, bgClass,
 }: {
-  label: string; value: string; sub: string; icon: React.ElementType;
-  onClick: () => void; variant: 'warning' | 'danger' | 'success';
+  icon: React.ElementType; title: string; value: string | number; subtitle: string;
+  cta: string; onClick: () => void; accentClass: string; bgClass: string;
 }) {
-  const styles = {
-    warning: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-    danger: 'bg-destructive/10 text-destructive',
-    success: 'bg-primary/10 text-primary',
-  };
-
   return (
     <Card
       className="cursor-pointer hover:bg-muted/30 transition-colors group"
       onClick={onClick}
     >
-      <CardContent className="p-3.5 flex items-center gap-3">
-        <div className={`p-2 rounded-lg shrink-0 ${styles[variant]}`}>
-          <Icon className="h-4 w-4" />
+      <CardContent className="p-4 space-y-3">
+        <div className="flex items-center gap-3">
+          <div className={`p-2 rounded-lg ${bgClass}`}>
+            <Icon className={`h-4 w-4 ${accentClass}`} />
+          </div>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{title}</p>
         </div>
-        <div className="min-w-0">
-          <p className="text-lg font-bold leading-tight truncate">{value}</p>
-          <p className="text-[11px] text-muted-foreground leading-tight truncate">{label}</p>
-          <p className="text-[10px] text-muted-foreground/70 truncate">{sub}</p>
-        </div>
+        <p className="text-2xl font-bold">{value}</p>
+        <p className="text-xs text-muted-foreground line-clamp-2">{subtitle}</p>
+        <p className="text-xs font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+          {cta} <ArrowRight className="h-3 w-3" />
+        </p>
       </CardContent>
     </Card>
   );
