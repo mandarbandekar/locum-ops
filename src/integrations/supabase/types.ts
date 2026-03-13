@@ -1413,6 +1413,66 @@ export type Database = {
         }
         Relationships: []
       }
+      required_subscriptions: {
+        Row: {
+          archived_at: string | null
+          auto_renew: boolean | null
+          billing_frequency: string
+          category: string
+          cost: number | null
+          created_at: string
+          currency: string | null
+          id: string
+          name: string
+          notes: string | null
+          provider: string
+          renewal_date: string | null
+          status: string
+          updated_at: string
+          used_for: string | null
+          user_id: string
+          website_url: string | null
+        }
+        Insert: {
+          archived_at?: string | null
+          auto_renew?: boolean | null
+          billing_frequency?: string
+          category?: string
+          cost?: number | null
+          created_at?: string
+          currency?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          provider?: string
+          renewal_date?: string | null
+          status?: string
+          updated_at?: string
+          used_for?: string | null
+          user_id?: string
+          website_url?: string | null
+        }
+        Update: {
+          archived_at?: string | null
+          auto_renew?: boolean | null
+          billing_frequency?: string
+          category?: string
+          cost?: number | null
+          created_at?: string
+          currency?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          provider?: string
+          renewal_date?: string | null
+          status?: string
+          updated_at?: string
+          used_for?: string | null
+          user_id?: string
+          website_url?: string | null
+        }
+        Relationships: []
+      }
       shifts: {
         Row: {
           color: string
