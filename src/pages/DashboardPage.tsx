@@ -91,9 +91,12 @@ export default function DashboardPage() {
     };
   }, [shifts, invoices, facilities, checklistItems, now]);
 
-  // ── Today's Priorities ──
+  // ── Today's Priorities (today, tomorrow, overdue only) ──
+  const todayStart = startOfDay(now);
+
   const priorities = useMemo(() => {
-    const items: { title: string; context: string; link: string; icon: React.ElementType; urgency: number }[] = [];
+    type PriorityItem = { title: string; context: string; link: string; icon: React.ElementType; urgency: number; bucket: 'overdue' | 'today' | 'tomorrow' };
+    const items: PriorityItem[] = [];
     const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
 
     // 1) Overdue invoices
@@ -104,10 +107,11 @@ export default function DashboardPage() {
         link: `/invoices/${inv.id}`,
         icon: AlertTriangle,
         urgency: 1,
+        bucket: 'overdue',
       });
     });
 
-    // 2) Draft invoices ready to send
+    // 2) Draft invoices ready to send (treat as today)
     invoices.filter(i => i.status === 'draft').forEach(inv => {
       items.push({
         title: `Review and send ${inv.invoice_number}`,
@@ -115,40 +119,54 @@ export default function DashboardPage() {
         link: `/invoices/${inv.id}`,
         icon: Send,
         urgency: 2,
+        bucket: 'today',
       });
     });
 
-    // 5) Upcoming shifts in next 48 hours
-    const in48h = new Date(now);
-    in48h.setHours(in48h.getHours() + 48);
+    // 3) Shifts today or tomorrow
     shifts
-      .filter(s => new Date(s.start_datetime) >= now && new Date(s.start_datetime) <= in48h && (s.status === 'booked' || s.status === 'proposed'))
+      .filter(s => {
+        const d = new Date(s.start_datetime);
+        return (isToday(d) || isTomorrow(d)) && (s.status === 'booked' || s.status === 'proposed');
+      })
       .forEach(s => {
+        const d = new Date(s.start_datetime);
         items.push({
           title: `Shift at ${getFacilityName(s.facility_id)}`,
-          context: format(new Date(s.start_datetime), 'EEE, MMM d · h:mm a'),
+          context: format(d, 'EEE, MMM d · h:mm a'),
           link: '/schedule',
           icon: CalendarDays,
-          urgency: 5,
+          urgency: isToday(d) ? 3 : 5,
+          bucket: isToday(d) ? 'today' : 'tomorrow',
         });
       });
 
-    // 8) Contract checklist items due soon
+    // 4) Overdue contract checklist items
     checklistItems
-      .filter(item => getChecklistBadge(item) === 'due_soon' || getChecklistBadge(item) === 'overdue')
+      .filter(item => {
+        const badge = getChecklistBadge(item);
+        if (badge === 'overdue') return true;
+        if (badge === 'due_soon' && item.due_date) {
+          const d = new Date(item.due_date);
+          return isToday(d) || isTomorrow(d);
+        }
+        return false;
+      })
       .forEach(item => {
         const badge = getChecklistBadge(item);
-        const days = differenceInDays(new Date(item.due_date!), now);
+        const d = item.due_date ? new Date(item.due_date) : now;
+        const isOverdue = badge === 'overdue';
         items.push({
-          title: `${item.title}`,
-          context: badge === 'overdue' ? 'Overdue' : `Due in ${days} days`,
-          link: `/facilities`,
+          title: item.title,
+          context: isOverdue ? 'Overdue' : isToday(d) ? 'Due today' : 'Due tomorrow',
+          link: '/facilities',
           icon: ShieldAlert,
-          urgency: badge === 'overdue' ? 3 : 8,
+          urgency: isOverdue ? 1 : 4,
+          bucket: isOverdue ? 'overdue' : isToday(d) ? 'today' : 'tomorrow',
         });
       });
 
-    return items.sort((a, b) => a.urgency - b.urgency).slice(0, 6);
+    return items.sort((a, b) => a.urgency - b.urgency);
   }, [invoices, shifts, facilities, checklistItems, now]);
 
   // Confirmations needing action
