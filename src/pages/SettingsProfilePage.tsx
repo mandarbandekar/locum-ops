@@ -74,6 +74,7 @@ export default function SettingsProfilePage() {
 
   return (
     <div>
+      <SettingsNav />
       <div className="page-header">
         <h1 className="page-title">Profile Settings</h1>
         <Button size="sm" onClick={handleSave} disabled={saving}>
