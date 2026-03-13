@@ -261,10 +261,12 @@ export default function SchedulePage() {
           ) : view === 'week' ? (
             <WeekTimeGrid
               weekDays={weekDays}
-              shifts={shifts}
+              shifts={calendarFilters.shifts ? shifts : []}
               getFacilityName={getFacilityName}
               onEditShift={setEditShift}
               onDropOnTime={handleDropOnTime}
+              calendarFilters={{ credentials: calendarFilters.credentials, subscriptions: calendarFilters.subscriptions }}
+              getEventsForDay={getEventsForDay}
             />
           ) : (
             <div className="rounded-lg border bg-card overflow-hidden">

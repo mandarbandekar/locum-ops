@@ -3,6 +3,8 @@ import { format, isSameDay, getHours, getMinutes } from 'date-fns';
 import { SHIFT_COLORS } from '@/types';
 import { getMarkersForDay } from '@/lib/calendarMarkers';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { CalendarEvent } from '@/hooks/useCalendarEvents';
+import { CalendarEventStack } from '@/components/schedule/CalendarEventChip';
 
 const HOURS = Array.from({ length: 18 }, (_, i) => i + 5); // 5 AM – 10 PM
 const HOUR_HEIGHT = 60; // px per hour
@@ -14,6 +16,8 @@ interface WeekTimeGridProps {
   getFacilityName: (id: string) => string;
   onEditShift: (id: string) => void;
   onDropOnTime: (shiftId: string, targetDate: Date, targetHour: number) => void;
+  calendarFilters?: { credentials: boolean; subscriptions: boolean };
+  getEventsForDay?: (day: Date, filters: { credentials: boolean; subscriptions: boolean }) => CalendarEvent[];
 }
 
 export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, onDropOnTime }: WeekTimeGridProps) {
