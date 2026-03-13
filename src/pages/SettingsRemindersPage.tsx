@@ -108,6 +108,31 @@ export default function SettingsRemindersPage() {
       </p>
 
       <div className="grid gap-6 max-w-2xl">
+        {/* Manual Send */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Send className="h-4 w-4 text-primary" /> Send Reminders Now
+            </CardTitle>
+            <CardDescription>
+              Manually trigger invoice reminder emails based on your current data
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              onClick={handleSendRemindersNow}
+              disabled={sendingReminders || isDemo}
+              className="gap-2"
+            >
+              {sendingReminders ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+              {sendingReminders ? 'Sending…' : 'Send invoice reminders now'}
+            </Button>
+            <p className="text-xs text-muted-foreground mt-2">
+              Checks for draft and overdue invoices and sends email reminders. Won't send duplicates for the same day.
+            </p>
+          </CardContent>
+        </Card>
+
         {/* Delivery Channels */}
         <Card>
           <CardHeader>
