@@ -5,11 +5,12 @@ import CredentialsList from '@/components/credentials/CredentialsList';
 import RenewalsTab from '@/components/credentials/RenewalsTab';
 import DocumentsVaultTab from '@/components/credentials/DocumentsVaultTab';
 import CEEntriesTab from '@/components/credentials/CEEntriesTab';
+import SubscriptionsTab from '@/components/subscriptions/SubscriptionsTab';
 import { AddCredentialDialog } from '@/components/credentials/AddCredentialDialog';
-import { ShieldCheck, GraduationCap } from 'lucide-react';
+import { ShieldCheck, GraduationCap, RefreshCw } from 'lucide-react';
 
 export default function CredentialsPage() {
-  const [primaryTab, setPrimaryTab] = useState<'credentials' | 'ce-tracker'>('credentials');
+  const [primaryTab, setPrimaryTab] = useState<'credentials' | 'ce-tracker' | 'subscriptions'>('credentials');
   const [credSubTab, setCredSubTab] = useState('overview');
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -27,8 +28,8 @@ export default function CredentialsPage() {
         </div>
       </div>
 
-      {/* Primary 2-tab selector */}
-      <div className="flex gap-3">
+      {/* Primary 3-tab selector */}
+      <div className="flex gap-3 flex-wrap">
         <button
           onClick={() => setPrimaryTab('credentials')}
           className={`flex items-center gap-2.5 px-5 py-3 rounded-xl border-2 font-semibold text-sm transition-all flex-1 sm:flex-none ${
@@ -50,6 +51,17 @@ export default function CredentialsPage() {
         >
           <GraduationCap className="h-5 w-5" />
           Continuing Education Hub
+        </button>
+        <button
+          onClick={() => setPrimaryTab('subscriptions')}
+          className={`flex items-center gap-2.5 px-5 py-3 rounded-xl border-2 font-semibold text-sm transition-all flex-1 sm:flex-none ${
+            primaryTab === 'subscriptions'
+              ? 'border-primary bg-primary/5 text-primary shadow-sm'
+              : 'border-border bg-card text-muted-foreground hover:border-primary/30 hover:bg-muted/50'
+          }`}
+        >
+          <RefreshCw className="h-5 w-5" />
+          Required Subscriptions
         </button>
       </div>
 
@@ -92,6 +104,11 @@ export default function CredentialsPage() {
       {/* CE Tracker section */}
       {primaryTab === 'ce-tracker' && (
         <CEEntriesTab />
+      )}
+
+      {/* Required Subscriptions section */}
+      {primaryTab === 'subscriptions' && (
+        <SubscriptionsTab />
       )}
 
       <AddCredentialDialog open={dialogOpen} onOpenChange={setDialogOpen} />
