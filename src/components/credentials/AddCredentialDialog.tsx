@@ -111,7 +111,7 @@ export function AddCredentialDialog({ open, onOpenChange, editingCredential, onA
     setForm({
       credential_type: 'custom', custom_title: '', jurisdiction: '', issuing_authority: '',
       credential_number: '', issue_date: '', expiration_date: '', renewal_frequency: 'annually',
-      notes: '', tags: '', ce_required_hours: '',
+      notes: '', tags: '', ce_required_hours: '', ce_requirements_notes: '',
     });
     setFile(null);
   };
