@@ -1097,6 +1097,121 @@ export type Database = {
           },
         ]
       }
+      import_files: {
+        Row: {
+          file_name: string
+          file_type: string | null
+          file_url: string | null
+          id: string
+          import_job_id: string
+          source_label: string
+          uploaded_at: string
+          user_id: string
+        }
+        Insert: {
+          file_name: string
+          file_type?: string | null
+          file_url?: string | null
+          id?: string
+          import_job_id: string
+          source_label?: string
+          uploaded_at?: string
+          user_id?: string
+        }
+        Update: {
+          file_name?: string
+          file_type?: string | null
+          file_url?: string | null
+          id?: string
+          import_job_id?: string
+          source_label?: string
+          uploaded_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_files_import_job_id_fkey"
+            columns: ["import_job_id"]
+            isOneToOne: false
+            referencedRelation: "import_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      import_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          source_type: string
+          status: string
+          summary: Json | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          source_type?: string
+          status?: string
+          summary?: Json | null
+          user_id?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          source_type?: string
+          status?: string
+          summary?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      imported_entities: {
+        Row: {
+          confidence_score: number | null
+          created_at: string
+          entity_type: string
+          id: string
+          import_job_id: string
+          parsed_data: Json | null
+          raw_data: Json | null
+          review_status: string
+          user_id: string
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string
+          entity_type: string
+          id?: string
+          import_job_id: string
+          parsed_data?: Json | null
+          raw_data?: Json | null
+          review_status?: string
+          user_id?: string
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string
+          entity_type?: string
+          id?: string
+          import_job_id?: string
+          parsed_data?: Json | null
+          raw_data?: Json | null
+          review_status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "imported_entities_import_job_id_fkey"
+            columns: ["import_job_id"]
+            isOneToOne: false
+            referencedRelation: "import_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoice_activity: {
         Row: {
           action: string
