@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { readFileAsText } from '@/lib/fileParser';
 
 export type SuggestionCategory = 'contacts' | 'rates' | 'terms' | 'contracts' | 'notes';
 export type SuggestionStatus = 'pending' | 'applied' | 'ignored';
