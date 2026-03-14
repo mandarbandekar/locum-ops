@@ -50,7 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           company: meta.company,
           profession: meta.profession,
         },
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo: `${window.location.origin}/onboarding`,
       },
     });
     return { error: error?.message ?? null };
