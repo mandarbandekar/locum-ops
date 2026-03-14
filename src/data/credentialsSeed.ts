@@ -40,6 +40,7 @@ export const demoCredentials: Credential[] = [
     notes: 'Schedule II-V. Renewal fee ~$888 for 3-year period.',
     tags: ['federal', 'controlled-substances'],
     ce_required_hours: null,
+    ce_requirements_notes: null,
     created_at: '2023-09-15T00:00:00Z',
     updated_at: today.toISOString(),
   },
