@@ -59,7 +59,7 @@ export function useFacilityImport(facilityId: string, facilityName: string) {
   }, [facilityId, facilityName]);
 
   const processFile = useCallback(async (file: File) => {
-    const text = await file.text();
+    const text = await readFileAsText(file);
     await processContent(text, `Uploaded file: ${file.name}`);
   }, [processContent]);
 

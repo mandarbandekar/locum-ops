@@ -124,8 +124,8 @@ export function useSetupAssistant() {
         source_label: lane,
       } as any);
 
-      // Read file content
-      const text = await file.text();
+      // Read file content (handles Excel binary files)
+      const text = await readFileAsText(file);
 
       return await uploadAndParse(lane, text, file.name, jobId);
     } catch (err: any) {
