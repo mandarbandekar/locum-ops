@@ -15,6 +15,7 @@ import { Upload, GraduationCap, FileCheck, AlertCircle, Clock, BookOpen } from '
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { getDaysUntilExpiration } from '@/lib/credentialTypes';
+import { RenewalPortalSection } from '@/components/credentials/RenewalPortalSection';
 
 interface Props {
   open: boolean;
