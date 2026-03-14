@@ -22,7 +22,7 @@ import { ManualShiftForm } from '@/components/onboarding/ManualShiftForm';
 import { ManualExpandScreen } from '@/components/onboarding/ManualExpandScreen';
 import { WorkspaceReady } from '@/components/onboarding/WorkspaceReady';
 
-const WIZARD_STEPS = 3; // Profile, Workflow, Defaults (shown in progress bar)
+const WIZARD_STEPS = 2; // Profile, Workflow (shown in progress bar)
 
 const PROFESSIONS: { value: Profession; label: string }[] = [
   { value: 'vet', label: 'Veterinarian' },
