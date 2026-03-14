@@ -175,6 +175,54 @@ export default function OnboardingPage() {
 
   // ─── Render phases ──────────────────────────────────────
 
+  // Tax enablement
+  if (phase === 'tax_enablement') {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="w-full max-w-lg space-y-6">
+          <Card>
+            <CardHeader className="text-center pb-2">
+              <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+                <span className="text-xl">📊</span>
+              </div>
+              <CardTitle className="text-xl">Track estimated taxes</CardTitle>
+              <CardDescription className="text-base">
+                Stay organized for quarterly payments. LocumOps helps you track set-asides and deadlines — not tax advice, just better prep for your accountant.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {!showTaxSetup ? (
+                <div className="space-y-3">
+                  <Button onClick={() => setShowTaxSetup(true)} className="w-full" size="lg">
+                    Enable Tax Tracker
+                  </Button>
+                  <Button variant="ghost" onClick={() => setPhase('setup_choice')} className="w-full text-muted-foreground">
+                    Skip for now
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <label className="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-border bg-muted/50">
+                    <Checkbox checked={taxDisclaimer} onCheckedChange={v => setTaxDisclaimer(!!v)} className="mt-0.5" />
+                    <span className="text-sm text-muted-foreground">I understand LocumOps does not provide tax, legal, or financial advice. I'll confirm due dates and amounts with my accountant.</span>
+                  </label>
+                  {taxDisclaimer && (
+                    <p className="text-sm text-primary flex items-center gap-1.5 justify-center">
+                      <Check className="h-4 w-4" /> Tax tracker enabled
+                    </p>
+                  )}
+                  <Button onClick={() => setPhase('setup_choice')} className="w-full" disabled={!taxDisclaimer}>
+                    Continue <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   // Setup choice
   if (phase === 'setup_choice') {
     return (
