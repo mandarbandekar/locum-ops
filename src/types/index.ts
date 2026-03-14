@@ -72,6 +72,7 @@ export interface Shift {
 }
 
 export type InvoiceStatus = 'draft' | 'sent' | 'partial' | 'paid' | 'overdue';
+export type InvoiceType = 'single' | 'bulk';
 export interface Invoice {
   id: string;
   facility_id: string;
