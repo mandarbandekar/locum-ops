@@ -20,12 +20,16 @@ import { PrioritiesCard, PriorityItem } from '@/components/dashboard/PrioritiesC
 import { ThisWeekCard } from '@/components/dashboard/ThisWeekCard';
 import { WorkReadinessStrip, ReadinessItem } from '@/components/dashboard/WorkReadinessStrip';
 import { QuickActions } from '@/components/dashboard/QuickActions';
+import { ContinueSetupCard } from '@/components/setup-assistant/ContinueSetupCard';
+import { useUserProfile } from '@/contexts/UserProfileContext';
 
 const dashDb = (table: string) => supabase.from(table as any);
 
 export default function DashboardPage() {
   const { shifts, invoices, facilities, payments, checklistItems } = useData();
   const { user, isDemo } = useAuth();
+  const { profile } = useUserProfile();
+  const showSetupCard = !isDemo && facilities.length === 0 && shifts.length === 0;
   const navigate = useNavigate();
   const now = new Date();
 
@@ -223,6 +227,8 @@ export default function DashboardPage() {
         <h1 className="page-title">Dashboard</h1>
         <QuickActions />
       </div>
+
+      {showSetupCard && <ContinueSetupCard />}
 
       {/* Row 1: 4 Summary Cards */}
       <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">

@@ -9,3 +9,5 @@ project_id = "eavfxjsdamienrcginvi"
     verify_jwt = false
   [functions.public-invoice]
     verify_jwt = false
+  [functions.ai-setup-parse]
+    verify_jwt = false
