@@ -228,6 +228,8 @@ export default function DashboardPage() {
         <QuickActions />
       </div>
 
+      {showSetupCard && <ContinueSetupCard />}
+
       {/* Row 1: 4 Summary Cards */}
       <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
         <SummaryCard
