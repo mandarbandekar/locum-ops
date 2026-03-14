@@ -78,6 +78,7 @@ export const demoCredentials: Credential[] = [
     notes: 'Expired — renewal training module required before reactivation.',
     tags: ['federal', 'accreditation'],
     ce_required_hours: 6,
+    ce_requirements_notes: 'USDA supplemental training modules required for reaccreditation.',
     created_at: '2025-06-01T00:00:00Z',
     updated_at: today.toISOString(),
   },
