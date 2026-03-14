@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { readFileAsText } from '@/lib/fileParser';
 
 export type ImportLane = 'facilities' | 'contracts' | 'shifts';
 export type ReviewStatus = 'pending' | 'confirmed' | 'edited' | 'skipped' | 'merged';
@@ -123,8 +124,8 @@ export function useSetupAssistant() {
         source_label: lane,
       } as any);
 
-      // Read file content
-      const text = await file.text();
+      // Read file content (handles Excel binary files)
+      const text = await readFileAsText(file);
 
       return await uploadAndParse(lane, text, file.name, jobId);
     } catch (err: any) {

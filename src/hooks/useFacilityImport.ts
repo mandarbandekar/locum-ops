@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { readFileAsText } from '@/lib/fileParser';
 
 export type SuggestionCategory = 'contacts' | 'rates' | 'terms' | 'contracts' | 'notes';
 export type SuggestionStatus = 'pending' | 'applied' | 'ignored';
@@ -58,7 +59,7 @@ export function useFacilityImport(facilityId: string, facilityName: string) {
   }, [facilityId, facilityName]);
 
   const processFile = useCallback(async (file: File) => {
-    const text = await file.text();
+    const text = await readFileAsText(file);
     await processContent(text, `Uploaded file: ${file.name}`);
   }, [processContent]);
 
