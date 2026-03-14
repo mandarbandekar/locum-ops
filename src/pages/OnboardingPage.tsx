@@ -10,13 +10,19 @@ import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useUserProfile, type Profession, type EmailTone, type CurrentTool, type FacilitiesCountBand, type InvoicesPerMonthBand, type TermsFieldsEnabled } from '@/contexts/UserProfileContext';
-import { Building2, CalendarDays, FileText, Upload, ArrowRight, Check, SkipForward } from 'lucide-react';
+import { ArrowRight, Check, SkipForward } from 'lucide-react';
 import { SetupAssistantLanes } from '@/components/setup-assistant/SetupAssistantLanes';
 import { ImportReviewPanel } from '@/components/setup-assistant/ImportReviewPanel';
 import { SetupSummary } from '@/components/setup-assistant/SetupSummary';
 import { useSetupAssistant } from '@/hooks/useSetupAssistant';
+import { useManualSetup } from '@/hooks/useManualSetup';
+import { SetupChoiceScreen } from '@/components/onboarding/SetupChoiceScreen';
+import { ManualFacilityForm } from '@/components/onboarding/ManualFacilityForm';
+import { ManualShiftForm } from '@/components/onboarding/ManualShiftForm';
+import { ManualExpandScreen } from '@/components/onboarding/ManualExpandScreen';
+import { WorkspaceReady } from '@/components/onboarding/WorkspaceReady';
 
-const TOTAL_STEPS = 4;
+const WIZARD_STEPS = 3; // Profile, Workflow, Defaults (shown in progress bar)
 
 const PROFESSIONS: { value: Profession; label: string }[] = [
   { value: 'vet', label: 'Veterinarian' },
@@ -50,12 +56,24 @@ const TONES: { value: EmailTone; label: string }[] = [
   { value: 'direct', label: 'Direct' },
 ];
 
+type Phase =
+  | 'wizard'        // Steps 1-3
+  | 'setup_choice'  // Step 4: choose import or manual
+  | 'import'        // Import assistant path
+  | 'import_review' // Review imported entities
+  | 'manual_facility' // Manual: add facility
+  | 'manual_shift'    // Manual: add shift
+  | 'manual_expand'   // Manual: add more or finish
+  | 'manual_review'   // Manual: confirm before finalizing
+  | 'workspace_ready'; // Final screen
+
 export default function OnboardingPage() {
   const { profile, updateProfile, completeOnboarding } = useUserProfile();
   const navigate = useNavigate();
-  const [step, setStep] = useState(1);
-  const [phase, setPhase] = useState<'steps' | 'review' | 'summary' | 'starting_path'>('steps');
+  const [wizardStep, setWizardStep] = useState(1);
+  const [phase, setPhase] = useState<Phase>('wizard');
   const setupAssistant = useSetupAssistant();
+  const manualSetup = useManualSetup();
 
   // Step 1 state
   const [profession, setProfession] = useState<Profession>(profile?.profession || 'other');
@@ -81,57 +99,29 @@ export default function OnboardingPage() {
   const [showTaxSetup, setShowTaxSetup] = useState(false);
   const [taxDisclaimer, setTaxDisclaimer] = useState(false);
 
+  // Track last added facility rate for prefilling shift form
+  const [lastFacilityRate, setLastFacilityRate] = useState<number | undefined>();
+
   useEffect(() => {
-    console.log('onboarding_step_view', { step, phase });
-  }, [step, phase]);
+    console.log('onboarding_step_view', { wizardStep, phase });
+  }, [wizardStep, phase]);
 
   const saveStep1 = async () => {
     console.log('onboarding_step_submit', { step: 1 });
     await updateProfile({ profession, work_style_label: workStyle, timezone, currency });
-    setStep(2);
+    setWizardStep(2);
   };
 
   const saveStep2 = async () => {
     console.log('onboarding_step_submit', { step: 2 });
     await updateProfile({ current_tools: currentTools, facilities_count_band: facilitiesBand, invoices_per_month_band: invoicesBand });
-    setStep(3);
+    setWizardStep(3);
   };
 
   const saveStep3 = async () => {
     console.log('onboarding_step_submit', { step: 3 });
     await updateProfile({ email_tone: emailTone, terms_fields_enabled: termsFields });
-    setStep(4);
-  };
-
-  const skipAll = async () => {
-    console.log('onboarding_skip');
-    await updateProfile({ timezone: Intl.DateTimeFormat().resolvedOptions().timeZone });
-    await completeOnboarding();
-    setPhase('starting_path');
-  };
-
-  const handleSetupComplete = (entities: any[]) => {
-    setPhase('review');
-  };
-
-  const handleReviewComplete = async () => {
-    await completeOnboarding();
-    const summary = setupAssistant.getSummary();
-    if (summary.facilities_imported > 0 || summary.contracts_added > 0 || summary.shifts_imported > 0) {
-      setPhase('summary');
-    } else {
-      setPhase('starting_path');
-    }
-  };
-
-  const handleSkipSetupAssistant = async () => {
-    await completeOnboarding();
-    setPhase('starting_path');
-  };
-
-  const handleStartingPath = (path: string) => {
-    console.log('starting_path_select', { path });
-    navigate(path);
+    setPhase('setup_choice');
   };
 
   const toggleTool = (tool: CurrentTool) => {
@@ -142,8 +132,86 @@ export default function OnboardingPage() {
     setTermsFields(prev => ({ ...prev, [field]: !prev[field] }));
   };
 
-  // Review phase
-  if (phase === 'review') {
+  // ─── Import path handlers ────────────────────────────────
+  const handleImportComplete = () => { setPhase('import_review'); };
+
+  const handleImportReviewComplete = async () => {
+    await completeOnboarding();
+    const summary = setupAssistant.getSummary();
+    if (summary.facilities_imported > 0 || summary.shifts_imported > 0) {
+      setPhase('workspace_ready');
+    } else {
+      // Nothing was actually confirmed, go to manual path
+      setPhase('manual_facility');
+    }
+  };
+
+  const handleSkipImport = () => { setPhase('manual_facility'); };
+
+  // ─── Manual path handlers ───────────────────────────────
+  const handleFacilitySaved = async (input: any) => {
+    const facility = await manualSetup.addFacility(input);
+    if (facility) {
+      setLastFacilityRate(input.weekday_rate);
+      setPhase('manual_shift');
+    }
+  };
+
+  const handleShiftSaved = async (input: any) => {
+    const shift = await manualSetup.addShift(input);
+    if (shift) {
+      setPhase('manual_expand');
+    }
+  };
+
+  const handleManualFinish = () => {
+    setPhase('manual_review');
+  };
+
+  const handleManualConfirm = async () => {
+    await completeOnboarding();
+    setPhase('workspace_ready');
+  };
+
+  const handleNavigate = (path: string) => {
+    console.log('onboarding_navigate', { path });
+    navigate(path);
+  };
+
+  // ─── Render phases ──────────────────────────────────────
+
+  // Setup choice
+  if (phase === 'setup_choice') {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="w-full max-w-lg">
+          <SetupChoiceScreen
+            currentTools={currentTools}
+            onChooseImport={() => setPhase('import')}
+            onChooseManual={() => setPhase('manual_facility')}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Import assistant
+  if (phase === 'import') {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="w-full max-w-lg">
+          <SetupAssistantLanes
+            onComplete={handleImportComplete}
+            onSkip={handleSkipImport}
+            hookState={setupAssistant}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Import review
+  if (phase === 'import_review') {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="w-full max-w-lg">
@@ -151,85 +219,134 @@ export default function OnboardingPage() {
             entities={setupAssistant.entities}
             onUpdateEntity={setupAssistant.updateEntityStatus}
             onBulkConfirm={setupAssistant.bulkConfirm}
-            onComplete={handleReviewComplete}
-            onBack={() => { setPhase('steps'); setStep(4); }}
+            onComplete={handleImportReviewComplete}
+            onBack={() => setPhase('import')}
           />
         </div>
       </div>
     );
   }
 
-  // Summary phase
-  if (phase === 'summary') {
+  // Manual: add facility
+  if (phase === 'manual_facility') {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="w-full max-w-lg">
-          <SetupSummary summary={setupAssistant.getSummary()} />
+          <ManualFacilityForm onSave={handleFacilitySaved} saving={manualSetup.saving} />
         </div>
       </div>
     );
   }
 
-  // Starting path phase
-  if (phase === 'starting_path') {
+  // Manual: add shift
+  if (phase === 'manual_shift') {
+    const lastFacility = manualSetup.facilities[manualSetup.facilities.length - 1];
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="w-full max-w-lg">
+          <ManualShiftForm
+            facilities={manualSetup.facilities}
+            defaultFacilityId={lastFacility?.id}
+            defaultRate={lastFacilityRate}
+            onSave={handleShiftSaved}
+            saving={manualSetup.saving}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Manual: expand (add more or finish)
+  if (phase === 'manual_expand') {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="w-full max-w-lg">
+          <ManualExpandScreen
+            facilities={manualSetup.facilities}
+            shifts={manualSetup.shifts}
+            onAddPractice={() => setPhase('manual_facility')}
+            onAddShift={() => setPhase('manual_shift')}
+            onFinish={handleManualFinish}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Manual review / confirmation
+  if (phase === 'manual_review') {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="w-full max-w-lg space-y-6">
           <div className="text-center space-y-2">
-            <h1 className="text-2xl font-bold text-foreground">What do you want to do first?</h1>
-            <p className="text-muted-foreground">Pick a starting point — you can always explore everything later.</p>
+            <h1 className="text-2xl font-bold text-foreground">Review your setup</h1>
+            <p className="text-muted-foreground">Here's what we'll create for you.</p>
           </div>
-          <div className="space-y-3">
-            <Button variant="outline" className="w-full justify-start h-auto py-4 px-5" onClick={() => handleStartingPath('/import')}>
-              <Upload className="mr-3 h-5 w-5 text-primary" />
-              <div className="text-left">
-                <div className="font-medium">Import from spreadsheet</div>
-                <div className="text-xs text-muted-foreground">Recommended if you have existing data</div>
+          <Card>
+            <CardContent className="pt-5 space-y-4">
+              <div>
+                <h3 className="font-medium text-sm text-muted-foreground mb-2">Practices</h3>
+                {manualSetup.facilities.map(f => (
+                  <div key={f.id} className="flex items-center gap-2 py-1">
+                    <Check className="h-4 w-4 text-primary" />
+                    <span className="text-sm">{f.name}</span>
+                  </div>
+                ))}
               </div>
-            </Button>
-            <Button variant="outline" className="w-full justify-start h-auto py-4 px-5" onClick={() => handleStartingPath('/facilities?add=1')}>
-              <Building2 className="mr-3 h-5 w-5 text-primary" />
-              <div className="text-left">
-                <div className="font-medium">Add your first facility</div>
-                <div className="text-xs text-muted-foreground">Set up a clinic or practice you work with</div>
+              <div>
+                <h3 className="font-medium text-sm text-muted-foreground mb-2">Shifts</h3>
+                {manualSetup.shifts.map(s => {
+                  const facility = manualSetup.facilities.find(f => f.id === s.facility_id);
+                  const date = new Date(s.start_datetime).toLocaleDateString();
+                  return (
+                    <div key={s.id} className="flex items-center gap-2 py-1">
+                      <Check className="h-4 w-4 text-primary" />
+                      <span className="text-sm">{facility?.name} — {date}</span>
+                    </div>
+                  );
+                })}
               </div>
-            </Button>
-            <Button variant="outline" className="w-full justify-start h-auto py-4 px-5" onClick={() => handleStartingPath('/schedule?add=1')}>
-              <CalendarDays className="mr-3 h-5 w-5 text-primary" />
-              <div className="text-left">
-                <div className="font-medium">Add your first shift</div>
-                <div className="text-xs text-muted-foreground">Block out an upcoming shift on the calendar</div>
-              </div>
-            </Button>
-            <Button variant="outline" className="w-full justify-start h-auto py-4 px-5" onClick={() => handleStartingPath('/')}>
-              <FileText className="mr-3 h-5 w-5 text-primary" />
-              <div className="text-left">
-                <div className="font-medium">Go to Dashboard</div>
-                <div className="text-xs text-muted-foreground">Explore on your own</div>
-              </div>
-            </Button>
-          </div>
+            </CardContent>
+          </Card>
+          <Button onClick={handleManualConfirm} className="w-full">
+            Confirm and finish setup
+          </Button>
         </div>
       </div>
     );
   }
 
+  // Workspace ready
+  if (phase === 'workspace_ready') {
+    const facilitiesCount = manualSetup.facilities.length || setupAssistant.getSummary().facilities_imported;
+    const shiftsCount = manualSetup.shifts.length || setupAssistant.getSummary().shifts_imported;
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="w-full max-w-lg">
+          <WorkspaceReady
+            facilitiesCount={facilitiesCount}
+            shiftsCount={shiftsCount}
+            onNavigate={handleNavigate}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Wizard steps 1–3 ──────────────────────────────────
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-lg space-y-6">
         {/* Progress */}
         <div className="space-y-2">
           <div className="flex justify-between text-sm text-muted-foreground">
-            <span>Step {step} of {TOTAL_STEPS}</span>
-            <button onClick={skipAll} className="text-primary hover:underline flex items-center gap-1">
-              <SkipForward className="h-3.5 w-3.5" /> Skip for now
-            </button>
+            <span>Step {wizardStep} of {WIZARD_STEPS}</span>
           </div>
-          <Progress value={(step / TOTAL_STEPS) * 100} className="h-2" />
+          <Progress value={(wizardStep / WIZARD_STEPS) * 100} className="h-2" />
         </div>
 
-        {/* Step 1 */}
-        {step === 1 && (
+        {/* Step 1: Profile */}
+        {wizardStep === 1 && (
           <Card>
             <CardHeader>
               <CardTitle>Tell us who you are</CardTitle>
@@ -279,8 +396,8 @@ export default function OnboardingPage() {
           </Card>
         )}
 
-        {/* Step 2 */}
-        {step === 2 && (
+        {/* Step 2: Workflow */}
+        {wizardStep === 2 && (
           <Card>
             <CardHeader>
               <CardTitle>How do you run your ops today?</CardTitle>
@@ -315,15 +432,15 @@ export default function OnboardingPage() {
                 </RadioGroup>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setStep(1)} className="flex-1">Back</Button>
+                <Button variant="outline" onClick={() => setWizardStep(1)} className="flex-1">Back</Button>
                 <Button onClick={saveStep2} className="flex-1">Continue <ArrowRight className="ml-2 h-4 w-4" /></Button>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Step 3 */}
-        {step === 3 && (
+        {/* Step 3: Defaults */}
+        {wizardStep === 3 && (
           <div className="space-y-4">
             <Card>
               <CardHeader>
@@ -361,7 +478,7 @@ export default function OnboardingPage() {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => setStep(2)} className="flex-1">Back</Button>
+                  <Button variant="outline" onClick={() => setWizardStep(2)} className="flex-1">Back</Button>
                   <Button onClick={saveStep3} className="flex-1">
                     Continue <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
@@ -392,15 +509,6 @@ export default function OnboardingPage() {
               </CardContent>
             </Card>
           </div>
-        )}
-
-        {/* Step 4: AI Setup Assistant */}
-        {step === 4 && (
-          <SetupAssistantLanes
-            onComplete={handleSetupComplete}
-            onSkip={handleSkipSetupAssistant}
-            hookState={setupAssistant}
-          />
         )}
       </div>
     </div>
