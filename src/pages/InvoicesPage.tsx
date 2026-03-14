@@ -146,7 +146,12 @@ export default function InvoicesPage() {
                 <td className="p-3" onClick={e => toggleSelect(inv.id, e)}>
                   <Checkbox checked={selected.has(inv.id)} />
                 </td>
-                <td className="p-3 font-medium">{inv.invoice_number}</td>
+                <td className="p-3 font-medium">
+                  {inv.invoice_number}
+                  {inv.invoice_type === 'bulk' && (
+                    <Badge variant="outline" className="ml-1.5 text-[10px] px-1 py-0">Bulk</Badge>
+                  )}
+                </td>
                 <td className="p-3">{getFacilityName(inv.facility_id)}</td>
                 <td className="p-3 text-muted-foreground hidden sm:table-cell">
                   {inv.invoice_date ? format(new Date(inv.invoice_date), 'MMM d, yyyy') : '—'}

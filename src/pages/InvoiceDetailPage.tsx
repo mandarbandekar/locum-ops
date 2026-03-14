@@ -139,6 +139,9 @@ export default function InvoiceDetailPage() {
           <Badge variant={statusConfig.variant} className="text-xs">
             {statusConfig.label}
           </Badge>
+          {(invoice as any).invoice_type === 'bulk' && (
+            <Badge variant="outline" className="text-xs">Bulk Invoice</Badge>
+          )}
         </div>
         <span className="text-sm text-muted-foreground">{facility?.name}</span>
 
