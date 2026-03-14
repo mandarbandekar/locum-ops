@@ -9,7 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Upload, GraduationCap } from 'lucide-react';
 import { useCredentials } from '@/hooks/useCredentials';
 import { useCEEntries, CEEntryWithLinks } from '@/hooks/useCEEntries';
-import { CREDENTIAL_TYPE_LABELS } from '@/lib/credentialTypes';
+import { CREDENTIAL_TYPE_LABELS, CE_DELIVERY_FORMATS } from '@/lib/credentialTypes';
 import { useToast } from '@/hooks/use-toast';
 
 const CE_CATEGORIES = [
