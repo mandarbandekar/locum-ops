@@ -113,6 +113,7 @@ export const demoCEEntries: CEEntry[] = [
     hours: 8,
     category: 'clinical',
     notes: 'Covered advanced periodontal surgery, crown restoration, and digital dental radiography interpretation.',
+    delivery_format: 'live_in_person',
     certificate_file_url: null,
     certificate_file_name: null,
     created_at: addDays(today, -14).toISOString(),
