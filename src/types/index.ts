@@ -90,6 +90,7 @@ export interface Invoice {
   share_token: string | null;
   share_token_created_at: string | null;
   share_token_revoked_at: string | null;
+  invoice_type: InvoiceType;
 }
 
 export interface InvoiceLineItem {
