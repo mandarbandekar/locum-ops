@@ -25,13 +25,13 @@ export default function TaxStrategyPage() {
 
       <Tabs value={activeSubTab} onValueChange={handleSubTabChange}>
         <TabsList className="grid grid-cols-4 w-full sm:w-auto sm:inline-flex">
-          <TabsTrigger value="guidance" className="gap-1.5 text-xs sm:text-sm">
-            <BookOpen className="h-3.5 w-3.5" />
-            Guidance
-          </TabsTrigger>
           <TabsTrigger value="tracker" className="gap-1.5 text-xs sm:text-sm">
             <BarChart3 className="h-3.5 w-3.5" />
             Tracker
+          </TabsTrigger>
+          <TabsTrigger value="guidance" className="gap-1.5 text-xs sm:text-sm">
+            <BookOpen className="h-3.5 w-3.5" />
+            Guidance
           </TabsTrigger>
           <TabsTrigger value="deductions" className="gap-1.5 text-xs sm:text-sm">
             <Folder className="h-3.5 w-3.5" />
