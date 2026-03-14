@@ -16,11 +16,14 @@ import { generateId } from '@/lib/businessLogic';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { ContractsTab } from '@/components/contracts/ContractsTab';
+import { FacilityImportDialog } from '@/components/facility-import/FacilityImportDialog';
+import { FileUp } from 'lucide-react';
 
 export default function FacilityDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { facilities, contacts, terms, shifts, invoices, updateFacility, addContact, updateContact, deleteContact, updateTerms, addShift } = useData();
+  const [importOpen, setImportOpen] = useState(false);
 
   const facility = facilities.find(c => c.id === id);
   if (!facility) return <div className="p-6">Practice facility not found. <Button variant="link" onClick={() => navigate('/facilities')}>Back</Button></div>;
@@ -38,6 +41,10 @@ export default function FacilityDetailPage() {
         </Button>
         <EditableFacilityName facility={facility} onSave={(newName, newAddress) => { updateFacility({ ...facility, name: newName, address: newAddress }); toast.success('Practice facility updated'); }} />
         <StatusBadge status={facility.status} className="ml-3" />
+        <div className="flex-1" />
+        <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+          <FileUp className="h-4 w-4 mr-1.5" /> Import practice data
+        </Button>
       </div>
 
       <Tabs defaultValue="overview">
@@ -84,6 +91,17 @@ export default function FacilityDetailPage() {
           <InvoiceSettingsTab facility={facility} onUpdate={updateFacility} />
         </TabsContent>
       </Tabs>
+
+      <FacilityImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        facilityId={facility.id}
+        facilityName={facility.name}
+        onAddContact={addContact}
+        onUpdateTerms={updateTerms}
+        onUpdateFacility={(updates) => updateFacility({ ...facility, ...updates })}
+        existingTerms={facilityTerms}
+      />
     </div>
   );
 }
