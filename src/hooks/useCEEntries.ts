@@ -74,6 +74,7 @@ export function useCEEntries() {
       completion_date: string;
       hours: number;
       category: string;
+      delivery_format?: string;
       notes?: string;
       certificate_file_url?: string | null;
       certificate_file_name?: string | null;
