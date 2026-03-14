@@ -21,6 +21,7 @@ export const demoCredentials: Credential[] = [
     notes: 'Primary state license. Renewal application opens 90 days before expiration.',
     tags: ['primary', 'state-license'],
     ce_required_hours: 30,
+    ce_requirements_notes: 'Oregon requires 30 hours total. Min 2 hrs scientific integrity/ethics. Max 15 hrs self-study. Controlled substance CE required.',
     created_at: '2024-03-01T00:00:00Z',
     updated_at: today.toISOString(),
   },
