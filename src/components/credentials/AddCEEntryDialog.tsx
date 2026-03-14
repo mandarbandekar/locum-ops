@@ -65,7 +65,7 @@ export function AddCEEntryDialog({ open, onOpenChange, editingEntry, preLinkedCr
         });
       } else {
         setForm({
-          title: '', provider: '', completion_date: '', hours: '', category: '', notes: '',
+          title: '', provider: '', completion_date: '', hours: '', category: '', delivery_format: '', notes: '',
           linked_credential_ids: preLinkedCredentialId ? [preLinkedCredentialId] : [],
           certificate_file_url: null, certificate_file_name: null,
         });
