@@ -80,6 +80,7 @@ export function AddCredentialDialog({ open, onOpenChange, editingCredential, onA
         notes: form.notes,
         tags: form.tags ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
         ce_required_hours: form.ce_required_hours ? parseFloat(form.ce_required_hours) : null,
+        ce_requirements_notes: form.ce_requirements_notes || null,
       };
 
       let credentialId: string;
