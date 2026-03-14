@@ -344,6 +344,7 @@ export default function CredentialsList() {
       )}
 
       <AddCredentialDialog
+        key={editingCredential?.id ?? 'new'}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         editingCredential={editingCredential}
