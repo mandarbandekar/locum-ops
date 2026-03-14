@@ -23,6 +23,7 @@ export default function InvoicesPage() {
   const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState('all');
   const [showCreate, setShowCreate] = useState(false);
+  const [showBulkCreate, setShowBulkCreate] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
