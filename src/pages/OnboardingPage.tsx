@@ -9,7 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { useUserProfile, type Profession, type EmailTone, type CurrentTool, type FacilitiesCountBand, type InvoicesPerMonthBand, type TermsFieldsEnabled } from '@/contexts/UserProfileContext';
+import { useUserProfile, type Profession, type CurrentTool, type FacilitiesCountBand, type InvoicesPerMonthBand } from '@/contexts/UserProfileContext';
 import { ArrowRight, Check, SkipForward } from 'lucide-react';
 import { SetupAssistantLanes } from '@/components/setup-assistant/SetupAssistantLanes';
 import { ImportReviewPanel } from '@/components/setup-assistant/ImportReviewPanel';
@@ -22,7 +22,7 @@ import { ManualShiftForm } from '@/components/onboarding/ManualShiftForm';
 import { ManualExpandScreen } from '@/components/onboarding/ManualExpandScreen';
 import { WorkspaceReady } from '@/components/onboarding/WorkspaceReady';
 
-const WIZARD_STEPS = 3; // Profile, Workflow, Defaults (shown in progress bar)
+const WIZARD_STEPS = 2; // Profile, Workflow (shown in progress bar)
 
 const PROFESSIONS: { value: Profession; label: string }[] = [
   { value: 'vet', label: 'Veterinarian' },
@@ -50,15 +50,13 @@ const TOOL_OPTIONS: { value: CurrentTool; label: string }[] = [
   { value: 'other', label: 'Other' },
 ];
 
-const TONES: { value: EmailTone; label: string }[] = [
-  { value: 'friendly', label: 'Friendly' },
-  { value: 'neutral', label: 'Neutral' },
-  { value: 'direct', label: 'Direct' },
-];
+
+
 
 type Phase =
-  | 'wizard'        // Steps 1-3
-  | 'setup_choice'  // Step 4: choose import or manual
+  | 'wizard'        // Steps 1-2
+  | 'tax_enablement' // Estimated tax opt-in
+  | 'setup_choice'  // Choose import or manual
   | 'import'        // Import assistant path
   | 'import_review' // Review imported entities
   | 'manual_facility' // Manual: add facility
@@ -86,14 +84,8 @@ export default function OnboardingPage() {
   const [facilitiesBand, setFacilitiesBand] = useState<FacilitiesCountBand>(profile?.facilities_count_band || 'band_1_3');
   const [invoicesBand, setInvoicesBand] = useState<InvoicesPerMonthBand>(profile?.invoices_per_month_band || 'inv_1_3');
 
-  // Step 3 state
-  const [emailTone, setEmailTone] = useState<EmailTone>(profile?.email_tone || 'neutral');
-  const [termsFields, setTermsFields] = useState<TermsFieldsEnabled>(
-    profile?.terms_fields_enabled || {
-      weekday_rate: true, weekend_rate: true, cancellation_policy: true,
-      overtime_policy: true, late_payment_policy: true, special_notes: true,
-    }
-  );
+
+
 
   // Tax opt-in
   const [showTaxSetup, setShowTaxSetup] = useState(false);
@@ -115,22 +107,15 @@ export default function OnboardingPage() {
   const saveStep2 = async () => {
     console.log('onboarding_step_submit', { step: 2 });
     await updateProfile({ current_tools: currentTools, facilities_count_band: facilitiesBand, invoices_per_month_band: invoicesBand });
-    setWizardStep(3);
-  };
-
-  const saveStep3 = async () => {
-    console.log('onboarding_step_submit', { step: 3 });
-    await updateProfile({ email_tone: emailTone, terms_fields_enabled: termsFields });
-    setPhase('setup_choice');
+    setPhase('tax_enablement');
   };
 
   const toggleTool = (tool: CurrentTool) => {
     setCurrentTools(prev => prev.includes(tool) ? prev.filter(t => t !== tool) : [...prev, tool]);
   };
 
-  const toggleTermsField = (field: keyof TermsFieldsEnabled) => {
-    setTermsFields(prev => ({ ...prev, [field]: !prev[field] }));
-  };
+
+
 
   // ─── Import path handlers ────────────────────────────────
   const handleImportComplete = () => { setPhase('import_review'); };
@@ -179,6 +164,54 @@ export default function OnboardingPage() {
   };
 
   // ─── Render phases ──────────────────────────────────────
+
+  // Tax enablement
+  if (phase === 'tax_enablement') {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="w-full max-w-lg space-y-6">
+          <Card>
+            <CardHeader className="text-center pb-2">
+              <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+                <span className="text-xl">📊</span>
+              </div>
+              <CardTitle className="text-xl">Track estimated taxes</CardTitle>
+              <CardDescription className="text-base">
+                Stay organized for quarterly payments. LocumOps helps you track set-asides and deadlines — not tax advice, just better prep for your accountant.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {!showTaxSetup ? (
+                <div className="space-y-3">
+                  <Button onClick={() => setShowTaxSetup(true)} className="w-full" size="lg">
+                    Enable Tax Tracker
+                  </Button>
+                  <Button variant="ghost" onClick={() => setPhase('setup_choice')} className="w-full text-muted-foreground">
+                    Skip for now
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <label className="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-border bg-muted/50">
+                    <Checkbox checked={taxDisclaimer} onCheckedChange={v => setTaxDisclaimer(!!v)} className="mt-0.5" />
+                    <span className="text-sm text-muted-foreground">I understand LocumOps does not provide tax, legal, or financial advice. I'll confirm due dates and amounts with my accountant.</span>
+                  </label>
+                  {taxDisclaimer && (
+                    <p className="text-sm text-primary flex items-center gap-1.5 justify-center">
+                      <Check className="h-4 w-4" /> Tax tracker enabled
+                    </p>
+                  )}
+                  <Button onClick={() => setPhase('setup_choice')} className="w-full" disabled={!taxDisclaimer}>
+                    Continue <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   // Setup choice
   if (phase === 'setup_choice') {
@@ -450,77 +483,8 @@ export default function OnboardingPage() {
           </Card>
         )}
 
-        {/* Step 3: Defaults */}
-        {wizardStep === 3 && (
-          <div className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Set up your defaults</CardTitle>
-                <CardDescription>You can change these anytime in Settings</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label>Email template tone</Label>
-                  <RadioGroup value={emailTone} onValueChange={v => setEmailTone(v as EmailTone)} className="flex gap-4 mt-1">
-                    {TONES.map(t => (
-                      <div key={t.value} className="flex items-center gap-1.5">
-                        <RadioGroupItem value={t.value} id={`tone-${t.value}`} />
-                        <Label htmlFor={`tone-${t.value}`}>{t.label}</Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
-                </div>
-                <div>
-                  <Label className="mb-2 block">Terms snapshot fields</Label>
-                  <div className="space-y-2">
-                    {([
-                      ['weekday_rate', 'Weekday rate'],
-                      ['weekend_rate', 'Weekend rate'],
-                      ['cancellation_policy', 'Cancellation policy'],
-                      ['overtime_policy', 'Overtime policy'],
-                      ['late_payment_policy', 'Late payment policy'],
-                      ['special_notes', 'Special notes'],
-                    ] as [keyof TermsFieldsEnabled, string][]).map(([key, label]) => (
-                      <div key={key} className="flex items-center justify-between">
-                        <span className="text-sm">{label}</span>
-                        <Switch checked={termsFields[key]} onCheckedChange={() => toggleTermsField(key)} />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => setWizardStep(2)} className="flex-1">Back</Button>
-                  <Button onClick={saveStep3} className="flex-1">
-                    Continue <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
 
-            {/* Optional Tax Setup */}
-            <Card className="border-dashed">
-              <CardContent className="pt-5 space-y-3">
-                <div>
-                  <p className="font-medium text-sm">Estimated tax tracker (not advice)</p>
-                  <p className="text-xs text-muted-foreground">Helps you organize totals and reminders for your accountant.</p>
-                </div>
-                {!showTaxSetup ? (
-                  <Button variant="outline" size="sm" onClick={() => setShowTaxSetup(true)}>Enable</Button>
-                ) : (
-                  <div className="space-y-3">
-                    <label className="flex items-start gap-2 cursor-pointer">
-                      <Checkbox checked={taxDisclaimer} onCheckedChange={v => setTaxDisclaimer(!!v)} className="mt-0.5" />
-                      <span className="text-xs text-muted-foreground">I understand LocumOps does not provide tax, legal, or financial advice. I'll confirm due dates and amounts with my accountant.</span>
-                    </label>
-                    {taxDisclaimer && (
-                      <p className="text-xs text-primary flex items-center gap-1"><Check className="h-3 w-3" /> Tax tracker enabled. You can configure it in Settings → Taxes.</p>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        )}
+
       </div>
     </div>
   );
