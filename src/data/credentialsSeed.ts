@@ -128,6 +128,7 @@ export const demoCEEntries: CEEntry[] = [
     hours: 12,
     category: 'clinical',
     notes: 'Trauma triage, shock management, and point-of-care ultrasound protocols.',
+    delivery_format: 'virtual_live',
     certificate_file_url: 'demo-cert.pdf',
     certificate_file_name: 'ECC_Certificate_2026.pdf',
     created_at: addDays(today, -45).toISOString(),
