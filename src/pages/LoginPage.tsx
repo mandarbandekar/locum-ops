@@ -44,7 +44,7 @@ export default function LoginPage() {
       if (!profession) { setError('Please select a profession'); setSubmitting(false); return; }
       const { error } = await signUp(email, password, { firstName, lastName, company, profession });
       if (error) setError(error);
-      else navigate('/');
+      else setMessage('Account created! Please check your email to verify your account before signing in.');
     } else {
       const { error } = await signIn(email, password);
       if (error) setError(error);
