@@ -59,6 +59,7 @@ export const demoCredentials: Credential[] = [
     notes: '$1M/$3M occurrence policy. Covers relief/locum work across all states.',
     tags: ['insurance'],
     ce_required_hours: null,
+    ce_requirements_notes: null,
     created_at: '2026-01-01T00:00:00Z',
     updated_at: today.toISOString(),
   },
