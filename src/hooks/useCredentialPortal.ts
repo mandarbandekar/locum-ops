@@ -23,8 +23,8 @@ export function useCredentialPortal(credentialId: string | null) {
   const portalQuery = useQuery({
     queryKey: ['credential_portal', credentialId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('credential_renewal_portals' as any)
+      const { data, error } = await (supabase as any)
+        .from('credential_renewal_portals')
         .select('*')
         .eq('credential_id', credentialId!)
         .maybeSingle();
