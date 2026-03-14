@@ -89,6 +89,7 @@ export function useCredentials() {
         notes: credential.notes || '',
         tags: credential.tags || [],
         ce_required_hours: credential.ce_required_hours ?? null,
+        ce_requirements_notes: credential.ce_requirements_notes ?? null,
       };
       const { data, error } = await supabase
         .from('credentials')
