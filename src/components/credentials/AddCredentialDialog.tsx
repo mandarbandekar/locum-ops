@@ -164,6 +164,14 @@ export function AddCredentialDialog({ open, onOpenChange, editingCredential, onA
               </div>
             )}
 
+            {/* CE Requirements Notes display */}
+            {(editingCredential as any)?.ce_requirements_notes && (
+              <div className="rounded-md border bg-background p-3">
+                <p className="text-xs font-medium text-muted-foreground mb-1">State CE Type Requirements</p>
+                <p className="text-xs">{(editingCredential as any).ce_requirements_notes}</p>
+              </div>
+            )}
+
             {daysLeft !== null && daysLeft > 0 && daysLeft <= 90 && (
               <p className="text-xs text-muted-foreground flex items-center gap-1">
                 <Clock className="h-3 w-3" /> Renewal due in {daysLeft} days
