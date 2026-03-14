@@ -178,7 +178,7 @@ export default function InvoicesPage() {
       </div>
 
       <CreateInvoiceDialog open={showCreate} onOpenChange={setShowCreate} />
-
+      <BulkInvoiceDialog open={showBulkCreate} onOpenChange={setShowBulkCreate} />
       {/* Bulk delete confirmation */}
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent>
