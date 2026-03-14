@@ -247,6 +247,7 @@ function CreateInvoiceDialog({ open, onOpenChange }: { open: boolean; onOpenChan
           share_token: null,
           share_token_created_at: null,
           share_token_revoked_at: null,
+          invoice_type: 'single',
         },
         lineItems
       );
