@@ -9,7 +9,7 @@ import CPAPacketTab from '@/components/tax-strategy/CPAPacketTab';
 
 export default function TaxStrategyPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeSubTab = searchParams.get('subtab') || 'guidance';
+  const activeSubTab = searchParams.get('subtab') || 'tracker';
 
   const handleSubTabChange = (value: string) => {
     setSearchParams(prev => {
