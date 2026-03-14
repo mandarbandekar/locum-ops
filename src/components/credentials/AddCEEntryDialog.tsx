@@ -107,6 +107,7 @@ export function AddCEEntryDialog({ open, onOpenChange, editingEntry, preLinkedCr
         completion_date: form.completion_date,
         hours: parseFloat(form.hours),
         category: form.category,
+        delivery_format: form.delivery_format,
         notes: form.notes,
         certificate_file_url: certUrl,
         certificate_file_name: certName,
