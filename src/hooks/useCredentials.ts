@@ -123,6 +123,7 @@ export function useCredentials() {
       if (updates.notes !== undefined) updateData.notes = updates.notes as string;
       if (updates.tags !== undefined) updateData.tags = updates.tags as string[];
       if (updates.ce_required_hours !== undefined) updateData.ce_required_hours = updates.ce_required_hours;
+      if (updates.ce_requirements_notes !== undefined) updateData.ce_requirements_notes = updates.ce_requirements_notes;
 
       const { data, error } = await supabase
         .from('credentials')
