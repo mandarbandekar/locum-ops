@@ -1,12 +1,5 @@
 import * as XLSX from 'xlsx';
 import mammoth from 'mammoth';
-import * as pdfjsLib from 'pdfjs-dist';
-
-// Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.mjs',
-  import.meta.url,
-).toString();
 
 /**
  * Reads a file and returns its text content.
@@ -66,6 +59,13 @@ async function readDocxAsText(file: File): Promise<string> {
 }
 
 async function readPdfAsText(file: File): Promise<string> {
+  // Lazy-load pdfjs-dist to avoid DOMMatrix errors in Node/test environments
+  const pdfjsLib = await import('pdfjs-dist');
+  pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+    'pdfjs-dist/build/pdf.worker.mjs',
+    import.meta.url,
+  ).toString();
+
   const buffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(buffer) }).promise;
 
