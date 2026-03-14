@@ -116,13 +116,7 @@ export default function OnboardingPage() {
   const saveStep2 = async () => {
     console.log('onboarding_step_submit', { step: 2 });
     await updateProfile({ current_tools: currentTools, facilities_count_band: facilitiesBand, invoices_per_month_band: invoicesBand });
-    setWizardStep(3);
-  };
-
-  const saveStep3 = async () => {
-    console.log('onboarding_step_submit', { step: 3 });
-    await updateProfile({ email_tone: emailTone, terms_fields_enabled: termsFields });
-    setPhase('setup_choice');
+    setPhase('tax_enablement');
   };
 
   const toggleTool = (tool: CurrentTool) => {
