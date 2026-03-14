@@ -9,7 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Upload, GraduationCap } from 'lucide-react';
 import { useCredentials } from '@/hooks/useCredentials';
 import { useCEEntries, CEEntryWithLinks } from '@/hooks/useCEEntries';
-import { CREDENTIAL_TYPE_LABELS } from '@/lib/credentialTypes';
+import { CREDENTIAL_TYPE_LABELS, CE_DELIVERY_FORMATS } from '@/lib/credentialTypes';
 import { useToast } from '@/hooks/use-toast';
 
 const CE_CATEGORIES = [
@@ -41,6 +41,7 @@ export function AddCEEntryDialog({ open, onOpenChange, editingEntry, preLinkedCr
     completion_date: '',
     hours: '',
     category: '',
+    delivery_format: '',
     notes: '',
     linked_credential_ids: [] as string[],
     certificate_file_url: null as string | null,
@@ -56,6 +57,7 @@ export function AddCEEntryDialog({ open, onOpenChange, editingEntry, preLinkedCr
           completion_date: editingEntry.completion_date,
           hours: String(editingEntry.hours),
           category: editingEntry.category,
+          delivery_format: editingEntry.delivery_format || '',
           notes: editingEntry.notes || '',
           linked_credential_ids: editingEntry.linked_credential_ids,
           certificate_file_url: editingEntry.certificate_file_url,
@@ -63,7 +65,7 @@ export function AddCEEntryDialog({ open, onOpenChange, editingEntry, preLinkedCr
         });
       } else {
         setForm({
-          title: '', provider: '', completion_date: '', hours: '', category: '', notes: '',
+          title: '', provider: '', completion_date: '', hours: '', category: '', delivery_format: '', notes: '',
           linked_credential_ids: preLinkedCredentialId ? [preLinkedCredentialId] : [],
           certificate_file_url: null, certificate_file_name: null,
         });
@@ -105,6 +107,7 @@ export function AddCEEntryDialog({ open, onOpenChange, editingEntry, preLinkedCr
         completion_date: form.completion_date,
         hours: parseFloat(form.hours),
         category: form.category,
+        delivery_format: form.delivery_format,
         notes: form.notes,
         certificate_file_url: certUrl,
         certificate_file_name: certName,
@@ -146,7 +149,7 @@ export function AddCEEntryDialog({ open, onOpenChange, editingEntry, preLinkedCr
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Completion Date *</Label>
               <Input type="date" value={form.completion_date} onChange={e => update('completion_date', e.target.value)} required />
@@ -155,6 +158,9 @@ export function AddCEEntryDialog({ open, onOpenChange, editingEntry, preLinkedCr
               <Label>Hours Earned *</Label>
               <Input type="number" step="0.5" min="0" value={form.hours} onChange={e => update('hours', e.target.value)} placeholder="e.g. 2" required />
             </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Category</Label>
               <Select value={form.category} onValueChange={v => update('category', v)}>
@@ -163,6 +169,16 @@ export function AddCEEntryDialog({ open, onOpenChange, editingEntry, preLinkedCr
                   {CE_CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Delivery Format</Label>
+              <Select value={form.delivery_format} onValueChange={v => update('delivery_format', v)}>
+                <SelectTrigger><SelectValue placeholder="Select format" /></SelectTrigger>
+                <SelectContent>
+                  {CE_DELIVERY_FORMATS.map(f => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">Some states require specific delivery types. Check your board requirements.</p>
             </div>
           </div>
 

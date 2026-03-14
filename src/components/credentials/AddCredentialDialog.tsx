@@ -56,6 +56,7 @@ export function AddCredentialDialog({ open, onOpenChange, editingCredential, onA
     notes: editingCredential?.notes || '',
     tags: editingCredential?.tags?.join(', ') || '',
     ce_required_hours: (editingCredential as any)?.ce_required_hours?.toString() || '',
+    ce_requirements_notes: (editingCredential as any)?.ce_requirements_notes || '',
   });
 
   const update = (field: string, value: string) => setForm(prev => ({ ...prev, [field]: value }));
@@ -79,6 +80,7 @@ export function AddCredentialDialog({ open, onOpenChange, editingCredential, onA
         notes: form.notes,
         tags: form.tags ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
         ce_required_hours: form.ce_required_hours ? parseFloat(form.ce_required_hours) : null,
+        ce_requirements_notes: form.ce_requirements_notes || null,
       };
 
       let credentialId: string;
@@ -109,7 +111,7 @@ export function AddCredentialDialog({ open, onOpenChange, editingCredential, onA
     setForm({
       credential_type: 'custom', custom_title: '', jurisdiction: '', issuing_authority: '',
       credential_number: '', issue_date: '', expiration_date: '', renewal_frequency: 'annually',
-      notes: '', tags: '', ce_required_hours: '',
+      notes: '', tags: '', ce_required_hours: '', ce_requirements_notes: '',
     });
     setFile(null);
   };
@@ -159,6 +161,14 @@ export function AddCredentialDialog({ open, onOpenChange, editingCredential, onA
                   <span>{Math.min(100, Math.round((ceStats.completedHours / requiredHours) * 100))}%</span>
                 </div>
                 <Progress value={Math.min(100, Math.round((ceStats.completedHours / requiredHours) * 100))} className="h-2" />
+              </div>
+            )}
+
+            {/* CE Requirements Notes display */}
+            {(editingCredential as any)?.ce_requirements_notes && (
+              <div className="rounded-md border bg-background p-3">
+                <p className="text-xs font-medium text-muted-foreground mb-1">State CE Type Requirements</p>
+                <p className="text-xs">{(editingCredential as any).ce_requirements_notes}</p>
               </div>
             )}
 
@@ -263,6 +273,17 @@ export function AddCredentialDialog({ open, onOpenChange, editingCredential, onA
               <Label>Tags (comma-separated)</Label>
               <Input value={form.tags} onChange={e => update('tags', e.target.value)} placeholder="e.g. primary, required" />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>CE Type Requirements</Label>
+            <Textarea
+              value={form.ce_requirements_notes}
+              onChange={e => update('ce_requirements_notes', e.target.value)}
+              placeholder="e.g. Min 2 hrs ethics, max 15 hrs self-study, controlled substance CE required..."
+              rows={2}
+            />
+            <p className="text-xs text-muted-foreground">State-specific CE type requirements. Check your licensing board for details.</p>
           </div>
 
           <div className="space-y-2">

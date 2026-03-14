@@ -54,6 +54,7 @@ export type Database = {
           certificate_file_url: string | null
           completion_date: string
           created_at: string
+          delivery_format: string
           hours: number
           id: string
           notes: string | null
@@ -68,6 +69,7 @@ export type Database = {
           certificate_file_url?: string | null
           completion_date: string
           created_at?: string
+          delivery_format?: string
           hours?: number
           id?: string
           notes?: string | null
@@ -82,6 +84,7 @@ export type Database = {
           certificate_file_url?: string | null
           completion_date?: string
           created_at?: string
+          delivery_format?: string
           hours?: number
           id?: string
           notes?: string | null
@@ -766,6 +769,7 @@ export type Database = {
       credentials: {
         Row: {
           ce_required_hours: number | null
+          ce_requirements_notes: string | null
           created_at: string
           credential_number: string | null
           credential_type: Database["public"]["Enums"]["credential_type"]
@@ -784,6 +788,7 @@ export type Database = {
         }
         Insert: {
           ce_required_hours?: number | null
+          ce_requirements_notes?: string | null
           created_at?: string
           credential_number?: string | null
           credential_type?: Database["public"]["Enums"]["credential_type"]
@@ -802,6 +807,7 @@ export type Database = {
         }
         Update: {
           ce_required_hours?: number | null
+          ce_requirements_notes?: string | null
           created_at?: string
           credential_number?: string | null
           credential_type?: Database["public"]["Enums"]["credential_type"]

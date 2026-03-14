@@ -8,7 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, GraduationCap, AlertCircle, FileCheck, Link2, CalendarDays } from 'lucide-react';
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, GraduationCap, AlertCircle, FileCheck, Link2, CalendarDays, Monitor } from 'lucide-react';
+import { CE_DELIVERY_FORMAT_LABELS } from '@/lib/credentialTypes';
 import { format } from 'date-fns';
 
 type FilterChip = 'all' | 'missing_cert' | 'linked' | 'this_year';
@@ -128,6 +129,7 @@ export default function CEEntriesTab() {
                 <TableHead>Date</TableHead>
                 <TableHead className="text-right">Hours</TableHead>
                 <TableHead>Category</TableHead>
+                <TableHead>Format</TableHead>
                 <TableHead>Linked Credentials</TableHead>
                 <TableHead>Certificate</TableHead>
                 <TableHead className="w-10"></TableHead>
@@ -141,6 +143,13 @@ export default function CEEntriesTab() {
                   <TableCell>{format(new Date(entry.completion_date), 'MMM d, yyyy')}</TableCell>
                   <TableCell className="text-right font-mono">{entry.hours}</TableCell>
                   <TableCell>{entry.category ? <Badge variant="secondary">{entry.category}</Badge> : '—'}</TableCell>
+                  <TableCell>
+                    {entry.delivery_format ? (
+                      <Badge variant="outline" className="text-xs">
+                        {CE_DELIVERY_FORMAT_LABELS[entry.delivery_format] || entry.delivery_format}
+                      </Badge>
+                    ) : '—'}
+                  </TableCell>
                   <TableCell>
                     {entry.linked_credential_ids.length > 0 ? (
                       <div className="flex flex-wrap gap-1">

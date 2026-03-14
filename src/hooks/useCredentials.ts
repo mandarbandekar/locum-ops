@@ -73,6 +73,7 @@ export function useCredentials() {
       notes?: string;
       tags?: string[];
       ce_required_hours?: number | null;
+      ce_requirements_notes?: string | null;
     }) => {
       const insertData: any = {
         user_id: user!.id,
@@ -88,6 +89,7 @@ export function useCredentials() {
         notes: credential.notes || '',
         tags: credential.tags || [],
         ce_required_hours: credential.ce_required_hours ?? null,
+        ce_requirements_notes: credential.ce_requirements_notes ?? null,
       };
       const { data, error } = await supabase
         .from('credentials')
@@ -121,6 +123,7 @@ export function useCredentials() {
       if (updates.notes !== undefined) updateData.notes = updates.notes as string;
       if (updates.tags !== undefined) updateData.tags = updates.tags as string[];
       if (updates.ce_required_hours !== undefined) updateData.ce_required_hours = updates.ce_required_hours;
+      if (updates.ce_requirements_notes !== undefined) updateData.ce_requirements_notes = updates.ce_requirements_notes;
 
       const { data, error } = await supabase
         .from('credentials')
