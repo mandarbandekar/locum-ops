@@ -144,6 +144,13 @@ export default function CEEntriesTab() {
                   <TableCell className="text-right font-mono">{entry.hours}</TableCell>
                   <TableCell>{entry.category ? <Badge variant="secondary">{entry.category}</Badge> : '—'}</TableCell>
                   <TableCell>
+                    {entry.delivery_format ? (
+                      <Badge variant="outline" className="text-xs">
+                        {CE_DELIVERY_FORMAT_LABELS[entry.delivery_format] || entry.delivery_format}
+                      </Badge>
+                    ) : '—'}
+                  </TableCell>
+                  <TableCell>
                     {entry.linked_credential_ids.length > 0 ? (
                       <div className="flex flex-wrap gap-1">
                         {entry.linked_credential_ids.map(id => (

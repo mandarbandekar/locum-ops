@@ -268,6 +268,17 @@ export function AddCredentialDialog({ open, onOpenChange, editingCredential, onA
           </div>
 
           <div className="space-y-2">
+            <Label>CE Type Requirements</Label>
+            <Textarea
+              value={form.ce_requirements_notes}
+              onChange={e => update('ce_requirements_notes', e.target.value)}
+              placeholder="e.g. Min 2 hrs ethics, max 15 hrs self-study, controlled substance CE required..."
+              rows={2}
+            />
+            <p className="text-xs text-muted-foreground">State-specific CE type requirements. Check your licensing board for details.</p>
+          </div>
+
+          <div className="space-y-2">
             <Label>Notes</Label>
             <Textarea value={form.notes} onChange={e => update('notes', e.target.value)} placeholder="Additional notes..." rows={3} />
           </div>
