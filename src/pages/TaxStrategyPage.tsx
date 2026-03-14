@@ -43,11 +43,11 @@ export default function TaxStrategyPage() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="guidance" className="mt-6">
-          <GuidanceTab />
-        </TabsContent>
         <TabsContent value="tracker" className="mt-6">
           <TrackerTab />
+        </TabsContent>
+        <TabsContent value="guidance" className="mt-6">
+          <GuidanceTab />
         </TabsContent>
         <TabsContent value="deductions" className="mt-6">
           <DeductionsTab />

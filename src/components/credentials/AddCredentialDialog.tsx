@@ -270,6 +270,11 @@ export function AddCredentialDialog({ open, onOpenChange, editingCredential, onA
             <Textarea value={form.notes} onChange={e => update('notes', e.target.value)} placeholder="Additional notes..." rows={3} />
           </div>
 
+          {/* Renewal Portal (edit mode only) */}
+          {isEditing && editingCredential && (
+            <RenewalPortalSection credentialId={editingCredential.id} />
+          )}
+
           <div className="space-y-2">
             <Label>Upload Document</Label>
             <div
