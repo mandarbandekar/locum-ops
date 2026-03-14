@@ -57,8 +57,9 @@ const TONES: { value: EmailTone; label: string }[] = [
 ];
 
 type Phase =
-  | 'wizard'        // Steps 1-3
-  | 'setup_choice'  // Step 4: choose import or manual
+  | 'wizard'        // Steps 1-2
+  | 'tax_enablement' // Estimated tax opt-in
+  | 'setup_choice'  // Choose import or manual
   | 'import'        // Import assistant path
   | 'import_review' // Review imported entities
   | 'manual_facility' // Manual: add facility
