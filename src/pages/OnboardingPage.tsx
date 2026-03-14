@@ -87,14 +87,8 @@ export default function OnboardingPage() {
   const [facilitiesBand, setFacilitiesBand] = useState<FacilitiesCountBand>(profile?.facilities_count_band || 'band_1_3');
   const [invoicesBand, setInvoicesBand] = useState<InvoicesPerMonthBand>(profile?.invoices_per_month_band || 'inv_1_3');
 
-  // Step 3 state
-  const [emailTone, setEmailTone] = useState<EmailTone>(profile?.email_tone || 'neutral');
-  const [termsFields, setTermsFields] = useState<TermsFieldsEnabled>(
-    profile?.terms_fields_enabled || {
-      weekday_rate: true, weekend_rate: true, cancellation_policy: true,
-      overtime_policy: true, late_payment_policy: true, special_notes: true,
-    }
-  );
+
+
 
   // Tax opt-in
   const [showTaxSetup, setShowTaxSetup] = useState(false);
