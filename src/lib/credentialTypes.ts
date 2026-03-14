@@ -47,6 +47,24 @@ export const RENEWAL_FREQUENCIES = [
   { value: 'none', label: 'No Renewal' },
 ];
 
+export const CE_DELIVERY_FORMATS = [
+  { value: 'live_in_person', label: 'Live (In-Person)' },
+  { value: 'virtual_live', label: 'Virtual Live / Interactive' },
+  { value: 'recorded', label: 'Recorded / On-Demand' },
+  { value: 'self_study', label: 'Self-Study' },
+  { value: 'journal_review', label: 'Journal / Publication Review' },
+  { value: 'controlled_substance', label: 'Controlled Substance / Opioid' },
+  { value: 'jurisprudence', label: 'Jurisprudence / Ethics' },
+  { value: 'usda_federal', label: 'USDA / Federal' },
+  { value: 'laboratory', label: 'Laboratory / Wet Lab' },
+  { value: 'research', label: 'Research / Teaching' },
+  { value: 'other', label: 'Other' },
+];
+
+export const CE_DELIVERY_FORMAT_LABELS: Record<string, string> = Object.fromEntries(
+  CE_DELIVERY_FORMATS.map(f => [f.value, f.label])
+);
+
 export const REMINDER_LEAD_TIMES = [
   { value: '120', label: '120 days before' },
   { value: '90', label: '90 days before' },

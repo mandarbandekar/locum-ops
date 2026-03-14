@@ -158,6 +158,7 @@ export const demoCEEntries: CEEntry[] = [
     hours: 6,
     category: 'practice_management',
     notes: 'Client communication, medical records, and locum-specific legal considerations.',
+    delivery_format: 'recorded',
     certificate_file_url: 'demo-cert-3.pdf',
     certificate_file_name: 'PracticeMgmt_Cert.pdf',
     created_at: addDays(today, -120).toISOString(),
