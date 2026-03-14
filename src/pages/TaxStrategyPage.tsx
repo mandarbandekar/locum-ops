@@ -9,7 +9,7 @@ import CPAPacketTab from '@/components/tax-strategy/CPAPacketTab';
 
 export default function TaxStrategyPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeSubTab = searchParams.get('subtab') || 'guidance';
+  const activeSubTab = searchParams.get('subtab') || 'tracker';
 
   const handleSubTabChange = (value: string) => {
     setSearchParams(prev => {
@@ -25,13 +25,13 @@ export default function TaxStrategyPage() {
 
       <Tabs value={activeSubTab} onValueChange={handleSubTabChange}>
         <TabsList className="grid grid-cols-4 w-full sm:w-auto sm:inline-flex">
-          <TabsTrigger value="guidance" className="gap-1.5 text-xs sm:text-sm">
-            <BookOpen className="h-3.5 w-3.5" />
-            Guidance
-          </TabsTrigger>
           <TabsTrigger value="tracker" className="gap-1.5 text-xs sm:text-sm">
             <BarChart3 className="h-3.5 w-3.5" />
             Tracker
+          </TabsTrigger>
+          <TabsTrigger value="guidance" className="gap-1.5 text-xs sm:text-sm">
+            <BookOpen className="h-3.5 w-3.5" />
+            Guidance
           </TabsTrigger>
           <TabsTrigger value="deductions" className="gap-1.5 text-xs sm:text-sm">
             <Folder className="h-3.5 w-3.5" />
@@ -43,11 +43,11 @@ export default function TaxStrategyPage() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="guidance" className="mt-6">
-          <GuidanceTab />
-        </TabsContent>
         <TabsContent value="tracker" className="mt-6">
           <TrackerTab />
+        </TabsContent>
+        <TabsContent value="guidance" className="mt-6">
+          <GuidanceTab />
         </TabsContent>
         <TabsContent value="deductions" className="mt-6">
           <DeductionsTab />

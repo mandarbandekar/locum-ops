@@ -719,6 +719,50 @@ export type Database = {
           },
         ]
       }
+      credential_renewal_portals: {
+        Row: {
+          created_at: string
+          credential_id: string
+          id: string
+          renewal_password_encrypted: string | null
+          renewal_portal_notes: string | null
+          renewal_username: string | null
+          renewal_website_url: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          credential_id: string
+          id?: string
+          renewal_password_encrypted?: string | null
+          renewal_portal_notes?: string | null
+          renewal_username?: string | null
+          renewal_website_url?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          credential_id?: string
+          id?: string
+          renewal_password_encrypted?: string | null
+          renewal_portal_notes?: string | null
+          renewal_username?: string | null
+          renewal_website_url?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credential_renewal_portals_credential_id_fkey"
+            columns: ["credential_id"]
+            isOneToOne: true
+            referencedRelation: "credentials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       credentials: {
         Row: {
           ce_required_hours: number | null
