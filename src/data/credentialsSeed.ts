@@ -97,6 +97,7 @@ export const demoCredentials: Credential[] = [
     notes: 'Secondary state license for cross-border locum work.',
     tags: ['state-license'],
     ce_required_hours: 20,
+    ce_requirements_notes: 'Washington requires 20 hrs per biennium. Min 4 hrs must be live/interactive.',
     created_at: '2025-01-15T00:00:00Z',
     updated_at: today.toISOString(),
   },
