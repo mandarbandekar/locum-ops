@@ -493,77 +493,8 @@ export default function OnboardingPage() {
           </Card>
         )}
 
-        {/* Step 3: Defaults */}
-        {wizardStep === 3 && (
-          <div className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Set up your defaults</CardTitle>
-                <CardDescription>You can change these anytime in Settings</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label>Email template tone</Label>
-                  <RadioGroup value={emailTone} onValueChange={v => setEmailTone(v as EmailTone)} className="flex gap-4 mt-1">
-                    {TONES.map(t => (
-                      <div key={t.value} className="flex items-center gap-1.5">
-                        <RadioGroupItem value={t.value} id={`tone-${t.value}`} />
-                        <Label htmlFor={`tone-${t.value}`}>{t.label}</Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
-                </div>
-                <div>
-                  <Label className="mb-2 block">Terms snapshot fields</Label>
-                  <div className="space-y-2">
-                    {([
-                      ['weekday_rate', 'Weekday rate'],
-                      ['weekend_rate', 'Weekend rate'],
-                      ['cancellation_policy', 'Cancellation policy'],
-                      ['overtime_policy', 'Overtime policy'],
-                      ['late_payment_policy', 'Late payment policy'],
-                      ['special_notes', 'Special notes'],
-                    ] as [keyof TermsFieldsEnabled, string][]).map(([key, label]) => (
-                      <div key={key} className="flex items-center justify-between">
-                        <span className="text-sm">{label}</span>
-                        <Switch checked={termsFields[key]} onCheckedChange={() => toggleTermsField(key)} />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => setWizardStep(2)} className="flex-1">Back</Button>
-                  <Button onClick={saveStep3} className="flex-1">
-                    Continue <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
 
-            {/* Optional Tax Setup */}
-            <Card className="border-dashed">
-              <CardContent className="pt-5 space-y-3">
-                <div>
-                  <p className="font-medium text-sm">Estimated tax tracker (not advice)</p>
-                  <p className="text-xs text-muted-foreground">Helps you organize totals and reminders for your accountant.</p>
-                </div>
-                {!showTaxSetup ? (
-                  <Button variant="outline" size="sm" onClick={() => setShowTaxSetup(true)}>Enable</Button>
-                ) : (
-                  <div className="space-y-3">
-                    <label className="flex items-start gap-2 cursor-pointer">
-                      <Checkbox checked={taxDisclaimer} onCheckedChange={v => setTaxDisclaimer(!!v)} className="mt-0.5" />
-                      <span className="text-xs text-muted-foreground">I understand LocumOps does not provide tax, legal, or financial advice. I'll confirm due dates and amounts with my accountant.</span>
-                    </label>
-                    {taxDisclaimer && (
-                      <p className="text-xs text-primary flex items-center gap-1"><Check className="h-3 w-3" /> Tax tracker enabled. You can configure it in Settings → Taxes.</p>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        )}
+
       </div>
     </div>
   );
