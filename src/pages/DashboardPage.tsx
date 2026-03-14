@@ -28,6 +28,8 @@ const dashDb = (table: string) => supabase.from(table as any);
 export default function DashboardPage() {
   const { shifts, invoices, facilities, payments, checklistItems } = useData();
   const { user, isDemo } = useAuth();
+  const { profile } = useUserProfile();
+  const showSetupCard = !isDemo && facilities.length === 0 && shifts.length === 0;
   const navigate = useNavigate();
   const now = new Date();
 
