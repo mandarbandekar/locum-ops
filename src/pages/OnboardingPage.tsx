@@ -114,9 +114,8 @@ export default function OnboardingPage() {
     setCurrentTools(prev => prev.includes(tool) ? prev.filter(t => t !== tool) : [...prev, tool]);
   };
 
-  const toggleTermsField = (field: keyof TermsFieldsEnabled) => {
-    setTermsFields(prev => ({ ...prev, [field]: !prev[field] }));
-  };
+
+
 
   // ─── Import path handlers ────────────────────────────────
   const handleImportComplete = () => { setPhase('import_review'); };
