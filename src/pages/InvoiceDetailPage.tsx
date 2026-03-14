@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Send, DollarSign, Trash2, Plus, CheckCircle, AlertTriangle, Download, Link2, Copy, RefreshCw, Loader2, Pencil, Check, X, ArrowRight, Undo2 } from 'lucide-react';
+import { ArrowLeft, Send, DollarSign, Trash2, Plus, CheckCircle, AlertTriangle, Download, Link2, Copy, RefreshCw, Loader2, Pencil, Check, X, ArrowRight, Undo2, Layers } from 'lucide-react';
 import { format } from 'date-fns';
 import { computeInvoiceStatus, generateId } from '@/lib/businessLogic';
 import { toast } from 'sonner';
@@ -139,6 +139,9 @@ export default function InvoiceDetailPage() {
           <Badge variant={statusConfig.variant} className="text-xs">
             {statusConfig.label}
           </Badge>
+          {(invoice as any).invoice_type === 'bulk' && (
+            <Badge variant="outline" className="text-xs">Bulk Invoice</Badge>
+          )}
         </div>
         <span className="text-sm text-muted-foreground">{facility?.name}</span>
 
@@ -195,6 +198,14 @@ export default function InvoiceDetailPage() {
         <div className="mb-4 rounded-md border border-warning/50 bg-warning/5 p-3 flex items-center gap-2 max-w-2xl print:hidden">
           <AlertTriangle className="h-4 w-4 text-warning shrink-0" />
           <p className="text-sm">Billing contact missing — <Button variant="link" size="sm" className="h-auto p-0" onClick={() => navigate(`/facilities/${invoice.facility_id}`)}>add one in Facility Overview</Button> to send faster.</p>
+        </div>
+      )}
+
+      {/* Bulk invoice shift summary */}
+      {(invoice as any).invoice_type === 'bulk' && items.length > 0 && (
+        <div className="mb-4 rounded-md border bg-muted/30 p-3 flex items-center gap-2 max-w-2xl print:hidden">
+          <Layers className="h-4 w-4 text-muted-foreground shrink-0" />
+          <p className="text-sm">This invoice includes <strong>{items.filter(li => li.shift_id).length} completed shifts</strong>.</p>
         </div>
       )}
 

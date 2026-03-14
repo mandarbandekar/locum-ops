@@ -8,10 +8,11 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Layers } from 'lucide-react';
 import { format, subDays } from 'date-fns';
 import { computeInvoiceStatus, generateInvoiceNumber } from '@/lib/businessLogic';
 import { toast } from 'sonner';
+import { BulkInvoiceDialog } from '@/components/invoice/BulkInvoiceDialog';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -22,6 +23,7 @@ export default function InvoicesPage() {
   const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState('all');
   const [showCreate, setShowCreate] = useState(false);
+  const [showBulkCreate, setShowBulkCreate] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -86,6 +88,9 @@ export default function InvoicesPage() {
               <Trash2 className="mr-1 h-4 w-4" /> Delete ({selected.size})
             </Button>
           )}
+          <Button size="sm" variant="outline" onClick={() => setShowBulkCreate(true)}>
+            <Layers className="mr-1 h-4 w-4" /> Bulk Invoice
+          </Button>
           <Button size="sm" onClick={() => setShowCreate(true)}>
             <Plus className="mr-1 h-4 w-4" /> Create Invoice
           </Button>
@@ -141,7 +146,12 @@ export default function InvoicesPage() {
                 <td className="p-3" onClick={e => toggleSelect(inv.id, e)}>
                   <Checkbox checked={selected.has(inv.id)} />
                 </td>
-                <td className="p-3 font-medium">{inv.invoice_number}</td>
+                <td className="p-3 font-medium">
+                  {inv.invoice_number}
+                  {inv.invoice_type === 'bulk' && (
+                    <Badge variant="outline" className="ml-1.5 text-[10px] px-1 py-0">Bulk</Badge>
+                  )}
+                </td>
                 <td className="p-3">{getFacilityName(inv.facility_id)}</td>
                 <td className="p-3 text-muted-foreground hidden sm:table-cell">
                   {inv.invoice_date ? format(new Date(inv.invoice_date), 'MMM d, yyyy') : '—'}
@@ -173,7 +183,7 @@ export default function InvoicesPage() {
       </div>
 
       <CreateInvoiceDialog open={showCreate} onOpenChange={setShowCreate} />
-
+      <BulkInvoiceDialog open={showBulkCreate} onOpenChange={setShowBulkCreate} />
       {/* Bulk delete confirmation */}
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent>
@@ -242,6 +252,7 @@ function CreateInvoiceDialog({ open, onOpenChange }: { open: boolean; onOpenChan
           share_token: null,
           share_token_created_at: null,
           share_token_revoked_at: null,
+          invoice_type: 'single',
         },
         lineItems
       );

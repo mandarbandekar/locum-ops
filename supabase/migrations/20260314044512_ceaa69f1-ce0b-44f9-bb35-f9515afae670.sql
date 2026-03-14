@@ -1,0 +1,1 @@
+ALTER TABLE public.invoices ADD COLUMN invoice_type text NOT NULL DEFAULT 'single';
