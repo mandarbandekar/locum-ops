@@ -156,6 +156,149 @@ export function useSetupAssistant() {
     ));
   }, []);
 
+  /**
+   * Materialize confirmed/edited entities into the real workspace tables.
+   * This is the critical step that actually creates facilities, contacts, terms, and shifts.
+   */
+  const materializeConfirmed = useCallback(async (
+    addFacility: (f: any) => Promise<any>,
+    addContact: (c: any) => Promise<void>,
+    updateTerms: (t: any) => Promise<void>,
+    addShift: (s: any) => Promise<any>,
+  ) => {
+    if (!user) return;
+
+    const confirmed = entities.filter(e =>
+      e.review_status === 'confirmed' || e.review_status === 'edited'
+    );
+
+    // Track facility name -> created facility id for linking contacts/terms/shifts
+    const facilityNameMap: Record<string, string> = {};
+
+    // 1. Create facilities first
+    const facilityEntities = confirmed.filter(e => e.entity_type === 'facility');
+    for (const entity of facilityEntities) {
+      const d = entity.parsed_data;
+      try {
+        const facility = await addFacility({
+          name: d.name || 'Unnamed Facility',
+          status: 'active' as const,
+          address: d.address || '',
+          timezone: d.timezone || 'America/New_York',
+          notes: d.notes || '',
+          outreach_last_sent_at: null,
+          tech_computer_info: '',
+          tech_wifi_info: '',
+          tech_pims_info: '',
+          clinic_access_info: '',
+          invoice_prefix: (d.name || 'FAC').substring(0, 3).toUpperCase(),
+          invoice_due_days: d.payment_terms_days || 30,
+        });
+
+        facilityNameMap[d.name?.toLowerCase() || ''] = facility.id;
+
+        // Create contact if extracted alongside the facility
+        if (d.contact_name) {
+          const emails = (d.contact_email || '').split(',').map((e: string) => e.trim());
+          const names = (d.contact_name || '').split('/').map((n: string) => n.trim());
+          
+          for (let i = 0; i < names.length; i++) {
+            if (names[i]) {
+              await addContact({
+                facility_id: facility.id,
+                name: names[i],
+                role: d.contact_role || 'Practice Manager',
+                email: emails[i] || emails[0] || '',
+                phone: d.contact_phone || '',
+                is_primary: i === 0,
+              });
+            }
+          }
+        }
+
+        // Create terms if rates were extracted
+        if (d.weekday_rate || d.weekend_rate || d.holiday_rate) {
+          await updateTerms({
+            id: `import-${facility.id}`,
+            facility_id: facility.id,
+            weekday_rate: d.weekday_rate || 0,
+            weekend_rate: d.weekend_rate || 0,
+            partial_day_rate: 0,
+            holiday_rate: d.holiday_rate || 0,
+            telemedicine_rate: 0,
+            cancellation_policy_text: d.cancellation_policy || '',
+            overtime_policy_text: d.overtime_policy || '',
+            late_payment_policy_text: d.late_payment_policy || '',
+            special_notes: '',
+          });
+        }
+      } catch (err) {
+        console.error(`Failed to create facility ${d.name}:`, err);
+      }
+    }
+
+    // 2. Create contract terms (standalone)
+    const contractEntities = confirmed.filter(e => e.entity_type === 'contract');
+    for (const entity of contractEntities) {
+      const d = entity.parsed_data;
+      const facilityId = facilityNameMap[d.facility_name?.toLowerCase() || ''];
+      if (facilityId && (d.weekday_rate || d.cancellation_policy || d.payment_terms_days)) {
+        try {
+          await updateTerms({
+            id: `import-contract-${facilityId}`,
+            facility_id: facilityId,
+            weekday_rate: d.weekday_rate || 0,
+            weekend_rate: d.weekend_rate || 0,
+            partial_day_rate: 0,
+            holiday_rate: d.holiday_rate || 0,
+            telemedicine_rate: 0,
+            cancellation_policy_text: d.cancellation_policy || '',
+            overtime_policy_text: d.overtime_policy || '',
+            late_payment_policy_text: d.late_payment_policy || '',
+            special_notes: d.invoicing_instructions || '',
+          });
+        } catch (err) {
+          console.error('Failed to create contract terms:', err);
+        }
+      }
+    }
+
+    // 3. Create shifts
+    const shiftEntities = confirmed.filter(e => e.entity_type === 'shift');
+    for (const entity of shiftEntities) {
+      const d = entity.parsed_data;
+      const facilityId = facilityNameMap[d.facility_name?.toLowerCase() || ''];
+      if (facilityId) {
+        try {
+          await addShift({
+            facility_id: facilityId,
+            start_datetime: d.start_time || d.date,
+            end_datetime: d.end_time || d.date,
+            rate_applied: 0,
+            status: d.status === 'proposed' ? 'proposed' : 'booked',
+            notes: d.notes || '',
+            color: 'blue',
+          });
+        } catch (err) {
+          console.error('Failed to create shift:', err);
+        }
+      }
+    }
+
+    // Update import job status
+    if (currentJobId) {
+      await db('import_jobs').update({
+        status: 'completed',
+        completed_at: new Date().toISOString(),
+        summary: {
+          facilities_imported: facilityEntities.length,
+          contracts_added: contractEntities.length,
+          shifts_imported: shiftEntities.length,
+        },
+      } as any).eq('id', currentJobId);
+    }
+  }, [user, entities, currentJobId]);
+
   const getSummary = useCallback((): SetupSummary => {
     const confirmed = entities.filter(e => e.review_status === 'confirmed' || e.review_status === 'edited');
     return {
@@ -175,6 +318,7 @@ export function useSetupAssistant() {
     uploadFile,
     updateEntityStatus,
     bulkConfirm,
+    materializeConfirmed,
     getSummary,
     setEntities,
   };
