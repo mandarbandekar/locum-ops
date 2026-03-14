@@ -88,6 +88,9 @@ export default function InvoicesPage() {
               <Trash2 className="mr-1 h-4 w-4" /> Delete ({selected.size})
             </Button>
           )}
+          <Button size="sm" variant="outline" onClick={() => setShowBulkCreate(true)}>
+            <Layers className="mr-1 h-4 w-4" /> Bulk Invoice
+          </Button>
           <Button size="sm" onClick={() => setShowCreate(true)}>
             <Plus className="mr-1 h-4 w-4" /> Create Invoice
           </Button>
