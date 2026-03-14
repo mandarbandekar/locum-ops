@@ -50,11 +50,8 @@ const TOOL_OPTIONS: { value: CurrentTool; label: string }[] = [
   { value: 'other', label: 'Other' },
 ];
 
-const TONES: { value: EmailTone; label: string }[] = [
-  { value: 'friendly', label: 'Friendly' },
-  { value: 'neutral', label: 'Neutral' },
-  { value: 'direct', label: 'Direct' },
-];
+
+
 
 type Phase =
   | 'wizard'        // Steps 1-2
