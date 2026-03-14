@@ -56,6 +56,7 @@ export function AddCredentialDialog({ open, onOpenChange, editingCredential, onA
     notes: editingCredential?.notes || '',
     tags: editingCredential?.tags?.join(', ') || '',
     ce_required_hours: (editingCredential as any)?.ce_required_hours?.toString() || '',
+    ce_requirements_notes: (editingCredential as any)?.ce_requirements_notes || '',
   });
 
   const update = (field: string, value: string) => setForm(prev => ({ ...prev, [field]: value }));
