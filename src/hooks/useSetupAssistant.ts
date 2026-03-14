@@ -112,7 +112,7 @@ export function useSetupAssistant() {
       const path = `${user.id}/${jobId}/${file.name}`;
       const { error: uploadErr } = await supabase.storage
         .from('import-uploads')
-        .upload(path, file);
+        .upload(path, file, { upsert: true });
       if (uploadErr) throw uploadErr;
 
       // Record in import_files
