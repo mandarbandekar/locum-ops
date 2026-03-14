@@ -11,6 +11,12 @@ import { Progress } from '@/components/ui/progress';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useUserProfile, type Profession, type EmailTone, type CurrentTool, type FacilitiesCountBand, type InvoicesPerMonthBand, type TermsFieldsEnabled } from '@/contexts/UserProfileContext';
 import { Building2, CalendarDays, FileText, Upload, ArrowRight, Check, SkipForward } from 'lucide-react';
+import { SetupAssistantLanes } from '@/components/setup-assistant/SetupAssistantLanes';
+import { ImportReviewPanel } from '@/components/setup-assistant/ImportReviewPanel';
+import { SetupSummary } from '@/components/setup-assistant/SetupSummary';
+import { useSetupAssistant } from '@/hooks/useSetupAssistant';
+
+const TOTAL_STEPS = 4;
 
 const PROFESSIONS: { value: Profession; label: string }[] = [
   { value: 'vet', label: 'Veterinarian' },
@@ -48,7 +54,8 @@ export default function OnboardingPage() {
   const { profile, updateProfile, completeOnboarding } = useUserProfile();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
-  const [showStartingPath, setShowStartingPath] = useState(false);
+  const [phase, setPhase] = useState<'steps' | 'review' | 'summary' | 'starting_path'>('steps');
+  const setupAssistant = useSetupAssistant();
 
   // Step 1 state
   const [profession, setProfession] = useState<Profession>(profile?.profession || 'other');
@@ -62,7 +69,6 @@ export default function OnboardingPage() {
   const [invoicesBand, setInvoicesBand] = useState<InvoicesPerMonthBand>(profile?.invoices_per_month_band || 'inv_1_3');
 
   // Step 3 state
-  
   const [emailTone, setEmailTone] = useState<EmailTone>(profile?.email_tone || 'neutral');
   const [termsFields, setTermsFields] = useState<TermsFieldsEnabled>(
     profile?.terms_fields_enabled || {
@@ -76,8 +82,8 @@ export default function OnboardingPage() {
   const [taxDisclaimer, setTaxDisclaimer] = useState(false);
 
   useEffect(() => {
-    console.log('onboarding_step_view', { step });
-  }, [step]);
+    console.log('onboarding_step_view', { step, phase });
+  }, [step, phase]);
 
   const saveStep1 = async () => {
     console.log('onboarding_step_submit', { step: 1 });
@@ -93,19 +99,34 @@ export default function OnboardingPage() {
 
   const saveStep3 = async () => {
     console.log('onboarding_step_submit', { step: 3 });
-    await updateProfile({
-      email_tone: emailTone,
-      terms_fields_enabled: termsFields,
-    });
-    await completeOnboarding();
-    setShowStartingPath(true);
+    await updateProfile({ email_tone: emailTone, terms_fields_enabled: termsFields });
+    setStep(4);
   };
 
   const skipAll = async () => {
     console.log('onboarding_skip');
     await updateProfile({ timezone: Intl.DateTimeFormat().resolvedOptions().timeZone });
     await completeOnboarding();
-    setShowStartingPath(true);
+    setPhase('starting_path');
+  };
+
+  const handleSetupComplete = (entities: any[]) => {
+    setPhase('review');
+  };
+
+  const handleReviewComplete = async () => {
+    await completeOnboarding();
+    const summary = setupAssistant.getSummary();
+    if (summary.facilities_imported > 0 || summary.contracts_added > 0 || summary.shifts_imported > 0) {
+      setPhase('summary');
+    } else {
+      setPhase('starting_path');
+    }
+  };
+
+  const handleSkipSetupAssistant = async () => {
+    await completeOnboarding();
+    setPhase('starting_path');
   };
 
   const handleStartingPath = (path: string) => {
@@ -121,7 +142,36 @@ export default function OnboardingPage() {
     setTermsFields(prev => ({ ...prev, [field]: !prev[field] }));
   };
 
-  if (showStartingPath) {
+  // Review phase
+  if (phase === 'review') {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="w-full max-w-lg">
+          <ImportReviewPanel
+            entities={setupAssistant.entities}
+            onUpdateEntity={setupAssistant.updateEntityStatus}
+            onBulkConfirm={setupAssistant.bulkConfirm}
+            onComplete={handleReviewComplete}
+            onBack={() => { setPhase('steps'); setStep(4); }}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Summary phase
+  if (phase === 'summary') {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="w-full max-w-lg">
+          <SetupSummary summary={setupAssistant.getSummary()} />
+        </div>
+      </div>
+    );
+  }
+
+  // Starting path phase
+  if (phase === 'starting_path') {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="w-full max-w-lg space-y-6">
@@ -170,12 +220,12 @@ export default function OnboardingPage() {
         {/* Progress */}
         <div className="space-y-2">
           <div className="flex justify-between text-sm text-muted-foreground">
-            <span>Step {step} of 3</span>
+            <span>Step {step} of {TOTAL_STEPS}</span>
             <button onClick={skipAll} className="text-primary hover:underline flex items-center gap-1">
               <SkipForward className="h-3.5 w-3.5" /> Skip for now
             </button>
           </div>
-          <Progress value={(step / 3) * 100} className="h-2" />
+          <Progress value={(step / TOTAL_STEPS) * 100} className="h-2" />
         </div>
 
         {/* Step 1 */}
@@ -313,7 +363,7 @@ export default function OnboardingPage() {
                 <div className="flex gap-2">
                   <Button variant="outline" onClick={() => setStep(2)} className="flex-1">Back</Button>
                   <Button onClick={saveStep3} className="flex-1">
-                    <Check className="mr-2 h-4 w-4" /> Finish setup
+                    Continue <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </div>
               </CardContent>
@@ -342,6 +392,15 @@ export default function OnboardingPage() {
               </CardContent>
             </Card>
           </div>
+        )}
+
+        {/* Step 4: AI Setup Assistant */}
+        {step === 4 && (
+          <SetupAssistantLanes
+            onComplete={handleSetupComplete}
+            onSkip={handleSkipSetupAssistant}
+            hookState={setupAssistant}
+          />
         )}
       </div>
     </div>
