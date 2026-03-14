@@ -102,7 +102,8 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, existi
 
           {/* Date selection */}
           <div>
-            <Label>{isMultiMode ? 'Dates (select multiple)' : 'Date'}</Label>
+            <Label>{isMultiMode ? 'Dates (select one or more)' : 'Date'}</Label>
+            {isMultiMode && <p className="text-xs text-muted-foreground">Choose one or more dates for this shift.</p>}
             {isMultiMode ? (
               <div className="mt-1.5">
                 <div className="border rounded-lg p-2 inline-block">
@@ -113,10 +114,12 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, existi
                     className={cn("p-3 pointer-events-auto")}
                   />
                 </div>
-                {selectedDates.length > 0 && (
+                {selectedDates.length > 0 ? (
                   <p className="text-xs text-muted-foreground mt-1.5">
                     {selectedDates.length} date{selectedDates.length !== 1 ? 's' : ''} selected: {selectedDates.sort((a, b) => a.getTime() - b.getTime()).map(d => format(d, 'MMM d')).join(', ')}
                   </p>
+                ) : (
+                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-1.5">Select at least one date.</p>
                 )}
               </div>
             ) : (

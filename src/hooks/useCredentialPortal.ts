@@ -56,8 +56,8 @@ export function useCredentialPortal(credentialId: string | null) {
         updated_at: new Date().toISOString(),
       };
 
-      const { data, error } = await supabase
-        .from('credential_renewal_portals' as any)
+      const { data, error } = await (supabase as any)
+        .from('credential_renewal_portals')
         .upsert(payload, { onConflict: 'credential_id' })
         .select()
         .single();
