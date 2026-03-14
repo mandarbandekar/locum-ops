@@ -73,6 +73,7 @@ export function useCredentials() {
       notes?: string;
       tags?: string[];
       ce_required_hours?: number | null;
+      ce_requirements_notes?: string | null;
     }) => {
       const insertData: any = {
         user_id: user!.id,
