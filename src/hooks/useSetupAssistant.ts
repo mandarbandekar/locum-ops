@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { readFileAsText } from '@/lib/fileParser';
 
 export type ImportLane = 'facilities' | 'contracts' | 'shifts';
 export type ReviewStatus = 'pending' | 'confirmed' | 'edited' | 'skipped' | 'merged';
