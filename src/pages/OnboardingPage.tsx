@@ -374,7 +374,18 @@ export default function OnboardingPage() {
               </div>
               <div>
                 <Label>Timezone</Label>
-                <Input value={timezone} onChange={e => setTimezone(e.target.value)} placeholder="America/New_York" />
+                <Select value={timezone} onValueChange={setTimezone}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="America/New_York">Eastern (America/New_York)</SelectItem>
+                    <SelectItem value="America/Chicago">Central (America/Chicago)</SelectItem>
+                    <SelectItem value="America/Denver">Mountain (America/Denver)</SelectItem>
+                    <SelectItem value="America/Phoenix">Arizona (America/Phoenix)</SelectItem>
+                    <SelectItem value="America/Los_Angeles">Pacific (America/Los_Angeles)</SelectItem>
+                    <SelectItem value="America/Anchorage">Alaska (America/Anchorage)</SelectItem>
+                    <SelectItem value="Pacific/Honolulu">Hawaii (Pacific/Honolulu)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label>Currency</Label>
