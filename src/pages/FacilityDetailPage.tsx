@@ -91,6 +91,17 @@ export default function FacilityDetailPage() {
           <InvoiceSettingsTab facility={facility} onUpdate={updateFacility} />
         </TabsContent>
       </Tabs>
+
+      <FacilityImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        facilityId={facility.id}
+        facilityName={facility.name}
+        onAddContact={addContact}
+        onUpdateTerms={updateTerms}
+        onUpdateFacility={(updates) => updateFacility({ ...facility, ...updates })}
+        existingTerms={facilityTerms}
+      />
     </div>
   );
 }
