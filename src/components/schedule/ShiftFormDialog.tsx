@@ -27,7 +27,7 @@ interface ShiftFormDialogProps {
 export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, existing, onSave, onDelete }: ShiftFormDialogProps) {
   const [facilityId, setFacilityId] = useState(existing?.facility_id || facilities[0]?.id || '');
   const [selectedDates, setSelectedDates] = useState<Date[]>(
-    existing ? [new Date(existing.start_datetime)] : [new Date()]
+    existing ? [new Date(existing.start_datetime)] : []
   );
   const [startTime, setStartTime] = useState(existing ? format(new Date(existing.start_datetime), 'HH:mm') : '08:00');
   const [endTime, setEndTime] = useState(existing ? format(new Date(existing.end_datetime), 'HH:mm') : '18:00');
