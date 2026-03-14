@@ -23,6 +23,7 @@ export default function FacilityDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { facilities, contacts, terms, shifts, invoices, updateFacility, addContact, updateContact, deleteContact, updateTerms, addShift } = useData();
+  const [importOpen, setImportOpen] = useState(false);
 
   const facility = facilities.find(c => c.id === id);
   if (!facility) return <div className="p-6">Practice facility not found. <Button variant="link" onClick={() => navigate('/facilities')}>Back</Button></div>;
@@ -40,6 +41,10 @@ export default function FacilityDetailPage() {
         </Button>
         <EditableFacilityName facility={facility} onSave={(newName, newAddress) => { updateFacility({ ...facility, name: newName, address: newAddress }); toast.success('Practice facility updated'); }} />
         <StatusBadge status={facility.status} className="ml-3" />
+        <div className="flex-1" />
+        <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+          <FileUp className="h-4 w-4 mr-1.5" /> Import practice data
+        </Button>
       </div>
 
       <Tabs defaultValue="overview">
