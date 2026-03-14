@@ -57,6 +57,7 @@ export function AddCEEntryDialog({ open, onOpenChange, editingEntry, preLinkedCr
           completion_date: editingEntry.completion_date,
           hours: String(editingEntry.hours),
           category: editingEntry.category,
+          delivery_format: editingEntry.delivery_format || '',
           notes: editingEntry.notes || '',
           linked_credential_ids: editingEntry.linked_credential_ids,
           certificate_file_url: editingEntry.certificate_file_url,
