@@ -143,6 +143,7 @@ export const demoCEEntries: CEEntry[] = [
     hours: 4,
     category: 'regulatory',
     notes: 'DEA compliance, record-keeping best practices, and PDMP usage.',
+    delivery_format: 'controlled_substance',
     certificate_file_url: 'demo-cert-2.pdf',
     certificate_file_name: 'DEA_Compliance_Cert.pdf',
     created_at: addDays(today, -90).toISOString(),
