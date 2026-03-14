@@ -129,6 +129,7 @@ export default function CEEntriesTab() {
                 <TableHead>Date</TableHead>
                 <TableHead className="text-right">Hours</TableHead>
                 <TableHead>Category</TableHead>
+                <TableHead>Format</TableHead>
                 <TableHead>Linked Credentials</TableHead>
                 <TableHead>Certificate</TableHead>
                 <TableHead className="w-10"></TableHead>
