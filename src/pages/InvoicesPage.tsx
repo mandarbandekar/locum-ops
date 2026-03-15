@@ -165,13 +165,13 @@ export default function InvoicesPage() {
                 </td>
                 <td className="p-3">{getStatusBadge(inv.computedStatus)}</td>
                 <td className="p-3" onClick={e => e.stopPropagation()}>
-                  <AlertDialog>
-                    <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive" asChild>
-                      <AlertDialogAction className="bg-transparent hover:bg-transparent p-0" onClick={e => e.preventDefault()}>
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </AlertDialogAction>
-                    </Button>
-                  </AlertDialog>
+                  <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                    onClick={async () => {
+                      await deleteInvoice(inv.id);
+                      toast.success('Invoice deleted');
+                    }}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
                 </td>
               </tr>
             ))}
