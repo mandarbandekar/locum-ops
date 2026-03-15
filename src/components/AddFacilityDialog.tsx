@@ -58,29 +58,33 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
     setInvoiceEmailTo(''); setInvoiceEmailCc(''); setInvoiceEmailBcc('');
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!name.trim()) {
       toast.error('Please enter a facility name');
       setStep(0);
       return;
     }
     const prefix = invoicePrefix || getInitials(name);
-    addFacility({
-      name, status, address, timezone: 'America/Los_Angeles', notes,
-      outreach_last_sent_at: null,
-      tech_computer_info: techComputer,
-      tech_wifi_info: techWifi,
-      tech_pims_info: techPims,
-      clinic_access_info: clinicAccess,
-      invoice_prefix: prefix,
-      invoice_due_days: invoiceDueDays,
-      invoice_email_to: invoiceEmailTo.trim(),
-      invoice_email_cc: invoiceEmailCc.trim(),
-      invoice_email_bcc: invoiceEmailBcc.trim(),
-    });
-    toast.success('Practice facility added');
-    resetForm();
-    onOpenChange(false);
+    try {
+      await addFacility({
+        name, status, address, timezone: 'America/Los_Angeles', notes,
+        outreach_last_sent_at: null,
+        tech_computer_info: techComputer,
+        tech_wifi_info: techWifi,
+        tech_pims_info: techPims,
+        clinic_access_info: clinicAccess,
+        invoice_prefix: prefix,
+        invoice_due_days: invoiceDueDays,
+        invoice_email_to: invoiceEmailTo.trim(),
+        invoice_email_cc: invoiceEmailCc.trim(),
+        invoice_email_bcc: invoiceEmailBcc.trim(),
+      });
+      toast.success('Practice facility added');
+      resetForm();
+      onOpenChange(false);
+    } catch {
+      // error toast handled in DataContext
+    }
   };
 
   const handleSkipAndAdd = () => {
