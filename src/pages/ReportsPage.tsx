@@ -20,17 +20,46 @@ const COLORS = [
   'hsl(30, 70%, 50%)',
 ];
 
+const db = (table: string) => supabase.from(table as any);
+
 export default function ReportsPage() {
   const { shifts, invoices, facilities } = useData();
+  const { user, isDemo } = useAuth();
   const [monthRange, setMonthRange] = useState('6');
+  const [taxSetAsidePercent, setTaxSetAsidePercent] = useState<number>(0);
 
+  // Fetch tax set-aside settings
+  useEffect(() => {
+    if (isDemo || !user) return;
+    const currentYear = new Date().getFullYear();
+    db('tax_settings')
+      .select('set_aside_mode, set_aside_percent, set_aside_fixed_monthly')
+      .eq('user_id', user.id)
+      .eq('tax_year', currentYear)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data && data.set_aside_mode === 'percent') {
+          setTaxSetAsidePercent(data.set_aside_percent || 0);
+        }
+      });
+  }, [user, isDemo]);
+
+  // Extend range to include future months that have shifts
   const months = useMemo(() => {
     const now = new Date();
-    return eachMonthOfInterval({
-      start: subMonths(startOfMonth(now), parseInt(monthRange) - 1),
-      end: endOfMonth(now),
+    const pastStart = subMonths(startOfMonth(now), parseInt(monthRange) - 1);
+    // Find the latest shift date to determine how far into the future to show
+    const futureShifts = shifts.filter(s => s.status === 'proposed' || s.status === 'booked');
+    let futureEnd = endOfMonth(now);
+    futureShifts.forEach(s => {
+      const d = parseISO(s.start_datetime);
+      if (d > futureEnd) futureEnd = endOfMonth(d);
     });
-  }, [monthRange]);
+    // Cap at 6 months into the future
+    const maxFuture = endOfMonth(addMonths(now, 6));
+    if (futureEnd > maxFuture) futureEnd = maxFuture;
+    return eachMonthOfInterval({ start: pastStart, end: futureEnd });
+  }, [monthRange, shifts]);
 
   const revenueData = useMemo(() => {
     return months.map(month => {
