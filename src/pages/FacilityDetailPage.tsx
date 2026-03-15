@@ -249,6 +249,9 @@ function OverviewTab({ facility, shifts, contacts, onUpdate, onAddContact, onUpd
           </CardContent>
         </Card>
 
+        {/* Invoice Settings */}
+        <InvoiceSettingsCard facility={facility} onUpdate={onUpdate} />
+
         {/* Upcoming Shifts */}
         <Card>
           <CardHeader><CardTitle className="text-base">Upcoming Shifts</CardTitle></CardHeader>
