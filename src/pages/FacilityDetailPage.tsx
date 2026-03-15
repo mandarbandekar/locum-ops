@@ -229,49 +229,7 @@ function OverviewTab({ facility, shifts, contacts, onUpdate, onAddContact, onUpd
       </div>
 
       <div className="space-y-4">
-        {/* Contacts */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-base">Contacts</CardTitle>
-            <Button size="sm" variant="ghost" onClick={openAddContact}><Plus className="mr-1 h-3 w-3" /> Add</Button>
-          </CardHeader>
-          <CardContent>
-            {contacts.length === 0 && !showContactForm && (
-              <p className="text-sm text-muted-foreground">No contacts added yet.</p>
-            )}
-            <div className="space-y-3">
-              {contacts.map(c => (
-                <div key={c.id} className="flex items-start justify-between p-2.5 rounded-md border border-border bg-muted/30">
-                  <div className="space-y-0.5">
-                    <p className="text-sm font-medium">{c.name}</p>
-                    <p className="text-xs text-muted-foreground">{c.role || 'Other'}</p>
-                    {c.email && <p className="text-xs text-muted-foreground">{c.email}</p>}
-                    {c.phone && <p className="text-xs text-muted-foreground">{c.phone}</p>}
-                  </div>
-                  <div className="flex gap-1 shrink-0">
-                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEditContact(c)}><Pencil className="h-3 w-3" /></Button>
-                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDeleteContact(c.id)}><Trash2 className="h-3 w-3" /></Button>
-                  </div>
-                </div>
-              ))}
-
-              {showContactForm && (
-                <div className="space-y-2.5 p-3 rounded-md border border-border bg-muted/20">
-                  <div><Label className="text-xs">Name</Label><Input value={contactForm.name} onChange={e => setContactForm(p => ({ ...p, name: e.target.value }))} placeholder="Contact name" /></div>
-                  <div><Label className="text-xs">Role / Type</Label><Input value={contactForm.role} onChange={e => setContactForm(p => ({ ...p, role: e.target.value }))} placeholder="e.g. Practice Manager, Office Manager, Receptionist" /></div>
-                  <div><Label className="text-xs">Email</Label><Input type="email" value={contactForm.email} onChange={e => setContactForm(p => ({ ...p, email: e.target.value }))} placeholder="email@example.com" /></div>
-                  <div><Label className="text-xs">Phone</Label><Input value={contactForm.phone} onChange={e => setContactForm(p => ({ ...p, phone: e.target.value }))} placeholder="555-0100" /></div>
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={handleSaveContact}><Check className="mr-1 h-3 w-3" /> Save</Button>
-                    <Button size="sm" variant="ghost" onClick={() => { setShowContactForm(false); setEditingContactId(null); }}><X className="mr-1 h-3 w-3" /> Cancel</Button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Invoice Settings */}
+        {/* Invoice Billing Contact and Settings */}
         <InvoiceSettingsCard facility={facility} onUpdate={onUpdate} />
 
         {/* Upcoming Shifts */}
