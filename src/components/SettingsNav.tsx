@@ -4,7 +4,6 @@ import { User, CalendarDays, FileText, CreditCard, Bell, Briefcase, Shield, Sett
 const settingsLinks = [
   { to: '/settings/profile', label: 'Profile', icon: User },
   { to: '/settings/scheduling', label: 'Scheduling', icon: CalendarDays },
-  { to: '/settings/invoicing', label: 'Invoicing', icon: FileText },
   { to: '/settings/payments', label: 'Payments', icon: CreditCard },
   { to: '/settings/reminders', label: 'Reminders', icon: Bell },
   { to: '/settings/business-taxes', label: 'Business & Taxes', icon: Briefcase },
