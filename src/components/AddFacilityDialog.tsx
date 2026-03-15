@@ -74,6 +74,9 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
       clinic_access_info: clinicAccess,
       invoice_prefix: prefix,
       invoice_due_days: invoiceDueDays,
+      invoice_email_to: invoiceEmailTo.trim(),
+      invoice_email_cc: invoiceEmailCc.trim(),
+      invoice_email_bcc: invoiceEmailBcc.trim(),
     });
     toast.success('Practice facility added');
     resetForm();
