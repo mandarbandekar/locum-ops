@@ -580,7 +580,7 @@ function InvoiceSettingsCard({ facility, onUpdate }: { facility: any; onUpdate: 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-base">Invoice Settings</CardTitle>
+        <CardTitle className="text-base">Invoice Billing Contact and Settings</CardTitle>
         {editing ? (
           <div className="flex gap-2">
             <Button size="sm" onClick={handleSave}><Save className="mr-1 h-3 w-3" /> Save</Button>
