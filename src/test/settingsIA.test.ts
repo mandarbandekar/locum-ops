@@ -12,10 +12,10 @@ const SETTINGS_LINKS = [
 ];
 
 describe('Settings IA', () => {
-  it('navigation has all 8 sections in correct order', () => {
+  it('navigation has all 7 sections in correct order', () => {
     const labels = SETTINGS_LINKS.map(l => l.label);
     expect(labels).toEqual([
-      'Profile', 'Scheduling', 'Invoicing', 'Payments',
+      'Profile', 'Scheduling', 'Payments',
       'Reminders', 'Business & Taxes', 'Security', 'Account',
     ]);
   });
