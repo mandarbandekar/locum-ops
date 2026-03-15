@@ -20,6 +20,11 @@ export interface ManualFacilityInput {
   billing_email_bcc?: string;
   address?: string;
   weekday_rate?: number;
+  weekend_rate?: number;
+  partial_day_rate?: number;
+  holiday_rate?: number;
+  telemedicine_rate?: number;
+  custom_rates?: Array<{ label: string; amount: number }>;
   notes?: string;
 }
 
