@@ -21,6 +21,7 @@ function makeInvoice(overrides: Partial<Invoice>): Invoice {
     share_token_created_at: null,
     share_token_revoked_at: null,
     invoice_type: 'single',
+    billing_email_to: '', billing_email_cc: '', billing_email_bcc: '',
     ...overrides,
   };
 }
