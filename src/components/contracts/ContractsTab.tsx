@@ -362,6 +362,54 @@ function TermsEditor({ terms, contractTitle, onSave }: {
   );
 }
 
+// ─── Policies & Notes Section ──────────────────────────────
+
+function PoliciesSection({ facilityTerms, facilityId, onUpdateTerms }: {
+  facilityTerms?: TermsSnapshot;
+  facilityId: string;
+  onUpdateTerms?: (t: TermsSnapshot) => void;
+}) {
+  const [cancellation, setCancellation] = useState(facilityTerms?.cancellation_policy_text || '');
+  const [overtime, setOvertime] = useState(facilityTerms?.overtime_policy_text || '');
+  const [latePayment, setLatePayment] = useState(facilityTerms?.late_payment_policy_text || '');
+  const [specialNotes, setSpecialNotes] = useState(facilityTerms?.special_notes || '');
+
+  const handleSave = () => {
+    if (!onUpdateTerms) return;
+    onUpdateTerms({
+      id: facilityTerms?.id || generateId(),
+      facility_id: facilityId,
+      weekday_rate: facilityTerms?.weekday_rate || 0,
+      weekend_rate: facilityTerms?.weekend_rate || 0,
+      partial_day_rate: facilityTerms?.partial_day_rate || 0,
+      holiday_rate: facilityTerms?.holiday_rate || 0,
+      telemedicine_rate: facilityTerms?.telemedicine_rate || 0,
+      custom_rates: facilityTerms?.custom_rates || [],
+      cancellation_policy_text: cancellation,
+      overtime_policy_text: overtime,
+      late_payment_policy_text: latePayment,
+      special_notes: specialNotes,
+    });
+    toast.success('Policies saved');
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Policies & Notes</CardTitle>
+        <p className="text-xs text-muted-foreground italic">Track cancellation, overtime, and payment policies for this facility.</p>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div><Label>Cancellation Policy</Label><Textarea value={cancellation} onChange={e => setCancellation(e.target.value)} rows={2} placeholder="e.g. 48-hour notice required..." /></div>
+        <div><Label>Overtime Policy</Label><Textarea value={overtime} onChange={e => setOvertime(e.target.value)} rows={2} placeholder="e.g. Time-and-a-half after 10 hours..." /></div>
+        <div><Label>Late Payment Policy</Label><Textarea value={latePayment} onChange={e => setLatePayment(e.target.value)} rows={2} placeholder="e.g. 1.5% monthly interest after 30 days..." /></div>
+        <div><Label>Special Notes</Label><Textarea value={specialNotes} onChange={e => setSpecialNotes(e.target.value)} rows={2} placeholder="Any additional notes..." /></div>
+        <Button onClick={handleSave}><Save className="mr-1 h-3 w-3" /> Save Policies</Button>
+      </CardContent>
+    </Card>
+  );
+}
+
 // ─── Checklist & Reminders ─────────────────────────────────
 
 function ChecklistSection({ items, facilityId, onAdd, onUpdate, onDelete, onCreateDefaults }: {
