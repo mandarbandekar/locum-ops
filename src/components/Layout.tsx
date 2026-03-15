@@ -14,11 +14,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="h-14 flex items-center border-b bg-card px-3 sm:px-4 shrink-0">
-            <SidebarTrigger className="mr-2 sm:mr-3" />
-            <span className="text-base sm:text-lg font-semibold text-primary tracking-tight truncate">LocumOps</span>
+          <header className="h-14 flex items-center border-b border-border bg-card/80 backdrop-blur-sm px-4 sm:px-5 shrink-0 sticky top-0 z-30">
+            <SidebarTrigger className="mr-3" />
+            <span className="text-[15px] font-semibold text-primary tracking-tight truncate">LocumOps</span>
             {company && (
-              <span className="ml-2 text-sm text-muted-foreground truncate hidden sm:inline">
+              <span className="ml-2.5 text-sm text-muted-foreground truncate hidden sm:inline">
                 — {company}
               </span>
             )}
@@ -26,7 +26,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <ThemeToggle />
             </div>
           </header>
-          <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-auto">
+          <main className="flex-1 p-4 sm:p-5 md:p-7 overflow-auto">
             {children}
           </main>
         </div>
