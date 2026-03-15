@@ -37,7 +37,7 @@ export default function ReportsPage() {
       .eq('user_id', user.id)
       .eq('tax_year', currentYear)
       .maybeSingle()
-      .then(({ data }) => {
+      .then(({ data }: { data: any }) => {
         if (data && data.set_aside_mode === 'percent') {
           setTaxSetAsidePercent(data.set_aside_percent || 0);
         }
