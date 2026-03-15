@@ -21,9 +21,6 @@ export interface Facility {
   clinic_access_info: string;
   invoice_prefix: string;
   invoice_due_days: number;
-  invoice_email_to: string;
-  invoice_email_cc: string;
-  invoice_email_bcc: string;
 }
 
 export type ContactRole = string;

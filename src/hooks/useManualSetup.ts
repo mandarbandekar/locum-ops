@@ -55,9 +55,6 @@ export function useManualSetup() {
         clinic_access_info: '',
         invoice_prefix: prefix,
         invoice_due_days: 30,
-        invoice_email_to: input.billing_email || '',
-        invoice_email_cc: '',
-        invoice_email_bcc: '',
       }).select().single();
 
       if (error) { toast.error(error.message); return null; }

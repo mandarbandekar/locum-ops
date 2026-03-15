@@ -606,101 +606,47 @@ function InvoicesTab({ invoices, onNavigate }: { invoices: any[]; onNavigate: (i
 function InvoiceSettingsTab({ facility, onUpdate }: { facility: any; onUpdate: (f: any) => void }) {
   const [prefix, setPrefix] = useState(facility.invoice_prefix || 'INV');
   const [dueDays, setDueDays] = useState(facility.invoice_due_days ?? 15);
-  const [emailTo, setEmailTo] = useState(facility.invoice_email_to || '');
-  const [emailCc, setEmailCc] = useState(facility.invoice_email_cc || '');
-  const [emailBcc, setEmailBcc] = useState(facility.invoice_email_bcc || '');
   const [dirty, setDirty] = useState(false);
 
   const handleSave = () => {
-    onUpdate({
-      ...facility,
-      invoice_prefix: prefix,
-      invoice_due_days: dueDays,
-      invoice_email_to: emailTo.trim(),
-      invoice_email_cc: emailCc.trim(),
-      invoice_email_bcc: emailBcc.trim(),
-    });
+    onUpdate({ ...facility, invoice_prefix: prefix, invoice_due_days: dueDays });
     setDirty(false);
     toast.success('Invoice settings saved');
   };
 
   return (
-    <div className="grid gap-6 max-w-2xl">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Invoice Settings</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Invoice Prefix</Label>
-            <Input
-              value={prefix}
-              onChange={e => { setPrefix(e.target.value.toUpperCase()); setDirty(true); }}
-              placeholder="INV"
-            />
-            <p className="text-xs text-muted-foreground">
-              Used for invoice numbering. e.g. {prefix}-2026-001
-            </p>
-          </div>
-          <div className="space-y-2">
-            <Label>Invoice Due (days)</Label>
-            <Input
-              type="number"
-              value={dueDays}
-              onChange={e => { setDueDays(Number(e.target.value)); setDirty(true); }}
-              min={1}
-            />
-            <p className="text-xs text-muted-foreground">
-              Number of days after invoice date that payment is due.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Invoice Email Recipients</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-xs text-muted-foreground -mt-2">
-            These email addresses are used when sending invoices for this practice. They are separate from the contacts in the Overview tab.
+    <Card className="max-w-lg">
+      <CardHeader>
+        <CardTitle className="text-base">Invoice Settings</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Label>Invoice Prefix</Label>
+          <Input
+            value={prefix}
+            onChange={e => { setPrefix(e.target.value.toUpperCase()); setDirty(true); }}
+            placeholder="INV"
+          />
+          <p className="text-xs text-muted-foreground">
+            Used for invoice numbering. e.g. {prefix}-2026-001
           </p>
-          <div className="space-y-2">
-            <Label>Send To</Label>
-            <Input
-              type="email"
-              value={emailTo}
-              onChange={e => { setEmailTo(e.target.value); setDirty(true); }}
-              placeholder="billing@clinic.com"
-            />
-            <p className="text-xs text-muted-foreground">Primary billing email for this practice.</p>
-          </div>
-          <div className="space-y-2">
-            <Label>CC</Label>
-            <Input
-              type="text"
-              value={emailCc}
-              onChange={e => { setEmailCc(e.target.value); setDirty(true); }}
-              placeholder="manager@clinic.com, admin@clinic.com"
-            />
-            <p className="text-xs text-muted-foreground">Comma-separated. Visible to all recipients.</p>
-          </div>
-          <div className="space-y-2">
-            <Label>BCC</Label>
-            <Input
-              type="text"
-              value={emailBcc}
-              onChange={e => { setEmailBcc(e.target.value); setDirty(true); }}
-              placeholder="records@mycompany.com"
-            />
-            <p className="text-xs text-muted-foreground">Comma-separated. Hidden from other recipients.</p>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Button onClick={handleSave} disabled={!dirty} size="sm" className="w-fit">
-        <Save className="mr-1 h-4 w-4" /> Save
-      </Button>
-    </div>
+        </div>
+        <div className="space-y-2">
+          <Label>Invoice Due (days)</Label>
+          <Input
+            type="number"
+            value={dueDays}
+            onChange={e => { setDueDays(Number(e.target.value)); setDirty(true); }}
+            min={1}
+          />
+          <p className="text-xs text-muted-foreground">
+            Number of days after invoice date that payment is due.
+          </p>
+        </div>
+        <Button onClick={handleSave} disabled={!dirty} size="sm">
+          <Save className="mr-1 h-4 w-4" /> Save
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
