@@ -380,7 +380,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
         const dueDate = new Date(s.end_datetime);
         dueDate.setDate(dueDate.getDate() + dueDays);
         try {
-          await addInvoice(
+           await addInvoice(
             {
               facility_id: s.facility_id,
               invoice_number: invoiceNumber,
@@ -398,6 +398,9 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
               share_token_created_at: null,
               share_token_revoked_at: null,
               invoice_type: 'single' as const,
+              billing_email_to: facility?.invoice_email_to || '',
+              billing_email_cc: facility?.invoice_email_cc || '',
+              billing_email_bcc: facility?.invoice_email_bcc || '',
             },
             [{
               shift_id: s.id,
