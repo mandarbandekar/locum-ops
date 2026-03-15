@@ -76,7 +76,7 @@ export function buildChecklistItems(
     { key: 'sender_company', label: 'Company name added', complete: !!(profile?.company_name), required: true, helperText: 'Add your company name in Invoice Profile settings' },
     { key: 'sender_address', label: 'Business address added', complete: !!(profile?.company_address), required: true, helperText: 'Add your business address to send invoices' },
     { key: 'bill_to', label: 'Bill-to contact added', complete: !!(facility?.name), required: true, helperText: 'Select a facility for this invoice' },
-    { key: 'billing_email', label: 'Billing email added', complete: !!(billingContact?.email), required: false, helperText: 'Add a billing email to share faster' },
+    { key: 'billing_email', label: 'Billing email added', complete: !!(billingContact?.email), required: false, helperText: 'Add a billing email in Invoice Billing Contact and Settings on the facility' },
     { key: 'line_items', label: 'At least 1 line item', complete: lineItems.length > 0, required: true, helperText: 'Add at least one line item' },
     { key: 'due_date', label: 'Due date added', complete: !!(invoice.due_date), required: true, helperText: 'Set a due date for this invoice' },
   ];
