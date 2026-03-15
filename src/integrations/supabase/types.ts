@@ -1003,6 +1003,9 @@ export type Database = {
           created_at: string
           id: string
           invoice_due_days: number
+          invoice_email_bcc: string
+          invoice_email_cc: string
+          invoice_email_to: string
           invoice_prefix: string
           name: string
           notes: string
@@ -1021,6 +1024,9 @@ export type Database = {
           created_at?: string
           id?: string
           invoice_due_days?: number
+          invoice_email_bcc?: string
+          invoice_email_cc?: string
+          invoice_email_to?: string
           invoice_prefix?: string
           name: string
           notes?: string
@@ -1039,6 +1045,9 @@ export type Database = {
           created_at?: string
           id?: string
           invoice_due_days?: number
+          invoice_email_bcc?: string
+          invoice_email_cc?: string
+          invoice_email_to?: string
           invoice_prefix?: string
           name?: string
           notes?: string

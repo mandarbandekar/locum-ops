@@ -4,7 +4,6 @@ import { describe, it, expect } from 'vitest';
 const SETTINGS_LINKS = [
   { to: '/settings/profile', label: 'Profile' },
   { to: '/settings/scheduling', label: 'Scheduling' },
-  { to: '/settings/invoicing', label: 'Invoicing' },
   { to: '/settings/payments', label: 'Payments' },
   { to: '/settings/reminders', label: 'Reminders' },
   { to: '/settings/business-taxes', label: 'Business & Taxes' },
@@ -13,10 +12,10 @@ const SETTINGS_LINKS = [
 ];
 
 describe('Settings IA', () => {
-  it('navigation has all 8 sections in correct order', () => {
+  it('navigation has all 7 sections in correct order', () => {
     const labels = SETTINGS_LINKS.map(l => l.label);
     expect(labels).toEqual([
-      'Profile', 'Scheduling', 'Invoicing', 'Payments',
+      'Profile', 'Scheduling', 'Payments',
       'Reminders', 'Business & Taxes', 'Security', 'Account',
     ]);
   });
@@ -37,12 +36,11 @@ describe('Settings IA', () => {
     expect(profileFields).toContain('company_name');
   });
 
-  it('Payment settings are separated from invoicing', () => {
-    const invoicingPath = SETTINGS_LINKS.find(l => l.label === 'Invoicing')?.to;
+  it('Invoice settings are per-facility, not in global settings', () => {
+    const invoicingLink = SETTINGS_LINKS.find(l => l.label === 'Invoicing');
+    expect(invoicingLink).toBeUndefined();
     const paymentsPath = SETTINGS_LINKS.find(l => l.label === 'Payments')?.to;
-    expect(invoicingPath).toBe('/settings/invoicing');
     expect(paymentsPath).toBe('/settings/payments');
-    expect(invoicingPath).not.toBe(paymentsPath);
   });
 
   it('Reminders remain centralized in one section', () => {

@@ -61,6 +61,11 @@ export function useManualSetup() {
       const facility = stripDbFields(data) as Facility;
       setFacilities(prev => [...prev, facility]);
 
+      // Set invoice email on facility if provided
+      if (input.billing_email) {
+        await db('facilities').update({ invoice_email_to: input.billing_email } as any).eq('id', facility.id);
+      }
+
       // Create contact if provided
       if (input.contact_name) {
         await db('facility_contacts').insert({
