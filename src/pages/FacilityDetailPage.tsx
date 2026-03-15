@@ -86,9 +86,6 @@ export default function FacilityDetailPage() {
           <ClinicAccessTab facility={facility} onUpdate={updateFacility} />
         </TabsContent>
 
-        <TabsContent value="invoice-settings" className="mt-4">
-          <InvoiceSettingsTab facility={facility} onUpdate={updateFacility} />
-        </TabsContent>
       </Tabs>
 
       <FacilityImportDialog
