@@ -27,7 +27,7 @@ import ThanksPage from "@/pages/ThanksPage";
 import OnboardingPage from "@/pages/OnboardingPage";
 import SettingsProfilePage from "@/pages/SettingsProfilePage";
 import SettingsSchedulingPage from "@/pages/SettingsSchedulingPage";
-import SettingsInvoicingPage from "@/pages/SettingsInvoicingPage";
+// SettingsInvoicingPage removed — invoice settings are now per-facility
 import SettingsPaymentsPage from "@/pages/SettingsPaymentsPage";
 import SettingsRemindersPage from "@/pages/SettingsRemindersPage";
 import SettingsBusinessTaxesPage from "@/pages/SettingsBusinessTaxesPage";
