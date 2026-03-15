@@ -1357,6 +1357,9 @@ export type Database = {
       invoices: {
         Row: {
           balance_due: number
+          billing_email_bcc: string
+          billing_email_cc: string
+          billing_email_to: string
           created_at: string
           due_date: string | null
           facility_id: string
@@ -1379,6 +1382,9 @@ export type Database = {
         }
         Insert: {
           balance_due?: number
+          billing_email_bcc?: string
+          billing_email_cc?: string
+          billing_email_to?: string
           created_at?: string
           due_date?: string | null
           facility_id: string
@@ -1401,6 +1407,9 @@ export type Database = {
         }
         Update: {
           balance_due?: number
+          billing_email_bcc?: string
+          billing_email_cc?: string
+          billing_email_to?: string
           created_at?: string
           due_date?: string | null
           facility_id?: string
