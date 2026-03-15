@@ -347,42 +347,7 @@ function EditableFacilityName({ facility, onSave }: { facility: any; onSave: (na
 
 // (ContactsTab removed — contact is now managed in OverviewTab)
 
-// ─── Terms Tab ─────────────────────────────────────────────
-
-function TermsTab({ terms, facilityId, onUpdate }: { terms?: TermsSnapshot; facilityId: string; onUpdate: (c: TermsSnapshot) => void }) {
-  const [form, setForm] = useState<TermsSnapshot>(terms || {
-    id: generateId(), facility_id: facilityId, weekday_rate: 0, weekend_rate: 0,
-    partial_day_rate: 0, holiday_rate: 0, telemedicine_rate: 0,
-    cancellation_policy_text: '', overtime_policy_text: '', late_payment_policy_text: '', special_notes: '',
-  });
-
-  const handleSave = () => {
-    onUpdate(form);
-    toast.success('Terms saved');
-  };
-
-  return (
-    <Card>
-      <CardContent className="pt-6 space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div><Label>Weekday Rate ($)</Label><Input type="number" value={form.weekday_rate} onChange={e => setForm(p => ({ ...p, weekday_rate: Number(e.target.value) }))} /></div>
-          <div><Label>Weekend Rate ($)</Label><Input type="number" value={form.weekend_rate} onChange={e => setForm(p => ({ ...p, weekend_rate: Number(e.target.value) }))} /></div>
-        </div>
-        <div className="grid grid-cols-3 gap-4">
-          <div><Label>Partial Day Rate ($)</Label><Input type="number" value={form.partial_day_rate} onChange={e => setForm(p => ({ ...p, partial_day_rate: Number(e.target.value) }))} /></div>
-          <div><Label>Holiday Rate ($)</Label><Input type="number" value={form.holiday_rate} onChange={e => setForm(p => ({ ...p, holiday_rate: Number(e.target.value) }))} /></div>
-          <div><Label>Telemedicine Rate ($)</Label><Input type="number" value={form.telemedicine_rate} onChange={e => setForm(p => ({ ...p, telemedicine_rate: Number(e.target.value) }))} /></div>
-        </div>
-        <div><Label>Cancellation Policy</Label><Textarea value={form.cancellation_policy_text} onChange={e => setForm(p => ({ ...p, cancellation_policy_text: e.target.value }))} rows={2} /></div>
-        <div><Label>Overtime Policy</Label><Textarea value={form.overtime_policy_text} onChange={e => setForm(p => ({ ...p, overtime_policy_text: e.target.value }))} rows={2} /></div>
-        <div><Label>Late Payment Policy</Label><Textarea value={form.late_payment_policy_text} onChange={e => setForm(p => ({ ...p, late_payment_policy_text: e.target.value }))} rows={2} /></div>
-        <div><Label>Special Notes</Label><Textarea value={form.special_notes} onChange={e => setForm(p => ({ ...p, special_notes: e.target.value }))} rows={2} /></div>
-        <p className="text-xs text-muted-foreground italic">Saved terms for reference. Verify against the signed contract.</p>
-        <Button onClick={handleSave}>Save Terms</Button>
-      </CardContent>
-    </Card>
-  );
-}
+// (Terms tab removed — rates moved to Overview, policies moved to Contract Vault & Terms)
 
 // ─── Tech Access Tab ───────────────────────────────────────
 

@@ -11,6 +11,7 @@ import { generateId } from '@/lib/businessLogic';
 import { FacilityStatus } from '@/types';
 import { toast } from 'sonner';
 import { ArrowLeft, ArrowRight, SkipForward } from 'lucide-react';
+import { RatesEditor, RateEntry, ratesToTermsFields } from '@/components/facilities/RatesEditor';
 
 const STEPS = [
   { label: 'General', description: 'Name & basic info' },
@@ -27,11 +28,7 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
   const [status, setStatus] = useState<FacilityStatus>('prospect');
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
-  const [weekdayRate, setWeekdayRate] = useState('');
-  const [weekendRate, setWeekendRate] = useState('');
-  const [partialDayRate, setPartialDayRate] = useState('');
-  const [holidayRate, setHolidayRate] = useState('');
-  const [telemedicineRate, setTelemedicineRate] = useState('');
+  const [rates, setRates] = useState<RateEntry[]>([]);
   const [techComputer, setTechComputer] = useState('');
   const [techWifi, setTechWifi] = useState('');
   const [techPims, setTechPims] = useState('');
@@ -52,8 +49,7 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
   const resetForm = () => {
     setStep(0);
     setName(''); setAddress(''); setNotes(''); setStatus('prospect');
-    setWeekdayRate(''); setWeekendRate('');
-    setPartialDayRate(''); setHolidayRate(''); setTelemedicineRate('');
+    setRates([]);
     setTechComputer(''); setTechWifi(''); setTechPims('');
     setClinicAccess(''); setInvoicePrefix(''); setInvoiceDueDays(15);
     setInvoiceEmailTo(''); setInvoiceEmailCc(''); setInvoiceEmailBcc('');
@@ -67,8 +63,7 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
     }
 
     const prefix = invoicePrefix || getInitials(name);
-    const hasAnyTermsInput = [weekdayRate, weekendRate, partialDayRate, holidayRate, telemedicineRate]
-      .some((value) => value.trim() !== '');
+    const hasAnyRates = rates.length > 0 && rates.some(r => r.amount > 0);
 
     try {
       const facility = await addFacility({
@@ -85,15 +80,12 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
         invoice_email_bcc: invoiceEmailBcc.trim(),
       });
 
-      if (hasAnyTermsInput) {
+      if (hasAnyRates) {
+        const fields = ratesToTermsFields(rates);
         await updateTerms({
           id: generateId(),
           facility_id: facility.id,
-          weekday_rate: Number(weekdayRate) || 0,
-          weekend_rate: Number(weekendRate) || 0,
-          partial_day_rate: Number(partialDayRate) || 0,
-          holiday_rate: Number(holidayRate) || 0,
-          telemedicine_rate: Number(telemedicineRate) || 0,
+          ...fields,
           cancellation_policy_text: '',
           overtime_policy_text: '',
           late_payment_policy_text: '',
@@ -193,26 +185,7 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
           {step === 1 && (
             <>
               <p className="text-sm text-muted-foreground">Set shift rates for this facility. You can also configure these later.</p>
-              <div className="space-y-2">
-                <Label>Weekday Rate ($)</Label>
-                <Input type="number" value={weekdayRate} onChange={e => setWeekdayRate(e.target.value)} placeholder="0" />
-              </div>
-              <div className="space-y-2">
-                <Label>Weekend Rate ($)</Label>
-                <Input type="number" value={weekendRate} onChange={e => setWeekendRate(e.target.value)} placeholder="0" />
-              </div>
-              <div className="space-y-2">
-                <Label>Partial Day Rate ($)</Label>
-                <Input type="number" value={partialDayRate} onChange={e => setPartialDayRate(e.target.value)} placeholder="0" />
-              </div>
-              <div className="space-y-2">
-                <Label>Holiday Rate ($)</Label>
-                <Input type="number" value={holidayRate} onChange={e => setHolidayRate(e.target.value)} placeholder="0" />
-              </div>
-              <div className="space-y-2">
-                <Label>Telemedicine Rate ($)</Label>
-                <Input type="number" value={telemedicineRate} onChange={e => setTelemedicineRate(e.target.value)} placeholder="0" />
-              </div>
+              <RatesEditor rates={rates} onChange={setRates} showCard={false} compact />
             </>
           )}
 
@@ -249,51 +222,26 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
               <p className="text-sm text-muted-foreground">Invoice settings, email recipients, and payment terms for this facility.</p>
               <div className="space-y-2">
                 <Label>Invoice Email (To)</Label>
-                <Input
-                  type="email"
-                  value={invoiceEmailTo}
-                  onChange={e => setInvoiceEmailTo(e.target.value)}
-                  placeholder="billing@clinic.com"
-                />
+                <Input type="email" value={invoiceEmailTo} onChange={e => setInvoiceEmailTo(e.target.value)} placeholder="billing@clinic.com" />
               </div>
               <div className="space-y-2">
                 <Label>Invoice Email (CC)</Label>
-                <Input
-                  type="email"
-                  value={invoiceEmailCc}
-                  onChange={e => setInvoiceEmailCc(e.target.value)}
-                  placeholder="manager@clinic.com"
-                />
+                <Input type="email" value={invoiceEmailCc} onChange={e => setInvoiceEmailCc(e.target.value)} placeholder="manager@clinic.com" />
               </div>
               <div className="space-y-2">
                 <Label>Invoice Email (BCC)</Label>
-                <Input
-                  type="email"
-                  value={invoiceEmailBcc}
-                  onChange={e => setInvoiceEmailBcc(e.target.value)}
-                  placeholder="records@clinic.com"
-                />
+                <Input type="email" value={invoiceEmailBcc} onChange={e => setInvoiceEmailBcc(e.target.value)} placeholder="records@clinic.com" />
               </div>
               <div className="space-y-2">
                 <Label>Invoice Prefix</Label>
-                <Input
-                  value={invoicePrefix}
-                  onChange={e => setInvoicePrefix(e.target.value.toUpperCase())}
-                  placeholder={name ? getInitials(name) : 'INV'}
-                />
+                <Input value={invoicePrefix} onChange={e => setInvoicePrefix(e.target.value.toUpperCase())} placeholder={name ? getInitials(name) : 'INV'} />
                 <p className="text-xs text-muted-foreground">
                   Defaults to facility initials. e.g. {invoicePrefix || (name ? getInitials(name) : 'INV')}-2026-001
                 </p>
               </div>
               <div className="space-y-2">
                 <Label>Invoice Due (days)</Label>
-                <Input
-                  type="number"
-                  value={invoiceDueDays}
-                  onChange={e => setInvoiceDueDays(Number(e.target.value))}
-                  min={1}
-                  placeholder="15"
-                />
+                <Input type="number" value={invoiceDueDays} onChange={e => setInvoiceDueDays(Number(e.target.value))} min={1} placeholder="15" />
                 <p className="text-xs text-muted-foreground">
                   Number of days after invoice date that payment is due. Default: Net 15.
                 </p>
@@ -304,13 +252,7 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
 
         {/* Navigation buttons */}
         <div className="flex items-center justify-between pt-2">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleBack}
-            disabled={step === 0}
-          >
+          <Button type="button" variant="ghost" size="sm" onClick={handleBack} disabled={step === 0}>
             <ArrowLeft className="mr-1 h-4 w-4" /> Back
           </Button>
           <Button type="button" size="sm" onClick={handleNext}>

@@ -17,12 +17,17 @@ import { uploadContractFile, getContractSignedUrl, deleteContractFile } from '@/
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
+import { TermsSnapshot } from '@/types';
+import { generateId } from '@/lib/businessLogic';
+
 interface ContractsTabProps {
   facilityId: string;
   isDemo?: boolean;
+  facilityTerms?: TermsSnapshot;
+  onUpdateTerms?: (t: TermsSnapshot) => void;
 }
 
-export function ContractsTab({ facilityId, isDemo = false }: ContractsTabProps) {
+export function ContractsTab({ facilityId, isDemo = false, facilityTerms, onUpdateTerms }: ContractsTabProps) {
   const {
     contracts, contractTerms, checklistItems, loading,
     addContract, updateContract, deleteContract,
@@ -48,7 +53,10 @@ export function ContractsTab({ facilityId, isDemo = false }: ContractsTabProps) 
       {/* B) Key Terms Snapshot */}
       <KeyTermsSnapshot contracts={contracts} contractTerms={contractTerms} onUpsert={upsertTerms} />
 
-      {/* C) Checklist & Reminders */}
+      {/* C) Policies & Notes */}
+      <PoliciesSection facilityTerms={facilityTerms} facilityId={facilityId} onUpdateTerms={onUpdateTerms} />
+
+      {/* D) Checklist & Reminders */}
       <ChecklistSection
         items={checklistItems}
         facilityId={facilityId}
