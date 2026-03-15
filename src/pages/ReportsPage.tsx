@@ -97,9 +97,12 @@ export default function ReportsPage() {
   const totalShifts = shiftsPerFacility.reduce((s, d) => s + d.shifts, 0);
   const activeFacilities = shiftsPerFacility.length;
 
+  const totalAnticipated = revenueData.reduce((s, d) => s + d.anticipated, 0);
+
   const revenueChartConfig = {
     paid: { label: 'Paid', color: 'hsl(142, 71%, 45%)' },
     outstanding: { label: 'Outstanding', color: 'hsl(38, 92%, 50%)' },
+    anticipated: { label: 'Anticipated', color: 'hsl(215, 25%, 75%)' },
   };
 
   const paymentChartConfig = {
