@@ -247,7 +247,7 @@ export default function InvoiceDetailPage() {
             billTo={{
               facilityName: facility?.name || 'Unknown',
               contactName: billingContact?.name,
-              email: billingContact?.email,
+              email: billingEmail,
               address: facility?.address,
             }}
             invoiceNumber={invoice.invoice_number}
