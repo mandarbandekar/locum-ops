@@ -220,7 +220,34 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
 
           {step === 4 && (
             <>
-              <p className="text-sm text-muted-foreground">Invoice numbering and payment terms for this facility.</p>
+              <p className="text-sm text-muted-foreground">Invoice settings, email recipients, and payment terms for this facility.</p>
+              <div className="space-y-2">
+                <Label>Invoice Email (To)</Label>
+                <Input
+                  type="email"
+                  value={invoiceEmailTo}
+                  onChange={e => setInvoiceEmailTo(e.target.value)}
+                  placeholder="billing@clinic.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Invoice Email (CC)</Label>
+                <Input
+                  type="email"
+                  value={invoiceEmailCc}
+                  onChange={e => setInvoiceEmailCc(e.target.value)}
+                  placeholder="manager@clinic.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Invoice Email (BCC)</Label>
+                <Input
+                  type="email"
+                  value={invoiceEmailBcc}
+                  onChange={e => setInvoiceEmailBcc(e.target.value)}
+                  placeholder="records@clinic.com"
+                />
+              </div>
               <div className="space-y-2">
                 <Label>Invoice Prefix</Label>
                 <Input
