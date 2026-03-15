@@ -40,9 +40,22 @@ export default function ReportsPage() {
       const total = monthInvoices.reduce((sum, inv) => sum + inv.total_amount, 0);
       const paid = monthInvoices.filter(i => i.status === 'paid').reduce((sum, inv) => sum + inv.total_amount, 0);
       const outstanding = total - paid;
-      return { month: format(month, 'MMM yyyy'), total, paid, outstanding };
+
+      // Anticipated income from future proposed/booked shifts not yet invoiced
+      const invoicedShiftIds = new Set(
+        monthInvoices.flatMap(inv => (inv as any).line_items?.map((li: any) => li.shift_id) || [])
+      );
+      const anticipatedShifts = shifts.filter(s => {
+        const shiftDate = parseISO(s.start_datetime);
+        return isWithinInterval(shiftDate, { start: month, end: monthEnd }) &&
+          (s.status === 'proposed' || s.status === 'booked') &&
+          !invoicedShiftIds.has(s.id);
+      });
+      const anticipated = anticipatedShifts.reduce((sum, s) => sum + s.rate_applied, 0);
+
+      return { month: format(month, 'MMM yyyy'), total, paid, outstanding, anticipated };
     });
-  }, [months, invoices]);
+  }, [months, invoices, shifts]);
 
   const shiftsPerFacility = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -84,9 +97,12 @@ export default function ReportsPage() {
   const totalShifts = shiftsPerFacility.reduce((s, d) => s + d.shifts, 0);
   const activeFacilities = shiftsPerFacility.length;
 
+  const totalAnticipated = revenueData.reduce((s, d) => s + d.anticipated, 0);
+
   const revenueChartConfig = {
     paid: { label: 'Paid', color: 'hsl(142, 71%, 45%)' },
     outstanding: { label: 'Outstanding', color: 'hsl(38, 92%, 50%)' },
+    anticipated: { label: 'Anticipated', color: 'hsl(215, 25%, 75%)' },
   };
 
   const paymentChartConfig = {
@@ -159,9 +175,14 @@ export default function ReportsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Monthly Revenue</CardTitle>
-          <CardDescription>Paid vs outstanding invoice amounts</CardDescription>
+          <CardDescription>Paid vs outstanding invoice amounts · anticipated income shown separately</CardDescription>
         </CardHeader>
         <CardContent>
+          {totalAnticipated > 0 && (
+            <p className="text-xs text-muted-foreground mb-2">
+              Anticipated income: <span className="font-semibold">${totalAnticipated.toLocaleString()}</span> (not included in Total Revenue)
+            </p>
+          )}
           <ChartContainer config={revenueChartConfig} className="h-[300px] w-full">
             <BarChart data={revenueData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
@@ -170,6 +191,7 @@ export default function ReportsPage() {
               <ChartTooltip content={<ChartTooltipContent />} />
               <Bar dataKey="paid" stackId="a" fill="var(--color-paid)" radius={[0, 0, 0, 0]} />
               <Bar dataKey="outstanding" stackId="a" fill="var(--color-outstanding)" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="anticipated" fill="var(--color-anticipated)" radius={[4, 4, 0, 0]} fillOpacity={0.5} strokeDasharray="4 2" stroke="var(--color-anticipated)" />
             </BarChart>
           </ChartContainer>
         </CardContent>
