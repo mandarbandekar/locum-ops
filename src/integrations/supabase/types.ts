@@ -1890,6 +1890,7 @@ export type Database = {
         Row: {
           cancellation_policy_text: string
           created_at: string
+          custom_rates: Json
           facility_id: string
           holiday_rate: number
           id: string
@@ -1906,6 +1907,7 @@ export type Database = {
         Insert: {
           cancellation_policy_text?: string
           created_at?: string
+          custom_rates?: Json
           facility_id: string
           holiday_rate?: number
           id?: string
@@ -1922,6 +1924,7 @@ export type Database = {
         Update: {
           cancellation_policy_text?: string
           created_at?: string
+          custom_rates?: Json
           facility_id?: string
           holiday_rate?: number
           id?: string

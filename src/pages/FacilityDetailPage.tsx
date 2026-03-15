@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import { ContractsTab } from '@/components/contracts/ContractsTab';
 import { FacilityImportDialog } from '@/components/facility-import/FacilityImportDialog';
 import { FileUp } from 'lucide-react';
+import { RatesEditor, termsToRates, ratesToTermsFields, RateEntry } from '@/components/facilities/RatesEditor';
 
 export default function FacilityDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -32,6 +33,20 @@ export default function FacilityDetailPage() {
   const facilityTerms = terms.find(c => c.facility_id === id);
   const facilityShifts = shifts.filter(s => s.facility_id === id).sort((a, b) => new Date(b.start_datetime).getTime() - new Date(a.start_datetime).getTime());
   const facilityInvoices = invoices.filter(i => i.facility_id === id);
+
+  const handleSaveRates = (rateEntries: RateEntry[]) => {
+    const fields = ratesToTermsFields(rateEntries);
+    updateTerms({
+      id: facilityTerms?.id || generateId(),
+      facility_id: facility.id,
+      ...fields,
+      cancellation_policy_text: facilityTerms?.cancellation_policy_text || '',
+      overtime_policy_text: facilityTerms?.overtime_policy_text || '',
+      late_payment_policy_text: facilityTerms?.late_payment_policy_text || '',
+      special_notes: facilityTerms?.special_notes || '',
+    });
+    toast.success('Rates saved');
+  };
 
   return (
     <div>
@@ -50,20 +65,15 @@ export default function FacilityDetailPage() {
       <Tabs defaultValue="overview">
         <TabsList className="flex-wrap">
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="terms">Terms</TabsTrigger>
           <TabsTrigger value="shifts">Shifts ({facilityShifts.length})</TabsTrigger>
           <TabsTrigger value="invoices">Invoices ({facilityInvoices.length})</TabsTrigger>
-          <TabsTrigger value="contracts">Contracts</TabsTrigger>
+          <TabsTrigger value="contracts">Contract Vault & Terms</TabsTrigger>
           <TabsTrigger value="tech-access">Tech Access</TabsTrigger>
           <TabsTrigger value="clinic-access">Clinic Access</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-4">
-          <OverviewTab facility={facility} shifts={facilityShifts} contacts={facilityContacts} onUpdate={updateFacility} onAddContact={addContact} onUpdateContact={updateContact} onDeleteContact={deleteContact} facilityId={facility.id} />
-        </TabsContent>
-
-        <TabsContent value="terms" className="mt-4">
-          <TermsTab terms={facilityTerms} facilityId={facility.id} onUpdate={updateTerms} />
+          <OverviewTab facility={facility} shifts={facilityShifts} contacts={facilityContacts} onUpdate={updateFacility} onAddContact={addContact} onUpdateContact={updateContact} onDeleteContact={deleteContact} facilityId={facility.id} facilityTerms={facilityTerms} onSaveRates={handleSaveRates} />
         </TabsContent>
 
         <TabsContent value="shifts" className="mt-4">
@@ -75,7 +85,7 @@ export default function FacilityDetailPage() {
         </TabsContent>
 
         <TabsContent value="contracts" className="mt-4">
-          <ContractsTab facilityId={facility.id} />
+          <ContractsTab facilityId={facility.id} facilityTerms={facilityTerms} onUpdateTerms={updateTerms} />
         </TabsContent>
 
         <TabsContent value="tech-access" className="mt-4">
@@ -104,16 +114,19 @@ export default function FacilityDetailPage() {
 
 // ─── Overview Tab ──────────────────────────────────────────
 
-function OverviewTab({ facility, shifts, contacts, onUpdate, onAddContact, onUpdateContact, onDeleteContact, facilityId }: {
+function OverviewTab({ facility, shifts, contacts, onUpdate, onAddContact, onUpdateContact, onDeleteContact, facilityId, facilityTerms, onSaveRates }: {
   facility: any; shifts: any[]; contacts: FacilityContact[]; onUpdate: any;
   onAddContact: (c: Omit<FacilityContact, 'id'>) => void;
   onUpdateContact: (c: FacilityContact) => void;
   onDeleteContact: (id: string) => void;
   facilityId: string;
+  facilityTerms?: TermsSnapshot;
+  onSaveRates: (rates: RateEntry[]) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [notes, setNotes] = useState(facility.notes);
   const [status, setStatus] = useState(facility.status);
+  const [rates, setRates] = useState<RateEntry[]>(termsToRates(facilityTerms || {}));
 
   // Contact add/edit state
   const [showContactForm, setShowContactForm] = useState(false);
@@ -166,45 +179,54 @@ function OverviewTab({ facility, shifts, contacts, onUpdate, onAddContact, onUpd
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-base">Details</CardTitle>
-          {editing ? (
-            <Button size="sm" onClick={handleSave}><Save className="mr-1 h-3 w-3" /> Save</Button>
-          ) : (
-            <Button size="sm" variant="ghost" onClick={() => setEditing(true)}><Edit2 className="mr-1 h-3 w-3" /> Edit</Button>
-          )}
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div>
-            <Label className="text-xs text-muted-foreground">Status</Label>
+      <div className="space-y-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-base">Details</CardTitle>
             {editing ? (
-              <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="prospect">Prospect</SelectItem>
-                  <SelectItem value="paused">Paused</SelectItem>
-                </SelectContent>
-              </Select>
+              <Button size="sm" onClick={handleSave}><Save className="mr-1 h-3 w-3" /> Save</Button>
             ) : (
-              <p><StatusBadge status={facility.status} /></p>
+              <Button size="sm" variant="ghost" onClick={() => setEditing(true)}><Edit2 className="mr-1 h-3 w-3" /> Edit</Button>
             )}
-          </div>
-          <div>
-            <Label className="text-xs text-muted-foreground">Timezone</Label>
-            <p className="text-sm">{facility.timezone}</p>
-          </div>
-          <div>
-            <Label className="text-xs text-muted-foreground">Notes</Label>
-            {editing ? (
-              <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3} />
-            ) : (
-              <p className="text-sm">{facility.notes || 'No notes'}</p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div>
+              <Label className="text-xs text-muted-foreground">Status</Label>
+              {editing ? (
+                <Select value={status} onValueChange={setStatus}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="prospect">Prospect</SelectItem>
+                    <SelectItem value="paused">Paused</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <p><StatusBadge status={facility.status} /></p>
+              )}
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Timezone</Label>
+              <p className="text-sm">{facility.timezone}</p>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Notes</Label>
+              {editing ? (
+                <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3} />
+              ) : (
+                <p className="text-sm">{facility.notes || 'No notes'}</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Rates Editor */}
+        <RatesEditor
+          rates={rates}
+          onChange={setRates}
+          onSave={onSaveRates}
+        />
+      </div>
 
       <div className="space-y-4">
         {/* Contacts */}
@@ -325,42 +347,7 @@ function EditableFacilityName({ facility, onSave }: { facility: any; onSave: (na
 
 // (ContactsTab removed — contact is now managed in OverviewTab)
 
-// ─── Terms Tab ─────────────────────────────────────────────
-
-function TermsTab({ terms, facilityId, onUpdate }: { terms?: TermsSnapshot; facilityId: string; onUpdate: (c: TermsSnapshot) => void }) {
-  const [form, setForm] = useState<TermsSnapshot>(terms || {
-    id: generateId(), facility_id: facilityId, weekday_rate: 0, weekend_rate: 0,
-    partial_day_rate: 0, holiday_rate: 0, telemedicine_rate: 0,
-    cancellation_policy_text: '', overtime_policy_text: '', late_payment_policy_text: '', special_notes: '',
-  });
-
-  const handleSave = () => {
-    onUpdate(form);
-    toast.success('Terms saved');
-  };
-
-  return (
-    <Card>
-      <CardContent className="pt-6 space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div><Label>Weekday Rate ($)</Label><Input type="number" value={form.weekday_rate} onChange={e => setForm(p => ({ ...p, weekday_rate: Number(e.target.value) }))} /></div>
-          <div><Label>Weekend Rate ($)</Label><Input type="number" value={form.weekend_rate} onChange={e => setForm(p => ({ ...p, weekend_rate: Number(e.target.value) }))} /></div>
-        </div>
-        <div className="grid grid-cols-3 gap-4">
-          <div><Label>Partial Day Rate ($)</Label><Input type="number" value={form.partial_day_rate} onChange={e => setForm(p => ({ ...p, partial_day_rate: Number(e.target.value) }))} /></div>
-          <div><Label>Holiday Rate ($)</Label><Input type="number" value={form.holiday_rate} onChange={e => setForm(p => ({ ...p, holiday_rate: Number(e.target.value) }))} /></div>
-          <div><Label>Telemedicine Rate ($)</Label><Input type="number" value={form.telemedicine_rate} onChange={e => setForm(p => ({ ...p, telemedicine_rate: Number(e.target.value) }))} /></div>
-        </div>
-        <div><Label>Cancellation Policy</Label><Textarea value={form.cancellation_policy_text} onChange={e => setForm(p => ({ ...p, cancellation_policy_text: e.target.value }))} rows={2} /></div>
-        <div><Label>Overtime Policy</Label><Textarea value={form.overtime_policy_text} onChange={e => setForm(p => ({ ...p, overtime_policy_text: e.target.value }))} rows={2} /></div>
-        <div><Label>Late Payment Policy</Label><Textarea value={form.late_payment_policy_text} onChange={e => setForm(p => ({ ...p, late_payment_policy_text: e.target.value }))} rows={2} /></div>
-        <div><Label>Special Notes</Label><Textarea value={form.special_notes} onChange={e => setForm(p => ({ ...p, special_notes: e.target.value }))} rows={2} /></div>
-        <p className="text-xs text-muted-foreground italic">Saved terms for reference. Verify against the signed contract.</p>
-        <Button onClick={handleSave}>Save Terms</Button>
-      </CardContent>
-    </Card>
-  );
-}
+// (Terms tab removed — rates moved to Overview, policies moved to Contract Vault & Terms)
 
 // ─── Tech Access Tab ───────────────────────────────────────
 

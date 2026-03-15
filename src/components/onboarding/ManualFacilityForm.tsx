@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowRight, Loader2 } from 'lucide-react';
+import { RatesEditor, RateEntry, ratesToTermsFields } from '@/components/facilities/RatesEditor';
 import type { ManualFacilityInput } from '@/hooks/useManualSetup';
 
 interface Props {
@@ -19,11 +20,12 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
   const [billingEmailCc, setBillingEmailCc] = useState('');
   const [billingEmailBcc, setBillingEmailBcc] = useState('');
   const [address, setAddress] = useState('');
-  const [weekdayRate, setWeekdayRate] = useState('');
+  const [rates, setRates] = useState<RateEntry[]>([]);
   const [notes, setNotes] = useState('');
 
   const handleSubmit = async () => {
     if (!name.trim()) return;
+    const rateFields = ratesToTermsFields(rates);
     await onSave({
       name: name.trim(),
       contact_name: contactName.trim() || undefined,
@@ -31,7 +33,12 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
       billing_email_cc: billingEmailCc.trim() || undefined,
       billing_email_bcc: billingEmailBcc.trim() || undefined,
       address: address.trim() || undefined,
-      weekday_rate: weekdayRate ? parseFloat(weekdayRate) : undefined,
+      weekday_rate: rateFields.weekday_rate || undefined,
+      weekend_rate: rateFields.weekend_rate || undefined,
+      partial_day_rate: rateFields.partial_day_rate || undefined,
+      holiday_rate: rateFields.holiday_rate || undefined,
+      telemedicine_rate: rateFields.telemedicine_rate || undefined,
+      custom_rates: rateFields.custom_rates.length > 0 ? rateFields.custom_rates : undefined,
       notes: notes.trim() || undefined,
     });
   };
@@ -99,15 +106,8 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
           />
         </div>
         <div>
-          <Label>Weekday rate</Label>
-          <Input
-            type="number"
-            value={weekdayRate}
-            onChange={e => setWeekdayRate(e.target.value)}
-            placeholder="e.g. 800"
-            min={0}
-            step={50}
-          />
+          <Label className="mb-2 block">Shift Rates</Label>
+          <RatesEditor rates={rates} onChange={setRates} showCard={false} compact />
         </div>
         <div>
           <Label>Notes</Label>

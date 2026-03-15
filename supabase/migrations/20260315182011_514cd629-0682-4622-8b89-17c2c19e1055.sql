@@ -1,0 +1,1 @@
+ALTER TABLE public.terms_snapshots ADD COLUMN custom_rates jsonb NOT NULL DEFAULT '[]'::jsonb;

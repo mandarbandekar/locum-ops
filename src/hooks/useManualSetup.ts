@@ -20,6 +20,11 @@ export interface ManualFacilityInput {
   billing_email_bcc?: string;
   address?: string;
   weekday_rate?: number;
+  weekend_rate?: number;
+  partial_day_rate?: number;
+  holiday_rate?: number;
+  telemedicine_rate?: number;
+  custom_rates?: Array<{ label: string; amount: number }>;
   notes?: string;
 }
 
@@ -79,20 +84,22 @@ export function useManualSetup() {
         });
       }
 
-      // Create terms if rate provided
-      if (input.weekday_rate) {
+      // Create terms if any rate provided
+      const hasRates = input.weekday_rate || input.weekend_rate || input.partial_day_rate || input.holiday_rate || input.telemedicine_rate || (input.custom_rates && input.custom_rates.length > 0);
+      if (hasRates) {
         await db('terms_snapshots').insert({
           user_id: user.id,
           facility_id: facility.id,
-          weekday_rate: input.weekday_rate,
-          weekend_rate: 0,
-          partial_day_rate: 0,
-          holiday_rate: 0,
-          telemedicine_rate: 0,
+          weekday_rate: input.weekday_rate || 0,
+          weekend_rate: input.weekend_rate || 0,
+          partial_day_rate: input.partial_day_rate || 0,
+          holiday_rate: input.holiday_rate || 0,
+          telemedicine_rate: input.telemedicine_rate || 0,
           cancellation_policy_text: '',
           overtime_policy_text: '',
           late_payment_policy_text: '',
           special_notes: '',
+          custom_rates: input.custom_rates || [],
         } as any);
       }
 

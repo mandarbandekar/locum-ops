@@ -49,6 +49,7 @@ export interface TermsSnapshot {
   overtime_policy_text: string;
   late_payment_policy_text: string;
   special_notes: string;
+  custom_rates?: Array<{ label: string; amount: number }>;
 }
 
 export type ShiftStatus = 'proposed' | 'booked' | 'completed' | 'canceled';
