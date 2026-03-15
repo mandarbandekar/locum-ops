@@ -114,16 +114,19 @@ export default function FacilityDetailPage() {
 
 // ─── Overview Tab ──────────────────────────────────────────
 
-function OverviewTab({ facility, shifts, contacts, onUpdate, onAddContact, onUpdateContact, onDeleteContact, facilityId }: {
+function OverviewTab({ facility, shifts, contacts, onUpdate, onAddContact, onUpdateContact, onDeleteContact, facilityId, facilityTerms, onSaveRates }: {
   facility: any; shifts: any[]; contacts: FacilityContact[]; onUpdate: any;
   onAddContact: (c: Omit<FacilityContact, 'id'>) => void;
   onUpdateContact: (c: FacilityContact) => void;
   onDeleteContact: (id: string) => void;
   facilityId: string;
+  facilityTerms?: TermsSnapshot;
+  onSaveRates: (rates: RateEntry[]) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [notes, setNotes] = useState(facility.notes);
   const [status, setStatus] = useState(facility.status);
+  const [rates, setRates] = useState<RateEntry[]>(termsToRates(facilityTerms || {}));
 
   // Contact add/edit state
   const [showContactForm, setShowContactForm] = useState(false);
@@ -176,45 +179,54 @@ function OverviewTab({ facility, shifts, contacts, onUpdate, onAddContact, onUpd
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-base">Details</CardTitle>
-          {editing ? (
-            <Button size="sm" onClick={handleSave}><Save className="mr-1 h-3 w-3" /> Save</Button>
-          ) : (
-            <Button size="sm" variant="ghost" onClick={() => setEditing(true)}><Edit2 className="mr-1 h-3 w-3" /> Edit</Button>
-          )}
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div>
-            <Label className="text-xs text-muted-foreground">Status</Label>
+      <div className="space-y-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-base">Details</CardTitle>
             {editing ? (
-              <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="prospect">Prospect</SelectItem>
-                  <SelectItem value="paused">Paused</SelectItem>
-                </SelectContent>
-              </Select>
+              <Button size="sm" onClick={handleSave}><Save className="mr-1 h-3 w-3" /> Save</Button>
             ) : (
-              <p><StatusBadge status={facility.status} /></p>
+              <Button size="sm" variant="ghost" onClick={() => setEditing(true)}><Edit2 className="mr-1 h-3 w-3" /> Edit</Button>
             )}
-          </div>
-          <div>
-            <Label className="text-xs text-muted-foreground">Timezone</Label>
-            <p className="text-sm">{facility.timezone}</p>
-          </div>
-          <div>
-            <Label className="text-xs text-muted-foreground">Notes</Label>
-            {editing ? (
-              <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3} />
-            ) : (
-              <p className="text-sm">{facility.notes || 'No notes'}</p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div>
+              <Label className="text-xs text-muted-foreground">Status</Label>
+              {editing ? (
+                <Select value={status} onValueChange={setStatus}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="prospect">Prospect</SelectItem>
+                    <SelectItem value="paused">Paused</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <p><StatusBadge status={facility.status} /></p>
+              )}
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Timezone</Label>
+              <p className="text-sm">{facility.timezone}</p>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Notes</Label>
+              {editing ? (
+                <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3} />
+              ) : (
+                <p className="text-sm">{facility.notes || 'No notes'}</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Rates Editor */}
+        <RatesEditor
+          rates={rates}
+          onChange={setRates}
+          onSave={onSaveRates}
+        />
+      </div>
 
       <div className="space-y-4">
         {/* Contacts */}
