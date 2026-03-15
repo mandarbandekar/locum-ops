@@ -37,6 +37,9 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
   const [clinicAccess, setClinicAccess] = useState('');
   const [invoicePrefix, setInvoicePrefix] = useState('');
   const [invoiceDueDays, setInvoiceDueDays] = useState(15);
+  const [invoiceEmailTo, setInvoiceEmailTo] = useState('');
+  const [invoiceEmailCc, setInvoiceEmailCc] = useState('');
+  const [invoiceEmailBcc, setInvoiceEmailBcc] = useState('');
 
   const totalSteps = STEPS.length;
   const progress = ((step + 1) / totalSteps) * 100;
@@ -52,6 +55,7 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
     setPartialDayRate(''); setHolidayRate(''); setTelemedicineRate('');
     setTechComputer(''); setTechWifi(''); setTechPims('');
     setClinicAccess(''); setInvoicePrefix(''); setInvoiceDueDays(15);
+    setInvoiceEmailTo(''); setInvoiceEmailCc(''); setInvoiceEmailBcc('');
   };
 
   const handleSubmit = () => {
@@ -70,6 +74,9 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
       clinic_access_info: clinicAccess,
       invoice_prefix: prefix,
       invoice_due_days: invoiceDueDays,
+      invoice_email_to: invoiceEmailTo.trim(),
+      invoice_email_cc: invoiceEmailCc.trim(),
+      invoice_email_bcc: invoiceEmailBcc.trim(),
     });
     toast.success('Practice facility added');
     resetForm();
@@ -213,7 +220,34 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
 
           {step === 4 && (
             <>
-              <p className="text-sm text-muted-foreground">Invoice numbering and payment terms for this facility.</p>
+              <p className="text-sm text-muted-foreground">Invoice settings, email recipients, and payment terms for this facility.</p>
+              <div className="space-y-2">
+                <Label>Invoice Email (To)</Label>
+                <Input
+                  type="email"
+                  value={invoiceEmailTo}
+                  onChange={e => setInvoiceEmailTo(e.target.value)}
+                  placeholder="billing@clinic.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Invoice Email (CC)</Label>
+                <Input
+                  type="email"
+                  value={invoiceEmailCc}
+                  onChange={e => setInvoiceEmailCc(e.target.value)}
+                  placeholder="manager@clinic.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Invoice Email (BCC)</Label>
+                <Input
+                  type="email"
+                  value={invoiceEmailBcc}
+                  onChange={e => setInvoiceEmailBcc(e.target.value)}
+                  placeholder="records@clinic.com"
+                />
+              </div>
               <div className="space-y-2">
                 <Label>Invoice Prefix</Label>
                 <Input

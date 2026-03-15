@@ -16,6 +16,8 @@ export interface ManualFacilityInput {
   name: string;
   contact_name?: string;
   billing_email?: string;
+  billing_email_cc?: string;
+  billing_email_bcc?: string;
   address?: string;
   weekday_rate?: number;
   notes?: string;
@@ -55,16 +57,14 @@ export function useManualSetup() {
         clinic_access_info: '',
         invoice_prefix: prefix,
         invoice_due_days: 30,
+        invoice_email_to: input.billing_email || '',
+        invoice_email_cc: input.billing_email_cc || '',
+        invoice_email_bcc: input.billing_email_bcc || '',
       }).select().single();
 
       if (error) { toast.error(error.message); return null; }
       const facility = stripDbFields(data) as Facility;
       setFacilities(prev => [...prev, facility]);
-
-      // Set invoice email on facility if provided
-      if (input.billing_email) {
-        await db('facilities').update({ invoice_email_to: input.billing_email } as any).eq('id', facility.id);
-      }
 
       // Create contact if provided
       if (input.contact_name) {

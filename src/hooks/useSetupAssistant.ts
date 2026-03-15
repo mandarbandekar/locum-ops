@@ -193,6 +193,9 @@ export function useSetupAssistant() {
           clinic_access_info: '',
           invoice_prefix: (d.name || 'FAC').substring(0, 3).toUpperCase(),
           invoice_due_days: d.payment_terms_days || 30,
+          invoice_email_to: '',
+          invoice_email_cc: '',
+          invoice_email_bcc: '',
         });
 
         facilityNameMap[d.name?.toLowerCase() || ''] = facility.id;
