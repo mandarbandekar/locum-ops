@@ -20,7 +20,7 @@ import { CalendarEventStack } from '@/components/schedule/CalendarEventChip';
 const STORAGE_KEY = 'schedule-view-pref';
 
 export default function SchedulePage() {
-  const { shifts, facilities, addShift, updateShift, deleteShift, updateFacility } = useData();
+  const { shifts, facilities, terms, addShift, updateShift, deleteShift, updateFacility } = useData();
   const { getEventsForDay } = useCalendarEvents();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<'month' | 'week' | 'list' | 'confirmations'>(() => {
