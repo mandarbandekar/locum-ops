@@ -18,7 +18,6 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 
 import { TermsSnapshot } from '@/types';
-import { generateId } from '@/lib/businessLogic';
 
 interface ContractsTabProps {
   facilityId: string;
