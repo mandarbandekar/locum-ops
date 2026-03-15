@@ -215,10 +215,16 @@ export default function ReportsPage() {
           <CardDescription>Paid vs outstanding invoice amounts · anticipated income shown separately</CardDescription>
         </CardHeader>
         <CardContent>
-          {totalAnticipated > 0 && (
-            <p className="text-xs text-muted-foreground mb-2">
-              Anticipated income: <span className="font-semibold">${totalAnticipated.toLocaleString()}</span> (not included in Total Revenue)
-            </p>
+          {(totalAnticipated > 0 || totalAnticipatedTax > 0) && (
+            <div className="flex flex-wrap gap-4 text-xs text-muted-foreground mb-2">
+              {totalAnticipated > 0 && (
+                <span>Anticipated income: <span className="font-semibold">${totalAnticipated.toLocaleString()}</span></span>
+              )}
+              {totalAnticipatedTax > 0 && (
+                <span>Anticipated taxes ({taxSetAsidePercent}%): <span className="font-semibold">${totalAnticipatedTax.toLocaleString()}</span></span>
+              )}
+              <span className="italic">(not included in Total Revenue)</span>
+            </div>
           )}
           <ChartContainer config={revenueChartConfig} className="h-[300px] w-full">
             <BarChart data={revenueData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
@@ -229,6 +235,7 @@ export default function ReportsPage() {
               <Bar dataKey="paid" stackId="a" fill="var(--color-paid)" radius={[0, 0, 0, 0]} />
               <Bar dataKey="outstanding" stackId="a" fill="var(--color-outstanding)" radius={[4, 4, 0, 0]} />
               <Bar dataKey="anticipated" fill="var(--color-anticipated)" radius={[4, 4, 0, 0]} fillOpacity={0.5} strokeDasharray="4 2" stroke="var(--color-anticipated)" />
+              <Bar dataKey="anticipatedTax" fill="var(--color-anticipatedTax)" radius={[4, 4, 0, 0]} fillOpacity={0.5} strokeDasharray="4 2" stroke="var(--color-anticipatedTax)" />
             </BarChart>
           </ChartContainer>
         </CardContent>
