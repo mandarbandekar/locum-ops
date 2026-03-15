@@ -195,10 +195,10 @@ export default function InvoiceDetailPage() {
       )}
 
       {/* Missing billing email warning */}
-      {!billingContact?.email && invoice.status !== 'paid' && (
+      {!billingEmail && invoice.status !== 'paid' && (
         <div className="mb-4 rounded-md border border-warning/50 bg-warning/5 p-3 flex items-center gap-2 max-w-2xl print:hidden">
           <AlertTriangle className="h-4 w-4 text-warning shrink-0" />
-          <p className="text-sm">Billing contact missing — <Button variant="link" size="sm" className="h-auto p-0" onClick={() => navigate(`/facilities/${invoice.facility_id}`)}>add one in Facility Overview</Button> to send faster.</p>
+          <p className="text-sm">Billing email missing — <Button variant="link" size="sm" className="h-auto p-0" onClick={() => navigate(`/facilities/${invoice.facility_id}`)}>add one in Invoice Billing Contact and Settings</Button> to send faster.</p>
         </div>
       )}
 
