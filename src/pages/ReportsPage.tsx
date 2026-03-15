@@ -40,9 +40,22 @@ export default function ReportsPage() {
       const total = monthInvoices.reduce((sum, inv) => sum + inv.total_amount, 0);
       const paid = monthInvoices.filter(i => i.status === 'paid').reduce((sum, inv) => sum + inv.total_amount, 0);
       const outstanding = total - paid;
-      return { month: format(month, 'MMM yyyy'), total, paid, outstanding };
+
+      // Anticipated income from future proposed/booked shifts not yet invoiced
+      const invoicedShiftIds = new Set(
+        monthInvoices.flatMap(inv => (inv as any).line_items?.map((li: any) => li.shift_id) || [])
+      );
+      const anticipatedShifts = shifts.filter(s => {
+        const shiftDate = parseISO(s.start_datetime);
+        return isWithinInterval(shiftDate, { start: month, end: monthEnd }) &&
+          (s.status === 'proposed' || s.status === 'booked') &&
+          !invoicedShiftIds.has(s.id);
+      });
+      const anticipated = anticipatedShifts.reduce((sum, s) => sum + s.rate_applied, 0);
+
+      return { month: format(month, 'MMM yyyy'), total, paid, outstanding, anticipated };
     });
-  }, [months, invoices]);
+  }, [months, invoices, shifts]);
 
   const shiftsPerFacility = useMemo(() => {
     const counts: Record<string, number> = {};
