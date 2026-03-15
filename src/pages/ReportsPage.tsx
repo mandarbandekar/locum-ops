@@ -133,11 +133,13 @@ export default function ReportsPage() {
   const activeFacilities = shiftsPerFacility.length;
 
   const totalAnticipated = revenueData.reduce((s, d) => s + d.anticipated, 0);
+  const totalAnticipatedTax = revenueData.reduce((s, d) => s + d.anticipatedTax, 0);
 
   const revenueChartConfig = {
     paid: { label: 'Paid', color: 'hsl(142, 71%, 45%)' },
     outstanding: { label: 'Outstanding', color: 'hsl(38, 92%, 50%)' },
-    anticipated: { label: 'Anticipated', color: 'hsl(215, 25%, 75%)' },
+    anticipated: { label: 'Anticipated Income', color: 'hsl(215, 25%, 75%)' },
+    anticipatedTax: { label: 'Anticipated Taxes', color: 'hsl(0, 60%, 65%)' },
   };
 
   const paymentChartConfig = {
