@@ -321,6 +321,7 @@ export default function SchedulePage() {
         onOpenChange={setShowAdd}
         facilities={facilities}
         shifts={shifts}
+        terms={terms}
         onSave={handleSaveShift}
       />
 
