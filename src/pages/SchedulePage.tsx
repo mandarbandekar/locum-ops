@@ -20,7 +20,7 @@ import { CalendarEventStack } from '@/components/schedule/CalendarEventChip';
 const STORAGE_KEY = 'schedule-view-pref';
 
 export default function SchedulePage() {
-  const { shifts, facilities, addShift, updateShift, deleteShift, updateFacility } = useData();
+  const { shifts, facilities, terms, addShift, updateShift, deleteShift, updateFacility } = useData();
   const { getEventsForDay } = useCalendarEvents();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<'month' | 'week' | 'list' | 'confirmations'>(() => {
@@ -321,6 +321,7 @@ export default function SchedulePage() {
         onOpenChange={setShowAdd}
         facilities={facilities}
         shifts={shifts}
+        terms={terms}
         onSave={handleSaveShift}
       />
 
@@ -330,6 +331,7 @@ export default function SchedulePage() {
           onOpenChange={() => setEditShift(null)}
           facilities={facilities}
           shifts={shifts}
+          terms={terms}
           existing={shifts.find(s => s.id === editShift)}
           onSave={handleSaveShift}
           onDelete={(id) => { deleteShift(id); setEditShift(null); toast.success('Shift deleted'); }}
