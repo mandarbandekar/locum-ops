@@ -21,7 +21,7 @@ const STEPS = [
 ];
 
 export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
-  const { addFacility } = useData();
+  const { addFacility, updateTerms } = useData();
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
   const [status, setStatus] = useState<FacilityStatus>('prospect');
