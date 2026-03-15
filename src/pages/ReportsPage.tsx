@@ -1,10 +1,12 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useData } from '@/contexts/DataContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from 'recharts';
-import { format, parseISO, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths, isWithinInterval } from 'date-fns';
+import { format, parseISO, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths, addMonths, isWithinInterval } from 'date-fns';
 import { DollarSign, TrendingUp, Calendar, Building2 } from 'lucide-react';
 
 const COLORS = [
@@ -18,17 +20,46 @@ const COLORS = [
   'hsl(30, 70%, 50%)',
 ];
 
+const db = (table: string) => supabase.from(table as any);
+
 export default function ReportsPage() {
   const { shifts, invoices, facilities } = useData();
+  const { user, isDemo } = useAuth();
   const [monthRange, setMonthRange] = useState('6');
+  const [taxSetAsidePercent, setTaxSetAsidePercent] = useState<number>(0);
 
+  // Fetch tax set-aside settings
+  useEffect(() => {
+    if (isDemo || !user) return;
+    const currentYear = new Date().getFullYear();
+    db('tax_settings')
+      .select('set_aside_mode, set_aside_percent, set_aside_fixed_monthly')
+      .eq('user_id', user.id)
+      .eq('tax_year', currentYear)
+      .maybeSingle()
+      .then(({ data }: { data: any }) => {
+        if (data && data.set_aside_mode === 'percent') {
+          setTaxSetAsidePercent(data.set_aside_percent || 0);
+        }
+      });
+  }, [user, isDemo]);
+
+  // Extend range to include future months that have shifts
   const months = useMemo(() => {
     const now = new Date();
-    return eachMonthOfInterval({
-      start: subMonths(startOfMonth(now), parseInt(monthRange) - 1),
-      end: endOfMonth(now),
+    const pastStart = subMonths(startOfMonth(now), parseInt(monthRange) - 1);
+    // Find the latest shift date to determine how far into the future to show
+    const futureShifts = shifts.filter(s => s.status === 'proposed' || s.status === 'booked');
+    let futureEnd = endOfMonth(now);
+    futureShifts.forEach(s => {
+      const d = parseISO(s.start_datetime);
+      if (d > futureEnd) futureEnd = endOfMonth(d);
     });
-  }, [monthRange]);
+    // Cap at 6 months into the future
+    const maxFuture = endOfMonth(addMonths(now, 6));
+    if (futureEnd > maxFuture) futureEnd = maxFuture;
+    return eachMonthOfInterval({ start: pastStart, end: futureEnd });
+  }, [monthRange, shifts]);
 
   const revenueData = useMemo(() => {
     return months.map(month => {
@@ -53,9 +84,13 @@ export default function ReportsPage() {
       });
       const anticipated = anticipatedShifts.reduce((sum, s) => sum + s.rate_applied, 0);
 
-      return { month: format(month, 'MMM yyyy'), total, paid, outstanding, anticipated };
+      const anticipatedTax = taxSetAsidePercent > 0
+        ? Math.round((taxSetAsidePercent / 100) * anticipated * 100) / 100
+        : 0;
+
+      return { month: format(month, 'MMM yyyy'), total, paid, outstanding, anticipated, anticipatedTax };
     });
-  }, [months, invoices, shifts]);
+  }, [months, invoices, shifts, taxSetAsidePercent]);
 
   const shiftsPerFacility = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -98,11 +133,13 @@ export default function ReportsPage() {
   const activeFacilities = shiftsPerFacility.length;
 
   const totalAnticipated = revenueData.reduce((s, d) => s + d.anticipated, 0);
+  const totalAnticipatedTax = revenueData.reduce((s, d) => s + d.anticipatedTax, 0);
 
   const revenueChartConfig = {
     paid: { label: 'Paid', color: 'hsl(142, 71%, 45%)' },
     outstanding: { label: 'Outstanding', color: 'hsl(38, 92%, 50%)' },
-    anticipated: { label: 'Anticipated', color: 'hsl(215, 25%, 75%)' },
+    anticipated: { label: 'Anticipated Income', color: 'hsl(215, 25%, 75%)' },
+    anticipatedTax: { label: 'Anticipated Taxes', color: 'hsl(0, 60%, 65%)' },
   };
 
   const paymentChartConfig = {
@@ -178,10 +215,16 @@ export default function ReportsPage() {
           <CardDescription>Paid vs outstanding invoice amounts · anticipated income shown separately</CardDescription>
         </CardHeader>
         <CardContent>
-          {totalAnticipated > 0 && (
-            <p className="text-xs text-muted-foreground mb-2">
-              Anticipated income: <span className="font-semibold">${totalAnticipated.toLocaleString()}</span> (not included in Total Revenue)
-            </p>
+          {(totalAnticipated > 0 || totalAnticipatedTax > 0) && (
+            <div className="flex flex-wrap gap-4 text-xs text-muted-foreground mb-2">
+              {totalAnticipated > 0 && (
+                <span>Anticipated income: <span className="font-semibold">${totalAnticipated.toLocaleString()}</span></span>
+              )}
+              {totalAnticipatedTax > 0 && (
+                <span>Anticipated taxes ({taxSetAsidePercent}%): <span className="font-semibold">${totalAnticipatedTax.toLocaleString()}</span></span>
+              )}
+              <span className="italic">(not included in Total Revenue)</span>
+            </div>
           )}
           <ChartContainer config={revenueChartConfig} className="h-[300px] w-full">
             <BarChart data={revenueData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
@@ -192,6 +235,7 @@ export default function ReportsPage() {
               <Bar dataKey="paid" stackId="a" fill="var(--color-paid)" radius={[0, 0, 0, 0]} />
               <Bar dataKey="outstanding" stackId="a" fill="var(--color-outstanding)" radius={[4, 4, 0, 0]} />
               <Bar dataKey="anticipated" fill="var(--color-anticipated)" radius={[4, 4, 0, 0]} fillOpacity={0.5} strokeDasharray="4 2" stroke="var(--color-anticipated)" />
+              <Bar dataKey="anticipatedTax" fill="var(--color-anticipatedTax)" radius={[4, 4, 0, 0]} fillOpacity={0.5} strokeDasharray="4 2" stroke="var(--color-anticipatedTax)" />
             </BarChart>
           </ChartContainer>
         </CardContent>
