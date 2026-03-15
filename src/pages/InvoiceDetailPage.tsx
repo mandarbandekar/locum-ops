@@ -180,7 +180,7 @@ export default function InvoiceDetailPage() {
       {/* Checklist for drafts */}
       {isDraft && (
         <div className="mb-6 max-w-2xl print:hidden">
-          <ReadyToSendChecklist items={buildChecklistItems(profile, invoice, items, billingContact, facility)} />
+          <ReadyToSendChecklist items={buildChecklistItems(profile, invoice, items, { email: billingEmail, name: billingContact?.name || '' }, facility)} />
         </div>
       )}
 
