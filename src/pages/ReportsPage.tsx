@@ -84,9 +84,13 @@ export default function ReportsPage() {
       });
       const anticipated = anticipatedShifts.reduce((sum, s) => sum + s.rate_applied, 0);
 
-      return { month: format(month, 'MMM yyyy'), total, paid, outstanding, anticipated };
+      const anticipatedTax = taxSetAsidePercent > 0
+        ? Math.round((taxSetAsidePercent / 100) * anticipated * 100) / 100
+        : 0;
+
+      return { month: format(month, 'MMM yyyy'), total, paid, outstanding, anticipated, anticipatedTax };
     });
-  }, [months, invoices, shifts]);
+  }, [months, invoices, shifts, taxSetAsidePercent]);
 
   const shiftsPerFacility = useMemo(() => {
     const counts: Record<string, number> = {};
