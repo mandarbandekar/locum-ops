@@ -55,6 +55,7 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
     setPartialDayRate(''); setHolidayRate(''); setTelemedicineRate('');
     setTechComputer(''); setTechWifi(''); setTechPims('');
     setClinicAccess(''); setInvoicePrefix(''); setInvoiceDueDays(15);
+    setInvoiceEmailTo(''); setInvoiceEmailCc(''); setInvoiceEmailBcc('');
   };
 
   const handleSubmit = () => {
