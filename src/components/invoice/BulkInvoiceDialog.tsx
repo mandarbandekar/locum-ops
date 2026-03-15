@@ -117,9 +117,6 @@ export function BulkInvoiceDialog({ open, onOpenChange, preselectedFacilityId }:
           share_token_created_at: null,
           share_token_revoked_at: null,
           invoice_type: 'bulk',
-          billing_email_to: facility.invoice_email_to || '',
-          billing_email_cc: facility.invoice_email_cc || '',
-          billing_email_bcc: facility.invoice_email_bcc || '',
         },
         lineItemsData
       );

@@ -32,7 +32,7 @@ describe('detectShiftConflicts', () => {
 });
 
 describe('computeInvoiceStatus', () => {
-  const base = { invoice_date: '', balance_due: 0, notes: '', share_token: null, share_token_created_at: null, share_token_revoked_at: null, invoice_type: 'single' as const, billing_email_to: '', billing_email_cc: '', billing_email_bcc: '' };
+  const base = { invoice_date: '', balance_due: 0, notes: '', share_token: null, share_token_created_at: null, share_token_revoked_at: null, invoice_type: 'single' as const };
 
   it('returns draft for draft invoices', () => {
     const inv: Invoice = { id: '1', facility_id: 'c1', invoice_number: 'INV-001', period_start: '', period_end: '', total_amount: 100, status: 'draft', sent_at: null, paid_at: null, due_date: null, ...base };
@@ -56,7 +56,7 @@ describe('computeInvoiceStatus', () => {
 });
 
 describe('generateInvoiceNumber', () => {
-  const base = { invoice_date: '', balance_due: 0, notes: '', share_token: null, share_token_created_at: null, share_token_revoked_at: null, invoice_type: 'single' as const, billing_email_to: '', billing_email_cc: '', billing_email_bcc: '' };
+  const base = { invoice_date: '', balance_due: 0, notes: '', share_token: null, share_token_created_at: null, share_token_revoked_at: null, invoice_type: 'single' as const };
   it('generates sequential numbers', () => {
     const existing: Invoice[] = [
       { id: '1', facility_id: 'c1', invoice_number: `INV-${new Date().getFullYear()}-001`, period_start: '', period_end: '', total_amount: 0, status: 'draft', sent_at: null, paid_at: null, due_date: null, ...base },

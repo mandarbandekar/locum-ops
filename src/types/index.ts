@@ -95,9 +95,6 @@ export interface Invoice {
   share_token_created_at: string | null;
   share_token_revoked_at: string | null;
   invoice_type: InvoiceType;
-  billing_email_to: string;
-  billing_email_cc: string;
-  billing_email_bcc: string;
 }
 
 export interface InvoiceLineItem {
