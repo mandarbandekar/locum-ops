@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import { useData } from '@/contexts/DataContext';
+import { generateId } from '@/lib/businessLogic';
 import { FacilityStatus } from '@/types';
 import { toast } from 'sonner';
 import { ArrowLeft, ArrowRight, SkipForward } from 'lucide-react';
@@ -20,7 +21,7 @@ const STEPS = [
 ];
 
 export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
-  const { addFacility } = useData();
+  const { addFacility, updateTerms } = useData();
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
   const [status, setStatus] = useState<FacilityStatus>('prospect');
@@ -64,9 +65,13 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
       setStep(0);
       return;
     }
+
     const prefix = invoicePrefix || getInitials(name);
+    const hasAnyTermsInput = [weekdayRate, weekendRate, partialDayRate, holidayRate, telemedicineRate]
+      .some((value) => value.trim() !== '');
+
     try {
-      await addFacility({
+      const facility = await addFacility({
         name, status, address, timezone: 'America/Los_Angeles', notes,
         outreach_last_sent_at: null,
         tech_computer_info: techComputer,
@@ -79,6 +84,23 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
         invoice_email_cc: invoiceEmailCc.trim(),
         invoice_email_bcc: invoiceEmailBcc.trim(),
       });
+
+      if (hasAnyTermsInput) {
+        await updateTerms({
+          id: generateId(),
+          facility_id: facility.id,
+          weekday_rate: Number(weekdayRate) || 0,
+          weekend_rate: Number(weekendRate) || 0,
+          partial_day_rate: Number(partialDayRate) || 0,
+          holiday_rate: Number(holidayRate) || 0,
+          telemedicine_rate: Number(telemedicineRate) || 0,
+          cancellation_policy_text: '',
+          overtime_policy_text: '',
+          late_payment_policy_text: '',
+          special_notes: '',
+        });
+      }
+
       toast.success('Practice facility added');
       resetForm();
       onOpenChange(false);
