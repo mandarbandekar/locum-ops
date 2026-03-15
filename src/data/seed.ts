@@ -18,7 +18,7 @@ export const starterContacts: FacilityContact[] = [
 ];
 
 export const starterTerms: TermsSnapshot[] = [
-  { id: 'cs1', facility_id: 'c1', weekday_rate: 850, weekend_rate: 1100, partial_day_rate: 500, holiday_rate: 1400, telemedicine_rate: 600, cancellation_policy_text: '48-hour notice required for cancellation without penalty.', overtime_policy_text: 'Time-and-a-half after 10 hours.', late_payment_policy_text: '1.5% monthly interest on balances over 30 days.', special_notes: 'Current credentials required.' },
+  { id: 'cs1', facility_id: 'c1', weekday_rate: 850, weekend_rate: 1100, partial_day_rate: 500, holiday_rate: 1400, telemedicine_rate: 600, cancellation_policy_text: '48-hour notice required for cancellation without penalty.', overtime_policy_text: 'Time-and-a-half after 10 hours.', late_payment_policy_text: '1.5% monthly interest on balances over 30 days.', special_notes: 'Current credentials required.', custom_rates: [] },
 ];
 
 export const starterShifts: Shift[] = [
