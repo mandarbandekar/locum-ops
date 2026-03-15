@@ -7,24 +7,32 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { AlertTriangle, Trash2, CalendarDays } from 'lucide-react';
+import { AlertTriangle, Trash2, CalendarDays, DollarSign } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
-import { ShiftStatus, SHIFT_COLORS, ShiftColor } from '@/types';
+import { ShiftStatus, SHIFT_COLORS, ShiftColor, TermsSnapshot } from '@/types';
 import { detectShiftConflicts } from '@/lib/businessLogic';
 import { cn } from '@/lib/utils';
+import { termsToRates, RateEntry } from '@/components/facilities/RatesEditor';
 
 interface ShiftFormDialogProps {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   facilities: any[];
   shifts: any[];
+  terms: TermsSnapshot[];
   existing?: any;
   onSave: (s: any) => void;
   onDelete?: (id: string) => void;
 }
 
-export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, existing, onSave, onDelete }: ShiftFormDialogProps) {
+function buildRateOptions(terms: TermsSnapshot[], facilityId: string): RateEntry[] {
+  const facilityTerms = terms.find(t => t.facility_id === facilityId);
+  if (!facilityTerms) return [];
+  return termsToRates(facilityTerms).filter(r => r.amount > 0);
+}
+
+export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms, existing, onSave, onDelete }: ShiftFormDialogProps) {
   const [facilityId, setFacilityId] = useState(existing?.facility_id || facilities[0]?.id || '');
   const [selectedDates, setSelectedDates] = useState<Date[]>(
     existing ? [new Date(existing.start_datetime)] : []
@@ -32,13 +40,24 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, existi
   const [startTime, setStartTime] = useState(existing ? format(new Date(existing.start_datetime), 'HH:mm') : '08:00');
   const [endTime, setEndTime] = useState(existing ? format(new Date(existing.end_datetime), 'HH:mm') : '18:00');
   const [status, setStatus] = useState<ShiftStatus>(existing?.status || 'proposed');
-  const [rate, setRate] = useState(existing?.rate_applied?.toString() || '850');
+  const [rate, setRate] = useState(existing?.rate_applied?.toString() || '');
   const [notes, setNotes] = useState(existing?.notes || '');
   const [color, setColor] = useState<ShiftColor>(existing?.color || 'blue');
 
   const isMultiMode = !existing;
 
-  // For conflict detection, check the first selected date
+  const rateOptions = useMemo(() => buildRateOptions(terms, facilityId), [terms, facilityId]);
+
+  // When facility changes in create mode, reset rate if current rate doesn't match new facility's options
+  const handleFacilityChange = (newFacilityId: string) => {
+    setFacilityId(newFacilityId);
+    const newOptions = buildRateOptions(terms, newFacilityId);
+    if (newOptions.length > 0 && !newOptions.some(o => o.amount.toString() === rate)) {
+      setRate(newOptions[0].amount.toString());
+    }
+  };
+
+  // For conflict detection
   const firstDate = selectedDates[0] ? format(selectedDates[0], 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
   const startDt = `${firstDate}T${startTime}:00`;
   const endDt = `${firstDate}T${endTime}:00`;
@@ -52,7 +71,6 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, existi
     e.preventDefault();
     
     if (existing) {
-      // Edit mode — single date
       const date = format(selectedDates[0] || new Date(), 'yyyy-MM-dd');
       const shift = {
         ...existing,
@@ -66,7 +84,6 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, existi
       };
       onSave(shift);
     } else {
-      // Create mode — multiple dates
       for (const d of selectedDates) {
         const date = format(d, 'yyyy-MM-dd');
         const shift = {
@@ -90,7 +107,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, existi
         <DialogHeader><DialogTitle>{existing ? 'Edit Shift' : 'Add Shift'}</DialogTitle></DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div><Label>Facility</Label>
-            <Select value={facilityId} onValueChange={setFacilityId}>
+            <Select value={facilityId} onValueChange={handleFacilityChange}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {facilities.map(c => (
@@ -159,7 +176,44 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, existi
                 </SelectContent>
               </Select>
             </div>
-            <div><Label>Rate ($)</Label><Input type="number" value={rate} onChange={e => setRate(e.target.value)} /></div>
+            <div>
+              <Label>Rate ($)</Label>
+              {rateOptions.length > 0 ? (
+                <div className="space-y-1.5">
+                  <Select
+                    value={rateOptions.some(o => o.amount.toString() === rate) ? rate : 'custom'}
+                    onValueChange={(v) => {
+                      if (v !== 'custom') setRate(v);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select rate" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {rateOptions.map((opt, i) => (
+                        <SelectItem key={`${opt.type}-${i}`} value={opt.amount.toString()}>
+                          {opt.label} — ${opt.amount.toLocaleString()}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="custom">Custom amount</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <div className="relative">
+                    <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                    <Input
+                      type="number"
+                      value={rate}
+                      onChange={e => setRate(e.target.value)}
+                      className="pl-7"
+                      min={0}
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <Input type="number" value={rate} onChange={e => setRate(e.target.value)} placeholder="0" min={0} />
+              )}
+            </div>
           </div>
           <div><Label>Notes</Label><Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} /></div>
           <div>
