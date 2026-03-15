@@ -59,13 +59,14 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
           />
         </div>
         <div>
-          <Label>Billing email</Label>
+          <Label>Invoice email (To)</Label>
           <Input
             type="email"
             value={billingEmail}
             onChange={e => setBillingEmail(e.target.value)}
             placeholder="billing@clinic.com"
           />
+          <p className="text-xs text-muted-foreground mt-1">Where invoices will be sent for this practice.</p>
         </div>
         <div>
           <Label>Address</Label>

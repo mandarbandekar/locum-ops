@@ -36,12 +36,11 @@ describe('Settings IA', () => {
     expect(profileFields).toContain('company_name');
   });
 
-  it('Payment settings are separated from invoicing', () => {
-    const invoicingPath = SETTINGS_LINKS.find(l => l.label === 'Invoicing')?.to;
+  it('Invoice settings are per-facility, not in global settings', () => {
+    const invoicingLink = SETTINGS_LINKS.find(l => l.label === 'Invoicing');
+    expect(invoicingLink).toBeUndefined();
     const paymentsPath = SETTINGS_LINKS.find(l => l.label === 'Payments')?.to;
-    expect(invoicingPath).toBe('/settings/invoicing');
     expect(paymentsPath).toBe('/settings/payments');
-    expect(invoicingPath).not.toBe(paymentsPath);
   });
 
   it('Reminders remain centralized in one section', () => {

@@ -1,5 +1,5 @@
 import { NavLink } from '@/components/NavLink';
-import { User, CalendarDays, FileText, CreditCard, Bell, Briefcase, Shield, Settings } from 'lucide-react';
+import { User, CalendarDays, CreditCard, Bell, Briefcase, Shield, Settings } from 'lucide-react';
 
 const settingsLinks = [
   { to: '/settings/profile', label: 'Profile', icon: User },

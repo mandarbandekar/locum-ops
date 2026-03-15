@@ -81,7 +81,7 @@ function AuthenticatedApp() {
           {/* Settings */}
           <Route path="/settings/profile" element={<SettingsProfilePage />} />
           <Route path="/settings/scheduling" element={<SettingsSchedulingPage />} />
-          <Route path="/settings/invoicing" element={<SettingsInvoicingPage />} />
+          <Route path="/settings/invoicing" element={<Navigate to="/settings/profile" replace />} />
           <Route path="/settings/payments" element={<SettingsPaymentsPage />} />
           <Route path="/settings/reminders" element={<SettingsRemindersPage />} />
           <Route path="/settings/business-taxes" element={<SettingsBusinessTaxesPage />} />
