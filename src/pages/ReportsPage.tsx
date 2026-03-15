@@ -175,9 +175,14 @@ export default function ReportsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Monthly Revenue</CardTitle>
-          <CardDescription>Paid vs outstanding invoice amounts</CardDescription>
+          <CardDescription>Paid vs outstanding invoice amounts · anticipated income shown separately</CardDescription>
         </CardHeader>
         <CardContent>
+          {totalAnticipated > 0 && (
+            <p className="text-xs text-muted-foreground mb-2">
+              Anticipated income: <span className="font-semibold">${totalAnticipated.toLocaleString()}</span> (not included in Total Revenue)
+            </p>
+          )}
           <ChartContainer config={revenueChartConfig} className="h-[300px] w-full">
             <BarChart data={revenueData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
@@ -186,6 +191,7 @@ export default function ReportsPage() {
               <ChartTooltip content={<ChartTooltipContent />} />
               <Bar dataKey="paid" stackId="a" fill="var(--color-paid)" radius={[0, 0, 0, 0]} />
               <Bar dataKey="outstanding" stackId="a" fill="var(--color-outstanding)" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="anticipated" fill="var(--color-anticipated)" radius={[4, 4, 0, 0]} fillOpacity={0.5} strokeDasharray="4 2" stroke="var(--color-anticipated)" />
             </BarChart>
           </ChartContainer>
         </CardContent>
