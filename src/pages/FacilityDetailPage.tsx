@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import { ContractsTab } from '@/components/contracts/ContractsTab';
 import { FacilityImportDialog } from '@/components/facility-import/FacilityImportDialog';
 import { FileUp } from 'lucide-react';
+import { RatesEditor, termsToRates, ratesToTermsFields, RateEntry } from '@/components/facilities/RatesEditor';
 
 export default function FacilityDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -32,6 +33,20 @@ export default function FacilityDetailPage() {
   const facilityTerms = terms.find(c => c.facility_id === id);
   const facilityShifts = shifts.filter(s => s.facility_id === id).sort((a, b) => new Date(b.start_datetime).getTime() - new Date(a.start_datetime).getTime());
   const facilityInvoices = invoices.filter(i => i.facility_id === id);
+
+  const handleSaveRates = (rateEntries: RateEntry[]) => {
+    const fields = ratesToTermsFields(rateEntries);
+    updateTerms({
+      id: facilityTerms?.id || generateId(),
+      facility_id: facility.id,
+      ...fields,
+      cancellation_policy_text: facilityTerms?.cancellation_policy_text || '',
+      overtime_policy_text: facilityTerms?.overtime_policy_text || '',
+      late_payment_policy_text: facilityTerms?.late_payment_policy_text || '',
+      special_notes: facilityTerms?.special_notes || '',
+    });
+    toast.success('Rates saved');
+  };
 
   return (
     <div>
@@ -50,20 +65,15 @@ export default function FacilityDetailPage() {
       <Tabs defaultValue="overview">
         <TabsList className="flex-wrap">
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="terms">Terms</TabsTrigger>
           <TabsTrigger value="shifts">Shifts ({facilityShifts.length})</TabsTrigger>
           <TabsTrigger value="invoices">Invoices ({facilityInvoices.length})</TabsTrigger>
-          <TabsTrigger value="contracts">Contracts</TabsTrigger>
+          <TabsTrigger value="contracts">Contract Vault & Terms</TabsTrigger>
           <TabsTrigger value="tech-access">Tech Access</TabsTrigger>
           <TabsTrigger value="clinic-access">Clinic Access</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-4">
-          <OverviewTab facility={facility} shifts={facilityShifts} contacts={facilityContacts} onUpdate={updateFacility} onAddContact={addContact} onUpdateContact={updateContact} onDeleteContact={deleteContact} facilityId={facility.id} />
-        </TabsContent>
-
-        <TabsContent value="terms" className="mt-4">
-          <TermsTab terms={facilityTerms} facilityId={facility.id} onUpdate={updateTerms} />
+          <OverviewTab facility={facility} shifts={facilityShifts} contacts={facilityContacts} onUpdate={updateFacility} onAddContact={addContact} onUpdateContact={updateContact} onDeleteContact={deleteContact} facilityId={facility.id} facilityTerms={facilityTerms} onSaveRates={handleSaveRates} />
         </TabsContent>
 
         <TabsContent value="shifts" className="mt-4">
@@ -75,7 +85,7 @@ export default function FacilityDetailPage() {
         </TabsContent>
 
         <TabsContent value="contracts" className="mt-4">
-          <ContractsTab facilityId={facility.id} />
+          <ContractsTab facilityId={facility.id} facilityTerms={facilityTerms} onUpdateTerms={updateTerms} />
         </TabsContent>
 
         <TabsContent value="tech-access" className="mt-4">
