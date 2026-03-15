@@ -4,7 +4,6 @@ import { describe, it, expect } from 'vitest';
 const SETTINGS_LINKS = [
   { to: '/settings/profile', label: 'Profile' },
   { to: '/settings/scheduling', label: 'Scheduling' },
-  { to: '/settings/invoicing', label: 'Invoicing' },
   { to: '/settings/payments', label: 'Payments' },
   { to: '/settings/reminders', label: 'Reminders' },
   { to: '/settings/business-taxes', label: 'Business & Taxes' },
