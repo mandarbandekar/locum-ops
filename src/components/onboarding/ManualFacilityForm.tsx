@@ -1,11 +1,8 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { ArrowRight, Loader2 } from 'lucide-react';
-import { RatesEditor, RateEntry, ratesToTermsFields } from '@/components/facilities/RatesEditor';
+import { ArrowRight, DollarSign, Loader2 } from 'lucide-react';
 import type { ManualFacilityInput } from '@/hooks/useManualSetup';
 
 interface Props {
@@ -15,49 +12,32 @@ interface Props {
 
 export function ManualFacilityForm({ onSave, saving }: Props) {
   const [name, setName] = useState('');
-  const [contactName, setContactName] = useState('');
   const [billingNameTo, setBillingNameTo] = useState('');
   const [billingEmail, setBillingEmail] = useState('');
-  const [billingNameCc, setBillingNameCc] = useState('');
-  const [billingEmailCc, setBillingEmailCc] = useState('');
-  const [billingNameBcc, setBillingNameBcc] = useState('');
-  const [billingEmailBcc, setBillingEmailBcc] = useState('');
   const [address, setAddress] = useState('');
-  const [rates, setRates] = useState<RateEntry[]>([]);
-  const [notes, setNotes] = useState('');
+  const [weekdayRate, setWeekdayRate] = useState('');
 
   const handleSubmit = async () => {
     if (!name.trim()) return;
-    const rateFields = ratesToTermsFields(rates);
     await onSave({
       name: name.trim(),
-      contact_name: contactName.trim() || undefined,
       billing_name_to: billingNameTo.trim() || undefined,
       billing_email: billingEmail.trim() || undefined,
-      billing_name_cc: billingNameCc.trim() || undefined,
-      billing_email_cc: billingEmailCc.trim() || undefined,
-      billing_name_bcc: billingNameBcc.trim() || undefined,
-      billing_email_bcc: billingEmailBcc.trim() || undefined,
       address: address.trim() || undefined,
-      weekday_rate: rateFields.weekday_rate || undefined,
-      weekend_rate: rateFields.weekend_rate || undefined,
-      partial_day_rate: rateFields.partial_day_rate || undefined,
-      holiday_rate: rateFields.holiday_rate || undefined,
-      telemedicine_rate: rateFields.telemedicine_rate || undefined,
-      custom_rates: rateFields.custom_rates.length > 0 ? rateFields.custom_rates : undefined,
-      notes: notes.trim() || undefined,
+      weekday_rate: weekdayRate ? parseFloat(weekdayRate) : undefined,
     });
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Add your first practice</CardTitle>
-        <CardDescription>
-          Start with one place you already work so LocumOps can begin organizing your schedule and billing.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <div className="space-y-5">
+      <div>
+        <h2 className="text-2xl font-bold text-foreground font-[Manrope]">Add your first practice</h2>
+        <p className="text-muted-foreground mt-1">
+          Start with one place you work so we can organize your schedule and billing.
+        </p>
+      </div>
+
+      <div className="space-y-4">
         <div>
           <Label>Practice / facility name <span className="text-destructive">*</span></Label>
           <Input
@@ -67,63 +47,7 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
             autoFocus
           />
         </div>
-        <div>
-          <Label>Contact person</Label>
-          <Input
-            value={contactName}
-            onChange={e => setContactName(e.target.value)}
-            placeholder="e.g. Dr. Smith"
-          />
-        </div>
-        <div>
-          <Label className="text-xs font-medium text-muted-foreground">Invoice To</Label>
-          <div className="grid grid-cols-2 gap-2 mt-1">
-            <Input
-              value={billingNameTo}
-              onChange={e => setBillingNameTo(e.target.value)}
-              placeholder="Name, e.g. Billing Dept"
-            />
-            <Input
-              type="email"
-              value={billingEmail}
-              onChange={e => setBillingEmail(e.target.value)}
-              placeholder="Email, e.g. billing@clinic.com"
-            />
-          </div>
-          <p className="text-xs text-muted-foreground mt-1">This email will be used as the billing contact when invoices are created.</p>
-        </div>
-        <div>
-          <Label className="text-xs font-medium text-muted-foreground">Invoice CC</Label>
-          <div className="grid grid-cols-2 gap-2 mt-1">
-            <Input
-              value={billingNameCc}
-              onChange={e => setBillingNameCc(e.target.value)}
-              placeholder="Name"
-            />
-            <Input
-              type="email"
-              value={billingEmailCc}
-              onChange={e => setBillingEmailCc(e.target.value)}
-              placeholder="Email"
-            />
-          </div>
-        </div>
-        <div>
-          <Label className="text-xs font-medium text-muted-foreground">Invoice BCC</Label>
-          <div className="grid grid-cols-2 gap-2 mt-1">
-            <Input
-              value={billingNameBcc}
-              onChange={e => setBillingNameBcc(e.target.value)}
-              placeholder="Name"
-            />
-            <Input
-              type="email"
-              value={billingEmailBcc}
-              onChange={e => setBillingEmailBcc(e.target.value)}
-              placeholder="Email"
-            />
-          </div>
-        </div>
+
         <div>
           <Label>Address</Label>
           <Input
@@ -132,24 +56,49 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
             placeholder="123 Main St, City, ST"
           />
         </div>
-        <div>
-          <Label className="mb-2 block">Shift Rates</Label>
-          <RatesEditor rates={rates} onChange={setRates} showCard={false} compact />
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label>Billing contact name</Label>
+            <Input
+              value={billingNameTo}
+              onChange={e => setBillingNameTo(e.target.value)}
+              placeholder="e.g. Billing Dept"
+            />
+          </div>
+          <div>
+            <Label>Billing email</Label>
+            <Input
+              type="email"
+              value={billingEmail}
+              onChange={e => setBillingEmail(e.target.value)}
+              placeholder="billing@clinic.com"
+            />
+          </div>
         </div>
+
         <div>
-          <Label>Notes</Label>
-          <Textarea
-            value={notes}
-            onChange={e => setNotes(e.target.value)}
-            placeholder="Anything else to remember about this practice..."
-            rows={2}
-          />
+          <Label>Default day rate</Label>
+          <div className="relative">
+            <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              type="number"
+              value={weekdayRate}
+              onChange={e => setWeekdayRate(e.target.value)}
+              placeholder="e.g. 800"
+              className="pl-7"
+              min={0}
+              step={50}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">You can add more rate types later in facility settings.</p>
         </div>
-        <Button onClick={handleSubmit} disabled={!name.trim() || saving} className="w-full">
-          {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-          Save and add shifts <ArrowRight className="ml-2 h-4 w-4" />
-        </Button>
-      </CardContent>
-    </Card>
+      </div>
+
+      <Button onClick={handleSubmit} disabled={!name.trim() || saving} className="w-full" size="lg">
+        {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+        Save and continue <ArrowRight className="ml-2 h-4 w-4" />
+      </Button>
+    </div>
   );
 }

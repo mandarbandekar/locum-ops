@@ -10,12 +10,12 @@ interface Props {
 
 export function WorkspaceReady({ facilitiesCount, shiftsCount, onNavigate }: Props) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="text-center space-y-2">
-        <div className="mx-auto h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
-          <Check className="h-6 w-6 text-primary" />
+        <div className="mx-auto h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+          <Check className="h-7 w-7 text-primary" />
         </div>
-        <h1 className="text-2xl font-bold text-foreground">Your workspace is ready!</h1>
+        <h2 className="text-2xl font-bold text-foreground font-[Manrope]">Your workspace is ready!</h2>
         <p className="text-muted-foreground">Here's what's set up for you.</p>
       </div>
 
@@ -33,11 +33,14 @@ export function WorkspaceReady({ facilitiesCount, shiftsCount, onNavigate }: Pro
               <span>{shiftsCount} shift{shiftsCount !== 1 ? 's' : ''} added</span>
             </div>
           )}
+          {facilitiesCount === 0 && shiftsCount === 0 && (
+            <p className="text-sm text-muted-foreground">You can add practices and shifts from the dashboard.</p>
+          )}
         </CardContent>
       </Card>
 
       <div className="space-y-2">
-        <Button className="w-full justify-start h-auto py-4 px-5" onClick={() => onNavigate('/')}>
+        <Button className="w-full justify-start h-auto py-4 px-5" size="lg" onClick={() => onNavigate('/')}>
           <LayoutDashboard className="mr-3 h-5 w-5" />
           <div className="text-left">
             <div className="font-medium">Go to Dashboard</div>

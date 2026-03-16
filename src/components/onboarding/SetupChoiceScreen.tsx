@@ -18,10 +18,10 @@ export function SetupChoiceScreen({ currentTools, onChooseImport, onChooseManual
   const recommended = getRecommendation(currentTools);
 
   return (
-    <div className="space-y-6">
-      <div className="text-center space-y-2">
-        <h1 className="text-2xl font-bold text-foreground">How do you want to get started?</h1>
-        <p className="text-muted-foreground">Choose the path that fits your workflow.</p>
+    <div className="space-y-5">
+      <div>
+        <h2 className="text-2xl font-bold text-foreground font-[Manrope]">How do you want to get started?</h2>
+        <p className="text-muted-foreground mt-1">Choose the path that fits your workflow.</p>
       </div>
 
       <div className="space-y-3">
