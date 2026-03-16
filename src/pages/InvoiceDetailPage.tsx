@@ -55,19 +55,20 @@ const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secon
 export default function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { invoices, lineItems, facilities, contacts, payments, activities, updateInvoice, deleteInvoice, addLineItem, updateLineItem, deleteLineItem, addPayment, addActivity } = useData();
+  const { invoices, lineItems, facilities, contacts, payments, activities, updateInvoice, deleteInvoice, addLineItem, updateLineItem, deleteLineItem, addPayment, addActivity, updateFacility } = useData();
   const { profile } = useUserProfile();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [moveTarget, setMoveTarget] = useState<string | null>(null);
+  const [billingDialogOpen, setBillingDialogOpen] = useState(false);
 
   const invoice = invoices.find(i => i.id === id);
   if (!invoice) return <div className="p-6">Invoice not found. <Button variant="link" onClick={() => navigate('/invoices')}>Back</Button></div>;
 
   const items = lineItems.filter(li => li.invoice_id === id);
   const facility = facilities.find(c => c.id === invoice.facility_id);
-  const billingContact = contacts.find(c => c.facility_id === invoice.facility_id);
-  const billingEmail = (invoice as any).billing_email_to || facility?.invoice_email_to || '';
+  const billingNameTo = facility?.invoice_name_to || '';
+  const billingEmailTo = (invoice as any).billing_email_to || facility?.invoice_email_to || '';
   const invoicePayments = payments.filter(p => p.invoice_id === id);
   const invoiceActivities = activities.filter(a => a.invoice_id === id).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   const computedStatus = computeInvoiceStatus(invoice);
@@ -180,7 +181,10 @@ export default function InvoiceDetailPage() {
       {/* Checklist for drafts */}
       {isDraft && (
         <div className="mb-6 max-w-2xl print:hidden">
-          <ReadyToSendChecklist items={buildChecklistItems(profile, invoice, items, { email: billingEmail, name: billingContact?.name || '' }, facility)} />
+          <ReadyToSendChecklist
+            items={buildChecklistItems(profile, invoice, items, facility)}
+            onFixBilling={() => setBillingDialogOpen(true)}
+          />
         </div>
       )}
 
@@ -194,11 +198,11 @@ export default function InvoiceDetailPage() {
         </div>
       )}
 
-      {/* Missing billing email warning */}
-      {!billingEmail && invoice.status !== 'paid' && (
+      {/* Missing billing details warning */}
+      {(!billingNameTo || !billingEmailTo) && invoice.status !== 'paid' && (
         <div className="mb-4 rounded-md border border-warning/50 bg-warning/5 p-3 flex items-center gap-2 max-w-2xl print:hidden">
           <AlertTriangle className="h-4 w-4 text-warning shrink-0" />
-          <p className="text-sm">Billing email missing — <Button variant="link" size="sm" className="h-auto p-0" onClick={() => navigate(`/facilities/${invoice.facility_id}`)}>add one in Invoice Billing Contact and Settings</Button> to send faster.</p>
+          <p className="text-sm">Billing contact details missing — <Button variant="link" size="sm" className="h-auto p-0" onClick={() => setBillingDialogOpen(true)}>add billing details</Button> to send this invoice.</p>
         </div>
       )}
 
@@ -214,9 +218,11 @@ export default function InvoiceDetailPage() {
         {/* LEFT: Editable Form */}
         <div className="space-y-4 print:hidden">
           {isDraft ? (
-            <DraftForm invoice={invoice} items={items} facility={facility} billingContact={billingContact} profile={profile}
+            <DraftForm invoice={invoice} items={items} facility={facility} profile={profile}
+              billingNameTo={billingNameTo} billingEmailTo={billingEmailTo}
               onUpdateInvoice={updateInvoice} onAddLineItem={addLineItem} onUpdateLineItem={updateLineItem}
-              onDeleteLineItem={deleteLineItem} onAddActivity={addActivity} />
+              onDeleteLineItem={deleteLineItem} onAddActivity={addActivity}
+              onOpenBillingDialog={() => setBillingDialogOpen(true)} />
           ) : (
             <SentView invoice={invoice} items={items} invoicePayments={invoicePayments}
               onUpdateInvoice={updateInvoice} onAddPayment={addPayment} onAddActivity={addActivity} />
@@ -246,8 +252,8 @@ export default function InvoiceDetailPage() {
             }}
             billTo={{
               facilityName: facility?.name || 'Unknown',
-              contactName: billingContact?.name,
-              email: billingEmail,
+              contactName: billingNameTo || undefined,
+              email: billingEmailTo,
               address: facility?.address,
             }}
             invoiceNumber={invoice.invoice_number}
@@ -285,7 +291,108 @@ export default function InvoiceDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Billing Details Dialog */}
+      <BillingDetailsDialog
+        open={billingDialogOpen}
+        onOpenChange={setBillingDialogOpen}
+        facility={facility}
+        onSave={(updates: any) => {
+          if (facility) {
+            updateFacility({ ...facility, ...updates });
+            toast.success('Billing contact details saved');
+          }
+          setBillingDialogOpen(false);
+        }}
+      />
     </div>
+  );
+}
+
+// ─── Billing Details Dialog ─────────────────────────────────
+
+function BillingDetailsDialog({ open, onOpenChange, facility, onSave }: { open: boolean; onOpenChange: (open: boolean) => void; facility: any; onSave: (updates: any) => void }) {
+  const [nameTo, setNameTo] = useState(facility?.invoice_name_to || '');
+  const [emailTo, setEmailTo] = useState(facility?.invoice_email_to || '');
+  const [nameCc, setNameCc] = useState(facility?.invoice_name_cc || '');
+  const [emailCc, setEmailCc] = useState(facility?.invoice_email_cc || '');
+  const [nameBcc, setNameBcc] = useState(facility?.invoice_name_bcc || '');
+  const [emailBcc, setEmailBcc] = useState(facility?.invoice_email_bcc || '');
+
+  // Sync when facility changes
+  const facilityId = facility?.id;
+  const [lastFacilityId, setLastFacilityId] = useState(facilityId);
+  if (facilityId !== lastFacilityId) {
+    setLastFacilityId(facilityId);
+    setNameTo(facility?.invoice_name_to || '');
+    setEmailTo(facility?.invoice_email_to || '');
+    setNameCc(facility?.invoice_name_cc || '');
+    setEmailCc(facility?.invoice_email_cc || '');
+    setNameBcc(facility?.invoice_name_bcc || '');
+    setEmailBcc(facility?.invoice_email_bcc || '');
+  }
+
+  const handleSave = () => {
+    onSave({
+      invoice_name_to: nameTo.trim(),
+      invoice_email_to: emailTo.trim(),
+      invoice_name_cc: nameCc.trim(),
+      invoice_email_cc: emailCc.trim(),
+      invoice_name_bcc: nameBcc.trim(),
+      invoice_email_bcc: emailBcc.trim(),
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Invoice Billing Contact</DialogTitle>
+          <DialogDescription>
+            Add the billing contact details for {facility?.name || 'this facility'}. These will be saved to the facility and used on all future invoices.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <p className="text-xs font-medium text-muted-foreground">To</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs">Name</Label>
+              <Input value={nameTo} onChange={e => setNameTo(e.target.value)} placeholder="Billing Department" />
+            </div>
+            <div>
+              <Label className="text-xs">Email</Label>
+              <Input type="email" value={emailTo} onChange={e => setEmailTo(e.target.value)} placeholder="billing@clinic.com" />
+            </div>
+          </div>
+          <p className="text-xs font-medium text-muted-foreground">CC</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs">Name</Label>
+              <Input value={nameCc} onChange={e => setNameCc(e.target.value)} placeholder="Office Manager" />
+            </div>
+            <div>
+              <Label className="text-xs">Email</Label>
+              <Input type="email" value={emailCc} onChange={e => setEmailCc(e.target.value)} placeholder="manager@clinic.com" />
+            </div>
+          </div>
+          <p className="text-xs font-medium text-muted-foreground">BCC</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs">Name</Label>
+              <Input value={nameBcc} onChange={e => setNameBcc(e.target.value)} placeholder="Records" />
+            </div>
+            <div>
+              <Label className="text-xs">Email</Label>
+              <Input type="email" value={emailBcc} onChange={e => setEmailBcc(e.target.value)} placeholder="records@clinic.com" />
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={handleSave} disabled={!nameTo.trim() || !emailTo.trim()}>Save</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -368,7 +475,7 @@ function EditableLineItemRow({ item, onUpdate, onDelete }: { item: any; onUpdate
 
 // ─── Draft Form ────────────────────────────────────────────
 
-function DraftForm({ invoice, items, facility, billingContact, profile, onUpdateInvoice, onAddLineItem, onUpdateLineItem, onDeleteLineItem, onAddActivity }: any) {
+function DraftForm({ invoice, items, facility, profile, billingNameTo, billingEmailTo, onUpdateInvoice, onAddLineItem, onUpdateLineItem, onDeleteLineItem, onAddActivity, onOpenBillingDialog }: any) {
   const navigate = useNavigate();
   const [invoiceNumber, setInvoiceNumber] = useState(invoice.invoice_number);
   const [invoiceDate, setInvoiceDate] = useState(invoice.invoice_date?.split('T')[0] || format(new Date(), 'yyyy-MM-dd'));
@@ -400,7 +507,7 @@ function DraftForm({ invoice, items, facility, billingContact, profile, onUpdate
   };
 
   const handleProceedToSend = async () => {
-    const checklist = buildChecklistItems(profile, { ...invoice, due_date: dueDate || invoice.due_date }, items, billingContact, facility);
+    const checklist = buildChecklistItems(profile, { ...invoice, due_date: dueDate || invoice.due_date }, items, facility);
     const required = checklist.filter((i: any) => i.required);
     const incomplete = required.filter((i: any) => !i.complete);
     if (incomplete.length > 0) {
@@ -466,7 +573,14 @@ function DraftForm({ invoice, items, facility, billingContact, profile, onUpdate
         <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Bill To</CardTitle></CardHeader>
         <CardContent className="text-sm">
           <p className="font-medium">{facility?.name || 'Unknown'}</p>
-          {billingContact && <p>{billingContact.name} — {billingContact.email || 'No email'}</p>}
+          {billingNameTo ? (
+            <p>{billingNameTo}{billingEmailTo ? ` — ${billingEmailTo}` : ''}</p>
+          ) : (
+            <div className="rounded-md border border-warning/50 bg-warning/5 p-2 mt-1">
+              <p className="text-sm">Add billing contact details to send this invoice.</p>
+              <Button variant="link" size="sm" className="h-auto p-0 mt-1" onClick={onOpenBillingDialog}>Add now</Button>
+            </div>
+          )}
           {facility?.address && <p className="text-muted-foreground">{facility.address}</p>}
         </CardContent>
       </Card>

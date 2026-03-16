@@ -11,7 +11,7 @@ interface ChecklistItem {
   helperText: string;
 }
 
-export function ReadyToSendChecklist({ items, onFix }: { items: ChecklistItem[]; onFix?: () => void }) {
+export function ReadyToSendChecklist({ items, onFix, onFixBilling }: { items: ChecklistItem[]; onFix?: () => void; onFixBilling?: () => void }) {
   const allRequired = items.filter(i => i.required).every(i => i.complete);
   const allComplete = items.every(i => i.complete);
   const navigate = useNavigate();
@@ -51,6 +51,11 @@ export function ReadyToSendChecklist({ items, onFix }: { items: ChecklistItem[];
                 Go to Settings
               </Button>
             )}
+            {!item.complete && (item.key === 'billing_name' || item.key === 'billing_email') && onFixBilling && (
+              <Button variant="link" size="sm" className="ml-auto h-auto p-0 text-xs" onClick={onFixBilling}>
+                Add Details
+              </Button>
+            )}
           </div>
         ))}
         {!allRequired && onFix && (
@@ -67,8 +72,7 @@ export function buildChecklistItems(
   profile: { first_name: string; last_name: string; company_name: string; company_address: string } | null,
   invoice: { due_date: string | null; notes: string },
   lineItems: any[],
-  billingContact: { email: string; name: string } | null | undefined,
-  facility: { name: string } | null | undefined
+  facility: { name: string; invoice_name_to?: string; invoice_email_to?: string } | null | undefined
 ): ChecklistItem[] {
   return [
     { key: 'sender_first_name', label: 'Sender first name added', complete: !!(profile?.first_name), required: true, helperText: 'Add your first name in Invoice Profile settings' },
@@ -76,7 +80,8 @@ export function buildChecklistItems(
     { key: 'sender_company', label: 'Company name added', complete: !!(profile?.company_name), required: true, helperText: 'Add your company name in Invoice Profile settings' },
     { key: 'sender_address', label: 'Business address added', complete: !!(profile?.company_address), required: true, helperText: 'Add your business address to send invoices' },
     { key: 'bill_to', label: 'Bill-to contact added', complete: !!(facility?.name), required: true, helperText: 'Select a facility for this invoice' },
-    { key: 'billing_email', label: 'Billing email added', complete: !!(billingContact?.email), required: false, helperText: 'Add a billing email in Invoice Billing Contact and Settings on the facility' },
+    { key: 'billing_name', label: 'Billing contact name added', complete: !!(facility?.invoice_name_to), required: true, helperText: 'Add a billing contact name in Invoice Billing Contact and Settings' },
+    { key: 'billing_email', label: 'Billing email added', complete: !!(facility?.invoice_email_to), required: true, helperText: 'Add a billing email in Invoice Billing Contact and Settings' },
     { key: 'line_items', label: 'At least 1 line item', complete: lineItems.length > 0, required: true, helperText: 'Add at least one line item' },
     { key: 'due_date', label: 'Due date added', complete: !!(invoice.due_date), required: true, helperText: 'Set a due date for this invoice' },
   ];
