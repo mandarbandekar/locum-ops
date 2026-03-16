@@ -139,7 +139,6 @@ export default function ReportsPage() {
     paid: { label: 'Paid', color: 'hsl(142, 71%, 45%)' },
     outstanding: { label: 'Outstanding', color: 'hsl(38, 92%, 50%)' },
     anticipated: { label: 'Anticipated Income', color: 'hsl(215, 25%, 75%)' },
-    anticipatedTax: { label: 'Anticipated Taxes', color: 'hsl(0, 60%, 65%)' },
   };
 
   const paymentChartConfig = {
