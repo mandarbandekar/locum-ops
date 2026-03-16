@@ -24,6 +24,7 @@ interface ShiftFormDialogProps {
   existing?: any;
   onSave: (s: any) => void;
   onDelete?: (id: string) => void;
+  embedded?: boolean;
 }
 
 function buildRateOptions(terms: TermsSnapshot[], facilityId: string): RateEntry[] {
