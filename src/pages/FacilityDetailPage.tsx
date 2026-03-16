@@ -24,7 +24,7 @@ import { ShiftFormDialog } from '@/components/schedule/ShiftFormDialog';
 export default function FacilityDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { facilities, contacts, terms, shifts, invoices, updateFacility, addContact, updateContact, deleteContact, updateTerms, addShift } = useData();
+  const { facilities, contacts, terms, shifts, invoices, updateFacility, addContact, updateContact, deleteContact, updateTerms, addShift, updateShift, deleteShift } = useData();
   const [importOpen, setImportOpen] = useState(false);
 
   const facility = facilities.find(c => c.id === id);
