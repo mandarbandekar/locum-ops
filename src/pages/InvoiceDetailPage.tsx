@@ -291,6 +291,20 @@ export default function InvoiceDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Billing Details Dialog */}
+      <BillingDetailsDialog
+        open={billingDialogOpen}
+        onOpenChange={setBillingDialogOpen}
+        facility={facility}
+        onSave={(updates: any) => {
+          if (facility) {
+            updateFacility({ ...facility, ...updates });
+            toast.success('Billing contact details saved');
+          }
+          setBillingDialogOpen(false);
+        }}
+      />
     </div>
   );
 }
