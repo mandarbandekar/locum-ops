@@ -1,11 +1,9 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowRight, Loader2 } from 'lucide-react';
+import { ArrowRight, DollarSign, Loader2 } from 'lucide-react';
 import type { Facility } from '@/types';
 import type { ManualShiftInput } from '@/hooks/useManualSetup';
 
@@ -18,10 +16,10 @@ interface Props {
 }
 
 export function ManualShiftForm({ facilities, defaultFacilityId, defaultRate, onSave, saving }: Props) {
-  const [facilityId, setFacilityId] = useState(defaultFacilityId || '');
+  const [facilityId, setFacilityId] = useState(defaultFacilityId || facilities[0]?.id || '');
   const [date, setDate] = useState('');
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
+  const [startTime, setStartTime] = useState('08:00');
+  const [endTime, setEndTime] = useState('18:00');
   const [rate, setRate] = useState(defaultRate?.toString() || '');
   const [notes, setNotes] = useState('');
 
@@ -40,18 +38,19 @@ export function ManualShiftForm({ facilities, defaultFacilityId, defaultRate, on
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Add your first booked shift</CardTitle>
-        <CardDescription>
-          Add one upcoming shift so your schedule is ready right away.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <div className="space-y-5">
+      <div>
+        <h2 className="text-2xl font-bold text-foreground font-[Manrope]">Add your first shift</h2>
+        <p className="text-muted-foreground mt-1">
+          Add an upcoming shift so your schedule is ready right away.
+        </p>
+      </div>
+
+      <div className="space-y-4">
         <div>
-          <Label>Facility</Label>
+          <Label>Practice</Label>
           <Select value={facilityId} onValueChange={setFacilityId}>
-            <SelectTrigger><SelectValue placeholder="Select facility" /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder="Select practice" /></SelectTrigger>
             <SelectContent>
               {facilities.map(f => (
                 <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
@@ -59,10 +58,12 @@ export function ManualShiftForm({ facilities, defaultFacilityId, defaultRate, on
             </SelectContent>
           </Select>
         </div>
+
         <div>
           <Label>Date <span className="text-destructive">*</span></Label>
           <Input type="date" value={date} onChange={e => setDate(e.target.value)} />
         </div>
+
         <div className="grid grid-cols-2 gap-3">
           <div>
             <Label>Start time <span className="text-destructive">*</span></Label>
@@ -73,31 +74,28 @@ export function ManualShiftForm({ facilities, defaultFacilityId, defaultRate, on
             <Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} />
           </div>
         </div>
+
         <div>
           <Label>Rate</Label>
-          <Input
-            type="number"
-            value={rate}
-            onChange={e => setRate(e.target.value)}
-            placeholder="e.g. 800"
-            min={0}
-            step={50}
-          />
+          <div className="relative">
+            <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              type="number"
+              value={rate}
+              onChange={e => setRate(e.target.value)}
+              placeholder="e.g. 800"
+              className="pl-7"
+              min={0}
+              step={50}
+            />
+          </div>
         </div>
-        <div>
-          <Label>Notes</Label>
-          <Textarea
-            value={notes}
-            onChange={e => setNotes(e.target.value)}
-            placeholder="Optional notes..."
-            rows={2}
-          />
-        </div>
-        <Button onClick={handleSubmit} disabled={!canSubmit || saving} className="w-full">
-          {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-          Save shift <ArrowRight className="ml-2 h-4 w-4" />
-        </Button>
-      </CardContent>
-    </Card>
+      </div>
+
+      <Button onClick={handleSubmit} disabled={!canSubmit || saving} className="w-full" size="lg">
+        {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+        Save shift <ArrowRight className="ml-2 h-4 w-4" />
+      </Button>
+    </div>
   );
 }
