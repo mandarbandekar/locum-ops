@@ -23,7 +23,7 @@ export function PrioritiesCard({ items, maxVisible = 5 }: PrioritiesCardProps) {
   return (
     <Card className="h-fit" data-testid="priorities-card">
       <CardHeader className="pb-1 pt-3 px-4">
-        <CardTitle className="text-sm font-semibold">Priorities</CardTitle>
+        <CardTitle className="text-sm font-semibold">Your Tasks</CardTitle>
         <p className="text-xs text-muted-foreground">Top actions for today</p>
       </CardHeader>
       <CardContent className="px-4 pb-3">
