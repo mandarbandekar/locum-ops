@@ -14,7 +14,7 @@ const navItems = [
   { title: 'Schedule', url: '/schedule', icon: CalendarDays },
   { title: 'Invoices', url: '/invoices', icon: FileText },
   { title: 'Business', url: '/business', icon: BarChart3 },
-  { title: 'Credentials', url: '/credentials', icon: ShieldCheck },
+  { title: 'Credential Management', url: '/credentials', icon: ShieldCheck },
   { title: 'Settings', url: '/settings/profile', icon: Settings },
 ];
 

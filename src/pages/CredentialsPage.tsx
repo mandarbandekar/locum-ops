@@ -22,7 +22,7 @@ export default function CredentialsPage() {
             <ShieldCheck className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="page-title">Credentials</h1>
+            <h1 className="page-title">Credential Management</h1>
             <p className="text-sm text-muted-foreground">Manage licenses, registrations, insurance & compliance</p>
           </div>
         </div>
