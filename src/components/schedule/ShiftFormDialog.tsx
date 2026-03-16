@@ -271,6 +271,15 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
             )}
           </div>
         </form>
+  );
+
+  if (embedded) return formContent;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader><DialogTitle>{existing ? 'Edit Shift' : 'Add Shift'}</DialogTitle></DialogHeader>
+        {formContent}
       </DialogContent>
     </Dialog>
   );
