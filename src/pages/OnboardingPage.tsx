@@ -289,13 +289,25 @@ export default function OnboardingPage() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="w-full max-w-lg">
-          <ManualShiftForm
-            facilities={manualSetup.facilities}
-            defaultFacilityId={lastFacility?.id}
-            defaultRate={lastFacilityRate}
-            onSave={handleShiftSaved}
-            saving={manualSetup.saving}
-          />
+          <Card>
+            <CardHeader>
+              <CardTitle>Add your first booked shift</CardTitle>
+              <CardDescription>
+                Add one upcoming shift so your schedule is ready right away.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ShiftFormDialog
+                open={true}
+                onOpenChange={() => {}}
+                facilities={manualSetup.facilities}
+                shifts={manualSetup.shifts}
+                terms={[]}
+                onSave={handleShiftSaved}
+                embedded
+              />
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
