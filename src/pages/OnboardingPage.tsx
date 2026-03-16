@@ -188,7 +188,18 @@ export default function OnboardingPage() {
 
   const saveProfile = async () => {
     console.log('onboarding_step_submit', { step: 'profile' });
-    await updateProfile({ profession, work_style_label: workStyle, timezone, currency });
+    await updateProfile({
+      first_name: firstName.trim(),
+      last_name: lastName.trim(),
+      company_name: companyName.trim(),
+      company_address: companyAddress.trim(),
+      invoice_email: invoiceEmail.trim() || null,
+      invoice_phone: invoicePhone.trim() || null,
+      profession,
+      work_style_label: workStyle,
+      timezone,
+      currency,
+    });
     setPhase('workflow');
   };
 
