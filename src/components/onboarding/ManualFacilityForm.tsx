@@ -16,8 +16,11 @@ interface Props {
 export function ManualFacilityForm({ onSave, saving }: Props) {
   const [name, setName] = useState('');
   const [contactName, setContactName] = useState('');
+  const [billingNameTo, setBillingNameTo] = useState('');
   const [billingEmail, setBillingEmail] = useState('');
+  const [billingNameCc, setBillingNameCc] = useState('');
   const [billingEmailCc, setBillingEmailCc] = useState('');
+  const [billingNameBcc, setBillingNameBcc] = useState('');
   const [billingEmailBcc, setBillingEmailBcc] = useState('');
   const [address, setAddress] = useState('');
   const [rates, setRates] = useState<RateEntry[]>([]);
