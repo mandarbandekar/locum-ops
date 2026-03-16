@@ -43,7 +43,7 @@ export default function BusinessPage() {
           }`}
         >
           <Landmark className="h-5 w-5" />
-          Taxes & Finance Ops
+          Estimated Tax Tracker
         </button>
         <button
           onClick={() => setSearchParams({ tab: 'tax-advisor' }, { replace: true })}
