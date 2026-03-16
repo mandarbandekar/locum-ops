@@ -19,6 +19,7 @@ import { useManualSetup } from '@/hooks/useManualSetup';
 import { SetupChoiceScreen } from '@/components/onboarding/SetupChoiceScreen';
 import { ManualFacilityForm } from '@/components/onboarding/ManualFacilityForm';
 import { ManualShiftForm } from '@/components/onboarding/ManualShiftForm';
+import { ShiftFormDialog } from '@/components/schedule/ShiftFormDialog';
 import { ManualExpandScreen } from '@/components/onboarding/ManualExpandScreen';
 import { WorkspaceReady } from '@/components/onboarding/WorkspaceReady';
 
@@ -142,7 +143,18 @@ export default function OnboardingPage() {
     }
   };
 
-  const handleShiftSaved = async (input: any) => {
+  const handleShiftSaved = async (shiftData: any) => {
+    // Convert ShiftFormDialog output to ManualShiftInput format
+    const startDt = new Date(shiftData.start_datetime);
+    const endDt = new Date(shiftData.end_datetime);
+    const input = {
+      facility_id: shiftData.facility_id,
+      date: startDt.toISOString().slice(0, 10),
+      start_time: startDt.toTimeString().slice(0, 5),
+      end_time: endDt.toTimeString().slice(0, 5),
+      rate: shiftData.rate_applied || undefined,
+      notes: shiftData.notes || undefined,
+    };
     const shift = await manualSetup.addShift(input);
     if (shift) {
       setPhase('manual_expand');
@@ -277,13 +289,25 @@ export default function OnboardingPage() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="w-full max-w-lg">
-          <ManualShiftForm
-            facilities={manualSetup.facilities}
-            defaultFacilityId={lastFacility?.id}
-            defaultRate={lastFacilityRate}
-            onSave={handleShiftSaved}
-            saving={manualSetup.saving}
-          />
+          <Card>
+            <CardHeader>
+              <CardTitle>Add your first booked shift</CardTitle>
+              <CardDescription>
+                Add one upcoming shift so your schedule is ready right away.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ShiftFormDialog
+                open={true}
+                onOpenChange={() => {}}
+                facilities={manualSetup.facilities}
+                shifts={manualSetup.shifts}
+                terms={[]}
+                onSave={handleShiftSaved}
+                embedded
+              />
+            </CardContent>
+          </Card>
         </div>
       </div>
     );

@@ -24,6 +24,7 @@ interface ShiftFormDialogProps {
   existing?: any;
   onSave: (s: any) => void;
   onDelete?: (id: string) => void;
+  embedded?: boolean;
 }
 
 function buildRateOptions(terms: TermsSnapshot[], facilityId: string): RateEntry[] {
@@ -32,7 +33,7 @@ function buildRateOptions(terms: TermsSnapshot[], facilityId: string): RateEntry
   return termsToRates(facilityTerms).filter(r => r.amount > 0);
 }
 
-export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms, existing, onSave, onDelete }: ShiftFormDialogProps) {
+export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms, existing, onSave, onDelete, embedded }: ShiftFormDialogProps) {
   const [facilityId, setFacilityId] = useState(existing?.facility_id || facilities[0]?.id || '');
   const [selectedDates, setSelectedDates] = useState<Date[]>(
     existing ? [new Date(existing.start_datetime)] : []
@@ -101,10 +102,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     onOpenChange(false);
   };
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>{existing ? 'Edit Shift' : 'Add Shift'}</DialogTitle></DialogHeader>
+  const formContent = (
         <form onSubmit={handleSubmit} className="space-y-4">
           <div><Label>Facility</Label>
             <Select value={facilityId} onValueChange={handleFacilityChange}>
@@ -270,6 +268,15 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
             )}
           </div>
         </form>
+  );
+
+  if (embedded) return formContent;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader><DialogTitle>{existing ? 'Edit Shift' : 'Add Shift'}</DialogTitle></DialogHeader>
+        {formContent}
       </DialogContent>
     </Dialog>
   );
