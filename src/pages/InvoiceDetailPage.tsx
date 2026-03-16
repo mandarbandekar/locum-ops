@@ -374,7 +374,7 @@ function EditableLineItemRow({ item, onUpdate, onDelete }: { item: any; onUpdate
 
 // ─── Draft Form ────────────────────────────────────────────
 
-function DraftForm({ invoice, items, facility, billingContact, profile, onUpdateInvoice, onAddLineItem, onUpdateLineItem, onDeleteLineItem, onAddActivity }: any) {
+function DraftForm({ invoice, items, facility, profile, billingNameTo, billingEmailTo, onUpdateInvoice, onAddLineItem, onUpdateLineItem, onDeleteLineItem, onAddActivity, onOpenBillingDialog }: any) {
   const navigate = useNavigate();
   const [invoiceNumber, setInvoiceNumber] = useState(invoice.invoice_number);
   const [invoiceDate, setInvoiceDate] = useState(invoice.invoice_date?.split('T')[0] || format(new Date(), 'yyyy-MM-dd'));
