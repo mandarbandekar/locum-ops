@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Send, DollarSign, Trash2, Plus, CheckCircle, AlertTriangle, Download, Link2, Copy, RefreshCw, Loader2, Pencil, Check, X, ArrowRight, Undo2, Layers } from 'lucide-react';
+import { ArrowLeft, DollarSign, Trash2, Plus, CheckCircle, AlertTriangle, Download, Link2, Copy, RefreshCw, Loader2, Pencil, Check, X, ArrowRight, Undo2, Layers } from 'lucide-react';
 import { format } from 'date-fns';
 import { computeInvoiceStatus, generateId } from '@/lib/businessLogic';
 import { toast } from 'sonner';
