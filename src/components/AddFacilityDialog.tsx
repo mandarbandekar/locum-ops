@@ -35,8 +35,11 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
   const [clinicAccess, setClinicAccess] = useState('');
   const [invoicePrefix, setInvoicePrefix] = useState('');
   const [invoiceDueDays, setInvoiceDueDays] = useState(15);
+  const [invoiceNameTo, setInvoiceNameTo] = useState('');
   const [invoiceEmailTo, setInvoiceEmailTo] = useState('');
+  const [invoiceNameCc, setInvoiceNameCc] = useState('');
   const [invoiceEmailCc, setInvoiceEmailCc] = useState('');
+  const [invoiceNameBcc, setInvoiceNameBcc] = useState('');
   const [invoiceEmailBcc, setInvoiceEmailBcc] = useState('');
 
   const totalSteps = STEPS.length;
@@ -52,7 +55,7 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
     setRates([]);
     setTechComputer(''); setTechWifi(''); setTechPims('');
     setClinicAccess(''); setInvoicePrefix(''); setInvoiceDueDays(15);
-    setInvoiceEmailTo(''); setInvoiceEmailCc(''); setInvoiceEmailBcc('');
+    setInvoiceNameTo(''); setInvoiceEmailTo(''); setInvoiceNameCc(''); setInvoiceEmailCc(''); setInvoiceNameBcc(''); setInvoiceEmailBcc('');
   };
 
   const handleSubmit = async () => {
@@ -75,8 +78,11 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
         clinic_access_info: clinicAccess,
         invoice_prefix: prefix,
         invoice_due_days: invoiceDueDays,
+        invoice_name_to: invoiceNameTo.trim(),
         invoice_email_to: invoiceEmailTo.trim(),
+        invoice_name_cc: invoiceNameCc.trim(),
         invoice_email_cc: invoiceEmailCc.trim(),
+        invoice_name_bcc: invoiceNameBcc.trim(),
         invoice_email_bcc: invoiceEmailBcc.trim(),
       });
 
@@ -221,12 +227,25 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
             <>
               <p className="text-sm text-muted-foreground">Invoice settings, email recipients, and payment terms for this facility.</p>
               <div className="space-y-2">
+                <Label>Name (To)</Label>
+                <Input value={invoiceNameTo} onChange={e => setInvoiceNameTo(e.target.value)} placeholder="Billing Department" />
+              </div>
+              <div className="space-y-2">
                 <Label>Invoice Email (To)</Label>
                 <Input type="email" value={invoiceEmailTo} onChange={e => setInvoiceEmailTo(e.target.value)} placeholder="billing@clinic.com" />
+                <p className="text-xs text-muted-foreground">This email will be used as the billing contact when invoices are created.</p>
+              </div>
+              <div className="space-y-2">
+                <Label>Name (CC)</Label>
+                <Input value={invoiceNameCc} onChange={e => setInvoiceNameCc(e.target.value)} placeholder="Office Manager" />
               </div>
               <div className="space-y-2">
                 <Label>Invoice Email (CC)</Label>
                 <Input type="email" value={invoiceEmailCc} onChange={e => setInvoiceEmailCc(e.target.value)} placeholder="manager@clinic.com" />
+              </div>
+              <div className="space-y-2">
+                <Label>Name (BCC)</Label>
+                <Input value={invoiceNameBcc} onChange={e => setInvoiceNameBcc(e.target.value)} placeholder="Records" />
               </div>
               <div className="space-y-2">
                 <Label>Invoice Email (BCC)</Label>

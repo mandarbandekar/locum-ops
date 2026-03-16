@@ -21,8 +21,11 @@ export interface Facility {
   clinic_access_info: string;
   invoice_prefix: string;
   invoice_due_days: number;
+  invoice_name_to: string;
   invoice_email_to: string;
+  invoice_name_cc: string;
   invoice_email_cc: string;
+  invoice_name_bcc: string;
   invoice_email_bcc: string;
 }
 

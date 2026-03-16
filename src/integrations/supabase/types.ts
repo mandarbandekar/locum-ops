@@ -1006,6 +1006,9 @@ export type Database = {
           invoice_email_bcc: string
           invoice_email_cc: string
           invoice_email_to: string
+          invoice_name_bcc: string
+          invoice_name_cc: string
+          invoice_name_to: string
           invoice_prefix: string
           name: string
           notes: string
@@ -1027,6 +1030,9 @@ export type Database = {
           invoice_email_bcc?: string
           invoice_email_cc?: string
           invoice_email_to?: string
+          invoice_name_bcc?: string
+          invoice_name_cc?: string
+          invoice_name_to?: string
           invoice_prefix?: string
           name: string
           notes?: string
@@ -1048,6 +1054,9 @@ export type Database = {
           invoice_email_bcc?: string
           invoice_email_cc?: string
           invoice_email_to?: string
+          invoice_name_bcc?: string
+          invoice_name_cc?: string
+          invoice_name_to?: string
           invoice_prefix?: string
           name?: string
           notes?: string

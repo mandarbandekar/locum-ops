@@ -16,8 +16,11 @@ interface Props {
 export function ManualFacilityForm({ onSave, saving }: Props) {
   const [name, setName] = useState('');
   const [contactName, setContactName] = useState('');
+  const [billingNameTo, setBillingNameTo] = useState('');
   const [billingEmail, setBillingEmail] = useState('');
+  const [billingNameCc, setBillingNameCc] = useState('');
   const [billingEmailCc, setBillingEmailCc] = useState('');
+  const [billingNameBcc, setBillingNameBcc] = useState('');
   const [billingEmailBcc, setBillingEmailBcc] = useState('');
   const [address, setAddress] = useState('');
   const [rates, setRates] = useState<RateEntry[]>([]);
@@ -29,8 +32,11 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
     await onSave({
       name: name.trim(),
       contact_name: contactName.trim() || undefined,
+      billing_name_to: billingNameTo.trim() || undefined,
       billing_email: billingEmail.trim() || undefined,
+      billing_name_cc: billingNameCc.trim() || undefined,
       billing_email_cc: billingEmailCc.trim() || undefined,
+      billing_name_bcc: billingNameBcc.trim() || undefined,
       billing_email_bcc: billingEmailBcc.trim() || undefined,
       address: address.trim() || undefined,
       weekday_rate: rateFields.weekday_rate || undefined,
@@ -70,6 +76,14 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
           />
         </div>
         <div>
+          <Label>Name (To)</Label>
+          <Input
+            value={billingNameTo}
+            onChange={e => setBillingNameTo(e.target.value)}
+            placeholder="e.g. Billing Department"
+          />
+        </div>
+        <div>
           <Label>Invoice email (To)</Label>
           <Input
             type="email"
@@ -77,7 +91,15 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
             onChange={e => setBillingEmail(e.target.value)}
             placeholder="billing@clinic.com"
           />
-          <p className="text-xs text-muted-foreground mt-1">Where invoices will be sent for this practice.</p>
+          <p className="text-xs text-muted-foreground mt-1">This email will be used as the billing contact when invoices are created.</p>
+        </div>
+        <div>
+          <Label>Name (CC)</Label>
+          <Input
+            value={billingNameCc}
+            onChange={e => setBillingNameCc(e.target.value)}
+            placeholder="e.g. Office Manager"
+          />
         </div>
         <div>
           <Label>Invoice email (CC)</Label>
@@ -86,6 +108,14 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
             value={billingEmailCc}
             onChange={e => setBillingEmailCc(e.target.value)}
             placeholder="manager@clinic.com"
+          />
+        </div>
+        <div>
+          <Label>Name (BCC)</Label>
+          <Input
+            value={billingNameBcc}
+            onChange={e => setBillingNameBcc(e.target.value)}
+            placeholder="e.g. Records"
           />
         </div>
         <div>

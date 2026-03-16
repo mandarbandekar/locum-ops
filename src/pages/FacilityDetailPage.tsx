@@ -551,8 +551,11 @@ function InvoiceSettingsCard({ facility, onUpdate }: { facility: any; onUpdate: 
   const [editing, setEditing] = useState(false);
   const [prefix, setPrefix] = useState(facility.invoice_prefix || 'INV');
   const [dueDays, setDueDays] = useState(facility.invoice_due_days ?? 15);
+  const [nameTo, setNameTo] = useState(facility.invoice_name_to || '');
   const [emailTo, setEmailTo] = useState(facility.invoice_email_to || '');
+  const [nameCc, setNameCc] = useState(facility.invoice_name_cc || '');
   const [emailCc, setEmailCc] = useState(facility.invoice_email_cc || '');
+  const [nameBcc, setNameBcc] = useState(facility.invoice_name_bcc || '');
   const [emailBcc, setEmailBcc] = useState(facility.invoice_email_bcc || '');
 
   const handleSave = () => {
@@ -560,8 +563,11 @@ function InvoiceSettingsCard({ facility, onUpdate }: { facility: any; onUpdate: 
       ...facility,
       invoice_prefix: prefix,
       invoice_due_days: dueDays,
+      invoice_name_to: nameTo.trim(),
       invoice_email_to: emailTo.trim(),
+      invoice_name_cc: nameCc.trim(),
       invoice_email_cc: emailCc.trim(),
+      invoice_name_bcc: nameBcc.trim(),
       invoice_email_bcc: emailBcc.trim(),
     });
     setEditing(false);
@@ -571,8 +577,11 @@ function InvoiceSettingsCard({ facility, onUpdate }: { facility: any; onUpdate: 
   const handleCancel = () => {
     setPrefix(facility.invoice_prefix || 'INV');
     setDueDays(facility.invoice_due_days ?? 15);
+    setNameTo(facility.invoice_name_to || '');
     setEmailTo(facility.invoice_email_to || '');
+    setNameCc(facility.invoice_name_cc || '');
     setEmailCc(facility.invoice_email_cc || '');
+    setNameBcc(facility.invoice_name_bcc || '');
     setEmailBcc(facility.invoice_email_bcc || '');
     setEditing(false);
   };
@@ -605,15 +614,28 @@ function InvoiceSettingsCard({ facility, onUpdate }: { facility: any; onUpdate: 
               </div>
             </div>
             <div>
-              <Label className="text-xs">Invoice Email To</Label>
-              <Input type="email" value={emailTo} onChange={e => setEmailTo(e.target.value)} placeholder="billing@clinic.com" />
+              <Label className="text-xs">Name (To)</Label>
+              <Input value={nameTo} onChange={e => setNameTo(e.target.value)} placeholder="Billing Department" />
             </div>
             <div>
-              <Label className="text-xs">CC</Label>
+              <Label className="text-xs">Invoice Email (To)</Label>
+              <Input type="email" value={emailTo} onChange={e => setEmailTo(e.target.value)} placeholder="billing@clinic.com" />
+              <p className="text-xs text-muted-foreground mt-0.5">This email will be used as the billing contact when invoices are created.</p>
+            </div>
+            <div>
+              <Label className="text-xs">Name (CC)</Label>
+              <Input value={nameCc} onChange={e => setNameCc(e.target.value)} placeholder="Office Manager" />
+            </div>
+            <div>
+              <Label className="text-xs">Invoice Email (CC)</Label>
               <Input type="email" value={emailCc} onChange={e => setEmailCc(e.target.value)} placeholder="manager@clinic.com" />
             </div>
             <div>
-              <Label className="text-xs">BCC</Label>
+              <Label className="text-xs">Name (BCC)</Label>
+              <Input value={nameBcc} onChange={e => setNameBcc(e.target.value)} placeholder="Records" />
+            </div>
+            <div>
+              <Label className="text-xs">Invoice Email (BCC)</Label>
               <Input type="email" value={emailBcc} onChange={e => setEmailBcc(e.target.value)} placeholder="records@clinic.com" />
             </div>
           </>
@@ -628,12 +650,24 @@ function InvoiceSettingsCard({ facility, onUpdate }: { facility: any; onUpdate: 
               <span className="font-medium">Net {facility.invoice_due_days ?? 15}</span>
             </div>
             <div className="flex justify-between">
+              <span className="text-muted-foreground">Name (To)</span>
+              <span className="font-medium">{facility.invoice_name_to || '—'}</span>
+            </div>
+            <div className="flex justify-between">
               <span className="text-muted-foreground">Email To</span>
               <span className="font-medium">{facility.invoice_email_to || '—'}</span>
             </div>
             <div className="flex justify-between">
+              <span className="text-muted-foreground">Name (CC)</span>
+              <span className="font-medium">{facility.invoice_name_cc || '—'}</span>
+            </div>
+            <div className="flex justify-between">
               <span className="text-muted-foreground">CC</span>
               <span className="font-medium">{facility.invoice_email_cc || '—'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Name (BCC)</span>
+              <span className="font-medium">{facility.invoice_name_bcc || '—'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">BCC</span>

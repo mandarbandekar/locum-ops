@@ -15,8 +15,11 @@ function stripDbFields(row: any): any {
 export interface ManualFacilityInput {
   name: string;
   contact_name?: string;
+  billing_name_to?: string;
   billing_email?: string;
+  billing_name_cc?: string;
   billing_email_cc?: string;
+  billing_name_bcc?: string;
   billing_email_bcc?: string;
   address?: string;
   weekday_rate?: number;
@@ -62,8 +65,11 @@ export function useManualSetup() {
         clinic_access_info: '',
         invoice_prefix: prefix,
         invoice_due_days: 30,
+        invoice_name_to: input.billing_name_to || '',
         invoice_email_to: input.billing_email || '',
+        invoice_name_cc: input.billing_name_cc || '',
         invoice_email_cc: input.billing_email_cc || '',
+        invoice_name_bcc: input.billing_name_bcc || '',
         invoice_email_bcc: input.billing_email_bcc || '',
       }).select().single();
 

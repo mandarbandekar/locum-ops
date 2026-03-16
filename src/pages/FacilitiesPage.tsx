@@ -44,8 +44,11 @@ export default function FacilitiesPage() {
         clinic_access_info: '',
         invoice_prefix: initials,
         invoice_due_days: 15,
+        invoice_name_to: '',
         invoice_email_to: '',
+        invoice_name_cc: '',
         invoice_email_cc: '',
+        invoice_name_bcc: '',
         invoice_email_bcc: '',
       });
       toast.success(`"${name}" added as a new practice facility`);
