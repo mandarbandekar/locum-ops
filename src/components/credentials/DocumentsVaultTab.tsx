@@ -126,10 +126,8 @@ export default function DocumentsVaultTab() {
   const handlePreview = async (doc: CredentialDocument) => {
     setPreviewDoc(doc);
     try {
-      const { data } = await supabase.storage
-        .from('credential-documents')
-        .createSignedUrl(doc.file_url, 3600);
-      setPreviewUrl(data?.signedUrl || null);
+      const url = await getSignedUrl('credential-documents', doc.file_url);
+      setPreviewUrl(url);
     } catch {
       setPreviewUrl(null);
     }
@@ -137,14 +135,9 @@ export default function DocumentsVaultTab() {
 
   const handleDownload = async (doc: CredentialDocument) => {
     try {
-      const { data } = await supabase.storage
-        .from('credential-documents')
-        .createSignedUrl(doc.file_url, 3600);
-      if (data?.signedUrl) {
-        const a = document.createElement('a');
-        a.href = data.signedUrl;
-        a.download = doc.file_name;
-        a.click();
+      const ok = await downloadStoredFile('credential-documents', doc.file_url, doc.file_name);
+      if (!ok) {
+        toast({ title: 'Download failed', description: 'Could not generate download link', variant: 'destructive' });
       }
     } catch (e: any) {
       toast({ title: 'Download failed', description: e.message, variant: 'destructive' });
