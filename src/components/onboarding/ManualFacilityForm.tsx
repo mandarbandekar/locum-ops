@@ -76,56 +76,53 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
           />
         </div>
         <div>
-          <Label>Name (To)</Label>
-          <Input
-            value={billingNameTo}
-            onChange={e => setBillingNameTo(e.target.value)}
-            placeholder="e.g. Billing Department"
-          />
-        </div>
-        <div>
-          <Label>Invoice email (To)</Label>
-          <Input
-            type="email"
-            value={billingEmail}
-            onChange={e => setBillingEmail(e.target.value)}
-            placeholder="billing@clinic.com"
-          />
+          <Label className="text-xs font-medium text-muted-foreground">Invoice To</Label>
+          <div className="grid grid-cols-2 gap-2 mt-1">
+            <Input
+              value={billingNameTo}
+              onChange={e => setBillingNameTo(e.target.value)}
+              placeholder="Name, e.g. Billing Dept"
+            />
+            <Input
+              type="email"
+              value={billingEmail}
+              onChange={e => setBillingEmail(e.target.value)}
+              placeholder="Email, e.g. billing@clinic.com"
+            />
+          </div>
           <p className="text-xs text-muted-foreground mt-1">This email will be used as the billing contact when invoices are created.</p>
         </div>
         <div>
-          <Label>Name (CC)</Label>
-          <Input
-            value={billingNameCc}
-            onChange={e => setBillingNameCc(e.target.value)}
-            placeholder="e.g. Office Manager"
-          />
+          <Label className="text-xs font-medium text-muted-foreground">Invoice CC</Label>
+          <div className="grid grid-cols-2 gap-2 mt-1">
+            <Input
+              value={billingNameCc}
+              onChange={e => setBillingNameCc(e.target.value)}
+              placeholder="Name"
+            />
+            <Input
+              type="email"
+              value={billingEmailCc}
+              onChange={e => setBillingEmailCc(e.target.value)}
+              placeholder="Email"
+            />
+          </div>
         </div>
         <div>
-          <Label>Invoice email (CC)</Label>
-          <Input
-            type="email"
-            value={billingEmailCc}
-            onChange={e => setBillingEmailCc(e.target.value)}
-            placeholder="manager@clinic.com"
-          />
-        </div>
-        <div>
-          <Label>Name (BCC)</Label>
-          <Input
-            value={billingNameBcc}
-            onChange={e => setBillingNameBcc(e.target.value)}
-            placeholder="e.g. Records"
-          />
-        </div>
-        <div>
-          <Label>Invoice email (BCC)</Label>
-          <Input
-            type="email"
-            value={billingEmailBcc}
-            onChange={e => setBillingEmailBcc(e.target.value)}
-            placeholder="records@clinic.com"
-          />
+          <Label className="text-xs font-medium text-muted-foreground">Invoice BCC</Label>
+          <div className="grid grid-cols-2 gap-2 mt-1">
+            <Input
+              value={billingNameBcc}
+              onChange={e => setBillingNameBcc(e.target.value)}
+              placeholder="Name"
+            />
+            <Input
+              type="email"
+              value={billingEmailBcc}
+              onChange={e => setBillingEmailBcc(e.target.value)}
+              placeholder="Email"
+            />
+          </div>
         </div>
         <div>
           <Label>Address</Label>
