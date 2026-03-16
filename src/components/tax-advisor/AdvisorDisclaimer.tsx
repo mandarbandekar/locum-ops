@@ -6,9 +6,9 @@ export const ADVISOR_DISCLAIMER =
 
 export function AdvisorDisclaimerBanner() {
   return (
-    <Alert className="border-warning bg-warning/10">
-      <AlertTriangle className="h-4 w-4 text-warning" />
-      <AlertDescription className="text-warning-foreground text-sm">
+    <Alert className="border-[hsl(var(--warning))] bg-[hsl(var(--chip-warning-bg))]">
+      <AlertTriangle className="h-4 w-4 text-[hsl(var(--chip-warning-text))]" />
+      <AlertDescription className="text-[hsl(var(--chip-warning-text))] text-sm">
         {ADVISOR_DISCLAIMER}
       </AlertDescription>
     </Alert>
