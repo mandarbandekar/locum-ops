@@ -487,8 +487,7 @@ export default function OnboardingPage() {
               shifts={shifts}
               terms={terms}
               onSave={(shift) => {
-                const { addShift } = useData;
-                // The dialog handles save via DataContext internally - we just track state
+                addShift(shift);
               }}
             />
           </div>
