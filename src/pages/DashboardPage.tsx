@@ -224,7 +224,13 @@ export default function DashboardPage() {
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="page-title">Dashboard</h1>
+        <h1 className="page-title">
+          {(() => {
+            const hour = new Date().getHours();
+            const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
+            return `${greeting}, ${profile?.first_name || 'there'}`;
+          })()}
+        </h1>
         <QuickActions />
       </div>
 
