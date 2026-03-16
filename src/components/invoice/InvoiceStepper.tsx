@@ -3,7 +3,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 const STEPS = [
   { key: 'draft', label: 'Draft & Review', description: 'Edit invoice details' },
-  { key: 'sent', label: 'Sent', description: 'Invoice sent to client' },
+  { key: 'sent', label: 'Ready to Send', description: 'Invoice ready to send to client' },
   { key: 'paid', label: 'Paid', description: 'Payment received' },
 ] as const;
 
