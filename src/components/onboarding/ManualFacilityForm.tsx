@@ -32,8 +32,11 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
     await onSave({
       name: name.trim(),
       contact_name: contactName.trim() || undefined,
+      billing_name_to: billingNameTo.trim() || undefined,
       billing_email: billingEmail.trim() || undefined,
+      billing_name_cc: billingNameCc.trim() || undefined,
       billing_email_cc: billingEmailCc.trim() || undefined,
+      billing_name_bcc: billingNameBcc.trim() || undefined,
       billing_email_bcc: billingEmailBcc.trim() || undefined,
       address: address.trim() || undefined,
       weekday_rate: rateFields.weekday_rate || undefined,
