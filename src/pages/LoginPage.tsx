@@ -129,7 +129,7 @@ export default function LoginPage() {
               <Input id="password" type="password" required minLength={6} value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" />
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
-            {message && <p className="text-sm text-green-600">{message}</p>}
+            {message && <p className="text-sm text-primary">{message}</p>}
             <Button type="submit" className="w-full" size="lg" disabled={submitting}>
               {submitting ? 'Please wait…' : isSignUp ? 'Create Account' : 'Sign In'}
             </Button>
