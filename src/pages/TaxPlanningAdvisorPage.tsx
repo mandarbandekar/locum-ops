@@ -42,10 +42,14 @@ export default function TaxPlanningAdvisorPage() {
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
         <div>
           <Tabs value={activeTab} onValueChange={handleTabChange}>
-            <TabsList className="grid grid-cols-4 w-full sm:w-auto sm:inline-flex">
+            <TabsList className="grid grid-cols-5 w-full sm:w-auto sm:inline-flex">
               <TabsTrigger value="ask" className="gap-1.5 text-xs sm:text-sm">
                 <MessageSquare className="h-3.5 w-3.5" />
                 Ask Advisor
+              </TabsTrigger>
+              <TabsTrigger value="guidance" className="gap-1.5 text-xs sm:text-sm">
+                <BookOpen className="h-3.5 w-3.5" />
+                Entity Guidance
               </TabsTrigger>
               <TabsTrigger value="review" className="gap-1.5 text-xs sm:text-sm">
                 <ClipboardList className="h-3.5 w-3.5" />
@@ -63,6 +67,9 @@ export default function TaxPlanningAdvisorPage() {
 
             <TabsContent value="ask" className="mt-6">
               <AskAdvisorTab profile={profile} sessions={sessions} onSaveSession={saveSession} onSaveQuestion={saveQuestion} />
+            </TabsContent>
+            <TabsContent value="guidance" className="mt-6">
+              <GuidanceTab />
             </TabsContent>
             <TabsContent value="review" className="mt-6">
               <OpportunityReviewTab reviewItems={reviewItems} profile={profile} onUpdateItem={updateReviewItem} />
