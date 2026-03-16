@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { useCredentials, CredentialDocument } from '@/hooks/useCredentials';
 import { DOCUMENT_CATEGORY_LABELS, CREDENTIAL_TYPE_LABELS } from '@/lib/credentialTypes';
 import { supabase } from '@/integrations/supabase/client';
+import { getSignedUrl, downloadStoredFile } from '@/lib/storageUtils';
 import type { Database } from '@/integrations/supabase/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
