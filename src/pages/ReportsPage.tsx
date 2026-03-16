@@ -229,7 +229,6 @@ export default function ReportsPage() {
               <Bar dataKey="paid" stackId="a" fill="var(--color-paid)" radius={[0, 0, 0, 0]} />
               <Bar dataKey="outstanding" stackId="a" fill="var(--color-outstanding)" radius={[4, 4, 0, 0]} />
               <Bar dataKey="anticipated" fill="var(--color-anticipated)" radius={[4, 4, 0, 0]} fillOpacity={0.5} strokeDasharray="4 2" stroke="var(--color-anticipated)" />
-              <Bar dataKey="anticipatedTax" fill="var(--color-anticipatedTax)" radius={[4, 4, 0, 0]} fillOpacity={0.5} strokeDasharray="4 2" stroke="var(--color-anticipatedTax)" />
             </BarChart>
           </ChartContainer>
         </CardContent>
