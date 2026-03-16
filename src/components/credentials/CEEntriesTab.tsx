@@ -190,14 +190,30 @@ export default function CEEntriesTab() {
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEdit(entry)}>
-                          <Pencil className="mr-2 h-4 w-4" /> Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive" onClick={() => deleteCEEntry.mutateAsync(entry.id)}>
-                          <Trash2 className="mr-2 h-4 w-4" /> Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
+                        <DropdownMenuContent align="end">
+                          {entry.certificate_file_url && (
+                            <>
+                              <DropdownMenuItem onClick={async () => {
+                                const ok = await viewStoredFile('credential-documents', entry.certificate_file_url!);
+                                if (!ok) toast.error('Could not open certificate');
+                              }}>
+                                <Eye className="mr-2 h-4 w-4" /> View Certificate
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={async () => {
+                                const ok = await downloadStoredFile('credential-documents', entry.certificate_file_url!, entry.certificate_file_name || 'certificate');
+                                if (!ok) toast.error('Could not download certificate');
+                              }}>
+                                <Download className="mr-2 h-4 w-4" /> Download Certificate
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                          <DropdownMenuItem onClick={() => handleEdit(entry)}>
+                            <Pencil className="mr-2 h-4 w-4" /> Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive" onClick={() => deleteCEEntry.mutateAsync(entry.id)}>
+                            <Trash2 className="mr-2 h-4 w-4" /> Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
                 </TableRow>
