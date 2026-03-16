@@ -167,8 +167,15 @@ export default function CEEntriesTab() {
                   </TableCell>
                   <TableCell>
                     {entry.certificate_file_url ? (
-                      <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 gap-1">
-                        <FileCheck className="h-3 w-3" /> Uploaded
+                      <Badge
+                        className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 gap-1 cursor-pointer hover:opacity-80"
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          const ok = await viewStoredFile('credential-documents', entry.certificate_file_url!);
+                          if (!ok) toast.error('Could not open certificate');
+                        }}
+                      >
+                        <Eye className="h-3 w-3" /> View Certificate
                       </Badge>
                     ) : (
                       <Badge variant="outline" className="text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-700 gap-1">
