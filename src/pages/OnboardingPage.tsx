@@ -105,7 +105,7 @@ const PHASE_BACK: Record<Phase, Phase | null> = {
 
 export default function OnboardingPage() {
   const { profile, updateProfile, completeOnboarding } = useUserProfile();
-  const { facilities, shifts, terms } = useData();
+  const { facilities, shifts, terms, addShift } = useData();
   const navigate = useNavigate();
   const [phase, setPhase] = useState<Phase>('profile');
   const setupAssistant = useSetupAssistant();
