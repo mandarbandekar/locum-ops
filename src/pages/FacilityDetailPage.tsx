@@ -19,6 +19,7 @@ import { ContractsTab } from '@/components/contracts/ContractsTab';
 import { FacilityImportDialog } from '@/components/facility-import/FacilityImportDialog';
 import { FileUp } from 'lucide-react';
 import { RatesEditor, termsToRates, ratesToTermsFields, RateEntry } from '@/components/facilities/RatesEditor';
+import { ShiftFormDialog } from '@/components/schedule/ShiftFormDialog';
 
 export default function FacilityDetailPage() {
   const { id } = useParams<{ id: string }>();
