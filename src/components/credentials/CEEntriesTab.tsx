@@ -8,7 +8,9 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, GraduationCap, AlertCircle, FileCheck, Link2, CalendarDays, Monitor } from 'lucide-react';
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, GraduationCap, AlertCircle, FileCheck, Link2, CalendarDays, Monitor, Eye, Download } from 'lucide-react';
+import { viewStoredFile, downloadStoredFile } from '@/lib/storageUtils';
+import { toast } from 'sonner';
 import { CE_DELIVERY_FORMAT_LABELS } from '@/lib/credentialTypes';
 import { format } from 'date-fns';
 
@@ -165,8 +167,15 @@ export default function CEEntriesTab() {
                   </TableCell>
                   <TableCell>
                     {entry.certificate_file_url ? (
-                      <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 gap-1">
-                        <FileCheck className="h-3 w-3" /> Uploaded
+                      <Badge
+                        className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 gap-1 cursor-pointer hover:opacity-80"
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          const ok = await viewStoredFile('credential-documents', entry.certificate_file_url!);
+                          if (!ok) toast.error('Could not open certificate');
+                        }}
+                      >
+                        <Eye className="h-3 w-3" /> View Certificate
                       </Badge>
                     ) : (
                       <Badge variant="outline" className="text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-700 gap-1">
@@ -181,14 +190,30 @@ export default function CEEntriesTab() {
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEdit(entry)}>
-                          <Pencil className="mr-2 h-4 w-4" /> Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive" onClick={() => deleteCEEntry.mutateAsync(entry.id)}>
-                          <Trash2 className="mr-2 h-4 w-4" /> Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
+                        <DropdownMenuContent align="end">
+                          {entry.certificate_file_url && (
+                            <>
+                              <DropdownMenuItem onClick={async () => {
+                                const ok = await viewStoredFile('credential-documents', entry.certificate_file_url!);
+                                if (!ok) toast.error('Could not open certificate');
+                              }}>
+                                <Eye className="mr-2 h-4 w-4" /> View Certificate
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={async () => {
+                                const ok = await downloadStoredFile('credential-documents', entry.certificate_file_url!, entry.certificate_file_name || 'certificate');
+                                if (!ok) toast.error('Could not download certificate');
+                              }}>
+                                <Download className="mr-2 h-4 w-4" /> Download Certificate
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                          <DropdownMenuItem onClick={() => handleEdit(entry)}>
+                            <Pencil className="mr-2 h-4 w-4" /> Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive" onClick={() => deleteCEEntry.mutateAsync(entry.id)}>
+                            <Trash2 className="mr-2 h-4 w-4" /> Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
                 </TableRow>

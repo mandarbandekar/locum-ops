@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { getSignedUrl, viewStoredFile } from '@/lib/storageUtils';
 
 const BUCKET = 'contract-documents';
 
@@ -18,16 +19,15 @@ export function getContractFileUrl(filePath: string): string {
   const { data } = supabase.storage
     .from(BUCKET)
     .getPublicUrl(filePath);
-  // Bucket is private, so we need signed URLs instead
   return data.publicUrl;
 }
 
 export async function getContractSignedUrl(filePath: string): Promise<string | null> {
-  const { data, error } = await supabase.storage
-    .from(BUCKET)
-    .createSignedUrl(filePath, 3600); // 1 hour
-  if (error) return null;
-  return data.signedUrl;
+  return getSignedUrl(BUCKET, filePath);
+}
+
+export async function viewContractFile(filePath: string): Promise<boolean> {
+  return viewStoredFile(BUCKET, filePath);
 }
 
 export async function deleteContractFile(filePath: string): Promise<void> {
