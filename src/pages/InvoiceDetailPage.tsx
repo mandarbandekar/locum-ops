@@ -218,9 +218,11 @@ export default function InvoiceDetailPage() {
         {/* LEFT: Editable Form */}
         <div className="space-y-4 print:hidden">
           {isDraft ? (
-            <DraftForm invoice={invoice} items={items} facility={facility} billingContact={billingContact} profile={profile}
+            <DraftForm invoice={invoice} items={items} facility={facility} profile={profile}
+              billingNameTo={billingNameTo} billingEmailTo={billingEmailTo}
               onUpdateInvoice={updateInvoice} onAddLineItem={addLineItem} onUpdateLineItem={updateLineItem}
-              onDeleteLineItem={deleteLineItem} onAddActivity={addActivity} />
+              onDeleteLineItem={deleteLineItem} onAddActivity={addActivity}
+              onOpenBillingDialog={() => setBillingDialogOpen(true)} />
           ) : (
             <SentView invoice={invoice} items={items} invoicePayments={invoicePayments}
               onUpdateInvoice={updateInvoice} onAddPayment={addPayment} onAddActivity={addActivity} />
