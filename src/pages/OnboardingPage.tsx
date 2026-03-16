@@ -118,7 +118,13 @@ export default function OnboardingPage() {
   const [facilityDialogOpen, setFacilityDialogOpen] = useState(false);
   const [shiftDialogOpen, setShiftDialogOpen] = useState(false);
 
-  // Profile state
+  // Profile state — pre-populated from signup metadata via UserProfileContext
+  const [firstName, setFirstName] = useState(profile?.first_name || '');
+  const [lastName, setLastName] = useState(profile?.last_name || '');
+  const [companyName, setCompanyName] = useState(profile?.company_name || '');
+  const [companyAddress, setCompanyAddress] = useState(profile?.company_address || '');
+  const [invoiceEmail, setInvoiceEmail] = useState(profile?.invoice_email || '');
+  const [invoicePhone, setInvoicePhone] = useState(profile?.invoice_phone || '');
   const [profession, setProfession] = useState<Profession>(profile?.profession || 'other');
   const [workStyle, setWorkStyle] = useState(profile?.work_style_label || '');
   const [timezone, setTimezone] = useState(profile?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone);
@@ -182,7 +188,18 @@ export default function OnboardingPage() {
 
   const saveProfile = async () => {
     console.log('onboarding_step_submit', { step: 'profile' });
-    await updateProfile({ profession, work_style_label: workStyle, timezone, currency });
+    await updateProfile({
+      first_name: firstName.trim(),
+      last_name: lastName.trim(),
+      company_name: companyName.trim(),
+      company_address: companyAddress.trim(),
+      invoice_email: invoiceEmail.trim() || null,
+      invoice_phone: invoicePhone.trim() || null,
+      profession,
+      work_style_label: workStyle,
+      timezone,
+      currency,
+    });
     setPhase('workflow');
   };
 
@@ -250,27 +267,57 @@ export default function OnboardingPage() {
           <div className="space-y-5">
             <div>
               <h2 className="text-2xl font-bold text-foreground font-[Manrope]">Welcome to LocumOps!</h2>
-              <p className="text-muted-foreground mt-1">Tell us a bit about yourself to personalize your experience.</p>
+              <p className="text-muted-foreground mt-1">Tell us about yourself and your business — this info will appear on your invoices.</p>
             </div>
             <div className="space-y-4">
-              <div>
-                <Label>Profession</Label>
-                <Select value={profession} onValueChange={v => setProfession(v as Profession)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {PROFESSIONS.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>First name <span className="text-destructive">*</span></Label>
+                  <Input value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Jane" autoFocus />
+                </div>
+                <div>
+                  <Label>Last name</Label>
+                  <Input value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Smith" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Profession</Label>
+                  <Select value={profession} onValueChange={v => setProfession(v as Profession)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {PROFESSIONS.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Work style</Label>
+                  <Select value={workStyle} onValueChange={setWorkStyle}>
+                    <SelectTrigger><SelectValue placeholder="Select…" /></SelectTrigger>
+                    <SelectContent>
+                      {WORK_STYLES.map(w => <SelectItem key={w} value={w}>{w}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div>
-                <Label>Work style</Label>
-                <Select value={workStyle} onValueChange={setWorkStyle}>
-                  <SelectTrigger><SelectValue placeholder="Select…" /></SelectTrigger>
-                  <SelectContent>
-                    {WORK_STYLES.map(w => <SelectItem key={w} value={w}>{w}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground mt-1">Used to personalize templates and exports.</p>
+                <Label>Company / practice name</Label>
+                <Input value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Smith Veterinary Services LLC" />
+                <p className="text-xs text-muted-foreground mt-1">Appears as the sender on your invoices.</p>
+              </div>
+              <div>
+                <Label>Business address</Label>
+                <Input value={companyAddress} onChange={e => setCompanyAddress(e.target.value)} placeholder="100 Main St, Suite 200, Portland, OR 97201" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Contact email</Label>
+                  <Input type="email" value={invoiceEmail} onChange={e => setInvoiceEmail(e.target.value)} placeholder="jane@example.com" />
+                </div>
+                <div>
+                  <Label>Phone</Label>
+                  <Input value={invoicePhone} onChange={e => setInvoicePhone(e.target.value)} placeholder="503-555-1234" />
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -303,7 +350,7 @@ export default function OnboardingPage() {
                 </div>
               </div>
             </div>
-            <Button onClick={saveProfile} className="w-full" size="lg">
+            <Button onClick={saveProfile} disabled={!firstName.trim()} className="w-full" size="lg">
               Continue <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </div>

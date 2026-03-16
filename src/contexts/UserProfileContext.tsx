@@ -147,8 +147,21 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
           invoice_phone: d.invoice_phone || null,
         });
       } else {
+        // Pull signup metadata from auth user to pre-populate profile
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        const meta = authUser?.user_metadata || {};
+        const insertData: any = {
+          user_id: user!.id,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          first_name: meta.first_name || '',
+          last_name: meta.last_name || '',
+          company_name: meta.company || '',
+          profession: meta.profession || 'other',
+          invoice_email: authUser?.email || null,
+        };
+
         const { data: newData, error: insertErr } = await db('user_profiles')
-          .insert({ user_id: user!.id, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone })
+          .insert(insertData)
           .select()
           .single();
         if (!insertErr && newData) {
