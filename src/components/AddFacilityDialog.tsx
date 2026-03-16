@@ -55,7 +55,7 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
     setRates([]);
     setTechComputer(''); setTechWifi(''); setTechPims('');
     setClinicAccess(''); setInvoicePrefix(''); setInvoiceDueDays(15);
-    setInvoiceEmailTo(''); setInvoiceEmailCc(''); setInvoiceEmailBcc('');
+    setInvoiceNameTo(''); setInvoiceEmailTo(''); setInvoiceNameCc(''); setInvoiceEmailCc(''); setInvoiceNameBcc(''); setInvoiceEmailBcc('');
   };
 
   const handleSubmit = async () => {
