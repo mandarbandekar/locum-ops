@@ -8,17 +8,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useUserProfile, type Profession, type CurrentTool, type FacilitiesCountBand, type InvoicesPerMonthBand } from '@/contexts/UserProfileContext';
+import { useData } from '@/contexts/DataContext';
 import { ArrowRight, Check } from 'lucide-react';
 import { SetupAssistantLanes } from '@/components/setup-assistant/SetupAssistantLanes';
 import { ImportReviewPanel } from '@/components/setup-assistant/ImportReviewPanel';
 import { useSetupAssistant } from '@/hooks/useSetupAssistant';
-import { useManualSetup } from '@/hooks/useManualSetup';
 import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
 import { SetupChoiceScreen } from '@/components/onboarding/SetupChoiceScreen';
-import { ManualFacilityForm } from '@/components/onboarding/ManualFacilityForm';
-import { ManualShiftForm } from '@/components/onboarding/ManualShiftForm';
 import { ManualExpandScreen } from '@/components/onboarding/ManualExpandScreen';
 import { WorkspaceReady } from '@/components/onboarding/WorkspaceReady';
+import { AddFacilityDialog } from '@/components/AddFacilityDialog';
+import { ShiftFormDialog } from '@/components/schedule/ShiftFormDialog';
 
 const PROFESSIONS: { value: Profession; label: string }[] = [
   { value: 'vet', label: 'Veterinarian' },
@@ -105,10 +105,18 @@ const PHASE_BACK: Record<Phase, Phase | null> = {
 
 export default function OnboardingPage() {
   const { profile, updateProfile, completeOnboarding } = useUserProfile();
+  const { facilities, shifts, terms, addShift } = useData();
   const navigate = useNavigate();
   const [phase, setPhase] = useState<Phase>('profile');
   const setupAssistant = useSetupAssistant();
-  const manualSetup = useManualSetup();
+
+  // Track facilities/shifts count at phase entry to detect new additions
+  const [facilityCountAtEntry, setFacilityCountAtEntry] = useState(0);
+  const [shiftCountAtEntry, setShiftCountAtEntry] = useState(0);
+
+  // Dialog open states
+  const [facilityDialogOpen, setFacilityDialogOpen] = useState(false);
+  const [shiftDialogOpen, setShiftDialogOpen] = useState(false);
 
   // Profile state
   const [profession, setProfession] = useState<Profession>(profile?.profession || 'other');
@@ -125,12 +133,47 @@ export default function OnboardingPage() {
   const [showTaxSetup, setShowTaxSetup] = useState(false);
   const [taxDisclaimer, setTaxDisclaimer] = useState(false);
 
-  // Last facility rate for prefilling
-  const [lastFacilityRate, setLastFacilityRate] = useState<number | undefined>();
-
   useEffect(() => {
     console.log('onboarding_step_view', { phase });
   }, [phase]);
+
+  // When entering manual_facility phase, open the dialog automatically
+  useEffect(() => {
+    if (phase === 'manual_facility') {
+      setFacilityCountAtEntry(facilities.length);
+      setFacilityDialogOpen(true);
+    }
+  }, [phase]);
+
+  // When entering manual_shift phase, open the dialog automatically
+  useEffect(() => {
+    if (phase === 'manual_shift') {
+      setShiftCountAtEntry(shifts.length);
+      setShiftDialogOpen(true);
+    }
+  }, [phase]);
+
+  // When facility dialog closes, check if a facility was added
+  const handleFacilityDialogChange = (open: boolean) => {
+    setFacilityDialogOpen(open);
+    if (!open && phase === 'manual_facility') {
+      // Check if new facilities were added (DataContext will have updated)
+      setTimeout(() => {
+        // Use a small delay to let DataContext state propagate
+        setPhase('manual_shift');
+      }, 300);
+    }
+  };
+
+  // When shift dialog closes, check if a shift was added
+  const handleShiftDialogChange = (open: boolean) => {
+    setShiftDialogOpen(open);
+    if (!open && phase === 'manual_shift') {
+      setTimeout(() => {
+        setPhase('manual_expand');
+      }, 300);
+    }
+  };
 
   const goBack = () => {
     const prev = PHASE_BACK[phase];
@@ -170,22 +213,6 @@ export default function OnboardingPage() {
     }
   };
 
-  // Manual handlers
-  const handleFacilitySaved = async (input: any) => {
-    const facility = await manualSetup.addFacility(input);
-    if (facility) {
-      setLastFacilityRate(input.weekday_rate);
-      setPhase('manual_shift');
-    }
-  };
-
-  const handleShiftSaved = async (input: any) => {
-    const shift = await manualSetup.addShift(input);
-    if (shift) {
-      setPhase('manual_expand');
-    }
-  };
-
   const handleManualConfirm = async () => {
     await completeOnboarding();
     setPhase('workspace_ready');
@@ -207,6 +234,12 @@ export default function OnboardingPage() {
     if (phase === 'manual_facility' || phase === 'manual_shift') return 'Skip to dashboard';
     if (phase === 'tax_enablement') return 'Skip for now';
     return 'Skip';
+  };
+
+  // Shift save handler for ShiftFormDialog
+  const handleShiftSave = (shift: any) => {
+    // ShiftFormDialog calls onSave but the actual addShift is in DataContext
+    // The dialog handles its own save via the form submit
   };
 
   // Render content based on phase
@@ -385,25 +418,86 @@ export default function OnboardingPage() {
 
       case 'manual_facility':
         return (
-          <ManualFacilityForm onSave={handleFacilitySaved} saving={manualSetup.saving} />
+          <div className="space-y-5">
+            <div>
+              <h2 className="text-2xl font-bold text-foreground font-[Manrope]">Add your first practice</h2>
+              <p className="text-muted-foreground mt-1">
+                Start with one place you work so we can organize your schedule and billing.
+              </p>
+            </div>
+            <Button onClick={() => setFacilityDialogOpen(true)} className="w-full" size="lg">
+              Open Practice Form <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+            {facilities.length > 0 && (
+              <Card>
+                <CardContent className="pt-4 space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground">Added practices</p>
+                  {facilities.map(f => (
+                    <div key={f.id} className="flex items-center gap-2 text-sm">
+                      <Check className="h-4 w-4 text-primary" />
+                      <span>{f.name}</span>
+                    </div>
+                  ))}
+                  <Button onClick={() => setPhase('manual_shift')} className="w-full mt-3" size="lg">
+                    Continue to shifts <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+            <AddFacilityDialog open={facilityDialogOpen} onOpenChange={handleFacilityDialogChange} />
+          </div>
         );
 
       case 'manual_shift':
         return (
-          <ManualShiftForm
-            facilities={manualSetup.facilities}
-            defaultFacilityId={manualSetup.facilities[manualSetup.facilities.length - 1]?.id}
-            defaultRate={lastFacilityRate}
-            onSave={handleShiftSaved}
-            saving={manualSetup.saving}
-          />
+          <div className="space-y-5">
+            <div>
+              <h2 className="text-2xl font-bold text-foreground font-[Manrope]">Add your first shift</h2>
+              <p className="text-muted-foreground mt-1">
+                Add an upcoming shift so your schedule is ready right away.
+              </p>
+            </div>
+            <Button onClick={() => setShiftDialogOpen(true)} className="w-full" size="lg">
+              Open Shift Form <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+            {shifts.length > 0 && (
+              <Card>
+                <CardContent className="pt-4 space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground">Added shifts</p>
+                  {shifts.map(s => {
+                    const facility = facilities.find(f => f.id === s.facility_id);
+                    const date = new Date(s.start_datetime).toLocaleDateString();
+                    return (
+                      <div key={s.id} className="flex items-center gap-2 text-sm">
+                        <Check className="h-4 w-4 text-primary" />
+                        <span>{facility?.name} — {date}</span>
+                      </div>
+                    );
+                  })}
+                  <Button onClick={() => setPhase('manual_expand')} className="w-full mt-3" size="lg">
+                    Continue <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+            <ShiftFormDialog
+              open={shiftDialogOpen}
+              onOpenChange={handleShiftDialogChange}
+              facilities={facilities}
+              shifts={shifts}
+              terms={terms}
+              onSave={(shift) => {
+                addShift(shift);
+              }}
+            />
+          </div>
         );
 
       case 'manual_expand':
         return (
           <ManualExpandScreen
-            facilities={manualSetup.facilities}
-            shifts={manualSetup.shifts}
+            facilities={facilities}
+            shifts={shifts}
             onAddPractice={() => setPhase('manual_facility')}
             onAddShift={() => setPhase('manual_shift')}
             onFinish={() => setPhase('manual_review')}
@@ -421,7 +515,7 @@ export default function OnboardingPage() {
               <CardContent className="pt-5 space-y-4">
                 <div>
                   <h3 className="font-medium text-sm text-muted-foreground mb-2">Practices</h3>
-                  {manualSetup.facilities.map(f => (
+                  {facilities.map(f => (
                     <div key={f.id} className="flex items-center gap-2 py-1">
                       <Check className="h-4 w-4 text-primary" />
                       <span className="text-sm">{f.name}</span>
@@ -430,8 +524,8 @@ export default function OnboardingPage() {
                 </div>
                 <div>
                   <h3 className="font-medium text-sm text-muted-foreground mb-2">Shifts</h3>
-                  {manualSetup.shifts.map(s => {
-                    const facility = manualSetup.facilities.find(f => f.id === s.facility_id);
+                  {shifts.map(s => {
+                    const facility = facilities.find(f => f.id === s.facility_id);
                     const date = new Date(s.start_datetime).toLocaleDateString();
                     return (
                       <div key={s.id} className="flex items-center gap-2 py-1">
@@ -450,12 +544,10 @@ export default function OnboardingPage() {
         );
 
       case 'workspace_ready':
-        const facilitiesCount = manualSetup.facilities.length || setupAssistant.getSummary().facilities_imported;
-        const shiftsCount = manualSetup.shifts.length || setupAssistant.getSummary().shifts_imported;
         return (
           <WorkspaceReady
-            facilitiesCount={facilitiesCount}
-            shiftsCount={shiftsCount}
+            facilitiesCount={facilities.length || setupAssistant.getSummary().facilities_imported}
+            shiftsCount={shifts.length || setupAssistant.getSummary().shifts_imported}
             onNavigate={handleNavigate}
           />
         );

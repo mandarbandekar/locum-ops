@@ -54,10 +54,12 @@ function AuthenticatedApp() {
 
   if (needsOnboarding && !isDemo) {
     return (
-      <Routes>
-        <Route path="/onboarding" element={<OnboardingPage />} />
-        <Route path="*" element={<Navigate to="/onboarding" replace />} />
-      </Routes>
+      <DataProvider isDemo={false}>
+        <Routes>
+          <Route path="/onboarding" element={<OnboardingPage />} />
+          <Route path="*" element={<Navigate to="/onboarding" replace />} />
+        </Routes>
+      </DataProvider>
     );
   }
 
