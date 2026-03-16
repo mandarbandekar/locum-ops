@@ -214,14 +214,9 @@ export default function ReportsPage() {
           <CardDescription>Paid vs outstanding invoice amounts · anticipated income shown separately</CardDescription>
         </CardHeader>
         <CardContent>
-          {(totalAnticipated > 0 || totalAnticipatedTax > 0) && (
+          {totalAnticipated > 0 && (
             <div className="flex flex-wrap gap-4 text-xs text-muted-foreground mb-2">
-              {totalAnticipated > 0 && (
-                <span>Anticipated income: <span className="font-semibold">${totalAnticipated.toLocaleString()}</span></span>
-              )}
-              {totalAnticipatedTax > 0 && (
-                <span>Anticipated taxes ({taxSetAsidePercent}%): <span className="font-semibold">${totalAnticipatedTax.toLocaleString()}</span></span>
-              )}
+              <span>Anticipated income: <span className="font-semibold">${totalAnticipated.toLocaleString()}</span></span>
               <span className="italic">(not included in Total Revenue)</span>
             </div>
           )}
