@@ -13,9 +13,10 @@ interface Props {
 
 export function ManualExpandScreen({ facilities, shifts, onAddPractice, onAddShift, onFinish }: Props) {
   return (
-    <div className="space-y-6">
-      <div className="text-center space-y-2">
-        <h1 className="text-2xl font-bold text-foreground">Your workspace is taking shape</h1>
+    <div className="space-y-5">
+      <div>
+        <h2 className="text-2xl font-bold text-foreground font-[Manrope]">Your workspace is taking shape</h2>
+        <p className="text-muted-foreground mt-1">Add more or finish setup.</p>
       </div>
 
       <Card>
@@ -46,7 +47,7 @@ export function ManualExpandScreen({ facilities, shifts, onAddPractice, onAddShi
           <CalendarDays className="mr-2 h-4 w-4 text-primary" />
           Add another shift
         </Button>
-        <Button onClick={onFinish} className="w-full mt-2">
+        <Button onClick={onFinish} className="w-full mt-2" size="lg">
           Finish setup
         </Button>
       </div>
