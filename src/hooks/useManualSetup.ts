@@ -65,8 +65,11 @@ export function useManualSetup() {
         clinic_access_info: '',
         invoice_prefix: prefix,
         invoice_due_days: 30,
+        invoice_name_to: input.billing_name_to || '',
         invoice_email_to: input.billing_email || '',
+        invoice_name_cc: input.billing_name_cc || '',
         invoice_email_cc: input.billing_email_cc || '',
+        invoice_name_bcc: input.billing_name_bcc || '',
         invoice_email_bcc: input.billing_email_bcc || '',
       }).select().single();
 

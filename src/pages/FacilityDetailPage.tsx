@@ -551,9 +551,134 @@ function InvoiceSettingsCard({ facility, onUpdate }: { facility: any; onUpdate: 
   const [editing, setEditing] = useState(false);
   const [prefix, setPrefix] = useState(facility.invoice_prefix || 'INV');
   const [dueDays, setDueDays] = useState(facility.invoice_due_days ?? 15);
+  const [nameTo, setNameTo] = useState(facility.invoice_name_to || '');
   const [emailTo, setEmailTo] = useState(facility.invoice_email_to || '');
+  const [nameCc, setNameCc] = useState(facility.invoice_name_cc || '');
   const [emailCc, setEmailCc] = useState(facility.invoice_email_cc || '');
+  const [nameBcc, setNameBcc] = useState(facility.invoice_name_bcc || '');
   const [emailBcc, setEmailBcc] = useState(facility.invoice_email_bcc || '');
+
+  const handleSave = () => {
+    onUpdate({
+      ...facility,
+      invoice_prefix: prefix,
+      invoice_due_days: dueDays,
+      invoice_name_to: nameTo.trim(),
+      invoice_email_to: emailTo.trim(),
+      invoice_name_cc: nameCc.trim(),
+      invoice_email_cc: emailCc.trim(),
+      invoice_name_bcc: nameBcc.trim(),
+      invoice_email_bcc: emailBcc.trim(),
+    });
+    setEditing(false);
+    toast.success('Invoice settings saved');
+  };
+
+  const handleCancel = () => {
+    setPrefix(facility.invoice_prefix || 'INV');
+    setDueDays(facility.invoice_due_days ?? 15);
+    setNameTo(facility.invoice_name_to || '');
+    setEmailTo(facility.invoice_email_to || '');
+    setNameCc(facility.invoice_name_cc || '');
+    setEmailCc(facility.invoice_email_cc || '');
+    setNameBcc(facility.invoice_name_bcc || '');
+    setEmailBcc(facility.invoice_email_bcc || '');
+    setEditing(false);
+  };
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle className="text-base">Invoice Billing Contact and Settings</CardTitle>
+        {editing ? (
+          <div className="flex gap-2">
+            <Button size="sm" onClick={handleSave}><Save className="mr-1 h-3 w-3" /> Save</Button>
+            <Button size="sm" variant="ghost" onClick={handleCancel}><X className="mr-1 h-3 w-3" /> Cancel</Button>
+          </div>
+        ) : (
+          <Button size="sm" variant="ghost" onClick={() => setEditing(true)}><Edit2 className="mr-1 h-3 w-3" /> Edit</Button>
+        )}
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {editing ? (
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Invoice Prefix</Label>
+                <Input value={prefix} onChange={e => setPrefix(e.target.value.toUpperCase())} placeholder="INV" />
+                <p className="text-xs text-muted-foreground mt-0.5">e.g. {prefix}-2026-001</p>
+              </div>
+              <div>
+                <Label className="text-xs">Due (days)</Label>
+                <Input type="number" value={dueDays} onChange={e => setDueDays(Number(e.target.value))} min={1} />
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs">Name (To)</Label>
+              <Input value={nameTo} onChange={e => setNameTo(e.target.value)} placeholder="Billing Department" />
+            </div>
+            <div>
+              <Label className="text-xs">Invoice Email (To)</Label>
+              <Input type="email" value={emailTo} onChange={e => setEmailTo(e.target.value)} placeholder="billing@clinic.com" />
+              <p className="text-xs text-muted-foreground mt-0.5">This email will be used as the billing contact when invoices are created.</p>
+            </div>
+            <div>
+              <Label className="text-xs">Name (CC)</Label>
+              <Input value={nameCc} onChange={e => setNameCc(e.target.value)} placeholder="Office Manager" />
+            </div>
+            <div>
+              <Label className="text-xs">Invoice Email (CC)</Label>
+              <Input type="email" value={emailCc} onChange={e => setEmailCc(e.target.value)} placeholder="manager@clinic.com" />
+            </div>
+            <div>
+              <Label className="text-xs">Name (BCC)</Label>
+              <Input value={nameBcc} onChange={e => setNameBcc(e.target.value)} placeholder="Records" />
+            </div>
+            <div>
+              <Label className="text-xs">Invoice Email (BCC)</Label>
+              <Input type="email" value={emailBcc} onChange={e => setEmailBcc(e.target.value)} placeholder="records@clinic.com" />
+            </div>
+          </>
+        ) : (
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Prefix</span>
+              <span className="font-medium">{facility.invoice_prefix || 'INV'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Due</span>
+              <span className="font-medium">Net {facility.invoice_due_days ?? 15}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Name (To)</span>
+              <span className="font-medium">{facility.invoice_name_to || '—'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Email To</span>
+              <span className="font-medium">{facility.invoice_email_to || '—'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Name (CC)</span>
+              <span className="font-medium">{facility.invoice_name_cc || '—'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">CC</span>
+              <span className="font-medium">{facility.invoice_email_cc || '—'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Name (BCC)</span>
+              <span className="font-medium">{facility.invoice_name_bcc || '—'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">BCC</span>
+              <span className="font-medium">{facility.invoice_email_bcc || '—'}</span>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
   const handleSave = () => {
     onUpdate({
