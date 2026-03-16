@@ -4,10 +4,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Briefcase, Play } from 'lucide-react';
+import { Play } from 'lucide-react';
+import onboardingIllustration from '@/assets/onboarding-illustration.png';
 
 const PROFESSIONS = [
   { value: 'vet', label: 'Veterinarian' },
@@ -59,39 +59,49 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted p-4">
-      <div className="w-full max-w-md space-y-4">
-        <Card>
-          <CardHeader className="text-center space-y-2">
-            <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-2">
-              <Briefcase className="h-6 w-6 text-primary" />
+    <div className="h-screen w-screen overflow-hidden flex bg-background">
+      {/* Left: form area */}
+      <div className="flex-1 flex flex-col justify-center px-6 lg:px-16 xl:px-24 overflow-y-auto">
+        <div className="w-full max-w-md mx-auto space-y-6 py-8">
+          {/* Logo / brand */}
+          <div>
+            <div className="flex items-center gap-2 mb-6">
+              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                <span className="text-primary font-bold text-lg">L</span>
+              </div>
+              <span className="font-[Manrope] font-bold text-lg text-foreground">LocumOps</span>
             </div>
-            <CardTitle className="text-2xl">LocumOps</CardTitle>
-            <CardDescription>{isSignUp ? 'Create your account' : 'Independent clinician management'}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {isSignUp && (
-                <>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="firstName">First Name *</Label>
-                      <Input id="firstName" value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Jane" required />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="lastName">Last Name</Label>
-                      <Input id="lastName" value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Smith" />
-                    </div>
+            <h1 className="text-2xl font-bold text-foreground font-[Manrope]">
+              {isSignUp ? 'Create your account' : 'Welcome back'}
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              {isSignUp ? 'Get started managing your locum business.' : 'Sign in to your LocumOps workspace.'}
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {isSignUp && (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="firstName">First Name *</Label>
+                    <Input id="firstName" value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Jane" required />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="lastName">Last Name</Label>
+                    <Input id="lastName" value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Smith" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
                     <Label htmlFor="company">Company / Practice</Label>
                     <Input id="company" value={company} onChange={e => setCompany(e.target.value)} placeholder="Smith Veterinary LLC" />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Label htmlFor="profession">Profession *</Label>
                     <Select value={profession} onValueChange={setProfession}>
                       <SelectTrigger id="profession">
-                        <SelectValue placeholder="Select your profession" />
+                        <SelectValue placeholder="Select…" />
                       </SelectTrigger>
                       <SelectContent>
                         {PROFESSIONS.map(p => (
@@ -100,58 +110,61 @@ export default function LoginPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                </>
-              )}
-              <div className="space-y-2">
-                <Label htmlFor="email">Email *</Label>
-                <Input id="email" type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" />
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Password *</Label>
-                  {!isSignUp && (
-                    <button type="button" className="text-xs text-primary underline" onClick={() => navigate('/forgot-password')}>
-                      Forgot password?
-                    </button>
-                  )}
                 </div>
-                <Input id="password" type="password" required minLength={6} value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" />
+              </>
+            )}
+            <div className="space-y-1.5">
+              <Label htmlFor="email">Email *</Label>
+              <Input id="email" type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" />
+            </div>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password *</Label>
+                {!isSignUp && (
+                  <button type="button" className="text-xs text-primary underline" onClick={() => navigate('/forgot-password')}>
+                    Forgot password?
+                  </button>
+                )}
               </div>
-              {error && <p className="text-sm text-destructive">{error}</p>}
-              {message && <p className="text-sm text-green-600">{message}</p>}
-              <Button type="submit" className="w-full" disabled={submitting}>
-                {submitting ? 'Please wait…' : isSignUp ? 'Create Account' : 'Sign In'}
-              </Button>
-              <p className="text-sm text-muted-foreground text-center">
-                {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
-                <button type="button" className="text-primary underline" onClick={resetForm}>
-                  {isSignUp ? 'Sign In' : 'Sign Up'}
-                </button>
-              </p>
-            </form>
-          </CardContent>
-        </Card>
-
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <Separator className="w-full" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-muted px-2 text-muted-foreground">or</span>
-          </div>
-        </div>
-
-        <Card className="border-dashed">
-          <CardContent className="pt-6 pb-6 text-center space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Want to explore first? Try the demo with sample data — no account needed.
-            </p>
-            <Button variant="outline" className="w-full" onClick={enterDemo}>
-              <Play className="mr-2 h-4 w-4" />
-              Try Demo
+              <Input id="password" type="password" required minLength={6} value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" />
+            </div>
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            {message && <p className="text-sm text-primary">{message}</p>}
+            <Button type="submit" className="w-full" size="lg" disabled={submitting}>
+              {submitting ? 'Please wait…' : isSignUp ? 'Create Account' : 'Sign In'}
             </Button>
-          </CardContent>
-        </Card>
+          </form>
+
+          <p className="text-sm text-muted-foreground text-center">
+            {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
+            <button type="button" className="text-primary font-medium underline" onClick={resetForm}>
+              {isSignUp ? 'Sign In' : 'Sign Up'}
+            </button>
+          </p>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <Separator className="w-full" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">or</span>
+            </div>
+          </div>
+
+          <Button variant="outline" className="w-full" size="lg" onClick={enterDemo}>
+            <Play className="mr-2 h-4 w-4" />
+            Try Demo — no account needed
+          </Button>
+        </div>
+      </div>
+
+      {/* Right: decorative panel (hidden on mobile) */}
+      <div className="hidden lg:flex w-[420px] xl:w-[480px] shrink-0 bg-muted/50 items-center justify-center p-8">
+        <img
+          src={onboardingIllustration}
+          alt="LocumOps — manage your locum business"
+          className="max-w-full max-h-[70vh] object-contain opacity-90"
+        />
       </div>
     </div>
   );
