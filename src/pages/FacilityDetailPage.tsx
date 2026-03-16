@@ -421,20 +421,17 @@ function ClinicAccessTab({ facility, onUpdate }: { facility: any; onUpdate: any 
 
 // ─── Shifts Tab ────────────────────────────────────────────
 
-function ShiftsTab({ shifts, facilityId, onAdd }: { shifts: any[]; facilityId: string; onAdd: (s: any) => void }) {
+function ShiftsTab({ shifts, allShifts, facilityId, facilities, terms, onAdd, onUpdate, onDelete }: { shifts: any[]; allShifts: any[]; facilityId: string; facilities: any[]; terms: any[]; onAdd: (s: any) => void; onUpdate: (s: any) => void; onDelete: (id: string) => void }) {
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({
-    date: '', start_time: '08:00', end_time: '17:00', rate_applied: 0, status: 'proposed' as string, notes: '', color: 'blue' as ShiftColor
-  });
+  const [editShift, setEditShift] = useState<any>(null);
 
-  const handleAdd = () => {
-    if (!form.date) return;
-    const start_datetime = `${form.date}T${form.start_time}:00`;
-    const end_datetime = `${form.date}T${form.end_time}:00`;
-    onAdd({ facility_id: facilityId, start_datetime, end_datetime, rate_applied: form.rate_applied, status: form.status, notes: form.notes, color: form.color });
-    setShowAdd(false);
-    setForm({ date: '', start_time: '08:00', end_time: '17:00', rate_applied: 0, status: 'proposed', notes: '', color: 'blue' });
-    toast.success('Shift added');
+  const handleSave = (s: any) => {
+    if (s.id) {
+      onUpdate(s);
+    } else {
+      onAdd(s);
+    }
+    toast.success(s.id ? 'Shift updated' : 'Shift added');
   };
 
   return (
@@ -451,69 +448,46 @@ function ShiftsTab({ shifts, facilityId, onAdd }: { shifts: any[]; facilityId: s
             <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
           </tr></thead>
           <tbody>
-            {shifts.map(s => {
-              const colorDef = SHIFT_COLORS.find(c => c.value === (s.color || 'blue')) || SHIFT_COLORS[0];
-              return (
-                <tr key={s.id} className="border-b last:border-0">
-                  <td className="p-3">
-                    <div className="flex items-center gap-2">
-                      <span className={`w-2.5 h-2.5 rounded-full ${s.color === 'blue' ? 'bg-blue-500' : s.color === 'green' ? 'bg-green-500' : s.color === 'red' ? 'bg-red-500' : s.color === 'orange' ? 'bg-orange-500' : s.color === 'purple' ? 'bg-purple-500' : s.color === 'pink' ? 'bg-pink-500' : s.color === 'teal' ? 'bg-teal-500' : s.color === 'yellow' ? 'bg-yellow-500' : 'bg-blue-500'}`} />
-                      {format(new Date(s.start_datetime), 'MMM d, yyyy')}
-                    </div>
-                  </td>
-                  <td className="p-3 text-muted-foreground">{format(new Date(s.start_datetime), 'h:mm a')} - {format(new Date(s.end_datetime), 'h:mm a')}</td>
-                  <td className="p-3">${s.rate_applied}</td>
-                  <td className="p-3"><StatusBadge status={s.status} /></td>
-                </tr>
-              );
-            })}
+            {shifts.map(s => (
+              <tr key={s.id} className="border-b last:border-0 hover:bg-muted/30 cursor-pointer" onClick={() => setEditShift(s)}>
+                <td className="p-3">
+                  <div className="flex items-center gap-2">
+                    <span className={`w-2.5 h-2.5 rounded-full ${s.color === 'blue' ? 'bg-blue-500' : s.color === 'green' ? 'bg-green-500' : s.color === 'red' ? 'bg-red-500' : s.color === 'orange' ? 'bg-orange-500' : s.color === 'purple' ? 'bg-purple-500' : s.color === 'pink' ? 'bg-pink-500' : s.color === 'teal' ? 'bg-teal-500' : s.color === 'yellow' ? 'bg-yellow-500' : 'bg-blue-500'}`} />
+                    {format(new Date(s.start_datetime), 'MMM d, yyyy')}
+                  </div>
+                </td>
+                <td className="p-3 text-muted-foreground">{format(new Date(s.start_datetime), 'h:mm a')} - {format(new Date(s.end_datetime), 'h:mm a')}</td>
+                <td className="p-3">${s.rate_applied}</td>
+                <td className="p-3"><StatusBadge status={s.status} /></td>
+              </tr>
+            ))}
             {shifts.length === 0 && <tr><td colSpan={4} className="p-6 text-center text-muted-foreground">No shifts</td></tr>}
           </tbody>
         </table>
       </div>
 
-      <Dialog open={showAdd} onOpenChange={setShowAdd}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Add Shift</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <div><Label>Date</Label><Input type="date" value={form.date} onChange={e => setForm(p => ({ ...p, date: e.target.value }))} /></div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><Label>Start Time</Label><Input type="time" value={form.start_time} onChange={e => setForm(p => ({ ...p, start_time: e.target.value }))} /></div>
-              <div><Label>End Time</Label><Input type="time" value={form.end_time} onChange={e => setForm(p => ({ ...p, end_time: e.target.value }))} /></div>
-            </div>
-            <div><Label>Rate ($)</Label><Input type="number" value={form.rate_applied} onChange={e => setForm(p => ({ ...p, rate_applied: Number(e.target.value) }))} /></div>
-            <div><Label>Status</Label>
-              <Select value={form.status} onValueChange={v => setForm(p => ({ ...p, status: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="proposed">Proposed</SelectItem>
-                  <SelectItem value="booked">Booked</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="canceled">Canceled</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div><Label>Notes</Label><Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} rows={2} /></div>
-            <div>
-              <Label>Color</Label>
-              <div className="flex gap-2 mt-1.5 flex-wrap">
-                {SHIFT_COLORS.map(c => (
-                  <button
-                    key={c.value}
-                    type="button"
-                    onClick={() => setForm(p => ({ ...p, color: c.value }))}
-                    className={`w-7 h-7 rounded-full border-2 transition-all ${form.color === c.value ? 'border-foreground scale-110' : 'border-transparent hover:scale-105'}`}
-                    title={c.label}
-                  >
-                    <span className={`block w-full h-full rounded-full ${c.value === 'blue' ? 'bg-blue-500' : c.value === 'green' ? 'bg-green-500' : c.value === 'red' ? 'bg-red-500' : c.value === 'orange' ? 'bg-orange-500' : c.value === 'purple' ? 'bg-purple-500' : c.value === 'pink' ? 'bg-pink-500' : c.value === 'teal' ? 'bg-teal-500' : 'bg-yellow-500'}`} />
-                  </button>
-                ))}
-              </div>
-            </div>
-            <Button onClick={handleAdd} className="w-full">Add Shift</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ShiftFormDialog
+        open={showAdd}
+        onOpenChange={setShowAdd}
+        facilities={facilities}
+        shifts={allShifts}
+        terms={terms}
+        onSave={handleSave}
+      />
+
+      {editShift && (
+        <ShiftFormDialog
+          key={editShift.id}
+          open={!!editShift}
+          onOpenChange={() => setEditShift(null)}
+          facilities={facilities}
+          shifts={allShifts}
+          terms={terms}
+          existing={editShift}
+          onSave={handleSave}
+          onDelete={(id) => { onDelete(id); setEditShift(null); toast.success('Shift deleted'); }}
+        />
+      )}
     </div>
   );
 }
