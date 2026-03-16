@@ -309,6 +309,93 @@ export default function InvoiceDetailPage() {
   );
 }
 
+// ─── Billing Details Dialog ─────────────────────────────────
+
+function BillingDetailsDialog({ open, onOpenChange, facility, onSave }: { open: boolean; onOpenChange: (open: boolean) => void; facility: any; onSave: (updates: any) => void }) {
+  const [nameTo, setNameTo] = useState(facility?.invoice_name_to || '');
+  const [emailTo, setEmailTo] = useState(facility?.invoice_email_to || '');
+  const [nameCc, setNameCc] = useState(facility?.invoice_name_cc || '');
+  const [emailCc, setEmailCc] = useState(facility?.invoice_email_cc || '');
+  const [nameBcc, setNameBcc] = useState(facility?.invoice_name_bcc || '');
+  const [emailBcc, setEmailBcc] = useState(facility?.invoice_email_bcc || '');
+
+  // Sync when facility changes
+  const facilityId = facility?.id;
+  const [lastFacilityId, setLastFacilityId] = useState(facilityId);
+  if (facilityId !== lastFacilityId) {
+    setLastFacilityId(facilityId);
+    setNameTo(facility?.invoice_name_to || '');
+    setEmailTo(facility?.invoice_email_to || '');
+    setNameCc(facility?.invoice_name_cc || '');
+    setEmailCc(facility?.invoice_email_cc || '');
+    setNameBcc(facility?.invoice_name_bcc || '');
+    setEmailBcc(facility?.invoice_email_bcc || '');
+  }
+
+  const handleSave = () => {
+    onSave({
+      invoice_name_to: nameTo.trim(),
+      invoice_email_to: emailTo.trim(),
+      invoice_name_cc: nameCc.trim(),
+      invoice_email_cc: emailCc.trim(),
+      invoice_name_bcc: nameBcc.trim(),
+      invoice_email_bcc: emailBcc.trim(),
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Invoice Billing Contact</DialogTitle>
+          <DialogDescription>
+            Add the billing contact details for {facility?.name || 'this facility'}. These will be saved to the facility and used on all future invoices.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <p className="text-xs font-medium text-muted-foreground">To</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs">Name</Label>
+              <Input value={nameTo} onChange={e => setNameTo(e.target.value)} placeholder="Billing Department" />
+            </div>
+            <div>
+              <Label className="text-xs">Email</Label>
+              <Input type="email" value={emailTo} onChange={e => setEmailTo(e.target.value)} placeholder="billing@clinic.com" />
+            </div>
+          </div>
+          <p className="text-xs font-medium text-muted-foreground">CC</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs">Name</Label>
+              <Input value={nameCc} onChange={e => setNameCc(e.target.value)} placeholder="Office Manager" />
+            </div>
+            <div>
+              <Label className="text-xs">Email</Label>
+              <Input type="email" value={emailCc} onChange={e => setEmailCc(e.target.value)} placeholder="manager@clinic.com" />
+            </div>
+          </div>
+          <p className="text-xs font-medium text-muted-foreground">BCC</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs">Name</Label>
+              <Input value={nameBcc} onChange={e => setNameBcc(e.target.value)} placeholder="Records" />
+            </div>
+            <div>
+              <Label className="text-xs">Email</Label>
+              <Input type="email" value={emailBcc} onChange={e => setEmailBcc(e.target.value)} placeholder="records@clinic.com" />
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={handleSave} disabled={!nameTo.trim() || !emailTo.trim()}>Save</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function getStepOrder(status: string): number {
   if (status === 'draft') return 0;
   if (status === 'sent' || status === 'partial' || status === 'overdue') return 1;
