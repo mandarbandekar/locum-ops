@@ -51,6 +51,11 @@ export function ReadyToSendChecklist({ items, onFix, onFixBilling }: { items: Ch
                 Go to Settings
               </Button>
             )}
+            {!item.complete && (item.key === 'billing_name' || item.key === 'billing_email') && onFixBilling && (
+              <Button variant="link" size="sm" className="ml-auto h-auto p-0 text-xs" onClick={onFixBilling}>
+                Add Details
+              </Button>
+            )}
           </div>
         ))}
         {!allRequired && onFix && (
