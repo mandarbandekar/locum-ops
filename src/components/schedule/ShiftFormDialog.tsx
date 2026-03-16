@@ -33,7 +33,7 @@ function buildRateOptions(terms: TermsSnapshot[], facilityId: string): RateEntry
   return termsToRates(facilityTerms).filter(r => r.amount > 0);
 }
 
-export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms, existing, onSave, onDelete }: ShiftFormDialogProps) {
+export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms, existing, onSave, onDelete, embedded }: ShiftFormDialogProps) {
   const [facilityId, setFacilityId] = useState(existing?.facility_id || facilities[0]?.id || '');
   const [selectedDates, setSelectedDates] = useState<Date[]>(
     existing ? [new Date(existing.start_datetime)] : []
