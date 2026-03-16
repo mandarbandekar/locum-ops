@@ -773,11 +773,6 @@ function SentView({ invoice, items, invoicePayments, onUpdateInvoice, onAddPayme
     toast.success('New share link generated');
   };
 
-  const handleResend = async () => {
-    await onUpdateInvoice({ ...invoice, sent_at: new Date().toISOString() });
-    await onAddActivity({ invoice_id: invoice.id, action: 'resent', description: 'Invoice resent' });
-    toast.success('Sent date updated');
-  };
 
   const handleRecordPayment = async (payment: any) => {
     await onAddPayment({ invoice_id: invoice.id, ...payment });
