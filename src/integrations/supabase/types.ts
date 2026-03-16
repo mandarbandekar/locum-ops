@@ -1668,6 +1668,44 @@ export type Database = {
         }
         Relationships: []
       }
+      saved_tax_questions: {
+        Row: {
+          created_at: string
+          id: string
+          include_in_summary: boolean
+          question_text: string
+          saved_from_session_id: string | null
+          topic: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          include_in_summary?: boolean
+          question_text: string
+          saved_from_session_id?: string | null
+          topic?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          include_in_summary?: boolean
+          question_text?: string
+          saved_from_session_id?: string | null
+          topic?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_tax_questions_saved_from_session_id_fkey"
+            columns: ["saved_from_session_id"]
+            isOneToOne: false
+            referencedRelation: "tax_advisor_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shifts: {
         Row: {
           color: string
@@ -1742,6 +1780,81 @@ export type Database = {
         }
         Relationships: []
       }
+      tax_advisor_profiles: {
+        Row: {
+          buys_supplies_equipment: boolean | null
+          combines_business_personal_travel: boolean | null
+          created_at: string
+          entity_type: string
+          id: string
+          multi_state_work: boolean | null
+          notes: string | null
+          pays_own_subscriptions: boolean | null
+          retirement_planning_interest: boolean | null
+          travels_for_ce: boolean | null
+          updated_at: string
+          user_id: string
+          uses_personal_vehicle: boolean | null
+        }
+        Insert: {
+          buys_supplies_equipment?: boolean | null
+          combines_business_personal_travel?: boolean | null
+          created_at?: string
+          entity_type?: string
+          id?: string
+          multi_state_work?: boolean | null
+          notes?: string | null
+          pays_own_subscriptions?: boolean | null
+          retirement_planning_interest?: boolean | null
+          travels_for_ce?: boolean | null
+          updated_at?: string
+          user_id?: string
+          uses_personal_vehicle?: boolean | null
+        }
+        Update: {
+          buys_supplies_equipment?: boolean | null
+          combines_business_personal_travel?: boolean | null
+          created_at?: string
+          entity_type?: string
+          id?: string
+          multi_state_work?: boolean | null
+          notes?: string | null
+          pays_own_subscriptions?: boolean | null
+          retirement_planning_interest?: boolean | null
+          travels_for_ce?: boolean | null
+          updated_at?: string
+          user_id?: string
+          uses_personal_vehicle?: boolean | null
+        }
+        Relationships: []
+      }
+      tax_advisor_sessions: {
+        Row: {
+          created_at: string
+          id: string
+          prompt: string
+          response: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          prompt: string
+          response?: string
+          title?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          prompt?: string
+          response?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       tax_checklist_items: {
         Row: {
           completed: boolean
@@ -1770,6 +1883,39 @@ export type Database = {
           id?: string
           item_key?: string
           label?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      tax_opportunity_review_items: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          last_reviewed_at: string | null
+          notes: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          last_reviewed_at?: string | null
+          notes?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          last_reviewed_at?: string | null
+          notes?: string | null
+          status?: string
           updated_at?: string
           user_id?: string
         }
