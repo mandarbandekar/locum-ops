@@ -8,7 +8,9 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, GraduationCap, AlertCircle, FileCheck, Link2, CalendarDays, Monitor } from 'lucide-react';
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, GraduationCap, AlertCircle, FileCheck, Link2, CalendarDays, Monitor, Eye, Download } from 'lucide-react';
+import { viewStoredFile, downloadStoredFile } from '@/lib/storageUtils';
+import { toast } from 'sonner';
 import { CE_DELIVERY_FORMAT_LABELS } from '@/lib/credentialTypes';
 import { format } from 'date-fns';
 
