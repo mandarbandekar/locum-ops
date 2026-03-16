@@ -78,8 +78,11 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
         clinic_access_info: clinicAccess,
         invoice_prefix: prefix,
         invoice_due_days: invoiceDueDays,
+        invoice_name_to: invoiceNameTo.trim(),
         invoice_email_to: invoiceEmailTo.trim(),
+        invoice_name_cc: invoiceNameCc.trim(),
         invoice_email_cc: invoiceEmailCc.trim(),
+        invoice_name_bcc: invoiceNameBcc.trim(),
         invoice_email_bcc: invoiceEmailBcc.trim(),
       });
 
