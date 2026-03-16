@@ -118,7 +118,13 @@ export default function OnboardingPage() {
   const [facilityDialogOpen, setFacilityDialogOpen] = useState(false);
   const [shiftDialogOpen, setShiftDialogOpen] = useState(false);
 
-  // Profile state
+  // Profile state — pre-populated from signup metadata via UserProfileContext
+  const [firstName, setFirstName] = useState(profile?.first_name || '');
+  const [lastName, setLastName] = useState(profile?.last_name || '');
+  const [companyName, setCompanyName] = useState(profile?.company_name || '');
+  const [companyAddress, setCompanyAddress] = useState(profile?.company_address || '');
+  const [invoiceEmail, setInvoiceEmail] = useState(profile?.invoice_email || '');
+  const [invoicePhone, setInvoicePhone] = useState(profile?.invoice_phone || '');
   const [profession, setProfession] = useState<Profession>(profile?.profession || 'other');
   const [workStyle, setWorkStyle] = useState(profile?.work_style_label || '');
   const [timezone, setTimezone] = useState(profile?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone);
