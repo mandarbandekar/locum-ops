@@ -1,6 +1,7 @@
-import { BarChart3, Landmark } from 'lucide-react';
+import { BarChart3, Landmark, BrainCircuit } from 'lucide-react';
 import ReportsPage from '@/pages/ReportsPage';
 import TaxStrategyPage from '@/pages/TaxStrategyPage';
+import TaxPlanningAdvisorPage from '@/pages/TaxPlanningAdvisorPage';
 import { useSearchParams } from 'react-router-dom';
 
 export default function BusinessPage() {
@@ -21,7 +22,7 @@ export default function BusinessPage() {
         </div>
       </div>
 
-      <div className="flex gap-3">
+      <div className="flex gap-3 flex-wrap">
         <button
           onClick={() => setSearchParams({ tab: 'reports' }, { replace: true })}
           className={`flex items-center gap-2.5 px-5 py-3 rounded-xl border-2 font-semibold text-sm transition-all flex-1 sm:flex-none ${
@@ -44,10 +45,22 @@ export default function BusinessPage() {
           <Landmark className="h-5 w-5" />
           Taxes & Finance Ops
         </button>
+        <button
+          onClick={() => setSearchParams({ tab: 'tax-advisor' }, { replace: true })}
+          className={`flex items-center gap-2.5 px-5 py-3 rounded-xl border-2 font-semibold text-sm transition-all flex-1 sm:flex-none ${
+            activeTab === 'tax-advisor'
+              ? 'border-primary bg-primary/5 text-primary shadow-sm'
+              : 'border-border bg-card text-muted-foreground hover:border-primary/30 hover:bg-muted/50'
+          }`}
+        >
+          <BrainCircuit className="h-5 w-5" />
+          Tax Planning Advisor
+        </button>
       </div>
 
       {activeTab === 'reports' && <ReportsPage />}
       {activeTab === 'tax-strategy' && <TaxStrategyPage />}
+      {activeTab === 'tax-advisor' && <TaxPlanningAdvisorPage />}
     </div>
   );
 }
