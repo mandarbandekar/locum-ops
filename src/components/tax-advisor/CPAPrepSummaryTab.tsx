@@ -14,7 +14,7 @@ interface Props {
 
 export default function CPAPrepSummaryTab({ questions, reviewItems, profile }: Props) {
   const { facilities } = useData();
-  const { userProfile } = useUserProfile();
+  const { profile: userProfile } = useUserProfile();
 
   const includedQuestions = questions.filter(q => q.include_in_summary);
   const reviewedAreas = reviewItems.filter(r => r.status !== 'not_started');
