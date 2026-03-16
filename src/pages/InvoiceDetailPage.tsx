@@ -55,19 +55,20 @@ const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secon
 export default function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { invoices, lineItems, facilities, contacts, payments, activities, updateInvoice, deleteInvoice, addLineItem, updateLineItem, deleteLineItem, addPayment, addActivity } = useData();
+  const { invoices, lineItems, facilities, contacts, payments, activities, updateInvoice, deleteInvoice, addLineItem, updateLineItem, deleteLineItem, addPayment, addActivity, updateFacility } = useData();
   const { profile } = useUserProfile();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [moveTarget, setMoveTarget] = useState<string | null>(null);
+  const [billingDialogOpen, setBillingDialogOpen] = useState(false);
 
   const invoice = invoices.find(i => i.id === id);
   if (!invoice) return <div className="p-6">Invoice not found. <Button variant="link" onClick={() => navigate('/invoices')}>Back</Button></div>;
 
   const items = lineItems.filter(li => li.invoice_id === id);
   const facility = facilities.find(c => c.id === invoice.facility_id);
-  const billingContact = contacts.find(c => c.facility_id === invoice.facility_id);
-  const billingEmail = (invoice as any).billing_email_to || facility?.invoice_email_to || '';
+  const billingNameTo = facility?.invoice_name_to || '';
+  const billingEmailTo = (invoice as any).billing_email_to || facility?.invoice_email_to || '';
   const invoicePayments = payments.filter(p => p.invoice_id === id);
   const invoiceActivities = activities.filter(a => a.invoice_id === id).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   const computedStatus = computeInvoiceStatus(invoice);
