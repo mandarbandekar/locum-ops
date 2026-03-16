@@ -406,7 +406,7 @@ function DraftForm({ invoice, items, facility, profile, billingNameTo, billingEm
   };
 
   const handleProceedToSend = async () => {
-    const checklist = buildChecklistItems(profile, { ...invoice, due_date: dueDate || invoice.due_date }, items, billingContact, facility);
+    const checklist = buildChecklistItems(profile, { ...invoice, due_date: dueDate || invoice.due_date }, items, facility);
     const required = checklist.filter((i: any) => i.required);
     const incomplete = required.filter((i: any) => !i.complete);
     if (incomplete.length > 0) {
