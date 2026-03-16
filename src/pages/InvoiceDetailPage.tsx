@@ -799,45 +799,7 @@ function SentView({ invoice, items, invoicePayments, onUpdateInvoice, onAddPayme
 
   return (
     <div className="space-y-4">
-      {/* Status + Balance — consolidated */}
-      <Card>
-        <CardContent className="pt-4 space-y-3 text-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Balance Due</span>
-            <span className={`font-bold text-xl ${computedStatus === 'overdue' ? 'text-destructive' : computedStatus === 'paid' ? 'text-primary' : 'text-foreground'}`}>
-              ${invoice.balance_due.toLocaleString()}
-            </span>
-          </div>
-          <div className="grid grid-cols-3 gap-3 pt-1 border-t text-xs">
-            <div>
-              <p className="text-muted-foreground mb-0.5">Invoice Date</p>
-              <p className="font-medium">{format(new Date(invoice.invoice_date), 'MMM d, yyyy')}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground mb-0.5">Due Date</p>
-              <p className="font-medium">{invoice.due_date ? format(new Date(invoice.due_date), 'MMM d, yyyy') : '—'}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground mb-0.5">Sent</p>
-              <p className="font-medium">{invoice.sent_at ? format(new Date(invoice.sent_at), 'MMM d, yyyy') : '—'}</p>
-            </div>
-          </div>
-
-          {/* Primary action */}
-          {!isPaid && (
-            <Button className="w-full" size="lg" onClick={() => setShowPayment(true)}>
-              <DollarSign className="mr-2 h-4 w-4" /> Record Payment
-            </Button>
-          )}
-          {isPaid && (
-            <div className="flex items-center justify-center gap-2 p-3 rounded-md bg-primary/10 text-primary text-sm font-medium">
-              <CheckCircle className="h-4 w-4" /> Paid in full
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Quick Actions — make redraft/edit clearer */}
+      {/* Quick Actions */}
       <Card className="border-dashed">
         <CardHeader className="pb-2"><CardTitle className="text-sm">Quick Actions</CardTitle></CardHeader>
         <CardContent className="space-y-2">
@@ -877,19 +839,10 @@ function SentView({ invoice, items, invoicePayments, onUpdateInvoice, onAddPayme
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-sm">Send & Share</CardTitle></CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex gap-2">
-            <Button variant="outline" className="flex-1" onClick={handleDownloadPdf} disabled={pdfLoading}>
-              {pdfLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-              {pdfLoading ? 'Generating…' : 'PDF'}
-            </Button>
-            {invoice.sent_at && (
-              <Button variant="outline" className="flex-1" onClick={handleResend}>
-                <Send className="mr-2 h-4 w-4" /> Resend
-              </Button>
-            )}
-          </div>
-
-          {/* Share Link */}
+          <Button variant="outline" className="w-full" onClick={handleDownloadPdf} disabled={pdfLoading}>
+            {pdfLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+            {pdfLoading ? 'Generating…' : 'Download PDF'}
+          </Button>
           {hasShareLink ? (
             <div className="space-y-2">
               <div className="flex items-center gap-2 p-2 rounded-md bg-muted text-xs font-mono break-all">
@@ -912,6 +865,42 @@ function SentView({ invoice, items, invoicePayments, onUpdateInvoice, onAddPayme
             <Button variant="outline" className="w-full" onClick={handleCreateShareLink} disabled={shareLoading}>
               <Link2 className="mr-2 h-4 w-4" /> Create Share Link
             </Button>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Balance Due + Record Payment */}
+      <Card>
+        <CardContent className="pt-4 space-y-3 text-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">Balance Due</span>
+            <span className={`font-bold text-xl ${computedStatus === 'overdue' ? 'text-destructive' : computedStatus === 'paid' ? 'text-primary' : 'text-foreground'}`}>
+              ${invoice.balance_due.toLocaleString()}
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-3 pt-1 border-t text-xs">
+            <div>
+              <p className="text-muted-foreground mb-0.5">Invoice Date</p>
+              <p className="font-medium">{format(new Date(invoice.invoice_date), 'MMM d, yyyy')}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground mb-0.5">Due Date</p>
+              <p className="font-medium">{invoice.due_date ? format(new Date(invoice.due_date), 'MMM d, yyyy') : '—'}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground mb-0.5">Sent</p>
+              <p className="font-medium">{invoice.sent_at ? format(new Date(invoice.sent_at), 'MMM d, yyyy') : '—'}</p>
+            </div>
+          </div>
+          {!isPaid && (
+            <Button className="w-full" size="lg" onClick={() => setShowPayment(true)}>
+              <DollarSign className="mr-2 h-4 w-4" /> Record Payment
+            </Button>
+          )}
+          {isPaid && (
+            <div className="flex items-center justify-center gap-2 p-3 rounded-md bg-primary/10 text-primary text-sm font-medium">
+              <CheckCircle className="h-4 w-4" /> Paid in full
+            </div>
           )}
         </CardContent>
       </Card>
