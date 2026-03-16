@@ -15,8 +15,11 @@ function stripDbFields(row: any): any {
 export interface ManualFacilityInput {
   name: string;
   contact_name?: string;
+  billing_name_to?: string;
   billing_email?: string;
+  billing_name_cc?: string;
   billing_email_cc?: string;
+  billing_name_bcc?: string;
   billing_email_bcc?: string;
   address?: string;
   weekday_rate?: number;
