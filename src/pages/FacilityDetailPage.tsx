@@ -613,30 +613,39 @@ function InvoiceSettingsCard({ facility, onUpdate }: { facility: any; onUpdate: 
                 <Input type="number" value={dueDays} onChange={e => setDueDays(Number(e.target.value))} min={1} />
               </div>
             </div>
-            <div>
-              <Label className="text-xs">Name (To)</Label>
-              <Input value={nameTo} onChange={e => setNameTo(e.target.value)} placeholder="Billing Department" />
+            <p className="text-xs font-medium text-muted-foreground pt-1">To</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Name</Label>
+                <Input value={nameTo} onChange={e => setNameTo(e.target.value)} placeholder="Billing Department" />
+              </div>
+              <div>
+                <Label className="text-xs">Email</Label>
+                <Input type="email" value={emailTo} onChange={e => setEmailTo(e.target.value)} placeholder="billing@clinic.com" />
+              </div>
             </div>
-            <div>
-              <Label className="text-xs">Invoice Email (To)</Label>
-              <Input type="email" value={emailTo} onChange={e => setEmailTo(e.target.value)} placeholder="billing@clinic.com" />
-              <p className="text-xs text-muted-foreground mt-0.5">This email will be used as the billing contact when invoices are created.</p>
+            <p className="text-xs text-muted-foreground">This email will be used as the billing contact when invoices are created.</p>
+            <p className="text-xs font-medium text-muted-foreground pt-1">CC</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Name</Label>
+                <Input value={nameCc} onChange={e => setNameCc(e.target.value)} placeholder="Office Manager" />
+              </div>
+              <div>
+                <Label className="text-xs">Email</Label>
+                <Input type="email" value={emailCc} onChange={e => setEmailCc(e.target.value)} placeholder="manager@clinic.com" />
+              </div>
             </div>
-            <div>
-              <Label className="text-xs">Name (CC)</Label>
-              <Input value={nameCc} onChange={e => setNameCc(e.target.value)} placeholder="Office Manager" />
-            </div>
-            <div>
-              <Label className="text-xs">Invoice Email (CC)</Label>
-              <Input type="email" value={emailCc} onChange={e => setEmailCc(e.target.value)} placeholder="manager@clinic.com" />
-            </div>
-            <div>
-              <Label className="text-xs">Name (BCC)</Label>
-              <Input value={nameBcc} onChange={e => setNameBcc(e.target.value)} placeholder="Records" />
-            </div>
-            <div>
-              <Label className="text-xs">Invoice Email (BCC)</Label>
-              <Input type="email" value={emailBcc} onChange={e => setEmailBcc(e.target.value)} placeholder="records@clinic.com" />
+            <p className="text-xs font-medium text-muted-foreground pt-1">BCC</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Name</Label>
+                <Input value={nameBcc} onChange={e => setNameBcc(e.target.value)} placeholder="Records" />
+              </div>
+              <div>
+                <Label className="text-xs">Email</Label>
+                <Input type="email" value={emailBcc} onChange={e => setEmailBcc(e.target.value)} placeholder="records@clinic.com" />
+              </div>
             </div>
           </>
         ) : (
@@ -650,28 +659,16 @@ function InvoiceSettingsCard({ facility, onUpdate }: { facility: any; onUpdate: 
               <span className="font-medium">Net {facility.invoice_due_days ?? 15}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Name (To)</span>
-              <span className="font-medium">{facility.invoice_name_to || '—'}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Email To</span>
-              <span className="font-medium">{facility.invoice_email_to || '—'}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Name (CC)</span>
-              <span className="font-medium">{facility.invoice_name_cc || '—'}</span>
+              <span className="text-muted-foreground">To</span>
+              <span className="font-medium">{[facility.invoice_name_to, facility.invoice_email_to].filter(Boolean).join(' · ') || '—'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">CC</span>
-              <span className="font-medium">{facility.invoice_email_cc || '—'}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Name (BCC)</span>
-              <span className="font-medium">{facility.invoice_name_bcc || '—'}</span>
+              <span className="font-medium">{[facility.invoice_name_cc, facility.invoice_email_cc].filter(Boolean).join(' · ') || '—'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">BCC</span>
-              <span className="font-medium">{facility.invoice_email_bcc || '—'}</span>
+              <span className="font-medium">{[facility.invoice_name_bcc, facility.invoice_email_bcc].filter(Boolean).join(' · ') || '—'}</span>
             </div>
           </div>
         )}

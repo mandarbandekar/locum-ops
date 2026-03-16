@@ -226,30 +226,39 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
           {step === 4 && (
             <>
               <p className="text-sm text-muted-foreground">Invoice settings, email recipients, and payment terms for this facility.</p>
-              <div className="space-y-2">
-                <Label>Name (To)</Label>
-                <Input value={invoiceNameTo} onChange={e => setInvoiceNameTo(e.target.value)} placeholder="Billing Department" />
+              <p className="text-xs font-medium text-muted-foreground">To</p>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Name</Label>
+                  <Input value={invoiceNameTo} onChange={e => setInvoiceNameTo(e.target.value)} placeholder="Billing Department" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Email</Label>
+                  <Input type="email" value={invoiceEmailTo} onChange={e => setInvoiceEmailTo(e.target.value)} placeholder="billing@clinic.com" />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label>Invoice Email (To)</Label>
-                <Input type="email" value={invoiceEmailTo} onChange={e => setInvoiceEmailTo(e.target.value)} placeholder="billing@clinic.com" />
-                <p className="text-xs text-muted-foreground">This email will be used as the billing contact when invoices are created.</p>
+              <p className="text-xs text-muted-foreground">This email will be used as the billing contact when invoices are created.</p>
+              <p className="text-xs font-medium text-muted-foreground pt-1">CC</p>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Name</Label>
+                  <Input value={invoiceNameCc} onChange={e => setInvoiceNameCc(e.target.value)} placeholder="Office Manager" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Email</Label>
+                  <Input type="email" value={invoiceEmailCc} onChange={e => setInvoiceEmailCc(e.target.value)} placeholder="manager@clinic.com" />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label>Name (CC)</Label>
-                <Input value={invoiceNameCc} onChange={e => setInvoiceNameCc(e.target.value)} placeholder="Office Manager" />
-              </div>
-              <div className="space-y-2">
-                <Label>Invoice Email (CC)</Label>
-                <Input type="email" value={invoiceEmailCc} onChange={e => setInvoiceEmailCc(e.target.value)} placeholder="manager@clinic.com" />
-              </div>
-              <div className="space-y-2">
-                <Label>Name (BCC)</Label>
-                <Input value={invoiceNameBcc} onChange={e => setInvoiceNameBcc(e.target.value)} placeholder="Records" />
-              </div>
-              <div className="space-y-2">
-                <Label>Invoice Email (BCC)</Label>
-                <Input type="email" value={invoiceEmailBcc} onChange={e => setInvoiceEmailBcc(e.target.value)} placeholder="records@clinic.com" />
+              <p className="text-xs font-medium text-muted-foreground pt-1">BCC</p>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Name</Label>
+                  <Input value={invoiceNameBcc} onChange={e => setInvoiceNameBcc(e.target.value)} placeholder="Records" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Email</Label>
+                  <Input type="email" value={invoiceEmailBcc} onChange={e => setInvoiceEmailBcc(e.target.value)} placeholder="records@clinic.com" />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label>Invoice Prefix</Label>
