@@ -35,8 +35,11 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
   const [clinicAccess, setClinicAccess] = useState('');
   const [invoicePrefix, setInvoicePrefix] = useState('');
   const [invoiceDueDays, setInvoiceDueDays] = useState(15);
+  const [invoiceNameTo, setInvoiceNameTo] = useState('');
   const [invoiceEmailTo, setInvoiceEmailTo] = useState('');
+  const [invoiceNameCc, setInvoiceNameCc] = useState('');
   const [invoiceEmailCc, setInvoiceEmailCc] = useState('');
+  const [invoiceNameBcc, setInvoiceNameBcc] = useState('');
   const [invoiceEmailBcc, setInvoiceEmailBcc] = useState('');
 
   const totalSteps = STEPS.length;
