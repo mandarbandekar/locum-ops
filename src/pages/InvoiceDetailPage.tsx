@@ -472,7 +472,14 @@ function DraftForm({ invoice, items, facility, profile, billingNameTo, billingEm
         <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Bill To</CardTitle></CardHeader>
         <CardContent className="text-sm">
           <p className="font-medium">{facility?.name || 'Unknown'}</p>
-          {billingContact && <p>{billingContact.name} — {billingContact.email || 'No email'}</p>}
+          {billingNameTo ? (
+            <p>{billingNameTo}{billingEmailTo ? ` — ${billingEmailTo}` : ''}</p>
+          ) : (
+            <div className="rounded-md border border-warning/50 bg-warning/5 p-2 mt-1">
+              <p className="text-sm">Add billing contact details to send this invoice.</p>
+              <Button variant="link" size="sm" className="h-auto p-0 mt-1" onClick={onOpenBillingDialog}>Add now</Button>
+            </div>
+          )}
           {facility?.address && <p className="text-muted-foreground">{facility.address}</p>}
         </CardContent>
       </Card>
