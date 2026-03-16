@@ -105,9 +105,6 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   const formContent = (
         <form onSubmit={handleSubmit} className="space-y-4">
           <div><Label>Facility</Label>
-        <DialogHeader><DialogTitle>{existing ? 'Edit Shift' : 'Add Shift'}</DialogTitle></DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div><Label>Facility</Label>
             <Select value={facilityId} onValueChange={handleFacilityChange}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
