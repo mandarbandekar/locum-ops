@@ -19,6 +19,7 @@ import { useManualSetup } from '@/hooks/useManualSetup';
 import { SetupChoiceScreen } from '@/components/onboarding/SetupChoiceScreen';
 import { ManualFacilityForm } from '@/components/onboarding/ManualFacilityForm';
 import { ManualShiftForm } from '@/components/onboarding/ManualShiftForm';
+import { ShiftFormDialog } from '@/components/schedule/ShiftFormDialog';
 import { ManualExpandScreen } from '@/components/onboarding/ManualExpandScreen';
 import { WorkspaceReady } from '@/components/onboarding/WorkspaceReady';
 
