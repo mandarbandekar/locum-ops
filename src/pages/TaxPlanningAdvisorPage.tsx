@@ -1,5 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MessageSquare, ClipboardList, HelpCircle, FileText } from 'lucide-react';
+import { MessageSquare, ClipboardList, HelpCircle, FileText, BookOpen } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { AdvisorDisclaimerBanner } from '@/components/tax-advisor/AdvisorDisclaimer';
 import { IntakeCard } from '@/components/tax-advisor/IntakeCard';
@@ -8,6 +8,7 @@ import AskAdvisorTab from '@/components/tax-advisor/AskAdvisorTab';
 import OpportunityReviewTab from '@/components/tax-advisor/OpportunityReviewTab';
 import MyCPAQuestionsTab from '@/components/tax-advisor/MyCPAQuestionsTab';
 import CPAPrepSummaryTab from '@/components/tax-advisor/CPAPrepSummaryTab';
+import GuidanceTab from '@/components/tax-strategy/GuidanceTab';
 
 export default function TaxPlanningAdvisorPage() {
   const [searchParams, setSearchParams] = useSearchParams();
