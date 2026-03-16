@@ -11,7 +11,7 @@ interface ChecklistItem {
   helperText: string;
 }
 
-export function ReadyToSendChecklist({ items, onFix }: { items: ChecklistItem[]; onFix?: () => void }) {
+export function ReadyToSendChecklist({ items, onFix, onFixBilling }: { items: ChecklistItem[]; onFix?: () => void; onFixBilling?: () => void }) {
   const allRequired = items.filter(i => i.required).every(i => i.complete);
   const allComplete = items.every(i => i.complete);
   const navigate = useNavigate();
