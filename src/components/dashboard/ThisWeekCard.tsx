@@ -66,8 +66,8 @@ export function ThisWeekCard({ paidThisMonth, recentPayments, nextShift, getFaci
         <div className="py-3">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Next Shift</p>
           {nextShift ? (
-            <div className="text-xs">
-              <p className="font-medium">{getFacilityName(nextShift.facility_id)}</p>
+            <div className="text-[13px]">
+              <p className="font-semibold">{getFacilityName(nextShift.facility_id)}</p>
               <p className="text-muted-foreground">
                 {format(new Date(nextShift.start_datetime), 'EEE, MMM d · h:mm a')}
               </p>
