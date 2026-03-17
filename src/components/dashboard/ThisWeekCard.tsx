@@ -29,15 +29,15 @@ export function ThisWeekCard({ paidThisMonth, recentPayments, nextShift, getFaci
       <CardHeader className="pb-1.5 pt-4 px-5">
         <CardTitle className="text-base font-bold tracking-tight">This Week</CardTitle>
       </CardHeader>
-      <CardContent className="px-4 pb-3 space-y-0">
+      <CardContent className="px-5 pb-4 space-y-0">
         {/* Paid this month */}
-        <div className="flex items-center gap-2 py-2">
-          <div className="p-1.5 rounded-md bg-emerald-500/10">
-            <DollarSign className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+        <div className="flex items-center gap-3 py-3">
+          <div className="p-2 rounded-lg bg-success/10">
+            <DollarSign className="h-4 w-4 text-success" />
           </div>
           <div>
-            <p className="text-lg font-bold leading-tight">${paidThisMonth.toLocaleString()}</p>
-            <p className="text-[11px] text-muted-foreground">Paid this month</p>
+            <p className="text-xl font-bold leading-tight">${paidThisMonth.toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground">Paid this month</p>
           </div>
         </div>
 
