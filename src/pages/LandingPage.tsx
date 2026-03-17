@@ -228,7 +228,7 @@ function WorkflowViz() {
       <div className="hidden sm:flex flex-wrap items-center justify-center gap-2">
         {steps.map((s, i) => (
           <div key={s} className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-2 text-sm font-medium text-primary">
+            <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-medium text-primary-foreground/80">
               <CheckCircle2 className="h-3.5 w-3.5" />{s}
             </span>
             {i < steps.length - 1 && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
