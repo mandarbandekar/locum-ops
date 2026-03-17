@@ -150,7 +150,7 @@ function ProductMockup({ compact = false }: { compact?: boolean }) {
         className="rounded-2xl border border-border/60 bg-card shadow-2xl shadow-primary/5 overflow-hidden">
         <div className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 border-b border-border/40 bg-muted/40">
           <div className="flex gap-1.5"><div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-destructive/60" /><div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-warning/60" /><div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-success/60" /></div>
-          <div className="flex-1 flex justify-center"><div className="h-5 w-32 sm:w-40 rounded-md bg-muted text-[9px] sm:text-[10px] flex items-center justify-center text-muted-foreground">app.locumops.com</div></div>
+          <div className="flex-1 flex justify-center"><div className="h-5 w-32 sm:w-40 rounded-md bg-muted text-[9px] sm:text-[10px] flex items-center justify-center text-foreground/60">app.locumops.com</div></div>
         </div>
         <div className={`${compact ? 'p-3' : 'p-3 sm:p-4'} space-y-2.5 sm:space-y-3`}>
           {/* Stats row */}
@@ -194,7 +194,7 @@ function ProductMockup({ compact = false }: { compact?: boolean }) {
               <AlertTriangle className="h-3.5 w-3.5 text-warning shrink-0 mt-0.5" />
               <div>
                 <p className="text-[10px] sm:text-[11px] font-semibold text-foreground">DEA License expires in 28 days</p>
-                <p className="text-[9px] sm:text-[10px] text-muted-foreground">Renewal reminder sent</p>
+                <p className="text-[9px] sm:text-[10px] text-foreground/60">Renewal reminder sent</p>
               </div>
             </div>
           )}
@@ -228,7 +228,7 @@ function WorkflowViz() {
       <div className="hidden sm:flex flex-wrap items-center justify-center gap-2">
         {steps.map((s, i) => (
           <div key={s} className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-2 text-sm font-medium text-primary">
+            <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-medium text-primary-foreground/80">
               <CheckCircle2 className="h-3.5 w-3.5" />{s}
             </span>
             {i < steps.length - 1 && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
@@ -238,7 +238,7 @@ function WorkflowViz() {
       <div className="flex sm:hidden flex-col items-center gap-1">
         {steps.map((s, i) => (
           <div key={s} className="flex flex-col items-center">
-            <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-2 text-xs font-medium text-primary">
+            <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-xs font-medium text-primary-foreground/80">
               <CheckCircle2 className="h-3 w-3" />{s}
             </span>
             {i < steps.length - 1 && <ChevronDown className="h-4 w-4 text-muted-foreground my-0.5" />}
@@ -328,7 +328,7 @@ export default function LandingPage({ hideSignIn = false }: { hideSignIn?: boole
           <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-16 items-center">
             <div className="space-y-5 sm:space-y-6">
               <Anim>
-                <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 sm:px-4 py-1.5 text-[10px] sm:text-xs font-semibold text-primary uppercase tracking-wider">
+                <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 sm:px-4 py-1.5 text-[10px] sm:text-xs font-semibold text-primary-foreground/80 uppercase tracking-wider">
                   <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Built for Relief Vets · Workflow-First
                 </span>
               </Anim>
@@ -356,7 +356,7 @@ export default function LandingPage({ hideSignIn = false }: { hideSignIn?: boole
                 </div>
               </Anim>
               <Anim delay={0.2}>
-                <p className="text-xs sm:text-sm text-muted-foreground/80 italic">
+                <p className="text-xs sm:text-sm text-muted-foreground italic">
                   Built for relief vets tired of juggling spreadsheets, inboxes, notes, and manual follow-up.
                 </p>
               </Anim>
