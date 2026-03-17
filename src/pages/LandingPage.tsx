@@ -109,7 +109,7 @@ function LeadForm({ source = 'cta', defaultType = 'demo' }: { source?: string; d
       <input type="email" placeholder="Email *" value={form.email} onChange={e => update('email', e.target.value)}
         className="w-full h-11 sm:h-12 rounded-xl border border-input bg-background px-3 sm:px-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/40" />
 
-      <select value={form.role} onChange={e => update('role', e.target.value)}
+      <select aria-label="Your role" value={form.role} onChange={e => update('role', e.target.value)}
         className="w-full h-11 sm:h-12 rounded-xl border border-input bg-background px-3 sm:px-4 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/40">
         <option value="">Your role</option>
         <option value="relief_vet">Relief Veterinarian</option>
@@ -117,7 +117,7 @@ function LeadForm({ source = 'cta', defaultType = 'demo' }: { source?: string; d
         <option value="other">Other</option>
       </select>
 
-      <select value={form.currentlyWorking} onChange={e => update('currentlyWorking', e.target.value)}
+      <select aria-label="Are you currently working as a relief vet?" value={form.currentlyWorking} onChange={e => update('currentlyWorking', e.target.value)}
         className="w-full h-11 sm:h-12 rounded-xl border border-input bg-background px-3 sm:px-4 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/40">
         <option value="">Are you currently working as a relief vet?</option>
         <option value="yes">Yes, actively working shifts</option>
