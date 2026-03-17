@@ -112,7 +112,6 @@ function LeadForm({ source = 'cta', defaultType = 'beta' }: { source?: string; d
         <option value="">Your role</option>
         <option value="relief_vet">Relief Veterinarian</option>
         <option value="relief_tech">Relief Vet Tech</option>
-        <option value="clinic_owner">Clinic Owner / Manager</option>
         <option value="other">Other</option>
       </select>
 
