@@ -230,7 +230,7 @@ export default function SchedulePage() {
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <div className="flex items-center gap-2">
-              <h2 className="text-lg font-semibold">{headerLabel}</h2>
+              <h2 className="text-xl font-bold tracking-tight">{headerLabel}</h2>
               <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => setCurrentDate(new Date())}>
                 Today
               </Button>
