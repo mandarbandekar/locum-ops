@@ -150,7 +150,7 @@ function ProductMockup({ compact = false }: { compact?: boolean }) {
         className="rounded-2xl border border-border/60 bg-card shadow-2xl shadow-primary/5 overflow-hidden">
         <div className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 border-b border-border/40 bg-muted/40">
           <div className="flex gap-1.5"><div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-destructive/60" /><div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-warning/60" /><div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-success/60" /></div>
-          <div className="flex-1 flex justify-center"><div className="h-5 w-32 sm:w-40 rounded-md bg-muted text-[9px] sm:text-[10px] flex items-center justify-center text-muted-foreground">app.locumops.com</div></div>
+          <div className="flex-1 flex justify-center"><div className="h-5 w-32 sm:w-40 rounded-md bg-muted text-[9px] sm:text-[10px] flex items-center justify-center text-foreground/60">app.locumops.com</div></div>
         </div>
         <div className={`${compact ? 'p-3' : 'p-3 sm:p-4'} space-y-2.5 sm:space-y-3`}>
           {/* Stats row */}
