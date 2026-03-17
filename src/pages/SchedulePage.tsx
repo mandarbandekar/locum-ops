@@ -201,21 +201,21 @@ export default function SchedulePage() {
       <div className="page-header flex-col sm:flex-row gap-3">
         <h1 className="page-title">Schedule</h1>
         <div className="flex gap-2 flex-wrap">
-          <Button size="sm" variant={view === 'month' ? 'default' : 'outline'} onClick={() => setView('month')}>
-            <CalendarDays className="mr-1 h-4 w-4" /> Month
+          <Button size="sm" variant={view === 'month' ? 'default' : 'outline'} onClick={() => setView('month')} className="h-8 text-[13px] px-4">
+            <CalendarDays className="mr-1.5 h-4 w-4" /> Month
           </Button>
-          <Button size="sm" variant={view === 'week' ? 'default' : 'outline'} onClick={() => setView('week')}>
-            <CalendarIcon className="mr-1 h-4 w-4" /> Week
+          <Button size="sm" variant={view === 'week' ? 'default' : 'outline'} onClick={() => setView('week')} className="h-8 text-[13px] px-4">
+            <CalendarIcon className="mr-1.5 h-4 w-4" /> Week
           </Button>
-          <Button size="sm" variant={view === 'list' ? 'default' : 'outline'} onClick={() => setView('list')}>
-            <List className="mr-1 h-4 w-4" /> List
+          <Button size="sm" variant={view === 'list' ? 'default' : 'outline'} onClick={() => setView('list')} className="h-8 text-[13px] px-4">
+            <List className="mr-1.5 h-4 w-4" /> List
           </Button>
-          <Button size="sm" variant={view === 'confirmations' ? 'default' : 'outline'} onClick={() => setView('confirmations')}>
-            <CheckSquare className="mr-1 h-4 w-4" /> Confirmations
+          <Button size="sm" variant={view === 'confirmations' ? 'default' : 'outline'} onClick={() => setView('confirmations')} className="h-8 text-[13px] px-4">
+            <CheckSquare className="mr-1.5 h-4 w-4" /> Confirmations
           </Button>
           {view !== 'confirmations' && (
-            <Button size="sm" onClick={() => setShowAdd(true)}>
-              <Plus className="mr-1 h-4 w-4" /> Add Shift
+            <Button size="sm" onClick={() => setShowAdd(true)} className="h-8 text-[13px] px-4">
+              <Plus className="mr-1.5 h-4 w-4" /> Add Shift
             </Button>
           )}
         </div>
