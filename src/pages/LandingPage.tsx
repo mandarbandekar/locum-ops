@@ -356,7 +356,7 @@ export default function LandingPage({ hideSignIn = false }: { hideSignIn?: boole
                 </div>
               </Anim>
               <Anim delay={0.2}>
-                <p className="text-xs sm:text-sm text-muted-foreground/80 italic">
+                <p className="text-xs sm:text-sm text-muted-foreground italic">
                   Built for relief vets tired of juggling spreadsheets, inboxes, notes, and manual follow-up.
                 </p>
               </Anim>
