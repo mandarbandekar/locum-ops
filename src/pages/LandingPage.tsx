@@ -125,7 +125,7 @@ function LeadForm({ source = 'cta', defaultType = 'beta' }: { source?: string; d
       </select>
 
       <textarea value={form.painPoint} onChange={e => update('painPoint', e.target.value)} rows={3} maxLength={1000}
-        placeholder="What is your biggest admin pain point? (optional)"
+        placeholder="What is your biggest admin pain point? *"
         className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/40 resize-none" />
 
       {errMsg && <p className="text-sm text-destructive">{errMsg}</p>}
