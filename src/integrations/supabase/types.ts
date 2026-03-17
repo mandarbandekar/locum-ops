@@ -2190,32 +2190,50 @@ export type Database = {
       waitlist_leads: {
         Row: {
           created_at: string
+          currently_working: string
           email: string
           facility_count: string
+          first_name: string
           headache: string
           id: string
+          last_name: string
+          lead_type: string
+          pain_point: string
           persona: string
           profession: string
+          role: string
           source_page: string
         }
         Insert: {
           created_at?: string
+          currently_working?: string
           email: string
           facility_count?: string
+          first_name?: string
           headache?: string
           id?: string
+          last_name?: string
+          lead_type?: string
+          pain_point?: string
           persona?: string
           profession?: string
+          role?: string
           source_page?: string
         }
         Update: {
           created_at?: string
+          currently_working?: string
           email?: string
           facility_count?: string
+          first_name?: string
           headache?: string
           id?: string
+          last_name?: string
+          lead_type?: string
+          pain_point?: string
           persona?: string
           profession?: string
+          role?: string
           source_page?: string
         }
         Relationships: []

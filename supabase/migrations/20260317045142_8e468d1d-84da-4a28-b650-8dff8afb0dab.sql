@@ -1,0 +1,8 @@
+
+ALTER TABLE public.waitlist_leads
+  ADD COLUMN IF NOT EXISTS first_name text NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS last_name text NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS role text NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS currently_working text NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS pain_point text NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS lead_type text NOT NULL DEFAULT 'beta';
