@@ -26,8 +26,8 @@ interface ThisWeekCardProps {
 export function ThisWeekCard({ paidThisMonth, recentPayments, nextShift, getFacilityName }: ThisWeekCardProps) {
   return (
     <Card className="h-fit" data-testid="this-week-card">
-      <CardHeader className="pb-1 pt-3 px-4">
-        <CardTitle className="text-sm font-semibold">This Week</CardTitle>
+      <CardHeader className="pb-1.5 pt-4 px-5">
+        <CardTitle className="text-base font-bold tracking-tight">This Week</CardTitle>
       </CardHeader>
       <CardContent className="px-4 pb-3 space-y-0">
         {/* Paid this month */}
