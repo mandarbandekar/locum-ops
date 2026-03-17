@@ -44,8 +44,8 @@ export function ThisWeekCard({ paidThisMonth, recentPayments, nextShift, getFaci
         <Separator className="my-1" />
 
         {/* Recent payments */}
-        <div className="py-2">
-          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-1.5">Recent Payments</p>
+        <div className="py-3">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Recent Payments</p>
           {recentPayments.length === 0 ? (
             <p className="text-xs text-muted-foreground">No recent payments</p>
           ) : (
