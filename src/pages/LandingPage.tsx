@@ -743,14 +743,6 @@ export default function LandingPage({ hideSignIn = false }: { hideSignIn?: boole
                 If you are actively doing relief work and want a more organized way to manage shifts, invoices, reminders, credentials, and revenue, we would love to hear from you.
               </p>
 
-              {/* Testimonial placeholder */}
-              <div className="rounded-2xl border border-border/40 bg-card p-5 sm:p-6">
-                <p className="text-sm font-semibold text-primary uppercase tracking-wider mb-2 sm:mb-3">Pilot Feedback</p>
-                <p className="text-sm text-muted-foreground italic leading-relaxed">
-                  "We're collecting feedback from our founding beta users. Real testimonials will appear here soon."
-                </p>
-                <p className="text-xs text-muted-foreground mt-2 sm:mt-3">— Coming soon from founding beta users</p>
-              </div>
             </Anim>
             <Anim delay={0.15}>
               <div className="rounded-2xl border border-primary/20 bg-gradient-to-b from-primary/[0.03] to-primary/[0.08] p-5 sm:p-6 md:p-8">
