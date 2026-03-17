@@ -17,7 +17,7 @@ export default function BusinessPage() {
           </div>
           <div>
             <h1 className="page-title">Business</h1>
-            <p className="text-sm text-muted-foreground">Reports, analytics, and tax planning</p>
+            <p className="page-subtitle">Reports, analytics, and tax planning</p>
           </div>
         </div>
       </div>
