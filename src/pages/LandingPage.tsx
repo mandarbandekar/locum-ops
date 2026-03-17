@@ -47,6 +47,7 @@ function LeadForm({ source = 'cta', defaultType = 'beta' }: { source?: string; d
     e.preventDefault();
     if (!form.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) { setErrMsg('Please enter a valid email.'); return; }
     if (!form.firstName.trim()) { setErrMsg('Please enter your first name.'); return; }
+    if (!form.painPoint.trim()) { setErrMsg('Please share your biggest admin pain point.'); return; }
     setErrMsg('');
     setStatus('loading');
 
