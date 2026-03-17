@@ -17,7 +17,7 @@ export default function BusinessPage() {
           </div>
           <div>
             <h1 className="page-title">Business</h1>
-            <p className="text-sm text-muted-foreground">Reports, analytics, and tax planning</p>
+            <p className="page-subtitle">Reports, analytics, and tax planning</p>
           </div>
         </div>
       </div>
@@ -25,33 +25,21 @@ export default function BusinessPage() {
       <div className="flex gap-3 flex-wrap">
         <button
           onClick={() => setSearchParams({ tab: 'reports' }, { replace: true })}
-          className={`flex items-center gap-2.5 px-5 py-3 rounded-xl border-2 font-semibold text-sm transition-all flex-1 sm:flex-none ${
-            activeTab === 'reports'
-              ? 'border-primary bg-primary/5 text-primary shadow-sm'
-              : 'border-border bg-card text-muted-foreground hover:border-primary/30 hover:bg-muted/50'
-          }`}
+          className={`primary-tab-btn ${activeTab === 'reports' ? 'primary-tab-btn--active' : 'primary-tab-btn--inactive'}`}
         >
           <BarChart3 className="h-5 w-5" />
           Reports
         </button>
         <button
           onClick={() => setSearchParams({ tab: 'tax-strategy' }, { replace: true })}
-          className={`flex items-center gap-2.5 px-5 py-3 rounded-xl border-2 font-semibold text-sm transition-all flex-1 sm:flex-none ${
-            activeTab === 'tax-strategy'
-              ? 'border-primary bg-primary/5 text-primary shadow-sm'
-              : 'border-border bg-card text-muted-foreground hover:border-primary/30 hover:bg-muted/50'
-          }`}
+          className={`primary-tab-btn ${activeTab === 'tax-strategy' ? 'primary-tab-btn--active' : 'primary-tab-btn--inactive'}`}
         >
           <Landmark className="h-5 w-5" />
           Estimated Tax Tracker
         </button>
         <button
           onClick={() => setSearchParams({ tab: 'tax-advisor' }, { replace: true })}
-          className={`flex items-center gap-2.5 px-5 py-3 rounded-xl border-2 font-semibold text-sm transition-all flex-1 sm:flex-none ${
-            activeTab === 'tax-advisor'
-              ? 'border-primary bg-primary/5 text-primary shadow-sm'
-              : 'border-border bg-card text-muted-foreground hover:border-primary/30 hover:bg-muted/50'
-          }`}
+          className={`primary-tab-btn ${activeTab === 'tax-advisor' ? 'primary-tab-btn--active' : 'primary-tab-btn--inactive'}`}
         >
           <BrainCircuit className="h-5 w-5" />
           Tax Planning Advisor

@@ -26,34 +26,34 @@ interface ThisWeekCardProps {
 export function ThisWeekCard({ paidThisMonth, recentPayments, nextShift, getFacilityName }: ThisWeekCardProps) {
   return (
     <Card className="h-fit" data-testid="this-week-card">
-      <CardHeader className="pb-1 pt-3 px-4">
-        <CardTitle className="text-sm font-semibold">This Week</CardTitle>
+      <CardHeader className="pb-1.5 pt-4 px-5">
+        <CardTitle className="text-base font-bold tracking-tight">This Week</CardTitle>
       </CardHeader>
-      <CardContent className="px-4 pb-3 space-y-0">
+      <CardContent className="px-5 pb-4 space-y-0">
         {/* Paid this month */}
-        <div className="flex items-center gap-2 py-2">
-          <div className="p-1.5 rounded-md bg-emerald-500/10">
-            <DollarSign className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+        <div className="flex items-center gap-3 py-3">
+          <div className="p-2 rounded-lg bg-success/10">
+            <DollarSign className="h-4 w-4 text-success" />
           </div>
           <div>
-            <p className="text-lg font-bold leading-tight">${paidThisMonth.toLocaleString()}</p>
-            <p className="text-[11px] text-muted-foreground">Paid this month</p>
+            <p className="text-xl font-bold leading-tight">${paidThisMonth.toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground">Paid this month</p>
           </div>
         </div>
 
         <Separator className="my-1" />
 
         {/* Recent payments */}
-        <div className="py-2">
-          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-1.5">Recent Payments</p>
+        <div className="py-3">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Recent Payments</p>
           {recentPayments.length === 0 ? (
             <p className="text-xs text-muted-foreground">No recent payments</p>
           ) : (
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               {recentPayments.slice(0, 3).map(p => (
-                <div key={p.id} className="flex items-center justify-between text-xs">
+                <div key={p.id} className="flex items-center justify-between text-[13px]">
                   <span className="text-muted-foreground truncate">{format(new Date(p.payment_date), 'MMM d')}</span>
-                  <span className="font-medium">${p.amount.toLocaleString()}</span>
+                  <span className="font-semibold">${p.amount.toLocaleString()}</span>
                 </div>
               ))}
             </div>
@@ -63,11 +63,11 @@ export function ThisWeekCard({ paidThisMonth, recentPayments, nextShift, getFaci
         <Separator className="my-1" />
 
         {/* Next shift */}
-        <div className="py-2">
-          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-1.5">Next Shift</p>
+        <div className="py-3">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Next Shift</p>
           {nextShift ? (
-            <div className="text-xs">
-              <p className="font-medium">{getFacilityName(nextShift.facility_id)}</p>
+            <div className="text-[13px]">
+              <p className="font-semibold">{getFacilityName(nextShift.facility_id)}</p>
               <p className="text-muted-foreground">
                 {format(new Date(nextShift.start_datetime), 'EEE, MMM d · h:mm a')}
               </p>

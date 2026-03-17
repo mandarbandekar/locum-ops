@@ -23,7 +23,7 @@ export default function CredentialsPage() {
           </div>
           <div>
             <h1 className="page-title">Credential Management</h1>
-            <p className="text-sm text-muted-foreground">Manage licenses, registrations, insurance & compliance</p>
+            <p className="page-subtitle">Manage licenses, registrations, insurance & compliance</p>
           </div>
         </div>
       </div>
@@ -32,33 +32,21 @@ export default function CredentialsPage() {
       <div className="flex gap-3 flex-wrap">
         <button
           onClick={() => setPrimaryTab('credentials')}
-          className={`flex items-center gap-2.5 px-5 py-3 rounded-xl border-2 font-semibold text-sm transition-all flex-1 sm:flex-none ${
-            primaryTab === 'credentials'
-              ? 'border-primary bg-primary/5 text-primary shadow-sm'
-              : 'border-border bg-card text-muted-foreground hover:border-primary/30 hover:bg-muted/50'
-          }`}
+          className={`primary-tab-btn ${primaryTab === 'credentials' ? 'primary-tab-btn--active' : 'primary-tab-btn--inactive'}`}
         >
           <ShieldCheck className="h-5 w-5" />
           Credentials
         </button>
         <button
           onClick={() => setPrimaryTab('ce-tracker')}
-          className={`flex items-center gap-2.5 px-5 py-3 rounded-xl border-2 font-semibold text-sm transition-all flex-1 sm:flex-none ${
-            primaryTab === 'ce-tracker'
-              ? 'border-primary bg-primary/5 text-primary shadow-sm'
-              : 'border-border bg-card text-muted-foreground hover:border-primary/30 hover:bg-muted/50'
-          }`}
+          className={`primary-tab-btn ${primaryTab === 'ce-tracker' ? 'primary-tab-btn--active' : 'primary-tab-btn--inactive'}`}
         >
           <GraduationCap className="h-5 w-5" />
           Continuing Education Hub
         </button>
         <button
           onClick={() => setPrimaryTab('subscriptions')}
-          className={`flex items-center gap-2.5 px-5 py-3 rounded-xl border-2 font-semibold text-sm transition-all flex-1 sm:flex-none ${
-            primaryTab === 'subscriptions'
-              ? 'border-primary bg-primary/5 text-primary shadow-sm'
-              : 'border-border bg-card text-muted-foreground hover:border-primary/30 hover:bg-muted/50'
-          }`}
+          className={`primary-tab-btn ${primaryTab === 'subscriptions' ? 'primary-tab-btn--active' : 'primary-tab-btn--inactive'}`}
         >
           <RefreshCw className="h-5 w-5" />
           Required Subscriptions
@@ -73,7 +61,7 @@ export default function CredentialsPage() {
               <TabsTrigger
                 key={t}
                 value={t}
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2.5 capitalize"
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-3 capitalize text-[13px] font-semibold"
               >
                 {t}
               </TabsTrigger>

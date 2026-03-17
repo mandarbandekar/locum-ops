@@ -97,14 +97,14 @@ export default function InvoicesPage() {
         </div>
       </div>
 
-      <div className="flex gap-2 mb-4 flex-wrap">
+      <div className="flex gap-2 mb-5 flex-wrap">
         {['all', 'draft', 'sent', 'partial', 'paid', 'overdue'].map(s => (
           <Button
             key={s}
             size="sm"
             variant={statusFilter === s ? 'default' : 'outline'}
             onClick={() => setStatusFilter(s)}
-            className="h-7 text-xs"
+            className="h-8 text-[13px] px-4"
           >
             {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
             {s !== 'all' && (
@@ -116,8 +116,8 @@ export default function InvoicesPage() {
         ))}
       </div>
 
-      <div className="rounded-lg border bg-card overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="rounded-xl border bg-card overflow-hidden">
+        <table className="w-full text-[13px]">
           <thead>
             <tr className="border-b bg-muted/50">
               <th className="p-3 w-10">
@@ -126,13 +126,13 @@ export default function InvoicesPage() {
                   onCheckedChange={toggleAll}
                 />
               </th>
-              <th className="text-left p-3 font-medium text-muted-foreground">Invoice #</th>
-              <th className="text-left p-3 font-medium text-muted-foreground">Facility</th>
-              <th className="text-left p-3 font-medium text-muted-foreground hidden sm:table-cell">Invoice Date</th>
-              <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Due Date</th>
-              <th className="text-right p-3 font-medium text-muted-foreground">Total</th>
-              <th className="text-right p-3 font-medium text-muted-foreground hidden sm:table-cell">Balance</th>
-              <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
+              <th className="text-left p-3 font-semibold text-muted-foreground">Invoice #</th>
+              <th className="text-left p-3 font-semibold text-muted-foreground">Facility</th>
+              <th className="text-left p-3 font-semibold text-muted-foreground hidden sm:table-cell">Invoice Date</th>
+              <th className="text-left p-3 font-semibold text-muted-foreground hidden md:table-cell">Due Date</th>
+              <th className="text-right p-3 font-semibold text-muted-foreground">Total</th>
+              <th className="text-right p-3 font-semibold text-muted-foreground hidden sm:table-cell">Balance</th>
+              <th className="text-left p-3 font-semibold text-muted-foreground">Status</th>
               <th className="w-10" />
             </tr>
           </thead>
@@ -146,7 +146,7 @@ export default function InvoicesPage() {
                 <td className="p-3" onClick={e => toggleSelect(inv.id, e)}>
                   <Checkbox checked={selected.has(inv.id)} />
                 </td>
-                <td className="p-3 font-medium">
+                <td className="p-3 font-semibold">
                   {inv.invoice_number}
                   {inv.invoice_type === 'bulk' && (
                     <Badge variant="outline" className="ml-1.5 text-[10px] px-1 py-0">Bulk</Badge>

@@ -13,16 +13,16 @@ interface SummaryCardProps {
 
 export function SummaryCard({ icon: Icon, title, value, subtitle, onClick, accentClass, bgClass }: SummaryCardProps) {
   return (
-    <Card className="cursor-pointer hover:bg-muted/30 transition-colors group" onClick={onClick}>
-      <CardContent className="p-3 space-y-1.5">
-        <div className="flex items-center gap-2">
-          <div className={`p-1.5 rounded-md ${bgClass}`}>
-            <Icon className={`h-3.5 w-3.5 ${accentClass}`} />
+    <Card className="cursor-pointer hover:bg-muted/30 hover:shadow-card transition-all group" onClick={onClick}>
+      <CardContent className="p-4 sm:p-5 space-y-2">
+        <div className="flex items-center gap-2.5">
+          <div className={`p-2 rounded-lg ${bgClass}`}>
+            <Icon className={`h-4 w-4 ${accentClass}`} />
           </div>
-          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">{title}</p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{title}</p>
         </div>
-        <p className="text-xl font-bold leading-tight">{value}</p>
-        <p className="text-xs text-muted-foreground line-clamp-1">{subtitle}</p>
+        <p className="text-2xl sm:text-[28px] font-bold leading-tight tracking-tight">{value}</p>
+        <p className="text-[13px] text-muted-foreground line-clamp-1">{subtitle}</p>
       </CardContent>
     </Card>
   );

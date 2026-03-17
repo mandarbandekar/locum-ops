@@ -221,7 +221,7 @@ export default function DashboardPage() {
   }, [checklistItems, taxChecklist, taxQuarters, needingActionCount, credentialsList, subscriptions, now]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="page-title">
@@ -237,7 +237,7 @@ export default function DashboardPage() {
       {showSetupCard && <ContinueSetupCard />}
 
       {/* Row 1: 4 Summary Cards */}
-      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <SummaryCard
           icon={CalendarDays}
           title="Upcoming Shifts"
