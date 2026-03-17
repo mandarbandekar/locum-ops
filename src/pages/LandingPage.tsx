@@ -194,7 +194,7 @@ function ProductMockup({ compact = false }: { compact?: boolean }) {
               <AlertTriangle className="h-3.5 w-3.5 text-warning shrink-0 mt-0.5" />
               <div>
                 <p className="text-[10px] sm:text-[11px] font-semibold text-foreground">DEA License expires in 28 days</p>
-                <p className="text-[9px] sm:text-[10px] text-muted-foreground">Renewal reminder sent</p>
+                <p className="text-[9px] sm:text-[10px] text-foreground/60">Renewal reminder sent</p>
               </div>
             </div>
           )}
