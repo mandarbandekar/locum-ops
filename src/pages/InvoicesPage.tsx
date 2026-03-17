@@ -146,7 +146,7 @@ export default function InvoicesPage() {
                 <td className="p-3" onClick={e => toggleSelect(inv.id, e)}>
                   <Checkbox checked={selected.has(inv.id)} />
                 </td>
-                <td className="p-3 font-medium">
+                <td className="p-3 font-semibold">
                   {inv.invoice_number}
                   {inv.invoice_type === 'bulk' && (
                     <Badge variant="outline" className="ml-1.5 text-[10px] px-1 py-0">Bulk</Badge>
