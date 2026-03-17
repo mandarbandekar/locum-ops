@@ -481,8 +481,8 @@ export default function LandingPage({ hideSignIn = false }: { hideSignIn?: boole
           <Anim>
             {/* Desktop: timeline */}
             <div className="hidden lg:block relative">
-              {/* Connector line */}
-              <div className="absolute top-10 left-[8.33%] right-[8.33%] h-0.5 bg-border" />
+              {/* Connector line — vertically centered through icons (h-12 = 48px, center = 24px) */}
+              <div className="absolute top-6 left-[8.33%] right-[8.33%] h-px bg-border/60" />
               <div className="grid grid-cols-6 gap-4">
                 {[
                   { step: '1', title: 'Add your shifts', desc: 'Keep upcoming work organized in one place.', icon: CalendarDays },
