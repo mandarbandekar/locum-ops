@@ -819,28 +819,9 @@ export default function LandingPage({ hideSignIn = false }: { hideSignIn?: boole
                   className="block text-sm text-muted-foreground hover:text-foreground transition-colors">Join the Founding Beta</button>
               </div>
             </div>
-            <div>
-              <p className="font-semibold text-foreground mb-3 text-sm">Connect</p>
-              <div className="space-y-2">
-                <a href="mailto:hello@locumops.com" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  <Mail className="h-4 w-4" /> hello@locumops.com
-                </a>
-                <a href="#" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  <Linkedin className="h-4 w-4" /> LinkedIn
-                </a>
-                <a href="#" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  <Twitter className="h-4 w-4" /> Twitter
-                </a>
-              </div>
-            </div>
           </div>
           <div className="mt-8 sm:mt-10 pt-6 border-t border-border/40 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
             <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} Locum Ops. All rights reserved.</p>
-            <div className="flex items-center gap-6 text-xs text-muted-foreground">
-              <a href="#" className="hover:text-foreground transition-colors">Privacy Policy</a>
-              <a href="#" className="hover:text-foreground transition-colors">Terms of Service</a>
-              <a href="#" className="hover:text-foreground transition-colors">Contact</a>
-            </div>
           </div>
         </div>
       </footer>
