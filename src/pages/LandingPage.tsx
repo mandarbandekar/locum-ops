@@ -47,6 +47,7 @@ function LeadForm({ source = 'cta', defaultType = 'beta' }: { source?: string; d
     e.preventDefault();
     if (!form.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) { setErrMsg('Please enter a valid email.'); return; }
     if (!form.firstName.trim()) { setErrMsg('Please enter your first name.'); return; }
+    if (!form.painPoint.trim()) { setErrMsg('Please share your biggest admin pain point.'); return; }
     setErrMsg('');
     setStatus('loading');
 
@@ -112,7 +113,6 @@ function LeadForm({ source = 'cta', defaultType = 'beta' }: { source?: string; d
         <option value="">Your role</option>
         <option value="relief_vet">Relief Veterinarian</option>
         <option value="relief_tech">Relief Vet Tech</option>
-        <option value="clinic_owner">Clinic Owner / Manager</option>
         <option value="other">Other</option>
       </select>
 
@@ -126,7 +126,7 @@ function LeadForm({ source = 'cta', defaultType = 'beta' }: { source?: string; d
       </select>
 
       <textarea value={form.painPoint} onChange={e => update('painPoint', e.target.value)} rows={3} maxLength={1000}
-        placeholder="What is your biggest admin pain point? (optional)"
+        placeholder="What is your biggest admin pain point? *"
         className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/40 resize-none" />
 
       {errMsg && <p className="text-sm text-destructive">{errMsg}</p>}
