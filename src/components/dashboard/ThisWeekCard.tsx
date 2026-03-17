@@ -49,11 +49,11 @@ export function ThisWeekCard({ paidThisMonth, recentPayments, nextShift, getFaci
           {recentPayments.length === 0 ? (
             <p className="text-xs text-muted-foreground">No recent payments</p>
           ) : (
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               {recentPayments.slice(0, 3).map(p => (
-                <div key={p.id} className="flex items-center justify-between text-xs">
+                <div key={p.id} className="flex items-center justify-between text-[13px]">
                   <span className="text-muted-foreground truncate">{format(new Date(p.payment_date), 'MMM d')}</span>
-                  <span className="font-medium">${p.amount.toLocaleString()}</span>
+                  <span className="font-semibold">${p.amount.toLocaleString()}</span>
                 </div>
               ))}
             </div>
