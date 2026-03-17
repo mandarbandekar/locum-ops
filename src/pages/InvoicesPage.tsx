@@ -97,14 +97,14 @@ export default function InvoicesPage() {
         </div>
       </div>
 
-      <div className="flex gap-2 mb-4 flex-wrap">
+      <div className="flex gap-2 mb-5 flex-wrap">
         {['all', 'draft', 'sent', 'partial', 'paid', 'overdue'].map(s => (
           <Button
             key={s}
             size="sm"
             variant={statusFilter === s ? 'default' : 'outline'}
             onClick={() => setStatusFilter(s)}
-            className="h-7 text-xs"
+            className="h-8 text-[13px] px-4"
           >
             {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
             {s !== 'all' && (
