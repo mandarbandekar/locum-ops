@@ -822,11 +822,6 @@ export default function LandingPage({ hideSignIn = false }: { hideSignIn?: boole
           </div>
           <div className="mt-8 sm:mt-10 pt-6 border-t border-border/40 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
             <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} Locum Ops. All rights reserved.</p>
-            <div className="flex items-center gap-6 text-xs text-muted-foreground">
-              <a href="#" className="hover:text-foreground transition-colors">Privacy Policy</a>
-              <a href="#" className="hover:text-foreground transition-colors">Terms of Service</a>
-              <a href="#" className="hover:text-foreground transition-colors">Contact</a>
-            </div>
           </div>
         </div>
       </footer>
