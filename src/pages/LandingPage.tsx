@@ -117,7 +117,7 @@ function LeadForm({ source = 'cta', defaultType = 'demo' }: { source?: string; d
         <option value="other">Other</option>
       </select>
 
-      <select value={form.currentlyWorking} onChange={e => update('currentlyWorking', e.target.value)}
+      <select aria-label="Are you currently working as a relief vet?" value={form.currentlyWorking} onChange={e => update('currentlyWorking', e.target.value)}
         className="w-full h-11 sm:h-12 rounded-xl border border-input bg-background px-3 sm:px-4 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/40">
         <option value="">Are you currently working as a relief vet?</option>
         <option value="yes">Yes, actively working shifts</option>
