@@ -328,7 +328,7 @@ export default function LandingPage({ hideSignIn = false }: { hideSignIn?: boole
           <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-16 items-center">
             <div className="space-y-5 sm:space-y-6">
               <Anim>
-                <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 sm:px-4 py-1.5 text-[10px] sm:text-xs font-semibold text-primary uppercase tracking-wider">
+                <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 sm:px-4 py-1.5 text-[10px] sm:text-xs font-semibold text-primary-foreground/80 uppercase tracking-wider">
                   <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Built for Relief Vets · Workflow-First
                 </span>
               </Anim>
