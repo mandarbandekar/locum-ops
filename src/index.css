@@ -147,16 +147,25 @@
 
 @layer components {
   .stat-card {
-    @apply bg-card rounded-2xl border p-4 sm:p-6 shadow-sm transition-shadow hover:shadow-md;
+    @apply bg-card rounded-2xl border p-5 sm:p-6 shadow-soft transition-shadow hover:shadow-card;
   }
   .page-header {
-    @apply mb-5 sm:mb-7 flex items-start sm:items-center justify-between;
+    @apply mb-6 sm:mb-8 flex items-start sm:items-center justify-between;
   }
   .page-title {
-    @apply text-2xl sm:text-[32px] font-semibold tracking-tight text-foreground;
+    @apply text-[26px] sm:text-[34px] font-bold tracking-tight text-foreground;
+    font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  }
+  .page-subtitle {
+    @apply text-[13px] sm:text-[15px] text-muted-foreground mt-0.5;
   }
   .status-badge {
     @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+
+  /* Section heading for card groups */
+  .section-heading {
+    @apply text-base sm:text-lg font-semibold tracking-tight text-foreground;
   }
 
   /* Premium chip styles using semantic tokens */
@@ -175,6 +184,17 @@
   .chip-info {
     background: hsl(var(--chip-info-bg));
     color: hsl(var(--chip-info-text));
+  }
+
+  /* Primary tab selector – card-style nav on Business, Credentials, etc. */
+  .primary-tab-btn {
+    @apply flex items-center gap-2.5 px-5 py-3.5 rounded-xl border-2 font-semibold text-sm transition-all flex-1 sm:flex-none;
+  }
+  .primary-tab-btn--active {
+    @apply border-primary bg-primary/5 text-primary shadow-sm;
+  }
+  .primary-tab-btn--inactive {
+    @apply border-border bg-card text-muted-foreground hover:border-primary/30 hover:bg-muted/50;
   }
 }
 
