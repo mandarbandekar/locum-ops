@@ -140,12 +140,14 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <p className="text-sm text-muted-foreground text-center">
-            {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
-            <button type="button" className="text-primary font-medium underline" onClick={resetForm}>
-              {isSignUp ? 'Sign In' : 'Sign Up'}
-            </button>
-          </p>
+          <div className="rounded-lg border border-border bg-muted/40 py-3 px-4 text-center">
+            <p className="text-sm text-muted-foreground">
+              {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
+              <button type="button" className="text-primary font-semibold underline underline-offset-2 hover:text-primary/80 transition-colors" onClick={resetForm}>
+                {isSignUp ? 'Sign In' : 'Sign Up'}
+              </button>
+            </p>
+          </div>
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
