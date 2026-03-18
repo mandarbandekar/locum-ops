@@ -21,7 +21,6 @@ import { ThisWeekCard } from '@/components/dashboard/ThisWeekCard';
 import { WorkReadinessStrip, ReadinessItem } from '@/components/dashboard/WorkReadinessStrip';
 import { QuickActions } from '@/components/dashboard/QuickActions';
 import { useUserProfile } from '@/contexts/UserProfileContext';
-import { useUserProfile } from '@/contexts/UserProfileContext';
 
 const dashDb = (table: string) => supabase.from(table as any);
 
