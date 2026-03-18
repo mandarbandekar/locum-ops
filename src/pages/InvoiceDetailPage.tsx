@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, DollarSign, Trash2, Plus, CheckCircle, AlertTriangle, Download, Link2, Copy, RefreshCw, Loader2, Pencil, Check, X, ArrowRight, Undo2, Layers } from 'lucide-react';
+import { ArrowLeft, DollarSign, Trash2, Plus, CheckCircle, AlertTriangle, Download, Link2, Copy, RefreshCw, Loader2, Pencil, Check, X, ArrowRight, Undo2, Layers, Send } from 'lucide-react';
 import { format } from 'date-fns';
 import { computeInvoiceStatus, generateId } from '@/lib/businessLogic';
 import { toast } from 'sonner';
@@ -225,6 +225,7 @@ export default function InvoiceDetailPage() {
               onOpenBillingDialog={() => setBillingDialogOpen(true)} />
           ) : (
             <SentView invoice={invoice} items={items} invoicePayments={invoicePayments}
+              facility={facility} billingNameTo={billingNameTo}
               onUpdateInvoice={updateInvoice} onAddPayment={addPayment} onAddActivity={addActivity} />
           )}
 
@@ -677,6 +678,11 @@ function DraftForm({ invoice, items, facility, profile, billingNameTo, billingEm
         <Button onClick={handleProceedToSend} className="w-full" size="lg">
           <ArrowRight className="mr-2 h-4 w-4" /> Ready to Send
         </Button>
+        <Button variant="outline" className="w-full justify-start font-bold" onClick={() => toast.info('Email sending coming soon!')} disabled={!billingNameTo || !billingEmailTo}>
+          <Send className="mr-2 h-4 w-4" />
+          Send Invoice to {billingNameTo || '—'} at {facility?.name || '—'}
+          <Badge variant="secondary" className="ml-auto text-[10px] px-1.5 py-0">Beta</Badge>
+        </Button>
         <div className="flex gap-2">
           <Button onClick={handleSave} variant="outline" disabled={saving} className="flex-1">
             {saving ? 'Saving…' : 'Save Draft'}
@@ -708,7 +714,7 @@ function DraftPdfButton({ invoiceId, invoiceNumber }: { invoiceId: string; invoi
 
 // ─── Sent View ─────────────────────────────────────────────
 
-function SentView({ invoice, items, invoicePayments, onUpdateInvoice, onAddPayment, onAddActivity }: any) {
+function SentView({ invoice, items, invoicePayments, facility, billingNameTo, onUpdateInvoice, onAddPayment, onAddActivity }: any) {
   const [showPayment, setShowPayment] = useState(false);
   const [shareLoading, setShareLoading] = useState(false);
   const computedStatus = computeInvoiceStatus(invoice);
@@ -834,6 +840,11 @@ function SentView({ invoice, items, invoicePayments, onUpdateInvoice, onAddPayme
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-sm">Send & Share</CardTitle></CardHeader>
         <CardContent className="space-y-3">
+          <Button variant="outline" className="w-full justify-start font-bold" onClick={() => toast.info('Email sending coming soon!')}>
+            <Send className="mr-2 h-4 w-4" />
+            Send Invoice to {billingNameTo || '—'} at {facility?.name || '—'}
+            <Badge variant="secondary" className="ml-auto text-[10px] px-1.5 py-0">Beta</Badge>
+          </Button>
           <Button variant="outline" className="w-full" onClick={handleDownloadPdf} disabled={pdfLoading}>
             {pdfLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
             {pdfLoading ? 'Generating…' : 'Download PDF'}
