@@ -714,7 +714,7 @@ function DraftPdfButton({ invoiceId, invoiceNumber }: { invoiceId: string; invoi
 
 // ─── Sent View ─────────────────────────────────────────────
 
-function SentView({ invoice, items, invoicePayments, onUpdateInvoice, onAddPayment, onAddActivity }: any) {
+function SentView({ invoice, items, invoicePayments, facility, billingNameTo, onUpdateInvoice, onAddPayment, onAddActivity }: any) {
   const [showPayment, setShowPayment] = useState(false);
   const [shareLoading, setShareLoading] = useState(false);
   const computedStatus = computeInvoiceStatus(invoice);
