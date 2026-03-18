@@ -211,6 +211,16 @@ export default function OnboardingPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
+                  <Label>First name</Label>
+                  <Input value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Jane" />
+                </div>
+                <div>
+                  <Label>Last name</Label>
+                  <Input value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Smith" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
                   <Label>Work style</Label>
                   <Select value={workStyle} onValueChange={setWorkStyle}>
                     <SelectTrigger><SelectValue placeholder="Select…" /></SelectTrigger>
