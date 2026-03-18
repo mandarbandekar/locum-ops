@@ -225,6 +225,7 @@ export default function InvoiceDetailPage() {
               onOpenBillingDialog={() => setBillingDialogOpen(true)} />
           ) : (
             <SentView invoice={invoice} items={items} invoicePayments={invoicePayments}
+              facility={facility} billingNameTo={billingNameTo}
               onUpdateInvoice={updateInvoice} onAddPayment={addPayment} onAddActivity={addActivity} />
           )}
 
