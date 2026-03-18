@@ -28,7 +28,7 @@ export default function DashboardPage() {
   const { shifts, invoices, facilities, payments, checklistItems } = useData();
   const { user, isDemo } = useAuth();
   const { profile } = useUserProfile();
-  const showSetupCard = !isDemo && facilities.length === 0 && shifts.length === 0;
+  const showSetupCard = false; // Setup assistant hidden for now
   const navigate = useNavigate();
   const now = new Date();
 
