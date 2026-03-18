@@ -334,7 +334,7 @@ export default function LandingPage({ hideSignIn = false }: { hideSignIn?: boole
               </Anim>
               <Anim delay={0.05}>
                 <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[3.5rem] font-extrabold leading-[1.1] sm:leading-[1.08] tracking-tight text-foreground font-display">
-                  Run your relief vet business{' '}
+                  Run your locum vet business{' '}
                   <span className="text-primary">without the back-office chaos.</span>
                 </h1>
               </Anim>
