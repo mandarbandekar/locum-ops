@@ -11,11 +11,7 @@ import onboardingIllustration from '@/assets/onboarding-illustration.png';
 
 const PROFESSIONS = [
   { value: 'vet', label: 'Veterinarian' },
-  { value: 'nurse', label: 'Nurse' },
-  { value: 'physician', label: 'Physician' },
-  { value: 'pharmacist', label: 'Pharmacist' },
-  { value: 'pt_ot', label: 'PT / OT' },
-  { value: 'other', label: 'Other' },
+  { value: 'vet_tech', label: 'Veterinary Technician' },
 ];
 
 export default function LoginPage() {
