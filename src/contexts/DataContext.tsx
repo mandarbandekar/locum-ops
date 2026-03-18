@@ -239,12 +239,17 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
   // ─── Shifts ──────────────────────────────────────────────
 
   const addShift = useCallback(async (s: Omit<Shift, 'id'>): Promise<Shift> => {
+    // Auto-mark past shifts as completed
+    const shiftData = { ...s };
+    if (new Date(shiftData.end_datetime) < new Date() && (shiftData.status === 'proposed' || shiftData.status === 'booked')) {
+      shiftData.status = 'completed';
+    }
     if (isDemo) {
-      const shift = { ...s, id: generateId() };
+      const shift = { ...shiftData, id: generateId() };
       setShifts(prev => [...prev, shift]);
       return shift;
     }
-    const { data, error } = await db('shifts').insert({ user_id: user!.id, ...s }).select().single();
+    const { data, error } = await db('shifts').insert({ user_id: user!.id, ...shiftData }).select().single();
     if (error) { toast.error(error.message); throw error; }
     const shift = stripDbFields(data) as Shift;
     setShifts(prev => [...prev, shift]);
