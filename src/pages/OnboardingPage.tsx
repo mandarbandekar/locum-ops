@@ -339,7 +339,7 @@ export default function OnboardingPage() {
         return (
           <div className="space-y-5">
             <div>
-              <h2 className="text-2xl font-bold text-foreground font-[Manrope]">How do you run your ops today?</h2>
+              <h2 className="text-2xl font-bold text-foreground font-[Manrope]">How do you handle admin back office work today?</h2>
               <p className="text-muted-foreground mt-1">Helps us understand your workflow.</p>
             </div>
             <div className="space-y-4">
