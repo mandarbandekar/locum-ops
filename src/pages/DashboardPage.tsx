@@ -233,7 +233,7 @@ export default function DashboardPage() {
         <QuickActions />
       </div>
 
-      {showSetupCard && <ContinueSetupCard />}
+      {/* Setup card hidden for now */}
 
       {/* Row 1: 4 Summary Cards */}
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
