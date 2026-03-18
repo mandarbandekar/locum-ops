@@ -84,6 +84,8 @@ export default function OnboardingPage() {
   const [shiftDialogOpen, setShiftDialogOpen] = useState(false);
 
   // Profile state
+  const [firstName, setFirstName] = useState(profile?.first_name || '');
+  const [lastName, setLastName] = useState(profile?.last_name || '');
   const [companyName, setCompanyName] = useState(profile?.company_name || '');
   const [companyAddress, setCompanyAddress] = useState(profile?.company_address || '');
   const [invoiceEmail, setInvoiceEmail] = useState(profile?.invoice_email || '');
