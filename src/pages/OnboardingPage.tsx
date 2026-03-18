@@ -84,6 +84,8 @@ export default function OnboardingPage() {
   const [shiftDialogOpen, setShiftDialogOpen] = useState(false);
 
   // Profile state
+  const [firstName, setFirstName] = useState(profile?.first_name || '');
+  const [lastName, setLastName] = useState(profile?.last_name || '');
   const [companyName, setCompanyName] = useState(profile?.company_name || '');
   const [companyAddress, setCompanyAddress] = useState(profile?.company_address || '');
   const [invoiceEmail, setInvoiceEmail] = useState(profile?.invoice_email || '');
@@ -147,6 +149,8 @@ export default function OnboardingPage() {
   const saveProfile = async () => {
     console.log('onboarding_step_submit', { step: 'profile' });
     await updateProfile({
+      first_name: firstName.trim(),
+      last_name: lastName.trim(),
       company_name: companyName.trim(),
       company_address: companyAddress.trim(),
       invoice_email: invoiceEmail.trim() || null,
@@ -205,6 +209,16 @@ export default function OnboardingPage() {
               <p className="text-muted-foreground mt-1">Tell us about your business — this info will appear on your invoices.</p>
             </div>
             <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>First name</Label>
+                  <Input value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Jane" />
+                </div>
+                <div>
+                  <Label>Last name</Label>
+                  <Input value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Smith" />
+                </div>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Work style</Label>

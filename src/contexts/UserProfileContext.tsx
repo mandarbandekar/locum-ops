@@ -124,10 +124,31 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
 
       if (data) {
         const d = data as any;
+        let firstName = d.first_name || '';
+        let lastName = d.last_name || '';
+        let profession = d.profession || 'other';
+
+        // If the trigger created a bare row, backfill from auth metadata
+        if (!firstName && !lastName) {
+          const { data: { user: authUser } } = await supabase.auth.getUser();
+          const meta = authUser?.user_metadata || {};
+          firstName = meta.first_name || '';
+          lastName = meta.last_name || '';
+          profession = meta.profession || profession;
+          if (firstName || lastName) {
+            await db('user_profiles').update({
+              first_name: firstName,
+              last_name: lastName,
+              profession,
+              invoice_email: d.invoice_email || authUser?.email || null,
+            }).eq('id', d.id);
+          }
+        }
+
         setProfile({
           id: d.id,
           user_id: d.user_id,
-          profession: d.profession,
+          profession,
           work_style_label: d.work_style_label,
           timezone: d.timezone,
           currency: d.currency,
@@ -139,8 +160,8 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
           email_tone: d.email_tone,
           terms_fields_enabled: (d.terms_fields_enabled as TermsFieldsEnabled) || DEFAULT_TERMS_FIELDS,
           onboarding_completed_at: d.onboarding_completed_at,
-          first_name: d.first_name || '',
-          last_name: d.last_name || '',
+          first_name: firstName,
+          last_name: lastName,
           company_name: d.company_name || '',
           company_address: d.company_address || '',
           invoice_email: d.invoice_email || null,
