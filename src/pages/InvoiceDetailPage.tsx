@@ -677,6 +677,11 @@ function DraftForm({ invoice, items, facility, profile, billingNameTo, billingEm
         <Button onClick={handleProceedToSend} className="w-full" size="lg">
           <ArrowRight className="mr-2 h-4 w-4" /> Ready to Send
         </Button>
+        <Button variant="outline" className="w-full justify-start font-bold" onClick={() => toast.info('Email sending coming soon!')} disabled={!billingNameTo || !billingEmailTo}>
+          <Send className="mr-2 h-4 w-4" />
+          Send Invoice to {billingNameTo || '—'} at {facility?.name || '—'}
+          <Badge variant="secondary" className="ml-auto text-[10px] px-1.5 py-0">Beta</Badge>
+        </Button>
         <div className="flex gap-2">
           <Button onClick={handleSave} variant="outline" disabled={saving} className="flex-1">
             {saving ? 'Saving…' : 'Save Draft'}
