@@ -839,6 +839,11 @@ function SentView({ invoice, items, invoicePayments, onUpdateInvoice, onAddPayme
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-sm">Send & Share</CardTitle></CardHeader>
         <CardContent className="space-y-3">
+          <Button variant="outline" className="w-full justify-start font-bold" onClick={() => toast.info('Email sending coming soon!')}>
+            <Send className="mr-2 h-4 w-4" />
+            Send Invoice to {invoice.billing_email_to ? invoice.billing_email_to.split('@')[0] : '—'} at {(() => { const { useData } = require('@/contexts/DataContext'); return ''; })() || '—'}
+            <Badge variant="secondary" className="ml-auto text-[10px] px-1.5 py-0">Beta</Badge>
+          </Button>
           <Button variant="outline" className="w-full" onClick={handleDownloadPdf} disabled={pdfLoading}>
             {pdfLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
             {pdfLoading ? 'Generating…' : 'Download PDF'}
