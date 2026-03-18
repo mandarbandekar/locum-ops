@@ -113,7 +113,11 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
       setStep(0);
       return;
     }
-    handleSubmit();
+    if (step < totalSteps - 1) {
+      setStep(step + 1);
+    } else {
+      handleSubmit();
+    }
   };
 
   const handleNext = () => {
