@@ -267,35 +267,31 @@ export default function OnboardingPage() {
           <div className="space-y-5">
             <div>
               <h2 className="text-2xl font-bold text-foreground font-[Manrope]">Welcome to LocumOps!</h2>
-              <p className="text-muted-foreground mt-1">Tell us about yourself and your business — this info will appear on your invoices.</p>
+              <p className="text-muted-foreground mt-1">Tell us about your business — this info will appear on your invoices.</p>
             </div>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>First name <span className="text-destructive">*</span></Label>
-                  <Input value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Jane" autoFocus />
-                </div>
-                <div>
-                  <Label>Last name</Label>
-                  <Input value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Smith" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>Profession</Label>
-                  <Select value={profession} onValueChange={v => setProfession(v as Profession)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {PROFESSIONS.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
                 <div>
                   <Label>Work style</Label>
                   <Select value={workStyle} onValueChange={setWorkStyle}>
                     <SelectTrigger><SelectValue placeholder="Select…" /></SelectTrigger>
                     <SelectContent>
                       {WORK_STYLES.map(w => <SelectItem key={w} value={w}>{w}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Timezone</Label>
+                  <Select value={timezone} onValueChange={setTimezone}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="America/New_York">Eastern</SelectItem>
+                      <SelectItem value="America/Chicago">Central</SelectItem>
+                      <SelectItem value="America/Denver">Mountain</SelectItem>
+                      <SelectItem value="America/Phoenix">Arizona</SelectItem>
+                      <SelectItem value="America/Los_Angeles">Pacific</SelectItem>
+                      <SelectItem value="America/Anchorage">Alaska</SelectItem>
+                      <SelectItem value="Pacific/Honolulu">Hawaii</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -319,38 +315,21 @@ export default function OnboardingPage() {
                   <Input value={invoicePhone} onChange={e => setInvoicePhone(e.target.value)} placeholder="503-555-1234" />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>Timezone</Label>
-                  <Select value={timezone} onValueChange={setTimezone}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="America/New_York">Eastern</SelectItem>
-                      <SelectItem value="America/Chicago">Central</SelectItem>
-                      <SelectItem value="America/Denver">Mountain</SelectItem>
-                      <SelectItem value="America/Phoenix">Arizona</SelectItem>
-                      <SelectItem value="America/Los_Angeles">Pacific</SelectItem>
-                      <SelectItem value="America/Anchorage">Alaska</SelectItem>
-                      <SelectItem value="Pacific/Honolulu">Hawaii</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Currency</Label>
-                  <Select value={currency} onValueChange={setCurrency}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="USD">USD</SelectItem>
-                      <SelectItem value="CAD">CAD</SelectItem>
-                      <SelectItem value="GBP">GBP</SelectItem>
-                      <SelectItem value="EUR">EUR</SelectItem>
-                      <SelectItem value="AUD">AUD</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div>
+                <Label>Currency</Label>
+                <Select value={currency} onValueChange={setCurrency}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="USD">USD</SelectItem>
+                    <SelectItem value="CAD">CAD</SelectItem>
+                    <SelectItem value="GBP">GBP</SelectItem>
+                    <SelectItem value="EUR">EUR</SelectItem>
+                    <SelectItem value="AUD">AUD</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-            <Button onClick={saveProfile} disabled={!firstName.trim()} className="w-full" size="lg">
+            <Button onClick={saveProfile} className="w-full" size="lg">
               Continue <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </div>
