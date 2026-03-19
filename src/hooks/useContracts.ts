@@ -113,7 +113,7 @@ export function useContracts(facilityId: string | undefined, isDemo = false) {
     if (isDemo) { setChecklistItems(prev => prev.map(x => x.id === item.id ? item : x)); return; }
     const { id, ...rest } = item;
     const { error } = await db('contract_checklist_items').update(rest).eq('id', id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
     setChecklistItems(prev => prev.map(x => x.id === item.id ? item : x));
   }, [isDemo]);
 
