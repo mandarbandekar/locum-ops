@@ -43,7 +43,7 @@ export function useCredentialPortal(credentialId: string | null) {
     }) => {
       if (!credentialId || !user) throw new Error('Missing credential or user');
 
-      // Simple base64 encoding for the password (not true encryption, but obscures at rest)
+      // NOTE: Base64 encoding only — not true encryption. Data is protected by RLS (row-owner only).
       const payload: any = {
         credential_id: credentialId,
         user_id: user.id,
