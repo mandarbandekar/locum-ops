@@ -94,7 +94,7 @@ export function useContracts(facilityId: string | undefined, isDemo = false) {
     } else {
       const { id: _, ...rest } = t;
       const { data, error } = await db('contract_terms').insert({ user_id: user!.id, ...rest }).select().single();
-      if (error) { toast.error(error.message); return; }
+      if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
       setContractTerms(prev => [...prev, strip(data) as ContractTerms]);
     }
   }, [isDemo, user, contractTerms]);
