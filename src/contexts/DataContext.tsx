@@ -157,7 +157,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     if (isDemo) { setFacilities(prev => prev.map(x => x.id === c.id ? c : x)); return; }
     const { id, ...rest } = c;
     const { error } = await db('facilities').update(rest).eq('id', id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
     setFacilities(prev => prev.map(x => x.id === c.id ? c : x));
   }, [isDemo]);
 
