@@ -331,7 +331,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     if (isDemo) { setLineItems(prev => prev.map(x => x.id === item.id ? item : x)); return; }
     const { id, ...rest } = item;
     const { error } = await db('invoice_line_items').update(rest).eq('id', id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
     setLineItems(prev => prev.map(x => x.id === item.id ? item : x));
   }, [isDemo]);
 
