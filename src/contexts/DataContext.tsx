@@ -193,7 +193,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
   const addContact = useCallback(async (c: Omit<FacilityContact, 'id'>) => {
     if (isDemo) { setContacts(prev => [...prev, { ...c, id: generateId() }]); return; }
     const { data, error } = await db('facility_contacts').insert({ user_id: user!.id, ...c }).select().single();
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
     setContacts(prev => [...prev, stripDbFields(data) as FacilityContact]);
   }, [isDemo, user]);
 
