@@ -347,7 +347,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
   const addEmailLog = useCallback(async (log: Omit<EmailLog, 'id'>) => {
     if (isDemo) { setEmailLogs(prev => [...prev, { ...log, id: generateId() }]); return; }
     const { data, error } = await db('email_logs').insert({ user_id: user!.id, ...log }).select().single();
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
     setEmailLogs(prev => [...prev, stripDbFields(data) as EmailLog]);
   }, [isDemo, user]);
 
