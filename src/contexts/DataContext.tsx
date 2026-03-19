@@ -227,7 +227,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     if (exists) {
       const { id, ...rest } = c;
       const { error } = await db('terms_snapshots').update(rest).eq('id', id);
-      if (error) { toast.error(error.message); return; }
+      if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
       setTerms(prev => prev.map(x => x.id === c.id ? c : x));
     } else {
       const { id: _, ...rest } = c;
