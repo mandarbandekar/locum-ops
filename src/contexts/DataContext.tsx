@@ -302,7 +302,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     if (isDemo) { setInvoices(prev => prev.map(x => x.id === inv.id ? inv : x)); return; }
     const { id, ...rest } = inv;
     const { error } = await db('invoices').update(rest).eq('id', id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
     setInvoices(prev => prev.map(x => x.id === inv.id ? inv : x));
   }, [isDemo]);
 
