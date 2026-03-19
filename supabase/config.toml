@@ -15,3 +15,5 @@ project_id = "eavfxjsdamienrcginvi"
     verify_jwt = false
   [functions.tax-advisor-chat]
     verify_jwt = false
+  [functions.credential-portal-crypto]
+    verify_jwt = false
