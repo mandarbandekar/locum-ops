@@ -267,7 +267,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
       return;
     }
     const { error } = await db('shifts').delete().eq('id', id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
     setShifts(prev => prev.filter(x => x.id !== id));
     setLineItems(prev => prev.filter(x => x.shift_id !== id));
   }, [isDemo]);
