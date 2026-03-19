@@ -177,7 +177,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     }
     // DB cascades handle child tables
     const { error } = await db('facilities').delete().eq('id', id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
     const invoiceIds = invoices.filter(x => x.facility_id === id).map(x => x.id);
     setFacilities(prev => prev.filter(x => x.id !== id));
     setContacts(prev => prev.filter(x => x.facility_id !== id));
