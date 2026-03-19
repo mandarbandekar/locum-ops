@@ -74,7 +74,7 @@ export function useManualSetup() {
         invoice_email_bcc: input.billing_email_bcc || '',
       }).select().single();
 
-      if (error) { toast.error(error.message); return null; }
+      if (error) { console.error(error); toast.error(friendlyDbError(error)); return null; }
       const facility = stripDbFields(data) as Facility;
       setFacilities(prev => [...prev, facility]);
 
