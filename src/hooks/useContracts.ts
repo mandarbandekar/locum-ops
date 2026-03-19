@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Contract, ContractTerms, ContractChecklistItem, DEFAULT_CHECKLIST_ITEMS } from '@/types/contracts';
 import { toast } from 'sonner';
+import { friendlyDbError } from '@/lib/errorUtils';
 import { generateId } from '@/lib/businessLogic';
 
 const db = (table: string) => supabase.from(table as any);
@@ -52,7 +53,7 @@ export function useContracts(facilityId: string | undefined, isDemo = false) {
       return contract;
     }
     const { data, error } = await db('contracts').insert({ user_id: user!.id, ...c }).select().single();
-    if (error) { toast.error(error.message); throw error; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); throw error; }
     const contract = strip(data) as Contract;
     setContracts(prev => [...prev, contract]);
     return contract;
@@ -62,7 +63,7 @@ export function useContracts(facilityId: string | undefined, isDemo = false) {
     if (isDemo) { setContracts(prev => prev.map(x => x.id === c.id ? c : x)); return; }
     const { id, ...rest } = c;
     const { error } = await db('contracts').update(rest).eq('id', id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
     setContracts(prev => prev.map(x => x.id === c.id ? c : x));
   }, [isDemo]);
 
@@ -73,7 +74,7 @@ export function useContracts(facilityId: string | undefined, isDemo = false) {
       return;
     }
     const { error } = await db('contracts').delete().eq('id', id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
     setContracts(prev => prev.filter(x => x.id !== id));
     setContractTerms(prev => prev.filter(x => x.contract_id !== id));
   }, [isDemo]);
@@ -88,12 +89,12 @@ export function useContracts(facilityId: string | undefined, isDemo = false) {
     if (exists) {
       const { id, ...rest } = t;
       const { error } = await db('contract_terms').update(rest).eq('id', id);
-      if (error) { toast.error(error.message); return; }
+      if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
       setContractTerms(prev => prev.map(x => x.id === t.id ? t : x));
     } else {
       const { id: _, ...rest } = t;
       const { data, error } = await db('contract_terms').insert({ user_id: user!.id, ...rest }).select().single();
-      if (error) { toast.error(error.message); return; }
+      if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
       setContractTerms(prev => [...prev, strip(data) as ContractTerms]);
     }
   }, [isDemo, user, contractTerms]);
@@ -104,7 +105,7 @@ export function useContracts(facilityId: string | undefined, isDemo = false) {
       return;
     }
     const { data, error } = await db('contract_checklist_items').insert({ user_id: user!.id, ...item }).select().single();
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
     setChecklistItems(prev => [...prev, strip(data) as ContractChecklistItem]);
   }, [isDemo, user]);
 
@@ -112,14 +113,14 @@ export function useContracts(facilityId: string | undefined, isDemo = false) {
     if (isDemo) { setChecklistItems(prev => prev.map(x => x.id === item.id ? item : x)); return; }
     const { id, ...rest } = item;
     const { error } = await db('contract_checklist_items').update(rest).eq('id', id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
     setChecklistItems(prev => prev.map(x => x.id === item.id ? item : x));
   }, [isDemo]);
 
   const deleteChecklistItem = useCallback(async (id: string) => {
     if (isDemo) { setChecklistItems(prev => prev.filter(x => x.id !== id)); return; }
     const { error } = await db('contract_checklist_items').delete().eq('id', id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
     setChecklistItems(prev => prev.filter(x => x.id !== id));
   }, [isDemo]);
 

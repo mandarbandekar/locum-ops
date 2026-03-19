@@ -8,6 +8,7 @@ import { computeInvoiceStatus, generateId, generateInvoiceNumber } from '@/lib/b
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { friendlyDbError } from '@/lib/errorUtils';
 
 // Helper for tables not yet in auto-generated types
 const db = (table: string) => supabase.from(table as any);
@@ -146,7 +147,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
       return f;
     }
     const { data, error } = await db('facilities').insert({ user_id: user!.id, ...c }).select().single();
-    if (error) { toast.error(error.message); throw error; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); throw error; }
     const facility = stripDbFields(data) as Facility;
     setFacilities(prev => [...prev, facility]);
     return facility;
@@ -156,7 +157,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     if (isDemo) { setFacilities(prev => prev.map(x => x.id === c.id ? c : x)); return; }
     const { id, ...rest } = c;
     const { error } = await db('facilities').update(rest).eq('id', id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
     setFacilities(prev => prev.map(x => x.id === c.id ? c : x));
   }, [isDemo]);
 
@@ -176,7 +177,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     }
     // DB cascades handle child tables
     const { error } = await db('facilities').delete().eq('id', id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
     const invoiceIds = invoices.filter(x => x.facility_id === id).map(x => x.id);
     setFacilities(prev => prev.filter(x => x.id !== id));
     setContacts(prev => prev.filter(x => x.facility_id !== id));
@@ -192,7 +193,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
   const addContact = useCallback(async (c: Omit<FacilityContact, 'id'>) => {
     if (isDemo) { setContacts(prev => [...prev, { ...c, id: generateId() }]); return; }
     const { data, error } = await db('facility_contacts').insert({ user_id: user!.id, ...c }).select().single();
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
     setContacts(prev => [...prev, stripDbFields(data) as FacilityContact]);
   }, [isDemo, user]);
 
@@ -200,14 +201,14 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     if (isDemo) { setContacts(prev => prev.map(x => x.id === c.id ? c : x)); return; }
     const { id, ...rest } = c;
     const { error } = await db('facility_contacts').update(rest).eq('id', id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
     setContacts(prev => prev.map(x => x.id === c.id ? c : x));
   }, [isDemo]);
 
   const deleteContact = useCallback(async (id: string) => {
     if (isDemo) { setContacts(prev => prev.filter(x => x.id !== id)); return; }
     const { error } = await db('facility_contacts').delete().eq('id', id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
     setContacts(prev => prev.filter(x => x.id !== id));
   }, [isDemo]);
 
@@ -226,12 +227,12 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     if (exists) {
       const { id, ...rest } = c;
       const { error } = await db('terms_snapshots').update(rest).eq('id', id);
-      if (error) { toast.error(error.message); return; }
+      if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
       setTerms(prev => prev.map(x => x.id === c.id ? c : x));
     } else {
       const { id: _, ...rest } = c;
       const { data, error } = await db('terms_snapshots').insert({ user_id: user!.id, ...rest }).select().single();
-      if (error) { toast.error(error.message); return; }
+      if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
       setTerms(prev => [...prev, stripDbFields(data) as TermsSnapshot]);
     }
   }, [isDemo, user, terms]);
@@ -245,7 +246,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
       return shift;
     }
     const { data, error } = await db('shifts').insert({ user_id: user!.id, ...s }).select().single();
-    if (error) { toast.error(error.message); throw error; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); throw error; }
     const shift = stripDbFields(data) as Shift;
     setShifts(prev => [...prev, shift]);
     return shift;
@@ -255,7 +256,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     if (isDemo) { setShifts(prev => prev.map(x => x.id === s.id ? s : x)); return; }
     const { id, ...rest } = s;
     const { error } = await db('shifts').update(rest).eq('id', id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
     setShifts(prev => prev.map(x => x.id === s.id ? s : x));
   }, [isDemo]);
 
@@ -266,7 +267,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
       return;
     }
     const { error } = await db('shifts').delete().eq('id', id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
     setShifts(prev => prev.filter(x => x.id !== id));
     setLineItems(prev => prev.filter(x => x.shift_id !== id));
   }, [isDemo]);
@@ -283,14 +284,14 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     }
     const { data: invData, error: invError } = await db('invoices')
       .insert({ user_id: user!.id, ...inv }).select().single();
-    if (invError) { toast.error(invError.message); throw invError; }
+    if (invError) { console.error(invError); toast.error(friendlyDbError(invError)); throw invError; }
     const invoice = stripDbFields(invData) as Invoice;
     setInvoices(prev => [...prev, invoice]);
 
     if (items.length > 0) {
       const toInsert = items.map(item => ({ user_id: user!.id, invoice_id: invoice.id, ...item }));
       const { data: liData, error: liError } = await db('invoice_line_items').insert(toInsert).select();
-      if (liError) { toast.error(liError.message); } else {
+      if (liError) { console.error(liError); toast.error(friendlyDbError(liError)); } else {
         setLineItems(prev => [...prev, ...(liData || []).map(stripDbFields) as InvoiceLineItem[]]);
       }
     }
@@ -301,7 +302,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     if (isDemo) { setInvoices(prev => prev.map(x => x.id === inv.id ? inv : x)); return; }
     const { id, ...rest } = inv;
     const { error } = await db('invoices').update(rest).eq('id', id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
     setInvoices(prev => prev.map(x => x.id === inv.id ? inv : x));
   }, [isDemo]);
 
@@ -312,7 +313,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
       return;
     }
     const { error } = await db('invoices').delete().eq('id', id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
     setInvoices(prev => prev.filter(x => x.id !== id));
     setLineItems(prev => prev.filter(x => x.invoice_id !== id));
   }, [isDemo]);
@@ -322,7 +323,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
   const addLineItem = useCallback(async (item: Omit<InvoiceLineItem, 'id'>) => {
     if (isDemo) { setLineItems(prev => [...prev, { ...item, id: generateId() }]); return; }
     const { data, error } = await db('invoice_line_items').insert({ user_id: user!.id, ...item }).select().single();
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
     setLineItems(prev => [...prev, stripDbFields(data) as InvoiceLineItem]);
   }, [isDemo, user]);
 
@@ -330,14 +331,14 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     if (isDemo) { setLineItems(prev => prev.map(x => x.id === item.id ? item : x)); return; }
     const { id, ...rest } = item;
     const { error } = await db('invoice_line_items').update(rest).eq('id', id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
     setLineItems(prev => prev.map(x => x.id === item.id ? item : x));
   }, [isDemo]);
 
   const deleteLineItem = useCallback(async (id: string) => {
     if (isDemo) { setLineItems(prev => prev.filter(x => x.id !== id)); return; }
     const { error } = await db('invoice_line_items').delete().eq('id', id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
     setLineItems(prev => prev.filter(x => x.id !== id));
   }, [isDemo]);
 
@@ -346,7 +347,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
   const addEmailLog = useCallback(async (log: Omit<EmailLog, 'id'>) => {
     if (isDemo) { setEmailLogs(prev => [...prev, { ...log, id: generateId() }]); return; }
     const { data, error } = await db('email_logs').insert({ user_id: user!.id, ...log }).select().single();
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
     setEmailLogs(prev => [...prev, stripDbFields(data) as EmailLog]);
   }, [isDemo, user]);
 
@@ -354,7 +355,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
   const addPayment = useCallback(async (p: Omit<InvoicePayment, 'id'>) => {
     if (isDemo) { setPayments(prev => [...prev, { ...p, id: generateId() }]); return; }
     const { data, error } = await db('invoice_payments').insert({ user_id: user!.id, ...p }).select().single();
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
     setPayments(prev => [...prev, stripDbFields(data) as InvoicePayment]);
   }, [isDemo, user]);
 

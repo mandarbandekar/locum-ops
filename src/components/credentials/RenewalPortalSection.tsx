@@ -126,7 +126,7 @@ export function RenewalPortalSection({ credentialId }: Props) {
         )}
 
         <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-          <ShieldCheck className="h-3 w-3" /> Stored securely and encrypted.
+          <ShieldCheck className="h-3 w-3" /> Access restricted to your account only.
         </p>
       </div>
     );
@@ -168,7 +168,7 @@ export function RenewalPortalSection({ credentialId }: Props) {
           </Button>
         </div>
         <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-          <ShieldCheck className="h-3 w-3" /> Stored securely and encrypted.
+          <ShieldCheck className="h-3 w-3" /> Access restricted to your account only.
         </p>
       </div>
       <div className="space-y-2">

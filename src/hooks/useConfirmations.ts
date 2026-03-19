@@ -6,6 +6,7 @@ import { ConfirmationRecord, ConfirmationActivity, ConfirmationShiftLink, comput
 import { generateSecureToken } from '@/lib/businessLogic';
 import { startOfMonth, endOfMonth, format } from 'date-fns';
 import { toast } from 'sonner';
+import { friendlyDbError } from '@/lib/errorUtils';
 
 const db = (table: string) => supabase.from(table as any);
 
@@ -86,7 +87,7 @@ export function useConfirmations() {
     const { data, error } = await db('confirmation_records')
       .insert({ user_id: user!.id, facility_id: facilityId, month_key: monthKey })
       .select().single();
-    if (error) { toast.error(error.message); throw error; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); throw error; }
     const record = stripDbFields(data) as ConfirmationRecord;
     setRecords(prev => [...prev, record]);
     return record;
@@ -115,7 +116,7 @@ export function useConfirmations() {
       addActivityLocal(recordId, 'sent', 'Confirmation sent');
     } else {
       const { error } = await db('confirmation_records').update({ ...updates, updated_at: now }).eq('id', recordId);
-      if (error) { toast.error(error.message); return; }
+      if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
       setRecords(prev => prev.map(r => r.id === recordId ? { ...r, ...updates } : r));
 
       // Save shift links
@@ -150,7 +151,7 @@ export function useConfirmations() {
       addActivityLocal(recordId, 'confirmed', 'Confirmation confirmed by practice');
     } else {
       const { error } = await db('confirmation_records').update({ ...updates, updated_at: now }).eq('id', recordId);
-      if (error) { toast.error(error.message); return; }
+      if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
       setRecords(prev => prev.map(r => r.id === recordId ? { ...r, ...updates } : r));
       await db('confirmation_activity').insert({
         confirmation_record_id: recordId,

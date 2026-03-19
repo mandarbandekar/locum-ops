@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { friendlyDbError } from '@/lib/errorUtils';
 import type { Facility, Shift } from '@/types';
 
 const db = (table: string) => supabase.from(table as any);
@@ -73,7 +74,7 @@ export function useManualSetup() {
         invoice_email_bcc: input.billing_email_bcc || '',
       }).select().single();
 
-      if (error) { toast.error(error.message); return null; }
+      if (error) { console.error(error); toast.error(friendlyDbError(error)); return null; }
       const facility = stripDbFields(data) as Facility;
       setFacilities(prev => [...prev, facility]);
 
@@ -111,7 +112,7 @@ export function useManualSetup() {
 
       return facility;
     } catch (err: any) {
-      toast.error(err.message || 'Failed to add facility');
+      toast.error(friendlyDbError(err));
       return null;
     } finally {
       setSaving(false);
@@ -136,12 +137,12 @@ export function useManualSetup() {
         color: 'blue',
       }).select().single();
 
-      if (error) { toast.error(error.message); return null; }
+      if (error) { console.error(error); toast.error(friendlyDbError(error)); return null; }
       const shift = stripDbFields(data) as Shift;
       setShifts(prev => [...prev, shift]);
       return shift;
     } catch (err: any) {
-      toast.error(err.message || 'Failed to add shift');
+      toast.error(friendlyDbError(err));
       return null;
     } finally {
       setSaving(false);
