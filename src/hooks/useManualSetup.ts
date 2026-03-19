@@ -137,7 +137,7 @@ export function useManualSetup() {
         color: 'blue',
       }).select().single();
 
-      if (error) { toast.error(error.message); return null; }
+      if (error) { console.error(error); toast.error(friendlyDbError(error)); return null; }
       const shift = stripDbFields(data) as Shift;
       setShifts(prev => [...prev, shift]);
       return shift;
