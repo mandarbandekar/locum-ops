@@ -74,7 +74,7 @@ export function useContracts(facilityId: string | undefined, isDemo = false) {
       return;
     }
     const { error } = await db('contracts').delete().eq('id', id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
     setContracts(prev => prev.filter(x => x.id !== id));
     setContractTerms(prev => prev.filter(x => x.contract_id !== id));
   }, [isDemo]);
