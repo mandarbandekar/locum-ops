@@ -112,7 +112,7 @@ export function useManualSetup() {
 
       return facility;
     } catch (err: any) {
-      toast.error(err.message || 'Failed to add facility');
+      toast.error(friendlyDbError(err));
       return null;
     } finally {
       setSaving(false);
