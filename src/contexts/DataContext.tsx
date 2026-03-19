@@ -147,7 +147,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
       return f;
     }
     const { data, error } = await db('facilities').insert({ user_id: user!.id, ...c }).select().single();
-    if (error) { toast.error(error.message); throw error; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); throw error; }
     const facility = stripDbFields(data) as Facility;
     setFacilities(prev => [...prev, facility]);
     return facility;
