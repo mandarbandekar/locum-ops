@@ -323,7 +323,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
   const addLineItem = useCallback(async (item: Omit<InvoiceLineItem, 'id'>) => {
     if (isDemo) { setLineItems(prev => [...prev, { ...item, id: generateId() }]); return; }
     const { data, error } = await db('invoice_line_items').insert({ user_id: user!.id, ...item }).select().single();
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
     setLineItems(prev => [...prev, stripDbFields(data) as InvoiceLineItem]);
   }, [isDemo, user]);
 
