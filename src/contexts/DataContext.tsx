@@ -246,7 +246,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
       return shift;
     }
     const { data, error } = await db('shifts').insert({ user_id: user!.id, ...s }).select().single();
-    if (error) { toast.error(error.message); throw error; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); throw error; }
     const shift = stripDbFields(data) as Shift;
     setShifts(prev => [...prev, shift]);
     return shift;
