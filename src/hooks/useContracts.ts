@@ -63,7 +63,7 @@ export function useContracts(facilityId: string | undefined, isDemo = false) {
     if (isDemo) { setContracts(prev => prev.map(x => x.id === c.id ? c : x)); return; }
     const { id, ...rest } = c;
     const { error } = await db('contracts').update(rest).eq('id', id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
     setContracts(prev => prev.map(x => x.id === c.id ? c : x));
   }, [isDemo]);
 
