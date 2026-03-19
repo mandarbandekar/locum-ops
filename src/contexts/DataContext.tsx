@@ -8,6 +8,7 @@ import { computeInvoiceStatus, generateId, generateInvoiceNumber } from '@/lib/b
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { friendlyDbError } from '@/lib/errorUtils';
 
 // Helper for tables not yet in auto-generated types
 const db = (table: string) => supabase.from(table as any);

@@ -6,6 +6,7 @@ import { ConfirmationRecord, ConfirmationActivity, ConfirmationShiftLink, comput
 import { generateSecureToken } from '@/lib/businessLogic';
 import { startOfMonth, endOfMonth, format } from 'date-fns';
 import { toast } from 'sonner';
+import { friendlyDbError } from '@/lib/errorUtils';
 
 const db = (table: string) => supabase.from(table as any);
 

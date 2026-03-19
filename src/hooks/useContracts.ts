@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Contract, ContractTerms, ContractChecklistItem, DEFAULT_CHECKLIST_ITEMS } from '@/types/contracts';
 import { toast } from 'sonner';
+import { friendlyDbError } from '@/lib/errorUtils';
 import { generateId } from '@/lib/businessLogic';
 
 const db = (table: string) => supabase.from(table as any);
