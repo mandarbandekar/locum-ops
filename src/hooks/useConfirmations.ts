@@ -116,7 +116,7 @@ export function useConfirmations() {
       addActivityLocal(recordId, 'sent', 'Confirmation sent');
     } else {
       const { error } = await db('confirmation_records').update({ ...updates, updated_at: now }).eq('id', recordId);
-      if (error) { toast.error(error.message); return; }
+      if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
       setRecords(prev => prev.map(r => r.id === recordId ? { ...r, ...updates } : r));
 
       // Save shift links
