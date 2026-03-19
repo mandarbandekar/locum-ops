@@ -89,7 +89,7 @@ export function useContracts(facilityId: string | undefined, isDemo = false) {
     if (exists) {
       const { id, ...rest } = t;
       const { error } = await db('contract_terms').update(rest).eq('id', id);
-      if (error) { toast.error(error.message); return; }
+      if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
       setContractTerms(prev => prev.map(x => x.id === t.id ? t : x));
     } else {
       const { id: _, ...rest } = t;
