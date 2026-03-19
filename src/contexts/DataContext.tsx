@@ -355,7 +355,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
   const addPayment = useCallback(async (p: Omit<InvoicePayment, 'id'>) => {
     if (isDemo) { setPayments(prev => [...prev, { ...p, id: generateId() }]); return; }
     const { data, error } = await db('invoice_payments').insert({ user_id: user!.id, ...p }).select().single();
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
     setPayments(prev => [...prev, stripDbFields(data) as InvoicePayment]);
   }, [isDemo, user]);
 
