@@ -105,7 +105,7 @@ export function useContracts(facilityId: string | undefined, isDemo = false) {
       return;
     }
     const { data, error } = await db('contract_checklist_items').insert({ user_id: user!.id, ...item }).select().single();
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
     setChecklistItems(prev => [...prev, strip(data) as ContractChecklistItem]);
   }, [isDemo, user]);
 
