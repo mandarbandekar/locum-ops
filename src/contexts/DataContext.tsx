@@ -291,7 +291,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     if (items.length > 0) {
       const toInsert = items.map(item => ({ user_id: user!.id, invoice_id: invoice.id, ...item }));
       const { data: liData, error: liError } = await db('invoice_line_items').insert(toInsert).select();
-      if (liError) { toast.error(liError.message); } else {
+      if (liError) { console.error(liError); toast.error(friendlyDbError(liError)); } else {
         setLineItems(prev => [...prev, ...(liData || []).map(stripDbFields) as InvoiceLineItem[]]);
       }
     }
