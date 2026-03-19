@@ -313,7 +313,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
       return;
     }
     const { error } = await db('invoices').delete().eq('id', id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
     setInvoices(prev => prev.filter(x => x.id !== id));
     setLineItems(prev => prev.filter(x => x.invoice_id !== id));
   }, [isDemo]);
