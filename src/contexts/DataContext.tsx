@@ -338,7 +338,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
   const deleteLineItem = useCallback(async (id: string) => {
     if (isDemo) { setLineItems(prev => prev.filter(x => x.id !== id)); return; }
     const { error } = await db('invoice_line_items').delete().eq('id', id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
     setLineItems(prev => prev.filter(x => x.id !== id));
   }, [isDemo]);
 
