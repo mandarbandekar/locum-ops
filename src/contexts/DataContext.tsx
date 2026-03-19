@@ -232,7 +232,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     } else {
       const { id: _, ...rest } = c;
       const { data, error } = await db('terms_snapshots').insert({ user_id: user!.id, ...rest }).select().single();
-      if (error) { toast.error(error.message); return; }
+      if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
       setTerms(prev => [...prev, stripDbFields(data) as TermsSnapshot]);
     }
   }, [isDemo, user, terms]);
