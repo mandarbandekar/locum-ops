@@ -142,7 +142,7 @@ export function useManualSetup() {
       setShifts(prev => [...prev, shift]);
       return shift;
     } catch (err: any) {
-      toast.error(err.message || 'Failed to add shift');
+      toast.error(friendlyDbError(err));
       return null;
     } finally {
       setSaving(false);
