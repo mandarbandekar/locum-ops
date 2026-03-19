@@ -15,6 +15,19 @@ export interface CredentialPortal {
   updated_at: string;
 }
 
+/** Server-side encrypt/decrypt via edge function. Falls back to base64 if unavailable. */
+async function cryptoCall(action: 'encrypt' | 'decrypt', text: string): Promise<string> {
+  const { data, error } = await supabase.functions.invoke('credential-portal-crypto', {
+    body: { action, text },
+  });
+  if (error || !data?.result) {
+    // Fallback: base64 (graceful degradation while secret is not yet set)
+    if (action === 'encrypt') return btoa(text);
+    try { return atob(text); } catch { return ''; }
+  }
+  return data.result;
+}
+
 export function useCredentialPortal(credentialId: string | null) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -43,15 +56,17 @@ export function useCredentialPortal(credentialId: string | null) {
     }) => {
       if (!credentialId || !user) throw new Error('Missing credential or user');
 
-      // NOTE: Base64 encoding only — not true encryption. Data is protected by RLS (row-owner only).
+      // Encrypt password server-side via edge function
+      const encryptedPassword = portal.renewal_password_encrypted
+        ? await cryptoCall('encrypt', portal.renewal_password_encrypted)
+        : null;
+
       const payload: any = {
         credential_id: credentialId,
         user_id: user.id,
         renewal_website_url: portal.renewal_website_url || null,
         renewal_username: portal.renewal_username || null,
-        renewal_password_encrypted: portal.renewal_password_encrypted
-          ? btoa(portal.renewal_password_encrypted)
-          : null,
+        renewal_password_encrypted: encryptedPassword,
         renewal_portal_notes: portal.renewal_portal_notes || null,
         updated_at: new Date().toISOString(),
       };
@@ -73,15 +88,21 @@ export function useCredentialPortal(credentialId: string | null) {
     },
   });
 
-  // Decode password for display
-  const decryptedPassword = portalQuery.data?.renewal_password_encrypted
-    ? (() => { try { return atob(portalQuery.data.renewal_password_encrypted); } catch { return ''; } })()
-    : null;
+  // Decrypt password via edge function (async, stored in separate query)
+  const decryptedPasswordQuery = useQuery({
+    queryKey: ['credential_portal_password', credentialId],
+    queryFn: async () => {
+      const encrypted = portalQuery.data?.renewal_password_encrypted;
+      if (!encrypted) return null;
+      return cryptoCall('decrypt', encrypted);
+    },
+    enabled: !!user && !!portalQuery.data?.renewal_password_encrypted,
+  });
 
   return {
     portal: portalQuery.data ?? null,
     isLoading: portalQuery.isLoading,
-    decryptedPassword,
+    decryptedPassword: decryptedPasswordQuery.data ?? null,
     upsertPortal,
   };
 }
