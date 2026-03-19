@@ -284,7 +284,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     }
     const { data: invData, error: invError } = await db('invoices')
       .insert({ user_id: user!.id, ...inv }).select().single();
-    if (invError) { toast.error(invError.message); throw invError; }
+    if (invError) { console.error(invError); toast.error(friendlyDbError(invError)); throw invError; }
     const invoice = stripDbFields(invData) as Invoice;
     setInvoices(prev => [...prev, invoice]);
 
