@@ -87,7 +87,7 @@ export function useConfirmations() {
     const { data, error } = await db('confirmation_records')
       .insert({ user_id: user!.id, facility_id: facilityId, month_key: monthKey })
       .select().single();
-    if (error) { toast.error(error.message); throw error; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); throw error; }
     const record = stripDbFields(data) as ConfirmationRecord;
     setRecords(prev => [...prev, record]);
     return record;
