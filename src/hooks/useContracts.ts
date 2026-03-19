@@ -53,7 +53,7 @@ export function useContracts(facilityId: string | undefined, isDemo = false) {
       return contract;
     }
     const { data, error } = await db('contracts').insert({ user_id: user!.id, ...c }).select().single();
-    if (error) { toast.error(error.message); throw error; }
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); throw error; }
     const contract = strip(data) as Contract;
     setContracts(prev => [...prev, contract]);
     return contract;
