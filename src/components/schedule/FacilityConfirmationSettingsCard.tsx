@@ -29,6 +29,8 @@ export function FacilityConfirmationSettingsCard({ facilityId, settings, onSave 
     preshift_enabled: settings?.preshift_enabled ?? false,
     preshift_send_offset_days: settings?.preshift_send_offset_days ?? 3,
     auto_send_enabled: settings?.auto_send_enabled ?? false,
+    auto_send_monthly: settings?.auto_send_monthly ?? false,
+    auto_send_preshift: settings?.auto_send_preshift ?? false,
   });
 
   useEffect(() => {
@@ -38,11 +40,13 @@ export function FacilityConfirmationSettingsCard({ facilityId, settings, onSave 
   }, [settings, facilityId]);
 
   const handleSave = () => {
-    if (!form.primary_contact_email && form.auto_send_enabled) {
+    if (!form.primary_contact_email && (form.auto_send_monthly || form.auto_send_preshift)) {
       toast.error('Add a contact email to enable auto-send');
       return;
     }
-    onSave(form);
+    // Sync legacy auto_send_enabled from per-mode flags
+    const updated = { ...form, auto_send_enabled: form.auto_send_monthly || form.auto_send_preshift };
+    onSave(updated);
     setEditing(false);
   };
 
@@ -91,23 +95,33 @@ export function FacilityConfirmationSettingsCard({ facilityId, settings, onSave 
               <span className="text-muted-foreground">Mode</span>
               <span className="font-medium">{confirmationMode}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Auto-send</span>
-              <Badge variant="outline" className={`text-xs ${form.auto_send_enabled ? 'border-green-500/30 text-green-600 bg-green-500/10' : 'border-muted-foreground/30 text-muted-foreground bg-muted/50'}`}>
-                {form.auto_send_enabled ? 'Enabled' : 'Disabled'}
-              </Badge>
-            </div>
             {form.monthly_enabled && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Monthly offset</span>
-                <span className="font-medium">{form.monthly_send_offset_days} days before</span>
-              </div>
+              <>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Monthly offset</span>
+                  <span className="font-medium">{form.monthly_send_offset_days} days before</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Auto-send monthly</span>
+                  <Badge variant="outline" className={`text-xs ${form.auto_send_monthly ? 'border-green-500/30 text-green-600 bg-green-500/10' : 'border-muted-foreground/30 text-muted-foreground bg-muted/50'}`}>
+                    {form.auto_send_monthly ? 'Auto-send' : 'Manual review'}
+                  </Badge>
+                </div>
+              </>
             )}
             {form.preshift_enabled && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Pre-shift offset</span>
-                <span className="font-medium">{form.preshift_send_offset_days === 0 ? 'Same day' : `${form.preshift_send_offset_days} day${form.preshift_send_offset_days > 1 ? 's' : ''} before`}</span>
-              </div>
+              <>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Pre-shift offset</span>
+                  <span className="font-medium">{form.preshift_send_offset_days === 0 ? 'Same day' : `${form.preshift_send_offset_days} day${form.preshift_send_offset_days > 1 ? 's' : ''} before`}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Auto-send pre-shift</span>
+                  <Badge variant="outline" className={`text-xs ${form.auto_send_preshift ? 'border-green-500/30 text-green-600 bg-green-500/10' : 'border-muted-foreground/30 text-muted-foreground bg-muted/50'}`}>
+                    {form.auto_send_preshift ? 'Auto-send' : 'Manual review'}
+                  </Badge>
+                </div>
+              </>
             )}
           </div>
         </CardContent>
@@ -159,22 +173,40 @@ export function FacilityConfirmationSettingsCard({ facilityId, settings, onSave 
                 <p className="text-xs text-muted-foreground">One email per month with all booked shifts</p>
               </div>
             </div>
-            <Switch checked={form.monthly_enabled} onCheckedChange={v => setForm(p => ({ ...p, monthly_enabled: v }))} />
+            <Switch checked={form.monthly_enabled} onCheckedChange={v => setForm(p => ({ ...p, monthly_enabled: v, ...(!v ? { auto_send_monthly: false } : {}) }))} />
           </div>
 
           {form.monthly_enabled && (
-            <div className="ml-6">
-              <Label className="text-xs">Send offset</Label>
-              <Select value={String(form.monthly_send_offset_days)} onValueChange={v => setForm(p => ({ ...p, monthly_send_offset_days: Number(v) }))}>
-                <SelectTrigger className="h-8 text-xs w-64">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {MONTHLY_OFFSET_OPTIONS.map(o => (
-                    <SelectItem key={o.value} value={String(o.value)}>{o.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="ml-6 space-y-3">
+              <div>
+                <Label className="text-xs">Send offset</Label>
+                <Select value={String(form.monthly_send_offset_days)} onValueChange={v => setForm(p => ({ ...p, monthly_send_offset_days: Number(v) }))}>
+                  <SelectTrigger className="h-8 text-xs w-64">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MONTHLY_OFFSET_OPTIONS.map(o => (
+                      <SelectItem key={o.value} value={String(o.value)}>{o.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">Auto-send monthly confirmations</p>
+                  <p className="text-xs text-muted-foreground">If off, reminders will be prepared for manual review instead.</p>
+                </div>
+                <Switch
+                  checked={form.auto_send_monthly}
+                  onCheckedChange={v => {
+                    if (v && !form.primary_contact_email) {
+                      toast.error('Add a contact email first');
+                      return;
+                    }
+                    setForm(p => ({ ...p, auto_send_monthly: v }));
+                  }}
+                />
+              </div>
             </div>
           )}
 
@@ -186,50 +218,49 @@ export function FacilityConfirmationSettingsCard({ facilityId, settings, onSave 
                 <p className="text-xs text-muted-foreground">Short reminder before each booked shift</p>
               </div>
             </div>
-            <Switch checked={form.preshift_enabled} onCheckedChange={v => setForm(p => ({ ...p, preshift_enabled: v }))} />
+            <Switch checked={form.preshift_enabled} onCheckedChange={v => setForm(p => ({ ...p, preshift_enabled: v, ...(!v ? { auto_send_preshift: false } : {}) }))} />
           </div>
 
           {form.preshift_enabled && (
-            <div className="ml-6">
-              <Label className="text-xs">Reminder offset</Label>
-              <Select value={String(form.preshift_send_offset_days)} onValueChange={v => setForm(p => ({ ...p, preshift_send_offset_days: Number(v) }))}>
-                <SelectTrigger className="h-8 text-xs w-64">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PRESHIFT_OFFSET_OPTIONS.map(o => (
-                    <SelectItem key={o.value} value={String(o.value)}>{o.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="ml-6 space-y-3">
+              <div>
+                <Label className="text-xs">Reminder offset</Label>
+                <Select value={String(form.preshift_send_offset_days)} onValueChange={v => setForm(p => ({ ...p, preshift_send_offset_days: Number(v) }))}>
+                  <SelectTrigger className="h-8 text-xs w-64">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PRESHIFT_OFFSET_OPTIONS.map(o => (
+                      <SelectItem key={o.value} value={String(o.value)}>{o.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">Auto-send pre-shift reminders</p>
+                  <p className="text-xs text-muted-foreground">If off, reminders will be prepared for manual review instead.</p>
+                </div>
+                <Switch
+                  checked={form.auto_send_preshift}
+                  onCheckedChange={v => {
+                    if (v && !form.primary_contact_email) {
+                      toast.error('Add a contact email first');
+                      return;
+                    }
+                    setForm(p => ({ ...p, auto_send_preshift: v }));
+                  }}
+                />
+              </div>
             </div>
           )}
         </div>
 
-        {/* Auto-send */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between py-2">
-            <div>
-              <p className="text-sm font-medium">Auto-send</p>
-              <p className="text-xs text-muted-foreground">Automatically send confirmations on schedule</p>
-            </div>
-            <Switch
-              checked={form.auto_send_enabled}
-              onCheckedChange={v => {
-                if (v && !form.primary_contact_email) {
-                  toast.error('Add a contact email first');
-                  return;
-                }
-                setForm(p => ({ ...p, auto_send_enabled: v }));
-              }}
-            />
-          </div>
-          {!form.primary_contact_email && (
-            <p className="text-xs text-orange-600 dark:text-orange-400 flex items-center gap-1">
-              <AlertTriangle className="h-3 w-3" /> Add a scheduling contact to enable auto-send.
-            </p>
-          )}
-        </div>
+        {!form.primary_contact_email && (
+          <p className="text-xs text-orange-600 dark:text-orange-400 flex items-center gap-1">
+            <AlertTriangle className="h-3 w-3" /> Add a scheduling contact to enable auto-send.
+          </p>
+        )}
       </CardContent>
     </Card>
   );

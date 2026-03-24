@@ -66,16 +66,60 @@ export function generateInvoiceReminders(
   return items;
 }
 
-export function generateConfirmationReminders(needingActionCount: number): GeneratedReminder[] {
-  if (needingActionCount <= 0) return [];
-  return [{
-    module: 'confirmations',
-    reminder_type: 'confirmation_not_sent',
-    title: `${needingActionCount} confirmation${needingActionCount > 1 ? 's' : ''} need action`,
-    body: 'Review and send monthly shift confirmations',
-    link: '/schedule',
-    urgency: 4,
-  }];
+export function generateConfirmationReminders(
+  needingActionCount: number,
+  manualReviewCount = 0,
+  needsUpdateCount = 0,
+  missingContactCount = 0,
+): GeneratedReminder[] {
+  const items: GeneratedReminder[] = [];
+
+  if (manualReviewCount > 0) {
+    items.push({
+      module: 'confirmations',
+      reminder_type: 'confirmation_manual_review',
+      title: `${manualReviewCount} confirmation${manualReviewCount > 1 ? 's' : ''} queued for manual review`,
+      body: 'Review and send confirmations to clinic contacts',
+      link: '/schedule',
+      urgency: 3,
+    });
+  }
+
+  if (needsUpdateCount > 0) {
+    items.push({
+      module: 'confirmations',
+      reminder_type: 'confirmation_needs_update',
+      title: `${needsUpdateCount} confirmation${needsUpdateCount > 1 ? 's' : ''} need${needsUpdateCount === 1 ? 's' : ''} update`,
+      body: 'Schedule changed after confirmation was sent',
+      link: '/schedule',
+      urgency: 2,
+    });
+  }
+
+  if (missingContactCount > 0) {
+    items.push({
+      module: 'confirmations',
+      reminder_type: 'confirmation_missing_contact',
+      title: `${missingContactCount} facilit${missingContactCount > 1 ? 'ies' : 'y'} missing scheduling contact`,
+      body: 'Add a contact email to enable confirmations',
+      link: '/schedule',
+      urgency: 5,
+    });
+  }
+
+  // Fallback: generic needing-action count (backward compat)
+  if (items.length === 0 && needingActionCount > 0) {
+    items.push({
+      module: 'confirmations',
+      reminder_type: 'confirmation_not_sent',
+      title: `${needingActionCount} confirmation${needingActionCount > 1 ? 's' : ''} need action`,
+      body: 'Review and send monthly shift confirmations',
+      link: '/schedule',
+      urgency: 4,
+    });
+  }
+
+  return items;
 }
 
 export function generateOutreachReminders(

@@ -9,7 +9,11 @@ export interface FacilityConfirmationSettings {
   preshift_enabled: boolean;
   preshift_send_offset_days: number;
   auto_send_enabled: boolean;
+  auto_send_monthly: boolean;
+  auto_send_preshift: boolean;
 }
+
+export type ConfirmationDeliveryMode = 'auto_send' | 'manual_review';
 
 export type ConfirmationEmailType = 'monthly' | 'preshift' | 'update';
 export type ConfirmationEmailStatus = 'scheduled' | 'sent' | 'confirmed' | 'needs_update' | 'failed';
@@ -28,6 +32,7 @@ export interface ConfirmationEmail {
   sent_at: string | null;
   confirmed_at: string | null;
   shift_hash_snapshot: string | null;
+  delivery_mode: ConfirmationDeliveryMode;
   created_at?: string;
 }
 

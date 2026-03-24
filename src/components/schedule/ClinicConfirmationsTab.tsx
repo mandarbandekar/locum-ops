@@ -53,11 +53,11 @@ export function ClinicConfirmationsTab() {
 
   // Categorize into sections
   const sections = useMemo(() => {
-    const upcomingAutoSends = filteredQueue.filter(q => q.autoSendEnabled && (q.status === 'not_sent' || q.status === 'scheduled'));
+    const autoScheduled = filteredQueue.filter(q => (q.autoSendMonthly || q.autoSendPreshift) && (q.status === 'not_sent' || q.status === 'scheduled'));
     const needsUpdate = filteredQueue.filter(q => q.status === 'needs_update');
     const recentlySent = filteredQueue.filter(q => q.status === 'sent' || q.status === 'confirmed');
-    const manualReview = filteredQueue.filter(q => !q.autoSendEnabled && q.status === 'not_sent');
-    return { upcomingAutoSends, needsUpdate, recentlySent, manualReview };
+    const manualReview = filteredQueue.filter(q => !(q.autoSendMonthly || q.autoSendPreshift) && (q.status === 'not_sent' || q.status === 'scheduled'));
+    return { autoScheduled, needsUpdate, recentlySent, manualReview };
   }, [filteredQueue]);
 
   // History: all emails for the current month
@@ -109,10 +109,14 @@ export function ClinicConfirmationsTab() {
           </div>
 
           {/* Mode badges */}
-          <div className="flex gap-1">
+          <div className="flex gap-1 flex-wrap">
             {item.monthlyEnabled && <Badge variant="outline" className="text-[10px] h-5 px-1.5">Monthly</Badge>}
             {item.preshiftEnabled && <Badge variant="outline" className="text-[10px] h-5 px-1.5">Pre-shift</Badge>}
-            {item.autoSendEnabled && <Badge variant="outline" className="text-[10px] h-5 px-1.5 border-green-500/30 text-green-600 bg-green-500/10">Auto</Badge>}
+            {item.autoSendMonthly && <Badge variant="outline" className="text-[10px] h-5 px-1.5 border-green-500/30 text-green-600 bg-green-500/10">Auto monthly</Badge>}
+            {item.autoSendPreshift && <Badge variant="outline" className="text-[10px] h-5 px-1.5 border-green-500/30 text-green-600 bg-green-500/10">Auto pre-shift</Badge>}
+            {!item.autoSendMonthly && !item.autoSendPreshift && item.monthlyEnabled && (
+              <Badge variant="outline" className="text-[10px] h-5 px-1.5 border-muted-foreground/30 text-muted-foreground">Manual review</Badge>
+            )}
           </div>
 
           {/* Last sent */}
@@ -249,12 +253,12 @@ export function ClinicConfirmationsTab() {
           ) : (
             <div className="space-y-6">
               {renderSection('Needs Update', AlertTriangle, sections.needsUpdate, '')}
-              {renderSection('Upcoming Auto-sends', Timer, sections.upcomingAutoSends, '')}
-              {renderSection('Manual Review', Mail, sections.manualReview, '')}
+              {renderSection('Scheduled for Auto-send', Timer, sections.autoScheduled, '')}
+              {renderSection('Queued for Manual Review', Mail, sections.manualReview, '')}
               {renderSection('Recently Sent', Send, sections.recentlySent, '')}
 
               {/* If sections are all empty but filteredQueue has items, show generic */}
-              {sections.needsUpdate.length === 0 && sections.upcomingAutoSends.length === 0 &&
+              {sections.needsUpdate.length === 0 && sections.autoScheduled.length === 0 &&
                sections.manualReview.length === 0 && sections.recentlySent.length === 0 && (
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {filteredQueue.map(renderQueueCard)}

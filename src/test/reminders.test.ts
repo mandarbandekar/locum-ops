@@ -48,9 +48,29 @@ describe('Reminder Engine', () => {
   });
 
   describe('generateConfirmationReminders', () => {
-    it('creates reminder when confirmations need action', () => {
+    it('creates manual review reminder when queued', () => {
+      const result = generateConfirmationReminders(0, 3, 0, 0);
+      expect(result).toHaveLength(1);
+      expect(result[0].reminder_type).toBe('confirmation_manual_review');
+      expect(result[0].title).toContain('3 confirmations');
+    });
+
+    it('creates needs_update reminder', () => {
+      const result = generateConfirmationReminders(0, 0, 2, 0);
+      expect(result).toHaveLength(1);
+      expect(result[0].reminder_type).toBe('confirmation_needs_update');
+    });
+
+    it('creates missing contact reminder', () => {
+      const result = generateConfirmationReminders(0, 0, 0, 1);
+      expect(result).toHaveLength(1);
+      expect(result[0].reminder_type).toBe('confirmation_missing_contact');
+    });
+
+    it('falls back to generic when no breakdown provided', () => {
       const result = generateConfirmationReminders(3);
       expect(result).toHaveLength(1);
+      expect(result[0].reminder_type).toBe('confirmation_not_sent');
       expect(result[0].title).toContain('3 confirmations');
     });
 
