@@ -14,6 +14,7 @@ import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
 import { WorkspaceReady } from '@/components/onboarding/WorkspaceReady';
 import { AddFacilityDialog } from '@/components/AddFacilityDialog';
 import { ShiftFormDialog } from '@/components/schedule/ShiftFormDialog';
+import { CalendarSyncStep } from '@/components/onboarding/CalendarSyncStep';
 
 const WORK_STYLES = [
   'Independent contractor (1099)',
@@ -39,6 +40,7 @@ type Phase =
   | 'manual_facility'
   | 'manual_shift'
   | 'manual_expand'
+  | 'calendar_sync'
   | 'workspace_ready';
 
 const PHASE_STEP: Record<Phase, number> = {
@@ -48,10 +50,11 @@ const PHASE_STEP: Record<Phase, number> = {
   manual_facility: 4,
   manual_shift: 5,
   manual_expand: 6,
-  workspace_ready: 6,
+  calendar_sync: 7,
+  workspace_ready: 7,
 };
 
-const TOTAL_STEPS = 6;
+const TOTAL_STEPS = 7;
 
 const PHASE_LABEL: Record<Phase, string> = {
   profile: 'Your business details',
@@ -60,6 +63,7 @@ const PHASE_LABEL: Record<Phase, string> = {
   manual_facility: 'Add a practice',
   manual_shift: 'Add a shift',
   manual_expand: 'Review & finish',
+  calendar_sync: 'Calendar sync',
   workspace_ready: 'All done!',
 };
 
@@ -70,6 +74,7 @@ const PHASE_BACK: Record<Phase, Phase | null> = {
   manual_facility: 'tax_enablement',
   manual_shift: 'manual_facility',
   manual_expand: 'manual_shift',
+  calendar_sync: 'manual_expand',
   workspace_ready: null,
 };
 
