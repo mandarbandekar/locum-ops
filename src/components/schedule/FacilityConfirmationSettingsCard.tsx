@@ -14,10 +14,11 @@ interface Props {
   facilityId: string;
   settings: FacilityConfirmationSettings | null;
   onSave: (s: FacilityConfirmationSettings) => void;
+  initialEditing?: boolean;
 }
 
-export function FacilityConfirmationSettingsCard({ facilityId, settings, onSave }: Props) {
-  const [editing, setEditing] = useState(false);
+export function FacilityConfirmationSettingsCard({ facilityId, settings, onSave, initialEditing }: Props) {
+  const [editing, setEditing] = useState(initialEditing ?? false);
   const [form, setForm] = useState<FacilityConfirmationSettings>({
     id: settings?.id || '',
     facility_id: facilityId,
