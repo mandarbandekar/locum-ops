@@ -7,8 +7,8 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { UserProfileProvider, useUserProfile } from "@/contexts/UserProfileContext";
 import { DataProvider } from "@/contexts/DataContext";
 import { Layout } from "@/components/Layout";
-import LandingPage from "@/pages/LandingPage";
-import PublicLandingPage from "@/pages/PublicLandingPage";
+
+
 import LoginPage from "@/pages/LoginPage";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
@@ -126,8 +126,7 @@ function AuthGate() {
         <Route path="/quiz" element={<QuizPage />} />
         <Route path="/results" element={<ResultsPage />} />
         <Route path="/thanks" element={<ThanksPage />} />
-        <Route path="/" element={<PublicLandingPage />} />
-        <Route path="/dev" element={<LandingPage />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     );
