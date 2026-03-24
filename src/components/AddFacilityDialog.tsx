@@ -252,6 +252,23 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
 
           {step === 4 && (
             <>
+              <p className="text-sm text-muted-foreground">Add the scheduling contact for shift confirmations. This person will receive monthly and pre-shift confirmation emails.</p>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-2">
+                  <Label>Contact Name</Label>
+                  <Input value={schedulingContactName} onChange={e => setSchedulingContactName(e.target.value)} placeholder="Practice Manager" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Contact Email</Label>
+                  <Input type="email" value={schedulingContactEmail} onChange={e => setSchedulingContactEmail(e.target.value)} placeholder="manager@clinic.com" />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">This contact will be used for shift confirmations in the Schedule module. You can configure auto-send settings later.</p>
+            </>
+          )}
+
+          {step === 5 && (
+            <>
               <p className="text-sm text-muted-foreground">Invoice settings, email recipients, and payment terms for this facility.</p>
               <p className="text-xs font-medium text-muted-foreground">To</p>
               <div className="grid grid-cols-2 gap-2">
