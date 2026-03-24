@@ -10,7 +10,7 @@ import {
 import { computeInvoiceStatus } from '@/lib/businessLogic';
 import { format, differenceInDays } from 'date-fns';
 import { getChecklistBadge } from '@/types/contracts';
-import { useConfirmations } from '@/hooks/useConfirmations';
+import { useClinicConfirmations } from '@/hooks/useClinicConfirmations';
 import { useCredentials } from '@/hooks/useCredentials';
 import { generateCredentialReminders } from '@/lib/reminderEngine';
 import { computeStatus as computeSubStatus } from '@/hooks/useSubscriptions';
@@ -80,7 +80,7 @@ export default function DashboardPage() {
   }, [shifts, invoices, checklistItems, now]);
 
   // ── Priorities ──
-  const { needingActionCount } = useConfirmations();
+  const { needingActionCount } = useClinicConfirmations();
   const { credentials: credentialsList } = useCredentials();
 
   const allPriorities = useMemo(() => {
