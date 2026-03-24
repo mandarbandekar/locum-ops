@@ -7,6 +7,7 @@ import {
   FacilityConfirmationSettings,
   ConfirmationEmail,
   ConfirmationEmailStatus,
+  ConfirmationDeliveryMode,
 } from '@/types/clinicConfirmations';
 import { computeShiftHash } from '@/types/confirmations';
 import { startOfMonth, endOfMonth, format, subDays, addMonths } from 'date-fns';
@@ -24,9 +25,9 @@ function stripDbFields(row: any): any {
 // Seed data for demo mode
 function getDemoSettings(): FacilityConfirmationSettings[] {
   return [
-    { id: 'fcs1', facility_id: 'c1', primary_contact_name: 'Sarah Johnson', primary_contact_email: 'sarah@greenfield.com', secondary_contact_email: '', monthly_enabled: true, monthly_send_offset_days: 7, preshift_enabled: true, preshift_send_offset_days: 3, auto_send_enabled: true },
-    { id: 'fcs2', facility_id: 'c2', primary_contact_name: 'Dr. Emily Park', primary_contact_email: 'emily@evergreen-hc.com', secondary_contact_email: '', monthly_enabled: true, monthly_send_offset_days: 5, preshift_enabled: false, preshift_send_offset_days: 3, auto_send_enabled: true },
-    { id: 'fcs3', facility_id: 'c4', primary_contact_name: 'Rachel Kim', primary_contact_email: 'rachel@mtviewpractice.com', secondary_contact_email: '', monthly_enabled: false, monthly_send_offset_days: 7, preshift_enabled: true, preshift_send_offset_days: 1, auto_send_enabled: true },
+    { id: 'fcs1', facility_id: 'c1', primary_contact_name: 'Sarah Johnson', primary_contact_email: 'sarah@greenfield.com', secondary_contact_email: '', monthly_enabled: true, monthly_send_offset_days: 7, preshift_enabled: true, preshift_send_offset_days: 3, auto_send_enabled: true, auto_send_monthly: true, auto_send_preshift: false },
+    { id: 'fcs2', facility_id: 'c2', primary_contact_name: 'Dr. Emily Park', primary_contact_email: 'emily@evergreen-hc.com', secondary_contact_email: '', monthly_enabled: true, monthly_send_offset_days: 5, preshift_enabled: false, preshift_send_offset_days: 3, auto_send_enabled: true, auto_send_monthly: true, auto_send_preshift: false },
+    { id: 'fcs3', facility_id: 'c4', primary_contact_name: 'Rachel Kim', primary_contact_email: 'rachel@mtviewpractice.com', secondary_contact_email: '', monthly_enabled: false, monthly_send_offset_days: 7, preshift_enabled: true, preshift_send_offset_days: 1, auto_send_enabled: true, auto_send_monthly: false, auto_send_preshift: true },
   ];
 }
 
@@ -42,6 +43,7 @@ function getDemoEmails(): ConfirmationEmail[] {
       scheduled_for: subDays(startOfMonth(nextMonth), 7).toISOString(),
       sent_at: subDays(startOfMonth(nextMonth), 7).toISOString(),
       confirmed_at: null, shift_hash_snapshot: 'old-hash',
+      delivery_mode: 'auto_send',
       created_at: subDays(now, 10).toISOString(),
     },
     {
@@ -51,6 +53,7 @@ function getDemoEmails(): ConfirmationEmail[] {
       scheduled_for: subDays(startOfMonth(nextMonth), 5).toISOString(),
       sent_at: subDays(startOfMonth(nextMonth), 5).toISOString(),
       confirmed_at: subDays(now, 2).toISOString(), shift_hash_snapshot: null,
+      delivery_mode: 'auto_send',
       created_at: subDays(now, 8).toISOString(),
     },
   ];
@@ -221,6 +224,13 @@ export function useClinicConfirmations() {
     }
 
     const now = new Date().toISOString();
+    const deliveryMode: ConfirmationDeliveryMode = (() => {
+      if (!facilitySettings) return 'manual_review';
+      if (type === 'monthly') return facilitySettings.auto_send_monthly ? 'auto_send' : 'manual_review';
+      if (type === 'preshift') return facilitySettings.auto_send_preshift ? 'auto_send' : 'manual_review';
+      return 'manual_review';
+    })();
+
     const emailRecord: any = {
       facility_id: facilityId,
       shift_id: shiftId,
@@ -232,6 +242,7 @@ export function useClinicConfirmations() {
       status: 'sent',
       sent_at: now,
       shift_hash_snapshot: hashSnapshot,
+      delivery_mode: deliveryMode,
     };
 
     if (isDemo) {
@@ -329,6 +340,8 @@ export function useClinicConfirmations() {
         monthlyEnabled: facilitySettings?.monthly_enabled ?? false,
         preshiftEnabled: facilitySettings?.preshift_enabled ?? false,
         autoSendEnabled: facilitySettings?.auto_send_enabled ?? false,
+        autoSendMonthly: facilitySettings?.auto_send_monthly ?? false,
+        autoSendPreshift: facilitySettings?.auto_send_preshift ?? false,
       };
     }).sort((a, b) => {
       const order: Record<string, number> = { needs_update: 0, scheduled: 1, not_sent: 2, sent: 3, confirmed: 4, failed: 5 };
