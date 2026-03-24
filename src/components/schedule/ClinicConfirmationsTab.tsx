@@ -101,27 +101,13 @@ export function ClinicConfirmationsTab() {
             {item.contactEmail ? (
               <span>{item.facilitySettings?.primary_contact_name || item.contact?.name || item.contactEmail}</span>
             ) : (
-              <AddSchedulingContactInline
-                facilityId={item.facilityId}
-                compact
-                onSave={(data) => {
-                  const existing = getSettings(item.facilityId);
-                  saveSettings({
-                    id: existing?.id || '',
-                    facility_id: item.facilityId,
-                    primary_contact_name: data.primary_contact_name,
-                    primary_contact_email: data.primary_contact_email,
-                    secondary_contact_email: existing?.secondary_contact_email || '',
-                    monthly_enabled: existing?.monthly_enabled ?? true,
-                    monthly_send_offset_days: existing?.monthly_send_offset_days ?? 7,
-                    preshift_enabled: existing?.preshift_enabled ?? false,
-                    preshift_send_offset_days: existing?.preshift_send_offset_days ?? 3,
-                    auto_send_enabled: existing?.auto_send_enabled ?? false,
-                    auto_send_monthly: existing?.auto_send_monthly ?? false,
-                    auto_send_preshift: existing?.auto_send_preshift ?? false,
-                  });
-                }}
-              />
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setSettingsDialogFacilityId(item.facilityId); }}
+                className="text-xs text-primary hover:underline flex items-center gap-1 font-medium"
+              >
+                <UserPlus className="h-3 w-3" /> Add Scheduling Contact
+              </button>
             )}
           </div>
 
