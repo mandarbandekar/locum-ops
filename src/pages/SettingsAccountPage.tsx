@@ -110,8 +110,8 @@ export default function SettingsAccountPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-destructive/30">
-          <CardHeader><CardTitle className="text-base text-destructive">Danger Zone</CardTitle></CardHeader>
+        <Card>
+          <CardHeader><CardTitle className="text-base">Delete My Account</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-muted-foreground">
               Permanently delete your account and all associated data including facilities, shifts, invoices, credentials, and settings. This action cannot be undone.
