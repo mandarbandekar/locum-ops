@@ -328,6 +328,28 @@ export function ClinicConfirmationsTab() {
         </TabsContent>
       </Tabs>
 
+      {/* Settings Dialog */}
+      <Dialog open={!!settingsDialogFacilityId} onOpenChange={(open) => { if (!open) setSettingsDialogFacilityId(null); }}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Scheduling / Confirmation Settings</DialogTitle>
+            <DialogDescription>
+              Configure scheduling contact and confirmation preferences for {facilities.find(f => f.id === settingsDialogFacilityId)?.name || 'this facility'}.
+            </DialogDescription>
+          </DialogHeader>
+          {settingsDialogFacilityId && (
+            <FacilityConfirmationSettingsCard
+              facilityId={settingsDialogFacilityId}
+              settings={getSettings(settingsDialogFacilityId)}
+              onSave={(s) => {
+                saveSettings(s);
+                setSettingsDialogFacilityId(null);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Detail Drawer */}
       {selectedFacilityId && (
         <ClinicConfirmationDrawer
