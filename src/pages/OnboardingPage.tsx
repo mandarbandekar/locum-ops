@@ -193,14 +193,16 @@ export default function OnboardingPage() {
   };
 
   const getSkipHandler = (): (() => void) | undefined => {
-    if (phase === 'manual_facility' || phase === 'manual_shift') return handleSkipToApp;
+    if (phase === 'manual_facility' || phase === 'manual_shift') return () => setPhase('calendar_sync');
     if (phase === 'tax_enablement') return () => setPhase('manual_facility');
+    if (phase === 'calendar_sync') return handleFinishSetup;
     return undefined;
   };
 
   const getSkipLabel = (): string => {
-    if (phase === 'manual_facility' || phase === 'manual_shift') return 'Skip to dashboard';
+    if (phase === 'manual_facility' || phase === 'manual_shift') return 'Skip to calendar sync';
     if (phase === 'tax_enablement') return 'Skip for now';
+    if (phase === 'calendar_sync') return 'Skip for now';
     return 'Skip';
   };
 
