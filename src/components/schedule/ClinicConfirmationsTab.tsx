@@ -39,6 +39,7 @@ export function ClinicConfirmationsTab() {
   const [facilityFilter, setFacilityFilter] = useState('all');
   const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
+  const [settingsDialogFacilityId, setSettingsDialogFacilityId] = useState<string | null>(null);
 
   const monthKey = format(currentMonth, 'yyyy-MM');
   const { getMonthQueue, getStatusCounts, emails, loading, saveSettings, getSettings } = useClinicConfirmations();
