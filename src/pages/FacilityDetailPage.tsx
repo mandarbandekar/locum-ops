@@ -20,11 +20,14 @@ import { FacilityImportDialog } from '@/components/facility-import/FacilityImpor
 import { FileUp } from 'lucide-react';
 import { RatesEditor, termsToRates, ratesToTermsFields, RateEntry } from '@/components/facilities/RatesEditor';
 import { ShiftFormDialog } from '@/components/schedule/ShiftFormDialog';
+import { FacilityConfirmationSettingsCard } from '@/components/schedule/FacilityConfirmationSettingsCard';
+import { useClinicConfirmations } from '@/hooks/useClinicConfirmations';
 
 export default function FacilityDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { facilities, contacts, terms, shifts, invoices, updateFacility, addContact, updateContact, deleteContact, updateTerms, addShift, updateShift, deleteShift } = useData();
+  const { getSettings, saveSettings } = useClinicConfirmations();
   const [importOpen, setImportOpen] = useState(false);
 
   const facility = facilities.find(c => c.id === id);
@@ -74,7 +77,7 @@ export default function FacilityDetailPage() {
         </TabsList>
 
         <TabsContent value="overview" className="mt-4">
-          <OverviewTab facility={facility} shifts={facilityShifts} contacts={facilityContacts} onUpdate={updateFacility} onAddContact={addContact} onUpdateContact={updateContact} onDeleteContact={deleteContact} facilityId={facility.id} facilityTerms={facilityTerms} onSaveRates={handleSaveRates} />
+          <OverviewTab facility={facility} shifts={facilityShifts} contacts={facilityContacts} onUpdate={updateFacility} onAddContact={addContact} onUpdateContact={updateContact} onDeleteContact={deleteContact} facilityId={facility.id} facilityTerms={facilityTerms} onSaveRates={handleSaveRates} confirmationSettings={getSettings(facility.id)} onSaveConfirmationSettings={saveSettings} />
         </TabsContent>
 
         <TabsContent value="shifts" className="mt-4">

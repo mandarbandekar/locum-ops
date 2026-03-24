@@ -10,7 +10,7 @@ import { SHIFT_COLORS, Shift } from '@/types';
 import { toast } from 'sonner';
 import { ShiftFormDialog } from '@/components/schedule/ShiftFormDialog';
 import { WeekTimeGrid } from '@/components/schedule/WeekTimeGrid';
-import { ConfirmationsTab } from '@/components/schedule/ConfirmationsTab';
+import { ClinicConfirmationsTab } from '@/components/schedule/ClinicConfirmationsTab';
 import { getMarkersForDay } from '@/lib/calendarMarkers';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { CalendarFilters, CalendarLayerFilters } from '@/components/schedule/CalendarFilters';
@@ -211,7 +211,7 @@ export default function SchedulePage() {
             <List className="mr-1.5 h-4 w-4" /> List
           </Button>
           <Button size="sm" variant={view === 'confirmations' ? 'default' : 'outline'} onClick={() => setView('confirmations')} className="h-8 text-[13px] px-4">
-            <CheckSquare className="mr-1.5 h-4 w-4" /> Confirmations
+            <CheckSquare className="mr-1.5 h-4 w-4" /> Clinic Confirmations
           </Button>
           {view !== 'confirmations' && (
             <Button size="sm" onClick={() => setShowAdd(true)} className="h-8 text-[13px] px-4">
@@ -222,7 +222,7 @@ export default function SchedulePage() {
       </div>
 
       {view === 'confirmations' ? (
-        <ConfirmationsTab />
+        <ClinicConfirmationsTab />
       ) : (
         <>
           <div className="flex items-center justify-between mb-4">
