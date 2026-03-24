@@ -15,9 +15,13 @@ interface Props {
   settings: FacilityConfirmationSettings | null;
   onSave: (s: FacilityConfirmationSettings) => void;
   initialEditing?: boolean;
+  /** When true, renders without Card wrapper/header — caller handles chrome */
+  embedded?: boolean;
+  /** Expose save handler to parent */
+  onSaveRef?: React.MutableRefObject<(() => void) | null>;
 }
 
-export function FacilityConfirmationSettingsCard({ facilityId, settings, onSave, initialEditing }: Props) {
+export function FacilityConfirmationSettingsCard({ facilityId, settings, onSave, initialEditing, embedded, onSaveRef }: Props) {
   const [editing, setEditing] = useState(initialEditing ?? false);
   const [form, setForm] = useState<FacilityConfirmationSettings>({
     id: settings?.id || '',
