@@ -341,6 +341,7 @@ export function ClinicConfirmationsTab() {
             <FacilityConfirmationSettingsCard
               facilityId={settingsDialogFacilityId}
               settings={getSettings(settingsDialogFacilityId)}
+              initialEditing
               onSave={(s) => {
                 saveSettings(s);
                 setSettingsDialogFacilityId(null);
