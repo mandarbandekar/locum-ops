@@ -139,19 +139,10 @@ export function FacilityConfirmationSettingsCard({ facilityId, settings, onSave,
     );
   }
 
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Mail className="h-4 w-4 text-primary" />
-          <CardTitle className="text-base">Scheduling / Confirmation Settings</CardTitle>
-        </div>
-        <div className="flex gap-2">
-          <Button size="sm" onClick={handleSave}><Save className="mr-1 h-3 w-3" /> Save</Button>
-          <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>Cancel</Button>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
+  // Embedded mode: render form content only, no Card wrapper
+  if (embedded) {
+    return (
+      <div className="space-y-4">
         {/* Contact info */}
         <div className="space-y-3">
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Scheduling Contact</p>
@@ -165,6 +156,123 @@ export function FacilityConfirmationSettingsCard({ facilityId, settings, onSave,
               <Input type="email" value={form.primary_contact_email} onChange={e => setForm(p => ({ ...p, primary_contact_email: e.target.value }))} placeholder="manager@clinic.com" />
             </div>
           </div>
+          <div>
+            <Label className="text-xs">Secondary Email (optional)</Label>
+            <Input type="email" value={form.secondary_contact_email} onChange={e => setForm(p => ({ ...p, secondary_contact_email: e.target.value }))} placeholder="cc@clinic.com" />
+          </div>
+        </div>
+
+        {/* Confirmation modes */}
+        <div className="space-y-3">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Confirmation Modes</p>
+
+          <div className="flex items-center justify-between py-2">
+            <div className="flex items-center gap-2">
+              <CalendarDays className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <p className="text-sm font-medium">Monthly Confirmation</p>
+                <p className="text-xs text-muted-foreground">One email per month with all booked shifts</p>
+              </div>
+            </div>
+            <Switch checked={form.monthly_enabled} onCheckedChange={v => setForm(p => ({ ...p, monthly_enabled: v, ...(!v ? { auto_send_monthly: false } : {}) }))} />
+          </div>
+
+          {form.monthly_enabled && (
+            <div className="ml-6 space-y-3">
+              <div>
+                <Label className="text-xs">Send offset</Label>
+                <Select value={String(form.monthly_send_offset_days)} onValueChange={v => setForm(p => ({ ...p, monthly_send_offset_days: Number(v) }))}>
+                  <SelectTrigger className="h-8 text-xs w-64">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MONTHLY_OFFSET_OPTIONS.map(o => (
+                      <SelectItem key={o.value} value={String(o.value)}>{o.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">Auto-send monthly confirmations</p>
+                  <p className="text-xs text-muted-foreground">If off, reminders will be prepared for manual review instead.</p>
+                </div>
+                <Switch
+                  checked={form.auto_send_monthly}
+                  onCheckedChange={v => {
+                    if (v && !form.primary_contact_email) {
+                      toast.error('Add a contact email first');
+                      return;
+                    }
+                    setForm(p => ({ ...p, auto_send_monthly: v }));
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between py-2">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <p className="text-sm font-medium">Pre-shift Reminder</p>
+                <p className="text-xs text-muted-foreground">Short reminder before each booked shift</p>
+              </div>
+            </div>
+            <Switch checked={form.preshift_enabled} onCheckedChange={v => setForm(p => ({ ...p, preshift_enabled: v, ...(!v ? { auto_send_preshift: false } : {}) }))} />
+          </div>
+
+          {form.preshift_enabled && (
+            <div className="ml-6 space-y-3">
+              <div>
+                <Label className="text-xs">Reminder offset</Label>
+                <Select value={String(form.preshift_send_offset_days)} onValueChange={v => setForm(p => ({ ...p, preshift_send_offset_days: Number(v) }))}>
+                  <SelectTrigger className="h-8 text-xs w-64">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PRESHIFT_OFFSET_OPTIONS.map(o => (
+                      <SelectItem key={o.value} value={String(o.value)}>{o.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">Auto-send pre-shift reminders</p>
+                  <p className="text-xs text-muted-foreground">If off, reminders will be prepared for manual review instead.</p>
+                </div>
+                <Switch
+                  checked={form.auto_send_preshift}
+                  onCheckedChange={v => {
+                    if (v && !form.primary_contact_email) {
+                      toast.error('Add a contact email first');
+                      return;
+                    }
+                    setForm(p => ({ ...p, auto_send_preshift: v }));
+                  }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {!form.primary_contact_email && (
+          <p className="text-xs text-orange-600 dark:text-orange-400 flex items-center gap-1">
+            <AlertTriangle className="h-3 w-3" /> Add a scheduling contact to enable auto-send.
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Mail className="h-4 w-4 text-primary" />
+          <CardTitle className="text-base">Scheduling / Confirmation Settings</CardTitle>
+        </div>
           <div>
             <Label className="text-xs">Secondary Email (optional)</Label>
             <Input type="email" value={form.secondary_contact_email} onChange={e => setForm(p => ({ ...p, secondary_contact_email: e.target.value }))} placeholder="cc@clinic.com" />
