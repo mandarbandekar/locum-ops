@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { AddSchedulingContactInline } from './AddSchedulingContactInline';
 
 interface Props {
   facilityId: string;
@@ -25,7 +26,7 @@ export function ClinicConfirmationDrawer({ facilityId, monthKey, open, onClose }
   const { facilities } = useData();
   const {
     getBookedShifts, getUpcomingBookedShifts, generateMonthlyBody, generatePreshiftBody,
-    sendConfirmationEmail, markConfirmed, getHistory, getSettings, getMonthQueue,
+    sendConfirmationEmail, markConfirmed, getHistory, getSettings, getMonthQueue, saveSettings,
   } = useClinicConfirmations();
 
   const facility = facilities.find(f => f.id === facilityId);
@@ -118,7 +119,26 @@ export function ClinicConfirmationDrawer({ facilityId, monthKey, open, onClose }
               ) : queueItem?.contact ? (
                 <span>{queueItem.contact.name} · {queueItem.contact.email}</span>
               ) : (
-                <span className="text-orange-600 dark:text-orange-400">⚠ No scheduling contact — add one in facility settings.</span>
+                <AddSchedulingContactInline
+                  facilityId={facilityId}
+                  onSave={(data) => {
+                    const existing = getSettings(facilityId);
+                    saveSettings({
+                      id: existing?.id || '',
+                      facility_id: facilityId,
+                      primary_contact_name: data.primary_contact_name,
+                      primary_contact_email: data.primary_contact_email,
+                      secondary_contact_email: existing?.secondary_contact_email || '',
+                      monthly_enabled: existing?.monthly_enabled ?? true,
+                      monthly_send_offset_days: existing?.monthly_send_offset_days ?? 7,
+                      preshift_enabled: existing?.preshift_enabled ?? false,
+                      preshift_send_offset_days: existing?.preshift_send_offset_days ?? 3,
+                      auto_send_enabled: existing?.auto_send_enabled ?? false,
+                      auto_send_monthly: existing?.auto_send_monthly ?? false,
+                      auto_send_preshift: existing?.auto_send_preshift ?? false,
+                    });
+                  }}
+                />
               )}
             </div>
 
