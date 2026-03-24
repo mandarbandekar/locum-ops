@@ -20,11 +20,14 @@ import { FacilityImportDialog } from '@/components/facility-import/FacilityImpor
 import { FileUp } from 'lucide-react';
 import { RatesEditor, termsToRates, ratesToTermsFields, RateEntry } from '@/components/facilities/RatesEditor';
 import { ShiftFormDialog } from '@/components/schedule/ShiftFormDialog';
+import { FacilityConfirmationSettingsCard } from '@/components/schedule/FacilityConfirmationSettingsCard';
+import { useClinicConfirmations } from '@/hooks/useClinicConfirmations';
 
 export default function FacilityDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { facilities, contacts, terms, shifts, invoices, updateFacility, addContact, updateContact, deleteContact, updateTerms, addShift, updateShift, deleteShift } = useData();
+  const { getSettings, saveSettings } = useClinicConfirmations();
   const [importOpen, setImportOpen] = useState(false);
 
   const facility = facilities.find(c => c.id === id);
@@ -74,7 +77,7 @@ export default function FacilityDetailPage() {
         </TabsList>
 
         <TabsContent value="overview" className="mt-4">
-          <OverviewTab facility={facility} shifts={facilityShifts} contacts={facilityContacts} onUpdate={updateFacility} onAddContact={addContact} onUpdateContact={updateContact} onDeleteContact={deleteContact} facilityId={facility.id} facilityTerms={facilityTerms} onSaveRates={handleSaveRates} />
+          <OverviewTab facility={facility} shifts={facilityShifts} contacts={facilityContacts} onUpdate={updateFacility} onAddContact={addContact} onUpdateContact={updateContact} onDeleteContact={deleteContact} facilityId={facility.id} facilityTerms={facilityTerms} onSaveRates={handleSaveRates} confirmationSettings={getSettings(facility.id)} onSaveConfirmationSettings={saveSettings} />
         </TabsContent>
 
         <TabsContent value="shifts" className="mt-4">
@@ -115,7 +118,7 @@ export default function FacilityDetailPage() {
 
 // ─── Overview Tab ──────────────────────────────────────────
 
-function OverviewTab({ facility, shifts, contacts, onUpdate, onAddContact, onUpdateContact, onDeleteContact, facilityId, facilityTerms, onSaveRates }: {
+function OverviewTab({ facility, shifts, contacts, onUpdate, onAddContact, onUpdateContact, onDeleteContact, facilityId, facilityTerms, onSaveRates, confirmationSettings, onSaveConfirmationSettings }: {
   facility: any; shifts: any[]; contacts: FacilityContact[]; onUpdate: any;
   onAddContact: (c: Omit<FacilityContact, 'id'>) => void;
   onUpdateContact: (c: FacilityContact) => void;
@@ -123,6 +126,8 @@ function OverviewTab({ facility, shifts, contacts, onUpdate, onAddContact, onUpd
   facilityId: string;
   facilityTerms?: TermsSnapshot;
   onSaveRates: (rates: RateEntry[]) => void;
+  confirmationSettings: import('@/types/clinicConfirmations').FacilityConfirmationSettings | null;
+  onSaveConfirmationSettings: (s: import('@/types/clinicConfirmations').FacilityConfirmationSettings) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [notes, setNotes] = useState(facility.notes);
@@ -232,6 +237,13 @@ function OverviewTab({ facility, shifts, contacts, onUpdate, onAddContact, onUpd
       <div className="space-y-4">
         {/* Invoice Billing Contact and Settings */}
         <InvoiceSettingsCard facility={facility} onUpdate={onUpdate} />
+
+        {/* Confirmation Settings */}
+        <FacilityConfirmationSettingsCard
+          facilityId={facilityId}
+          settings={confirmationSettings}
+          onSave={onSaveConfirmationSettings}
+        />
 
         {/* Upcoming Shifts */}
         <Card>

@@ -347,6 +347,78 @@ export type Database = {
           },
         ]
       }
+      confirmation_emails: {
+        Row: {
+          body: string
+          confirmed_at: string | null
+          created_at: string
+          facility_id: string
+          id: string
+          month_key: string | null
+          recipient_email: string
+          scheduled_for: string | null
+          sent_at: string | null
+          shift_hash_snapshot: string | null
+          shift_id: string | null
+          status: string
+          subject: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body?: string
+          confirmed_at?: string | null
+          created_at?: string
+          facility_id: string
+          id?: string
+          month_key?: string | null
+          recipient_email?: string
+          scheduled_for?: string | null
+          sent_at?: string | null
+          shift_hash_snapshot?: string | null
+          shift_id?: string | null
+          status?: string
+          subject?: string
+          type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          confirmed_at?: string | null
+          created_at?: string
+          facility_id?: string
+          id?: string
+          month_key?: string | null
+          recipient_email?: string
+          scheduled_for?: string | null
+          sent_at?: string | null
+          shift_hash_snapshot?: string | null
+          shift_id?: string | null
+          status?: string
+          subject?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "confirmation_emails_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "confirmation_emails_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "shifts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       confirmation_records: {
         Row: {
           confirmed_at: string | null
@@ -444,6 +516,41 @@ export type Database = {
             columns: ["shift_id"]
             isOneToOne: false
             referencedRelation: "shifts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      confirmation_snapshots: {
+        Row: {
+          confirmation_email_id: string
+          created_at: string
+          id: string
+          last_shift_snapshot_at: string
+          shift_count_snapshot: number
+          shift_data_snapshot: Json | null
+        }
+        Insert: {
+          confirmation_email_id: string
+          created_at?: string
+          id?: string
+          last_shift_snapshot_at?: string
+          shift_count_snapshot?: number
+          shift_data_snapshot?: Json | null
+        }
+        Update: {
+          confirmation_email_id?: string
+          created_at?: string
+          id?: string
+          last_shift_snapshot_at?: string
+          shift_count_snapshot?: number
+          shift_data_snapshot?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "confirmation_snapshots_confirmation_email_id_fkey"
+            columns: ["confirmation_email_id"]
+            isOneToOne: false
+            referencedRelation: "confirmation_emails"
             referencedColumns: ["id"]
           },
         ]
@@ -1193,6 +1300,62 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      facility_confirmation_settings: {
+        Row: {
+          auto_send_enabled: boolean
+          created_at: string
+          facility_id: string
+          id: string
+          monthly_enabled: boolean
+          monthly_send_offset_days: number
+          preshift_enabled: boolean
+          preshift_send_offset_days: number
+          primary_contact_email: string
+          primary_contact_name: string
+          secondary_contact_email: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_send_enabled?: boolean
+          created_at?: string
+          facility_id: string
+          id?: string
+          monthly_enabled?: boolean
+          monthly_send_offset_days?: number
+          preshift_enabled?: boolean
+          preshift_send_offset_days?: number
+          primary_contact_email?: string
+          primary_contact_name?: string
+          secondary_contact_email?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_send_enabled?: boolean
+          created_at?: string
+          facility_id?: string
+          id?: string
+          monthly_enabled?: boolean
+          monthly_send_offset_days?: number
+          preshift_enabled?: boolean
+          preshift_send_offset_days?: number
+          primary_contact_email?: string
+          primary_contact_name?: string
+          secondary_contact_email?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "facility_confirmation_settings_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       facility_contacts: {
         Row: {
