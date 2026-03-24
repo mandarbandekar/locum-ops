@@ -118,7 +118,7 @@ export default function FacilityDetailPage() {
 
 // ─── Overview Tab ──────────────────────────────────────────
 
-function OverviewTab({ facility, shifts, contacts, onUpdate, onAddContact, onUpdateContact, onDeleteContact, facilityId, facilityTerms, onSaveRates }: {
+function OverviewTab({ facility, shifts, contacts, onUpdate, onAddContact, onUpdateContact, onDeleteContact, facilityId, facilityTerms, onSaveRates, confirmationSettings, onSaveConfirmationSettings }: {
   facility: any; shifts: any[]; contacts: FacilityContact[]; onUpdate: any;
   onAddContact: (c: Omit<FacilityContact, 'id'>) => void;
   onUpdateContact: (c: FacilityContact) => void;
@@ -126,6 +126,8 @@ function OverviewTab({ facility, shifts, contacts, onUpdate, onAddContact, onUpd
   facilityId: string;
   facilityTerms?: TermsSnapshot;
   onSaveRates: (rates: RateEntry[]) => void;
+  confirmationSettings: import('@/types/clinicConfirmations').FacilityConfirmationSettings | null;
+  onSaveConfirmationSettings: (s: import('@/types/clinicConfirmations').FacilityConfirmationSettings) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [notes, setNotes] = useState(facility.notes);
@@ -235,6 +237,13 @@ function OverviewTab({ facility, shifts, contacts, onUpdate, onAddContact, onUpd
       <div className="space-y-4">
         {/* Invoice Billing Contact and Settings */}
         <InvoiceSettingsCard facility={facility} onUpdate={onUpdate} />
+
+        {/* Confirmation Settings */}
+        <FacilityConfirmationSettingsCard
+          facilityId={facilityId}
+          settings={confirmationSettings}
+          onSave={onSaveConfirmationSettings}
+        />
 
         {/* Upcoming Shifts */}
         <Card>
