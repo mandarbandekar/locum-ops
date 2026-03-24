@@ -352,6 +352,7 @@ export type Database = {
           body: string
           confirmed_at: string | null
           created_at: string
+          delivery_mode: string
           facility_id: string
           id: string
           month_key: string | null
@@ -370,6 +371,7 @@ export type Database = {
           body?: string
           confirmed_at?: string | null
           created_at?: string
+          delivery_mode?: string
           facility_id: string
           id?: string
           month_key?: string | null
@@ -388,6 +390,7 @@ export type Database = {
           body?: string
           confirmed_at?: string | null
           created_at?: string
+          delivery_mode?: string
           facility_id?: string
           id?: string
           month_key?: string | null
@@ -1304,6 +1307,8 @@ export type Database = {
       facility_confirmation_settings: {
         Row: {
           auto_send_enabled: boolean
+          auto_send_monthly: boolean
+          auto_send_preshift: boolean
           created_at: string
           facility_id: string
           id: string
@@ -1319,6 +1324,8 @@ export type Database = {
         }
         Insert: {
           auto_send_enabled?: boolean
+          auto_send_monthly?: boolean
+          auto_send_preshift?: boolean
           created_at?: string
           facility_id: string
           id?: string
@@ -1334,6 +1341,8 @@ export type Database = {
         }
         Update: {
           auto_send_enabled?: boolean
+          auto_send_monthly?: boolean
+          auto_send_preshift?: boolean
           created_at?: string
           facility_id?: string
           id?: string
