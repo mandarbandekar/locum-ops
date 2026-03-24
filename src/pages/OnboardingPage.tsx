@@ -550,10 +550,15 @@ export default function OnboardingPage() {
               </Button>
             </div>
 
-            <Button onClick={handleFinishSetup} className="w-full" size="lg">
-              Finish setup <ArrowRight className="ml-2 h-4 w-4" />
+            <Button onClick={() => setPhase('calendar_sync')} className="w-full" size="lg">
+              Continue <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </div>
+        );
+
+      case 'calendar_sync':
+        return (
+          <CalendarSyncStep onContinue={handleFinishSetup} />
         );
 
       case 'workspace_ready':
