@@ -80,8 +80,20 @@ export default function DashboardPage() {
   }, [shifts, invoices, checklistItems, now]);
 
   // ── Priorities ──
-  const { needingActionCount } = useClinicConfirmations();
+  const { needingActionCount, getMonthQueue } = useClinicConfirmations();
   const { credentials: credentialsList } = useCredentials();
+
+  // Compute confirmation breakdown for reminders/priorities
+  const confirmationBreakdown = useMemo(() => {
+    const nextMonth = addMonths(now, 1);
+    const monthKey = format(nextMonth, 'yyyy-MM');
+    const queue = getMonthQueue(monthKey);
+    const manualReview = queue.filter(q => !(q.autoSendMonthly || q.autoSendPreshift) && (q.status === 'not_sent' || q.status === 'scheduled')).length;
+    const needsUpdate = queue.filter(q => q.status === 'needs_update').length;
+    const missingContact = queue.filter(q => !q.contactEmail && (q.monthlyEnabled || q.preshiftEnabled)).length;
+    const autoSendSoon = queue.filter(q => (q.autoSendMonthly || q.autoSendPreshift) && (q.status === 'not_sent' || q.status === 'scheduled')).length;
+    return { manualReview, needsUpdate, missingContact, autoSendSoon };
+  }, [getMonthQueue, now]);
 
   const allPriorities = useMemo(() => {
     const items: PriorityItem[] = [];
@@ -104,12 +116,39 @@ export default function DashboardPage() {
       });
     });
 
-    // Confirmations
-    if (needingActionCount > 0) {
+    // Confirmations - manual review queue
+    if (confirmationBreakdown.manualReview > 0) {
       items.push({
-        title: `${needingActionCount} confirmation${needingActionCount > 1 ? 's' : ''} need action`,
-        context: 'Review and send monthly shift confirmations',
-        link: '/schedule', icon: CheckSquare, urgency: 4,
+        title: `${confirmationBreakdown.manualReview} confirmation${confirmationBreakdown.manualReview > 1 ? 's' : ''} queued for review`,
+        context: 'Manual review required — review and send to clinic contacts',
+        link: '/schedule', icon: CheckSquare, urgency: 3,
+      });
+    }
+
+    // Confirmations - needs update
+    if (confirmationBreakdown.needsUpdate > 0) {
+      items.push({
+        title: `${confirmationBreakdown.needsUpdate} confirmation${confirmationBreakdown.needsUpdate > 1 ? 's' : ''} need${confirmationBreakdown.needsUpdate === 1 ? 's' : ''} update`,
+        context: 'Schedule changed after confirmation was sent',
+        link: '/schedule', icon: AlertTriangle, urgency: 2,
+      });
+    }
+
+    // Confirmations - auto-sends happening soon
+    if (confirmationBreakdown.autoSendSoon > 0) {
+      items.push({
+        title: `${confirmationBreakdown.autoSendSoon} auto-send${confirmationBreakdown.autoSendSoon > 1 ? 's' : ''} scheduled`,
+        context: 'Will send automatically to clinic contacts',
+        link: '/schedule', icon: Send, urgency: 7,
+      });
+    }
+
+    // Confirmations - missing contact
+    if (confirmationBreakdown.missingContact > 0) {
+      items.push({
+        title: `${confirmationBreakdown.missingContact} facilit${confirmationBreakdown.missingContact > 1 ? 'ies' : 'y'} missing contact`,
+        context: 'Add a scheduling contact to enable confirmations',
+        link: '/schedule', icon: AlertTriangle, urgency: 5,
       });
     }
 
@@ -147,7 +186,7 @@ export default function DashboardPage() {
     }
 
     return items.sort((a, b) => a.urgency - b.urgency).slice(0, 7);
-  }, [invoices, shifts, facilities, checklistItems, needingActionCount, credentialsList, now]);
+  }, [invoices, shifts, facilities, checklistItems, confirmationBreakdown, credentialsList, now]);
 
   // ── This Week data ──
   const thisWeek = useMemo(() => {
@@ -172,8 +211,9 @@ export default function DashboardPage() {
   const readinessItems = useMemo(() => {
     const lines: ReadinessItem[] = [];
 
-    if (needingActionCount > 0) {
-      lines.push({ text: `Confirmations: ${needingActionCount} need${needingActionCount > 1 ? '' : 's'} action`, link: '/schedule' });
+    if (confirmationBreakdown.manualReview > 0 || confirmationBreakdown.needsUpdate > 0) {
+      const total = confirmationBreakdown.manualReview + confirmationBreakdown.needsUpdate;
+      lines.push({ text: `Confirmations: ${total} need${total > 1 ? '' : 's'} action`, link: '/schedule' });
     }
 
     const dueSoonChecklist = checklistItems.filter(item => {
@@ -217,7 +257,7 @@ export default function DashboardPage() {
     }
 
     return lines;
-  }, [checklistItems, taxChecklist, taxQuarters, needingActionCount, credentialsList, subscriptions, now]);
+  }, [checklistItems, taxChecklist, taxQuarters, confirmationBreakdown, credentialsList, subscriptions, now]);
 
   return (
     <div className="space-y-5">
