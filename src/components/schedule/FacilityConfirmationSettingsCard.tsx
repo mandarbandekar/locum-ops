@@ -55,6 +55,11 @@ export function FacilityConfirmationSettingsCard({ facilityId, settings, onSave,
     setEditing(false);
   };
 
+  // Expose save to parent when embedded
+  useEffect(() => {
+    if (onSaveRef) onSaveRef.current = handleSave;
+  });
+
   const noContact = !form.primary_contact_email;
 
   const confirmationMode = form.monthly_enabled && form.preshift_enabled
