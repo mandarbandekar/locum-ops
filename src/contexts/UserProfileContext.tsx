@@ -134,6 +134,12 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
           const meta = authUser?.user_metadata || {};
           firstName = meta.first_name || '';
           lastName = meta.last_name || '';
+          // Google OAuth provides full_name/name instead of first/last
+          if (!firstName && !lastName && (meta.full_name || meta.name)) {
+            const parts = (meta.full_name || meta.name || '').split(' ');
+            firstName = parts[0] || '';
+            lastName = parts.slice(1).join(' ') || '';
+          }
           profession = meta.profession || profession;
           if (firstName || lastName) {
             await db('user_profiles').update({
@@ -171,11 +177,19 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
         // Pull signup metadata from auth user to pre-populate profile
         const { data: { user: authUser } } = await supabase.auth.getUser();
         const meta = authUser?.user_metadata || {};
+        let gFirst = meta.first_name || '';
+        let gLast = meta.last_name || '';
+        // Google OAuth provides full_name/name instead of first/last
+        if (!gFirst && !gLast && (meta.full_name || meta.name)) {
+          const parts = (meta.full_name || meta.name || '').split(' ');
+          gFirst = parts[0] || '';
+          gLast = parts.slice(1).join(' ') || '';
+        }
         const insertData: any = {
           user_id: user!.id,
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          first_name: meta.first_name || '',
-          last_name: meta.last_name || '',
+          first_name: gFirst,
+          last_name: gLast,
           company_name: meta.company || '',
           profession: meta.profession || 'other',
           invoice_email: authUser?.email || null,
