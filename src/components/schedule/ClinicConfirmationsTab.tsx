@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useClinicConfirmations } from '@/hooks/useClinicConfirmations';
 import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,8 @@ import {
 } from 'lucide-react';
 import { format, addMonths, subMonths } from 'date-fns';
 import { ClinicConfirmationDrawer } from './ClinicConfirmationDrawer';
-
+import { AddSchedulingContactInline } from './AddSchedulingContactInline';
+import { FacilityConfirmationSettings } from '@/types/clinicConfirmations';
 const STATUS_FILTER_OPTIONS = [
   { value: 'all', label: 'All' },
   { value: 'not_sent', label: 'Not sent' },
@@ -39,7 +40,7 @@ export function ClinicConfirmationsTab() {
   const [activeTab, setActiveTab] = useState('overview');
 
   const monthKey = format(currentMonth, 'yyyy-MM');
-  const { getMonthQueue, getStatusCounts, emails, loading } = useClinicConfirmations();
+  const { getMonthQueue, getStatusCounts, emails, loading, saveSettings, getSettings } = useClinicConfirmations();
   const { facilities } = useData();
   const counts = getStatusCounts(monthKey);
   const queue = getMonthQueue(monthKey);
@@ -98,7 +99,27 @@ export function ClinicConfirmationsTab() {
             {item.contactEmail ? (
               <span>{item.facilitySettings?.primary_contact_name || item.contact?.name || item.contactEmail}</span>
             ) : (
-              <span className="text-orange-600 dark:text-orange-400">⚠ No scheduling contact</span>
+              <AddSchedulingContactInline
+                facilityId={item.facilityId}
+                compact
+                onSave={(data) => {
+                  const existing = getSettings(item.facilityId);
+                  saveSettings({
+                    id: existing?.id || '',
+                    facility_id: item.facilityId,
+                    primary_contact_name: data.primary_contact_name,
+                    primary_contact_email: data.primary_contact_email,
+                    secondary_contact_email: existing?.secondary_contact_email || '',
+                    monthly_enabled: existing?.monthly_enabled ?? true,
+                    monthly_send_offset_days: existing?.monthly_send_offset_days ?? 7,
+                    preshift_enabled: existing?.preshift_enabled ?? false,
+                    preshift_send_offset_days: existing?.preshift_send_offset_days ?? 3,
+                    auto_send_enabled: existing?.auto_send_enabled ?? false,
+                    auto_send_monthly: existing?.auto_send_monthly ?? false,
+                    auto_send_preshift: existing?.auto_send_preshift ?? false,
+                  });
+                }}
+              />
             )}
           </div>
 

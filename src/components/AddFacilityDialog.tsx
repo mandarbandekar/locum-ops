@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import { useData } from '@/contexts/DataContext';
+import { useClinicConfirmations } from '@/hooks/useClinicConfirmations';
 import { generateId } from '@/lib/businessLogic';
 import { FacilityStatus } from '@/types';
 import { toast } from 'sonner';
@@ -18,11 +19,13 @@ const STEPS = [
   { label: 'Shift Rates', description: 'Rate configuration' },
   { label: 'Tech Access', description: 'Logins & credentials' },
   { label: 'Clinic Access', description: 'Door codes & parking' },
+  { label: 'Scheduling Contact', description: 'Confirmation contact info' },
   { label: 'Invoice Settings', description: 'Prefix & terms' },
 ];
 
 export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const { addFacility, updateTerms } = useData();
+  const { saveSettings: saveConfirmationSettings } = useClinicConfirmations();
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
   const [status, setStatus] = useState<FacilityStatus>('prospect');
@@ -41,7 +44,8 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
   const [invoiceEmailCc, setInvoiceEmailCc] = useState('');
   const [invoiceNameBcc, setInvoiceNameBcc] = useState('');
   const [invoiceEmailBcc, setInvoiceEmailBcc] = useState('');
-
+  const [schedulingContactName, setSchedulingContactName] = useState('');
+  const [schedulingContactEmail, setSchedulingContactEmail] = useState('');
   const totalSteps = STEPS.length;
   const progress = ((step + 1) / totalSteps) * 100;
 
@@ -56,6 +60,7 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
     setTechComputer(''); setTechWifi(''); setTechPims('');
     setClinicAccess(''); setInvoicePrefix(''); setInvoiceDueDays(15);
     setInvoiceNameTo(''); setInvoiceEmailTo(''); setInvoiceNameCc(''); setInvoiceEmailCc(''); setInvoiceNameBcc(''); setInvoiceEmailBcc('');
+    setSchedulingContactName(''); setSchedulingContactEmail('');
   };
 
   const handleSubmit = async () => {
@@ -96,6 +101,24 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
           overtime_policy_text: '',
           late_payment_policy_text: '',
           special_notes: '',
+        });
+      }
+
+      // Save scheduling contact if provided
+      if (schedulingContactEmail.trim()) {
+        await saveConfirmationSettings({
+          id: '',
+          facility_id: facility.id,
+          primary_contact_name: schedulingContactName.trim(),
+          primary_contact_email: schedulingContactEmail.trim(),
+          secondary_contact_email: '',
+          monthly_enabled: true,
+          monthly_send_offset_days: 7,
+          preshift_enabled: false,
+          preshift_send_offset_days: 3,
+          auto_send_enabled: false,
+          auto_send_monthly: false,
+          auto_send_preshift: false,
         });
       }
 
@@ -228,6 +251,23 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
           )}
 
           {step === 4 && (
+            <>
+              <p className="text-sm text-muted-foreground">Add the scheduling contact for shift confirmations. This person will receive monthly and pre-shift confirmation emails.</p>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-2">
+                  <Label>Contact Name</Label>
+                  <Input value={schedulingContactName} onChange={e => setSchedulingContactName(e.target.value)} placeholder="Practice Manager" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Contact Email</Label>
+                  <Input type="email" value={schedulingContactEmail} onChange={e => setSchedulingContactEmail(e.target.value)} placeholder="manager@clinic.com" />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">This contact will be used for shift confirmations in the Schedule module. You can configure auto-send settings later.</p>
+            </>
+          )}
+
+          {step === 5 && (
             <>
               <p className="text-sm text-muted-foreground">Invoice settings, email recipients, and payment terms for this facility.</p>
               <p className="text-xs font-medium text-muted-foreground">To</p>
