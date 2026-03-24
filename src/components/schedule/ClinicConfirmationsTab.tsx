@@ -330,8 +330,8 @@ export function ClinicConfirmationsTab() {
       </Tabs>
 
       {/* Settings Dialog */}
-      <Dialog open={!!settingsDialogFacilityId} onOpenChange={(open) => { if (!open) setSettingsDialogFacilityId(null); }}>
-        <DialogContent className="max-w-xl">
+      <Dialog key={settingsDialogFacilityId || 'none'} open={!!settingsDialogFacilityId} onOpenChange={(open) => { if (!open) setSettingsDialogFacilityId(null); }}>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Scheduling / Confirmation Settings</DialogTitle>
             <DialogDescription>
@@ -343,12 +343,18 @@ export function ClinicConfirmationsTab() {
               facilityId={settingsDialogFacilityId}
               settings={getSettings(settingsDialogFacilityId)}
               initialEditing
+              embedded
+              onSaveRef={settingsSaveRef}
               onSave={(s) => {
                 saveSettings(s);
                 setSettingsDialogFacilityId(null);
               }}
             />
           )}
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setSettingsDialogFacilityId(null)}>Cancel</Button>
+            <Button onClick={() => settingsSaveRef.current?.()}>Save Settings</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
