@@ -14,6 +14,7 @@ import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
 import { WorkspaceReady } from '@/components/onboarding/WorkspaceReady';
 import { AddFacilityDialog } from '@/components/AddFacilityDialog';
 import { ShiftFormDialog } from '@/components/schedule/ShiftFormDialog';
+import { CalendarSyncStep } from '@/components/onboarding/CalendarSyncStep';
 
 const WORK_STYLES = [
   'Independent contractor (1099)',
@@ -39,6 +40,7 @@ type Phase =
   | 'manual_facility'
   | 'manual_shift'
   | 'manual_expand'
+  | 'calendar_sync'
   | 'workspace_ready';
 
 const PHASE_STEP: Record<Phase, number> = {
@@ -48,10 +50,11 @@ const PHASE_STEP: Record<Phase, number> = {
   manual_facility: 4,
   manual_shift: 5,
   manual_expand: 6,
-  workspace_ready: 6,
+  calendar_sync: 7,
+  workspace_ready: 7,
 };
 
-const TOTAL_STEPS = 6;
+const TOTAL_STEPS = 7;
 
 const PHASE_LABEL: Record<Phase, string> = {
   profile: 'Your business details',
@@ -60,6 +63,7 @@ const PHASE_LABEL: Record<Phase, string> = {
   manual_facility: 'Add a practice',
   manual_shift: 'Add a shift',
   manual_expand: 'Review & finish',
+  calendar_sync: 'Calendar sync',
   workspace_ready: 'All done!',
 };
 
@@ -70,6 +74,7 @@ const PHASE_BACK: Record<Phase, Phase | null> = {
   manual_facility: 'tax_enablement',
   manual_shift: 'manual_facility',
   manual_expand: 'manual_shift',
+  calendar_sync: 'manual_expand',
   workspace_ready: null,
 };
 
@@ -188,14 +193,16 @@ export default function OnboardingPage() {
   };
 
   const getSkipHandler = (): (() => void) | undefined => {
-    if (phase === 'manual_facility' || phase === 'manual_shift') return handleSkipToApp;
+    if (phase === 'manual_facility' || phase === 'manual_shift') return () => setPhase('calendar_sync');
     if (phase === 'tax_enablement') return () => setPhase('manual_facility');
+    if (phase === 'calendar_sync') return handleFinishSetup;
     return undefined;
   };
 
   const getSkipLabel = (): string => {
-    if (phase === 'manual_facility' || phase === 'manual_shift') return 'Skip to dashboard';
+    if (phase === 'manual_facility' || phase === 'manual_shift') return 'Skip to calendar sync';
     if (phase === 'tax_enablement') return 'Skip for now';
+    if (phase === 'calendar_sync') return 'Skip for now';
     return 'Skip';
   };
 
@@ -543,10 +550,15 @@ export default function OnboardingPage() {
               </Button>
             </div>
 
-            <Button onClick={handleFinishSetup} className="w-full" size="lg">
-              Finish setup <ArrowRight className="ml-2 h-4 w-4" />
+            <Button onClick={() => setPhase('calendar_sync')} className="w-full" size="lg">
+              Continue <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </div>
+        );
+
+      case 'calendar_sync':
+        return (
+          <CalendarSyncStep onContinue={handleFinishSetup} />
         );
 
       case 'workspace_ready':

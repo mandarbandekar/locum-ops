@@ -1,9 +1,10 @@
 import { NavLink } from '@/components/NavLink';
-import { User, CalendarDays, CreditCard, Bell, Briefcase, Shield, Settings } from 'lucide-react';
+import { User, CalendarDays, CreditCard, Bell, Briefcase, Shield, Settings, Calendar } from 'lucide-react';
 
 const settingsLinks = [
   { to: '/settings/profile', label: 'Profile', icon: User },
   { to: '/settings/scheduling', label: 'Scheduling', icon: CalendarDays },
+  { to: '/settings/calendar-sync', label: 'Calendar Sync', icon: Calendar },
   { to: '/settings/payments', label: 'Payments', icon: CreditCard },
   { to: '/settings/reminders', label: 'Reminders', icon: Bell },
   { to: '/settings/business-taxes', label: 'Business & Taxes', icon: Briefcase },

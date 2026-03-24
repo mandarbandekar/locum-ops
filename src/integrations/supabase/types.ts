@@ -14,6 +14,102 @@ export type Database = {
   }
   public: {
     Tables: {
+      calendar_connections: {
+        Row: {
+          created_at: string
+          external_calendar_id: string | null
+          google_email: string | null
+          google_refresh_token_encrypted: string | null
+          id: string
+          provider: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          external_calendar_id?: string | null
+          google_email?: string | null
+          google_refresh_token_encrypted?: string | null
+          id?: string
+          provider: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          external_calendar_id?: string | null
+          google_email?: string | null
+          google_refresh_token_encrypted?: string | null
+          id?: string
+          provider?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      calendar_feed_tokens: {
+        Row: {
+          created_at: string
+          id: string
+          revoked_at: string | null
+          token: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          revoked_at?: string | null
+          token?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          revoked_at?: string | null
+          token?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      calendar_sync_preferences: {
+        Row: {
+          created_at: string
+          id: string
+          include_facility_address: boolean
+          include_notes: boolean
+          sync_booked_only: boolean
+          sync_future_only: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          include_facility_address?: boolean
+          include_notes?: boolean
+          sync_booked_only?: boolean
+          sync_future_only?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          include_facility_address?: boolean
+          include_notes?: boolean
+          sync_booked_only?: boolean
+          sync_future_only?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ce_credential_links: {
         Row: {
           ce_entry_id: string
@@ -1702,6 +1798,50 @@ export type Database = {
             columns: ["saved_from_session_id"]
             isOneToOne: false
             referencedRelation: "tax_advisor_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shift_calendar_sync: {
+        Row: {
+          created_at: string
+          external_event_id: string | null
+          id: string
+          last_synced_at: string | null
+          provider: string
+          shift_id: string
+          sync_status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          external_event_id?: string | null
+          id?: string
+          last_synced_at?: string | null
+          provider: string
+          shift_id: string
+          sync_status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          external_event_id?: string | null
+          id?: string
+          last_synced_at?: string | null
+          provider?: string
+          shift_id?: string
+          sync_status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shift_calendar_sync_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "shifts"
             referencedColumns: ["id"]
           },
         ]
