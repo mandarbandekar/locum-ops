@@ -7,13 +7,14 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import {
   ChevronLeft, ChevronRight, CheckCircle, AlertTriangle, Send, Clock,
-  Eye, User, CalendarDays, Mail, History, Timer, XCircle, Building,
+  Eye, User, CalendarDays, Mail, History, Timer, XCircle, Building, UserPlus,
 } from 'lucide-react';
 import { format, addMonths, subMonths } from 'date-fns';
 import { ClinicConfirmationDrawer } from './ClinicConfirmationDrawer';
-import { AddSchedulingContactInline } from './AddSchedulingContactInline';
+import { FacilityConfirmationSettingsCard } from './FacilityConfirmationSettingsCard';
 import { FacilityConfirmationSettings } from '@/types/clinicConfirmations';
 const STATUS_FILTER_OPTIONS = [
   { value: 'all', label: 'All' },
