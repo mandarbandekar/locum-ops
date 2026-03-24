@@ -273,6 +273,25 @@ export function FacilityConfirmationSettingsCard({ facilityId, settings, onSave,
           <Mail className="h-4 w-4 text-primary" />
           <CardTitle className="text-base">Scheduling / Confirmation Settings</CardTitle>
         </div>
+        <div className="flex gap-2">
+          <Button size="sm" onClick={handleSave}><Save className="mr-1 h-3 w-3" /> Save</Button>
+          <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>Cancel</Button>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Contact info */}
+        <div className="space-y-3">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Scheduling Contact</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs">Contact Name</Label>
+              <Input value={form.primary_contact_name} onChange={e => setForm(p => ({ ...p, primary_contact_name: e.target.value }))} placeholder="Practice Manager" />
+            </div>
+            <div>
+              <Label className="text-xs">Contact Email</Label>
+              <Input type="email" value={form.primary_contact_email} onChange={e => setForm(p => ({ ...p, primary_contact_email: e.target.value }))} placeholder="manager@clinic.com" />
+            </div>
+          </div>
           <div>
             <Label className="text-xs">Secondary Email (optional)</Label>
             <Input type="email" value={form.secondary_contact_email} onChange={e => setForm(p => ({ ...p, secondary_contact_email: e.target.value }))} placeholder="cc@clinic.com" />
