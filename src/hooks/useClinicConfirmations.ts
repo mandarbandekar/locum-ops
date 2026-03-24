@@ -111,8 +111,9 @@ export function useClinicConfirmations() {
       if (error) { toast.error(friendlyDbError(error)); return; }
       setSettings(prev => prev.map(x => x.id === existing.id ? { ...s, id: existing.id } : x));
     } else {
+      const { id: _stripId, ...rest } = s;
       const { data, error } = await db('facility_confirmation_settings')
-        .insert({ user_id: user!.id, ...s })
+        .insert({ user_id: user!.id, facility_id: s.facility_id, ...rest })
         .select().single();
       if (error) { toast.error(friendlyDbError(error)); return; }
       setSettings(prev => [...prev, stripDbFields(data)]);
