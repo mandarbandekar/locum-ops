@@ -112,12 +112,7 @@ export default function OnboardingPage() {
     console.log('onboarding_step_view', { phase });
   }, [phase]);
 
-  // When entering manual_facility phase, open the dialog automatically
-  useEffect(() => {
-    if (phase === 'manual_facility') {
-      setFacilityDialogOpen(true);
-    }
-  }, [phase]);
+  // Facility dialog is opened manually by the user clicking "Add Practice"
 
   // When entering manual_shift phase, open the dialog automatically
   useEffect(() => {
