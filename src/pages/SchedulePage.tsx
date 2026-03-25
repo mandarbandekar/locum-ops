@@ -23,10 +23,7 @@ export default function SchedulePage() {
   const { shifts, facilities, terms, addShift, updateShift, deleteShift, updateFacility } = useData();
   const { getEventsForDay } = useCalendarEvents();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [view, setView] = useState<'month' | 'week' | 'list' | 'confirmations'>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    return (saved === 'month' || saved === 'week' || saved === 'list' || saved === 'confirmations') ? saved : 'month';
-  });
+  const [view, setView] = useState<'month' | 'week' | 'list' | 'confirmations'>('month');
   const [showAdd, setShowAdd] = useState(false);
   const [editShift, setEditShift] = useState<string | null>(null);
   const [dragOverDay, setDragOverDay] = useState<string | null>(null);
