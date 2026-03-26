@@ -49,7 +49,7 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
   const [invoiceEmailBcc, setInvoiceEmailBcc] = useState('');
   const [schedulingContactName, setSchedulingContactName] = useState('');
   const [schedulingContactEmail, setSchedulingContactEmail] = useState('');
-  const [billingCadence, setBillingCadence] = useState('monthly');
+  const [billingCadence, setBillingCadence] = useState<BillingCadence>('monthly');
   const [billingWeekEndDay, setBillingWeekEndDay] = useState('saturday');
   const [billingAnchorDate, setBillingAnchorDate] = useState('');
   const [autoGenerateInvoices, setAutoGenerateInvoices] = useState(true);
