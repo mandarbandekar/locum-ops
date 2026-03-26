@@ -399,6 +399,8 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
               share_token_created_at: null,
               share_token_revoked_at: null,
               invoice_type: 'single' as const,
+              generation_type: 'automatic' as const,
+              billing_cadence: null,
             },
             [{
               shift_id: s.id,

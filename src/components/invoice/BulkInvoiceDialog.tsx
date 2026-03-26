@@ -117,6 +117,8 @@ export function BulkInvoiceDialog({ open, onOpenChange, preselectedFacilityId }:
           share_token_created_at: null,
           share_token_revoked_at: null,
           invoice_type: 'bulk',
+          generation_type: 'manual',
+          billing_cadence: null,
         },
         lineItemsData
       );

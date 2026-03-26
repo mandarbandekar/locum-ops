@@ -50,6 +50,10 @@ export default function FacilitiesPage() {
         invoice_email_cc: '',
         invoice_name_bcc: '',
         invoice_email_bcc: '',
+        billing_cadence: 'monthly',
+        billing_cycle_anchor_date: null,
+        billing_week_end_day: 'saturday',
+        auto_generate_invoices: true,
       });
       toast.success(`"${name}" added as a new practice facility`);
       setSearch('');

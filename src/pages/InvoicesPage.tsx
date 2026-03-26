@@ -253,6 +253,8 @@ function CreateInvoiceDialog({ open, onOpenChange }: { open: boolean; onOpenChan
           share_token_created_at: null,
           share_token_revoked_at: null,
           invoice_type: 'single',
+          generation_type: 'manual',
+          billing_cadence: null,
         },
         lineItems
       );
