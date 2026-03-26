@@ -1232,6 +1232,10 @@ export type Database = {
       facilities: {
         Row: {
           address: string
+          auto_generate_invoices: boolean
+          billing_cadence: string
+          billing_cycle_anchor_date: string | null
+          billing_week_end_day: string
           clinic_access_info: string
           created_at: string
           id: string
@@ -1256,6 +1260,10 @@ export type Database = {
         }
         Insert: {
           address?: string
+          auto_generate_invoices?: boolean
+          billing_cadence?: string
+          billing_cycle_anchor_date?: string | null
+          billing_week_end_day?: string
           clinic_access_info?: string
           created_at?: string
           id?: string
@@ -1280,6 +1288,10 @@ export type Database = {
         }
         Update: {
           address?: string
+          auto_generate_invoices?: boolean
+          billing_cadence?: string
+          billing_cycle_anchor_date?: string | null
+          billing_week_end_day?: string
           clinic_access_info?: string
           created_at?: string
           id?: string
@@ -1661,12 +1673,14 @@ export type Database = {
       invoices: {
         Row: {
           balance_due: number
+          billing_cadence: string | null
           billing_email_bcc: string
           billing_email_cc: string
           billing_email_to: string
           created_at: string
           due_date: string | null
           facility_id: string
+          generation_type: string
           id: string
           invoice_date: string
           invoice_number: string
@@ -1686,12 +1700,14 @@ export type Database = {
         }
         Insert: {
           balance_due?: number
+          billing_cadence?: string | null
           billing_email_bcc?: string
           billing_email_cc?: string
           billing_email_to?: string
           created_at?: string
           due_date?: string | null
           facility_id: string
+          generation_type?: string
           id?: string
           invoice_date?: string
           invoice_number: string
@@ -1711,12 +1727,14 @@ export type Database = {
         }
         Update: {
           balance_due?: number
+          billing_cadence?: string | null
           billing_email_bcc?: string
           billing_email_cc?: string
           billing_email_to?: string
           created_at?: string
           due_date?: string | null
           facility_id?: string
+          generation_type?: string
           id?: string
           invoice_date?: string
           invoice_number?: string
