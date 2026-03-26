@@ -1,7 +1,8 @@
 import { Card, CardContent } from '@/components/ui/card';
-import { CalendarDays, Clock, MapPin, ArrowRight } from 'lucide-react';
+import { CalendarDays, Clock, ArrowRight, Plus } from 'lucide-react';
 import { format, isToday, isTomorrow, addDays } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 
 interface Shift {
@@ -16,6 +17,8 @@ interface Shift {
 interface UpcomingShiftsCardProps {
   shifts: Shift[];
   getFacilityName: (id: string) => string;
+  greeting: string;
+  firstName: string;
 }
 
 function getRelativeDay(date: Date): string {
@@ -24,7 +27,15 @@ function getRelativeDay(date: Date): string {
   return format(date, 'EEE, MMM d');
 }
 
-export function UpcomingShiftsCard({ shifts, getFacilityName }: UpcomingShiftsCardProps) {
+const ACCENT_COLORS = [
+  'border-l-primary',
+  'border-l-warning',
+  'border-l-info',
+  'border-l-success',
+  'border-l-destructive',
+];
+
+export function UpcomingShiftsCard({ shifts, getFacilityName, greeting, firstName }: UpcomingShiftsCardProps) {
   const navigate = useNavigate();
   const now = new Date();
   const in7Days = addDays(now, 7);
@@ -41,18 +52,21 @@ export function UpcomingShiftsCard({ shifts, getFacilityName }: UpcomingShiftsCa
   const nextShift = upcoming[0];
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardContent className="p-5 flex flex-col flex-1">
-        {/* Greeting area with next shift context */}
-        <div className="mb-4">
+    <Card className="h-full flex flex-col border-0 shadow-md">
+      <CardContent className="p-0 flex flex-col flex-1">
+        {/* Greeting header */}
+        <div className="px-5 pt-5 pb-4">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2.5 rounded-xl bg-primary/10">
+              <CalendarDays className="h-5 w-5 text-primary" />
+            </div>
+            <h2 className="text-xl font-bold tracking-tight text-foreground">{greeting}</h2>
+          </div>
           {nextShift ? (
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Your day is open.</p>
-              <p className="text-sm text-muted-foreground">
-                Next shift:{' '}
-                <span className="font-medium text-foreground">
-                  {getRelativeDay(new Date(nextShift.start_datetime))}
-                </span>
+            <div className="space-y-0.5 text-sm text-muted-foreground">
+              <p>Your day is open.</p>
+              <p>
+                Next shift: <span className="font-semibold text-foreground">{getRelativeDay(new Date(nextShift.start_datetime))}</span>
               </p>
             </div>
           ) : (
@@ -60,52 +74,53 @@ export function UpcomingShiftsCard({ shifts, getFacilityName }: UpcomingShiftsCa
           )}
         </div>
 
+        {/* Divider */}
+        <div className="h-px bg-border mx-5" />
+
         {/* Next 7 Days */}
-        <div className="flex-1">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+        <div className="px-5 pt-4 pb-2 flex-1">
+          <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.08em] mb-3">
             Next 7 Days
           </p>
 
           {upcoming.length === 0 ? (
-            <div className="py-6 text-center">
-              <CalendarDays className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">No upcoming shifts</p>
+            <div className="py-8 text-center">
+              <CalendarDays className="h-8 w-8 text-muted-foreground/20 mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground mb-3">No upcoming shifts</p>
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate('/schedule')}>
+                <Plus className="h-3.5 w-3.5" /> Add Shift
+              </Button>
             </div>
           ) : (
-            <div className="space-y-1">
-              {upcoming.map((shift) => {
+            <div className="space-y-1.5">
+              {upcoming.map((shift, idx) => {
                 const startDate = new Date(shift.start_datetime);
                 const endDate = new Date(shift.end_datetime);
                 const facilityName = getFacilityName(shift.facility_id);
                 const initials = facilityName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
-                const isShiftToday = isToday(startDate);
 
                 return (
                   <div
                     key={shift.id}
-                    className={`flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors group
-                      ${isShiftToday ? 'bg-primary/5 border border-primary/20' : 'hover:bg-muted/50'}`}
+                    className={`flex items-center gap-3 p-3 rounded-lg border-l-[3px] cursor-pointer transition-all
+                      hover:bg-muted/40 hover:shadow-sm bg-card
+                      ${ACCENT_COLORS[idx % ACCENT_COLORS.length]}`}
                     onClick={() => navigate('/schedule')}
                   >
-                    {/* Avatar */}
-                    <div className="shrink-0 w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
-                      <span className="text-xs font-bold text-primary">{initials}</span>
+                    <div className="shrink-0 w-9 h-9 rounded-full bg-muted flex items-center justify-center">
+                      <span className="text-[11px] font-bold text-muted-foreground">{initials}</span>
                     </div>
-
-                    {/* Info */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold truncate leading-tight">{facilityName}</p>
-                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
-                        <span>{getRelativeDay(startDate)}</span>
-                        <span>•</span>
-                        <Clock className="h-3 w-3" />
+                      <p className="text-[13px] font-semibold truncate leading-tight">{facilityName}</p>
+                      <div className="flex items-center gap-1 text-[11px] text-muted-foreground mt-0.5">
+                        <span className="font-medium">{getRelativeDay(startDate)}</span>
+                        <span className="opacity-50">•</span>
+                        <Clock className="h-3 w-3 opacity-60" />
                         <span>{format(startDate, 'h:mm a')} - {format(endDate, 'h:mm a')}</span>
                       </div>
                     </div>
-
-                    {/* Agency badge */}
                     {shift.agency && (
-                      <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 shrink-0 border-primary/30 text-primary">
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 shrink-0 border-primary/30 text-primary font-medium">
                         {shift.agency}
                       </Badge>
                     )}
@@ -116,14 +131,16 @@ export function UpcomingShiftsCard({ shifts, getFacilityName }: UpcomingShiftsCa
           )}
         </div>
 
-        {/* View all link */}
+        {/* Footer */}
         {upcoming.length > 0 && (
-          <button
-            className="flex items-center gap-1 text-xs text-primary font-medium hover:underline mt-3 pt-2 border-t border-border"
-            onClick={() => navigate('/schedule')}
-          >
-            View full schedule <ArrowRight className="h-3 w-3" />
-          </button>
+          <div className="px-5 pb-4 pt-2">
+            <button
+              className="flex items-center gap-1.5 text-xs text-primary font-semibold hover:underline"
+              onClick={() => navigate('/schedule')}
+            >
+              View full schedule <ArrowRight className="h-3 w-3" />
+            </button>
+          </div>
         )}
       </CardContent>
     </Card>
