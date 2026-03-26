@@ -15,9 +15,9 @@ import { useCredentials } from '@/hooks/useCredentials';
 import { generateCredentialReminders } from '@/lib/reminderEngine';
 import { computeStatus as computeSubStatus } from '@/hooks/useSubscriptions';
 
-import { SummaryCard } from '@/components/dashboard/SummaryCards';
-import { PrioritiesCard, PriorityItem } from '@/components/dashboard/PrioritiesCard';
-import { ThisWeekCard } from '@/components/dashboard/ThisWeekCard';
+import { UpcomingShiftsCard } from '@/components/dashboard/UpcomingShiftsCard';
+import { MoneyToCollectCard } from '@/components/dashboard/MoneyToCollectCard';
+import { NeedsAttentionCard, AttentionItem } from '@/components/dashboard/NeedsAttentionCard';
 import { WorkReadinessStrip, ReadinessItem } from '@/components/dashboard/WorkReadinessStrip';
 import { QuickActions } from '@/components/dashboard/QuickActions';
 import { useUserProfile } from '@/contexts/UserProfileContext';
@@ -28,7 +28,6 @@ export default function DashboardPage() {
   const { shifts, invoices, facilities, payments, checklistItems } = useData();
   const { user, isDemo } = useAuth();
   const { profile } = useUserProfile();
-  const showSetupCard = false; // Setup assistant hidden for now
   const navigate = useNavigate();
   const now = new Date();
 
@@ -54,14 +53,6 @@ export default function DashboardPage() {
 
   // ── Summary data ──
   const summary = useMemo(() => {
-    const in7Days = new Date(now);
-    in7Days.setDate(in7Days.getDate() + 7);
-
-    const upcomingShifts = shifts.filter(s =>
-      new Date(s.start_datetime) >= now && new Date(s.start_datetime) <= in7Days &&
-      (s.status === 'booked' || s.status === 'proposed')
-    );
-
     const draftInvoices = invoices.filter(i => i.status === 'draft');
     const draftTotal = draftInvoices.reduce((s, i) => s + i.total_amount, 0);
 
@@ -71,19 +62,19 @@ export default function DashboardPage() {
     });
     const outstandingTotal = unpaidInvoices.reduce((s, i) => s + i.balance_due, 0);
 
-    const dueSoonChecklist = checklistItems.filter(item => {
-      const badge = getChecklistBadge(item);
-      return badge === 'due_soon' || badge === 'overdue';
-    });
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    const paidThisMonth = payments
+      .filter(p => { const d = new Date(p.payment_date); return d.getMonth() === currentMonth && d.getFullYear() === currentYear; })
+      .reduce((s, p) => s + p.amount, 0);
 
-    return { upcomingShifts, draftInvoices, draftTotal, unpaidInvoices, outstandingTotal, dueSoonChecklist };
-  }, [shifts, invoices, checklistItems, now]);
+    return { draftInvoices, draftTotal, unpaidInvoices, outstandingTotal, paidThisMonth };
+  }, [invoices, payments, now]);
 
-  // ── Priorities ──
+  // ── Priorities / Attention items ──
   const { needingActionCount, getMonthQueue } = useClinicConfirmations();
   const { credentials: credentialsList } = useCredentials();
 
-  // Compute confirmation breakdown for reminders/priorities
   const confirmationBreakdown = useMemo(() => {
     const nextMonth = addMonths(now, 1);
     const monthKey = format(nextMonth, 'yyyy-MM');
@@ -95,32 +86,36 @@ export default function DashboardPage() {
     return { manualReview, needsUpdate, missingContact, autoSendSoon };
   }, [getMonthQueue, now]);
 
-  const allPriorities = useMemo(() => {
-    const items: PriorityItem[] = [];
+  const attentionItems = useMemo(() => {
+    const items: AttentionItem[] = [];
+
+    // Draft invoices (grouped)
+    if (summary.draftInvoices.length > 0) {
+      items.push({
+        title: `${summary.draftInvoices.length} draft invoice${summary.draftInvoices.length > 1 ? 's' : ''}`,
+        context: 'Ready to review and send',
+        link: '/invoices', icon: FileText, urgency: 2,
+        amount: `$${summary.draftTotal.toLocaleString()}`,
+      });
+    }
 
     // Overdue invoices
-    invoices.filter(i => computeInvoiceStatus(i) === 'overdue').forEach(inv => {
+    const overdueInvoices = invoices.filter(i => computeInvoiceStatus(i) === 'overdue');
+    if (overdueInvoices.length > 0) {
+      const overdueTotal = overdueInvoices.reduce((s, i) => s + i.balance_due, 0);
       items.push({
-        title: `Follow up on ${inv.invoice_number}`,
-        context: `$${inv.balance_due.toLocaleString()} overdue · ${getFacilityName(inv.facility_id)}`,
-        link: `/invoices/${inv.id}`, icon: AlertTriangle, urgency: 1,
+        title: `${overdueInvoices.length} overdue invoice${overdueInvoices.length > 1 ? 's' : ''}`,
+        context: 'Follow up on late payments',
+        link: '/invoices', icon: AlertTriangle, urgency: 1,
+        amount: `$${overdueTotal.toLocaleString()}`,
       });
-    });
-
-    // Draft invoices
-    invoices.filter(i => i.status === 'draft').forEach(inv => {
-      items.push({
-        title: `Review and send ${inv.invoice_number}`,
-        context: `$${inv.total_amount.toLocaleString()} ready to send`,
-        link: `/invoices/${inv.id}`, icon: Send, urgency: 2,
-      });
-    });
+    }
 
     // Confirmations - manual review queue
     if (confirmationBreakdown.manualReview > 0) {
       items.push({
-        title: `${confirmationBreakdown.manualReview} confirmation${confirmationBreakdown.manualReview > 1 ? 's' : ''} queued for review`,
-        context: 'Manual review required — review and send to clinic contacts',
+        title: `${confirmationBreakdown.manualReview} confirmation${confirmationBreakdown.manualReview > 1 ? 's' : ''} to review`,
+        context: 'Review and send to clinic contacts',
         link: '/schedule', icon: CheckSquare, urgency: 3,
       });
     }
@@ -128,42 +123,20 @@ export default function DashboardPage() {
     // Confirmations - needs update
     if (confirmationBreakdown.needsUpdate > 0) {
       items.push({
-        title: `${confirmationBreakdown.needsUpdate} confirmation${confirmationBreakdown.needsUpdate > 1 ? 's' : ''} need${confirmationBreakdown.needsUpdate === 1 ? 's' : ''} update`,
-        context: 'Schedule changed after confirmation was sent',
+        title: `${confirmationBreakdown.needsUpdate} confirmation${confirmationBreakdown.needsUpdate > 1 ? 's' : ''} need update`,
+        context: 'Schedule changed after confirmation sent',
         link: '/schedule', icon: AlertTriangle, urgency: 2,
       });
     }
 
-    // Confirmations - auto-sends happening soon
-    if (confirmationBreakdown.autoSendSoon > 0) {
-      items.push({
-        title: `${confirmationBreakdown.autoSendSoon} auto-send${confirmationBreakdown.autoSendSoon > 1 ? 's' : ''} scheduled`,
-        context: 'Will send automatically to clinic contacts',
-        link: '/schedule', icon: Send, urgency: 7,
-      });
-    }
-
-    // Confirmations - missing contact
+    // Missing contacts
     if (confirmationBreakdown.missingContact > 0) {
       items.push({
         title: `${confirmationBreakdown.missingContact} facilit${confirmationBreakdown.missingContact > 1 ? 'ies' : 'y'} missing contact`,
-        context: 'Add a scheduling contact to enable confirmations',
+        context: 'Add scheduling contact to enable confirmations',
         link: '/schedule', icon: AlertTriangle, urgency: 5,
       });
     }
-
-    // Upcoming shifts in 48h
-    const in48h = new Date(now);
-    in48h.setHours(in48h.getHours() + 48);
-    shifts
-      .filter(s => new Date(s.start_datetime) >= now && new Date(s.start_datetime) <= in48h && (s.status === 'booked' || s.status === 'proposed'))
-      .forEach(s => {
-        items.push({
-          title: `Shift at ${getFacilityName(s.facility_id)}`,
-          context: format(new Date(s.start_datetime), 'EEE, MMM d · h:mm a'),
-          link: '/schedule', icon: CalendarDays, urgency: 5,
-        });
-      });
 
     // Checklist items
     checklistItems
@@ -185,27 +158,31 @@ export default function DashboardPage() {
       });
     }
 
-    return items.sort((a, b) => a.urgency - b.urgency).slice(0, 7);
-  }, [invoices, shifts, facilities, checklistItems, confirmationBreakdown, credentialsList, now]);
+    // Subscriptions due soon
+    const dueSoonSubs = subscriptions.filter(s => computeSubStatus(s.renewal_date, s.status) === 'due_soon');
+    if (dueSoonSubs.length > 0) {
+      items.push({
+        title: `${dueSoonSubs.length} subscription${dueSoonSubs.length > 1 ? 's' : ''} renewing soon`,
+        context: 'Review upcoming renewals',
+        link: '/credentials?tab=subscriptions', icon: ShieldAlert, urgency: 6,
+      });
+    }
 
-  // ── This Week data ──
-  const thisWeek = useMemo(() => {
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-    const paidThisMonth = payments
-      .filter(p => { const d = new Date(p.payment_date); return d.getMonth() === currentMonth && d.getFullYear() === currentYear; })
-      .reduce((s, p) => s + p.amount, 0);
+    // Tax quarter
+    const nextQuarter = taxQuarters.find(q => new Date(q.due_date) >= now && q.status !== 'paid');
+    if (nextQuarter) {
+      const daysUntil = differenceInDays(new Date(nextQuarter.due_date), now);
+      if (daysUntil <= 30) {
+        items.push({
+          title: `Q${nextQuarter.quarter} estimated tax due`,
+          context: `Due in ${daysUntil} days`,
+          link: '/business?tab=tax-strategy&subtab=tracker', icon: DollarSign, urgency: 4,
+        });
+      }
+    }
 
-    const recentPayments = [...payments]
-      .sort((a, b) => new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime())
-      .slice(0, 3);
-
-    const nextShift = shifts
-      .filter(s => new Date(s.start_datetime) >= now && (s.status === 'booked' || s.status === 'proposed'))
-      .sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime())[0] || null;
-
-    return { paidThisMonth, recentPayments, nextShift };
-  }, [payments, shifts, now]);
+    return items.sort((a, b) => a.urgency - b.urgency);
+  }, [invoices, summary, checklistItems, confirmationBreakdown, credentialsList, subscriptions, taxQuarters, now]);
 
   // ── Work Readiness ──
   const readinessItems = useMemo(() => {
@@ -224,7 +201,6 @@ export default function DashboardPage() {
       lines.push({ text: `Contracts: ${dueSoonChecklist.length} item${dueSoonChecklist.length > 1 ? 's' : ''} due soon`, link: '/facilities' });
     }
 
-    // Credentials
     if (credentialsList) {
       const expiringSoon = credentialsList.filter(c => {
         if (c.status === 'archived') return false;
@@ -237,108 +213,53 @@ export default function DashboardPage() {
       }
     }
 
-    // Subscriptions
-    const dueSoonSubs = subscriptions.filter(s => computeSubStatus(s.renewal_date, s.status) === 'due_soon');
-    if (dueSoonSubs.length > 0) {
-      lines.push({ text: `Subscriptions: ${dueSoonSubs.length} renewal${dueSoonSubs.length > 1 ? 's' : ''} soon`, link: '/credentials?tab=subscriptions' });
-    }
-
-    // Tax readiness
     if (taxChecklist.length > 0) {
       const completed = taxChecklist.filter(c => c.completed).length;
       const percent = Math.round((completed / taxChecklist.length) * 100);
       if (percent < 100) lines.push({ text: `Tax readiness: ${percent}%`, link: '/business?tab=tax-strategy&subtab=tracker' });
     }
 
-    const nextQuarter = taxQuarters.find(q => new Date(q.due_date) >= now && q.status !== 'paid');
-    if (nextQuarter) {
-      const daysUntil = differenceInDays(new Date(nextQuarter.due_date), now);
-      lines.push({ text: `Taxes: Q${nextQuarter.quarter} due in ${daysUntil} days`, link: '/business?tab=tax-strategy&subtab=tracker' });
-    }
-
     return lines;
-  }, [checklistItems, taxChecklist, taxQuarters, confirmationBreakdown, credentialsList, subscriptions, now]);
+  }, [checklistItems, taxChecklist, confirmationBreakdown, credentialsList, now]);
+
+  const greeting = (() => {
+    const hour = new Date().getHours();
+    return hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
+  })();
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 h-full">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="page-title">
-          {(() => {
-            const hour = new Date().getHours();
-            const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
-            return `${greeting}, ${profile?.first_name || 'there'}`;
-          })()}
-        </h1>
+        <h1 className="page-title">{greeting}, {profile?.first_name || 'there'}</h1>
         <QuickActions />
       </div>
 
-      {/* Setup card hidden for now */}
-
-      {/* Row 1: 4 Summary Cards */}
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        <SummaryCard
-          icon={CalendarDays}
-          title="Upcoming Shifts"
-          value={summary.upcomingShifts.length}
-          subtitle={summary.upcomingShifts.length > 0
-            ? `${summary.upcomingShifts.length} in next 7 days`
-            : 'No upcoming shifts'}
-          onClick={() => navigate('/schedule')}
-          accentClass="text-primary"
-          bgClass="bg-primary/10"
-        />
-        <SummaryCard
-          icon={FileText}
-          title="Ready to Invoice"
-          value={`$${summary.draftTotal.toLocaleString()}`}
-          subtitle={summary.draftInvoices.length > 0
-            ? `$${summary.draftTotal.toLocaleString()} across ${summary.draftInvoices.length} draft${summary.draftInvoices.length > 1 ? 's' : ''}`
-            : 'No drafts ready'}
-          onClick={() => navigate('/invoices')}
-          accentClass="text-warning"
-          bgClass="bg-warning/10"
-        />
-        <SummaryCard
-          icon={DollarSign}
-          title="Outstanding"
-          value={`$${summary.outstandingTotal.toLocaleString()}`}
-          subtitle={summary.unpaidInvoices.length > 0
-            ? `${summary.unpaidInvoices.length} invoice${summary.unpaidInvoices.length > 1 ? 's' : ''} awaiting payment`
-            : '0 unpaid invoices'}
-          onClick={() => navigate('/invoices')}
-          accentClass="text-success"
-          bgClass="bg-success/10"
-        />
-        <SummaryCard
-          icon={ShieldAlert}
-          title="Due Soon"
-          value={summary.dueSoonChecklist.length}
-          subtitle={summary.dueSoonChecklist.length > 0
-            ? `${summary.dueSoonChecklist.length} item${summary.dueSoonChecklist.length > 1 ? 's' : ''} need attention`
-            : 'No urgent admin items'}
-          onClick={() => navigate('/facilities')}
-          accentClass="text-destructive"
-          bgClass="bg-destructive/10"
-        />
-      </div>
-
-      {/* Row 2: Priorities + This Week */}
-      <div className="grid gap-4 lg:grid-cols-12">
-        <div className="lg:col-span-8">
-          <PrioritiesCard items={allPriorities} maxVisible={5} />
-        </div>
+      {/* 3-Column Layout */}
+      <div className="grid gap-4 lg:grid-cols-12" style={{ minHeight: 'calc(100vh - 220px)' }}>
+        {/* Left: Upcoming Shifts */}
         <div className="lg:col-span-4">
-          <ThisWeekCard
-            paidThisMonth={thisWeek.paidThisMonth}
-            recentPayments={thisWeek.recentPayments}
-            nextShift={thisWeek.nextShift}
-            getFacilityName={getFacilityName}
+          <UpcomingShiftsCard shifts={shifts} getFacilityName={getFacilityName} />
+        </div>
+
+        {/* Center: Money to Collect */}
+        <div className="lg:col-span-4">
+          <MoneyToCollectCard
+            outstandingTotal={summary.outstandingTotal}
+            unpaidCount={summary.unpaidInvoices.length}
+            draftTotal={summary.draftTotal}
+            draftCount={summary.draftInvoices.length}
+            paidThisMonth={summary.paidThisMonth}
           />
         </div>
+
+        {/* Right: Needs Attention */}
+        <div className="lg:col-span-4">
+          <NeedsAttentionCard items={attentionItems} />
+        </div>
       </div>
 
-      {/* Row 3: Work Readiness Strip */}
+      {/* Work Readiness Strip */}
       <WorkReadinessStrip items={readinessItems} />
     </div>
   );
