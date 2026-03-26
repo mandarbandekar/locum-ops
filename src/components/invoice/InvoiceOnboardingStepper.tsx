@@ -100,7 +100,10 @@ export function InvoiceOnboardingStepper({ onComplete }: Props) {
 
   const saveContact = async () => {
     if (!editingFacilityId || !editName.trim() || !editEmail.trim()) return;
-    await updateFacility(editingFacilityId, {
+    const fac = facilities.find(f => f.id === editingFacilityId);
+    if (!fac) return;
+    await updateFacility({
+      ...fac,
       invoice_name_to: editName.trim(),
       invoice_email_to: editEmail.trim(),
     });
