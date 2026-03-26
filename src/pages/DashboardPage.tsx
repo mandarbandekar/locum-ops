@@ -84,7 +84,17 @@ export default function DashboardPage() {
       return { month: format(month, 'MMM'), paid, outstanding };
     });
 
-    return { draftInvoices, draftTotal, unpaidInvoices, outstandingTotal, paidThisMonth, revenueData };
+    const invoiceItems = [...draftInvoices, ...unpaidInvoices].map(inv => ({
+      id: inv.id,
+      invoice_number: inv.invoice_number,
+      facility_name: getFacilityName(inv.facility_id),
+      total_amount: inv.total_amount,
+      balance_due: inv.balance_due,
+      status: computeInvoiceStatus(inv),
+      due_date: inv.due_date,
+    }));
+
+    return { draftInvoices, draftTotal, unpaidInvoices, outstandingTotal, paidThisMonth, revenueData, invoiceItems };
   }, [invoices, payments, now]);
 
   // ── Priorities / Attention items ──
@@ -266,11 +276,10 @@ export default function DashboardPage() {
         <div className="lg:col-span-4">
           <MoneyToCollectCard
             outstandingTotal={summary.outstandingTotal}
-            unpaidCount={summary.unpaidInvoices.length}
             draftTotal={summary.draftTotal}
-            draftCount={summary.draftInvoices.length}
             paidThisMonth={summary.paidThisMonth}
             revenueData={summary.revenueData}
+            invoiceItems={summary.invoiceItems}
           />
         </div>
 
