@@ -8,7 +8,7 @@ import {
   Send, ShieldAlert, CheckSquare,
 } from 'lucide-react';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
-import { format, differenceInDays, addMonths } from 'date-fns';
+import { format, differenceInDays, addMonths, subMonths, startOfMonth, endOfMonth, eachMonthOfInterval, isWithinInterval, parseISO } from 'date-fns';
 import { getChecklistBadge } from '@/types/contracts';
 import { useClinicConfirmations } from '@/hooks/useClinicConfirmations';
 import { useCredentials } from '@/hooks/useCredentials';
@@ -68,7 +68,23 @@ export default function DashboardPage() {
       .filter(p => { const d = new Date(p.payment_date); return d.getMonth() === currentMonth && d.getFullYear() === currentYear; })
       .reduce((s, p) => s + p.amount, 0);
 
-    return { draftInvoices, draftTotal, unpaidInvoices, outstandingTotal, paidThisMonth };
+    // Revenue data for mini chart (last 6 months)
+    const months = eachMonthOfInterval({
+      start: startOfMonth(subMonths(new Date(), 5)),
+      end: endOfMonth(new Date()),
+    });
+    const revenueData = months.map(month => {
+      const monthEnd = endOfMonth(month);
+      const monthInvoices = invoices.filter(inv => {
+        const periodEnd = parseISO(inv.period_end);
+        return isWithinInterval(periodEnd, { start: month, end: monthEnd });
+      });
+      const paid = monthInvoices.filter(i => i.status === 'paid').reduce((s, i) => s + i.total_amount, 0);
+      const outstanding = monthInvoices.filter(i => i.status !== 'paid').reduce((s, i) => s + i.total_amount, 0);
+      return { month: format(month, 'MMM'), paid, outstanding };
+    });
+
+    return { draftInvoices, draftTotal, unpaidInvoices, outstandingTotal, paidThisMonth, revenueData };
   }, [invoices, payments, now]);
 
   // ── Priorities / Attention items ──
@@ -254,6 +270,7 @@ export default function DashboardPage() {
             draftTotal={summary.draftTotal}
             draftCount={summary.draftInvoices.length}
             paidThisMonth={summary.paidThisMonth}
+            revenueData={summary.revenueData}
           />
         </div>
 
