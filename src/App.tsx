@@ -34,7 +34,7 @@ import SettingsRemindersPage from "@/pages/SettingsRemindersPage";
 import SettingsBusinessTaxesPage from "@/pages/SettingsBusinessTaxesPage";
 import SettingsSecurityPage from "@/pages/SettingsSecurityPage";
 import SettingsAccountPage from "@/pages/SettingsAccountPage";
-import ImportPage from "@/pages/ImportPage";
+
 import PublicInvoicePage from "@/pages/PublicInvoicePage";
 import PublicConfirmationPage from "@/pages/PublicConfirmationPage";
 import NotFound from "./pages/NotFound";
@@ -93,7 +93,7 @@ function AuthenticatedApp() {
           <Route path="/settings/account" element={<SettingsAccountPage />} />
           {/* Legacy redirects */}
           <Route path="/settings/invoice-profile" element={<Navigate to="/settings/invoicing" replace />} />
-          <Route path="/import" element={<ImportPage />} />
+          <Route path="/import" element={<Navigate to="/" replace />} />
           <Route path="/onboarding" element={<Navigate to="/" replace />} />
           <Route path="/login" element={<Navigate to="/" replace />} />
           <Route path="*" element={<NotFound />} />
