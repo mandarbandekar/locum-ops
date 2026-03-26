@@ -4,8 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/StatusBadge';
-import { Plus, Search, Trash2, MapPin, Loader2 } from 'lucide-react';
+import { Plus, Search, Trash2, MapPin, Loader2, AlertTriangle } from 'lucide-react';
 import { AddFacilityDialog } from '@/components/AddFacilityDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
@@ -134,6 +135,7 @@ export default function FacilitiesPage() {
               <th className="text-left p-3 font-medium text-muted-foreground">Name</th>
               <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Address</th>
               <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
+              <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Billing</th>
               <th className="w-10" />
             </tr>
           </thead>
@@ -147,7 +149,17 @@ export default function FacilitiesPage() {
                 <td className="p-3 font-medium">{c.name}</td>
                 <td className="p-3 text-muted-foreground hidden md:table-cell">{c.address}</td>
                 <td className="p-3"><StatusBadge status={c.status} /></td>
-                <td className="p-3" onClick={e => e.stopPropagation()}>
+                <td className="p-3 hidden lg:table-cell">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 capitalize">{c.billing_cadence || 'monthly'}</Badge>
+                    {c.auto_generate_invoices && <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Auto</Badge>}
+                    {!(c.invoice_name_to?.trim() && c.invoice_email_to?.trim()) && (
+                      <span className="inline-flex items-center gap-0.5 text-[10px] text-amber-600 dark:text-amber-400">
+                        <AlertTriangle className="h-3 w-3" />
+                      </span>
+                    )}
+                  </div>
+                </td>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive">
