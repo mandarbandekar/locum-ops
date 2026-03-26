@@ -12,8 +12,9 @@ import { useClinicConfirmations } from '@/hooks/useClinicConfirmations';
 import { generateId } from '@/lib/businessLogic';
 import { FacilityStatus } from '@/types';
 import { toast } from 'sonner';
-import { ArrowLeft, ArrowRight, SkipForward } from 'lucide-react';
+import { ArrowLeft, ArrowRight, SkipForward, AlertTriangle } from 'lucide-react';
 import { RatesEditor, RateEntry, ratesToTermsFields } from '@/components/facilities/RatesEditor';
+import type { BillingCadence } from '@/lib/invoiceBillingDefaults';
 
 const STEPS = [
   { label: 'General', description: 'Name & basic info' },
