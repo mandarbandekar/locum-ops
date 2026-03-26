@@ -22,6 +22,7 @@ import { RatesEditor, termsToRates, ratesToTermsFields, RateEntry } from '@/comp
 import { ShiftFormDialog } from '@/components/schedule/ShiftFormDialog';
 import { FacilityConfirmationSettingsCard } from '@/components/schedule/FacilityConfirmationSettingsCard';
 import { useClinicConfirmations } from '@/hooks/useClinicConfirmations';
+import { InvoicingPreferencesCard } from '@/components/facilities/InvoicingPreferencesCard';
 
 export default function FacilityDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -235,8 +236,8 @@ function OverviewTab({ facility, shifts, contacts, onUpdate, onAddContact, onUpd
       </div>
 
       <div className="space-y-4">
-        {/* Invoice Billing Contact and Settings */}
-        <InvoiceSettingsCard facility={facility} onUpdate={onUpdate} />
+        {/* Invoicing Preferences */}
+        <InvoicingPreferencesCard facility={facility} onUpdate={onUpdate} />
 
         {/* Confirmation Settings */}
         <FacilityConfirmationSettingsCard
@@ -532,9 +533,7 @@ function InvoicesTab({ invoices, onNavigate }: { invoices: any[]; onNavigate: (i
   );
 }
 
-// ─── Invoice Settings Card (in Overview) ───────────────────
-
-function InvoiceSettingsCard({ facility, onUpdate }: { facility: any; onUpdate: (f: any) => void }) {
+// ─── Invoice Settings Card removed — replaced by InvoicingPreferencesCard component ───
   const [editing, setEditing] = useState(false);
   const [prefix, setPrefix] = useState(facility.invoice_prefix || 'INV');
   const [dueDays, setDueDays] = useState(facility.invoice_due_days ?? 15);
