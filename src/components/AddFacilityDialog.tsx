@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import { useData } from '@/contexts/DataContext';
@@ -47,6 +48,10 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
   const [invoiceEmailBcc, setInvoiceEmailBcc] = useState('');
   const [schedulingContactName, setSchedulingContactName] = useState('');
   const [schedulingContactEmail, setSchedulingContactEmail] = useState('');
+  const [billingCadence, setBillingCadence] = useState('monthly');
+  const [billingWeekEndDay, setBillingWeekEndDay] = useState('saturday');
+  const [billingAnchorDate, setBillingAnchorDate] = useState('');
+  const [autoGenerateInvoices, setAutoGenerateInvoices] = useState(true);
   const totalSteps = STEPS.length;
   const progress = ((step + 1) / totalSteps) * 100;
 
