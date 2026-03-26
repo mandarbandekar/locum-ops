@@ -67,6 +67,7 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
     setClinicAccess(''); setInvoicePrefix(''); setInvoiceDueDays(15);
     setInvoiceNameTo(''); setInvoiceEmailTo(''); setInvoiceNameCc(''); setInvoiceEmailCc(''); setInvoiceNameBcc(''); setInvoiceEmailBcc('');
     setSchedulingContactName(''); setSchedulingContactEmail('');
+    setBillingCadence('monthly'); setBillingWeekEndDay('saturday'); setBillingAnchorDate(''); setAutoGenerateInvoices(true);
   };
 
   const handleSubmit = async () => {
