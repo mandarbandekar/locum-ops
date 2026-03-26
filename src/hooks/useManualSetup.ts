@@ -30,6 +30,10 @@ export interface ManualFacilityInput {
   telemedicine_rate?: number;
   custom_rates?: Array<{ label: string; amount: number }>;
   notes?: string;
+  billing_cadence?: string;
+  billing_week_end_day?: string;
+  billing_anchor_date?: string;
+  auto_generate_invoices?: boolean;
 }
 
 export interface ManualShiftInput {
