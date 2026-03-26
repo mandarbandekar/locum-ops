@@ -231,15 +231,19 @@ export default function DashboardPage() {
     <div className="space-y-5 h-full">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="page-title">{greeting}, {profile?.first_name || 'there'}</h1>
         <QuickActions />
       </div>
 
       {/* 3-Column Layout */}
-      <div className="grid gap-4 lg:grid-cols-12" style={{ minHeight: 'calc(100vh - 220px)' }}>
+      <div className="grid gap-5 lg:grid-cols-12" style={{ minHeight: 'calc(100vh - 200px)' }}>
         {/* Left: Upcoming Shifts */}
         <div className="lg:col-span-4">
-          <UpcomingShiftsCard shifts={shifts} getFacilityName={getFacilityName} />
+          <UpcomingShiftsCard
+            shifts={shifts}
+            getFacilityName={getFacilityName}
+            greeting={`${greeting}, ${profile?.first_name || 'there'}`}
+            firstName={profile?.first_name || 'there'}
+          />
         </div>
 
         {/* Center: Money to Collect */}
