@@ -147,12 +147,24 @@ export default function InvoicesPage() {
                   <Checkbox checked={selected.has(inv.id)} />
                 </td>
                 <td className="p-3 font-semibold">
-                  {inv.invoice_number}
-                  {inv.invoice_type === 'bulk' && (
-                    <Badge variant="outline" className="ml-1.5 text-[10px] px-1 py-0">Bulk</Badge>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {inv.invoice_number}
+                    {inv.invoice_type === 'bulk' && (
+                      <Badge variant="outline" className="text-[10px] px-1 py-0">Bulk</Badge>
+                    )}
+                    {inv.generation_type === 'automatic' && (
+                      <Badge variant="outline" className="text-[10px] px-1 py-0 text-primary border-primary/30">
+                        <Zap className="h-2.5 w-2.5 mr-0.5" />Auto
+                      </Badge>
+                    )}
+                  </div>
+                </td>
+                <td className="p-3">
+                  <div>{getFacilityName(inv.facility_id)}</div>
+                  {inv.billing_cadence && (
+                    <span className="text-[11px] text-muted-foreground">{inv.billing_cadence.charAt(0).toUpperCase() + inv.billing_cadence.slice(1)}</span>
                   )}
                 </td>
-                <td className="p-3">{getFacilityName(inv.facility_id)}</td>
                 <td className="p-3 text-muted-foreground hidden sm:table-cell">
                   {inv.invoice_date ? format(new Date(inv.invoice_date), 'MMM d, yyyy') : '—'}
                 </td>
@@ -176,7 +188,31 @@ export default function InvoicesPage() {
               </tr>
             ))}
             {displayInvoices.length === 0 && (
-              <tr><td colSpan={9} className="p-6 text-center text-muted-foreground">No invoices</td></tr>
+              <tr><td colSpan={9} className="p-10 text-center">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                    <FileText className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  {statusFilter !== 'all' ? (
+                    <>
+                      <p className="text-sm text-muted-foreground">No {statusFilter} invoices</p>
+                      <Button size="sm" variant="outline" onClick={() => setStatusFilter('all')}>View all invoices</Button>
+                    </>
+                  ) : invoices.length === 0 ? (
+                    <>
+                      <p className="text-sm font-medium">No invoices yet</p>
+                      <p className="text-xs text-muted-foreground max-w-xs">Configure billing cadence on your facilities to start generating invoice drafts automatically.</p>
+                      <div className="flex gap-2 mt-1">
+                        <Button size="sm" onClick={() => setShowCreate(true)}>
+                          <Plus className="mr-1 h-3.5 w-3.5" /> Create Invoice
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No invoices match this filter</p>
+                  )}
+                </div>
+              </td></tr>
             )}
           </tbody>
         </table>
