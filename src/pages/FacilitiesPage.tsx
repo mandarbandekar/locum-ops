@@ -160,6 +160,7 @@ export default function FacilitiesPage() {
                     )}
                   </div>
                 </td>
+                <td className="p-3" onClick={e => e.stopPropagation()}>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive">
@@ -181,7 +182,7 @@ export default function FacilitiesPage() {
               </tr>
             ))}
             {filtered.length === 0 && (
-              <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">No practice facilities found</td></tr>
+              <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">No practice facilities found</td></tr>
             )}
           </tbody>
         </table>
