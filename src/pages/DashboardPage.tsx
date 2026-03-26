@@ -228,14 +228,14 @@ export default function DashboardPage() {
   })();
 
   return (
-    <div className="space-y-5 h-full">
+    <div className="space-y-4 h-full">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-end">
         <QuickActions />
       </div>
 
       {/* 3-Column Layout */}
-      <div className="grid gap-5 lg:grid-cols-12" style={{ minHeight: 'calc(100vh - 200px)' }}>
+      <div className="grid gap-5 lg:grid-cols-12" style={{ minHeight: 'calc(100vh - 190px)' }}>
         {/* Left: Upcoming Shifts */}
         <div className="lg:col-span-4">
           <UpcomingShiftsCard
