@@ -20,7 +20,8 @@ const STEPS = [
   { label: 'Tech Access', description: 'Logins & credentials' },
   { label: 'Clinic Access', description: 'Door codes & parking' },
   { label: 'Scheduling Contact', description: 'Confirmation contact info' },
-  { label: 'Invoice Settings', description: 'Prefix & terms' },
+  { label: 'Invoicing Preferences', description: 'Billing cadence & automation' },
+  { label: 'Invoice Settings', description: 'Prefix, contacts & terms' },
 ];
 
 export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
