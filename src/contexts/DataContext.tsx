@@ -394,12 +394,6 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
       addEmailLog,
       getComputedInvoiceStatus,
     }}>
-      addInvoice, updateInvoice, deleteInvoice,
-      addLineItem, updateLineItem, deleteLineItem,
-      addPayment, addActivity,
-      addEmailLog,
-      getComputedInvoiceStatus,
-    }}>
       {children}
     </DataContext.Provider>
   );
