@@ -89,6 +89,10 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
         invoice_email_cc: invoiceEmailCc.trim(),
         invoice_name_bcc: invoiceNameBcc.trim(),
         invoice_email_bcc: invoiceEmailBcc.trim(),
+        billing_cadence: 'monthly',
+        billing_cycle_anchor_date: null,
+        billing_week_end_day: 'saturday',
+        auto_generate_invoices: true,
       });
 
       if (hasAnyRates) {

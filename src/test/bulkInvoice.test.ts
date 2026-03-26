@@ -17,6 +17,7 @@ const baseInv = {
   invoice_date: '', period_start: '', period_end: '', total_amount: 0,
   balance_due: 0, notes: '', share_token: null, share_token_created_at: null,
   share_token_revoked_at: null, invoice_type: 'single' as const,
+  generation_type: 'manual' as const, billing_cadence: null,
 };
 
 describe('Bulk Invoice Helpers', () => {

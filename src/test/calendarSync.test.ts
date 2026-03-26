@@ -22,6 +22,10 @@ const mockFacility: Facility = {
   invoice_email_cc: '',
   invoice_name_bcc: '',
   invoice_email_bcc: '',
+  billing_cadence: 'monthly',
+  billing_cycle_anchor_date: null,
+  billing_week_end_day: 'saturday',
+  auto_generate_invoices: true,
 };
 
 const futureDate = new Date();

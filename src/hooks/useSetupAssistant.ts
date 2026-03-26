@@ -196,6 +196,10 @@ export function useSetupAssistant() {
           invoice_email_to: '',
           invoice_email_cc: '',
           invoice_email_bcc: '',
+          billing_cadence: 'monthly' as const,
+          billing_cycle_anchor_date: null,
+          billing_week_end_day: 'saturday',
+          auto_generate_invoices: true,
         });
 
         facilityNameMap[d.name?.toLowerCase() || ''] = facility.id;
