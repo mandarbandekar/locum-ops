@@ -144,6 +144,9 @@ export default function InvoiceDetailPage() {
           {(invoice as any).invoice_type === 'bulk' && (
             <Badge variant="outline" className="text-xs">Bulk Invoice</Badge>
           )}
+          {(invoice as any).generation_type === 'automatic' && (
+            <Badge variant="outline" className="text-xs text-primary border-primary/30">Auto-generated</Badge>
+          )}
         </div>
         <span className="text-sm text-muted-foreground">{facility?.name}</span>
 

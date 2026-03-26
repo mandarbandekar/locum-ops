@@ -544,6 +544,8 @@ function InvoiceSettingsCard({ facility, onUpdate }: { facility: any; onUpdate: 
   const [emailCc, setEmailCc] = useState(facility.invoice_email_cc || '');
   const [nameBcc, setNameBcc] = useState(facility.invoice_name_bcc || '');
   const [emailBcc, setEmailBcc] = useState(facility.invoice_email_bcc || '');
+  const [billingCadence, setBillingCadence] = useState(facility.billing_cadence || 'monthly');
+  const [autoGenerate, setAutoGenerate] = useState(facility.auto_generate_invoices ?? true);
 
   const handleSave = () => {
     onUpdate({
@@ -556,6 +558,8 @@ function InvoiceSettingsCard({ facility, onUpdate }: { facility: any; onUpdate: 
       invoice_email_cc: emailCc.trim(),
       invoice_name_bcc: nameBcc.trim(),
       invoice_email_bcc: emailBcc.trim(),
+      billing_cadence: billingCadence,
+      auto_generate_invoices: autoGenerate,
     });
     setEditing(false);
     toast.success('Invoice settings saved');
@@ -570,6 +574,8 @@ function InvoiceSettingsCard({ facility, onUpdate }: { facility: any; onUpdate: 
     setEmailCc(facility.invoice_email_cc || '');
     setNameBcc(facility.invoice_name_bcc || '');
     setEmailBcc(facility.invoice_email_bcc || '');
+    setBillingCadence(facility.billing_cadence || 'monthly');
+    setAutoGenerate(facility.auto_generate_invoices ?? true);
     setEditing(false);
   };
 
