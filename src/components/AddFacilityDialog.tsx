@@ -281,6 +281,62 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
 
           {step === 5 && (
             <>
+              <p className="text-sm text-muted-foreground">Choose how often invoices should be generated for this facility.</p>
+              <div className="space-y-2">
+                <Label>Billing cadence</Label>
+                <Select value={billingCadence} onValueChange={(v: BillingCadence) => setBillingCadence(v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="daily">Daily</SelectItem>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                    <SelectItem value="biweekly">Biweekly</SelectItem>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {billingCadence === 'weekly' && (
+                <div className="space-y-2">
+                  <Label>Week ends on</Label>
+                  <Select value={billingWeekEndDay} onValueChange={setBillingWeekEndDay}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {['sunday','monday','tuesday','wednesday','thursday','friday','saturday'].map(d => (
+                        <SelectItem key={d} value={d}>{d.charAt(0).toUpperCase() + d.slice(1)}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">Weekly invoices default to Saturday billing close.</p>
+                </div>
+              )}
+
+              {billingCadence === 'biweekly' && (
+                <div className="space-y-2">
+                  <Label>Cycle start date</Label>
+                  <Input type="date" value={billingAnchorDate} onChange={e => setBillingAnchorDate(e.target.value)} />
+                  <p className="text-xs text-muted-foreground">Anchor date for the biweekly billing cycle.</p>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between py-2">
+                <div>
+                  <Label>Auto-generate invoices</Label>
+                  <p className="text-xs text-muted-foreground">Draft invoices are created automatically and reviewed before sending.</p>
+                </div>
+                <Switch checked={autoGenerateInvoices} onCheckedChange={setAutoGenerateInvoices} />
+              </div>
+
+              {autoGenerateInvoices && !invoiceEmailTo.trim() && (
+                <div className="flex items-start gap-2 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                  <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-700 dark:text-amber-400">Add a billing contact in the next step to enable invoice generation and sending.</p>
+                </div>
+              )}
+            </>
+          )}
+
+          {step === 6 && (
+            <>
               <p className="text-sm text-muted-foreground">Invoice settings, email recipients, and payment terms for this facility.</p>
               <p className="text-xs font-medium text-muted-foreground">To</p>
               <div className="grid grid-cols-2 gap-2">
