@@ -7,6 +7,7 @@ export interface User {
 }
 
 export type FacilityStatus = 'prospect' | 'active' | 'paused';
+export type BillingCadence = 'daily' | 'weekly' | 'biweekly' | 'monthly';
 export interface Facility {
   id: string;
   name: string;
@@ -27,6 +28,10 @@ export interface Facility {
   invoice_email_cc: string;
   invoice_name_bcc: string;
   invoice_email_bcc: string;
+  billing_cadence: BillingCadence;
+  billing_cycle_anchor_date: string | null;
+  billing_week_end_day: string;
+  auto_generate_invoices: boolean;
 }
 
 export type ContactRole = string;
@@ -80,6 +85,7 @@ export interface Shift {
 
 export type InvoiceStatus = 'draft' | 'sent' | 'partial' | 'paid' | 'overdue';
 export type InvoiceType = 'single' | 'bulk';
+export type InvoiceGenerationType = 'manual' | 'automatic';
 export interface Invoice {
   id: string;
   facility_id: string;
@@ -98,6 +104,8 @@ export interface Invoice {
   share_token_created_at: string | null;
   share_token_revoked_at: string | null;
   invoice_type: InvoiceType;
+  generation_type: InvoiceGenerationType;
+  billing_cadence: BillingCadence | null;
 }
 
 export interface InvoiceLineItem {
