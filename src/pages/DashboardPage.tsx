@@ -266,11 +266,10 @@ export default function DashboardPage() {
         <div className="lg:col-span-4">
           <MoneyToCollectCard
             outstandingTotal={summary.outstandingTotal}
-            unpaidCount={summary.unpaidInvoices.length}
             draftTotal={summary.draftTotal}
-            draftCount={summary.draftInvoices.length}
             paidThisMonth={summary.paidThisMonth}
             revenueData={summary.revenueData}
+            invoiceItems={summary.invoiceItems}
           />
         </div>
 

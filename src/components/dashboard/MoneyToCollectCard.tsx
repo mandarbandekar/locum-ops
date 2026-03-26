@@ -1,10 +1,12 @@
 import { useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { DollarSign, FileText, ArrowRight, TrendingUp, Send } from 'lucide-react';
+import { DollarSign, FileText, ArrowRight, TrendingUp, Send, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ChartContainer } from '@/components/ui/chart';
-import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, Tooltip } from 'recharts';
+import { StatusBadge } from '@/components/StatusBadge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface RevenueMonth {
   month: string;
@@ -12,22 +14,30 @@ interface RevenueMonth {
   outstanding: number;
 }
 
+interface InvoiceItem {
+  id: string;
+  invoice_number: string;
+  facility_name: string;
+  total_amount: number;
+  balance_due: number;
+  status: string;
+  due_date: string | null;
+}
+
 interface MoneyToCollectCardProps {
   outstandingTotal: number;
-  unpaidCount: number;
   draftTotal: number;
-  draftCount: number;
   paidThisMonth: number;
   revenueData: RevenueMonth[];
+  invoiceItems: InvoiceItem[];
 }
 
 export function MoneyToCollectCard({
   outstandingTotal,
-  unpaidCount,
   draftTotal,
-  draftCount,
   paidThisMonth,
   revenueData,
+  invoiceItems,
 }: MoneyToCollectCardProps) {
   const navigate = useNavigate();
   const totalCollectable = outstandingTotal + draftTotal;
@@ -39,12 +49,24 @@ export function MoneyToCollectCard({
     outstanding: { label: 'Outstanding', color: 'hsl(var(--warning))' },
   };
 
+  const getIcon = (status: string) => {
+    if (status === 'draft') return <FileText className="h-3.5 w-3.5 text-warning" />;
+    if (status === 'overdue') return <Clock className="h-3.5 w-3.5 text-destructive" />;
+    return <Send className="h-3.5 w-3.5 text-primary" />;
+  };
+
+  const getIconBg = (status: string) => {
+    if (status === 'draft') return 'bg-warning/10';
+    if (status === 'overdue') return 'bg-destructive/10';
+    return 'bg-primary/10';
+  };
+
   return (
     <Card className="h-full flex flex-col border-0 shadow-md">
-      <CardContent className="p-0 flex flex-col flex-1">
+      <CardContent className="p-0 flex flex-col flex-1 min-h-0">
         {/* Header with total collectable */}
-        <div className="px-5 pt-5 pb-3">
-          <div className="flex items-center gap-2 mb-3">
+        <div className="px-5 pt-5 pb-2">
+          <div className="flex items-center gap-2 mb-1">
             <div className="p-2 rounded-xl bg-warning/10">
               <DollarSign className="h-5 w-5 text-warning" />
             </div>
@@ -55,71 +77,63 @@ export function MoneyToCollectCard({
               </p>
             </div>
           </div>
-        </div>
-
-        {/* Breakdown items */}
-        <div className="px-4 space-y-1.5">
-          {draftCount > 0 && (
-            <div
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-muted/40 cursor-pointer hover:bg-muted/70 transition-colors"
-              onClick={() => navigate('/invoices')}
-            >
-              <div className="p-1.5 rounded-md bg-warning/10">
-                <FileText className="h-3.5 w-3.5 text-warning" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[12px] font-semibold leading-tight">
-                  {draftCount} draft{draftCount > 1 ? 's' : ''} ready
-                </p>
-                <p className="text-[11px] text-muted-foreground">${draftTotal.toLocaleString()}</p>
-              </div>
-              <ArrowRight className="h-3 w-3 text-muted-foreground/40" />
-            </div>
-          )}
-
-          {unpaidCount > 0 && (
-            <div
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-muted/40 cursor-pointer hover:bg-muted/70 transition-colors"
-              onClick={() => navigate('/invoices')}
-            >
-              <div className="p-1.5 rounded-md bg-primary/10">
-                <Send className="h-3.5 w-3.5 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[12px] font-semibold leading-tight">
-                  {unpaidCount} awaiting payment
-                </p>
-                <p className="text-[11px] text-muted-foreground">${outstandingTotal.toLocaleString()}</p>
-              </div>
-              <ArrowRight className="h-3 w-3 text-muted-foreground/40" />
-            </div>
-          )}
-
-          {totalCollectable === 0 && (
-            <div className="py-3 text-center">
-              <p className="text-[12px] text-muted-foreground">All caught up!</p>
-            </div>
-          )}
-        </div>
-
-        {/* Collected this month */}
-        <div className="px-5 pt-3">
-          <div className="flex items-center gap-2 text-[12px]">
+          <div className="flex items-center gap-2 text-[12px] mt-2">
             <TrendingUp className="h-3.5 w-3.5 text-success" />
-            <span className="text-muted-foreground">This month:</span>
+            <span className="text-muted-foreground">Collected this month:</span>
             <span className="font-bold text-success">${paidThisMonth.toLocaleString()}</span>
           </div>
         </div>
 
+        {/* Individual invoice list */}
+        <div className="px-4 pt-2 flex-1 min-h-0">
+          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-2 px-1">
+            Invoices to Review ({invoiceItems.length})
+          </p>
+          <ScrollArea className="h-[180px]">
+            <div className="space-y-1.5 pr-2">
+              {invoiceItems.length === 0 && (
+                <div className="py-4 text-center">
+                  <p className="text-[12px] text-muted-foreground">All caught up!</p>
+                </div>
+              )}
+              {invoiceItems.map((inv) => (
+                <div
+                  key={inv.id}
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg bg-muted/40 cursor-pointer hover:bg-muted/70 transition-colors"
+                  onClick={() => navigate(`/invoices/${inv.id}`)}
+                >
+                  <div className={`p-1.5 rounded-md ${getIconBg(inv.status)}`}>
+                    {getIcon(inv.status)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-[12px] font-semibold leading-tight truncate">
+                        {inv.invoice_number}
+                      </p>
+                      <StatusBadge status={inv.status} className="text-[9px] px-1.5 py-0" />
+                    </div>
+                    <p className="text-[11px] text-muted-foreground truncate">{inv.facility_name}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-[12px] font-bold">
+                      ${(inv.status === 'draft' ? inv.total_amount : inv.balance_due).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        </div>
+
         {/* Revenue mini chart */}
-        <div className="px-4 pt-4 flex-1 min-h-0">
-          <div className="flex items-center justify-between mb-2">
+        <div className="px-4 pt-3">
+          <div className="flex items-center justify-between mb-1">
             <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Revenue Trend</p>
             <p className="text-[11px] text-muted-foreground">
               Total: <span className="font-semibold text-foreground">${totalRevenue.toLocaleString()}</span>
             </p>
           </div>
-          <ChartContainer config={chartConfig} className="h-[120px] w-full">
+          <ChartContainer config={chartConfig} className="h-[90px] w-full">
             <BarChart data={revenueData} barGap={0} barCategoryGap="20%">
               <XAxis
                 dataKey="month"
@@ -136,10 +150,7 @@ export function MoneyToCollectCard({
                       <p className="font-semibold mb-1">{label}</p>
                       {payload.map((p: any) => (
                         <div key={p.dataKey} className="flex items-center gap-2">
-                          <span
-                            className="h-2 w-2 rounded-full"
-                            style={{ background: p.fill }}
-                          />
+                          <span className="h-2 w-2 rounded-full" style={{ background: p.fill }} />
                           <span className="text-muted-foreground">{p.dataKey === 'paid' ? 'Collected' : 'Outstanding'}:</span>
                           <span className="font-medium">${p.value?.toLocaleString()}</span>
                         </div>
@@ -155,7 +166,7 @@ export function MoneyToCollectCard({
         </div>
 
         {/* CTA */}
-        <div className="px-4 pt-2 pb-4 mt-auto">
+        <div className="px-4 pt-1 pb-4 mt-auto">
           <Button
             variant="outline"
             className="w-full h-9 font-semibold text-[12px]"
