@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import { useData } from '@/contexts/DataContext';
@@ -11,8 +12,9 @@ import { useClinicConfirmations } from '@/hooks/useClinicConfirmations';
 import { generateId } from '@/lib/businessLogic';
 import { FacilityStatus } from '@/types';
 import { toast } from 'sonner';
-import { ArrowLeft, ArrowRight, SkipForward } from 'lucide-react';
+import { ArrowLeft, ArrowRight, SkipForward, AlertTriangle } from 'lucide-react';
 import { RatesEditor, RateEntry, ratesToTermsFields } from '@/components/facilities/RatesEditor';
+import type { BillingCadence } from '@/lib/invoiceBillingDefaults';
 
 const STEPS = [
   { label: 'General', description: 'Name & basic info' },
@@ -20,7 +22,8 @@ const STEPS = [
   { label: 'Tech Access', description: 'Logins & credentials' },
   { label: 'Clinic Access', description: 'Door codes & parking' },
   { label: 'Scheduling Contact', description: 'Confirmation contact info' },
-  { label: 'Invoice Settings', description: 'Prefix & terms' },
+  { label: 'Invoicing Preferences', description: 'Billing cadence & automation' },
+  { label: 'Invoice Settings', description: 'Prefix, contacts & terms' },
 ];
 
 export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
@@ -46,6 +49,10 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
   const [invoiceEmailBcc, setInvoiceEmailBcc] = useState('');
   const [schedulingContactName, setSchedulingContactName] = useState('');
   const [schedulingContactEmail, setSchedulingContactEmail] = useState('');
+  const [billingCadence, setBillingCadence] = useState<BillingCadence>('monthly');
+  const [billingWeekEndDay, setBillingWeekEndDay] = useState('saturday');
+  const [billingAnchorDate, setBillingAnchorDate] = useState('');
+  const [autoGenerateInvoices, setAutoGenerateInvoices] = useState(true);
   const totalSteps = STEPS.length;
   const progress = ((step + 1) / totalSteps) * 100;
 
@@ -61,6 +68,7 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
     setClinicAccess(''); setInvoicePrefix(''); setInvoiceDueDays(15);
     setInvoiceNameTo(''); setInvoiceEmailTo(''); setInvoiceNameCc(''); setInvoiceEmailCc(''); setInvoiceNameBcc(''); setInvoiceEmailBcc('');
     setSchedulingContactName(''); setSchedulingContactEmail('');
+    setBillingCadence('monthly'); setBillingWeekEndDay('saturday'); setBillingAnchorDate(''); setAutoGenerateInvoices(true);
   };
 
   const handleSubmit = async () => {
@@ -89,10 +97,10 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
         invoice_email_cc: invoiceEmailCc.trim(),
         invoice_name_bcc: invoiceNameBcc.trim(),
         invoice_email_bcc: invoiceEmailBcc.trim(),
-        billing_cadence: 'monthly',
-        billing_cycle_anchor_date: null,
-        billing_week_end_day: 'saturday',
-        auto_generate_invoices: true,
+        billing_cadence: billingCadence,
+        billing_cycle_anchor_date: billingCadence === 'biweekly' && billingAnchorDate ? billingAnchorDate : null,
+        billing_week_end_day: billingCadence === 'weekly' ? billingWeekEndDay : 'saturday',
+        auto_generate_invoices: autoGenerateInvoices && !!(invoiceEmailTo.trim()),
       });
 
       if (hasAnyRates) {
@@ -272,6 +280,62 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
           )}
 
           {step === 5 && (
+            <>
+              <p className="text-sm text-muted-foreground">Choose how often invoices should be generated for this facility.</p>
+              <div className="space-y-2">
+                <Label>Billing cadence</Label>
+                <Select value={billingCadence} onValueChange={(v: BillingCadence) => setBillingCadence(v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="daily">Daily</SelectItem>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                    <SelectItem value="biweekly">Biweekly</SelectItem>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {billingCadence === 'weekly' && (
+                <div className="space-y-2">
+                  <Label>Week ends on</Label>
+                  <Select value={billingWeekEndDay} onValueChange={setBillingWeekEndDay}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {['sunday','monday','tuesday','wednesday','thursday','friday','saturday'].map(d => (
+                        <SelectItem key={d} value={d}>{d.charAt(0).toUpperCase() + d.slice(1)}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">Weekly invoices default to Saturday billing close.</p>
+                </div>
+              )}
+
+              {billingCadence === 'biweekly' && (
+                <div className="space-y-2">
+                  <Label>Cycle start date</Label>
+                  <Input type="date" value={billingAnchorDate} onChange={e => setBillingAnchorDate(e.target.value)} />
+                  <p className="text-xs text-muted-foreground">Anchor date for the biweekly billing cycle.</p>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between py-2">
+                <div>
+                  <Label>Auto-generate invoices</Label>
+                  <p className="text-xs text-muted-foreground">Draft invoices are created automatically and reviewed before sending.</p>
+                </div>
+                <Switch checked={autoGenerateInvoices} onCheckedChange={setAutoGenerateInvoices} />
+              </div>
+
+              {autoGenerateInvoices && !invoiceEmailTo.trim() && (
+                <div className="flex items-start gap-2 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                  <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-700 dark:text-amber-400">Add a billing contact in the next step to enable invoice generation and sending.</p>
+                </div>
+              )}
+            </>
+          )}
+
+          {step === 6 && (
             <>
               <p className="text-sm text-muted-foreground">Invoice settings, email recipients, and payment terms for this facility.</p>
               <p className="text-xs font-medium text-muted-foreground">To</p>

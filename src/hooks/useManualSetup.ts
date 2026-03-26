@@ -30,6 +30,10 @@ export interface ManualFacilityInput {
   telemedicine_rate?: number;
   custom_rates?: Array<{ label: string; amount: number }>;
   notes?: string;
+  billing_cadence?: string;
+  billing_week_end_day?: string;
+  billing_anchor_date?: string;
+  auto_generate_invoices?: boolean;
 }
 
 export interface ManualShiftInput {
@@ -72,10 +76,10 @@ export function useManualSetup() {
         invoice_email_cc: input.billing_email_cc || '',
         invoice_name_bcc: input.billing_name_bcc || '',
         invoice_email_bcc: input.billing_email_bcc || '',
-        billing_cadence: 'monthly',
-        billing_cycle_anchor_date: null,
-        billing_week_end_day: 'saturday',
-        auto_generate_invoices: true,
+        billing_cadence: input.billing_cadence || 'monthly',
+        billing_cycle_anchor_date: input.billing_anchor_date || null,
+        billing_week_end_day: input.billing_week_end_day || 'saturday',
+        auto_generate_invoices: input.auto_generate_invoices ?? true,
       }).select().single();
 
       if (error) { console.error(error); toast.error(friendlyDbError(error)); return null; }
