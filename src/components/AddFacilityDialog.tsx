@@ -96,10 +96,10 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
         invoice_email_cc: invoiceEmailCc.trim(),
         invoice_name_bcc: invoiceNameBcc.trim(),
         invoice_email_bcc: invoiceEmailBcc.trim(),
-        billing_cadence: 'monthly',
-        billing_cycle_anchor_date: null,
-        billing_week_end_day: 'saturday',
-        auto_generate_invoices: true,
+        billing_cadence: billingCadence,
+        billing_cycle_anchor_date: billingCadence === 'biweekly' && billingAnchorDate ? billingAnchorDate : null,
+        billing_week_end_day: billingCadence === 'weekly' ? billingWeekEndDay : 'saturday',
+        auto_generate_invoices: autoGenerateInvoices && !!(invoiceEmailTo.trim()),
       });
 
       if (hasAnyRates) {
