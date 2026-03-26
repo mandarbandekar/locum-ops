@@ -209,8 +209,19 @@ export default function InvoiceDetailPage() {
         </div>
       )}
 
+      {/* Auto-generated invoice info */}
+      {invoice.generation_type === 'automatic' && (
+        <div className="mb-4 rounded-md border bg-primary/5 p-3 flex items-center gap-2 max-w-2xl print:hidden">
+          <Layers className="h-4 w-4 text-primary shrink-0" />
+          <div className="text-sm">
+            <p>Generated automatically for <strong>{facility?.name}</strong></p>
+            {invoice.billing_cadence && <p className="text-xs text-muted-foreground">{invoice.billing_cadence.charAt(0).toUpperCase() + invoice.billing_cadence.slice(1)} billing cadence · Includes {items.filter(li => li.shift_id).length} eligible shifts</p>}
+          </div>
+        </div>
+      )}
+
       {/* Bulk invoice shift summary */}
-      {(invoice as any).invoice_type === 'bulk' && items.length > 0 && (
+      {invoice.generation_type !== 'automatic' && (invoice as any).invoice_type === 'bulk' && items.length > 0 && (
         <div className="mb-4 rounded-md border bg-muted/30 p-3 flex items-center gap-2 max-w-2xl print:hidden">
           <Layers className="h-4 w-4 text-muted-foreground shrink-0" />
           <p className="text-sm">This invoice includes <strong>{items.filter(li => li.shift_id).length} completed shifts</strong>.</p>
