@@ -132,16 +132,22 @@ export function UpcomingShiftsCard({ shifts, getFacilityName, greeting, firstNam
         </div>
 
         {/* Footer */}
-        {upcoming.length > 0 && (
-          <div className="px-5 pb-4 pt-2">
-            <button
-              className="flex items-center gap-1.5 text-xs text-primary font-semibold hover:underline"
-              onClick={() => navigate('/schedule')}
-            >
-              View full schedule <ArrowRight className="h-3 w-3" />
-            </button>
-          </div>
-        )}
+        <div className="px-5 pb-4 pt-2 flex items-center justify-between">
+          <button
+            className="flex items-center gap-1.5 text-xs text-primary font-semibold hover:underline"
+            onClick={() => navigate('/schedule')}
+          >
+            View full schedule <ArrowRight className="h-3 w-3" />
+          </button>
+          <Button
+            size="sm"
+            className="h-8 text-[12px] font-semibold gap-1.5"
+            onClick={() => navigate('/schedule?addShift=true')}
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add Shift
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
