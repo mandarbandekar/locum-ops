@@ -606,6 +606,27 @@ function InvoiceSettingsCard({ facility, onUpdate }: { facility: any; onUpdate: 
                 <Input type="number" value={dueDays} onChange={e => setDueDays(Number(e.target.value))} min={1} />
               </div>
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Billing Cadence</Label>
+                <Select value={billingCadence} onValueChange={setBillingCadence}>
+                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="daily">Daily</SelectItem>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                    <SelectItem value="biweekly">Biweekly</SelectItem>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                  </SelectContent>
+                </Select>
+                {billingCadence === 'weekly' && <p className="text-[10px] text-muted-foreground mt-0.5">Defaults to Saturday billing close.</p>}
+              </div>
+              <div className="flex items-end pb-1">
+                <label className="flex items-center gap-2 text-xs cursor-pointer">
+                  <input type="checkbox" checked={autoGenerate} onChange={e => setAutoGenerate(e.target.checked)} className="rounded" />
+                  Auto-generate invoices
+                </label>
+              </div>
+            </div>
             <p className="text-xs font-medium text-muted-foreground pt-1">To</p>
             <div className="grid grid-cols-2 gap-3">
               <div>
