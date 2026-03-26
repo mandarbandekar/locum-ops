@@ -367,58 +367,6 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     setActivities(prev => [...prev, stripDbFields(data) as InvoiceActivity]);
   }, [isDemo, user]);
 
-  // ─── Auto-invoice on shift completion ─────────────────────
-  const updateShiftWithAutoInvoice = useCallback(async (s: Shift) => {
-    const oldShift = shifts.find(x => x.id === s.id);
-    await updateShift(s);
-    const justCompleted = s.status === 'completed' && oldShift?.status !== 'completed';
-    if (justCompleted) {
-      const alreadyInvoiced = lineItems.find(li => li.shift_id === s.id);
-      if (!alreadyInvoiced) {
-        const facility = facilities.find(f => f.id === s.facility_id);
-        const invoiceNumber = generateInvoiceNumber(invoices, facility?.invoice_prefix || 'INV');
-        const dueDays = (facility as any)?.invoice_due_days || 15;
-        const dueDate = new Date(s.end_datetime);
-        dueDate.setDate(dueDate.getDate() + dueDays);
-        try {
-          await addInvoice(
-            {
-              facility_id: s.facility_id,
-              invoice_number: invoiceNumber,
-              invoice_date: new Date().toISOString(),
-              period_start: s.start_datetime,
-              period_end: s.end_datetime,
-              total_amount: s.rate_applied,
-              balance_due: s.rate_applied,
-              status: 'draft' as Invoice['status'],
-              sent_at: null,
-              paid_at: null,
-              due_date: dueDate.toISOString(),
-              notes: '',
-              share_token: null,
-              share_token_created_at: null,
-              share_token_revoked_at: null,
-              invoice_type: 'single' as const,
-              generation_type: 'automatic' as const,
-              billing_cadence: null,
-            },
-            [{
-              shift_id: s.id,
-              description: `${facility?.name || 'Shift'} — ${new Date(s.start_datetime).toLocaleDateString()}`,
-              service_date: new Date(s.start_datetime).toISOString().split('T')[0],
-              qty: 1,
-              unit_rate: s.rate_applied,
-              line_total: s.rate_applied,
-            }]
-          );
-          toast.success(`Draft invoice ${invoiceNumber} auto-created`);
-        } catch {
-          // addInvoice already toasts errors
-        }
-      }
-    }
-  }, [shifts, lineItems, facilities, invoices, updateShift, addInvoice]);
-
   // ─── Computed ────────────────────────────────────────────
 
   const getComputedInvoiceStatus = useCallback((invoice: Invoice) => {
@@ -439,7 +387,13 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
       addFacility, updateFacility, deleteFacility,
       addContact, updateContact, deleteContact,
       updateTerms,
-      addShift, updateShift: updateShiftWithAutoInvoice, deleteShift,
+      addShift, updateShift, deleteShift,
+      addInvoice, updateInvoice, deleteInvoice,
+      addLineItem, updateLineItem, deleteLineItem,
+      addPayment, addActivity,
+      addEmailLog,
+      getComputedInvoiceStatus,
+    }}>
       addInvoice, updateInvoice, deleteInvoice,
       addLineItem, updateLineItem, deleteLineItem,
       addPayment, addActivity,
