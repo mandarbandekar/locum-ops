@@ -190,7 +190,7 @@ export default function SchedulePage() {
               draggable
               onDragStart={(e) => onDragStart(e, s.id)}
               className={`text-xs p-1 rounded mb-0.5 cursor-grab active:cursor-grabbing truncate ${colorDef.bg} ${colorDef.text} hover:opacity-80 transition-opacity select-none`}
-              onClick={() => setEditShift(s.id)}
+              onClick={(e) => { e.stopPropagation(); setEditShift(s.id); }}
               title={`${getFacilityName(s.facility_id)} — drag to reschedule`}
             >
               {format(new Date(s.start_datetime), 'ha')} {getFacilityName(s.facility_id).split(' ')[0]}
