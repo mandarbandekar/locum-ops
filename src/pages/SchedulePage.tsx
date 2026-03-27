@@ -268,8 +268,8 @@ export default function SchedulePage() {
               getEventsForDay={getEventsForDay}
             />
           ) : (
-            <div className="rounded-lg border bg-card overflow-hidden">
-              <table className="w-full text-sm">
+            <div className="rounded-lg border bg-card overflow-x-auto -mx-3 sm:mx-0">
+              <table className="w-full text-sm min-w-[500px] sm:min-w-0">
                 <thead><tr className="border-b bg-muted/50">
                   <th className="text-left p-3 font-medium text-muted-foreground">Date</th>
                   <th className="text-left p-3 font-medium text-muted-foreground">Facility</th>
