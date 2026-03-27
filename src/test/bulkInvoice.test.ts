@@ -25,15 +25,17 @@ describe('Bulk Invoice Helpers', () => {
   periodStart.setDate(periodStart.getDate() - 30);
   const periodEnd = new Date();
 
-  it('only includes completed shifts for the selected facility', () => {
+  it('includes booked and completed shifts for the selected facility, excludes canceled', () => {
     const shifts = [
       makeShift('s1', 'c1', 'completed', 5),
       makeShift('s2', 'c1', 'booked', 3),
       makeShift('s3', 'c2', 'completed', 4),
+      makeShift('s4', 'c1', 'canceled', 2),
     ];
     const { eligible } = getEligibleShiftsForBulkInvoice(shifts, [], [], 'c1', periodStart, periodEnd);
-    expect(eligible).toHaveLength(1);
-    expect(eligible[0].id).toBe('s1');
+    expect(eligible).toHaveLength(2);
+    expect(eligible.map(e => e.id)).toContain('s1');
+    expect(eligible.map(e => e.id)).toContain('s2');
   });
 
   it('excludes shifts already on sent/paid invoices', () => {
