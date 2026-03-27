@@ -267,7 +267,6 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
         // This ensures shifts added for any week/month get grouped correctly
         const period = getBillingPeriod(cadence, shiftStart);
 
-        {
           const sentIds = getSentInvoiceShiftIds(lineItems, invoices);
           const allShiftsWithNew = [...shifts, shift];
           const eligible = getEligibleShiftsForPeriod(allShiftsWithNew, facility.id, period.start, period.end, sentIds);
