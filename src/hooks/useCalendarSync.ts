@@ -39,7 +39,7 @@ const DEFAULT_PREFS: CalendarSyncPreferences = {
   include_notes: false,
 };
 
-export type ExportRange = 'next_30' | 'this_month' | 'next_month' | 'custom';
+export type ExportRange = 'next_30' | 'next_90' | 'next_180' | 'this_month' | 'next_month' | 'custom';
 
 export function useCalendarSync() {
   const { user, session, isDemo } = useAuth();
@@ -232,6 +232,14 @@ export function useCalendarSync() {
       case 'next_30':
         start = now;
         end = addDays(now, 30);
+        break;
+      case 'next_90':
+        start = now;
+        end = addDays(now, 90);
+        break;
+      case 'next_180':
+        start = now;
+        end = addDays(now, 180);
         break;
       case 'this_month':
         start = startOfMonth(now);
