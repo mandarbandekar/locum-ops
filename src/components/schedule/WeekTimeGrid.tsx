@@ -16,11 +16,12 @@ interface WeekTimeGridProps {
   getFacilityName: (id: string) => string;
   onEditShift: (id: string) => void;
   onDropOnTime: (shiftId: string, targetDate: Date, targetHour: number) => void;
+  onCellClick?: (date: Date, hour: number) => void;
   calendarFilters?: { credentials: boolean; subscriptions: boolean };
   getEventsForDay?: (day: Date, filters: { credentials: boolean; subscriptions: boolean }) => CalendarEvent[];
 }
 
-export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, onDropOnTime, calendarFilters, getEventsForDay }: WeekTimeGridProps) {
+export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, onDropOnTime, onCellClick, calendarFilters, getEventsForDay }: WeekTimeGridProps) {
   const [dragOverCell, setDragOverCell] = useState<string | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 
@@ -120,6 +121,7 @@ export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, o
                       onDragOver={(e) => handleDragOver(e, di, hour)}
                       onDragLeave={() => setDragOverCell(null)}
                       onDrop={(e) => handleDrop(e, di, hour)}
+                      onClick={() => onCellClick?.(weekDays[di], hour)}
                     >
                       {/* Half-hour dashed line */}
                       <div
