@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useCalendarSync, type ExportRange } from '@/hooks/useCalendarSync';
 import { useState } from 'react';
-import { Calendar, Copy, Download, ExternalLink, Link2Off, RefreshCw, Smartphone, Globe, Check } from 'lucide-react';
+import { Calendar, Copy, Download, ExternalLink, Link2Off, RefreshCw, Smartphone, Globe, Check, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function SettingsCalendarSyncPage() {
@@ -17,6 +17,9 @@ export default function SettingsCalendarSyncPage() {
     feedToken,
     preferences,
     loading,
+    syncing,
+    connectGoogle,
+    syncToGoogle,
     generateFeedToken,
     revokeFeedToken,
     regenerateFeedToken,
@@ -89,21 +92,24 @@ export default function SettingsCalendarSyncPage() {
                     <span className="font-medium">{googleConnection.external_calendar_id}</span>
                   </div>
                 )}
-                <Button variant="outline" size="sm" onClick={disconnectGoogle}>
-                  <Link2Off className="h-3.5 w-3.5 mr-1.5" /> Disconnect
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={syncToGoogle} disabled={syncing}>
+                    {syncing ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5 mr-1.5" />}
+                    {syncing ? 'Syncing…' : 'Sync Now'}
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={disconnectGoogle}>
+                    <Link2Off className="h-3.5 w-3.5 mr-1.5" /> Disconnect
+                  </Button>
+                </div>
               </div>
             ) : (
               <div className="text-center py-4">
                 <p className="text-sm text-muted-foreground mb-3">
                   Connect your Google account to automatically sync booked shifts.
                 </p>
-                <Button size="sm" disabled>
+                <Button size="sm" onClick={connectGoogle}>
                   <Globe className="h-3.5 w-3.5 mr-1.5" /> Connect Google Calendar
                 </Button>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Google Calendar sync requires additional setup. Coming soon.
-                </p>
               </div>
             )}
           </CardContent>
