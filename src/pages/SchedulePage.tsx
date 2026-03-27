@@ -3,10 +3,11 @@ import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { StatusBadge } from '@/components/StatusBadge';
-import { Plus, ChevronLeft, ChevronRight, List, CalendarDays, Trash2, Calendar as CalendarIcon, CheckSquare, RefreshCw } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, List, CalendarDays, Trash2, Calendar as CalendarIcon, CheckSquare, RefreshCw, AlertTriangle } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, getDay, startOfWeek, endOfWeek, addWeeks, subWeeks, differenceInMilliseconds } from 'date-fns';
 import { SHIFT_COLORS, Shift } from '@/types';
+import { detectShiftConflicts } from '@/lib/businessLogic';
 import { toast } from 'sonner';
 import { ShiftFormDialog } from '@/components/schedule/ShiftFormDialog';
 import { WeekTimeGrid } from '@/components/schedule/WeekTimeGrid';
@@ -157,6 +158,20 @@ export default function SchedulePage() {
     setShowAdd(true);
   }, []);
 
+  const hasDoubleBooking = useCallback((dayShifts: any[]) => {
+    const active = dayShifts.filter(s => s.status !== 'canceled');
+    for (let i = 0; i < active.length; i++) {
+      for (let j = i + 1; j < active.length; j++) {
+        const aStart = new Date(active[i].start_datetime).getTime();
+        const aEnd = new Date(active[i].end_datetime).getTime();
+        const bStart = new Date(active[j].start_datetime).getTime();
+        const bEnd = new Date(active[j].end_datetime).getTime();
+        if (aStart < bEnd && bStart < aEnd) return true;
+      }
+    }
+    return false;
+  }, []);
+
   const renderDayCell = (day: Date, minHeight: string) => {
     const dayShifts = calendarFilters.shifts ? shifts.filter(s => isSameDay(new Date(s.start_datetime), day)) : [];
     const isToday = isSameDay(day, new Date());
@@ -164,18 +179,24 @@ export default function SchedulePage() {
     const dayKey = day.toISOString();
     const isDragOver = dragOverDay === dayKey;
     const calEvents = getEventsForDay(day, { credentials: calendarFilters.credentials, subscriptions: calendarFilters.subscriptions });
+    const isDoubleBooked = hasDoubleBooking(dayShifts);
 
     return (
       <div
         key={dayKey}
-        className={`${minHeight} border-t border-r p-1 transition-colors cursor-pointer ${isToday ? 'bg-primary/5' : ''} ${isDragOver ? 'bg-primary/10 ring-2 ring-inset ring-primary/30' : ''}`}
+        className={`${minHeight} border-t border-r p-1 transition-colors cursor-pointer ${isToday ? 'bg-primary/5' : ''} ${isDragOver ? 'bg-primary/10 ring-2 ring-inset ring-primary/30' : ''} ${isDoubleBooked ? 'ring-1 ring-inset ring-amber-500/40' : ''}`}
         onDragOver={(e) => onDragOver(e, dayKey)}
         onDragLeave={onDragLeave}
         onDrop={(e) => onDrop(e, day)}
         onClick={() => openAddShiftAt(day)}
       >
-        <div className={`text-xs font-medium mb-1 ${isToday ? 'text-primary' : 'text-muted-foreground'}`}>
+        <div className={`text-xs font-medium mb-1 flex items-center gap-1 ${isToday ? 'text-primary' : 'text-muted-foreground'}`}>
           {format(day, 'd')}
+          {isDoubleBooked && (
+            <span className="inline-flex items-center gap-0.5 text-[9px] text-amber-600 dark:text-amber-400" title="Overlapping shifts">
+              <AlertTriangle className="h-3 w-3" />
+            </span>
+          )}
         </div>
         {markers.map(m => (
           <div key={m.label} className={`text-[10px] px-1 py-0.5 rounded mb-0.5 truncate font-medium ${m.bg} ${m.text}`} title={m.label}>
