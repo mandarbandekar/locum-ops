@@ -1,4 +1,5 @@
-import { useState, useRef, useCallback, DragEvent } from 'react';
+import { useState, useRef, useCallback, useMemo, DragEvent } from 'react';
+import { AlertTriangle } from 'lucide-react';
 import { format, isSameDay, getHours, getMinutes } from 'date-fns';
 import { SHIFT_COLORS } from '@/types';
 import { getMarkersForDay } from '@/lib/calendarMarkers';
@@ -52,19 +53,45 @@ export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, o
     setDragOverCell(null);
   }, [weekDays, onDropOnTime]);
 
+  const doubleBookedDays = useMemo(() => {
+    const result = new Set<number>();
+    weekDays.forEach((day, di) => {
+      const dayShifts = shifts.filter(s => isSameDay(new Date(s.start_datetime), day) && s.status !== 'canceled');
+      for (let i = 0; i < dayShifts.length; i++) {
+        for (let j = i + 1; j < dayShifts.length; j++) {
+          const aS = new Date(dayShifts[i].start_datetime).getTime();
+          const aE = new Date(dayShifts[i].end_datetime).getTime();
+          const bS = new Date(dayShifts[j].start_datetime).getTime();
+          const bE = new Date(dayShifts[j].end_datetime).getTime();
+          if (aS < bE && bS < aE) { result.add(di); break; }
+        }
+        if (result.has(di)) break;
+      }
+    });
+    return result;
+  }, [weekDays, shifts]);
+
   return (
     <div className="rounded-lg border bg-card overflow-hidden">
       {/* Day headers */}
       <div className="grid bg-muted/50" style={{ gridTemplateColumns: `${GUTTER_WIDTH}px repeat(7, 1fr)` }}>
         <div className="p-2 border-r" />
-        {weekDays.map(d => {
+        {weekDays.map((d, di) => {
           const isToday = isSameDay(d, new Date());
+          const isConflict = doubleBookedDays.has(di);
           return (
             <div
               key={d.toISOString()}
               className={`p-2 text-center border-r last:border-r-0 ${isToday ? 'text-primary' : 'text-muted-foreground'}`}
             >
-              <div className="text-xs font-medium">{format(d, 'EEE')}</div>
+              <div className="text-xs font-medium flex items-center justify-center gap-1">
+                {format(d, 'EEE')}
+                {isConflict && (
+                  <span title="Overlapping shifts">
+                    <AlertTriangle className="h-3 w-3 text-amber-500" />
+                  </span>
+                )}
+              </div>
               <div className={`text-lg font-semibold leading-none mt-0.5 ${isToday ? 'bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center mx-auto' : ''}`}>
                 {format(d, 'd')}
               </div>
