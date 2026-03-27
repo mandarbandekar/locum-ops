@@ -321,7 +321,7 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
               <div className="flex items-center justify-between py-2">
                 <div>
                   <Label>Auto-generate invoices</Label>
-                  <p className="text-xs text-muted-foreground">Draft invoices are created automatically and reviewed before sending.</p>
+                  <p className="text-xs text-muted-foreground">Draft invoices are generated automatically during the early morning system run.</p>
                 </div>
                 <Switch checked={autoGenerateInvoices} onCheckedChange={setAutoGenerateInvoices} />
               </div>

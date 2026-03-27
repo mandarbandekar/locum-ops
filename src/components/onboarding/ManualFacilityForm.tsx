@@ -147,7 +147,7 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
           <div className="flex items-center justify-between">
             <div>
               <Label>Auto-generate invoices</Label>
-              <p className="text-xs text-muted-foreground">Drafts are created automatically and reviewed before sending.</p>
+              <p className="text-xs text-muted-foreground">Draft invoices are generated automatically during the early morning system run.</p>
             </div>
             <Switch checked={autoGenerateInvoices} onCheckedChange={setAutoGenerateInvoices} />
           </div>

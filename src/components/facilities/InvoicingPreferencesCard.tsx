@@ -280,7 +280,7 @@ export function InvoicingPreferencesCard({ facility, onUpdate }: InvoicingPrefer
         <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
           <div>
             <p className="text-sm font-medium">Auto-generate invoices</p>
-            <p className="text-xs text-muted-foreground">Draft invoices are generated automatically and reviewed before sending.</p>
+            <p className="text-xs text-muted-foreground">Draft invoices are generated automatically during the early morning system run.</p>
           </div>
           <Switch
             checked={autoGenerate}

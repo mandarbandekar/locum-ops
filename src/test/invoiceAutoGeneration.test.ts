@@ -10,6 +10,7 @@ import {
   getSentInvoiceShiftIds,
   canSendInvoice,
 } from '@/lib/invoiceAutoGeneration';
+import { SYSTEM_RUN_HOUR } from '@/lib/invoiceAutoGeneration';
 import { getDefaultBillingConfig, DEFAULT_BILLING_WEEK_END_DAY, validateSenderProfile, hasBillingContact } from '@/lib/invoiceBillingDefaults';
 import type { Shift, Invoice, InvoiceLineItem, Facility } from '@/types';
 
@@ -46,16 +47,17 @@ describe('Invoice Auto-Generation (New Rules)', () => {
     expect(end.getDate()).toBe(10);
   });
 
-  it('daily: triggers on the morning of the shift date', () => {
+  it('daily: triggers during early morning system run on the shift date', () => {
     const shifts = [makeShift('s1', 'f1', 'booked', '2026-03-10')];
     const triggerDate = getGenerationTriggerDate(shifts, 'daily');
     expect(triggerDate).not.toBeNull();
     expect(triggerDate!.getDate()).toBe(10);
-    expect(triggerDate!.getHours()).toBe(0); // start of day = morning
+    expect(triggerDate!.getHours()).toBe(SYSTEM_RUN_HOUR);
 
-    // Should generate on that morning
-    const morning = new Date('2026-03-10T07:00:00');
-    expect(shouldGenerateDraft(shifts, 'daily', morning)).toBe(true);
+    // Should NOT generate before system run hour
+    expect(shouldGenerateDraft(shifts, 'daily', new Date('2026-03-10T04:00:00'))).toBe(false);
+    // Should generate at system run hour
+    expect(shouldGenerateDraft(shifts, 'daily', new Date(`2026-03-10T0${SYSTEM_RUN_HOUR}:00:00`))).toBe(true);
   });
 
   // 2) Weekly invoices generate on the morning of the last scheduled shift in Mon-Sun week
@@ -67,7 +69,7 @@ describe('Invoice Auto-Generation (New Rules)', () => {
     expect(end.getDay()).toBe(0); // Sunday
   });
 
-  it('weekly: triggers on the morning of the last scheduled shift in that week', () => {
+  it('weekly: triggers during early morning system run on the last scheduled shift day', () => {
     const shifts = [
       makeShift('s1', 'f1', 'booked', '2026-03-10'), // Tuesday
       makeShift('s2', 'f1', 'booked', '2026-03-12'), // Thursday
@@ -75,11 +77,12 @@ describe('Invoice Auto-Generation (New Rules)', () => {
     ];
     const triggerDate = getGenerationTriggerDate(shifts, 'weekly');
     expect(triggerDate!.getDate()).toBe(14); // Saturday, the last shift
+    expect(triggerDate!.getHours()).toBe(SYSTEM_RUN_HOUR);
 
-    // Should NOT generate before Saturday morning
-    expect(shouldGenerateDraft(shifts, 'weekly', new Date('2026-03-13T23:59:00'))).toBe(false);
-    // Should generate on Saturday morning
-    expect(shouldGenerateDraft(shifts, 'weekly', new Date('2026-03-14T07:00:00'))).toBe(true);
+    // Should NOT generate before Saturday system run
+    expect(shouldGenerateDraft(shifts, 'weekly', new Date('2026-03-14T04:00:00'))).toBe(false);
+    // Should generate at Saturday system run
+    expect(shouldGenerateDraft(shifts, 'weekly', new Date(`2026-03-14T0${SYSTEM_RUN_HOUR}:00:00`))).toBe(true);
   });
 
   // 3) Monthly invoices generate on the morning of the last scheduled shift in the month
@@ -92,7 +95,7 @@ describe('Invoice Auto-Generation (New Rules)', () => {
     expect(end.getDate()).toBe(31);
   });
 
-  it('monthly: triggers on the morning of the last scheduled shift, not end of month', () => {
+  it('monthly: triggers during early morning system run on the last scheduled shift day', () => {
     const shifts = [
       makeShift('s1', 'f1', 'booked', '2026-03-03'),
       makeShift('s2', 'f1', 'booked', '2026-03-12'),
@@ -100,9 +103,10 @@ describe('Invoice Auto-Generation (New Rules)', () => {
     ];
     const triggerDate = getGenerationTriggerDate(shifts, 'monthly');
     expect(triggerDate!.getDate()).toBe(29); // Last shift, not March 31
+    expect(triggerDate!.getHours()).toBe(SYSTEM_RUN_HOUR);
 
-    expect(shouldGenerateDraft(shifts, 'monthly', new Date('2026-03-28T23:59:00'))).toBe(false);
-    expect(shouldGenerateDraft(shifts, 'monthly', new Date('2026-03-29T06:00:00'))).toBe(true);
+    expect(shouldGenerateDraft(shifts, 'monthly', new Date('2026-03-29T04:00:00'))).toBe(false);
+    expect(shouldGenerateDraft(shifts, 'monthly', new Date(`2026-03-29T0${SYSTEM_RUN_HOUR}:00:00`))).toBe(true);
   });
 
   // 4) Shift end time is NOT required for invoice generation
