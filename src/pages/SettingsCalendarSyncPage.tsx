@@ -180,6 +180,8 @@ export default function SettingsCalendarSyncPage() {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="next_30">Next 30 days</SelectItem>
+                    <SelectItem value="next_90">Next 3 months</SelectItem>
+                    <SelectItem value="next_180">Next 6 months</SelectItem>
                     <SelectItem value="this_month">This month</SelectItem>
                     <SelectItem value="next_month">Next month</SelectItem>
                   </SelectContent>
