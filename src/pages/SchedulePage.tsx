@@ -221,7 +221,9 @@ export default function SchedulePage() {
         </div>
       </div>
 
-      {view === 'confirmations' ? (
+      {view === 'sync' ? (
+        <CalendarSyncPanel />
+      ) : view === 'confirmations' ? (
         <ClinicConfirmationsTab />
       ) : (
         <>
