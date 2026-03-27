@@ -12,7 +12,7 @@ interface Props {
 }
 
 export function CalendarSyncStep({ onContinue }: Props) {
-  const { generateFeedToken, feedToken, getFeedUrl, exportIcs } = useCalendarSync();
+  const { generateFeedToken, feedToken, getFeedUrl, exportIcs, connectGoogle } = useCalendarSync();
   const [selectedOption, setSelectedOption] = useState<'google' | 'ical' | 'export' | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -55,7 +55,10 @@ export function CalendarSyncStep({ onContinue }: Props) {
           className={`cursor-pointer transition-all hover:border-primary/40 ${
             selectedOption === 'google' ? 'border-primary bg-primary/[0.03]' : 'border-border'
           }`}
-          onClick={() => setSelectedOption('google')}
+          onClick={() => {
+            setSelectedOption('google');
+            connectGoogle();
+          }}
         >
           <CardContent className="py-4 px-4 flex items-start gap-3">
             <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
@@ -65,8 +68,8 @@ export function CalendarSyncStep({ onContinue }: Props) {
               <p className="font-semibold text-sm text-foreground">Connect Google Calendar</p>
               <p className="text-xs text-muted-foreground mt-0.5">Sync booked shifts automatically</p>
               {selectedOption === 'google' && (
-                <p className="text-xs text-muted-foreground mt-2 bg-muted/50 rounded-md p-2">
-                  Google Calendar sync requires additional setup. You can configure this later in Settings → Calendar Sync.
+                <p className="text-xs text-primary mt-2 flex items-center gap-1">
+                  <Check className="h-3.5 w-3.5" /> Opening Google sign-in…
                 </p>
               )}
             </div>

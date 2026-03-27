@@ -2025,6 +2025,7 @@ export type Database = {
           external_event_id: string | null
           id: string
           last_synced_at: string | null
+          last_synced_hash: string | null
           provider: string
           shift_id: string
           sync_status: string
@@ -2036,6 +2037,7 @@ export type Database = {
           external_event_id?: string | null
           id?: string
           last_synced_at?: string | null
+          last_synced_hash?: string | null
           provider: string
           shift_id: string
           sync_status?: string
@@ -2047,6 +2049,7 @@ export type Database = {
           external_event_id?: string | null
           id?: string
           last_synced_at?: string | null
+          last_synced_hash?: string | null
           provider?: string
           shift_id?: string
           sync_status?: string
