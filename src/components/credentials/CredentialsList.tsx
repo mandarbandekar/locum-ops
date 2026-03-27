@@ -26,7 +26,7 @@ export default function CredentialsList() {
   const [editingCredential, setEditingCredential] = useState<Credential | null>(null);
   const [ceDialogOpen, setCeDialogOpen] = useState(false);
   const [cePreLinkedId, setCePreLinkedId] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>('table');
+  const [viewMode, setViewMode] = useState<ViewMode>('card');
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
