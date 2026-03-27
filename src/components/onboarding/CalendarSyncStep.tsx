@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Globe, Smartphone, Download, ArrowRight, Calendar } from 'lucide-react';
 import { useCalendarSync } from '@/hooks/useCalendarSync';
 import { useState } from 'react';
