@@ -262,11 +262,12 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
       const facility = facilities.find(f => f.id === shift.facility_id);
       if (facility && facility.auto_generate_invoices && shift.status !== 'canceled') {
         const cadence = facility.billing_cadence as BillingCadence;
-        const now = new Date();
-        const period = getBillingPeriod(cadence, now);
         const shiftStart = new Date(shift.start_datetime);
+        // Use the SHIFT date to determine billing period, not today's date
+        // This ensures shifts added for any week/month get grouped correctly
+        const period = getBillingPeriod(cadence, shiftStart);
 
-        if (shiftStart >= period.start && shiftStart <= period.end) {
+        {
           const sentIds = getSentInvoiceShiftIds(lineItems, invoices);
           const allShiftsWithNew = [...shifts, shift];
           const eligible = getEligibleShiftsForPeriod(allShiftsWithNew, facility.id, period.start, period.end, sentIds);
