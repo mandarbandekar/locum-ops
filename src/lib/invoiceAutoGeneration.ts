@@ -123,6 +123,41 @@ export function shouldGenerateDraft(
 }
 
 /**
+ * Determine if a draft invoice should be generated immediately because a
+ * shift was added today for the current billing period.
+ *
+ * When a shift is added for today's date, the system should immediately
+ * create or update the draft invoice for the relevant billing period,
+ * without waiting for the next early morning system run.
+ *
+ * Returns true when at least one eligible shift falls on `today` AND
+ * that shift is within the billing period that contains `today`.
+ */
+export function shouldGenerateDraftOnShiftAdd(
+  eligibleShifts: Shift[],
+  cadence: BillingCadence,
+  periodStart: Date,
+  periodEnd: Date,
+  now: Date = new Date(),
+): boolean {
+  if (eligibleShifts.length === 0) return false;
+
+  const todayStart = startOfDay(now);
+  const todayEnd = endOfDay(now);
+
+  // Check if any eligible shift was scheduled for today
+  const hasShiftToday = eligibleShifts.some(s => {
+    const shiftDate = new Date(s.start_datetime);
+    return shiftDate >= todayStart && shiftDate <= todayEnd;
+  });
+
+  if (!hasShiftToday) return false;
+
+  // Verify today falls within the billing period
+  return now >= periodStart && now <= periodEnd;
+}
+
+/**
  * Get the set of shift IDs already on any invoice (any status).
  */
 export function getInvoicedShiftIds(lineItems: InvoiceLineItem[]): Set<string> {

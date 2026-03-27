@@ -7,6 +7,7 @@ import {
   buildAutoInvoiceDraft,
   getGenerationTriggerDate,
   shouldGenerateDraft,
+  shouldGenerateDraftOnShiftAdd,
   getSentInvoiceShiftIds,
   canSendInvoice,
 } from '@/lib/invoiceAutoGeneration';
@@ -262,5 +263,42 @@ describe('Invoice Auto-Generation (New Rules)', () => {
       company_address: '123 Main St', email: 'jane@test.com', phone: null,
     });
     expect(valid.valid).toBe(true);
+  });
+
+  // Same-day shift addition triggers immediate draft generation
+  describe('shouldGenerateDraftOnShiftAdd', () => {
+    it('returns true when a shift is added for today within the billing period', () => {
+      const today = new Date('2026-03-15T14:00:00');
+      const shifts = [makeShift('s1', 'f1', 'booked', '2026-03-15')];
+      const period = getBillingPeriod('monthly', today);
+      expect(shouldGenerateDraftOnShiftAdd(shifts, 'monthly', period.start, period.end, today)).toBe(true);
+    });
+
+    it('returns false when no shift is scheduled for today', () => {
+      const today = new Date('2026-03-15T14:00:00');
+      const shifts = [makeShift('s1', 'f1', 'booked', '2026-03-20')];
+      const period = getBillingPeriod('monthly', today);
+      expect(shouldGenerateDraftOnShiftAdd(shifts, 'monthly', period.start, period.end, today)).toBe(false);
+    });
+
+    it('returns false with no eligible shifts', () => {
+      const today = new Date('2026-03-15T14:00:00');
+      const period = getBillingPeriod('weekly', today);
+      expect(shouldGenerateDraftOnShiftAdd([], 'weekly', period.start, period.end, today)).toBe(false);
+    });
+
+    it('works for daily cadence with same-day shift', () => {
+      const today = new Date('2026-03-10T10:00:00');
+      const shifts = [makeShift('s1', 'f1', 'booked', '2026-03-10')];
+      const period = getBillingPeriod('daily', today);
+      expect(shouldGenerateDraftOnShiftAdd(shifts, 'daily', period.start, period.end, today)).toBe(true);
+    });
+
+    it('works for weekly cadence with same-day shift mid-week', () => {
+      const today = new Date('2026-03-11T12:00:00'); // Wednesday
+      const shifts = [makeShift('s1', 'f1', 'booked', '2026-03-11')];
+      const period = getBillingPeriod('weekly', today);
+      expect(shouldGenerateDraftOnShiftAdd(shifts, 'weekly', period.start, period.end, today)).toBe(true);
+    });
   });
 });
