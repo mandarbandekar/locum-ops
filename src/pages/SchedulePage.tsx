@@ -197,22 +197,22 @@ export default function SchedulePage() {
     <div>
       <div className="page-header flex-col sm:flex-row gap-3">
         <h1 className="page-title">Schedule</h1>
-        <div className="flex gap-2 flex-wrap">
-          <Button size="sm" variant={view === 'month' ? 'default' : 'outline'} onClick={() => setView('month')} className="h-8 text-[13px] px-4">
-            <CalendarDays className="mr-1.5 h-4 w-4" /> Month
+        <div className="flex gap-1.5 sm:gap-2 flex-wrap">
+          <Button size="sm" variant={view === 'month' ? 'default' : 'outline'} onClick={() => setView('month')} className="h-8 text-[12px] sm:text-[13px] px-2.5 sm:px-4">
+            <CalendarDays className="mr-1 sm:mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" /> Month
           </Button>
-          <Button size="sm" variant={view === 'week' ? 'default' : 'outline'} onClick={() => setView('week')} className="h-8 text-[13px] px-4">
-            <CalendarIcon className="mr-1.5 h-4 w-4" /> Week
+          <Button size="sm" variant={view === 'week' ? 'default' : 'outline'} onClick={() => setView('week')} className="h-8 text-[12px] sm:text-[13px] px-2.5 sm:px-4">
+            <CalendarIcon className="mr-1 sm:mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" /> Week
           </Button>
-          <Button size="sm" variant={view === 'list' ? 'default' : 'outline'} onClick={() => setView('list')} className="h-8 text-[13px] px-4">
-            <List className="mr-1.5 h-4 w-4" /> List
+          <Button size="sm" variant={view === 'list' ? 'default' : 'outline'} onClick={() => setView('list')} className="h-8 text-[12px] sm:text-[13px] px-2.5 sm:px-4">
+            <List className="mr-1 sm:mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" /> List
           </Button>
-          <Button size="sm" variant={view === 'confirmations' ? 'default' : 'outline'} onClick={() => setView('confirmations')} className="h-8 text-[13px] px-4">
-            <CheckSquare className="mr-1.5 h-4 w-4" /> Clinic Confirmations
+          <Button size="sm" variant={view === 'confirmations' ? 'default' : 'outline'} onClick={() => setView('confirmations')} className="h-8 text-[12px] sm:text-[13px] px-2.5 sm:px-4">
+            <CheckSquare className="mr-1 sm:mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" /> <span className="hidden sm:inline">Clinic </span>Confirm
           </Button>
           {view !== 'confirmations' && (
-            <Button size="sm" onClick={() => setShowAdd(true)} className="h-8 text-[13px] px-4">
-              <Plus className="mr-1.5 h-4 w-4" /> Add Shift
+            <Button size="sm" onClick={() => setShowAdd(true)} className="h-8 text-[12px] sm:text-[13px] px-2.5 sm:px-4">
+              <Plus className="mr-1 sm:mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" /> Add Shift
             </Button>
           )}
         </div>
@@ -242,17 +242,19 @@ export default function SchedulePage() {
           </div>
 
           {view === 'month' ? (
-            <div className="rounded-lg border bg-card overflow-hidden">
-              <div className="grid grid-cols-7 bg-muted/50">
-                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-                  <div key={d} className="p-2 text-center text-xs font-medium text-muted-foreground">{d}</div>
-                ))}
-              </div>
-              <div className="grid grid-cols-7">
-                {Array.from({ length: startDow }).map((_, i) => (
-                  <div key={`empty-${i}`} className="min-h-[80px] border-t border-r bg-muted/20" />
-                ))}
-                {monthDays.map(day => renderDayCell(day, 'min-h-[80px]'))}
+            <div className="rounded-lg border bg-card overflow-x-auto">
+              <div className="min-w-[500px]">
+                <div className="grid grid-cols-7 bg-muted/50">
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+                    <div key={d} className="p-1.5 sm:p-2 text-center text-[10px] sm:text-xs font-medium text-muted-foreground">{d}</div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-7">
+                  {Array.from({ length: startDow }).map((_, i) => (
+                    <div key={`empty-${i}`} className="min-h-[60px] sm:min-h-[80px] border-t border-r bg-muted/20" />
+                  ))}
+                  {monthDays.map(day => renderDayCell(day, 'min-h-[60px] sm:min-h-[80px]'))}
+                </div>
               </div>
             </div>
           ) : view === 'week' ? (
@@ -266,8 +268,8 @@ export default function SchedulePage() {
               getEventsForDay={getEventsForDay}
             />
           ) : (
-            <div className="rounded-lg border bg-card overflow-hidden">
-              <table className="w-full text-sm">
+            <div className="rounded-lg border bg-card overflow-x-auto -mx-3 sm:mx-0">
+              <table className="w-full text-sm min-w-[500px] sm:min-w-0">
                 <thead><tr className="border-b bg-muted/50">
                   <th className="text-left p-3 font-medium text-muted-foreground">Date</th>
                   <th className="text-left p-3 font-medium text-muted-foreground">Facility</th>

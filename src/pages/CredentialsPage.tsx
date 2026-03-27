@@ -29,27 +29,27 @@ export default function CredentialsPage() {
       </div>
 
       {/* Primary 3-tab selector */}
-      <div className="flex gap-3 flex-wrap">
+      <div className="flex gap-2 sm:gap-3 flex-wrap">
         <button
           onClick={() => setPrimaryTab('credentials')}
           className={`primary-tab-btn ${primaryTab === 'credentials' ? 'primary-tab-btn--active' : 'primary-tab-btn--inactive'}`}
         >
-          <ShieldCheck className="h-5 w-5" />
-          Credentials
+          <ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5" />
+          <span className="text-xs sm:text-sm">Credentials</span>
         </button>
         <button
           onClick={() => setPrimaryTab('ce-tracker')}
           className={`primary-tab-btn ${primaryTab === 'ce-tracker' ? 'primary-tab-btn--active' : 'primary-tab-btn--inactive'}`}
         >
-          <GraduationCap className="h-5 w-5" />
-          Continuing Education Hub
+          <GraduationCap className="h-4 w-4 sm:h-5 sm:w-5" />
+          <span className="text-xs sm:text-sm"><span className="hidden sm:inline">Continuing </span>CE Hub</span>
         </button>
         <button
           onClick={() => setPrimaryTab('subscriptions')}
           className={`primary-tab-btn ${primaryTab === 'subscriptions' ? 'primary-tab-btn--active' : 'primary-tab-btn--inactive'}`}
         >
-          <RefreshCw className="h-5 w-5" />
-          Required Subscriptions
+          <RefreshCw className="h-4 w-4 sm:h-5 sm:w-5" />
+          <span className="text-xs sm:text-sm"><span className="hidden sm:inline">Required </span>Subscriptions</span>
         </button>
       </div>
 

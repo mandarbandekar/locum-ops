@@ -26,7 +26,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <ThemeToggle />
             </div>
           </header>
-          <main className="flex-1 p-4 sm:p-5 md:p-7 overflow-auto">
+          <main className="flex-1 p-3 sm:p-5 md:p-7 overflow-auto">
             {children}
           </main>
         </div>
