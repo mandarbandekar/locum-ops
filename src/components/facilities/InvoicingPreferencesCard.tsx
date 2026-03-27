@@ -15,22 +15,12 @@ interface InvoicingPreferencesCardProps {
   onUpdate: (f: Facility) => void;
 }
 
-const CADENCE_LABELS: Record<BillingCadence, string> = {
+const CADENCE_LABELS: Record<string, string> = {
   daily: 'Daily',
-  weekly: 'Weekly',
+  weekly: 'Weekly (Mon–Sun)',
   biweekly: 'Biweekly',
   monthly: 'Monthly',
 };
-
-const WEEK_DAYS = [
-  { value: 'sunday', label: 'Sunday' },
-  { value: 'monday', label: 'Monday' },
-  { value: 'tuesday', label: 'Tuesday' },
-  { value: 'wednesday', label: 'Wednesday' },
-  { value: 'thursday', label: 'Thursday' },
-  { value: 'friday', label: 'Friday' },
-  { value: 'saturday', label: 'Saturday' },
-];
 
 export function InvoicingPreferencesCard({ facility, onUpdate }: InvoicingPreferencesCardProps) {
   const [editing, setEditing] = useState(false);
@@ -133,14 +123,8 @@ export function InvoicingPreferencesCard({ facility, onUpdate }: InvoicingPrefer
           </div>
           {facility.billing_cadence === 'weekly' && (
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Week ends on</span>
-              <span className="font-medium capitalize">{facility.billing_week_end_day || 'Saturday'}</span>
-            </div>
-          )}
-          {facility.billing_cadence === 'biweekly' && facility.billing_cycle_anchor_date && (
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Cycle anchor</span>
-              <span className="font-medium">{facility.billing_cycle_anchor_date}</span>
+              <span className="text-muted-foreground">Billing week</span>
+              <span className="font-medium">Monday – Sunday</span>
             </div>
           )}
           <div className="flex items-center justify-between text-sm">
@@ -215,50 +199,20 @@ export function InvoicingPreferencesCard({ facility, onUpdate }: InvoicingPrefer
               <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="daily">Daily</SelectItem>
-                <SelectItem value="weekly">Weekly</SelectItem>
-                <SelectItem value="biweekly">Biweekly</SelectItem>
+                <SelectItem value="weekly">Weekly (Mon–Sun)</SelectItem>
                 <SelectItem value="monthly">Monthly</SelectItem>
               </SelectContent>
             </Select>
+            {billingCadence === 'weekly' && (
+              <p className="text-[10px] text-muted-foreground mt-0.5">Billing week runs Monday through Sunday. Draft generates on the morning of your last scheduled shift that week.</p>
+            )}
+            {billingCadence === 'monthly' && (
+              <p className="text-[10px] text-muted-foreground mt-0.5">Draft generates on the morning of your last scheduled shift of the month.</p>
+            )}
+            {billingCadence === 'daily' && (
+              <p className="text-[10px] text-muted-foreground mt-0.5">A draft invoice is generated each morning you have a scheduled shift.</p>
+            )}
           </div>
-          <div>
-            <Label className="text-xs">Invoice Prefix</Label>
-            <Input value={prefix} onChange={e => setPrefix(e.target.value.toUpperCase())} placeholder="INV" className="h-9" />
-            <p className="text-[10px] text-muted-foreground mt-0.5">e.g. {prefix}-2026-001</p>
-          </div>
-        </div>
-
-        {/* Weekly: billing end day */}
-        {billingCadence === 'weekly' && (
-          <div>
-            <Label className="text-xs">Weekly Billing End Day</Label>
-            <Select value={weekEndDay} onValueChange={setWeekEndDay}>
-              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {WEEK_DAYS.map(d => (
-                  <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Weekly invoices default to Saturday billing close.</p>
-          </div>
-        )}
-
-        {/* Biweekly: anchor date */}
-        {billingCadence === 'biweekly' && (
-          <div>
-            <Label className="text-xs flex items-center gap-1.5">
-              <Calendar className="h-3 w-3" /> Biweekly Cycle Start Date
-            </Label>
-            <Input
-              type="date"
-              value={anchorDate}
-              onChange={e => setAnchorDate(e.target.value)}
-              className="h-9"
-            />
-            <p className="text-[10px] text-muted-foreground mt-0.5">The anchor date determines when each 2-week billing cycle starts.</p>
-          </div>
-        )}
 
         {/* Payment terms */}
         <div>
