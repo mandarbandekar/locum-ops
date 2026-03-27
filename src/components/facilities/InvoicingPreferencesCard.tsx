@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Receipt, Edit2, Save, X, AlertTriangle, CheckCircle2, Calendar } from 'lucide-react';
+import { Receipt, Edit2, Save, X, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Facility, BillingCadence } from '@/types';
 
