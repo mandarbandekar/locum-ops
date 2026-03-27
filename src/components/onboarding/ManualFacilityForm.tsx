@@ -20,8 +20,6 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
   const [address, setAddress] = useState('');
   const [weekdayRate, setWeekdayRate] = useState('');
   const [billingCadence, setBillingCadence] = useState<BillingCadence>('monthly');
-  const [billingWeekEndDay, setBillingWeekEndDay] = useState('saturday');
-  const [billingAnchorDate, setBillingAnchorDate] = useState('');
   const [autoGenerateInvoices, setAutoGenerateInvoices] = useState(true);
 
   const handleSubmit = async () => {
@@ -33,8 +31,8 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
       address: address.trim() || undefined,
       weekday_rate: weekdayRate ? parseFloat(weekdayRate) : undefined,
       billing_cadence: billingCadence,
-      billing_week_end_day: billingCadence === 'weekly' ? billingWeekEndDay : undefined,
-      billing_anchor_date: billingCadence === 'biweekly' && billingAnchorDate ? billingAnchorDate : undefined,
+      billing_week_end_day: undefined,
+      billing_anchor_date: undefined,
       auto_generate_invoices: autoGenerateInvoices && !!billingEmail.trim(),
     });
   };
@@ -114,35 +112,20 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="daily">Daily</SelectItem>
-                <SelectItem value="weekly">Weekly</SelectItem>
-                <SelectItem value="biweekly">Biweekly</SelectItem>
+                <SelectItem value="weekly">Weekly (Mon–Sun)</SelectItem>
                 <SelectItem value="monthly">Monthly</SelectItem>
               </SelectContent>
             </Select>
+            {billingCadence === 'weekly' && (
+              <p className="text-xs text-muted-foreground mt-1">Billing week runs Monday through Sunday. Draft generates on the morning of your last scheduled shift that week.</p>
+            )}
+            {billingCadence === 'monthly' && (
+              <p className="text-xs text-muted-foreground mt-1">Draft generates on the morning of your last scheduled shift of the month.</p>
+            )}
+            {billingCadence === 'daily' && (
+              <p className="text-xs text-muted-foreground mt-1">A draft invoice is generated each morning you have a scheduled shift.</p>
+            )}
           </div>
-
-          {billingCadence === 'weekly' && (
-            <div>
-              <Label>Week ends on</Label>
-              <Select value={billingWeekEndDay} onValueChange={setBillingWeekEndDay}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {['sunday','monday','tuesday','wednesday','thursday','friday','saturday'].map(d => (
-                    <SelectItem key={d} value={d}>{d.charAt(0).toUpperCase() + d.slice(1)}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground mt-1">Weekly invoices default to Saturday billing close.</p>
-            </div>
-          )}
-
-          {billingCadence === 'biweekly' && (
-            <div>
-              <Label>Cycle start date</Label>
-              <Input type="date" value={billingAnchorDate} onChange={e => setBillingAnchorDate(e.target.value)} />
-              <p className="text-xs text-muted-foreground mt-1">Anchor date for the biweekly billing cycle.</p>
-            </div>
-          )}
 
           <div className="flex items-center justify-between">
             <div>
