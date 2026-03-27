@@ -7,6 +7,7 @@ import {
   buildAutoInvoiceDraft,
   getGenerationTriggerDate,
   shouldGenerateDraft,
+  shouldGenerateDraftOnShiftAdd,
   getSentInvoiceShiftIds,
   canSendInvoice,
 } from '@/lib/invoiceAutoGeneration';
