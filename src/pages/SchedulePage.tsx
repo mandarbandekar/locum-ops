@@ -26,6 +26,7 @@ export default function SchedulePage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<'month' | 'week' | 'list' | 'confirmations' | 'sync'>('month');
   const [showAdd, setShowAdd] = useState(false);
+  const [addShiftDefaults, setAddShiftDefaults] = useState<{ date?: Date; startTime?: string }>({});
   const [editShift, setEditShift] = useState<string | null>(null);
   const [dragOverDay, setDragOverDay] = useState<string | null>(null);
   const [calendarFilters, setCalendarFilters] = useState<CalendarLayerFilters>({
