@@ -213,6 +213,12 @@ export function InvoicingPreferencesCard({ facility, onUpdate }: InvoicingPrefer
               <p className="text-[10px] text-muted-foreground mt-0.5">A draft invoice is generated each morning you have a scheduled shift.</p>
             )}
           </div>
+          <div>
+            <Label className="text-xs">Invoice Prefix</Label>
+            <Input value={prefix} onChange={e => setPrefix(e.target.value.toUpperCase())} placeholder="INV" className="h-9" />
+            <p className="text-[10px] text-muted-foreground mt-0.5">e.g. {prefix}-2026-001</p>
+          </div>
+        </div>
 
         {/* Payment terms */}
         <div>
