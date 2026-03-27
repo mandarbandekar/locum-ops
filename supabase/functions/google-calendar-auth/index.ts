@@ -415,9 +415,11 @@ Deno.serve(async (req) => {
             .upsert({
               user_id: userId,
               shift_id: shift.id,
-              google_event_id: googleEventId,
+              provider: 'google',
+              external_event_id: googleEventId,
               last_synced_hash: shiftHash,
               sync_status: 'synced',
+              last_synced_at: new Date().toISOString(),
             }, { onConflict: 'user_id,shift_id' });
 
           synced++;

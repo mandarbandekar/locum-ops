@@ -42,12 +42,13 @@ const DEFAULT_PREFS: CalendarSyncPreferences = {
 export type ExportRange = 'next_30' | 'this_month' | 'next_month' | 'custom';
 
 export function useCalendarSync() {
-  const { user, isDemo } = useAuth();
+  const { user, session, isDemo } = useAuth();
   const { shifts, facilities } = useData();
   const [connections, setConnections] = useState<CalendarConnection[]>([]);
   const [feedToken, setFeedToken] = useState<CalendarFeedToken | null>(null);
   const [preferences, setPreferences] = useState<CalendarSyncPreferences>(DEFAULT_PREFS);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
 
   const loadData = useCallback(async () => {
     if (!user || isDemo) { setLoading(false); return; }
@@ -78,7 +79,95 @@ export function useCalendarSync() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  // Listen for OAuth callback postMessage
+  useEffect(() => {
+    const handler = (event: MessageEvent) => {
+      if (event.data?.type === 'google-calendar-callback') {
+        if (event.data.status === 'success') {
+          toast.success('Google Calendar connected!');
+          loadData();
+        } else {
+          toast.error(event.data.message || 'Failed to connect Google Calendar');
+        }
+      }
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, [loadData]);
+
   const googleConnection = connections.find(c => c.provider === 'google' && c.status === 'active');
+
+  const connectGoogle = useCallback(async () => {
+    if (!session?.access_token) {
+      toast.error('Please sign in first');
+      return;
+    }
+    try {
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const res = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/google-calendar-auth?action=initiate`,
+        {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      const data = await res.json();
+      if (data.error) {
+        toast.error(data.error);
+        return;
+      }
+      if (data.url) {
+        // Open Google OAuth in a popup
+        const width = 500;
+        const height = 600;
+        const left = window.screenX + (window.outerWidth - width) / 2;
+        const top = window.screenY + (window.outerHeight - height) / 2;
+        window.open(
+          data.url,
+          'google-calendar-auth',
+          `width=${width},height=${height},left=${left},top=${top},scrollbars=yes`
+        );
+      }
+    } catch (err) {
+      toast.error('Failed to initiate Google Calendar connection');
+      console.error(err);
+    }
+  }, [session]);
+
+  const syncToGoogle = useCallback(async () => {
+    if (!session?.access_token || !googleConnection) return;
+    setSyncing(true);
+    try {
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const res = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/google-calendar-auth?action=sync`,
+        {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      const data = await res.json();
+      if (data.error) {
+        if (res.status === 401) {
+          toast.error('Google connection expired. Please reconnect.');
+          loadData();
+        } else {
+          toast.error(data.error);
+        }
+      } else {
+        toast.success(`Synced ${data.synced} shift${data.synced !== 1 ? 's' : ''} to Google Calendar`);
+      }
+    } catch (err) {
+      toast.error('Failed to sync shifts');
+      console.error(err);
+    } finally {
+      setSyncing(false);
+    }
+  }, [session, googleConnection, loadData]);
 
   const generateFeedToken = useCallback(async (): Promise<CalendarFeedToken | null> => {
     if (!user) return null;
@@ -208,6 +297,9 @@ export function useCalendarSync() {
     feedToken,
     preferences,
     loading,
+    syncing,
+    connectGoogle,
+    syncToGoogle,
     generateFeedToken,
     revokeFeedToken,
     regenerateFeedToken,
