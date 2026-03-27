@@ -1,86 +1,54 @@
 import type { Facility, Shift, Invoice, InvoiceLineItem, BillingCadence } from '@/types';
-import { format, startOfDay, endOfDay, startOfMonth, endOfMonth, startOfWeek, endOfWeek, subDays, addDays, isBefore, isAfter, isWithinInterval } from 'date-fns';
-
-const GRACE_HOURS = 2;
+import { format, startOfDay, endOfDay, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays } from 'date-fns';
 
 /**
  * Returns whether a shift is invoice-eligible:
- * - end time has passed (with grace window)
- * - not canceled
- * - not already invoiced (no line item pointing to it)
+ * - booked (not canceled)
+ * - not already invoiced
+ * Does NOT require shift end time to pass or manual completion.
  */
 export function isShiftInvoiceEligible(
   shift: Shift,
   invoicedShiftIds: Set<string>,
-  now: Date = new Date()
 ): boolean {
   if (shift.status === 'canceled') return false;
   if (invoicedShiftIds.has(shift.id)) return false;
-  const endTime = new Date(shift.end_datetime);
-  const graceEnd = new Date(endTime.getTime() + GRACE_HOURS * 60 * 60 * 1000);
-  return now >= graceEnd;
+  return true;
 }
 
 /**
  * Get the billing period boundaries for a given cadence.
- * Returns the most recently completed period.
+ * - Daily: the given reference date itself
+ * - Weekly: Monday–Sunday containing the reference date
+ * - Biweekly: unchanged legacy logic using anchor
+ * - Monthly: calendar month containing the reference date
  */
 export function getBillingPeriod(
   cadence: BillingCadence,
   referenceDate: Date,
-  weekEndDay: string = 'saturday',
+  _weekEndDay: string = 'saturday',
   anchorDate?: string | null
 ): { start: Date; end: Date } {
-  const dayMap: Record<string, number> = {
-    sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
-    thursday: 4, friday: 5, saturday: 6,
-  };
-
   switch (cadence) {
     case 'daily': {
-      const yesterday = subDays(startOfDay(referenceDate), 1);
-      return { start: startOfDay(yesterday), end: endOfDay(yesterday) };
+      return { start: startOfDay(referenceDate), end: endOfDay(referenceDate) };
     }
     case 'weekly': {
-      const weekEndDayNum = dayMap[weekEndDay] ?? 6;
-      // Find the most recent occurrence of weekEndDay before referenceDate
-      let end = new Date(referenceDate);
-      while (end.getDay() !== weekEndDayNum || end >= referenceDate) {
-        end = subDays(end, 1);
-      }
-      end = endOfDay(end);
-      const start = startOfDay(addDays(end, -6));
-      return { start, end };
+      // Monday–Sunday week
+      const weekStart = startOfWeek(referenceDate, { weekStartsOn: 1 }); // Monday
+      const weekEnd = endOfDay(addDays(weekStart, 6)); // Sunday EOD
+      return { start: weekStart, end: weekEnd };
     }
     case 'biweekly': {
-      if (!anchorDate) {
-        // Fallback: treat as 2-week periods from epoch
-        const anchor = new Date('2026-01-01');
-        const daysSinceAnchor = Math.floor((referenceDate.getTime() - anchor.getTime()) / 86400000);
-        const periodNum = Math.floor(daysSinceAnchor / 14);
-        const periodStart = addDays(anchor, periodNum * 14);
-        const periodEnd = endOfDay(addDays(periodStart, 13));
-        // Return previous completed period
-        if (referenceDate <= periodEnd) {
-          const prevStart = addDays(periodStart, -14);
-          return { start: startOfDay(prevStart), end: endOfDay(addDays(prevStart, 13)) };
-        }
-        return { start: startOfDay(periodStart), end: periodEnd };
-      }
-      const anchor = new Date(anchorDate);
+      const anchor = anchorDate ? new Date(anchorDate) : new Date('2026-01-01');
       const daysSinceAnchor = Math.floor((referenceDate.getTime() - anchor.getTime()) / 86400000);
       const periodNum = Math.floor(daysSinceAnchor / 14);
       const periodStart = addDays(anchor, periodNum * 14);
       const periodEnd = endOfDay(addDays(periodStart, 13));
-      if (referenceDate <= periodEnd) {
-        const prevStart = addDays(periodStart, -14);
-        return { start: startOfDay(prevStart), end: endOfDay(addDays(prevStart, 13)) };
-      }
       return { start: startOfDay(periodStart), end: periodEnd };
     }
     case 'monthly': {
-      const prevMonth = new Date(referenceDate.getFullYear(), referenceDate.getMonth() - 1, 1);
-      return { start: startOfMonth(prevMonth), end: endOfMonth(prevMonth) };
+      return { start: startOfMonth(referenceDate), end: endOfMonth(referenceDate) };
     }
     default:
       return { start: startOfMonth(referenceDate), end: endOfMonth(referenceDate) };
@@ -96,16 +64,47 @@ export function getEligibleShiftsForPeriod(
   periodStart: Date,
   periodEnd: Date,
   invoicedShiftIds: Set<string>,
-  now: Date = new Date()
 ): Shift[] {
   return allShifts
     .filter(s => {
       if (s.facility_id !== facilityId) return false;
-      if (!isShiftInvoiceEligible(s, invoicedShiftIds, now)) return false;
+      if (!isShiftInvoiceEligible(s, invoicedShiftIds)) return false;
       const shiftStart = new Date(s.start_datetime);
       return shiftStart >= periodStart && shiftStart <= periodEnd;
     })
     .sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime());
+}
+
+/**
+ * For Weekly / Monthly cadences, find the last scheduled shift date
+ * in the period. The draft should generate on the morning of that date.
+ * For Daily, returns the shift date itself.
+ */
+export function getGenerationTriggerDate(
+  eligibleShifts: Shift[],
+  cadence: BillingCadence,
+): Date | null {
+  if (eligibleShifts.length === 0) return null;
+  if (cadence === 'daily') {
+    return startOfDay(new Date(eligibleShifts[0].start_datetime));
+  }
+  // Weekly / Monthly / Biweekly: morning of last scheduled shift
+  const lastShift = eligibleShifts[eligibleShifts.length - 1];
+  return startOfDay(new Date(lastShift.start_datetime));
+}
+
+/**
+ * Determine if it's time to generate the draft invoice.
+ * Returns true if `now` is on or after the morning of the generation trigger date.
+ */
+export function shouldGenerateDraft(
+  eligibleShifts: Shift[],
+  cadence: BillingCadence,
+  now: Date = new Date(),
+): boolean {
+  const triggerDate = getGenerationTriggerDate(eligibleShifts, cadence);
+  if (!triggerDate) return false;
+  return now >= triggerDate;
 }
 
 /**
@@ -115,6 +114,26 @@ export function getInvoicedShiftIds(lineItems: InvoiceLineItem[]): Set<string> {
   const ids = new Set<string>();
   for (const li of lineItems) {
     if (li.shift_id) ids.add(li.shift_id);
+  }
+  return ids;
+}
+
+/**
+ * Get the set of shift IDs on SENT invoices only (for duplicate prevention).
+ * Shifts on draft invoices can still be updated.
+ */
+export function getSentInvoiceShiftIds(
+  lineItems: InvoiceLineItem[],
+  invoices: Invoice[],
+): Set<string> {
+  const sentInvoiceIds = new Set(
+    invoices.filter(i => i.status !== 'draft').map(i => i.id)
+  );
+  const ids = new Set<string>();
+  for (const li of lineItems) {
+    if (li.shift_id && sentInvoiceIds.has(li.invoice_id)) {
+      ids.add(li.shift_id);
+    }
   }
   return ids;
 }
@@ -167,5 +186,38 @@ export function buildAutoInvoiceDraft(
       billing_cadence: facility.billing_cadence,
     },
     lineItems,
+  };
+}
+
+/**
+ * Check if a draft invoice can be sent.
+ * Missing billing contact = warning only (draft still generated).
+ * Missing sender details = blocks sending.
+ */
+export function canSendInvoice(
+  facility: Facility,
+  senderProfile: { first_name: string; last_name: string; company_name: string; email: string | null },
+): { canSend: boolean; warnings: string[]; blockers: string[] } {
+  const warnings: string[] = [];
+  const blockers: string[] = [];
+
+  if (!facility.invoice_email_to?.trim()) {
+    warnings.push('Add a billing contact before sending this invoice.');
+  }
+
+  if (!senderProfile.first_name && !senderProfile.last_name) {
+    blockers.push('Sender name is required to send invoices.');
+  }
+  if (!senderProfile.company_name) {
+    blockers.push('Company name is required to send invoices.');
+  }
+  if (!senderProfile.email) {
+    blockers.push('Sender email is required to send invoices.');
+  }
+
+  return {
+    canSend: blockers.length === 0,
+    warnings,
+    blockers,
   };
 }
