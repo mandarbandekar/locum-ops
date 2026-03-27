@@ -1,5 +1,12 @@
 import type { Facility, Shift, Invoice, InvoiceLineItem, BillingCadence } from '@/types';
-import { format, startOfDay, endOfDay, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays } from 'date-fns';
+import { format, startOfDay, endOfDay, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, setHours } from 'date-fns';
+
+/**
+ * The hour (in local time) at which the early morning system run evaluates
+ * invoice generation eligibility. Draft invoices are created during this
+ * window — not at shift end time, and not via manual completion.
+ */
+export const SYSTEM_RUN_HOUR = 5; // 5 AM
 
 /**
  * Returns whether a shift is invoice-eligible:
@@ -76,9 +83,14 @@ export function getEligibleShiftsForPeriod(
 }
 
 /**
- * For Weekly / Monthly cadences, find the last scheduled shift date
- * in the period. The draft should generate on the morning of that date.
- * For Daily, returns the shift date itself.
+ * Returns the early-morning system-run timestamp on the appropriate generation day.
+ *
+ * - Daily: early morning of the shift date itself
+ * - Weekly: early morning of the last scheduled shift day in the Mon–Sun week
+ * - Monthly: early morning of the last scheduled shift day in the calendar month
+ * - Biweekly: early morning of the last scheduled shift day in the 14-day period
+ *
+ * "Early morning" = SYSTEM_RUN_HOUR (5 AM).
  */
 export function getGenerationTriggerDate(
   eligibleShifts: Shift[],
@@ -86,16 +98,19 @@ export function getGenerationTriggerDate(
 ): Date | null {
   if (eligibleShifts.length === 0) return null;
   if (cadence === 'daily') {
-    return startOfDay(new Date(eligibleShifts[0].start_datetime));
+    return setHours(startOfDay(new Date(eligibleShifts[0].start_datetime)), SYSTEM_RUN_HOUR);
   }
-  // Weekly / Monthly / Biweekly: morning of last scheduled shift
+  // Weekly / Monthly / Biweekly: early morning system run on the day of the last scheduled shift
   const lastShift = eligibleShifts[eligibleShifts.length - 1];
-  return startOfDay(new Date(lastShift.start_datetime));
+  return setHours(startOfDay(new Date(lastShift.start_datetime)), SYSTEM_RUN_HOUR);
 }
 
 /**
- * Determine if it's time to generate the draft invoice.
- * Returns true if `now` is on or after the morning of the generation trigger date.
+ * Determine if the early morning system run should generate the draft invoice.
+ * Returns true when `now` is on or after the SYSTEM_RUN_HOUR on the generation day.
+ *
+ * Draft invoices are generated automatically during the early morning system run —
+ * not at shift end time, and not via manual completion.
  */
 export function shouldGenerateDraft(
   eligibleShifts: Shift[],
