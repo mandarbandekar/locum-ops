@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CredentialsOverview } from '@/components/credentials/CredentialsOverview';
+
 import CredentialsList from '@/components/credentials/CredentialsList';
 import RenewalsTab from '@/components/credentials/RenewalsTab';
 import DocumentsVaultTab from '@/components/credentials/DocumentsVaultTab';
@@ -11,7 +11,7 @@ import { ShieldCheck, GraduationCap, RefreshCw } from 'lucide-react';
 
 export default function CredentialsPage() {
   const [primaryTab, setPrimaryTab] = useState<'credentials' | 'ce-tracker' | 'subscriptions'>('credentials');
-  const [credSubTab, setCredSubTab] = useState('overview');
+  const [credSubTab, setCredSubTab] = useState('credentials');
   const [dialogOpen, setDialogOpen] = useState(false);
 
   return (
@@ -57,7 +57,7 @@ export default function CredentialsPage() {
       {primaryTab === 'credentials' && (
         <Tabs value={credSubTab} onValueChange={setCredSubTab}>
           <TabsList className="w-full justify-start border-b rounded-none bg-transparent p-0 h-auto">
-            {['overview', 'credentials', 'renewals', 'documents'].map(t => (
+            {['credentials', 'renewals', 'documents'].map(t => (
               <TabsTrigger
                 key={t}
                 value={t}
@@ -67,13 +67,6 @@ export default function CredentialsPage() {
               </TabsTrigger>
             ))}
           </TabsList>
-
-          <TabsContent value="overview" className="mt-6">
-            <CredentialsOverview
-              onNavigate={setCredSubTab}
-              onAddCredential={() => setDialogOpen(true)}
-            />
-          </TabsContent>
 
           <TabsContent value="credentials" className="mt-6">
             <CredentialsList />
