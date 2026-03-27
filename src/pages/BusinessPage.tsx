@@ -22,27 +22,27 @@ export default function BusinessPage() {
         </div>
       </div>
 
-      <div className="flex gap-3 flex-wrap">
+      <div className="flex gap-2 sm:gap-3 flex-wrap">
         <button
           onClick={() => setSearchParams({ tab: 'reports' }, { replace: true })}
           className={`primary-tab-btn ${activeTab === 'reports' ? 'primary-tab-btn--active' : 'primary-tab-btn--inactive'}`}
         >
-          <BarChart3 className="h-5 w-5" />
-          Reports
+          <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5" />
+          <span className="text-xs sm:text-sm">Reports</span>
         </button>
         <button
           onClick={() => setSearchParams({ tab: 'tax-strategy' }, { replace: true })}
           className={`primary-tab-btn ${activeTab === 'tax-strategy' ? 'primary-tab-btn--active' : 'primary-tab-btn--inactive'}`}
         >
-          <Landmark className="h-5 w-5" />
-          Estimated Tax Tracker
+          <Landmark className="h-4 w-4 sm:h-5 sm:w-5" />
+          <span className="text-xs sm:text-sm"><span className="hidden sm:inline">Estimated </span>Tax Tracker</span>
         </button>
         <button
           onClick={() => setSearchParams({ tab: 'tax-advisor' }, { replace: true })}
           className={`primary-tab-btn ${activeTab === 'tax-advisor' ? 'primary-tab-btn--active' : 'primary-tab-btn--inactive'}`}
         >
-          <BrainCircuit className="h-5 w-5" />
-          Tax Planning Advisor
+          <BrainCircuit className="h-4 w-4 sm:h-5 sm:w-5" />
+          <span className="text-xs sm:text-sm">Tax <span className="hidden sm:inline">Planning </span>Advisor</span>
         </button>
       </div>
 

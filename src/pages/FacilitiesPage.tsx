@@ -71,15 +71,15 @@ export default function FacilitiesPage() {
 
   return (
     <div>
-      <div className="page-header">
+      <div className="page-header flex-col sm:flex-row gap-3">
         <h1 className="page-title">Practice Facilities</h1>
-        <Button size="sm" onClick={() => setShowAdd(true)}>
+        <Button size="sm" onClick={() => setShowAdd(true)} className="w-full sm:w-auto">
           <Plus className="mr-1 h-4 w-4" /> Add Practice Facility
         </Button>
       </div>
 
-      <div className="flex gap-3 mb-4">
-        <div className="relative flex-1 max-w-sm" ref={searchRef}>
+      <div className="flex flex-col sm:flex-row gap-3 mb-4">
+        <div className="relative flex-1 sm:max-w-sm" ref={searchRef}>
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search practice facilities or find address..."
@@ -128,8 +128,8 @@ export default function FacilitiesPage() {
         </Select>
       </div>
 
-      <div className="rounded-lg border bg-card overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="rounded-lg border bg-card overflow-x-auto -mx-3 sm:mx-0">
+        <table className="w-full text-sm min-w-[500px] sm:min-w-0">
           <thead>
             <tr className="border-b bg-muted/50">
               <th className="text-left p-3 font-medium text-muted-foreground">Name</th>

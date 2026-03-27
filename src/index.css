@@ -150,10 +150,10 @@
     @apply bg-card rounded-2xl border p-5 sm:p-6 shadow-soft transition-shadow hover:shadow-card;
   }
   .page-header {
-    @apply mb-6 sm:mb-8 flex items-start sm:items-center justify-between;
+    @apply mb-4 sm:mb-6 md:mb-8 flex items-start sm:items-center justify-between;
   }
   .page-title {
-    @apply text-[26px] sm:text-[34px] font-bold tracking-tight text-foreground;
+    @apply text-[22px] sm:text-[26px] md:text-[34px] font-bold tracking-tight text-foreground;
     font-family: 'Manrope', 'Inter', system-ui, sans-serif;
   }
   .page-subtitle {
@@ -188,7 +188,7 @@
 
   /* Primary tab selector – card-style nav on Business, Credentials, etc. */
   .primary-tab-btn {
-    @apply flex items-center gap-2.5 px-5 py-3.5 rounded-xl border-2 font-semibold text-sm transition-all flex-1 sm:flex-none;
+    @apply flex items-center gap-1.5 sm:gap-2.5 px-3 sm:px-5 py-2.5 sm:py-3.5 rounded-xl border-2 font-semibold text-xs sm:text-sm transition-all flex-1 sm:flex-none min-w-0;
   }
   .primary-tab-btn--active {
     @apply border-primary bg-primary/5 text-primary shadow-sm;

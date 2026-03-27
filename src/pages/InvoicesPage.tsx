@@ -80,19 +80,19 @@ export default function InvoicesPage() {
 
   return (
     <div>
-      <div className="page-header">
+      <div className="page-header flex-col sm:flex-row gap-3">
         <h1 className="page-title">Invoices</h1>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap w-full sm:w-auto">
           {selected.size > 0 && (
             <Button size="sm" variant="destructive" onClick={() => setShowDeleteConfirm(true)}>
               <Trash2 className="mr-1 h-4 w-4" /> Delete ({selected.size})
             </Button>
           )}
-          <Button size="sm" variant="outline" onClick={() => setShowBulkCreate(true)}>
-            <Layers className="mr-1 h-4 w-4" /> Bulk Invoice
+          <Button size="sm" variant="outline" onClick={() => setShowBulkCreate(true)} className="flex-1 sm:flex-none">
+            <Layers className="mr-1 h-4 w-4" /> Bulk
           </Button>
-          <Button size="sm" onClick={() => setShowCreate(true)}>
-            <Plus className="mr-1 h-4 w-4" /> Create Invoice
+          <Button size="sm" onClick={() => setShowCreate(true)} className="flex-1 sm:flex-none">
+            <Plus className="mr-1 h-4 w-4" /> Create
           </Button>
         </div>
       </div>
@@ -116,8 +116,8 @@ export default function InvoicesPage() {
         ))}
       </div>
 
-      <div className="rounded-xl border bg-card overflow-hidden">
-        <table className="w-full text-[13px]">
+      <div className="rounded-xl border bg-card overflow-x-auto -mx-3 sm:mx-0">
+        <table className="w-full text-[13px] min-w-[600px] sm:min-w-0">
           <thead>
             <tr className="border-b bg-muted/50">
               <th className="p-3 w-10">

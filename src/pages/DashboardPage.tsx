@@ -255,13 +255,13 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-4 h-full">
-      {/* Header */}
-      <div className="flex items-center justify-end">
+      {/* Header - hidden on mobile since greeting is in the card */}
+      <div className="hidden sm:flex items-center justify-end">
         <QuickActions />
       </div>
 
       {/* 3-Column Layout */}
-      <div className="grid gap-5 lg:grid-cols-12" style={{ minHeight: 'calc(100vh - 190px)' }}>
+      <div className="grid gap-4 sm:gap-5 grid-cols-1 lg:grid-cols-12 lg:min-h-[calc(100vh-190px)]">
         {/* Left: Upcoming Shifts */}
         <div className="lg:col-span-4">
           <UpcomingShiftsCard
@@ -287,6 +287,11 @@ export default function DashboardPage() {
         <div className="lg:col-span-4">
           <NeedsAttentionCard items={attentionItems} />
         </div>
+      </div>
+
+      {/* Mobile Quick Actions */}
+      <div className="sm:hidden">
+        <QuickActions />
       </div>
 
       {/* Work Readiness Strip */}
