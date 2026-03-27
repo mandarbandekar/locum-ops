@@ -210,7 +210,10 @@ export default function SchedulePage() {
           <Button size="sm" variant={view === 'confirmations' ? 'default' : 'outline'} onClick={() => setView('confirmations')} className="h-8 text-[12px] sm:text-[13px] px-2.5 sm:px-4">
             <CheckSquare className="mr-1 sm:mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" /> <span className="hidden sm:inline">Clinic </span>Confirm
           </Button>
-          {view !== 'confirmations' && (
+          <Button size="sm" variant={view === 'sync' ? 'default' : 'outline'} onClick={() => setView('sync')} className="h-8 text-[12px] sm:text-[13px] px-2.5 sm:px-4">
+            <RefreshCw className="mr-1 sm:mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" /> Sync
+          </Button>
+          {view !== 'confirmations' && view !== 'sync' && (
             <Button size="sm" onClick={() => setShowAdd(true)} className="h-8 text-[12px] sm:text-[13px] px-2.5 sm:px-4">
               <Plus className="mr-1 sm:mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" /> Add Shift
             </Button>
