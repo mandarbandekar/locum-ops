@@ -111,7 +111,20 @@ export function InvoiceOnboardingStepper({ onComplete }: Props) {
     setEditingFacilityId(null);
   };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
+    // Persist billing configs to each facility
+    for (const fac of activeFacilities) {
+      const config = billingConfigs[fac.id];
+      if (config) {
+        await updateFacility({
+          ...fac,
+          billing_cadence: config.billing_cadence,
+          billing_week_end_day: config.billing_week_end_day,
+          auto_generate_invoices: config.auto_generate,
+          billing_cycle_anchor_date: config.biweekly_anchor_date,
+        });
+      }
+    }
     toast.success('Invoice setup complete');
     onComplete();
   };

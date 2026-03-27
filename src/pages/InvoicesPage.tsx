@@ -250,14 +250,14 @@ function CreateInvoiceDialog({ open, onOpenChange }: { open: boolean; onOpenChan
 
   const handleCreate = async () => {
     if (!facilityId) return;
-    const completedShifts = shifts.filter(s =>
+    const eligibleShifts = shifts.filter(s =>
       s.facility_id === facilityId &&
-      s.status === 'completed' &&
+      s.status !== 'canceled' &&
       new Date(s.start_datetime) >= new Date(periodStart) &&
       new Date(s.end_datetime) <= new Date(periodEnd + 'T23:59:59')
     );
 
-    const lineItems = completedShifts.map(s => ({
+    const lineItems = eligibleShifts.map(s => ({
       shift_id: s.id,
       description: `Shift - ${format(new Date(s.start_datetime), 'MMM d, yyyy')} (${format(new Date(s.start_datetime), 'h:mm a')} - ${format(new Date(s.end_datetime), 'h:mm a')})`,
       service_date: new Date(s.start_datetime).toISOString().split('T')[0],
@@ -320,7 +320,7 @@ function CreateInvoiceDialog({ open, onOpenChange }: { open: boolean; onOpenChan
             <div><Label>Period Start</Label><Input type="date" value={periodStart} onChange={e => setPeriodStart(e.target.value)} /></div>
             <div><Label>Period End</Label><Input type="date" value={periodEnd} onChange={e => setPeriodEnd(e.target.value)} /></div>
           </div>
-          <p className="text-xs text-muted-foreground">Completed shifts in this range will be auto-added as line items.</p>
+          <p className="text-xs text-muted-foreground">Booked and completed shifts in this range will be auto-added as line items.</p>
           <Button onClick={handleCreate} className="w-full">Create Invoice</Button>
         </div>
       </DialogContent>

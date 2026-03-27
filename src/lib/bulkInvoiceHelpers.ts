@@ -40,9 +40,9 @@ export function getEligibleShiftsForBulkInvoice(
   const periodStartTime = periodStart.getTime();
   const periodEndTime = new Date(periodEnd.getTime() + 86400000 - 1).getTime(); // end of day
 
-  const completedFacilityShifts = allShifts.filter(s => {
+  const eligibleFacilityShifts = allShifts.filter(s => {
     if (s.facility_id !== facilityId) return false;
-    if (s.status !== 'completed') return false;
+    if (s.status === 'canceled') return false;
     const shiftStart = new Date(s.start_datetime).getTime();
     return shiftStart >= periodStartTime && shiftStart <= periodEndTime;
   }).sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime());
@@ -50,7 +50,7 @@ export function getEligibleShiftsForBulkInvoice(
   const eligible: Shift[] = [];
   const draftExcluded: Shift[] = [];
 
-  for (const s of completedFacilityShifts) {
+  for (const s of eligibleFacilityShifts) {
     if (shiftIdsOnNonDraft.has(s.id)) continue; // fully excluded
     if (shiftIdsOnDraft.has(s.id)) {
       draftExcluded.push(s);
