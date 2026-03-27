@@ -28,8 +28,6 @@ export function InvoicingPreferencesCard({ facility, onUpdate }: InvoicingPrefer
   const [autoGenerate, setAutoGenerate] = useState(facility.auto_generate_invoices ?? false);
   const [dueDays, setDueDays] = useState(facility.invoice_due_days ?? 15);
   const [prefix, setPrefix] = useState(facility.invoice_prefix || 'INV');
-  const [weekEndDay, setWeekEndDay] = useState(facility.billing_week_end_day || 'saturday');
-  const [anchorDate, setAnchorDate] = useState(facility.billing_cycle_anchor_date || '');
   const [nameTo, setNameTo] = useState(facility.invoice_name_to || '');
   const [emailTo, setEmailTo] = useState(facility.invoice_email_to || '');
   const [nameCc, setNameCc] = useState(facility.invoice_name_cc || '');
@@ -50,8 +48,8 @@ export function InvoicingPreferencesCard({ facility, onUpdate }: InvoicingPrefer
       auto_generate_invoices: finalAutoGenerate,
       invoice_due_days: dueDays,
       invoice_prefix: prefix,
-      billing_week_end_day: billingCadence === 'weekly' ? weekEndDay : facility.billing_week_end_day,
-      billing_cycle_anchor_date: billingCadence === 'biweekly' ? (anchorDate || null) : null,
+      billing_week_end_day: facility.billing_week_end_day,
+      billing_cycle_anchor_date: null,
       invoice_name_to: nameTo.trim(),
       invoice_email_to: emailTo.trim(),
       invoice_name_cc: nameCc.trim(),
@@ -68,8 +66,6 @@ export function InvoicingPreferencesCard({ facility, onUpdate }: InvoicingPrefer
     setAutoGenerate(facility.auto_generate_invoices ?? false);
     setDueDays(facility.invoice_due_days ?? 15);
     setPrefix(facility.invoice_prefix || 'INV');
-    setWeekEndDay(facility.billing_week_end_day || 'saturday');
-    setAnchorDate(facility.billing_cycle_anchor_date || '');
     setNameTo(facility.invoice_name_to || '');
     setEmailTo(facility.invoice_email_to || '');
     setNameCc(facility.invoice_name_cc || '');
