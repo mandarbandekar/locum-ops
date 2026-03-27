@@ -106,12 +106,12 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   };
 
   const formContent = (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       {/* Two-column layout: left = calendar, right = details */}
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col sm:flex-row gap-6">
         {/* Left column: Date picker */}
-        <div className="sm:w-[260px] shrink-0 flex flex-col">
-          <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
+        <div className="sm:w-[280px] shrink-0 flex flex-col">
+          <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <CalendarDays className="h-3.5 w-3.5" />
             {isMultiMode ? 'Select Dates' : 'Date'}
           </Label>
@@ -126,11 +126,11 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
                 />
               </div>
               {selectedDates.length > 0 ? (
-                <p className="text-xs text-muted-foreground mt-1.5">
+                <p className="text-xs text-muted-foreground mt-2">
                   {selectedDates.length} date{selectedDates.length !== 1 ? 's' : ''}: {selectedDates.sort((a, b) => a.getTime() - b.getTime()).map(d => format(d, 'MMM d')).join(', ')}
                 </p>
               ) : (
-                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1.5">Tap to select dates</p>
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">Tap to select dates</p>
               )}
             </div>
           ) : (
@@ -155,15 +155,15 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
         </div>
 
         {/* Right column: Shift details */}
-        <div className="flex-1 flex flex-col gap-2.5 min-w-0">
+        <div className="flex-1 flex flex-col gap-4 min-w-0">
           {/* Facility */}
           <div>
-            <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 flex items-center gap-1.5">
+            <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
               <Building2 className="h-3.5 w-3.5" />
               Facility
             </Label>
             <Select value={facilityId} onValueChange={handleFacilityChange}>
-              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {facilities.map(c => (
                   <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
@@ -174,22 +174,22 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
 
           {/* Time row */}
           <div>
-            <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 flex items-center gap-1.5">
+            <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
               <Clock className="h-3.5 w-3.5" />
               Time
             </Label>
-            <div className="grid grid-cols-2 gap-2">
-              <Input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="h-9" />
-              <Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="h-9" />
+            <div className="grid grid-cols-2 gap-3">
+              <Input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="h-10" />
+              <Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="h-10" />
             </div>
           </div>
 
           {/* Status + Rate row */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Status</Label>
+              <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Status</Label>
               <Select value={status} onValueChange={v => setStatus(v as ShiftStatus)}>
-                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="proposed">Proposed</SelectItem>
                   <SelectItem value="booked">Booked</SelectItem>
@@ -199,7 +199,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
               </Select>
             </div>
             <div>
-              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 flex items-center gap-1.5">
+              <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
                 <DollarSign className="h-3.5 w-3.5" />
                 Rate
               </Label>
@@ -208,7 +208,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
                   value={rateOptions.some(o => o.amount.toString() === rate) ? rate : 'custom'}
                   onValueChange={(v) => { if (v !== 'custom') setRate(v); }}
                 >
-                  <SelectTrigger className="h-9">
+                  <SelectTrigger className="h-10">
                     <SelectValue placeholder="Select rate" />
                   </SelectTrigger>
                   <SelectContent>
@@ -223,41 +223,41 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
               ) : (
                 <div className="relative">
                   <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                  <Input type="number" value={rate} onChange={e => setRate(e.target.value)} placeholder="0" min={0} className="pl-7 h-9" />
+                  <Input type="number" value={rate} onChange={e => setRate(e.target.value)} placeholder="0" min={0} className="pl-7 h-10" />
                 </div>
               )}
             </div>
           </div>
 
-          {/* Color + Notes toggle row */}
-          <div className="flex items-end gap-2">
-            <div className="flex-1">
-              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 flex items-center gap-1.5">
-                <Palette className="h-3.5 w-3.5" />
-                Color
-              </Label>
-              <div className="flex gap-1.5 flex-wrap">
+          {/* Color row */}
+          <div>
+            <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <Palette className="h-3.5 w-3.5" />
+              Color
+            </Label>
+            <div className="flex items-center gap-2">
+              <div className="flex gap-2 flex-wrap">
                 {SHIFT_COLORS.map(c => (
                   <button
                     key={c.value}
                     type="button"
                     onClick={() => setColor(c.value)}
                     className={cn(
-                      "w-6 h-6 rounded-full transition-all",
+                      "w-7 h-7 rounded-full transition-all",
                       COLOR_MAP[c.value],
-                      color === c.value ? 'ring-2 ring-foreground ring-offset-2 ring-offset-background scale-110' : 'opacity-60 hover:opacity-100 hover:scale-105'
+                      color === c.value ? 'ring-2 ring-foreground ring-offset-2 ring-offset-background scale-110' : 'opacity-50 hover:opacity-90 hover:scale-105'
                     )}
                     title={c.label}
                   />
                 ))}
               </div>
+              {!showNotes && (
+                <Button type="button" variant="ghost" size="sm" className="text-xs text-muted-foreground shrink-0 h-7 px-2 ml-auto" onClick={() => setShowNotes(true)}>
+                  <StickyNote className="h-3.5 w-3.5 mr-1" />
+                  Add note
+                </Button>
+              )}
             </div>
-            {!showNotes && (
-              <Button type="button" variant="ghost" size="sm" className="text-xs text-muted-foreground shrink-0 h-7 px-2" onClick={() => setShowNotes(true)}>
-                <StickyNote className="h-3.5 w-3.5 mr-1" />
-                Add note
-              </Button>
-            )}
           </div>
 
           {/* Notes (collapsible) */}
@@ -269,7 +269,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
 
       {/* Conflict warning */}
       {conflicts.length > 0 && (
-        <div className="flex items-start gap-2 p-2.5 rounded-lg bg-destructive/10 text-destructive text-sm">
+        <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
           <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
           <div>
             <p className="font-medium text-xs">Scheduling conflict!</p>
@@ -284,13 +284,13 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
 
       {/* Actions */}
       <div className="flex gap-2">
-        <Button type="submit" className="flex-1" disabled={selectedDates.length === 0}>
+        <Button type="submit" className="flex-1 h-11" disabled={selectedDates.length === 0}>
           {existing ? 'Update Shift' : selectedDates.length > 1 ? `Add ${selectedDates.length} Shifts` : 'Add Shift'}
         </Button>
         {existing && onDelete && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button type="button" variant="destructive" size="icon"><Trash2 className="h-4 w-4" /></Button>
+              <Button type="button" variant="destructive" size="icon" className="h-11 w-11"><Trash2 className="h-4 w-4" /></Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
@@ -312,7 +312,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[620px] overflow-hidden">
+      <DialogContent className="max-w-[680px] overflow-hidden">
         <DialogHeader><DialogTitle>{existing ? 'Edit Shift' : 'Add Shift'}</DialogTitle></DialogHeader>
         {formContent}
       </DialogContent>
