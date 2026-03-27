@@ -25,6 +25,8 @@ interface ShiftFormDialogProps {
   onSave: (s: any) => void;
   onDelete?: (id: string) => void;
   embedded?: boolean;
+  defaultDate?: Date;
+  defaultStartTime?: string;
 }
 
 function buildRateOptions(terms: TermsSnapshot[], facilityId: string): RateEntry[] {
@@ -33,13 +35,13 @@ function buildRateOptions(terms: TermsSnapshot[], facilityId: string): RateEntry
   return termsToRates(facilityTerms).filter(r => r.amount > 0);
 }
 
-export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms, existing, onSave, onDelete, embedded }: ShiftFormDialogProps) {
+export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms, existing, onSave, onDelete, embedded, defaultDate, defaultStartTime }: ShiftFormDialogProps) {
   const [facilityId, setFacilityId] = useState(existing?.facility_id || facilities[0]?.id || '');
   const [selectedDates, setSelectedDates] = useState<Date[]>(
-    existing ? [new Date(existing.start_datetime)] : []
+    existing ? [new Date(existing.start_datetime)] : defaultDate ? [defaultDate] : []
   );
-  const [startTime, setStartTime] = useState(existing ? format(new Date(existing.start_datetime), 'HH:mm') : '08:00');
-  const [endTime, setEndTime] = useState(existing ? format(new Date(existing.end_datetime), 'HH:mm') : '18:00');
+  const [startTime, setStartTime] = useState(existing ? format(new Date(existing.start_datetime), 'HH:mm') : defaultStartTime || '08:00');
+  const [endTime, setEndTime] = useState(existing ? format(new Date(existing.end_datetime), 'HH:mm') : defaultStartTime ? format(new Date(2026, 0, 1, parseInt(defaultStartTime.split(':')[0]) + 1, parseInt(defaultStartTime.split(':')[1] || '0')), 'HH:mm') : '18:00');
   const [status, setStatus] = useState<ShiftStatus>(existing?.status || 'proposed');
   const [rate, setRate] = useState(existing?.rate_applied?.toString() || '');
   const [notes, setNotes] = useState(existing?.notes || '');

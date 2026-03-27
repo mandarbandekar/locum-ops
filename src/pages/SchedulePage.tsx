@@ -26,6 +26,7 @@ export default function SchedulePage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<'month' | 'week' | 'list' | 'confirmations' | 'sync'>('month');
   const [showAdd, setShowAdd] = useState(false);
+  const [addShiftDefaults, setAddShiftDefaults] = useState<{ date?: Date; startTime?: string }>({});
   const [editShift, setEditShift] = useState<string | null>(null);
   const [dragOverDay, setDragOverDay] = useState<string | null>(null);
   const [calendarFilters, setCalendarFilters] = useState<CalendarLayerFilters>({
@@ -150,6 +151,12 @@ export default function SchedulePage() {
     setDragOverDay(null);
   };
 
+  const openAddShiftAt = useCallback((date: Date, hour?: number) => {
+    const startTime = hour !== undefined ? `${String(Math.floor(hour)).padStart(2, '0')}:${String(Math.round((hour % 1) * 60)).padStart(2, '0')}` : undefined;
+    setAddShiftDefaults({ date, startTime });
+    setShowAdd(true);
+  }, []);
+
   const renderDayCell = (day: Date, minHeight: string) => {
     const dayShifts = calendarFilters.shifts ? shifts.filter(s => isSameDay(new Date(s.start_datetime), day)) : [];
     const isToday = isSameDay(day, new Date());
@@ -161,10 +168,11 @@ export default function SchedulePage() {
     return (
       <div
         key={dayKey}
-        className={`${minHeight} border-t border-r p-1 transition-colors ${isToday ? 'bg-primary/5' : ''} ${isDragOver ? 'bg-primary/10 ring-2 ring-inset ring-primary/30' : ''}`}
+        className={`${minHeight} border-t border-r p-1 transition-colors cursor-pointer ${isToday ? 'bg-primary/5' : ''} ${isDragOver ? 'bg-primary/10 ring-2 ring-inset ring-primary/30' : ''}`}
         onDragOver={(e) => onDragOver(e, dayKey)}
         onDragLeave={onDragLeave}
         onDrop={(e) => onDrop(e, day)}
+        onClick={() => openAddShiftAt(day)}
       >
         <div className={`text-xs font-medium mb-1 ${isToday ? 'text-primary' : 'text-muted-foreground'}`}>
           {format(day, 'd')}
@@ -182,7 +190,7 @@ export default function SchedulePage() {
               draggable
               onDragStart={(e) => onDragStart(e, s.id)}
               className={`text-xs p-1 rounded mb-0.5 cursor-grab active:cursor-grabbing truncate ${colorDef.bg} ${colorDef.text} hover:opacity-80 transition-opacity select-none`}
-              onClick={() => setEditShift(s.id)}
+              onClick={(e) => { e.stopPropagation(); setEditShift(s.id); }}
               title={`${getFacilityName(s.facility_id)} — drag to reschedule`}
             >
               {format(new Date(s.start_datetime), 'ha')} {getFacilityName(s.facility_id).split(' ')[0]}
@@ -270,6 +278,7 @@ export default function SchedulePage() {
               getFacilityName={getFacilityName}
               onEditShift={setEditShift}
               onDropOnTime={handleDropOnTime}
+              onCellClick={openAddShiftAt}
               calendarFilters={{ credentials: calendarFilters.credentials, subscriptions: calendarFilters.subscriptions }}
               getEventsForDay={getEventsForDay}
             />
@@ -323,11 +332,13 @@ export default function SchedulePage() {
 
       <ShiftFormDialog
         open={showAdd}
-        onOpenChange={setShowAdd}
+        onOpenChange={(o) => { setShowAdd(o); if (!o) setAddShiftDefaults({}); }}
         facilities={facilities}
         shifts={shifts}
         terms={terms}
         onSave={handleSaveShift}
+        defaultDate={addShiftDefaults.date}
+        defaultStartTime={addShiftDefaults.startTime}
       />
 
       {editShift && (
