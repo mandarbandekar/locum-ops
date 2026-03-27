@@ -50,8 +50,6 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
   const [schedulingContactName, setSchedulingContactName] = useState('');
   const [schedulingContactEmail, setSchedulingContactEmail] = useState('');
   const [billingCadence, setBillingCadence] = useState<BillingCadence>('monthly');
-  const [billingWeekEndDay, setBillingWeekEndDay] = useState('saturday');
-  const [billingAnchorDate, setBillingAnchorDate] = useState('');
   const [autoGenerateInvoices, setAutoGenerateInvoices] = useState(true);
   const totalSteps = STEPS.length;
   const progress = ((step + 1) / totalSteps) * 100;
@@ -68,7 +66,7 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
     setClinicAccess(''); setInvoicePrefix(''); setInvoiceDueDays(15);
     setInvoiceNameTo(''); setInvoiceEmailTo(''); setInvoiceNameCc(''); setInvoiceEmailCc(''); setInvoiceNameBcc(''); setInvoiceEmailBcc('');
     setSchedulingContactName(''); setSchedulingContactEmail('');
-    setBillingCadence('monthly'); setBillingWeekEndDay('saturday'); setBillingAnchorDate(''); setAutoGenerateInvoices(true);
+    setBillingCadence('monthly'); setAutoGenerateInvoices(true);
   };
 
   const handleSubmit = async () => {
@@ -98,8 +96,8 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
         invoice_name_bcc: invoiceNameBcc.trim(),
         invoice_email_bcc: invoiceEmailBcc.trim(),
         billing_cadence: billingCadence,
-        billing_cycle_anchor_date: billingCadence === 'biweekly' && billingAnchorDate ? billingAnchorDate : null,
-        billing_week_end_day: billingCadence === 'weekly' ? billingWeekEndDay : 'saturday',
+        billing_cycle_anchor_date: null,
+        billing_week_end_day: 'saturday',
         auto_generate_invoices: autoGenerateInvoices && !!(invoiceEmailTo.trim()),
       });
 
@@ -288,35 +286,20 @@ export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpe
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="daily">Daily</SelectItem>
-                    <SelectItem value="weekly">Weekly</SelectItem>
-                    <SelectItem value="biweekly">Biweekly</SelectItem>
+                    <SelectItem value="weekly">Weekly (Mon–Sun)</SelectItem>
                     <SelectItem value="monthly">Monthly</SelectItem>
                   </SelectContent>
                 </Select>
+                {billingCadence === 'weekly' && (
+                  <p className="text-xs text-muted-foreground">Billing week runs Monday through Sunday. Draft generates on the morning of your last scheduled shift that week.</p>
+                )}
+                {billingCadence === 'monthly' && (
+                  <p className="text-xs text-muted-foreground">Draft generates on the morning of your last scheduled shift of the month.</p>
+                )}
+                {billingCadence === 'daily' && (
+                  <p className="text-xs text-muted-foreground">A draft invoice is generated each morning you have a scheduled shift.</p>
+                )}
               </div>
-
-              {billingCadence === 'weekly' && (
-                <div className="space-y-2">
-                  <Label>Week ends on</Label>
-                  <Select value={billingWeekEndDay} onValueChange={setBillingWeekEndDay}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {['sunday','monday','tuesday','wednesday','thursday','friday','saturday'].map(d => (
-                        <SelectItem key={d} value={d}>{d.charAt(0).toUpperCase() + d.slice(1)}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">Weekly invoices default to Saturday billing close.</p>
-                </div>
-              )}
-
-              {billingCadence === 'biweekly' && (
-                <div className="space-y-2">
-                  <Label>Cycle start date</Label>
-                  <Input type="date" value={billingAnchorDate} onChange={e => setBillingAnchorDate(e.target.value)} />
-                  <p className="text-xs text-muted-foreground">Anchor date for the biweekly billing cycle.</p>
-                </div>
-              )}
 
               <div className="flex items-center justify-between py-2">
                 <div>
