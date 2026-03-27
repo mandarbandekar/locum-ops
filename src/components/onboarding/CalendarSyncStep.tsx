@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Globe, Smartphone, Download, ArrowRight, Calendar } from 'lucide-react';
 import { useCalendarSync } from '@/hooks/useCalendarSync';
 import { useState } from 'react';
@@ -50,32 +51,6 @@ export function CalendarSyncStep({ onContinue }: Props) {
       </div>
 
       <div className="space-y-3">
-        {/* Google Calendar */}
-        <Card
-          className={`cursor-pointer transition-all hover:border-primary/40 ${
-            selectedOption === 'google' ? 'border-primary bg-primary/[0.03]' : 'border-border'
-          }`}
-          onClick={() => {
-            setSelectedOption('google');
-            connectGoogle();
-          }}
-        >
-          <CardContent className="py-4 px-4 flex items-start gap-3">
-            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-              <Globe className="h-5 w-5 text-primary" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm text-foreground">Connect Google Calendar</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Sync booked shifts automatically</p>
-              {selectedOption === 'google' && (
-                <p className="text-xs text-primary mt-2 flex items-center gap-1">
-                  <Check className="h-3.5 w-3.5" /> Opening Google sign-in…
-                </p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Apple / iCal */}
         <Card
           className={`cursor-pointer transition-all hover:border-primary/40 ${
@@ -107,7 +82,7 @@ export function CalendarSyncStep({ onContinue }: Props) {
           </CardContent>
         </Card>
 
-        {/* Export */}
+        {/* Download Calendar File */}
         <Card
           className={`cursor-pointer transition-all hover:border-primary/40 ${
             selectedOption === 'export' ? 'border-primary bg-primary/[0.03]' : 'border-border'
@@ -119,13 +94,29 @@ export function CalendarSyncStep({ onContinue }: Props) {
               <Download className="h-5 w-5 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm text-foreground">Export .ics</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Download a calendar file to import anywhere</p>
+              <p className="font-semibold text-sm text-foreground">Download Calendar File</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Download a .ics file for Google Calendar or any other calendar app</p>
               {selectedOption === 'export' && (
                 <p className="text-xs text-primary mt-2 flex items-center gap-1">
                   <Check className="h-3.5 w-3.5" /> File downloaded
                 </p>
               )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Google Calendar - Coming Soon */}
+        <Card className="opacity-60 cursor-default">
+          <CardContent className="py-4 px-4 flex items-start gap-3">
+            <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center shrink-0 mt-0.5">
+              <Globe className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <p className="font-semibold text-sm text-muted-foreground">Google Calendar Sync</p>
+                <Badge variant="outline" className="text-[10px] text-muted-foreground">Coming Soon</Badge>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">Direct sync with Google Calendar is coming soon</p>
             </div>
           </CardContent>
         </Card>

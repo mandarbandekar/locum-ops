@@ -47,50 +47,6 @@ export function CalendarSyncPanel() {
 
   return (
     <div className="grid gap-4 sm:gap-6 max-w-2xl">
-      {/* Google Calendar */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Globe className="h-4 w-4 text-primary" />
-              <CardTitle className="text-sm">Google Calendar</CardTitle>
-            </div>
-            {googleConnection ? (
-              <Badge variant="secondary" className="text-[10px]">Connected</Badge>
-            ) : (
-              <Badge variant="outline" className="text-[10px] text-muted-foreground">Not connected</Badge>
-            )}
-          </div>
-          <CardDescription className="text-xs">Sync booked shifts automatically to Google Calendar.</CardDescription>
-        </CardHeader>
-        <CardContent className="pt-0">
-          {googleConnection ? (
-            <div className="space-y-2">
-              <div className="text-xs">
-                <span className="text-muted-foreground">Account:</span>{' '}
-                <span className="font-medium">{googleConnection.google_email || 'Connected'}</span>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="h-7 text-xs" onClick={syncToGoogle} disabled={syncing}>
-                  {syncing ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <RefreshCw className="h-3 w-3 mr-1" />}
-                  {syncing ? 'Syncing…' : 'Sync Now'}
-                </Button>
-                <Button variant="outline" size="sm" className="h-7 text-xs" onClick={disconnectGoogle}>
-                  <Link2Off className="h-3 w-3 mr-1" /> Disconnect
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-3">
-              <p className="text-xs text-muted-foreground mb-2">Connect your Google account to automatically sync booked shifts.</p>
-              <Button size="sm" className="h-7 text-xs" onClick={connectGoogle}>
-                <Globe className="h-3 w-3 mr-1" /> Connect Google Calendar
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
       {/* Apple / iCal Subscription */}
       <Card>
         <CardHeader className="pb-3">
@@ -132,14 +88,14 @@ export function CalendarSyncPanel() {
         </CardContent>
       </Card>
 
-      {/* Export */}
+      {/* Download Calendar File */}
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
             <Download className="h-4 w-4 text-primary" />
-            <CardTitle className="text-sm">Export .ics</CardTitle>
+            <CardTitle className="text-sm">Download Calendar File</CardTitle>
           </div>
-          <CardDescription className="text-xs">Download a calendar file to import anywhere.</CardDescription>
+          <CardDescription className="text-xs">Download a .ics file to import into Google Calendar or any other calendar app of your choice.</CardDescription>
         </CardHeader>
         <CardContent className="pt-0">
           <div className="flex items-end gap-3">
@@ -155,8 +111,27 @@ export function CalendarSyncPanel() {
               </Select>
             </div>
             <Button size="sm" className="h-8 text-xs" onClick={() => exportIcs(exportRange)}>
-              <Download className="h-3 w-3 mr-1" /> Export
+              <Download className="h-3 w-3 mr-1" /> Download
             </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Google Calendar - Coming Soon */}
+      <Card className="opacity-70">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Globe className="h-4 w-4 text-primary" />
+              <CardTitle className="text-sm">Google Calendar</CardTitle>
+            </div>
+            <Badge variant="outline" className="text-[10px] text-muted-foreground">Coming Soon</Badge>
+          </div>
+          <CardDescription className="text-xs">Direct two-way sync with Google Calendar is coming soon.</CardDescription>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="text-center py-3">
+            <p className="text-xs text-muted-foreground">Use the Download Calendar File option above to import your shifts into Google Calendar.</p>
           </div>
         </CardContent>
       </Card>
