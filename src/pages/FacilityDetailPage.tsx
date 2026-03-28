@@ -419,15 +419,15 @@ function ClinicAccessTab({ facility, onUpdate }: { facility: any; onUpdate: any 
 
 // ─── Shifts Tab ────────────────────────────────────────────
 
-function ShiftsTab({ shifts, allShifts, facilityId, facilities, terms, onAdd, onUpdate, onDelete }: { shifts: any[]; allShifts: any[]; facilityId: string; facilities: any[]; terms: any[]; onAdd: (s: any) => void; onUpdate: (s: any) => void; onDelete: (id: string) => void }) {
+function ShiftsTab({ shifts, allShifts, facilityId, facilities, terms, onAdd, onUpdate, onDelete }: { shifts: any[]; allShifts: any[]; facilityId: string; facilities: any[]; terms: any[]; onAdd: (s: any) => Promise<any>; onUpdate: (s: any) => Promise<void>; onDelete: (id: string) => Promise<void> }) {
   const [showAdd, setShowAdd] = useState(false);
   const [editShift, setEditShift] = useState<any>(null);
 
-  const handleSave = (s: any) => {
+  const handleSave = async (s: any) => {
     if (s.id) {
-      onUpdate(s);
+      await onUpdate(s);
     } else {
-      onAdd(s);
+      await onAdd(s);
     }
     toast.success(s.id ? 'Shift updated' : 'Shift added');
   };

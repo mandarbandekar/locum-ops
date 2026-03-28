@@ -10,6 +10,7 @@ import {
   getEligibleShiftsForPeriod,
   getSentInvoiceShiftIds,
   buildAutoInvoiceDraft,
+  shouldGenerateDraftOnShiftAdd,
 } from '@/lib/invoiceAutoGeneration';
 import type { BillingCadence } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -263,30 +264,59 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
       if (facility && facility.auto_generate_invoices && shift.status !== 'canceled') {
         const cadence = facility.billing_cadence as BillingCadence;
         const shiftStart = new Date(shift.start_datetime);
-        // Use the SHIFT date to determine billing period, not today's date
-        // This ensures shifts added for any week/month get grouped correctly
-        const period = getBillingPeriod(cadence, shiftStart);
+        const period = getBillingPeriod(
+          cadence,
+          shiftStart,
+          facility.billing_week_end_day,
+          facility.billing_cycle_anchor_date,
+        );
 
-        const sentIds = getSentInvoiceShiftIds(lineItems, invoices);
-        const allShiftsWithNew = [...shifts, shift];
-        const eligible = getEligibleShiftsForPeriod(allShiftsWithNew, facility.id, period.start, period.end, sentIds);
+        const { data: invoiceRows, error: invoiceRowsError } = await db('invoices')
+          .select('*')
+          .eq('facility_id', facility.id)
+          .eq('user_id', user!.id);
+        if (invoiceRowsError) throw invoiceRowsError;
+
+        const facilityInvoices = ((invoiceRows as any[]) || []).map(stripDbFields) as Invoice[];
+        const invoiceIds = facilityInvoices.map(inv => inv.id);
+
+        let facilityLineItems: InvoiceLineItem[] = [];
+        if (invoiceIds.length > 0) {
+          const { data: lineItemRows, error: lineItemRowsError } = await db('invoice_line_items')
+            .select('*')
+            .in('invoice_id', invoiceIds);
+          if (lineItemRowsError) throw lineItemRowsError;
+          facilityLineItems = ((lineItemRows as any[]) || []).map(stripDbFields) as InvoiceLineItem[];
+        }
+
+        const { data: periodShiftRows, error: periodShiftRowsError } = await db('shifts')
+          .select('*')
+          .eq('facility_id', facility.id)
+          .eq('user_id', user!.id)
+          .neq('status', 'canceled')
+          .gte('start_datetime', period.start.toISOString())
+          .lte('start_datetime', period.end.toISOString())
+          .order('start_datetime', { ascending: true });
+        if (periodShiftRowsError) throw periodShiftRowsError;
+
+        const sentIds = getSentInvoiceShiftIds(facilityLineItems, facilityInvoices);
+        const eligible = getEligibleShiftsForPeriod(
+          ((periodShiftRows as any[]) || []).map(stripDbFields) as Shift[],
+          facility.id,
+          period.start,
+          period.end,
+          sentIds,
+        );
 
         if (eligible.length > 0) {
-          // Query DB directly for existing draft to avoid stale closure issues
-          // when multiple shifts are added quickly in sequence
           const periodStartStr = period.start.toISOString().slice(0, 10);
           const periodEndStr = period.end.toISOString().slice(0, 10);
-          const { data: draftRows } = await db('invoices')
-            .select('*')
-            .eq('facility_id', facility.id)
-            .eq('user_id', user!.id)
-            .eq('status', 'draft')
-            .eq('generation_type', 'automatic');
-
-          const existingDraft = ((draftRows as any[]) || []).find((inv) =>
+          const existingDraft = facilityInvoices.find((inv) =>
+            inv.status === 'draft' &&
+            inv.generation_type === 'automatic' &&
             new Date(inv.period_start).toISOString().slice(0, 10) === periodStartStr &&
             new Date(inv.period_end).toISOString().slice(0, 10) === periodEndStr
-          ) as Invoice | undefined;
+          );
 
           if (existingDraft) {
             // Update existing draft: rebuild line items
@@ -296,23 +326,26 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
             const total = newItems.reduce((sum, li) => sum + li.line_total, 0);
 
             // Delete old line items for this draft
-            await db('invoice_line_items').delete().eq('invoice_id', existingDraft.id);
+            const { error: deleteLineItemsError } = await db('invoice_line_items').delete().eq('invoice_id', existingDraft.id);
+            if (deleteLineItemsError) throw deleteLineItemsError;
             setLineItems(prev => prev.filter(li => li.invoice_id !== existingDraft.id));
 
             // Insert new line items
             const toInsert = newItems.map(item => ({ user_id: user!.id, invoice_id: existingDraft.id, ...item }));
-            const { data: liData } = await db('invoice_line_items').insert(toInsert).select();
+            const { data: liData, error: insertLineItemsError } = await db('invoice_line_items').insert(toInsert).select();
+            if (insertLineItemsError) throw insertLineItemsError;
             if (liData) {
               setLineItems(prev => [...prev, ...(liData).map(stripDbFields) as InvoiceLineItem[]]);
             }
 
             // Update invoice total
             const updatedInv = { ...existingDraft, total_amount: total, balance_due: total };
-            await db('invoices').update({ total_amount: total, balance_due: total }).eq('id', existingDraft.id);
+            const { error: updateDraftError } = await db('invoices').update({ total_amount: total, balance_due: total }).eq('id', existingDraft.id);
+            if (updateDraftError) throw updateDraftError;
             setInvoices(prev => prev.map(i => i.id === existingDraft.id ? updatedInv : i));
 
             toast.info(`Draft invoice updated for ${facility.name}`);
-          } else {
+          } else if (shouldGenerateDraftOnShiftAdd(eligible, cadence, period.start, period.end, new Date())) {
             // Create new draft
             const invoiceNumber = generateInvoiceNumber(invoices, facility.invoice_prefix);
             const { invoice: invData, lineItems: newItems } = buildAutoInvoiceDraft(
@@ -327,7 +360,8 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
 
               if (newItems.length > 0) {
                 const toInsert = newItems.map(item => ({ user_id: user!.id, invoice_id: invoice.id, ...item }));
-                const { data: liData } = await db('invoice_line_items').insert(toInsert).select();
+                const { data: liData, error: liErr } = await db('invoice_line_items').insert(toInsert).select();
+                if (liErr) throw liErr;
                 if (liData) {
                   setLineItems(prev => [...prev, ...(liData).map(stripDbFields) as InvoiceLineItem[]]);
                 }

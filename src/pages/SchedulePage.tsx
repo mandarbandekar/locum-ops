@@ -65,21 +65,21 @@ export default function SchedulePage() {
 
   const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
 
-  const handleSaveShift = (s: any) => {
+  const handleSaveShift = async (s: any) => {
     if (s.id) {
-      updateShift(s as any);
+      await updateShift(s as any);
       const facility = facilities.find(f => f.id === s.facility_id);
       if (facility && facility.status !== 'active') {
-        updateFacility({ ...facility, status: 'active' });
+        await updateFacility({ ...facility, status: 'active' });
         toast.success(`Shift updated — "${facility.name}" has been set to Active`);
       } else {
         toast.success('Shift updated');
       }
     } else {
-      addShift(s);
+      await addShift(s);
       const facility = facilities.find(f => f.id === s.facility_id);
       if (facility && facility.status !== 'active') {
-        updateFacility({ ...facility, status: 'active' });
+        await updateFacility({ ...facility, status: 'active' });
         toast.success(`Shift added — "${facility.name}" has been set to Active`);
       } else {
         toast.success('Shift added');
