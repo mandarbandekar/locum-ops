@@ -283,7 +283,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
             .eq('status', 'draft')
             .eq('generation_type', 'automatic');
 
-          const existingDraft = (draftRows || []).find((inv: any) =>
+          const existingDraft = ((draftRows as any[]) || []).find((inv) =>
             new Date(inv.period_start).toISOString().slice(0, 10) === periodStartStr &&
             new Date(inv.period_end).toISOString().slice(0, 10) === periodEndStr
           ) as Invoice | undefined;
