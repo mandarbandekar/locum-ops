@@ -97,10 +97,16 @@ export default function SchedulePage() {
     newStart.setHours(oldStart.getHours(), oldStart.getMinutes(), oldStart.getSeconds(), 0);
     const newEnd = new Date(newStart.getTime() + duration);
     if (newStart.getTime() === oldStart.getTime()) return;
+    // Check conflicts against current shifts excluding the one being moved and canceled ones
+    const otherShifts = shifts.filter(s => s.id !== shiftId && s.status !== 'canceled');
+    const conflicts = detectShiftConflicts(otherShifts, { start_datetime: newStart.toISOString(), end_datetime: newEnd.toISOString() });
+    if (conflicts.length > 0) {
+      toast.warning(`Scheduling conflict on ${format(newStart, 'EEE, MMM d')} with ${getFacilityName(conflicts[0].facility_id)}`);
+    }
     updateShift({ ...shift, start_datetime: newStart.toISOString(), end_datetime: newEnd.toISOString() } as any);
     toast.success(`Shift moved to ${format(newStart, 'EEE, MMM d')}`);
     setDragOverDay(null);
-  }, [shifts, updateShift]);
+  }, [shifts, updateShift, getFacilityName]);
 
   const handleDropOnTime = useCallback((shiftId: string, targetDate: Date, targetHour: number) => {
     const shift = shifts.find(s => s.id === shiftId);
