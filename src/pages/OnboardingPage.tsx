@@ -482,8 +482,8 @@ export default function OnboardingPage() {
               facilities={facilities}
               shifts={shifts}
               terms={terms}
-              onSave={(shift) => {
-                addShift(shift);
+              onSave={async (shift) => {
+                await addShift(shift);
               }}
             />
           </div>

@@ -22,7 +22,7 @@ interface ShiftFormDialogProps {
   shifts: any[];
   terms: TermsSnapshot[];
   existing?: any;
-  onSave: (s: any) => void;
+   onSave: (s: any) => void | Promise<void>;
   onDelete?: (id: string) => void;
   embedded?: boolean;
   defaultDate?: Date;
@@ -58,6 +58,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   const [notes, setNotes] = useState(existing?.notes || '');
   const [color, setColor] = useState<ShiftColor>(existing?.color || 'blue');
   const [showNotes, setShowNotes] = useState(!!existing?.notes);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isMultiMode = !existing;
 
@@ -80,29 +81,37 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     [shifts, startDt, endDt, existing?.id]
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (existing) {
-      const date = format(selectedDates[0] || new Date(), 'yyyy-MM-dd');
-      onSave({
-        ...existing,
-        facility_id: facilityId,
-        start_datetime: new Date(`${date}T${startTime}:00`).toISOString(),
-        end_datetime: new Date(`${date}T${endTime}:00`).toISOString(),
-        status, rate_applied: Number(rate), notes, color,
-      });
-    } else {
-      for (const d of selectedDates) {
-        const date = format(d, 'yyyy-MM-dd');
-        onSave({
+    setIsSubmitting(true);
+    try {
+      if (existing) {
+        const date = format(selectedDates[0] || new Date(), 'yyyy-MM-dd');
+        await onSave({
+          ...existing,
           facility_id: facilityId,
           start_datetime: new Date(`${date}T${startTime}:00`).toISOString(),
           end_datetime: new Date(`${date}T${endTime}:00`).toISOString(),
           status, rate_applied: Number(rate), notes, color,
         });
+      } else {
+        const orderedDates = [...selectedDates].sort((a, b) => a.getTime() - b.getTime());
+        for (const d of orderedDates) {
+          const date = format(d, 'yyyy-MM-dd');
+          await onSave({
+            facility_id: facilityId,
+            start_datetime: new Date(`${date}T${startTime}:00`).toISOString(),
+            end_datetime: new Date(`${date}T${endTime}:00`).toISOString(),
+            status, rate_applied: Number(rate), notes, color,
+          });
+        }
       }
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Failed to save shift(s):', error);
+    } finally {
+      setIsSubmitting(false);
     }
-    onOpenChange(false);
   };
 
   const formContent = (
@@ -285,7 +294,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
       {/* Actions */}
       <div className="flex gap-2">
         <Button type="submit" className="flex-1 h-11" disabled={selectedDates.length === 0}>
-          {existing ? 'Update Shift' : selectedDates.length > 1 ? `Add ${selectedDates.length} Shifts` : 'Add Shift'}
+          {isSubmitting ? 'Saving...' : existing ? 'Update Shift' : selectedDates.length > 1 ? `Add ${selectedDates.length} Shifts` : 'Add Shift'}
         </Button>
         {existing && onDelete && (
           <AlertDialog>
