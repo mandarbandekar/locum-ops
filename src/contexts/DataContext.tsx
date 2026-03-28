@@ -378,13 +378,65 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     return shift;
   }, [isDemo, user, facilities, shifts, invoices, lineItems]);
 
+  const handleInvoiceCleanupAfterShiftRemoval = useCallback(async (shiftId: string) => {
+    // Find line items linked to this shift
+    const affectedLineItems = lineItems.filter(li => li.shift_id === shiftId);
+    if (affectedLineItems.length === 0) return;
+
+    const affectedInvoiceIds = [...new Set(affectedLineItems.map(li => li.invoice_id))];
+
+    for (const invoiceId of affectedInvoiceIds) {
+      const invoice = invoices.find(inv => inv.id === invoiceId);
+      if (!invoice || invoice.status !== 'draft') continue; // only touch drafts
+
+      // Delete the line item(s) for this shift
+      for (const li of affectedLineItems.filter(l => l.invoice_id === invoiceId)) {
+        if (!isDemo) {
+          await db('invoice_line_items').delete().eq('id', li.id);
+        }
+      }
+      setLineItems(prev => prev.filter(x => !(x.shift_id === shiftId && x.invoice_id === invoiceId)));
+
+      // Check remaining line items for this invoice
+      const remainingItems = lineItems.filter(li => li.invoice_id === invoiceId && li.shift_id !== shiftId);
+
+      if (remainingItems.length === 0) {
+        // No more line items — delete the entire invoice
+        if (!isDemo) {
+          await db('invoices').delete().eq('id', invoiceId);
+        }
+        setInvoices(prev => prev.filter(x => x.id !== invoiceId));
+        const facility = facilities.find(f => f.id === invoice.facility_id);
+        const facilityName = facility?.name || 'Unknown';
+        toast.info(`Draft invoice ${invoice.invoice_number} for "${facilityName}" was deleted — no remaining shifts.`);
+      } else {
+        // Update the invoice total
+        const newTotal = remainingItems.reduce((sum, li) => sum + li.line_total, 0);
+        const updated = { ...invoice, total_amount: newTotal, balance_due: newTotal };
+        if (!isDemo) {
+          await db('invoices').update({ total_amount: newTotal, balance_due: newTotal }).eq('id', invoiceId);
+        }
+        setInvoices(prev => prev.map(x => x.id === invoiceId ? updated : x));
+        const facility = facilities.find(f => f.id === invoice.facility_id);
+        const facilityName = facility?.name || 'Unknown';
+        toast.info(`Draft invoice ${invoice.invoice_number} for "${facilityName}" updated — line item removed.`);
+      }
+    }
+  }, [isDemo, lineItems, invoices, facilities]);
+
   const updateShift = useCallback(async (s: Shift) => {
     if (isDemo) { setShifts(prev => prev.map(x => x.id === s.id ? s : x)); return; }
+    const oldShift = shifts.find(x => x.id === s.id);
     const { id, ...rest } = s;
     const { error } = await db('shifts').update(rest).eq('id', id);
     if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
     setShifts(prev => prev.map(x => x.id === s.id ? s : x));
-  }, [isDemo]);
+
+    // If shift was just canceled, clean up its invoice
+    if (s.status === 'canceled' && oldShift?.status !== 'canceled') {
+      await handleInvoiceCleanupAfterShiftRemoval(s.id);
+    }
+  }, [isDemo, shifts, handleInvoiceCleanupAfterShiftRemoval]);
 
   const deleteShift = useCallback(async (id: string) => {
     if (isDemo) {
@@ -392,11 +444,14 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
       setLineItems(prev => prev.filter(x => x.shift_id !== id));
       return;
     }
+    // Clean up invoices before deleting the shift
+    await handleInvoiceCleanupAfterShiftRemoval(id);
+
     const { error } = await db('shifts').delete().eq('id', id);
     if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
     setShifts(prev => prev.filter(x => x.id !== id));
     setLineItems(prev => prev.filter(x => x.shift_id !== id));
-  }, [isDemo]);
+  }, [isDemo, handleInvoiceCleanupAfterShiftRemoval]);
 
   // ─── Invoices ────────────────────────────────────────────
 
