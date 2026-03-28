@@ -312,7 +312,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[680px] overflow-hidden">
+      <DialogContent className="max-w-[800px] overflow-hidden">
         <DialogHeader><DialogTitle>{existing ? 'Edit Shift' : 'Add Shift'}</DialogTitle></DialogHeader>
         {formContent}
       </DialogContent>
