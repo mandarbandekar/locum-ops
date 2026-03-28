@@ -10,7 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { AlertTriangle, Trash2, CalendarDays, DollarSign, Clock, Building2, StickyNote, Palette } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
-import { ShiftStatus, SHIFT_COLORS, ShiftColor, TermsSnapshot } from '@/types';
+import { ShiftStatus, SHIFT_COLORS, ShiftColor, TermsSnapshot, Shift } from '@/types';
 import { detectShiftConflicts } from '@/lib/businessLogic';
 import { cn } from '@/lib/utils';
 import { termsToRates, RateEntry } from '@/components/facilities/RatesEditor';
@@ -72,14 +72,26 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     }
   };
 
-  const firstDate = selectedDates[0] ? format(selectedDates[0], 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
-  const startDt = `${firstDate}T${startTime}:00`;
-  const endDt = `${firstDate}T${endTime}:00`;
-
-  const conflicts = useMemo(() =>
-    detectShiftConflicts(shifts, { start_datetime: startDt, end_datetime: endDt, id: existing?.id }),
-    [shifts, startDt, endDt, existing?.id]
-  );
+  // Check conflicts for ALL selected dates, not just the first
+  const conflicts = useMemo(() => {
+    const allConflicts: Shift[] = [];
+    const seen = new Set<string>();
+    const datesToCheck = selectedDates.length > 0 ? selectedDates : [new Date()];
+    for (const d of datesToCheck) {
+      const dateStr = format(d, 'yyyy-MM-dd');
+      const startDt = `${dateStr}T${startTime}:00`;
+      const endDt = `${dateStr}T${endTime}:00`;
+      // Filter out canceled/completed shifts before checking
+      const activeShifts = shifts.filter(s => s.status !== 'canceled');
+      for (const c of detectShiftConflicts(activeShifts, { start_datetime: startDt, end_datetime: endDt, id: existing?.id })) {
+        if (!seen.has(c.id)) {
+          seen.add(c.id);
+          allConflicts.push(c);
+        }
+      }
+    }
+    return allConflicts;
+  }, [shifts, selectedDates, startTime, endTime, existing?.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
