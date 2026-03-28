@@ -272,14 +272,21 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
         const eligible = getEligibleShiftsForPeriod(allShiftsWithNew, facility.id, period.start, period.end, sentIds);
 
         if (eligible.length > 0) {
-          // Check for existing auto-draft for this facility + period
-          const existingDraft = invoices.find(inv =>
-            inv.facility_id === facility.id &&
-            inv.status === 'draft' &&
-            inv.generation_type === 'automatic' &&
-            new Date(inv.period_start).toISOString().slice(0, 10) === period.start.toISOString().slice(0, 10) &&
-            new Date(inv.period_end).toISOString().slice(0, 10) === period.end.toISOString().slice(0, 10)
-          );
+          // Query DB directly for existing draft to avoid stale closure issues
+          // when multiple shifts are added quickly in sequence
+          const periodStartStr = period.start.toISOString().slice(0, 10);
+          const periodEndStr = period.end.toISOString().slice(0, 10);
+          const { data: draftRows } = await db('invoices')
+            .select('*')
+            .eq('facility_id', facility.id)
+            .eq('user_id', user!.id)
+            .eq('status', 'draft')
+            .eq('generation_type', 'automatic');
+
+          const existingDraft = ((draftRows as any[]) || []).find((inv) =>
+            new Date(inv.period_start).toISOString().slice(0, 10) === periodStartStr &&
+            new Date(inv.period_end).toISOString().slice(0, 10) === periodEndStr
+          ) as Invoice | undefined;
 
           if (existingDraft) {
             // Update existing draft: rebuild line items
