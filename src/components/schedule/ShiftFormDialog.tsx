@@ -130,7 +130,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
                   {selectedDates.length} date{selectedDates.length !== 1 ? 's' : ''}: {selectedDates.sort((a, b) => a.getTime() - b.getTime()).map(d => format(d, 'MMM d')).join(', ')}
                 </p>
               ) : (
-                <p className="text-sm font-medium text-amber-600 dark:text-amber-400 mt-2">Tap to select dates</p>
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">Tap to select dates</p>
               )}
             </div>
           ) : (
@@ -312,7 +312,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[800px] overflow-hidden">
+      <DialogContent className="max-w-[680px] overflow-hidden">
         <DialogHeader><DialogTitle>{existing ? 'Edit Shift' : 'Add Shift'}</DialogTitle></DialogHeader>
         {formContent}
       </DialogContent>
