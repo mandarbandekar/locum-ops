@@ -345,7 +345,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
             setInvoices(prev => prev.map(i => i.id === existingDraft.id ? updatedInv : i));
 
             toast.info(`Draft invoice updated for ${facility.name}`);
-          } else if (shouldGenerateDraftOnShiftAdd(eligible, cadence, period.start, period.end, new Date())) {
+          } else if (facility.auto_generate_invoices && eligible.length > 0) {
             // Create new draft
             const invoiceNumber = generateInvoiceNumber(invoices, facility.invoice_prefix);
             const { invoice: invData, lineItems: newItems } = buildAutoInvoiceDraft(
