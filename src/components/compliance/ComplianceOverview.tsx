@@ -36,11 +36,23 @@ interface Props {
   onAddCE?: () => void;
 }
 
-export function ComplianceOverview({ onNavigate }: Props) {
+export function ComplianceOverview({ onNavigate, checklistItems, onChecklistAction, showChecklist, credentialCount, onStartOnboarding, onAddCredential, onUploadDocument, onAddCE }: Props) {
   const { summary, alerts, upcomingRenewals, enrichedCredentials, isLoading } = useComplianceData();
 
   if (isLoading) {
     return <div className="flex items-center justify-center py-20"><p className="text-muted-foreground">Loading compliance data…</p></div>;
+  }
+
+  // Show empty state if no credentials
+  if ((credentialCount ?? summary.activeCredentials) === 0 && onAddCredential && onUploadDocument && onAddCE && onStartOnboarding) {
+    return (
+      <ComplianceEmptyState
+        onAddCredential={onAddCredential}
+        onUploadDocument={onUploadDocument}
+        onAddCE={onAddCE}
+        onStartOnboarding={onStartOnboarding}
+      />
+    );
   }
 
   const activeAlerts = alerts.filter(a => a.severity !== 'info').slice(0, 6);
