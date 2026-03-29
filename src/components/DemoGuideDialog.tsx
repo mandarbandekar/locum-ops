@@ -1,4 +1,4 @@
-import { Info, LayoutDashboard, Building2, CalendarDays, FileText, BarChart3, ShieldCheck, Settings, X } from 'lucide-react';
+import { Info, LayoutDashboard, Building2, CalendarDays, FileText, BarChart3, ShieldCheck, Settings } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -8,37 +8,37 @@ const modules = [
   {
     icon: LayoutDashboard,
     title: 'Dashboard',
-    description: 'Your command center. See upcoming shifts, outstanding invoices, credential renewals, and tax deadlines — all in one glance. Revenue trends and anticipated earnings help you forecast cash flow.',
+    description: "Your command center. See upcoming shifts, outstanding invoices, credential renewals, and tax deadlines \u2014 all in one glance. Revenue trends and anticipated earnings help you forecast cash flow.",
   },
   {
     icon: Building2,
     title: 'Practice Facilities',
-    description: 'Store clinic details, billing preferences, scheduling contacts, and contract checklists for every facility you work with. Each clinic's invoicing cadence (daily, weekly, monthly) drives automatic invoice generation.',
+    description: "Store clinic details, billing preferences, scheduling contacts, and contract checklists for every facility you work with. Each clinic\u2019s invoicing cadence (daily, weekly, monthly) drives automatic invoice generation.",
   },
   {
     icon: CalendarDays,
     title: 'Schedule',
-    description: 'Book and manage shifts with a visual weekly calendar. Drag-and-drop rescheduling, conflict detection, and built-in clinic confirmations ensure your schedule stays accurate and confirmed.',
+    description: "Book and manage shifts with a visual weekly calendar. Drag-and-drop rescheduling, conflict detection, and built-in clinic confirmations ensure your schedule stays accurate and confirmed.",
   },
   {
     icon: FileText,
     title: 'Invoices',
-    description: 'Invoices are auto-generated based on each clinic's billing cadence. Review drafts, track payments, send reminders, and share invoices via secure links — no more spreadsheets or manual calculations.',
+    description: "Invoices are auto-generated based on each clinic\u2019s billing cadence. Review drafts, track payments, send reminders, and share invoices via secure links \u2014 no more spreadsheets or manual calculations.",
   },
   {
     icon: BarChart3,
     title: 'Business',
-    description: 'Revenue reports, estimated quarterly tax tracking, and an AI-powered Tax Planning Advisor help you stay on top of your 1099 business finances and maximize deductions.',
+    description: "Revenue reports, estimated quarterly tax tracking, and an AI-powered Tax Planning Advisor help you stay on top of your 1099 business finances and maximize deductions.",
   },
   {
     icon: ShieldCheck,
     title: 'Credential Management',
-    description: 'Track licenses, certifications, CE credits, and required documents in one place. Get renewal reminders before anything expires, and build credential packets for clinic onboarding.',
+    description: "Track licenses, certifications, CE credits, and required documents in one place. Get renewal reminders before anything expires, and build credential packets for clinic onboarding.",
   },
   {
     icon: Settings,
     title: 'Settings',
-    description: 'Configure your invoice profile, payment methods, calendar sync, reminder preferences, and account details to tailor LocumOps to how you run your practice.',
+    description: "Configure your invoice profile, payment methods, calendar sync, reminder preferences, and account details to tailor LocumOps to how you run your practice.",
   },
 ];
 
@@ -63,7 +63,7 @@ export function DemoGuideDialog() {
             Welcome to LocumOps
           </DialogTitle>
           <p className="text-sm text-muted-foreground mt-1">
-            Built for independent relief veterinarians to manage the back-office side of locum work — scheduling, invoicing, credentials, and taxes — all in one place.
+            Built for independent relief veterinarians to manage the back-office side of locum work &mdash; scheduling, invoicing, credentials, and taxes &mdash; all in one place.
           </p>
         </DialogHeader>
         <ScrollArea className="max-h-[60vh] px-6 pb-6">
