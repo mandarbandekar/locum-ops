@@ -1,6 +1,7 @@
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { DemoGuideDialog } from '@/components/DemoGuideDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 
@@ -22,7 +23,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 — {company}
               </span>
             )}
-            <div className="ml-auto">
+            <div className="ml-auto flex items-center gap-2">
+              {isDemo && <DemoGuideDialog />}
               <ThemeToggle />
             </div>
           </header>
