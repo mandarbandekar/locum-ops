@@ -838,6 +838,7 @@ export type Database = {
           file_name: string
           file_type: string | null
           file_url: string
+          folder: string
           id: string
           updated_at: string
           uploaded_at: string
@@ -850,6 +851,7 @@ export type Database = {
           file_name: string
           file_type?: string | null
           file_url: string
+          folder?: string
           id?: string
           updated_at?: string
           uploaded_at?: string
@@ -862,6 +864,7 @@ export type Database = {
           file_name?: string
           file_type?: string | null
           file_url?: string
+          folder?: string
           id?: string
           updated_at?: string
           uploaded_at?: string
