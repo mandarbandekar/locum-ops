@@ -315,6 +315,93 @@ export type Database = {
         }
         Relationships: []
       }
+      compliance_activity_events: {
+        Row: {
+          actor_type: string
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          event_summary: string
+          event_type: string
+          id: string
+          metadata_json: Json | null
+          user_id: string
+        }
+        Insert: {
+          actor_type?: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          event_summary?: string
+          event_type: string
+          id?: string
+          metadata_json?: Json | null
+          user_id?: string
+        }
+        Update: {
+          actor_type?: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          event_summary?: string
+          event_type?: string
+          id?: string
+          metadata_json?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      compliance_alerts: {
+        Row: {
+          action_payload_json: Json | null
+          alert_type: string
+          created_at: string
+          dismissed_at: string | null
+          id: string
+          is_dismissed: boolean
+          message: string
+          primary_action_type: string | null
+          related_entity_id: string | null
+          related_entity_type: string | null
+          severity: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          action_payload_json?: Json | null
+          alert_type: string
+          created_at?: string
+          dismissed_at?: string | null
+          id?: string
+          is_dismissed?: boolean
+          message?: string
+          primary_action_type?: string | null
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          severity?: string
+          title: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          action_payload_json?: Json | null
+          alert_type?: string
+          created_at?: string
+          dismissed_at?: string | null
+          id?: string
+          is_dismissed?: boolean
+          message?: string
+          primary_action_type?: string | null
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          severity?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       confirmation_activity: {
         Row: {
           action: string
@@ -1001,6 +1088,7 @@ export type Database = {
       }
       credentials: {
         Row: {
+          ce_logged_hours_cache: number | null
           ce_required_hours: number | null
           ce_requirements_notes: string | null
           created_at: string
@@ -1008,18 +1096,28 @@ export type Database = {
           credential_type: Database["public"]["Enums"]["credential_type"]
           custom_title: string
           expiration_date: string | null
+          holder_name: string | null
           id: string
           issue_date: string | null
           issuing_authority: string | null
           jurisdiction: string | null
+          jurisdiction_type: string | null
+          missing_items_count: number | null
           notes: string | null
+          readiness_label: string | null
+          readiness_score: number | null
+          recommended_action: string | null
+          renewal_due_date: string | null
           renewal_frequency: string | null
+          renewal_open_date: string | null
+          renewal_url: string | null
           status: Database["public"]["Enums"]["credential_status"]
           tags: string[] | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          ce_logged_hours_cache?: number | null
           ce_required_hours?: number | null
           ce_requirements_notes?: string | null
           created_at?: string
@@ -1027,18 +1125,28 @@ export type Database = {
           credential_type?: Database["public"]["Enums"]["credential_type"]
           custom_title: string
           expiration_date?: string | null
+          holder_name?: string | null
           id?: string
           issue_date?: string | null
           issuing_authority?: string | null
           jurisdiction?: string | null
+          jurisdiction_type?: string | null
+          missing_items_count?: number | null
           notes?: string | null
+          readiness_label?: string | null
+          readiness_score?: number | null
+          recommended_action?: string | null
+          renewal_due_date?: string | null
           renewal_frequency?: string | null
+          renewal_open_date?: string | null
+          renewal_url?: string | null
           status?: Database["public"]["Enums"]["credential_status"]
           tags?: string[] | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          ce_logged_hours_cache?: number | null
           ce_required_hours?: number | null
           ce_requirements_notes?: string | null
           created_at?: string
@@ -1046,12 +1154,21 @@ export type Database = {
           credential_type?: Database["public"]["Enums"]["credential_type"]
           custom_title?: string
           expiration_date?: string | null
+          holder_name?: string | null
           id?: string
           issue_date?: string | null
           issuing_authority?: string | null
           jurisdiction?: string | null
+          jurisdiction_type?: string | null
+          missing_items_count?: number | null
           notes?: string | null
+          readiness_label?: string | null
+          readiness_score?: number | null
+          recommended_action?: string | null
+          renewal_due_date?: string | null
           renewal_frequency?: string | null
+          renewal_open_date?: string | null
+          renewal_url?: string | null
           status?: Database["public"]["Enums"]["credential_status"]
           tags?: string[] | null
           updated_at?: string
@@ -1097,6 +1214,44 @@ export type Database = {
           ytd_amount?: number
         }
         Relationships: []
+      }
+      document_links: {
+        Row: {
+          created_at: string
+          document_id: string
+          id: string
+          link_entity_id: string
+          link_entity_type: string
+          link_role: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          document_id: string
+          id?: string
+          link_entity_id: string
+          link_entity_type: string
+          link_role?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          document_id?: string
+          id?: string
+          link_entity_id?: string
+          link_entity_type?: string
+          link_role?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_links_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "credential_documents"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       email_logs: {
         Row: {
@@ -1921,6 +2076,77 @@ export type Database = {
         }
         Relationships: []
       }
+      renewal_records: {
+        Row: {
+          confirmation_number: string | null
+          confirmed_at: string | null
+          created_at: string
+          credential_id: string
+          cycle_end_date: string | null
+          cycle_start_date: string | null
+          id: string
+          metadata_json: Json | null
+          missing_items_count: number | null
+          notes: string | null
+          readiness_label: string | null
+          readiness_score: number | null
+          renewal_due_date: string | null
+          renewal_open_date: string | null
+          renewal_status: string
+          submitted_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          confirmation_number?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          credential_id: string
+          cycle_end_date?: string | null
+          cycle_start_date?: string | null
+          id?: string
+          metadata_json?: Json | null
+          missing_items_count?: number | null
+          notes?: string | null
+          readiness_label?: string | null
+          readiness_score?: number | null
+          renewal_due_date?: string | null
+          renewal_open_date?: string | null
+          renewal_status?: string
+          submitted_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          confirmation_number?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          credential_id?: string
+          cycle_end_date?: string | null
+          cycle_start_date?: string | null
+          id?: string
+          metadata_json?: Json | null
+          missing_items_count?: number | null
+          notes?: string | null
+          readiness_label?: string | null
+          readiness_score?: number | null
+          renewal_due_date?: string | null
+          renewal_open_date?: string | null
+          renewal_status?: string
+          submitted_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "renewal_records_credential_id_fkey"
+            columns: ["credential_id"]
+            isOneToOne: false
+            referencedRelation: "credentials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       required_subscriptions: {
         Row: {
           archived_at: string | null
@@ -2630,6 +2856,10 @@ export type Database = {
       }
       owns_credential: {
         Args: { _credential_id: string; _user_id: string }
+        Returns: boolean
+      }
+      owns_document: {
+        Args: { _document_id: string; _user_id: string }
         Returns: boolean
       }
       owns_packet: {
