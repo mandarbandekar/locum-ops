@@ -1,6 +1,7 @@
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { DemoGuideDialog } from '@/components/DemoGuideDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 
