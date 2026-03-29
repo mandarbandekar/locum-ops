@@ -21,9 +21,7 @@ async function cryptoCall(action: 'encrypt' | 'decrypt', text: string): Promise<
     body: { action, text },
   });
   if (error || !data?.result) {
-    // Fallback: base64 (graceful degradation while secret is not yet set)
-    if (action === 'encrypt') return btoa(text);
-    try { return atob(text); } catch { return ''; }
+    throw new Error('Encryption service unavailable — password not saved. Please contact support.');
   }
   return data.result;
 }

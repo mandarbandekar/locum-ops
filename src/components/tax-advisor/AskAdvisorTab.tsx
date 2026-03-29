@@ -6,6 +6,7 @@ import { Send, Save, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import type { TaxAdvisorProfile, TaxAdvisorSession } from '@/hooks/useTaxAdvisor';
 import { useData } from '@/contexts/DataContext';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Props {
   profile: TaxAdvisorProfile | null;
@@ -53,11 +54,14 @@ export default function AskAdvisorTab({ profile, sessions, onSaveSession, onSave
     abortRef.current = controller;
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('Not authenticated');
+
       const resp = await fetch(CHAT_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           messages: [{ role: 'user', content: prompt }],
