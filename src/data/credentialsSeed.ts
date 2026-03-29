@@ -5,6 +5,19 @@ const today = new Date();
 const addDays = (d: Date, n: number) => { const r = new Date(d); r.setDate(r.getDate() + n); return r; };
 const fmt = (d: Date) => d.toISOString().split('T')[0];
 
+const defaultComplianceFields = {
+  renewal_open_date: null,
+  renewal_due_date: null,
+  renewal_url: null,
+  readiness_score: 0,
+  readiness_label: 'not_ready',
+  holder_name: null,
+  jurisdiction_type: 'state',
+  ce_logged_hours_cache: 0,
+  missing_items_count: 0,
+  recommended_action: null,
+};
+
 export const demoCredentials: Credential[] = [
   {
     id: 'demo-cred-1',
@@ -24,6 +37,15 @@ export const demoCredentials: Credential[] = [
     ce_requirements_notes: 'Oregon requires 30 hours total. Min 2 hrs scientific integrity/ethics. Max 15 hrs self-study. Controlled substance CE required.',
     created_at: '2024-03-01T00:00:00Z',
     updated_at: today.toISOString(),
+    ...defaultComplianceFields,
+    renewal_url: 'https://www.oregon.gov/ovmeb',
+    readiness_score: 72,
+    readiness_label: 'nearly_ready',
+    holder_name: 'Dr. Sarah Mitchell',
+    jurisdiction_type: 'state',
+    ce_logged_hours_cache: 26,
+    missing_items_count: 1,
+    recommended_action: 'Upload missing CE certificate',
   },
   {
     id: 'demo-cred-2',
@@ -43,6 +65,13 @@ export const demoCredentials: Credential[] = [
     ce_requirements_notes: null,
     created_at: '2023-09-15T00:00:00Z',
     updated_at: today.toISOString(),
+    ...defaultComplianceFields,
+    renewal_url: 'https://apps.deadiversion.usdoj.gov/',
+    readiness_score: 55,
+    readiness_label: 'in_progress',
+    jurisdiction_type: 'federal',
+    missing_items_count: 1,
+    recommended_action: 'Review renewal — expiring in 42 days',
   },
   {
     id: 'demo-cred-3',
@@ -62,6 +91,10 @@ export const demoCredentials: Credential[] = [
     ce_requirements_notes: null,
     created_at: '2026-01-01T00:00:00Z',
     updated_at: today.toISOString(),
+    ...defaultComplianceFields,
+    readiness_score: 90,
+    readiness_label: 'ready',
+    jurisdiction_type: 'private',
   },
   {
     id: 'demo-cred-4',
@@ -81,6 +114,12 @@ export const demoCredentials: Credential[] = [
     ce_requirements_notes: 'USDA supplemental training modules required for reaccreditation.',
     created_at: '2025-06-01T00:00:00Z',
     updated_at: today.toISOString(),
+    ...defaultComplianceFields,
+    readiness_score: 15,
+    readiness_label: 'not_ready',
+    jurisdiction_type: 'federal',
+    missing_items_count: 3,
+    recommended_action: 'Complete USDA training modules to reactivate',
   },
   {
     id: 'demo-cred-5',
@@ -100,6 +139,11 @@ export const demoCredentials: Credential[] = [
     ce_requirements_notes: 'Washington requires 20 hrs per biennium. Min 4 hrs must be live/interactive.',
     created_at: '2025-01-15T00:00:00Z',
     updated_at: today.toISOString(),
+    ...defaultComplianceFields,
+    readiness_score: 95,
+    readiness_label: 'ready',
+    holder_name: 'Dr. Sarah Mitchell',
+    ce_logged_hours_cache: 18,
   },
 ];
 
@@ -183,7 +227,6 @@ export const demoCEEntriesWithLinks: CEEntryWithLinks[] = demoCEEntries.map(entr
 }));
 
 export const demoDocuments: CredentialDocument[] = [
-  // Registrations
   {
     id: 'demo-doc-1',
     user_id: 'demo-user',
@@ -208,7 +251,6 @@ export const demoDocuments: CredentialDocument[] = [
     uploaded_at: addDays(today, -180).toISOString(),
     updated_at: addDays(today, -180).toISOString(),
   },
-  // Business entity documents
   {
     id: 'demo-doc-3',
     user_id: 'demo-user',
@@ -245,7 +287,6 @@ export const demoDocuments: CredentialDocument[] = [
     uploaded_at: addDays(today, -90).toISOString(),
     updated_at: addDays(today, -90).toISOString(),
   },
-  // Tax documents
   {
     id: 'demo-doc-6',
     user_id: 'demo-user',
@@ -282,7 +323,6 @@ export const demoDocuments: CredentialDocument[] = [
     uploaded_at: addDays(today, -20).toISOString(),
     updated_at: addDays(today, -20).toISOString(),
   },
-  // Quarterly payment receipts
   {
     id: 'demo-doc-9',
     user_id: 'demo-user',
@@ -319,7 +359,6 @@ export const demoDocuments: CredentialDocument[] = [
     uploaded_at: addDays(today, -240).toISOString(),
     updated_at: addDays(today, -240).toISOString(),
   },
-  // Insurance documents
   {
     id: 'demo-doc-12',
     user_id: 'demo-user',
