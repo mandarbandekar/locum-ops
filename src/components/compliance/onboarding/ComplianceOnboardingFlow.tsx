@@ -113,7 +113,7 @@ export function ComplianceOnboardingFlow({ open, onComplete, onSkip, onSetSelect
       });
 
       if (credentialFile && result?.id) {
-        await uploadDocument.mutateAsync({ file: credentialFile, credentialId: result.id });
+        await uploadDocument(credentialFile, result.id);
         onMarkDocumentUploaded();
         setSummary(s => ({ ...s, documentUploaded: true }));
       }
@@ -135,7 +135,7 @@ export function ComplianceOnboardingFlow({ open, onComplete, onSkip, onSetSelect
     if (!documentFile) { setStep('add-ce'); return; }
     setSaving(true);
     try {
-      await uploadDocument.mutateAsync({ file: documentFile, credentialId: null });
+      await uploadDocument(documentFile);
       onMarkDocumentUploaded();
       setSummary(s => ({ ...s, documentUploaded: true }));
       setStep('add-ce');
@@ -156,6 +156,7 @@ export function ComplianceOnboardingFlow({ open, onComplete, onSkip, onSetSelect
         hours: parseFloat(ceForm.hours) || 0,
         category: '',
         delivery_format: '',
+        linked_credential_ids: [],
       });
       onMarkCEAdded();
       setSummary(s => ({ ...s, ceAdded: true }));
