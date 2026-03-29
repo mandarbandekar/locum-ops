@@ -16,7 +16,8 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import {
   Upload, Search, FileText, FileImage, File, Download, Trash2,
-  Eye, Replace, Clock, FolderOpen, LayoutGrid, List, X, Plus
+  Eye, Replace, Clock, FolderOpen, LayoutGrid, List, X, Plus,
+  Folder, FolderPlus, ChevronRight, Home, ArrowLeft, MoveRight, Edit2, Check
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -56,23 +57,78 @@ export default function DocumentsVaultTab() {
   const [uploadCategory, setUploadCategory] = useState('custom');
   const [uploadCredentialId, setUploadCredentialId] = useState('none');
 
-  // Trigger file picker when replacingDocId is set
+  // Folder state
+  const [currentFolder, setCurrentFolder] = useState('');
+  const [showCreateFolder, setShowCreateFolder] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [movingDoc, setMovingDoc] = useState<CredentialDocument | null>(null);
+  const [renamingFolder, setRenamingFolder] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+
   useEffect(() => {
     if (replacingDocId) {
       replaceInputRef.current?.click();
     }
   }, [replacingDocId]);
 
+  // Get all unique folders from documents
+  const allFolders = useMemo(() => {
+    const folders = new Set<string>();
+    documents.forEach(d => {
+      const folder = (d as any).folder || '';
+      if (folder) folders.add(folder);
+    });
+    return Array.from(folders).sort();
+  }, [documents]);
+
+  // Get subfolders and docs for current path
+  const { subfolders, currentDocs } = useMemo(() => {
+    const prefix = currentFolder ? currentFolder + '/' : '';
+
+    // Collect immediate subfolders
+    const subs = new Set<string>();
+    documents.forEach(d => {
+      const folder = (d as any).folder || '';
+      if (currentFolder === '' && folder && !folder.includes('/')) {
+        subs.add(folder);
+      } else if (currentFolder && folder.startsWith(prefix)) {
+        const rest = folder.slice(prefix.length);
+        if (rest && !rest.includes('/')) {
+          subs.add(folder);
+        }
+      }
+    });
+
+    // Also include folders that appear as prefixes
+    allFolders.forEach(f => {
+      if (currentFolder === '') {
+        const top = f.split('/')[0];
+        if (top) subs.add(top);
+      } else if (f.startsWith(prefix)) {
+        const rest = f.slice(prefix.length);
+        const next = rest.split('/')[0];
+        if (next) subs.add(currentFolder + '/' + next);
+      }
+    });
+
+    // Docs in current folder
+    const docs = documents.filter(d => {
+      const folder = (d as any).folder || '';
+      return folder === currentFolder;
+    });
+
+    return { subfolders: Array.from(subs).sort(), currentDocs: docs };
+  }, [documents, currentFolder, allFolders]);
+
   const filtered = useMemo(() => {
-    return documents.filter(d => {
+    return currentDocs.filter(d => {
       if (search && !d.file_name.toLowerCase().includes(search.toLowerCase())) return false;
       if (filterCategory !== 'all' && d.document_category !== filterCategory) return false;
       if (filterCredential !== 'all' && d.credential_id !== filterCredential) return false;
       return true;
     });
-  }, [documents, search, filterCategory, filterCredential]);
+  }, [currentDocs, search, filterCategory, filterCredential]);
 
-  // Group by category for grid
   const groupedByCategory = useMemo(() => {
     const groups: Record<string, CredentialDocument[]> = {};
     filtered.forEach(d => {
@@ -83,7 +139,6 @@ export default function DocumentsVaultTab() {
     return groups;
   }, [filtered]);
 
-  // Version history: docs with same credential_id & file_name pattern
   const getVersions = useCallback((doc: CredentialDocument) => {
     if (!doc.credential_id) return [doc];
     return documents
@@ -95,9 +150,16 @@ export default function DocumentsVaultTab() {
     setUploading(true);
     try {
       for (const file of Array.from(files)) {
-        await uploadDocument(file, uploadCredentialId === 'none' ? undefined : uploadCredentialId, uploadCategory);
+        const doc = await uploadDocument(file, uploadCredentialId === 'none' ? undefined : uploadCredentialId, uploadCategory);
+        // Move to current folder if we're inside one
+        if (currentFolder && doc) {
+          await (supabase as any)
+            .from('credential_documents')
+            .update({ folder: currentFolder })
+            .eq('id', (doc as any).id);
+        }
       }
-      toast({ title: 'Upload complete', description: `${files.length} file(s) uploaded.` });
+      toast({ title: 'Upload complete', description: `${files.length} file(s) uploaded${currentFolder ? ` to ${currentFolder}` : ''}.` });
     } catch (e: any) {
       toast({ title: 'Upload failed', description: e.message, variant: 'destructive' });
     } finally {
@@ -111,7 +173,7 @@ export default function DocumentsVaultTab() {
     if (e.dataTransfer.files.length > 0) {
       handleFiles(e.dataTransfer.files);
     }
-  }, [uploadCategory, uploadCredentialId]);
+  }, [uploadCategory, uploadCredentialId, currentFolder]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -157,7 +219,6 @@ export default function DocumentsVaultTab() {
   const handleReplace = async (file: File, doc: CredentialDocument) => {
     setUploading(true);
     try {
-      // Upload new version
       const newVersion = doc.version_number + 1;
       const filePath = `${doc.user_id}/${Date.now()}-${file.name}`;
       const { error: uploadError } = await supabase.storage
@@ -173,6 +234,7 @@ export default function DocumentsVaultTab() {
         file_type: file.type,
         document_category: doc.document_category as Database['public']['Enums']['document_category'],
         version_number: newVersion,
+        folder: (doc as any).folder || '',
       };
 
       const { error } = await supabase.from('credential_documents').insert([insertData]);
@@ -187,6 +249,119 @@ export default function DocumentsVaultTab() {
     }
   };
 
+  const handleCreateFolder = async () => {
+    const name = newFolderName.trim();
+    if (!name) return;
+    // Validate folder name
+    if (name.includes('/') || name.includes('\\')) {
+      toast({ title: 'Invalid folder name', description: 'Folder names cannot contain slashes.', variant: 'destructive' });
+      return;
+    }
+    const fullPath = currentFolder ? `${currentFolder}/${name}` : name;
+    // Folders are implicit — they exist when documents are assigned to them.
+    // We create a "marker" by just navigating into it. But since empty folders won't persist,
+    // let's just navigate in and the user can upload files there.
+    setCurrentFolder(fullPath);
+    setShowCreateFolder(false);
+    setNewFolderName('');
+    toast({ title: 'Folder created', description: `"${name}" is ready. Upload files here.` });
+  };
+
+  const handleMoveToFolder = async (doc: CredentialDocument, targetFolder: string) => {
+    try {
+      await (supabase as any)
+        .from('credential_documents')
+        .update({ folder: targetFolder })
+        .eq('id', doc.id);
+      toast({ title: 'Document moved', description: `Moved to ${targetFolder || 'Root'}` });
+      setMovingDoc(null);
+    } catch (e: any) {
+      toast({ title: 'Move failed', description: e.message, variant: 'destructive' });
+    }
+  };
+
+  const handleRenameFolder = async (oldName: string, newName: string) => {
+    if (!newName.trim() || newName.includes('/') || newName.includes('\\')) {
+      toast({ title: 'Invalid name', variant: 'destructive' });
+      return;
+    }
+    const parentPath = oldName.includes('/') ? oldName.substring(0, oldName.lastIndexOf('/')) : '';
+    const newFullPath = parentPath ? `${parentPath}/${newName.trim()}` : newName.trim();
+
+    try {
+      // Update all documents in this folder and subfolders
+      const docsToUpdate = documents.filter(d => {
+        const f = (d as any).folder || '';
+        return f === oldName || f.startsWith(oldName + '/');
+      });
+
+      for (const doc of docsToUpdate) {
+        const docFolder = (doc as any).folder || '';
+        const updatedFolder = docFolder === oldName
+          ? newFullPath
+          : newFullPath + docFolder.slice(oldName.length);
+        await (supabase as any)
+          .from('credential_documents')
+          .update({ folder: updatedFolder })
+          .eq('id', doc.id);
+      }
+
+      if (currentFolder === oldName) {
+        setCurrentFolder(newFullPath);
+      }
+      toast({ title: 'Folder renamed' });
+      setRenamingFolder(null);
+      setRenameValue('');
+    } catch (e: any) {
+      toast({ title: 'Rename failed', description: e.message, variant: 'destructive' });
+    }
+  };
+
+  const handleDeleteFolder = async (folderPath: string) => {
+    const docsInFolder = documents.filter(d => {
+      const f = (d as any).folder || '';
+      return f === folderPath || f.startsWith(folderPath + '/');
+    });
+    if (docsInFolder.length > 0) {
+      // Move docs to parent
+      const parentPath = folderPath.includes('/') ? folderPath.substring(0, folderPath.lastIndexOf('/')) : '';
+      for (const doc of docsInFolder) {
+        await (supabase as any)
+          .from('credential_documents')
+          .update({ folder: parentPath })
+          .eq('id', doc.id);
+      }
+      toast({ title: 'Folder removed', description: `${docsInFolder.length} file(s) moved to ${parentPath || 'root'}.` });
+    } else {
+      toast({ title: 'Folder removed' });
+    }
+    if (currentFolder === folderPath) {
+      const parentPath = folderPath.includes('/') ? folderPath.substring(0, folderPath.lastIndexOf('/')) : '';
+      setCurrentFolder(parentPath);
+    }
+  };
+
+  const getFolderDisplayName = (folderPath: string) => {
+    if (!folderPath) return 'All Documents';
+    return folderPath.includes('/') ? folderPath.split('/').pop()! : folderPath;
+  };
+
+  const getFolderDocCount = (folderPath: string) => {
+    return documents.filter(d => {
+      const f = (d as any).folder || '';
+      return f === folderPath || f.startsWith(folderPath + '/');
+    }).length;
+  };
+
+  const breadcrumbs = useMemo(() => {
+    if (!currentFolder) return [];
+    const parts = currentFolder.split('/');
+    return parts.map((part, i) => ({
+      label: part,
+      path: parts.slice(0, i + 1).join('/'),
+    }));
+  }, [currentFolder]);
+
   const linkedCredentialName = (credentialId: string | null) => {
     if (!credentialId) return null;
     const cred = credentials.find(c => c.id === credentialId);
@@ -199,6 +374,33 @@ export default function DocumentsVaultTab() {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumb Navigation */}
+      <div className="flex items-center gap-1 text-sm">
+        <Button
+          variant={currentFolder ? 'ghost' : 'secondary'}
+          size="sm"
+          className="h-7 gap-1.5 px-2"
+          onClick={() => setCurrentFolder('')}
+        >
+          <Home className="h-3.5 w-3.5" />
+          All Documents
+        </Button>
+        {breadcrumbs.map((bc, i) => (
+          <div key={bc.path} className="flex items-center gap-1">
+            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+            <Button
+              variant={i === breadcrumbs.length - 1 ? 'secondary' : 'ghost'}
+              size="sm"
+              className="h-7 px-2"
+              onClick={() => setCurrentFolder(bc.path)}
+            >
+              <Folder className="h-3.5 w-3.5 mr-1" />
+              {bc.label}
+            </Button>
+          </div>
+        ))}
+      </div>
+
       {/* Upload Zone */}
       <div
         onDrop={handleDrop}
@@ -225,7 +427,9 @@ export default function DocumentsVaultTab() {
           </div>
           <div>
             <p className="font-medium">{uploading ? 'Uploading…' : 'Drag & drop files here, or click to browse'}</p>
-            <p className="text-sm text-muted-foreground mt-1">PDFs, images, and common office documents supported</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              {currentFolder ? `Files will be added to "${getFolderDisplayName(currentFolder)}"` : 'PDFs, images, and common office documents supported'}
+            </p>
           </div>
           <div className="flex gap-3 mt-2">
             <Select value={uploadCategory} onValueChange={setUploadCategory}>
@@ -253,7 +457,7 @@ export default function DocumentsVaultTab() {
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Toolbar: Filters + New Folder */}
       <div className="flex flex-wrap gap-3 items-center">
         <div className="relative flex-1 min-w-[200px] max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -277,6 +481,11 @@ export default function DocumentsVaultTab() {
             ))}
           </SelectContent>
         </Select>
+
+        <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShowCreateFolder(true)}>
+          <FolderPlus className="h-4 w-4" /> New Folder
+        </Button>
+
         <div className="flex border rounded-md">
           <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} size="icon" className="h-9 w-9 rounded-r-none" onClick={() => setViewMode('grid')}>
             <LayoutGrid className="h-4 w-4" />
@@ -290,7 +499,7 @@ export default function DocumentsVaultTab() {
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <StatCard label="Total Documents" count={documents.length} icon={FolderOpen} />
-        <StatCard label="Categories Used" count={Object.keys(groupedByCategory).length} icon={FileText} />
+        <StatCard label="Folders" count={allFolders.length} icon={Folder} />
         <StatCard label="Linked to Credentials" count={documents.filter(d => d.credential_id).length} icon={File} />
         <StatCard label="Uploaded This Month" count={documents.filter(d => {
           const uploaded = new Date(d.uploaded_at);
@@ -299,22 +508,100 @@ export default function DocumentsVaultTab() {
         }).length} icon={Upload} />
       </div>
 
+      {/* Subfolders */}
+      {subfolders.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
+            <Folder className="h-4 w-4" /> Folders
+          </h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+            {subfolders.map(folder => {
+              const displayName = getFolderDisplayName(folder);
+              const docCount = getFolderDocCount(folder);
+              const isRenaming = renamingFolder === folder;
+
+              return (
+                <Card
+                  key={folder}
+                  className="group hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => !isRenaming && setCurrentFolder(folder)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="p-2 rounded-lg bg-primary/10">
+                        <Folder className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setRenamingFolder(folder); setRenameValue(displayName); }}>
+                          <Edit2 className="h-3 w-3" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => handleDeleteFolder(folder)}>
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                    {isRenaming ? (
+                      <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                        <Input
+                          value={renameValue}
+                          onChange={e => setRenameValue(e.target.value)}
+                          className="h-7 text-sm"
+                          autoFocus
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') handleRenameFolder(folder, renameValue);
+                            if (e.key === 'Escape') setRenamingFolder(null);
+                          }}
+                        />
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleRenameFolder(folder, renameValue)}>
+                          <Check className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        <p className="font-medium text-sm truncate">{displayName}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{docCount} file{docCount !== 1 ? 's' : ''}</p>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Empty state */}
-      {filtered.length === 0 && (
+      {filtered.length === 0 && subfolders.length === 0 && (
         <Card>
           <CardContent className="py-16 text-center">
             <div className="p-4 rounded-full bg-muted inline-block mb-4">
               <FolderOpen className="h-8 w-8 text-muted-foreground" />
             </div>
-            <h2 className="text-xl font-semibold mb-2">No Documents</h2>
+            <h2 className="text-xl font-semibold mb-2">
+              {currentFolder ? 'Empty Folder' : 'No Documents'}
+            </h2>
             <p className="text-muted-foreground max-w-md mx-auto">
-              {documents.length === 0 ? 'Upload your first document using the drag & drop zone above.' : 'No documents match your filters.'}
+              {currentFolder
+                ? 'This folder is empty. Upload files or create subfolders.'
+                : documents.length === 0
+                  ? 'Upload your first document using the drag & drop zone above.'
+                  : 'No documents match your filters.'}
             </p>
+            {currentFolder && (
+              <Button variant="outline" className="mt-4" onClick={() => {
+                const parent = currentFolder.includes('/')
+                  ? currentFolder.substring(0, currentFolder.lastIndexOf('/'))
+                  : '';
+                setCurrentFolder(parent);
+              }}>
+                <ArrowLeft className="mr-2 h-4 w-4" /> Go Back
+              </Button>
+            )}
           </CardContent>
         </Card>
       )}
 
-      {/* Grid View - grouped by category */}
+      {/* Grid View */}
       {filtered.length > 0 && viewMode === 'grid' && (
         <div className="space-y-6">
           {Object.entries(groupedByCategory).map(([cat, docs]) => (
@@ -334,6 +621,7 @@ export default function DocumentsVaultTab() {
                     onDownload={() => handleDownload(doc)}
                     onDelete={() => handleDelete(doc)}
                     onReplace={() => setReplacingDocId(doc.id)}
+                    onMove={() => setMovingDoc(doc)}
                   />
                 ))}
               </div>
@@ -351,14 +639,16 @@ export default function DocumentsVaultTab() {
                 <TableHead>File</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Linked Credential</TableHead>
+                <TableHead>Folder</TableHead>
                 <TableHead>Version</TableHead>
                 <TableHead>Uploaded</TableHead>
-                <TableHead className="w-[120px]">Actions</TableHead>
+                <TableHead className="w-[140px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.map(doc => {
                 const Icon = getFileIcon(doc.file_type);
+                const folder = (doc as any).folder || '';
                 return (
                   <TableRow key={doc.id}>
                     <TableCell>
@@ -375,6 +665,13 @@ export default function DocumentsVaultTab() {
                     <TableCell className="text-sm text-muted-foreground">
                       {linkedCredentialName(doc.credential_id) || '—'}
                     </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {folder ? (
+                        <button className="flex items-center gap-1 hover:text-foreground transition-colors" onClick={() => setCurrentFolder(folder)}>
+                          <Folder className="h-3 w-3" /> {getFolderDisplayName(folder)}
+                        </button>
+                      ) : '—'}
+                    </TableCell>
                     <TableCell>
                       <span className="text-sm text-muted-foreground">v{doc.version_number}</span>
                     </TableCell>
@@ -388,6 +685,9 @@ export default function DocumentsVaultTab() {
                         </Button>
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDownload(doc)}>
                           <Download className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setMovingDoc(doc)} title="Move to folder">
+                          <MoveRight className="h-3.5 w-3.5" />
                         </Button>
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setReplacingDocId(doc.id)}>
                           <Replace className="h-3.5 w-3.5" />
@@ -419,8 +719,8 @@ export default function DocumentsVaultTab() {
                   <span>Category: {DOCUMENT_CATEGORY_LABELS[previewDoc.document_category]}</span>
                   <span>Version: {previewDoc.version_number}</span>
                   <span>Uploaded: {format(new Date(previewDoc.uploaded_at), 'MMM d, yyyy h:mm a')}</span>
-                  {previewDoc.updated_at !== previewDoc.uploaded_at && (
-                    <span>Updated: {format(new Date(previewDoc.updated_at), 'MMM d, yyyy')}</span>
+                  {(previewDoc as any).folder && (
+                    <span>Folder: {(previewDoc as any).folder}</span>
                   )}
                 </span>
               )}
@@ -433,7 +733,6 @@ export default function DocumentsVaultTab() {
             </Badge>
           )}
 
-          {/* Preview content */}
           <div className="flex-1 min-h-0">
             {previewUrl ? (
               isImageType(previewDoc?.file_type ?? null) ? (
@@ -454,7 +753,6 @@ export default function DocumentsVaultTab() {
             )}
           </div>
 
-          {/* Version History */}
           {previewDoc && (
             <div className="border-t pt-4">
               <h4 className="text-sm font-medium mb-2 flex items-center gap-1.5">
@@ -484,12 +782,85 @@ export default function DocumentsVaultTab() {
           )}
 
           <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => previewDoc && setMovingDoc(previewDoc)}>
+              <MoveRight className="mr-2 h-4 w-4" /> Move
+            </Button>
             <Button variant="outline" onClick={() => previewDoc && setReplacingDocId(previewDoc.id)}>
               <Replace className="mr-2 h-4 w-4" /> Replace
             </Button>
             <Button onClick={() => previewDoc && handleDownload(previewDoc)}>
               <Download className="mr-2 h-4 w-4" /> Download
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Folder Dialog */}
+      <Dialog open={showCreateFolder} onOpenChange={setShowCreateFolder}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FolderPlus className="h-5 w-5" /> Create Folder
+            </DialogTitle>
+            <DialogDescription>
+              {currentFolder
+                ? `Create a subfolder inside "${getFolderDisplayName(currentFolder)}"`
+                : 'Create a new folder to organize your documents'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Input
+              placeholder="Folder name"
+              value={newFolderName}
+              onChange={e => setNewFolderName(e.target.value)}
+              autoFocus
+              onKeyDown={e => { if (e.key === 'Enter') handleCreateFolder(); }}
+            />
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => { setShowCreateFolder(false); setNewFolderName(''); }}>
+                Cancel
+              </Button>
+              <Button onClick={handleCreateFolder} disabled={!newFolderName.trim()}>
+                <FolderPlus className="mr-2 h-4 w-4" /> Create
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Move to Folder Dialog */}
+      <Dialog open={!!movingDoc} onOpenChange={open => { if (!open) setMovingDoc(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MoveRight className="h-5 w-5" /> Move Document
+            </DialogTitle>
+            <DialogDescription>
+              Move "{movingDoc?.file_name}" to a folder
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 max-h-[300px] overflow-y-auto">
+            <button
+              className={cn(
+                'w-full flex items-center gap-2 p-3 rounded-lg text-sm transition-colors text-left',
+                (movingDoc && ((movingDoc as any).folder || '') === '') ? 'bg-primary/10 text-primary' : 'hover:bg-muted'
+              )}
+              onClick={() => movingDoc && handleMoveToFolder(movingDoc, '')}
+            >
+              <Home className="h-4 w-4" /> Root (No folder)
+            </button>
+            {allFolders.map(folder => (
+              <button
+                key={folder}
+                className={cn(
+                  'w-full flex items-center gap-2 p-3 rounded-lg text-sm transition-colors text-left',
+                  (movingDoc && (movingDoc as any).folder === folder) ? 'bg-primary/10 text-primary' : 'hover:bg-muted'
+                )}
+                onClick={() => movingDoc && handleMoveToFolder(movingDoc, folder)}
+              >
+                <Folder className="h-4 w-4" /> {folder}
+              </button>
+            ))}
           </div>
         </DialogContent>
       </Dialog>
@@ -528,13 +899,14 @@ function StatCard({ label, count, icon: Icon }: { label: string; count: number; 
   );
 }
 
-function DocumentCard({ doc, credentialName, onPreview, onDownload, onDelete, onReplace }: {
+function DocumentCard({ doc, credentialName, onPreview, onDownload, onDelete, onReplace, onMove }: {
   doc: CredentialDocument;
   credentialName: string | null;
   onPreview: () => void;
   onDownload: () => void;
   onDelete: () => void;
   onReplace: () => void;
+  onMove: () => void;
 }) {
   const Icon = getFileIcon(doc.file_type);
   return (
@@ -550,6 +922,9 @@ function DocumentCard({ doc, credentialName, onPreview, onDownload, onDelete, on
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onDownload}>
               <Download className="h-3.5 w-3.5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onMove} title="Move to folder">
+              <MoveRight className="h-3.5 w-3.5" />
             </Button>
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onReplace}>
               <Replace className="h-3.5 w-3.5" />
