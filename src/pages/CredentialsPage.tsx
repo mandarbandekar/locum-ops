@@ -1,18 +1,35 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
+import { ComplianceOverview } from '@/components/compliance/ComplianceOverview';
 import CredentialsList from '@/components/credentials/CredentialsList';
 import RenewalsTab from '@/components/credentials/RenewalsTab';
 import DocumentsVaultTab from '@/components/credentials/DocumentsVaultTab';
 import CEEntriesTab from '@/components/credentials/CEEntriesTab';
 import SubscriptionsTab from '@/components/subscriptions/SubscriptionsTab';
 import { AddCredentialDialog } from '@/components/credentials/AddCredentialDialog';
-import { ShieldCheck, GraduationCap, RefreshCw } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
+
+type PrimaryTab = 'overview' | 'credentials' | 'renewals' | 'ce-tracker' | 'documents' | 'requirements';
+
+const TABS: { value: PrimaryTab; label: string; shortLabel?: string }[] = [
+  { value: 'overview', label: 'Overview' },
+  { value: 'credentials', label: 'Credentials' },
+  { value: 'renewals', label: 'Renewals' },
+  { value: 'ce-tracker', label: 'CE Hub' },
+  { value: 'documents', label: 'Documents' },
+  { value: 'requirements', label: 'Requirements' },
+];
 
 export default function CredentialsPage() {
-  const [primaryTab, setPrimaryTab] = useState<'credentials' | 'ce-tracker' | 'subscriptions'>('credentials');
-  const [credSubTab, setCredSubTab] = useState('credentials');
+  const [activeTab, setActiveTab] = useState<PrimaryTab>('overview');
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  const handleNavigate = (tab: string) => {
+    if (TABS.some(t => t.value === tab)) {
+      setActiveTab(tab as PrimaryTab);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -23,74 +40,48 @@ export default function CredentialsPage() {
           </div>
           <div>
             <h1 className="page-title">Credential Management</h1>
-            <p className="page-subtitle">Manage licenses, registrations, insurance & compliance</p>
+            <p className="page-subtitle">Manage licenses, CE, renewals, insurance, documents, and compliance tasks in one place</p>
           </div>
         </div>
       </div>
 
-      {/* Primary 3-tab selector */}
-      <div className="flex gap-2 sm:gap-3 flex-wrap">
-        <button
-          onClick={() => setPrimaryTab('credentials')}
-          className={`primary-tab-btn ${primaryTab === 'credentials' ? 'primary-tab-btn--active' : 'primary-tab-btn--inactive'}`}
-        >
-          <ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5" />
-          <span className="text-xs sm:text-sm">Credentials</span>
-        </button>
-        <button
-          onClick={() => setPrimaryTab('ce-tracker')}
-          className={`primary-tab-btn ${primaryTab === 'ce-tracker' ? 'primary-tab-btn--active' : 'primary-tab-btn--inactive'}`}
-        >
-          <GraduationCap className="h-4 w-4 sm:h-5 sm:w-5" />
-          <span className="text-xs sm:text-sm"><span className="hidden sm:inline">Continuing </span>CE Hub</span>
-        </button>
-        <button
-          onClick={() => setPrimaryTab('subscriptions')}
-          className={`primary-tab-btn ${primaryTab === 'subscriptions' ? 'primary-tab-btn--active' : 'primary-tab-btn--inactive'}`}
-        >
-          <RefreshCw className="h-4 w-4 sm:h-5 sm:w-5" />
-          <span className="text-xs sm:text-sm"><span className="hidden sm:inline">Required </span>Subscriptions</span>
-        </button>
-      </div>
+      <Tabs value={activeTab} onValueChange={v => setActiveTab(v as PrimaryTab)}>
+        <TabsList className="w-full justify-start border-b rounded-none bg-transparent p-0 h-auto flex-wrap">
+          {TABS.map(tab => (
+            <TabsTrigger
+              key={tab.value}
+              value={tab.value}
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-3 text-[13px] font-semibold"
+            >
+              {tab.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
-      {/* Credentials section */}
-      {primaryTab === 'credentials' && (
-        <Tabs value={credSubTab} onValueChange={setCredSubTab}>
-          <TabsList className="w-full justify-start border-b rounded-none bg-transparent p-0 h-auto">
-            {['credentials', 'renewals', 'documents'].map(t => (
-              <TabsTrigger
-                key={t}
-                value={t}
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-3 capitalize text-[13px] font-semibold"
-              >
-                {t}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+        <TabsContent value="overview" className="mt-6">
+          <ComplianceOverview onNavigate={handleNavigate} />
+        </TabsContent>
 
-          <TabsContent value="credentials" className="mt-6">
-            <CredentialsList />
-          </TabsContent>
+        <TabsContent value="credentials" className="mt-6">
+          <CredentialsList />
+        </TabsContent>
 
-          <TabsContent value="renewals" className="mt-6">
-            <RenewalsTab />
-          </TabsContent>
+        <TabsContent value="renewals" className="mt-6">
+          <RenewalsTab />
+        </TabsContent>
 
-          <TabsContent value="documents" className="mt-6">
-            <DocumentsVaultTab />
-          </TabsContent>
-        </Tabs>
-      )}
+        <TabsContent value="ce-tracker" className="mt-6">
+          <CEEntriesTab />
+        </TabsContent>
 
-      {/* CE Tracker section */}
-      {primaryTab === 'ce-tracker' && (
-        <CEEntriesTab />
-      )}
+        <TabsContent value="documents" className="mt-6">
+          <DocumentsVaultTab />
+        </TabsContent>
 
-      {/* Required Subscriptions section */}
-      {primaryTab === 'subscriptions' && (
-        <SubscriptionsTab />
-      )}
+        <TabsContent value="requirements" className="mt-6">
+          <SubscriptionsTab />
+        </TabsContent>
+      </Tabs>
 
       <AddCredentialDialog open={dialogOpen} onOpenChange={setDialogOpen} />
     </div>
