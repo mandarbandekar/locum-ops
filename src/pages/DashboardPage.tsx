@@ -81,7 +81,20 @@ export default function DashboardPage() {
       });
       const paid = monthInvoices.filter(i => i.status === 'paid').reduce((s, i) => s + i.total_amount, 0);
       const outstanding = monthInvoices.filter(i => i.status !== 'paid').reduce((s, i) => s + i.total_amount, 0);
-      return { month: format(month, 'MMM'), paid, outstanding };
+
+      // Anticipated income from proposed/booked shifts not yet invoiced
+      const invoicedShiftIds = new Set(
+        monthInvoices.flatMap(inv => (inv as any).line_items?.map((li: any) => li.shift_id) || [])
+      );
+      const anticipatedShifts = shifts.filter(s => {
+        const shiftDate = parseISO(s.start_datetime);
+        return isWithinInterval(shiftDate, { start: month, end: monthEnd }) &&
+          (s.status === 'proposed' || s.status === 'booked') &&
+          !invoicedShiftIds.has(s.id);
+      });
+      const anticipated = anticipatedShifts.reduce((s, sh) => s + sh.rate_applied, 0);
+
+      return { month: format(month, 'MMM'), paid, outstanding, anticipated };
     });
 
     const invoiceItems = [...draftInvoices, ...unpaidInvoices].map(inv => ({

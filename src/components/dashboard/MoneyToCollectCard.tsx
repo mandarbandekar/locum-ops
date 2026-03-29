@@ -12,6 +12,7 @@ interface RevenueMonth {
   month: string;
   paid: number;
   outstanding: number;
+  anticipated?: number;
 }
 
 interface InvoiceItem {
@@ -44,9 +45,12 @@ export function MoneyToCollectCard({
 
   const totalRevenue = useMemo(() => revenueData.reduce((s, d) => s + d.paid + d.outstanding, 0), [revenueData]);
 
+  const totalAnticipated = useMemo(() => revenueData.reduce((s, d) => s + (d.anticipated || 0), 0), [revenueData]);
+
   const chartConfig = {
     paid: { label: 'Collected', color: 'hsl(var(--success))' },
     outstanding: { label: 'Outstanding', color: 'hsl(var(--warning))' },
+    anticipated: { label: 'Anticipated', color: 'hsl(var(--muted-foreground))' },
   };
 
   const getIcon = (status: string) => {
@@ -129,9 +133,12 @@ export function MoneyToCollectCard({
         <div className="px-4 pt-3">
           <div className="flex items-center justify-between mb-1">
             <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Revenue Trend</p>
-            <p className="text-[11px] text-muted-foreground">
-              Total: <span className="font-semibold text-foreground">${totalRevenue.toLocaleString()}</span>
-            </p>
+            <div className="text-[11px] text-muted-foreground text-right">
+              <span>Total: <span className="font-semibold text-foreground">${totalRevenue.toLocaleString()}</span></span>
+              {totalAnticipated > 0 && (
+                <span className="ml-2">Est: <span className="font-semibold text-muted-foreground">${totalAnticipated.toLocaleString()}</span></span>
+              )}
+            </div>
           </div>
           <ChartContainer config={chartConfig} className="h-[90px] w-full">
             <BarChart data={revenueData} barGap={0} barCategoryGap="20%">
@@ -161,6 +168,7 @@ export function MoneyToCollectCard({
               />
               <Bar dataKey="paid" stackId="a" fill="hsl(var(--success))" radius={[0, 0, 0, 0]} />
               <Bar dataKey="outstanding" stackId="a" fill="hsl(var(--warning))" radius={[3, 3, 0, 0]} />
+              <Bar dataKey="anticipated" fill="hsl(var(--muted-foreground))" radius={[3, 3, 0, 0]} fillOpacity={0.4} strokeDasharray="4 2" stroke="hsl(var(--muted-foreground))" />
             </BarChart>
           </ChartContainer>
         </div>
