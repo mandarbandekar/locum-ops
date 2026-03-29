@@ -1,20 +1,22 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import {
   ShieldCheck, FileText, Syringe, Shield, GraduationCap, Plus,
-  Upload, ArrowLeft, ArrowRight, CheckCircle2, Sparkles,
+  Upload, ArrowLeft, ArrowRight, CheckCircle2, Sparkles, Loader2,
+  Eye, AlertCircle, Zap,
 } from 'lucide-react';
 import { useCredentials } from '@/hooks/useCredentials';
 import { useCEEntries } from '@/hooks/useCEEntries';
+import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Props {
   open: boolean;
@@ -34,9 +36,18 @@ export interface OnboardingSummary {
   expirationDays?: number | null;
 }
 
-type Step = 'select-types' | 'add-credential' | 'upload-document' | 'add-ce' | 'complete';
+type Step =
+  | 'select-types'
+  | 'add-credential'
+  | 'ai-upload'
+  | 'ai-processing'
+  | 'ai-review'
+  | 'upload-document'
+  | 'add-ce'
+  | 'complete';
 
-const STEPS: Step[] = ['select-types', 'add-credential', 'upload-document', 'add-ce', 'complete'];
+const ALL_STEPS: Step[] = ['select-types', 'add-credential', 'upload-document', 'add-ce', 'complete'];
+const AI_STEPS: Step[] = ['select-types', 'ai-upload', 'ai-processing', 'ai-review', 'upload-document', 'add-ce', 'complete'];
 
 const CREDENTIAL_OPTIONS = [
   { key: 'veterinary_license', label: 'Veterinary License', icon: ShieldCheck },
@@ -55,13 +66,65 @@ const US_STATES = [
   'South Dakota','Tennessee','Texas','Utah','Vermont','Virginia','Washington','West Virginia','Wisconsin','Wyoming',
 ];
 
+interface ExtractedField {
+  value: string;
+  confidence: 'high' | 'review' | 'unclear';
+}
+
+interface ExtractionResult {
+  credential_type: ExtractedField;
+  custom_title: ExtractedField;
+  holder_name?: ExtractedField;
+  issuing_authority?: ExtractedField;
+  jurisdiction?: ExtractedField;
+  credential_number?: ExtractedField;
+  issue_date?: ExtractedField;
+  expiration_date?: ExtractedField;
+  document_type_label?: string;
+  overall_confidence: number;
+}
+
+function parseExtraction(data: any): ExtractionResult {
+  const field = (key: string): ExtractedField | undefined => {
+    const val = data[key];
+    if (!val) return undefined;
+    return { value: val, confidence: data[`${key}_confidence`] || 'review' };
+  };
+  return {
+    credential_type: field('credential_type') || { value: 'custom', confidence: 'unclear' },
+    custom_title: field('custom_title') || { value: 'Credential', confidence: 'unclear' },
+    holder_name: field('holder_name'),
+    issuing_authority: field('issuing_authority'),
+    jurisdiction: field('jurisdiction'),
+    credential_number: field('credential_number'),
+    issue_date: field('issue_date'),
+    expiration_date: field('expiration_date'),
+    document_type_label: data.document_type_label,
+    overall_confidence: data.overall_confidence ?? 0.5,
+  };
+}
+
+// Read file content as text for AI processing
+async function readFileAsText(file: File): Promise<string> {
+  if (file.type === 'application/pdf') {
+    // For PDFs, we send filename + basic info since we can't parse client-side easily
+    return `[PDF Document: ${file.name}, Size: ${(file.size / 1024).toFixed(1)}KB]`;
+  }
+  return await file.text();
+}
+
 export function ComplianceOnboardingFlow({ open, onComplete, onSkip, onSetSelectedTypes, onMarkCredentialAdded, onMarkDocumentUploaded, onMarkCEAdded }: Props) {
   const [step, setStep] = useState<Step>('select-types');
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+  const [entryMode, setEntryMode] = useState<'manual' | 'ai'>('manual');
+
+  // Manual form state
   const [credForm, setCredForm] = useState({
     credential_type: 'veterinary_license',
     custom_title: '',
+    holder_name: '',
     jurisdiction: '',
+    issuing_authority: '',
     credential_number: '',
     expiration_date: '',
     issue_date: '',
@@ -69,26 +132,38 @@ export function ComplianceOnboardingFlow({ open, onComplete, onSkip, onSetSelect
     notes: '',
   });
   const [showOptionalFields, setShowOptionalFields] = useState(false);
-  const [entryMode, setEntryMode] = useState<'manual' | 'upload'>('manual');
-  const [credentialFile, setCredentialFile] = useState<File | null>(null);
-  const [documentFile, setDocumentFile] = useState<File | null>(null);
-  const [ceForm, setCEForm] = useState({ title: '', provider: '', completion_date: '', hours: '' });
-  const [ceFile, setCEFile] = useState<File | null>(null);
-  const [saving, setSaving] = useState(false);
 
+  // AI upload state
+  const [aiFile, setAiFile] = useState<File | null>(null);
+  const [extraction, setExtraction] = useState<ExtractionResult | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [processingMessage, setProcessingMessage] = useState('');
+
+  // Document upload state
+  const [documentFile, setDocumentFile] = useState<File | null>(null);
+  // CE state
+  const [ceForm, setCEForm] = useState({ title: '', provider: '', completion_date: '', hours: '' });
+
+  const [saving, setSaving] = useState(false);
   const [summary, setSummary] = useState<OnboardingSummary>({
     credentialAdded: false, documentUploaded: false, ceAdded: false,
   });
 
   const { addCredential, uploadDocument } = useCredentials();
   const { addCEEntry } = useCEEntries();
+  const { session } = useAuth();
 
-  const stepIndex = STEPS.indexOf(step);
-  const progress = ((stepIndex + 1) / STEPS.length) * 100;
+  const currentSteps = entryMode === 'ai' ? AI_STEPS : ALL_STEPS;
+  const stepIndex = currentSteps.indexOf(step);
+  const totalVisible = currentSteps.length;
+  const progress = Math.max(((stepIndex + 1) / totalVisible) * 100, 10);
 
   const stepLabels: Record<Step, string> = {
     'select-types': 'Choose what to track',
     'add-credential': 'Add your first credential',
+    'ai-upload': 'Upload for faster setup',
+    'ai-processing': 'Reviewing your document',
+    'ai-review': 'Review suggested details',
     'upload-document': 'Upload a document',
     'add-ce': 'Track CE hours',
     'complete': 'Setup complete',
@@ -98,6 +173,49 @@ export function ComplianceOnboardingFlow({ open, onComplete, onSkip, onSetSelect
     setSelectedTypes(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
   };
 
+  // === AI Upload Flow ===
+  const handleAiUpload = useCallback(async () => {
+    if (!aiFile || !session?.access_token) return;
+    setStep('ai-processing');
+    setAiError(null);
+    setProcessingMessage('Identifying document type…');
+
+    try {
+      const content = await readFileAsText(aiFile);
+      setProcessingMessage('Extracting credential details…');
+
+      const { data, error } = await supabase.functions.invoke('ai-credential-extract', {
+        body: { file_name: aiFile.name, content },
+      });
+
+      if (error) throw new Error(error.message || 'Extraction failed');
+      if (!data?.success) throw new Error(data?.error || 'No data returned');
+
+      const result = parseExtraction(data.data);
+      setExtraction(result);
+
+      // Pre-fill form from extraction
+      setCredForm(f => ({
+        ...f,
+        credential_type: result.credential_type.value || f.credential_type,
+        custom_title: result.custom_title.value || f.custom_title,
+        holder_name: result.holder_name?.value || f.holder_name,
+        jurisdiction: result.jurisdiction?.value || f.jurisdiction,
+        issuing_authority: result.issuing_authority?.value || f.issuing_authority,
+        credential_number: result.credential_number?.value || f.credential_number,
+        expiration_date: result.expiration_date?.value || f.expiration_date,
+        issue_date: result.issue_date?.value || f.issue_date,
+      }));
+
+      setStep('ai-review');
+    } catch (e: any) {
+      console.error('AI extraction error:', e);
+      setAiError(e.message || 'Something went wrong. You can finish the details manually.');
+      // Fall back to manual with whatever we have
+      setStep('ai-review');
+    }
+  }, [aiFile, session?.access_token]);
+
   const handleSaveCredential = async () => {
     setSaving(true);
     try {
@@ -106,14 +224,16 @@ export function ComplianceOnboardingFlow({ open, onComplete, onSkip, onSetSelect
         credential_type: credForm.credential_type,
         custom_title: title,
         jurisdiction: credForm.jurisdiction || null,
+        issuing_authority: credForm.issuing_authority || null,
         credential_number: credForm.credential_number || null,
         expiration_date: credForm.expiration_date || null,
         issue_date: credForm.issue_date || null,
         notes: credForm.notes || '',
       });
 
-      if (credentialFile && result?.id) {
-        await uploadDocument(credentialFile, result.id);
+      // If AI path, also upload the source document and link it
+      if (entryMode === 'ai' && aiFile && result?.id) {
+        await uploadDocument(aiFile, result.id);
         onMarkDocumentUploaded();
         setSummary(s => ({ ...s, documentUploaded: true }));
       }
@@ -168,8 +288,16 @@ export function ComplianceOnboardingFlow({ open, onComplete, onSkip, onSetSelect
     }
   };
 
-  const handleComplete = () => {
-    onComplete(summary);
+  const handleComplete = () => onComplete(summary);
+
+  const getConfidenceBadge = (conf: 'high' | 'review' | 'unclear') => {
+    const styles = {
+      high: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+      review: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+      unclear: 'bg-muted text-muted-foreground border-border',
+    };
+    const labels = { high: 'High confidence', review: 'Review suggested', unclear: 'Missing / unclear' };
+    return <Badge variant="outline" className={cn('text-[10px] px-1.5 py-0 font-normal', styles[conf])}>{labels[conf]}</Badge>;
   };
 
   return (
@@ -179,9 +307,9 @@ export function ComplianceOnboardingFlow({ open, onComplete, onSkip, onSetSelect
         <div className="px-6 pt-5 pb-3 space-y-2 border-b">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-primary">
-              Step {stepIndex + 1} of {STEPS.length}
+              Step {Math.min(stepIndex + 1, totalVisible)} of {totalVisible}
             </span>
-            {step !== 'complete' && (
+            {step !== 'complete' && step !== 'ai-processing' && (
               <Button variant="ghost" size="sm" className="text-xs text-muted-foreground h-7" onClick={onSkip}>
                 Skip for now
               </Button>
@@ -193,6 +321,8 @@ export function ComplianceOnboardingFlow({ open, onComplete, onSkip, onSetSelect
 
         {/* Content */}
         <div className="p-6 max-h-[60vh] overflow-y-auto">
+
+          {/* STEP: Select Types */}
           {step === 'select-types' && (
             <div className="space-y-5">
               <div>
@@ -205,10 +335,7 @@ export function ComplianceOnboardingFlow({ open, onComplete, onSkip, onSetSelect
                   return (
                     <Card
                       key={key}
-                      className={cn(
-                        'cursor-pointer transition-all hover:shadow-md',
-                        selected && 'ring-2 ring-primary border-primary/50'
-                      )}
+                      className={cn('cursor-pointer transition-all hover:shadow-md', selected && 'ring-2 ring-primary border-primary/50')}
                       onClick={() => toggleType(key)}
                     >
                       <CardContent className="p-4 flex items-center gap-3">
@@ -224,6 +351,7 @@ export function ComplianceOnboardingFlow({ open, onComplete, onSkip, onSetSelect
             </div>
           )}
 
+          {/* STEP: Add Credential (manual vs AI choice) */}
           {step === 'add-credential' && (
             <div className="space-y-5">
               <div>
@@ -231,35 +359,47 @@ export function ComplianceOnboardingFlow({ open, onComplete, onSkip, onSetSelect
                 <p className="text-sm text-muted-foreground mt-1">Start with the credential you rely on most often for work.</p>
               </div>
 
-              <div className="flex gap-2">
-                <Button
-                  variant={entryMode === 'manual' ? 'default' : 'outline'}
-                  size="sm"
+              {/* Method picker cards */}
+              <div className="grid grid-cols-1 gap-3">
+                <Card
+                  className={cn('cursor-pointer transition-all hover:shadow-md', entryMode === 'manual' && 'ring-2 ring-primary border-primary/50')}
                   onClick={() => setEntryMode('manual')}
-                  className="gap-1.5"
                 >
-                  <FileText className="h-3.5 w-3.5" /> Enter manually
-                </Button>
-                <Button
-                  variant={entryMode === 'upload' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setEntryMode('upload')}
-                  className="gap-1.5"
+                  <CardContent className="p-4 flex items-center gap-4">
+                    <div className={cn('p-2.5 rounded-lg', entryMode === 'manual' ? 'bg-primary/20' : 'bg-muted')}>
+                      <FileText className={cn('h-5 w-5', entryMode === 'manual' ? 'text-primary' : 'text-muted-foreground')} />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold">Enter manually</p>
+                      <p className="text-xs text-muted-foreground">Type in your credential details step by step</p>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card
+                  className={cn('cursor-pointer transition-all hover:shadow-md', entryMode === 'ai' && 'ring-2 ring-primary border-primary/50')}
+                  onClick={() => setEntryMode('ai')}
                 >
-                  <Upload className="h-3.5 w-3.5" /> Upload document
-                </Button>
+                  <CardContent className="p-4 flex items-center gap-4">
+                    <div className={cn('p-2.5 rounded-lg', entryMode === 'ai' ? 'bg-primary/20' : 'bg-muted')}>
+                      <Zap className={cn('h-5 w-5', entryMode === 'ai' ? 'text-primary' : 'text-muted-foreground')} />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold">Upload document for faster setup</p>
+                      <p className="text-xs text-muted-foreground">Save time — LocumOps reviews your document and suggests the details</p>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
 
-              {entryMode === 'manual' ? (
-                <div className="space-y-4">
+              {/* Manual form inline */}
+              {entryMode === 'manual' && (
+                <div className="space-y-4 pt-2">
                   <div className="space-y-2">
                     <Label>Credential type</Label>
                     <Select value={credForm.credential_type} onValueChange={v => setCredForm(f => ({ ...f, credential_type: v, custom_title: CREDENTIAL_OPTIONS.find(o => o.key === v)?.label || '' }))}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {CREDENTIAL_OPTIONS.map(o => (
-                          <SelectItem key={o.key} value={o.key}>{o.label}</SelectItem>
-                        ))}
+                        {CREDENTIAL_OPTIONS.map(o => <SelectItem key={o.key} value={o.key}>{o.label}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
@@ -280,13 +420,11 @@ export function ComplianceOnboardingFlow({ open, onComplete, onSkip, onSetSelect
                     <Label>Expiration date</Label>
                     <Input type="date" value={credForm.expiration_date} onChange={e => setCredForm(f => ({ ...f, expiration_date: e.target.value }))} />
                   </div>
-
                   {!showOptionalFields && (
                     <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1" onClick={() => setShowOptionalFields(true)}>
                       <Plus className="h-3 w-3" /> More fields (optional)
                     </Button>
                   )}
-
                   {showOptionalFields && (
                     <div className="space-y-4 pt-1 border-t">
                       <div className="space-y-2">
@@ -304,51 +442,162 @@ export function ComplianceOnboardingFlow({ open, onComplete, onSkip, onSetSelect
                     </div>
                   )}
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="border-2 border-dashed rounded-xl p-8 text-center space-y-3">
-                    <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
-                    <div>
-                      <p className="text-sm font-medium">Upload a credential document</p>
-                      <p className="text-xs text-muted-foreground mt-1">License copy, DEA document, insurance file, or other credential</p>
-                    </div>
-                    <input
-                      type="file"
-                      accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
-                      className="hidden"
-                      id="cred-file-upload"
-                      onChange={e => {
-                        const f = e.target.files?.[0];
-                        if (f) setCredentialFile(f);
-                      }}
-                    />
-                    <Button variant="outline" size="sm" onClick={() => document.getElementById('cred-file-upload')?.click()}>
-                      Choose file
-                    </Button>
-                    {credentialFile && (
-                      <p className="text-xs text-primary font-medium">{credentialFile.name}</p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Credential type</Label>
-                    <Select value={credForm.credential_type} onValueChange={v => setCredForm(f => ({ ...f, credential_type: v, custom_title: CREDENTIAL_OPTIONS.find(o => o.key === v)?.label || '' }))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {CREDENTIAL_OPTIONS.map(o => (
-                          <SelectItem key={o.key} value={o.key}>{o.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Expiration date</Label>
-                    <Input type="date" value={credForm.expiration_date} onChange={e => setCredForm(f => ({ ...f, expiration_date: e.target.value }))} />
-                  </div>
-                </div>
               )}
             </div>
           )}
 
+          {/* STEP: AI Upload */}
+          {step === 'ai-upload' && (
+            <div className="space-y-5">
+              <div>
+                <h3 className="text-lg font-bold">Upload your first credential document</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Start with a license copy, DEA document, insurance file, or similar credential record. LocumOps will review it and suggest the important details.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {['Veterinary license', 'DEA registration', 'Malpractice insurance', 'Controlled substance permit'].map(t => (
+                  <Badge key={t} variant="outline" className="text-xs">{t}</Badge>
+                ))}
+              </div>
+              <div
+                className={cn(
+                  'border-2 border-dashed rounded-xl p-8 text-center space-y-3 transition-colors',
+                  aiFile ? 'border-primary/50 bg-primary/5' : 'hover:border-muted-foreground/30'
+                )}
+              >
+                <Upload className={cn('h-8 w-8 mx-auto', aiFile ? 'text-primary' : 'text-muted-foreground')} />
+                <div>
+                  <p className="text-sm font-medium">{aiFile ? aiFile.name : 'Drop your document here or click to browse'}</p>
+                  {aiFile && <p className="text-xs text-muted-foreground mt-1">{(aiFile.size / 1024).toFixed(0)} KB</p>}
+                </div>
+                <input
+                  type="file"
+                  accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.txt"
+                  className="hidden"
+                  id="ai-file-upload"
+                  onChange={e => {
+                    const f = e.target.files?.[0];
+                    if (f) setAiFile(f);
+                  }}
+                />
+                <Button variant="outline" size="sm" onClick={() => document.getElementById('ai-file-upload')?.click()}>
+                  {aiFile ? 'Change file' : 'Choose file'}
+                </Button>
+              </div>
+              <p className="text-[11px] text-muted-foreground text-center">
+                You'll review any suggested details before anything is saved.
+              </p>
+            </div>
+          )}
+
+          {/* STEP: AI Processing */}
+          {step === 'ai-processing' && (
+            <div className="space-y-6 text-center py-8">
+              <div className="mx-auto w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <Loader2 className="h-7 w-7 text-primary animate-spin" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold">Reviewing your document</h3>
+                <p className="text-sm text-muted-foreground mt-2">
+                  LocumOps is finding the details that matter most for setup.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                  <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                  {processingMessage}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* STEP: AI Review */}
+          {step === 'ai-review' && (
+            <div className="space-y-5">
+              <div>
+                <h3 className="text-lg font-bold">Review suggested details</h3>
+                {aiError ? (
+                  <div className="flex items-start gap-2 mt-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                    <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                    <p className="text-xs text-amber-600 dark:text-amber-400">
+                      {aiError.includes('couldn') ? aiError : "We couldn't identify everything automatically. You can finish the details manually."}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    LocumOps reviewed your document. Please confirm or edit the details before saving.
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-4">
+                <ReviewField
+                  label="Credential type"
+                  confidence={extraction?.credential_type.confidence}
+                  badge={getConfidenceBadge}
+                >
+                  <Select value={credForm.credential_type} onValueChange={v => setCredForm(f => ({ ...f, credential_type: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {CREDENTIAL_OPTIONS.map(o => <SelectItem key={o.key} value={o.key}>{o.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </ReviewField>
+
+                <ReviewField label="Title" confidence={extraction?.custom_title.confidence} badge={getConfidenceBadge}>
+                  <Input value={credForm.custom_title} onChange={e => setCredForm(f => ({ ...f, custom_title: e.target.value }))} />
+                </ReviewField>
+
+                <ReviewField label="Holder name" confidence={extraction?.holder_name?.confidence} badge={getConfidenceBadge}>
+                  <Input value={credForm.holder_name} onChange={e => setCredForm(f => ({ ...f, holder_name: e.target.value }))} placeholder="Name on credential" />
+                </ReviewField>
+
+                <ReviewField label="Issuing state" confidence={extraction?.jurisdiction?.confidence} badge={getConfidenceBadge}>
+                  <Select value={credForm.jurisdiction} onValueChange={v => setCredForm(f => ({ ...f, jurisdiction: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Select state" /></SelectTrigger>
+                    <SelectContent>
+                      {US_STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </ReviewField>
+
+                <ReviewField label="Issuing authority" confidence={extraction?.issuing_authority?.confidence} badge={getConfidenceBadge}>
+                  <Input value={credForm.issuing_authority} onChange={e => setCredForm(f => ({ ...f, issuing_authority: e.target.value }))} placeholder="e.g. State Veterinary Board" />
+                </ReviewField>
+
+                <ReviewField label="Credential number" confidence={extraction?.credential_number?.confidence} badge={getConfidenceBadge}>
+                  <Input value={credForm.credential_number} onChange={e => setCredForm(f => ({ ...f, credential_number: e.target.value }))} placeholder="e.g. VET-12345" />
+                </ReviewField>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <ReviewField label="Issue date" confidence={extraction?.issue_date?.confidence} badge={getConfidenceBadge}>
+                    <Input type="date" value={credForm.issue_date} onChange={e => setCredForm(f => ({ ...f, issue_date: e.target.value }))} />
+                  </ReviewField>
+                  <ReviewField label="Expiration date" confidence={extraction?.expiration_date?.confidence} badge={getConfidenceBadge}>
+                    <Input type="date" value={credForm.expiration_date} onChange={e => setCredForm(f => ({ ...f, expiration_date: e.target.value }))} />
+                  </ReviewField>
+                </div>
+              </div>
+
+              {extraction?.document_type_label && (
+                <div className="p-3 rounded-lg bg-muted/50 border">
+                  <p className="text-xs text-muted-foreground mb-1">This document will be saved as:</p>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs">{extraction.document_type_label}</Badge>
+                    <span className="text-xs text-muted-foreground">linked to</span>
+                    <Badge variant="outline" className="text-xs">{credForm.custom_title || 'Credential'}</Badge>
+                  </div>
+                </div>
+              )}
+
+              <p className="text-[11px] text-muted-foreground">
+                Review AI-suggested details before saving. Always verify official renewal requirements with your licensing authority.
+              </p>
+            </div>
+          )}
+
+          {/* STEP: Upload Document */}
           {step === 'upload-document' && (
             <div className="space-y-5">
               <div>
@@ -378,13 +627,12 @@ export function ComplianceOnboardingFlow({ open, onComplete, onSkip, onSetSelect
                 <Button variant="outline" size="sm" onClick={() => document.getElementById('doc-file-upload')?.click()}>
                   Choose file
                 </Button>
-                {documentFile && (
-                  <p className="text-xs text-primary font-medium">{documentFile.name}</p>
-                )}
+                {documentFile && <p className="text-xs text-primary font-medium">{documentFile.name}</p>}
               </div>
             </div>
           )}
 
+          {/* STEP: Add CE */}
           {step === 'add-ce' && (
             <div className="space-y-5">
               <div>
@@ -414,13 +662,16 @@ export function ComplianceOnboardingFlow({ open, onComplete, onSkip, onSetSelect
             </div>
           )}
 
+          {/* STEP: Complete */}
           {step === 'complete' && (
             <div className="space-y-5 text-center">
               <div className="mx-auto w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center">
                 <Sparkles className="h-7 w-7 text-emerald-500" />
               </div>
               <div>
-                <h3 className="text-lg font-bold">You're off to a good start</h3>
+                <h3 className="text-lg font-bold">
+                  {entryMode === 'ai' ? 'Your first credential is ready' : "You're off to a good start"}
+                </h3>
                 <p className="text-sm text-muted-foreground mt-1">Here's what you've set up so far:</p>
               </div>
               <div className="space-y-2 text-left">
@@ -428,7 +679,7 @@ export function ComplianceOnboardingFlow({ open, onComplete, onSkip, onSetSelect
                 {summary.expirationDays != null && summary.expirationDays > 0 && (
                   <SummaryRow done label={`Next expiration in ${summary.expirationDays} days`} />
                 )}
-                <SummaryRow done={summary.documentUploaded} label={summary.documentUploaded ? '1 document uploaded' : 'Document upload recommended'} />
+                <SummaryRow done={summary.documentUploaded} label={summary.documentUploaded ? 'Document linked successfully' : 'Document upload recommended'} />
                 <SummaryRow done={summary.ceAdded} label={summary.ceAdded ? 'CE tracking started' : 'CE tracking not yet started'} />
               </div>
             </div>
@@ -437,20 +688,31 @@ export function ComplianceOnboardingFlow({ open, onComplete, onSkip, onSetSelect
 
         {/* Footer */}
         <div className="px-6 py-4 border-t flex items-center justify-between">
-          {step === 'select-types' && <div />}
-          {step === 'add-credential' && (
-            <Button variant="ghost" size="sm" onClick={() => setStep('select-types')} className="gap-1">
-              <ArrowLeft className="h-3.5 w-3.5" /> Back
-            </Button>
-          )}
-          {step === 'upload-document' && (
-            <Button variant="ghost" size="sm" onClick={() => setStep('add-credential')} className="gap-1">
-              <ArrowLeft className="h-3.5 w-3.5" /> Back
-            </Button>
-          )}
-          {step === 'add-ce' && <div />}
-          {step === 'complete' && <div />}
+          {/* Back buttons */}
+          <div>
+            {step === 'add-credential' && (
+              <Button variant="ghost" size="sm" onClick={() => setStep('select-types')} className="gap-1">
+                <ArrowLeft className="h-3.5 w-3.5" /> Back
+              </Button>
+            )}
+            {step === 'ai-upload' && (
+              <Button variant="ghost" size="sm" onClick={() => setStep('add-credential')} className="gap-1">
+                <ArrowLeft className="h-3.5 w-3.5" /> Back
+              </Button>
+            )}
+            {step === 'ai-review' && (
+              <Button variant="ghost" size="sm" onClick={() => { setAiFile(null); setExtraction(null); setAiError(null); setStep('ai-upload'); }} className="gap-1">
+                <ArrowLeft className="h-3.5 w-3.5" /> Start over
+              </Button>
+            )}
+            {step === 'upload-document' && (
+              <Button variant="ghost" size="sm" onClick={() => setStep(entryMode === 'ai' ? 'ai-review' : 'add-credential')} className="gap-1">
+                <ArrowLeft className="h-3.5 w-3.5" /> Back
+              </Button>
+            )}
+          </div>
 
+          {/* Action buttons */}
           <div className="flex gap-2">
             {step === 'select-types' && (
               <Button onClick={() => { onSetSelectedTypes(selectedTypes); setStep('add-credential'); }} className="gap-1">
@@ -459,11 +721,32 @@ export function ComplianceOnboardingFlow({ open, onComplete, onSkip, onSetSelect
             )}
             {step === 'add-credential' && (
               <>
-                <Button variant="ghost" size="sm" onClick={() => setStep('upload-document')}>Skip for now</Button>
-                <Button onClick={handleSaveCredential} disabled={saving} className="gap-1">
-                  {saving ? 'Saving...' : 'Save credential'}
+                {entryMode === 'manual' ? (
+                  <>
+                    <Button variant="ghost" size="sm" onClick={() => setStep('upload-document')}>Skip for now</Button>
+                    <Button onClick={handleSaveCredential} disabled={saving} className="gap-1">
+                      {saving ? 'Saving...' : 'Save credential'}
+                    </Button>
+                  </>
+                ) : (
+                  <Button onClick={() => setStep('ai-upload')} className="gap-1">
+                    Continue <ArrowRight className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+              </>
+            )}
+            {step === 'ai-upload' && (
+              <>
+                <Button variant="ghost" size="sm" onClick={() => { setEntryMode('manual'); setStep('add-credential'); }}>Enter manually instead</Button>
+                <Button onClick={handleAiUpload} disabled={!aiFile} className="gap-1">
+                  <Upload className="h-3.5 w-3.5" /> Upload & review
                 </Button>
               </>
+            )}
+            {step === 'ai-review' && (
+              <Button onClick={handleSaveCredential} disabled={saving} className="gap-1">
+                {saving ? 'Saving...' : 'Confirm & save'}
+              </Button>
             )}
             {step === 'upload-document' && (
               <>
@@ -475,7 +758,7 @@ export function ComplianceOnboardingFlow({ open, onComplete, onSkip, onSetSelect
             )}
             {step === 'add-ce' && (
               <>
-                <Button variant="ghost" size="sm" onClick={() => { setStep('complete'); }}>Skip for now</Button>
+                <Button variant="ghost" size="sm" onClick={() => setStep('complete')}>Skip for now</Button>
                 <Button onClick={handleSaveCE} disabled={saving || !ceForm.title || !ceForm.completion_date} className="gap-1">
                   {saving ? 'Saving...' : 'Add CE now'}
                 </Button>
@@ -483,7 +766,7 @@ export function ComplianceOnboardingFlow({ open, onComplete, onSkip, onSetSelect
             )}
             {step === 'complete' && (
               <>
-                <Button variant="outline" onClick={() => setStep('add-credential')}>Add another credential</Button>
+                <Button variant="outline" onClick={() => { setEntryMode('manual'); setStep('add-credential'); }}>Add another credential</Button>
                 <Button onClick={handleComplete} className="gap-1">Go to dashboard</Button>
               </>
             )}
@@ -491,6 +774,25 @@ export function ComplianceOnboardingFlow({ open, onComplete, onSkip, onSetSelect
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// === Sub-components ===
+
+function ReviewField({ label, confidence, badge, children }: {
+  label: string;
+  confidence?: 'high' | 'review' | 'unclear';
+  badge: (c: 'high' | 'review' | 'unclear') => React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between">
+        <Label className="text-xs">{label}</Label>
+        {confidence && badge(confidence)}
+      </div>
+      {children}
+    </div>
   );
 }
 
