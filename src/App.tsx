@@ -9,6 +9,8 @@ import { DataProvider } from "@/contexts/DataContext";
 import { Layout } from "@/components/Layout";
 
 
+import { useIdleTimeout } from "@/hooks/useIdleTimeout";
+import { IdleTimeoutWarning } from "@/components/IdleTimeoutWarning";
 import LoginPage from "@/pages/LoginPage";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
@@ -104,7 +106,9 @@ function AuthenticatedApp() {
 }
 
 function AuthGate() {
-  const { user, loading, isDemo } = useAuth();
+  const { user, loading, isDemo, signOut } = useAuth();
+  const idleEnabled = !!(user || isDemo);
+  const { showWarning, secondsLeft, stayLoggedIn } = useIdleTimeout(signOut, idleEnabled);
 
   if (loading) {
     return (
@@ -135,6 +139,12 @@ function AuthGate() {
   return (
     <UserProfileProvider isDemo={isDemo}>
       <AuthenticatedApp />
+      <IdleTimeoutWarning
+        open={showWarning}
+        secondsLeft={secondsLeft}
+        onStay={stayLoggedIn}
+        onLogout={signOut}
+      />
     </UserProfileProvider>
   );
 }
