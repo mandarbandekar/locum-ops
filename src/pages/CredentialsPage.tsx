@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 import { ComplianceOverview } from '@/components/compliance/ComplianceOverview';
@@ -8,11 +8,16 @@ import DocumentsVaultTab from '@/components/credentials/DocumentsVaultTab';
 import CEEntriesTab from '@/components/credentials/CEEntriesTab';
 import SubscriptionsTab from '@/components/subscriptions/SubscriptionsTab';
 import { AddCredentialDialog } from '@/components/credentials/AddCredentialDialog';
+import { ComplianceWelcomeModal } from '@/components/compliance/onboarding/ComplianceWelcomeModal';
+import { ComplianceOnboardingFlow } from '@/components/compliance/onboarding/ComplianceOnboardingFlow';
+import { useComplianceOnboarding } from '@/hooks/useComplianceOnboarding';
+import { useCredentials } from '@/hooks/useCredentials';
+import { useAuth } from '@/contexts/AuthContext';
 import { ShieldCheck } from 'lucide-react';
 
 type PrimaryTab = 'overview' | 'credentials' | 'renewals' | 'ce-tracker' | 'documents' | 'requirements';
 
-const TABS: { value: PrimaryTab; label: string; shortLabel?: string }[] = [
+const TABS: { value: PrimaryTab; label: string }[] = [
   { value: 'overview', label: 'Overview' },
   { value: 'credentials', label: 'Credentials' },
   { value: 'renewals', label: 'Renewals' },
@@ -24,12 +29,79 @@ const TABS: { value: PrimaryTab; label: string; shortLabel?: string }[] = [
 export default function CredentialsPage() {
   const [activeTab, setActiveTab] = useState<PrimaryTab>('overview');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const { isDemo } = useAuth();
+
+  const {
+    showWelcome,
+    needsOnboarding,
+    state: onboardingState,
+    isLoading: onboardingLoading,
+    checklistItems,
+    markWelcomeSeen,
+    markSkipped,
+    markCompleted,
+    setSelectedTypes,
+    markCredentialAdded,
+    markDocumentUploaded,
+    markCEAdded,
+  } = useComplianceOnboarding();
+
+  const { credentials } = useCredentials();
+  const credentialCount = isDemo ? 5 : (credentials?.length || 0);
+
+  const [showOnboardingFlow, setShowOnboardingFlow] = useState(false);
+
+  // Show welcome modal for first-time users with no credentials
+  const shouldShowWelcome = !isDemo && !onboardingLoading && showWelcome && credentialCount === 0;
+  // Show onboarding flow after welcome
+  const shouldShowFlow = showOnboardingFlow;
+
+  const handleGetStarted = async () => {
+    await markWelcomeSeen();
+    setShowOnboardingFlow(true);
+  };
+
+  const handleSkipWelcome = async () => {
+    await markSkipped();
+  };
+
+  const handleSkipFlow = async () => {
+    await markSkipped();
+    setShowOnboardingFlow(false);
+  };
+
+  const handleFlowComplete = async () => {
+    await markCompleted();
+    setShowOnboardingFlow(false);
+  };
+
+  const handleStartOnboarding = async () => {
+    await markWelcomeSeen();
+    setShowOnboardingFlow(true);
+  };
 
   const handleNavigate = (tab: string) => {
     if (TABS.some(t => t.value === tab)) {
       setActiveTab(tab as PrimaryTab);
     }
   };
+
+  const handleChecklistAction = useCallback((action: string) => {
+    switch (action) {
+      case 'add-credential':
+        setDialogOpen(true);
+        break;
+      case 'upload-document':
+        setActiveTab('documents');
+        break;
+      case 'add-ce':
+        setActiveTab('ce-tracker');
+        break;
+      case 'review-renewals':
+        setActiveTab('renewals');
+        break;
+    }
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -59,7 +131,17 @@ export default function CredentialsPage() {
         </TabsList>
 
         <TabsContent value="overview" className="mt-6">
-          <ComplianceOverview onNavigate={handleNavigate} />
+          <ComplianceOverview
+            onNavigate={handleNavigate}
+            checklistItems={checklistItems}
+            onChecklistAction={handleChecklistAction}
+            showChecklist={!isDemo && needsOnboarding && !onboardingLoading}
+            credentialCount={credentialCount}
+            onStartOnboarding={handleStartOnboarding}
+            onAddCredential={() => setDialogOpen(true)}
+            onUploadDocument={() => setActiveTab('documents')}
+            onAddCE={() => setActiveTab('ce-tracker')}
+          />
         </TabsContent>
 
         <TabsContent value="credentials" className="mt-6">
@@ -84,6 +166,23 @@ export default function CredentialsPage() {
       </Tabs>
 
       <AddCredentialDialog open={dialogOpen} onOpenChange={setDialogOpen} />
+
+      {/* Onboarding modals */}
+      <ComplianceWelcomeModal
+        open={shouldShowWelcome}
+        onGetStarted={handleGetStarted}
+        onSkip={handleSkipWelcome}
+      />
+
+      <ComplianceOnboardingFlow
+        open={shouldShowFlow}
+        onComplete={handleFlowComplete}
+        onSkip={handleSkipFlow}
+        onSetSelectedTypes={setSelectedTypes}
+        onMarkCredentialAdded={markCredentialAdded}
+        onMarkDocumentUploaded={markDocumentUploaded}
+        onMarkCEAdded={markCEAdded}
+      />
     </div>
   );
 }
