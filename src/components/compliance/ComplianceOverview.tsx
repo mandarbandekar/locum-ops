@@ -14,9 +14,26 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { ComplianceSetupChecklist } from '@/components/compliance/onboarding/ComplianceSetupChecklist';
+import { ComplianceEmptyState } from '@/components/compliance/onboarding/ComplianceEmptyState';
+
+interface ChecklistItem {
+  key: string;
+  label: string;
+  done: boolean;
+  action: string;
+}
 
 interface Props {
   onNavigate: (tab: string) => void;
+  checklistItems?: ChecklistItem[];
+  onChecklistAction?: (action: string) => void;
+  showChecklist?: boolean;
+  credentialCount?: number;
+  onStartOnboarding?: () => void;
+  onAddCredential?: () => void;
+  onUploadDocument?: () => void;
+  onAddCE?: () => void;
 }
 
 export function ComplianceOverview({ onNavigate }: Props) {
