@@ -107,6 +107,11 @@ export function ComplianceOverview({ onNavigate, checklistItems, onChecklistActi
         />
       </div>
 
+      {/* Setup Checklist */}
+      {showChecklist && checklistItems && onChecklistAction && (
+        <ComplianceSetupChecklist items={checklistItems} onAction={onChecklistAction} />
+      )}
+
       {/* Attention Needed */}
       {activeAlerts.length > 0 && (
         <Card className="border-amber-500/20">
