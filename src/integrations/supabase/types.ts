@@ -402,6 +402,51 @@ export type Database = {
         }
         Relationships: []
       }
+      compliance_onboarding_state: {
+        Row: {
+          created_at: string
+          first_ce_entry_added: boolean
+          first_credential_added: boolean
+          first_document_uploaded: boolean
+          has_seen_welcome: boolean
+          id: string
+          onboarding_completed_at: string | null
+          onboarding_skipped_at: string | null
+          onboarding_started_at: string | null
+          selected_credential_types: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          first_ce_entry_added?: boolean
+          first_credential_added?: boolean
+          first_document_uploaded?: boolean
+          has_seen_welcome?: boolean
+          id?: string
+          onboarding_completed_at?: string | null
+          onboarding_skipped_at?: string | null
+          onboarding_started_at?: string | null
+          selected_credential_types?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          first_ce_entry_added?: boolean
+          first_credential_added?: boolean
+          first_document_uploaded?: boolean
+          has_seen_welcome?: boolean
+          id?: string
+          onboarding_completed_at?: string | null
+          onboarding_skipped_at?: string | null
+          onboarding_started_at?: string | null
+          selected_credential_types?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       confirmation_activity: {
         Row: {
           action: string
