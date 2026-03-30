@@ -151,8 +151,22 @@ export default function LoginPage() {
               </div>
               <Input id="password" type="password" required minLength={6} value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" />
             </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
-            {message && (
+            {error && (
+              <div className="space-y-2">
+                <p className="text-sm text-destructive">{error}</p>
+                {message === 'sign_up_prompt' && (
+                  <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-center">
+                    <p className="text-sm text-muted-foreground">
+                      Don't have an account yet?{' '}
+                      <button type="button" className="text-primary font-semibold underline" onClick={resetForm}>
+                        Sign up here
+                      </button>
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+            {message && message !== 'sign_up_prompt' && (
               <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 text-center space-y-1">
                 <p className="text-sm font-semibold text-primary">✅ Account created!</p>
                 <p className="text-sm text-muted-foreground">Please check your email to verify your account before signing in.</p>
