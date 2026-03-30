@@ -687,10 +687,28 @@ export default function DocumentsVaultTab() {
                 return (
                   <TableRow key={doc.id}>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Icon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                        <span className="font-medium truncate max-w-[200px]">{doc.file_name}</span>
-                      </div>
+                      {renamingDocId === doc.id ? (
+                        <div className="flex items-center gap-1">
+                          <Input
+                            value={docRenameValue}
+                            onChange={e => setDocRenameValue(e.target.value)}
+                            autoFocus
+                            className="h-7 text-sm max-w-[200px]"
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') handleRenameDoc(doc, docRenameValue);
+                              if (e.key === 'Escape') { setRenamingDocId(null); setDocRenameValue(''); }
+                            }}
+                          />
+                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleRenameDoc(doc, docRenameValue)}>
+                            <Check className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <Icon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <span className="font-medium truncate max-w-[200px]">{doc.file_name}</span>
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge variant="secondary" className="text-xs">
