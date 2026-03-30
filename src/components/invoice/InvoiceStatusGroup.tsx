@@ -136,9 +136,9 @@ export function InvoiceStatusGroup({
                       </div>
                       {inv.due_date && getDueBadge(inv.due_date, inv.computedStatus)}
                     </td>
-                    <td className="p-3 text-right font-medium">${inv.total_amount.toLocaleString()}</td>
+                    <td className="p-3 text-right font-medium">${(inv.total_amount ?? 0).toLocaleString()}</td>
                     <td className="p-3 text-right hidden sm:table-cell">
-                      {inv.balance_due > 0 ? <span className="font-medium">${inv.balance_due.toLocaleString()}</span> : <span className="text-muted-foreground">—</span>}
+                      {(inv.balance_due ?? 0) > 0 ? <span className="font-medium">${(inv.balance_due ?? 0).toLocaleString()}</span> : <span className="text-muted-foreground">—</span>}
                     </td>
                     <td className="p-3">
                       <Badge className={`${statusStyles[inv.computedStatus] || statusStyles.draft} text-xs font-medium`}>
