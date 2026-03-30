@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/alert-dialog';
 
 export default function InvoicesPage() {
-  const { invoices, facilities, shifts, addInvoice, deleteInvoice } = useData();
+  const { invoices, facilities, shifts, addInvoice, deleteInvoice, dataLoading } = useData();
   const navigate = useNavigate();
   const [showCreate, setShowCreate] = useState(false);
   const [showBulkCreate, setShowBulkCreate] = useState(false);
