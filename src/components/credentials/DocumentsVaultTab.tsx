@@ -765,6 +765,9 @@ export default function DocumentsVaultTab() {
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setRenamingDocId(doc.id); setDocRenameValue(doc.file_name); }} title="Rename">
                           <Edit2 className="h-3.5 w-3.5" />
                         </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openRecategorize(doc)} title="Change category">
+                          <Tag className="h-3.5 w-3.5" />
+                        </Button>
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDownload(doc)}>
                           <Download className="h-3.5 w-3.5" />
                         </Button>
@@ -991,7 +994,7 @@ function StatCard({ label, count, icon: Icon }: { label: string; count: number; 
   );
 }
 
-function DocumentCard({ doc, credentialName, onPreview, onDownload, onDelete, onReplace, onMove, onRename }: {
+function DocumentCard({ doc, credentialName, onPreview, onDownload, onDelete, onReplace, onMove, onRename, onRecategorize }: {
   doc: CredentialDocument;
   credentialName: string | null;
   onPreview: () => void;
@@ -1000,6 +1003,7 @@ function DocumentCard({ doc, credentialName, onPreview, onDownload, onDelete, on
   onReplace: () => void;
   onMove: () => void;
   onRename: () => void;
+  onRecategorize: () => void;
 }) {
   const Icon = getFileIcon(doc.file_type);
   return (
@@ -1015,6 +1019,9 @@ function DocumentCard({ doc, credentialName, onPreview, onDownload, onDelete, on
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onRename} title="Rename">
               <Edit2 className="h-3.5 w-3.5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onRecategorize} title="Change category">
+              <Tag className="h-3.5 w-3.5" />
             </Button>
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onDownload}>
               <Download className="h-3.5 w-3.5" />
