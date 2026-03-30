@@ -61,6 +61,8 @@ export default function DocumentsVaultTab() {
   const [uploadCredentialId, setUploadCredentialId] = useState('none');
   const [showUploadStepper, setShowUploadStepper] = useState(false);
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
+  const [draggingDocId, setDraggingDocId] = useState<string | null>(null);
+  const [dragOverFolder, setDragOverFolder] = useState<string | null>(null);
 
   // Document rename state
   const [renamingDocId, setRenamingDocId] = useState<string | null>(null);
@@ -339,11 +341,43 @@ export default function DocumentsVaultTab() {
         .from('credential_documents')
         .update({ folder: targetFolder })
         .eq('id', doc.id);
+      queryClient.invalidateQueries({ queryKey: ['credential_documents'] });
       toast({ title: 'Document moved', description: `Moved to ${targetFolder || 'Root'}` });
       setMovingDoc(null);
     } catch (e: any) {
       toast({ title: 'Move failed', description: e.message, variant: 'destructive' });
     }
+  };
+
+  const handleDocDragStart = (e: React.DragEvent, docId: string) => {
+    e.dataTransfer.setData('text/plain', docId);
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggingDocId(docId);
+  };
+
+  const handleFolderDrop = async (e: React.DragEvent, targetFolder: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverFolder(null);
+    setDraggingDocId(null);
+    const docId = e.dataTransfer.getData('text/plain');
+    if (!docId) return;
+    const doc = documents.find(d => d.id === docId);
+    if (!doc) return;
+    const currentDocFolder = (doc as any).folder || '';
+    if (currentDocFolder === targetFolder) return;
+    await handleMoveToFolder(doc, targetFolder);
+  };
+
+  const handleFolderDragOver = (e: React.DragEvent, folderPath: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverFolder(folderPath);
+  };
+
+  const handleFolderDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOverFolder(null);
   };
 
   const handleRenameFolder = async (oldName: string, newName: string) => {
@@ -559,8 +593,14 @@ export default function DocumentsVaultTab() {
               return (
                 <Card
                   key={folder}
-                  className="group hover:shadow-md transition-shadow cursor-pointer"
+                  className={cn(
+                    'group hover:shadow-md transition-all cursor-pointer',
+                    dragOverFolder === folder && 'ring-2 ring-primary bg-primary/5 scale-[1.02]'
+                  )}
                   onClick={() => !isRenaming && setCurrentFolder(folder)}
+                  onDrop={(e) => handleFolderDrop(e, folder)}
+                  onDragOver={(e) => handleFolderDragOver(e, folder)}
+                  onDragLeave={handleFolderDragLeave}
                 >
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between mb-2">
@@ -682,6 +722,8 @@ export default function DocumentsVaultTab() {
                       onMove={() => setMovingDoc(doc)}
                       onRename={() => { setRenamingDocId(doc.id); setDocRenameValue(doc.file_name); }}
                       onRecategorize={() => openRecategorize(doc)}
+                      onDragStart={(e) => handleDocDragStart(e, doc.id)}
+                      isDragging={draggingDocId === doc.id}
                     />
                   )
                 ))}
@@ -711,7 +753,13 @@ export default function DocumentsVaultTab() {
                 const Icon = getFileIcon(doc.file_type);
                 const folder = (doc as any).folder || '';
                 return (
-                  <TableRow key={doc.id}>
+                  <TableRow
+                    key={doc.id}
+                    draggable
+                    onDragStart={(e) => handleDocDragStart(e, doc.id)}
+                    onDragEnd={() => setDraggingDocId(null)}
+                    className={cn(draggingDocId === doc.id && 'opacity-50')}
+                  >
                     <TableCell>
                       {renamingDocId === doc.id ? (
                         <div className="flex items-center gap-1">
@@ -1041,7 +1089,7 @@ function StatCard({ label, count, icon: Icon }: { label: string; count: number; 
   );
 }
 
-function DocumentCard({ doc, credentialName, onPreview, onDownload, onDelete, onReplace, onMove, onRename, onRecategorize }: {
+function DocumentCard({ doc, credentialName, onPreview, onDownload, onDelete, onReplace, onMove, onRename, onRecategorize, onDragStart, isDragging }: {
   doc: CredentialDocument;
   credentialName: string | null;
   onPreview: () => void;
@@ -1051,10 +1099,17 @@ function DocumentCard({ doc, credentialName, onPreview, onDownload, onDelete, on
   onMove: () => void;
   onRename: () => void;
   onRecategorize: () => void;
+  onDragStart?: (e: React.DragEvent) => void;
+  isDragging?: boolean;
 }) {
   const Icon = getFileIcon(doc.file_type);
   return (
-    <Card className="group hover:shadow-md transition-shadow cursor-pointer" onClick={onPreview}>
+    <Card
+      className={cn('group hover:shadow-md transition-shadow cursor-pointer', isDragging && 'opacity-50')}
+      onClick={onPreview}
+      draggable
+      onDragStart={onDragStart}
+    >
       <CardContent className="p-4 space-y-3">
         <div className="flex items-start justify-between">
           <div className={cn(
