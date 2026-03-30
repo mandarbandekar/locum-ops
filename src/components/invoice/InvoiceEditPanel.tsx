@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -113,10 +113,10 @@ export function InvoiceEditPanel({
 
   const total = items.reduce((s: number, li: any) => s + li.line_total, 0);
 
-  // Expose fields for live preview
-  if (onInvoiceFieldChange) {
-    onInvoiceFieldChange({ invoiceNumber, invoiceDate, dueDate, notes, total });
-  }
+  // Expose fields for live preview (in useEffect to avoid infinite render loop)
+  useEffect(() => {
+    onInvoiceFieldChange?.({ invoiceNumber, invoiceDate, dueDate, notes, total });
+  }, [invoiceNumber, invoiceDate, dueDate, notes, total]);
 
   // Expose save function for action bar
   const handleSave = async () => {
