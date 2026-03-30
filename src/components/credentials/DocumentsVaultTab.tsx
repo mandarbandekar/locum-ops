@@ -44,6 +44,7 @@ function isImageType(fileType: string | null) {
 export default function DocumentsVaultTab() {
   const { documents, credentials, isDocumentsLoading, uploadDocument } = useCredentials();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const replaceInputRef = useRef<HTMLInputElement>(null);
 
@@ -58,6 +59,8 @@ export default function DocumentsVaultTab() {
   const [replacingDocId, setReplacingDocId] = useState<string | null>(null);
   const [uploadCategory, setUploadCategory] = useState('custom');
   const [uploadCredentialId, setUploadCredentialId] = useState('none');
+  const [showUploadStepper, setShowUploadStepper] = useState(false);
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
 
   // Folder state
   const [currentFolder, setCurrentFolder] = useState('');
