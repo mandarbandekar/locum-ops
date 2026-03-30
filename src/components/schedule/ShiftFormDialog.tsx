@@ -154,12 +154,25 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
                   className={cn("p-2 pointer-events-auto")}
                 />
               </div>
-              {selectedDates.length > 0 ? (
+               {selectedDates.length > 0 ? (
                 <p className="text-xs text-muted-foreground mt-2">
                   {selectedDates.length} date{selectedDates.length !== 1 ? 's' : ''}: {selectedDates.sort((a, b) => a.getTime() - b.getTime()).map(d => format(d, 'MMM d')).join(', ')}
                 </p>
               ) : (
                 <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">Tap to select dates</p>
+              )}
+              {conflicts.length > 0 && (
+                <div className="mt-2 flex items-start gap-1.5 p-2 rounded-md bg-destructive/10 text-destructive">
+                  <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                  <div className="text-[11px] leading-snug">
+                    <p className="font-semibold">Scheduling conflict{conflicts.length > 1 ? 's' : ''}:</p>
+                    {conflicts.map(c => (
+                      <p key={c.id} className="mt-0.5">
+                        {facilities.find((f: any) => f.id === c.facility_id)?.name || 'Unknown'} — {format(new Date(c.start_datetime), 'MMM d, h:mm a')} to {format(new Date(c.end_datetime), 'h:mm a')}
+                      </p>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
           ) : (
