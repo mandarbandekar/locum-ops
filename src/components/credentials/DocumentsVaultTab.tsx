@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils';
 import {
   Upload, Search, FileText, FileImage, File, Download, Trash2,
   Eye, Replace, Clock, FolderOpen, LayoutGrid, List, X, Plus,
-  Folder, FolderPlus, ChevronRight, Home, ArrowLeft, MoveRight, Edit2, Check
+  Folder, FolderPlus, ChevronRight, Home, ArrowLeft, MoveRight, Edit2, Check, Tag
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { DocumentUploadStepper } from './DocumentUploadStepper';
@@ -65,6 +65,11 @@ export default function DocumentsVaultTab() {
   // Document rename state
   const [renamingDocId, setRenamingDocId] = useState<string | null>(null);
   const [docRenameValue, setDocRenameValue] = useState('');
+
+  // Recategorize state
+  const [recategorizingDoc, setRecategorizingDoc] = useState<CredentialDocument | null>(null);
+  const [newCategory, setNewCategory] = useState('');
+  const [newLinkedCredential, setNewLinkedCredential] = useState('none');
 
   // Folder state
   const [currentFolder, setCurrentFolder] = useState('');
@@ -246,6 +251,26 @@ export default function DocumentsVaultTab() {
       toast({ title: 'Delete failed', description: e.message, variant: 'destructive' });
     }
   };
+  const handleRecategorize = async () => {
+    if (!recategorizingDoc) return;
+    try {
+      const updates: Record<string, any> = { document_category: newCategory };
+      updates.credential_id = newLinkedCredential === 'none' ? null : newLinkedCredential;
+      await supabase.from('credential_documents').update(updates).eq('id', recategorizingDoc.id);
+      queryClient.invalidateQueries({ queryKey: ['credential_documents'] });
+      toast({ title: 'Document updated', description: 'Category and linked credential saved.' });
+      setRecategorizingDoc(null);
+    } catch (e: any) {
+      toast({ title: 'Update failed', description: e.message, variant: 'destructive' });
+    }
+  };
+
+  const openRecategorize = (doc: CredentialDocument) => {
+    setRecategorizingDoc(doc);
+    setNewCategory(doc.document_category);
+    setNewLinkedCredential(doc.credential_id || 'none');
+  };
+
   const handleRenameDoc = async (doc: CredentialDocument, newName: string) => {
     const trimmed = newName.trim();
     if (!trimmed) return;
@@ -656,6 +681,7 @@ export default function DocumentsVaultTab() {
                       onReplace={() => setReplacingDocId(doc.id)}
                       onMove={() => setMovingDoc(doc)}
                       onRename={() => { setRenamingDocId(doc.id); setDocRenameValue(doc.file_name); }}
+                      onRecategorize={() => openRecategorize(doc)}
                     />
                   )
                 ))}
@@ -738,6 +764,9 @@ export default function DocumentsVaultTab() {
                         </Button>
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setRenamingDocId(doc.id); setDocRenameValue(doc.file_name); }} title="Rename">
                           <Edit2 className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openRecategorize(doc)} title="Change category">
+                          <Tag className="h-3.5 w-3.5" />
                         </Button>
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDownload(doc)}>
                           <Download className="h-3.5 w-3.5" />
@@ -921,6 +950,53 @@ export default function DocumentsVaultTab() {
         </DialogContent>
       </Dialog>
 
+      {/* Recategorize Dialog */}
+      <Dialog open={!!recategorizingDoc} onOpenChange={open => { if (!open) setRecategorizingDoc(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Tag className="h-5 w-5" /> Change Category
+            </DialogTitle>
+            <DialogDescription>
+              Update category and linked credential for "{recategorizingDoc?.file_name}"
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Document Category</label>
+              <Select value={newCategory} onValueChange={setNewCategory}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(DOCUMENT_CATEGORY_LABELS).map(([k, v]) => (
+                    <SelectItem key={k} value={k}>{v}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Link to Credential (optional)</label>
+              <Select value={newLinkedCredential} onValueChange={setNewLinkedCredential}>
+                <SelectTrigger>
+                  <SelectValue placeholder="None" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  {credentials.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.custom_title}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setRecategorizingDoc(null)}>Cancel</Button>
+              <Button onClick={handleRecategorize}>Save Changes</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Upload Stepper Dialog */}
       <DocumentUploadStepper
         open={showUploadStepper}
@@ -965,7 +1041,7 @@ function StatCard({ label, count, icon: Icon }: { label: string; count: number; 
   );
 }
 
-function DocumentCard({ doc, credentialName, onPreview, onDownload, onDelete, onReplace, onMove, onRename }: {
+function DocumentCard({ doc, credentialName, onPreview, onDownload, onDelete, onReplace, onMove, onRename, onRecategorize }: {
   doc: CredentialDocument;
   credentialName: string | null;
   onPreview: () => void;
@@ -974,6 +1050,7 @@ function DocumentCard({ doc, credentialName, onPreview, onDownload, onDelete, on
   onReplace: () => void;
   onMove: () => void;
   onRename: () => void;
+  onRecategorize: () => void;
 }) {
   const Icon = getFileIcon(doc.file_type);
   return (
@@ -989,6 +1066,9 @@ function DocumentCard({ doc, credentialName, onPreview, onDownload, onDelete, on
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onRename} title="Rename">
               <Edit2 className="h-3.5 w-3.5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onRecategorize} title="Change category">
+              <Tag className="h-3.5 w-3.5" />
             </Button>
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onDownload}>
               <Download className="h-3.5 w-3.5" />
