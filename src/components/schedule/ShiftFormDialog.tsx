@@ -152,7 +152,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
                   mode="multiple"
                   selected={selectedDates}
                   onSelect={(dates) => setSelectedDates(dates || [])}
-                  modifiers={{ booked: (date: Date) => bookedDates.has(format(date, 'yyyy-MM-dd')) }}
+                  modifiers={{ booked: bookedDateObjects }}
                   modifiersClassNames={{ booked: "bg-destructive/20 text-destructive font-semibold" }}
                   className={cn("p-2 pointer-events-auto")}
                 />
