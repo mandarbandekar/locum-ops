@@ -339,10 +339,9 @@ export default function DocumentsVaultTab() {
     }
     const fullPath = currentFolder ? `${currentFolder}/${name}` : name;
     setManualFolders(prev => new Set(prev).add(fullPath));
-    setCurrentFolder(fullPath);
     setShowCreateFolder(false);
     setNewFolderName('');
-    toast({ title: 'Folder created', description: `"${name}" is ready. Upload files here.` });
+    toast({ title: 'Folder created', description: `"${name}" is ready. Drag & drop documents into it.` });
   };
 
   const handleMoveToFolder = async (doc: CredentialDocument, targetFolder: string) => {
