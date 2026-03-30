@@ -13,6 +13,7 @@ import { format, subDays } from 'date-fns';
 import { computeInvoiceStatus, generateInvoiceNumber } from '@/lib/businessLogic';
 import { toast } from 'sonner';
 import { BulkInvoiceDialog } from '@/components/invoice/BulkInvoiceDialog';
+import { InvoiceEmptyState } from '@/components/invoice/InvoiceEmptyState';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -78,8 +79,20 @@ export default function InvoicesPage() {
     setShowDeleteConfirm(false);
   };
 
+  // Show empty state for first-time users
+  if (invoices.length === 0) {
+    return (
+      <div>
+        <div className="page-header flex-col sm:flex-row gap-3">
+          <h1 className="page-title">Invoices</h1>
+        </div>
+        <InvoiceEmptyState onCreateManual={() => setShowCreate(true)} />
+        <CreateInvoiceDialog open={showCreate} onOpenChange={setShowCreate} />
+      </div>
+    );
+  }
+
   return (
-    <div>
       <div className="page-header flex-col sm:flex-row gap-3">
         <h1 className="page-title">Invoices</h1>
         <div className="flex gap-2 flex-wrap w-full sm:w-auto">
