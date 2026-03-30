@@ -260,7 +260,7 @@ export default function DocumentsVaultTab() {
     setDocRenameValue('');
   };
 
-
+  const handleReplace = async (file: File, doc: CredentialDocument) => {
     setUploading(true);
     try {
       const newVersion = doc.version_number + 1;
