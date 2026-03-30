@@ -341,11 +341,43 @@ export default function DocumentsVaultTab() {
         .from('credential_documents')
         .update({ folder: targetFolder })
         .eq('id', doc.id);
+      queryClient.invalidateQueries({ queryKey: ['credential_documents'] });
       toast({ title: 'Document moved', description: `Moved to ${targetFolder || 'Root'}` });
       setMovingDoc(null);
     } catch (e: any) {
       toast({ title: 'Move failed', description: e.message, variant: 'destructive' });
     }
+  };
+
+  const handleDocDragStart = (e: React.DragEvent, docId: string) => {
+    e.dataTransfer.setData('text/plain', docId);
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggingDocId(docId);
+  };
+
+  const handleFolderDrop = async (e: React.DragEvent, targetFolder: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverFolder(null);
+    setDraggingDocId(null);
+    const docId = e.dataTransfer.getData('text/plain');
+    if (!docId) return;
+    const doc = documents.find(d => d.id === docId);
+    if (!doc) return;
+    const currentDocFolder = (doc as any).folder || '';
+    if (currentDocFolder === targetFolder) return;
+    await handleMoveToFolder(doc, targetFolder);
+  };
+
+  const handleFolderDragOver = (e: React.DragEvent, folderPath: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverFolder(folderPath);
+  };
+
+  const handleFolderDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOverFolder(null);
   };
 
   const handleRenameFolder = async (oldName: string, newName: string) => {
