@@ -19,14 +19,17 @@ import {
 } from '@/components/ui/alert-dialog';
 
 export default function InvoicesPage() {
-  const { invoices, facilities, shifts, addInvoice, deleteInvoice } = useData();
+  const { invoices, facilities, shifts, addInvoice, deleteInvoice, dataLoading } = useData();
   const navigate = useNavigate();
   const [showCreate, setShowCreate] = useState(false);
   const [showBulkCreate, setShowBulkCreate] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const allInvoices = invoices
+  
+
+  const safeInvoices = Array.isArray(invoices) ? invoices : [];
+  const allInvoices = safeInvoices
     .map(inv => ({ ...inv, computedStatus: computeInvoiceStatus(inv) }))
     .sort((a, b) => new Date(b.invoice_date || b.period_end).getTime() - new Date(a.invoice_date || a.period_end).getTime());
 
@@ -57,7 +60,16 @@ export default function InvoicesPage() {
   const draft = allInvoices.filter(i => i.computedStatus === 'draft');
   const paid = allInvoices.filter(i => i.computedStatus === 'paid');
 
-  if (invoices.length === 0) {
+  if (dataLoading) {
+    return (
+      <div className="p-6">
+        <h1 className="page-title mb-4">Invoices</h1>
+        <p className="text-muted-foreground">Loading invoices…</p>
+      </div>
+    );
+  }
+
+  if (safeInvoices.length === 0) {
     return (
       <div>
         <div className="page-header flex-col sm:flex-row gap-3">
