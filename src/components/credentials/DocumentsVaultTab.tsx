@@ -172,6 +172,20 @@ export default function DocumentsVaultTab() {
     }
   };
 
+  const handleStepperUpload = async (files: File[], category: string, credentialId: string | undefined, folder: string) => {
+    for (const file of files) {
+      const doc = await uploadDocument(file, credentialId, category);
+      if (folder && doc) {
+        await (supabase as any)
+          .from('credential_documents')
+          .update({ folder })
+          .eq('id', (doc as any).id);
+      }
+    }
+    queryClient.invalidateQueries({ queryKey: ['credential_documents'] });
+    toast({ title: 'Upload complete', description: `${files.length} file(s) uploaded${folder ? ` to ${folder}` : ''}.` });
+  };
+
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
