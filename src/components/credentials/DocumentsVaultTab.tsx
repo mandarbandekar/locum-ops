@@ -753,7 +753,13 @@ export default function DocumentsVaultTab() {
                 const Icon = getFileIcon(doc.file_type);
                 const folder = (doc as any).folder || '';
                 return (
-                  <TableRow key={doc.id}>
+                  <TableRow
+                    key={doc.id}
+                    draggable
+                    onDragStart={(e) => handleDocDragStart(e, doc.id)}
+                    onDragEnd={() => setDraggingDocId(null)}
+                    className={cn(draggingDocId === doc.id && 'opacity-50')}
+                  >
                     <TableCell>
                       {renamingDocId === doc.id ? (
                         <div className="flex items-center gap-1">
