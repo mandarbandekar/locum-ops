@@ -860,6 +860,16 @@ export default function DocumentsVaultTab() {
         </DialogContent>
       </Dialog>
 
+      {/* Upload Stepper Dialog */}
+      <DocumentUploadStepper
+        open={showUploadStepper}
+        onOpenChange={setShowUploadStepper}
+        credentials={credentials}
+        allFolders={allFolders}
+        currentFolder={currentFolder}
+        onUpload={handleStepperUpload}
+      />
+
       {/* Replace file input (hidden) */}
       <input
         ref={replaceInputRef}
