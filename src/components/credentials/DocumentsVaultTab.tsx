@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
+import { useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 import {
   Upload, Search, FileText, FileImage, File, Download, Trash2,
@@ -20,6 +21,7 @@ import {
   Folder, FolderPlus, ChevronRight, Home, ArrowLeft, MoveRight, Edit2, Check
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { DocumentUploadStepper } from './DocumentUploadStepper';
 
 type ViewMode = 'grid' | 'list';
 
@@ -42,6 +44,7 @@ function isImageType(fileType: string | null) {
 export default function DocumentsVaultTab() {
   const { documents, credentials, isDocumentsLoading, uploadDocument } = useCredentials();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const replaceInputRef = useRef<HTMLInputElement>(null);
 
@@ -56,6 +59,8 @@ export default function DocumentsVaultTab() {
   const [replacingDocId, setReplacingDocId] = useState<string | null>(null);
   const [uploadCategory, setUploadCategory] = useState('custom');
   const [uploadCredentialId, setUploadCredentialId] = useState('none');
+  const [showUploadStepper, setShowUploadStepper] = useState(false);
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
 
   // Folder state
   const [currentFolder, setCurrentFolder] = useState('');
@@ -122,12 +127,13 @@ export default function DocumentsVaultTab() {
 
   const filtered = useMemo(() => {
     return currentDocs.filter(d => {
+      if (deletingIds.has(d.id)) return false;
       if (search && !d.file_name.toLowerCase().includes(search.toLowerCase())) return false;
       if (filterCategory !== 'all' && d.document_category !== filterCategory) return false;
       if (filterCredential !== 'all' && d.credential_id !== filterCredential) return false;
       return true;
     });
-  }, [currentDocs, search, filterCategory, filterCredential]);
+  }, [currentDocs, search, filterCategory, filterCredential, deletingIds]);
 
   const groupedByCategory = useMemo(() => {
     const groups: Record<string, CredentialDocument[]> = {};
@@ -165,6 +171,20 @@ export default function DocumentsVaultTab() {
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleStepperUpload = async (files: File[], category: string, credentialId: string | undefined, folder: string) => {
+    for (const file of files) {
+      const doc = await uploadDocument(file, credentialId, category);
+      if (folder && doc) {
+        await (supabase as any)
+          .from('credential_documents')
+          .update({ folder })
+          .eq('id', (doc as any).id);
+      }
+    }
+    queryClient.invalidateQueries({ queryKey: ['credential_documents'] });
+    toast({ title: 'Upload complete', description: `${files.length} file(s) uploaded${folder ? ` to ${folder}` : ''}.` });
   };
 
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -207,11 +227,16 @@ export default function DocumentsVaultTab() {
   };
 
   const handleDelete = async (doc: CredentialDocument) => {
+    // Optimistic: immediately hide the doc
+    setDeletingIds(prev => new Set(prev).add(doc.id));
     try {
       await supabase.storage.from('credential-documents').remove([doc.file_url]);
       await supabase.from('credential_documents').delete().eq('id', doc.id);
+      queryClient.invalidateQueries({ queryKey: ['credential_documents'] });
       toast({ title: 'Document deleted' });
     } catch (e: any) {
+      // Revert on failure
+      setDeletingIds(prev => { const next = new Set(prev); next.delete(doc.id); return next; });
       toast({ title: 'Delete failed', description: e.message, variant: 'destructive' });
     }
   };
@@ -401,58 +426,28 @@ export default function DocumentsVaultTab() {
         ))}
       </div>
 
-      {/* Upload Zone */}
+      {/* Upload Zone — simplified to trigger stepper */}
       <div
-        onDrop={handleDrop}
+        onDrop={e => { e.preventDefault(); setIsDragging(false); setShowUploadStepper(true); }}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         className={cn(
-          'border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer',
+          'border-2 border-dashed rounded-xl p-6 text-center transition-colors cursor-pointer',
           isDragging
             ? 'border-primary bg-primary/5'
             : 'border-border hover:border-primary/50 hover:bg-muted/50'
         )}
-        onClick={() => fileInputRef.current?.click()}
+        onClick={() => setShowUploadStepper(true)}
       >
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          className="hidden"
-          onChange={e => e.target.files && handleFiles(e.target.files)}
-        />
-        <div className="flex flex-col items-center gap-3">
+        <div className="flex flex-col items-center gap-2">
           <div className={cn('p-3 rounded-full', isDragging ? 'bg-primary/10' : 'bg-muted')}>
             <Upload className={cn('h-6 w-6', isDragging ? 'text-primary' : 'text-muted-foreground')} />
           </div>
           <div>
-            <p className="font-medium">{uploading ? 'Uploading…' : 'Drag & drop files here, or click to browse'}</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              {currentFolder ? `Files will be added to "${getFolderDisplayName(currentFolder)}"` : 'PDFs, images, and common office documents supported'}
+            <p className="font-medium text-sm">Click to upload documents</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Upload → Categorize → Choose folder
             </p>
-          </div>
-          <div className="flex gap-3 mt-2">
-            <Select value={uploadCategory} onValueChange={setUploadCategory}>
-              <SelectTrigger className="w-[160px] h-8 text-xs">
-                <SelectValue placeholder="Category" />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(DOCUMENT_CATEGORY_LABELS).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={uploadCredentialId} onValueChange={setUploadCredentialId}>
-              <SelectTrigger className="w-[180px] h-8 text-xs">
-                <SelectValue placeholder="Link to credential" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">None</SelectItem>
-                {credentials.map(c => (
-                  <SelectItem key={c.id} value={c.id}>{c.custom_title}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
         </div>
       </div>
@@ -864,6 +859,16 @@ export default function DocumentsVaultTab() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Upload Stepper Dialog */}
+      <DocumentUploadStepper
+        open={showUploadStepper}
+        onOpenChange={setShowUploadStepper}
+        credentials={credentials}
+        allFolders={allFolders}
+        currentFolder={currentFolder}
+        onUpload={handleStepperUpload}
+      />
 
       {/* Replace file input (hidden) */}
       <input
