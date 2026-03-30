@@ -118,9 +118,9 @@ export function InvoiceSentPanel({ invoice, items, invoicePayments, facility, bi
       <Card>
         <CardHeader className="pb-1.5 pt-3 px-3"><CardTitle className="text-xs text-muted-foreground uppercase tracking-wider">Send & Share</CardTitle></CardHeader>
         <CardContent className="space-y-2 px-3 pb-3">
-          <Button variant="outline" className="w-full justify-start text-sm" onClick={() => toast.info('Email sending coming soon!')}>
+          <Button className="w-full text-sm" onClick={() => toast.info('Email sending coming soon!')}>
             <Send className="mr-2 h-4 w-4" />
-            Email to {billingNameTo || '—'}
+            Email to {billingNameTo || 'Billing Contact'}
             <Badge variant="secondary" className="ml-auto text-[10px] px-1.5 py-0">Beta</Badge>
           </Button>
           <Button variant="outline" className="w-full text-sm" onClick={handleDownloadPdf} disabled={pdfLoading}>
