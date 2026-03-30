@@ -2,18 +2,17 @@ import { useState } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Trash2, Layers, Zap, FileText, Settings } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Plus, Trash2, Layers, AlertTriangle, Send, FileEdit, CheckCircle } from 'lucide-react';
 import { format, subDays } from 'date-fns';
 import { computeInvoiceStatus, generateInvoiceNumber } from '@/lib/businessLogic';
 import { toast } from 'sonner';
 import { BulkInvoiceDialog } from '@/components/invoice/BulkInvoiceDialog';
 import { InvoiceEmptyState } from '@/components/invoice/InvoiceEmptyState';
+import { InvoiceStatusGroup } from '@/components/invoice/InvoiceStatusGroup';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -22,36 +21,16 @@ import {
 export default function InvoicesPage() {
   const { invoices, facilities, shifts, addInvoice, deleteInvoice } = useData();
   const navigate = useNavigate();
-  const [statusFilter, setStatusFilter] = useState('all');
   const [showCreate, setShowCreate] = useState(false);
   const [showBulkCreate, setShowBulkCreate] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const displayInvoices = invoices
+  const allInvoices = invoices
     .map(inv => ({ ...inv, computedStatus: computeInvoiceStatus(inv) }))
-    .filter(inv => statusFilter === 'all' || inv.computedStatus === statusFilter)
     .sort((a, b) => new Date(b.invoice_date || b.period_end).getTime() - new Date(a.invoice_date || a.period_end).getTime());
 
   const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
-
-  const getStatusBadge = (status: string) => {
-    const styles: Record<string, string> = {
-      draft: 'bg-muted text-muted-foreground',
-      sent: 'bg-blue-500/15 text-blue-700 dark:text-blue-400',
-      partial: 'bg-amber-500/15 text-amber-700 dark:text-amber-400',
-      paid: 'bg-primary/15 text-primary',
-      overdue: 'bg-destructive/15 text-destructive',
-    };
-    const labels: Record<string, string> = {
-      draft: 'Draft',
-      sent: 'Sent',
-      partial: 'Partially Paid',
-      paid: 'Paid',
-      overdue: 'Overdue',
-    };
-    return <Badge className={`${styles[status] || styles.draft} text-xs font-medium`}>{labels[status] || status}</Badge>;
-  };
 
   const toggleSelect = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -60,14 +39,6 @@ export default function InvoicesPage() {
       if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
-  };
-
-  const toggleAll = () => {
-    if (selected.size === displayInvoices.length) {
-      setSelected(new Set());
-    } else {
-      setSelected(new Set(displayInvoices.map(i => i.id)));
-    }
   };
 
   const handleBulkDelete = async () => {
@@ -79,7 +50,13 @@ export default function InvoicesPage() {
     setShowDeleteConfirm(false);
   };
 
-  // Show empty state for first-time users
+  // Group by status in priority order
+  const overdue = allInvoices.filter(i => i.computedStatus === 'overdue');
+  const sent = allInvoices.filter(i => i.computedStatus === 'sent');
+  const partial = allInvoices.filter(i => i.computedStatus === 'partial');
+  const draft = allInvoices.filter(i => i.computedStatus === 'draft');
+  const paid = allInvoices.filter(i => i.computedStatus === 'paid');
+
   if (invoices.length === 0) {
     return (
       <div>
@@ -111,130 +88,59 @@ export default function InvoicesPage() {
         </div>
       </div>
 
-      <div className="flex gap-2 mb-5 flex-wrap">
-        {['all', 'draft', 'sent', 'partial', 'paid', 'overdue'].map(s => (
-          <Button
-            key={s}
-            size="sm"
-            variant={statusFilter === s ? 'default' : 'outline'}
-            onClick={() => setStatusFilter(s)}
-            className="h-8 text-[13px] px-4"
-          >
-            {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
-            {s !== 'all' && (
-              <span className="ml-1 opacity-60">
-                ({invoices.filter(i => (s === 'overdue' ? computeInvoiceStatus(i) : i.status) === s).length})
-              </span>
-            )}
-          </Button>
-        ))}
-      </div>
+      <div className="space-y-4">
+        <InvoiceStatusGroup
+          title="Overdue"
+          icon={<AlertTriangle className="h-4 w-4 text-destructive" />}
+          invoices={overdue}
+          selected={selected}
+          onToggleSelect={toggleSelect}
+          onDelete={deleteInvoice}
+          getFacilityName={getFacilityName}
+          emptyMessage="No overdue invoices — you're all caught up!"
+          defaultOpen={true}
+        />
 
-      <div className="rounded-xl border bg-card overflow-x-auto -mx-3 sm:mx-0">
-        <table className="w-full text-[13px] min-w-[600px] sm:min-w-0">
-          <thead>
-            <tr className="border-b bg-muted/50">
-              <th className="p-3 w-10">
-                <Checkbox
-                  checked={displayInvoices.length > 0 && selected.size === displayInvoices.length}
-                  onCheckedChange={toggleAll}
-                />
-              </th>
-              <th className="text-left p-3 font-semibold text-muted-foreground">Invoice #</th>
-              <th className="text-left p-3 font-semibold text-muted-foreground">Facility</th>
-              <th className="text-left p-3 font-semibold text-muted-foreground hidden sm:table-cell">Invoice Date</th>
-              <th className="text-left p-3 font-semibold text-muted-foreground hidden md:table-cell">Due Date</th>
-              <th className="text-right p-3 font-semibold text-muted-foreground">Total</th>
-              <th className="text-right p-3 font-semibold text-muted-foreground hidden sm:table-cell">Balance</th>
-              <th className="text-left p-3 font-semibold text-muted-foreground">Status</th>
-              <th className="w-10" />
-            </tr>
-          </thead>
-          <tbody>
-            {displayInvoices.map(inv => (
-              <tr
-                key={inv.id}
-                className={`border-b last:border-0 hover:bg-muted/30 cursor-pointer transition-colors ${selected.has(inv.id) ? 'bg-primary/5' : ''}`}
-                onClick={() => navigate(`/invoices/${inv.id}`)}
-              >
-                <td className="p-3" onClick={e => toggleSelect(inv.id, e)}>
-                  <Checkbox checked={selected.has(inv.id)} />
-                </td>
-                <td className="p-3 font-semibold">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {inv.invoice_number}
-                    {inv.invoice_type === 'bulk' && (
-                      <Badge variant="outline" className="text-[10px] px-1 py-0">Bulk</Badge>
-                    )}
-                    {inv.generation_type === 'automatic' && (
-                      <Badge variant="outline" className="text-[10px] px-1 py-0 text-primary border-primary/30">
-                        <Zap className="h-2.5 w-2.5 mr-0.5" />Auto
-                      </Badge>
-                    )}
-                  </div>
-                </td>
-                <td className="p-3">
-                  <div>{getFacilityName(inv.facility_id)}</div>
-                  {inv.billing_cadence && (
-                    <span className="text-[11px] text-muted-foreground">{inv.billing_cadence.charAt(0).toUpperCase() + inv.billing_cadence.slice(1)}</span>
-                  )}
-                </td>
-                <td className="p-3 text-muted-foreground hidden sm:table-cell">
-                  {inv.invoice_date ? format(new Date(inv.invoice_date), 'MMM d, yyyy') : '—'}
-                </td>
-                <td className="p-3 text-muted-foreground hidden md:table-cell">
-                  {inv.due_date ? format(new Date(inv.due_date), 'MMM d, yyyy') : '—'}
-                </td>
-                <td className="p-3 text-right font-medium">${inv.total_amount.toLocaleString()}</td>
-                <td className="p-3 text-right hidden sm:table-cell">
-                  {inv.balance_due > 0 ? <span className="font-medium">${inv.balance_due.toLocaleString()}</span> : <span className="text-muted-foreground">—</span>}
-                </td>
-                <td className="p-3">{getStatusBadge(inv.computedStatus)}</td>
-                <td className="p-3" onClick={e => e.stopPropagation()}>
-                  <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                    onClick={async () => {
-                      await deleteInvoice(inv.id);
-                      toast.success('Invoice deleted');
-                    }}>
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </td>
-              </tr>
-            ))}
-            {displayInvoices.length === 0 && (
-              <tr><td colSpan={9} className="p-10 text-center">
-                <div className="flex flex-col items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                    <FileText className="h-5 w-5 text-muted-foreground" />
-                  </div>
-                  {statusFilter !== 'all' ? (
-                    <>
-                      <p className="text-sm text-muted-foreground">No {statusFilter} invoices</p>
-                      <Button size="sm" variant="outline" onClick={() => setStatusFilter('all')}>View all invoices</Button>
-                    </>
-                  ) : invoices.length === 0 ? (
-                    <>
-                      <p className="text-sm font-medium">No invoices yet</p>
-                      <p className="text-xs text-muted-foreground max-w-xs">Configure billing cadence on your facilities to start generating invoice drafts automatically.</p>
-                      <div className="flex gap-2 mt-1">
-                        <Button size="sm" onClick={() => setShowCreate(true)}>
-                          <Plus className="mr-1 h-3.5 w-3.5" /> Create Invoice
-                        </Button>
-                      </div>
-                    </>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">No invoices match this filter</p>
-                  )}
-                </div>
-              </td></tr>
-            )}
-          </tbody>
-        </table>
+        <InvoiceStatusGroup
+          title="Sent & Awaiting Payment"
+          icon={<Send className="h-4 w-4 text-blue-500" />}
+          invoices={[...sent, ...partial]}
+          selected={selected}
+          onToggleSelect={toggleSelect}
+          onDelete={deleteInvoice}
+          getFacilityName={getFacilityName}
+          emptyMessage="No invoices awaiting payment right now."
+          defaultOpen={true}
+        />
+
+        <InvoiceStatusGroup
+          title="Drafts"
+          icon={<FileEdit className="h-4 w-4 text-muted-foreground" />}
+          invoices={draft}
+          selected={selected}
+          onToggleSelect={toggleSelect}
+          onDelete={deleteInvoice}
+          getFacilityName={getFacilityName}
+          emptyMessage="No draft invoices — everything has been sent."
+          defaultOpen={true}
+        />
+
+        <InvoiceStatusGroup
+          title="Paid"
+          icon={<CheckCircle className="h-4 w-4 text-primary" />}
+          invoices={paid}
+          selected={selected}
+          onToggleSelect={toggleSelect}
+          onDelete={deleteInvoice}
+          getFacilityName={getFacilityName}
+          emptyMessage="No paid invoices yet."
+          defaultOpen={false}
+        />
       </div>
 
       <CreateInvoiceDialog open={showCreate} onOpenChange={setShowCreate} />
       <BulkInvoiceDialog open={showBulkCreate} onOpenChange={setShowBulkCreate} />
-      {/* Bulk delete confirmation */}
+
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
