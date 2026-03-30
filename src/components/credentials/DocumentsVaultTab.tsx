@@ -127,12 +127,13 @@ export default function DocumentsVaultTab() {
 
   const filtered = useMemo(() => {
     return currentDocs.filter(d => {
+      if (deletingIds.has(d.id)) return false;
       if (search && !d.file_name.toLowerCase().includes(search.toLowerCase())) return false;
       if (filterCategory !== 'all' && d.document_category !== filterCategory) return false;
       if (filterCredential !== 'all' && d.credential_id !== filterCredential) return false;
       return true;
     });
-  }, [currentDocs, search, filterCategory, filterCredential]);
+  }, [currentDocs, search, filterCategory, filterCredential, deletingIds]);
 
   const groupedByCategory = useMemo(() => {
     const groups: Record<string, CredentialDocument[]> = {};
