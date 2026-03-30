@@ -89,11 +89,11 @@ export function MoneyToCollectCard({
         </div>
 
         {/* Individual invoice list */}
-        <div className="px-4 pt-2 flex-1 min-h-0">
+        <div className="px-4 pt-2 min-h-0">
           <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-2 px-1">
             Invoices to Review ({invoiceItems.length})
           </p>
-          <ScrollArea className="h-[180px]">
+          <ScrollArea className="max-h-[220px]">
             <div className="space-y-1.5 pr-2">
               {invoiceItems.length === 0 && (
                 <div className="py-4 text-center">
