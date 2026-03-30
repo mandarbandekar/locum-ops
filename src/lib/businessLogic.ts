@@ -1,16 +1,36 @@
 import { Shift, Invoice } from '@/types';
 
+/**
+ * Normalize a datetime string to { dateKey, minutes-since-midnight } so that
+ * comparisons are always in the same frame (local wall-clock).
+ */
+function toLocalSlot(dt: string) {
+  const d = new Date(dt);
+  const year = d.getFullYear();
+  const month = d.getMonth();
+  const day = d.getDate();
+  const dateKey = `${year}-${month}-${day}`;
+  const minutes = d.getHours() * 60 + d.getMinutes();
+  return { dateKey, minutes };
+}
+
 export function detectShiftConflicts(shifts: Shift[], newShift: { start_datetime: string; end_datetime: string; id?: string }): Shift[] {
-  const newStart = new Date(newShift.start_datetime).getTime();
-  const newEnd = new Date(newShift.end_datetime).getTime();
+  const newStart = toLocalSlot(newShift.start_datetime);
+  const newEnd = toLocalSlot(newShift.end_datetime);
 
   return shifts.filter(s => {
     if (s.id === newShift.id) return false;
     if (s.status === 'canceled') return false;
     if (s.status !== 'booked' && s.status !== 'proposed') return false;
-    const sStart = new Date(s.start_datetime).getTime();
-    const sEnd = new Date(s.end_datetime).getTime();
-    return newStart < sEnd && newEnd > sStart;
+
+    const sStart = toLocalSlot(s.start_datetime);
+    const sEnd = toLocalSlot(s.end_datetime);
+
+    // Must be on the same calendar day to conflict
+    if (sStart.dateKey !== newStart.dateKey) return false;
+
+    // Standard interval overlap: startA < endB && endA > startB
+    return newStart.minutes < sEnd.minutes && newEnd.minutes > sStart.minutes;
   });
 }
 
