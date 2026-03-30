@@ -82,7 +82,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="h-screen w-screen overflow-hidden flex bg-background">
+    <main className="h-screen w-screen overflow-hidden flex bg-background">
       {/* Left: form area */}
       <div className="flex-1 flex flex-col justify-center px-6 lg:px-16 xl:px-24 overflow-y-auto">
         <div className="w-full max-w-md mx-auto space-y-6 py-8">
@@ -215,6 +215,6 @@ export default function LoginPage() {
           className="max-w-full max-h-[70vh] object-contain opacity-90"
         />
       </div>
-    </div>
+    </main>
   );
 }
