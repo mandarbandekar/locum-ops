@@ -246,8 +246,21 @@ export default function DocumentsVaultTab() {
       toast({ title: 'Delete failed', description: e.message, variant: 'destructive' });
     }
   };
+  const handleRenameDoc = async (doc: CredentialDocument, newName: string) => {
+    const trimmed = newName.trim();
+    if (!trimmed) return;
+    try {
+      await supabase.from('credential_documents').update({ file_name: trimmed }).eq('id', doc.id);
+      queryClient.invalidateQueries({ queryKey: ['credential_documents'] });
+      toast({ title: 'Document renamed' });
+    } catch (e: any) {
+      toast({ title: 'Rename failed', description: e.message, variant: 'destructive' });
+    }
+    setRenamingDocId(null);
+    setDocRenameValue('');
+  };
 
-  const handleReplace = async (file: File, doc: CredentialDocument) => {
+
     setUploading(true);
     try {
       const newVersion = doc.version_number + 1;
