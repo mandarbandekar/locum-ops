@@ -131,22 +131,21 @@ export function UpcomingShiftsCard({ shifts, getFacilityName, greeting, firstNam
           )}
         </div>
 
-        {/* Footer */}
-        <div className="px-5 pb-4 pt-2 flex items-center justify-between">
+        {/* Footer - flows with content */}
+        <div className="px-5 pb-5 pt-4 space-y-3">
+          <Button
+            className="w-full h-10 text-[13px] font-bold gap-2 shadow-sm"
+            onClick={() => navigate('/schedule?addShift=true')}
+          >
+            <Plus className="h-4 w-4" />
+            Add Shift
+          </Button>
           <button
-            className="flex items-center gap-1.5 text-xs text-primary font-semibold hover:underline"
+            className="flex items-center gap-1.5 text-xs text-primary font-semibold hover:underline mx-auto"
             onClick={() => navigate('/schedule')}
           >
             View full schedule <ArrowRight className="h-3 w-3" />
           </button>
-          <Button
-            size="sm"
-            className="h-8 text-[12px] font-semibold gap-1.5"
-            onClick={() => navigate('/schedule?addShift=true')}
-          >
-            <Plus className="h-3.5 w-3.5" />
-            Add Shift
-          </Button>
         </div>
       </CardContent>
     </Card>
