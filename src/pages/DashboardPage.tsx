@@ -289,7 +289,7 @@ export default function DashboardPage() {
       )}
 
       {/* 3-Column Layout */}
-      <div className="grid gap-4 sm:gap-5 grid-cols-1 lg:grid-cols-12 lg:min-h-[calc(100vh-190px)]">
+      <div className="grid gap-4 sm:gap-5 grid-cols-1 lg:grid-cols-12 lg:items-start">
         {/* Left: Upcoming Shifts */}
         <div className="lg:col-span-4">
           <UpcomingShiftsCard
