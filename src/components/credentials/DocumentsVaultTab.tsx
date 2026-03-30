@@ -62,6 +62,10 @@ export default function DocumentsVaultTab() {
   const [showUploadStepper, setShowUploadStepper] = useState(false);
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
 
+  // Document rename state
+  const [renamingDocId, setRenamingDocId] = useState<string | null>(null);
+  const [docRenameValue, setDocRenameValue] = useState('');
+
   // Folder state
   const [currentFolder, setCurrentFolder] = useState('');
   const [showCreateFolder, setShowCreateFolder] = useState(false);
@@ -69,6 +73,7 @@ export default function DocumentsVaultTab() {
   const [movingDoc, setMovingDoc] = useState<CredentialDocument | null>(null);
   const [renamingFolder, setRenamingFolder] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
+  const [manualFolders, setManualFolders] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (replacingDocId) {
@@ -83,8 +88,9 @@ export default function DocumentsVaultTab() {
       const folder = (d as any).folder || '';
       if (folder) folders.add(folder);
     });
+    manualFolders.forEach(f => folders.add(f));
     return Array.from(folders).sort();
-  }, [documents]);
+  }, [documents, manualFolders]);
 
   // Get subfolders and docs for current path
   const { subfolders, currentDocs } = useMemo(() => {
@@ -240,6 +246,19 @@ export default function DocumentsVaultTab() {
       toast({ title: 'Delete failed', description: e.message, variant: 'destructive' });
     }
   };
+  const handleRenameDoc = async (doc: CredentialDocument, newName: string) => {
+    const trimmed = newName.trim();
+    if (!trimmed) return;
+    try {
+      await supabase.from('credential_documents').update({ file_name: trimmed }).eq('id', doc.id);
+      queryClient.invalidateQueries({ queryKey: ['credential_documents'] });
+      toast({ title: 'Document renamed' });
+    } catch (e: any) {
+      toast({ title: 'Rename failed', description: e.message, variant: 'destructive' });
+    }
+    setRenamingDocId(null);
+    setDocRenameValue('');
+  };
 
   const handleReplace = async (file: File, doc: CredentialDocument) => {
     setUploading(true);
@@ -277,15 +296,12 @@ export default function DocumentsVaultTab() {
   const handleCreateFolder = async () => {
     const name = newFolderName.trim();
     if (!name) return;
-    // Validate folder name
     if (name.includes('/') || name.includes('\\')) {
       toast({ title: 'Invalid folder name', description: 'Folder names cannot contain slashes.', variant: 'destructive' });
       return;
     }
     const fullPath = currentFolder ? `${currentFolder}/${name}` : name;
-    // Folders are implicit — they exist when documents are assigned to them.
-    // We create a "marker" by just navigating into it. But since empty folders won't persist,
-    // let's just navigate in and the user can upload files there.
+    setManualFolders(prev => new Set(prev).add(fullPath));
     setCurrentFolder(fullPath);
     setShowCreateFolder(false);
     setNewFolderName('');
@@ -608,16 +624,40 @@ export default function DocumentsVaultTab() {
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {docs.map(doc => (
-                  <DocumentCard
-                    key={doc.id}
-                    doc={doc}
-                    credentialName={linkedCredentialName(doc.credential_id)}
-                    onPreview={() => handlePreview(doc)}
-                    onDownload={() => handleDownload(doc)}
-                    onDelete={() => handleDelete(doc)}
-                    onReplace={() => setReplacingDocId(doc.id)}
-                    onMove={() => setMovingDoc(doc)}
-                  />
+                  renamingDocId === doc.id ? (
+                    <Card key={doc.id} className="p-4">
+                      <div className="flex items-center gap-2">
+                        <Input
+                          value={docRenameValue}
+                          onChange={e => setDocRenameValue(e.target.value)}
+                          autoFocus
+                          className="h-8 text-sm"
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') handleRenameDoc(doc, docRenameValue);
+                            if (e.key === 'Escape') { setRenamingDocId(null); setDocRenameValue(''); }
+                          }}
+                        />
+                        <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleRenameDoc(doc, docRenameValue)}>
+                          <Check className="h-4 w-4" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => { setRenamingDocId(null); setDocRenameValue(''); }}>
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </Card>
+                  ) : (
+                    <DocumentCard
+                      key={doc.id}
+                      doc={doc}
+                      credentialName={linkedCredentialName(doc.credential_id)}
+                      onPreview={() => handlePreview(doc)}
+                      onDownload={() => handleDownload(doc)}
+                      onDelete={() => handleDelete(doc)}
+                      onReplace={() => setReplacingDocId(doc.id)}
+                      onMove={() => setMovingDoc(doc)}
+                      onRename={() => { setRenamingDocId(doc.id); setDocRenameValue(doc.file_name); }}
+                    />
+                  )
                 ))}
               </div>
             </div>
@@ -647,10 +687,28 @@ export default function DocumentsVaultTab() {
                 return (
                   <TableRow key={doc.id}>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Icon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                        <span className="font-medium truncate max-w-[200px]">{doc.file_name}</span>
-                      </div>
+                      {renamingDocId === doc.id ? (
+                        <div className="flex items-center gap-1">
+                          <Input
+                            value={docRenameValue}
+                            onChange={e => setDocRenameValue(e.target.value)}
+                            autoFocus
+                            className="h-7 text-sm max-w-[200px]"
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') handleRenameDoc(doc, docRenameValue);
+                              if (e.key === 'Escape') { setRenamingDocId(null); setDocRenameValue(''); }
+                            }}
+                          />
+                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleRenameDoc(doc, docRenameValue)}>
+                            <Check className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <Icon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <span className="font-medium truncate max-w-[200px]">{doc.file_name}</span>
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge variant="secondary" className="text-xs">
@@ -677,6 +735,9 @@ export default function DocumentsVaultTab() {
                       <div className="flex items-center gap-1">
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handlePreview(doc)}>
                           <Eye className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setRenamingDocId(doc.id); setDocRenameValue(doc.file_name); }} title="Rename">
+                          <Edit2 className="h-3.5 w-3.5" />
                         </Button>
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDownload(doc)}>
                           <Download className="h-3.5 w-3.5" />
@@ -904,7 +965,7 @@ function StatCard({ label, count, icon: Icon }: { label: string; count: number; 
   );
 }
 
-function DocumentCard({ doc, credentialName, onPreview, onDownload, onDelete, onReplace, onMove }: {
+function DocumentCard({ doc, credentialName, onPreview, onDownload, onDelete, onReplace, onMove, onRename }: {
   doc: CredentialDocument;
   credentialName: string | null;
   onPreview: () => void;
@@ -912,6 +973,7 @@ function DocumentCard({ doc, credentialName, onPreview, onDownload, onDelete, on
   onDelete: () => void;
   onReplace: () => void;
   onMove: () => void;
+  onRename: () => void;
 }) {
   const Icon = getFileIcon(doc.file_type);
   return (
@@ -925,6 +987,9 @@ function DocumentCard({ doc, credentialName, onPreview, onDownload, onDelete, on
             <Icon className="h-5 w-5 text-muted-foreground" />
           </div>
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onRename} title="Rename">
+              <Edit2 className="h-3.5 w-3.5" />
+            </Button>
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onDownload}>
               <Download className="h-3.5 w-3.5" />
             </Button>
