@@ -426,58 +426,28 @@ export default function DocumentsVaultTab() {
         ))}
       </div>
 
-      {/* Upload Zone */}
+      {/* Upload Zone — simplified to trigger stepper */}
       <div
-        onDrop={handleDrop}
+        onDrop={e => { e.preventDefault(); setIsDragging(false); setShowUploadStepper(true); }}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         className={cn(
-          'border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer',
+          'border-2 border-dashed rounded-xl p-6 text-center transition-colors cursor-pointer',
           isDragging
             ? 'border-primary bg-primary/5'
             : 'border-border hover:border-primary/50 hover:bg-muted/50'
         )}
-        onClick={() => fileInputRef.current?.click()}
+        onClick={() => setShowUploadStepper(true)}
       >
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          className="hidden"
-          onChange={e => e.target.files && handleFiles(e.target.files)}
-        />
-        <div className="flex flex-col items-center gap-3">
+        <div className="flex flex-col items-center gap-2">
           <div className={cn('p-3 rounded-full', isDragging ? 'bg-primary/10' : 'bg-muted')}>
             <Upload className={cn('h-6 w-6', isDragging ? 'text-primary' : 'text-muted-foreground')} />
           </div>
           <div>
-            <p className="font-medium">{uploading ? 'Uploading…' : 'Drag & drop files here, or click to browse'}</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              {currentFolder ? `Files will be added to "${getFolderDisplayName(currentFolder)}"` : 'PDFs, images, and common office documents supported'}
+            <p className="font-medium text-sm">Click to upload documents</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Upload → Categorize → Choose folder
             </p>
-          </div>
-          <div className="flex gap-3 mt-2">
-            <Select value={uploadCategory} onValueChange={setUploadCategory}>
-              <SelectTrigger className="w-[160px] h-8 text-xs">
-                <SelectValue placeholder="Category" />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(DOCUMENT_CATEGORY_LABELS).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={uploadCredentialId} onValueChange={setUploadCredentialId}>
-              <SelectTrigger className="w-[180px] h-8 text-xs">
-                <SelectValue placeholder="Link to credential" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">None</SelectItem>
-                {credentials.map(c => (
-                  <SelectItem key={c.id} value={c.id}>{c.custom_title}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
         </div>
       </div>
