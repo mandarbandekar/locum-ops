@@ -114,13 +114,52 @@ export function InvoiceSentPanel({ invoice, items, invoicePayments, facility, bi
 
   return (
     <div className="space-y-3">
-      {/* Balance Due */}
+      {/* Send & Share — shown first */}
+      <Card>
+        <CardHeader className="pb-1.5 pt-3 px-3"><CardTitle className="text-xs text-muted-foreground uppercase tracking-wider">Send & Share</CardTitle></CardHeader>
+        <CardContent className="space-y-2 px-3 pb-3">
+          <Button variant="outline" className="w-full justify-start text-sm" onClick={() => toast.info('Email sending coming soon!')}>
+            <Send className="mr-2 h-4 w-4" />
+            Email to {billingNameTo || '—'}
+            <Badge variant="secondary" className="ml-auto text-[10px] px-1.5 py-0">Beta</Badge>
+          </Button>
+          <Button variant="outline" className="w-full text-sm" onClick={handleDownloadPdf} disabled={pdfLoading}>
+            {pdfLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+            {pdfLoading ? 'Generating…' : 'Download PDF'}
+          </Button>
+          {hasShareLink ? (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 p-2 rounded-md bg-muted text-xs font-mono break-all">
+                <Link2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                <span className="flex-1 truncate">{shareUrl}</span>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="flex-1" onClick={handleCopyShareLink}>
+                  <Copy className="mr-1 h-3.5 w-3.5" /> Copy
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleRegenerateShareLink} disabled={shareLoading}>
+                  <RefreshCw className="mr-1 h-3.5 w-3.5" /> New
+                </Button>
+              </div>
+              <Button variant="ghost" size="sm" className="w-full text-destructive hover:text-destructive text-xs" onClick={handleRevokeShareLink}>
+                Revoke Link
+              </Button>
+            </div>
+          ) : (
+            <Button variant="outline" className="w-full text-sm" onClick={handleCreateShareLink} disabled={shareLoading}>
+              <Link2 className="mr-2 h-4 w-4" /> Create Share Link
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Balance Due & Record Payment */}
       <Card className={isPaid ? 'border-primary/30 bg-primary/5' : computedStatus === 'overdue' ? 'border-destructive/30 bg-destructive/5' : ''}>
         <CardContent className="pt-4 pb-4 space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Balance Due</span>
             <span className={`font-bold text-2xl ${computedStatus === 'overdue' ? 'text-destructive' : computedStatus === 'paid' ? 'text-primary' : 'text-foreground'}`}>
-              ${invoice.balance_due.toLocaleString()}
+              ${(invoice.balance_due ?? 0).toLocaleString()}
             </span>
           </div>
           <div className="grid grid-cols-3 gap-3 pt-2 border-t text-xs">
@@ -149,8 +188,6 @@ export function InvoiceSentPanel({ invoice, items, invoicePayments, facility, bi
           )}
         </CardContent>
       </Card>
-
-      {/* Send & Share */}
       <Card>
         <CardHeader className="pb-1.5 pt-3 px-3"><CardTitle className="text-xs text-muted-foreground uppercase tracking-wider">Send & Share</CardTitle></CardHeader>
         <CardContent className="space-y-2 px-3 pb-3">

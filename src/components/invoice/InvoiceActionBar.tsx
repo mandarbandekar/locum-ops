@@ -67,7 +67,7 @@ export function InvoiceActionBar({ invoice, items, facility, profile, dueDate, o
     });
     await onAddActivity({ invoice_id: invoice.id, action: 'marked_sent', description: 'Invoice marked as sent' });
     setSending(false);
-    toast.success('Invoice marked as sent');
+    toast.success('Invoice ready to send');
   };
 
   const handleDownloadPdf = async () => {
@@ -94,7 +94,7 @@ export function InvoiceActionBar({ invoice, items, facility, profile, dueDate, o
           {saving ? 'Saving…' : 'Save Draft'}
         </Button>
         <Button size="sm" onClick={handleProceedToSend} disabled={sending}>
-          {sending ? 'Sending…' : <>Mark as Sent <ArrowRight className="ml-1 h-3.5 w-3.5" /></>}
+          {sending ? 'Processing…' : <>Ready to Send <ArrowRight className="ml-1 h-3.5 w-3.5" /></>}
         </Button>
       </div>
     </div>
