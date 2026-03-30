@@ -193,8 +193,8 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
                   selected={selectedDates[0]}
                   onSelect={(date) => date && setSelectedDates([date])}
                   initialFocus
-                  modifiers={{ booked: (date: Date) => bookedDates.has(format(date, 'yyyy-MM-dd')) }}
-                  modifiersClassNames={{ booked: "bg-destructive/20 text-destructive font-semibold" }}
+                   modifiers={{ booked: bookedDatesList }}
+                   modifiersClassNames={{ booked: "bg-destructive/20 text-destructive font-semibold" }}
                   className={cn("p-3 pointer-events-auto")}
                 />
               </PopoverContent>
