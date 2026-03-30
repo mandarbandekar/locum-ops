@@ -52,7 +52,7 @@ export default function CredentialsPage() {
   const [showOnboardingFlow, setShowOnboardingFlow] = useState(false);
 
   // Auto-trigger onboarding for completely empty state (no credentials + never completed/skipped onboarding)
-  const isCompletelyEmpty = !isDemo && !onboardingLoading && credentialCount === 0 && needsOnboarding;
+      const isCompletelyEmpty = !isDemo && !onboardingLoading && credentialCount === 0 && needsOnboarding;
 
   // Show welcome modal for first-time users with no credentials
   const shouldShowWelcome = !isDemo && !onboardingLoading && showWelcome && credentialCount === 0;
@@ -138,7 +138,7 @@ export default function CredentialsPage() {
             onNavigate={handleNavigate}
             checklistItems={checklistItems}
             onChecklistAction={handleChecklistAction}
-            showChecklist={!isDemo && needsOnboarding && !onboardingLoading}
+            showChecklist={!isDemo && needsOnboarding && !onboardingLoading && credentialCount === 0}
             credentialCount={credentialCount}
             onStartOnboarding={handleStartOnboarding}
             onAddCredential={() => setDialogOpen(true)}
