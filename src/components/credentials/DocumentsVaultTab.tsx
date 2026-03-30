@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils';
 import {
   Upload, Search, FileText, FileImage, File, Download, Trash2,
   Eye, Replace, Clock, FolderOpen, LayoutGrid, List, X, Plus,
-  Folder, FolderPlus, ChevronRight, Home, ArrowLeft, MoveRight, Edit2, Check
+  Folder, FolderPlus, ChevronRight, Home, ArrowLeft, MoveRight, Edit2, Check, Tag
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { DocumentUploadStepper } from './DocumentUploadStepper';
