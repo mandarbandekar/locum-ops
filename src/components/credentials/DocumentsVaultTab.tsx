@@ -226,11 +226,16 @@ export default function DocumentsVaultTab() {
   };
 
   const handleDelete = async (doc: CredentialDocument) => {
+    // Optimistic: immediately hide the doc
+    setDeletingIds(prev => new Set(prev).add(doc.id));
     try {
       await supabase.storage.from('credential-documents').remove([doc.file_url]);
       await supabase.from('credential_documents').delete().eq('id', doc.id);
+      queryClient.invalidateQueries({ queryKey: ['credential_documents'] });
       toast({ title: 'Document deleted' });
     } catch (e: any) {
+      // Revert on failure
+      setDeletingIds(prev => { const next = new Set(prev); next.delete(doc.id); return next; });
       toast({ title: 'Delete failed', description: e.message, variant: 'destructive' });
     }
   };
