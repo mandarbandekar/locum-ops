@@ -80,7 +80,17 @@ export default function DocumentsVaultTab() {
   const [movingDoc, setMovingDoc] = useState<CredentialDocument | null>(null);
   const [renamingFolder, setRenamingFolder] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
-  const [manualFolders, setManualFolders] = useState<Set<string>>(new Set());
+  const [manualFolders, setManualFolders] = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem('doc_vault_folders');
+      return saved ? new Set(JSON.parse(saved)) : new Set();
+    } catch { return new Set(); }
+  });
+
+  // Persist manual folders to localStorage
+  useEffect(() => {
+    localStorage.setItem('doc_vault_folders', JSON.stringify(Array.from(manualFolders)));
+  }, [manualFolders]);
 
   useEffect(() => {
     if (replacingDocId) {
