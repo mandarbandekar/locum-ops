@@ -66,6 +66,11 @@ export default function DocumentsVaultTab() {
   const [renamingDocId, setRenamingDocId] = useState<string | null>(null);
   const [docRenameValue, setDocRenameValue] = useState('');
 
+  // Recategorize state
+  const [recategorizingDoc, setRecategorizingDoc] = useState<CredentialDocument | null>(null);
+  const [newCategory, setNewCategory] = useState('');
+  const [newLinkedCredential, setNewLinkedCredential] = useState('none');
+
   // Folder state
   const [currentFolder, setCurrentFolder] = useState('');
   const [showCreateFolder, setShowCreateFolder] = useState(false);
@@ -246,6 +251,26 @@ export default function DocumentsVaultTab() {
       toast({ title: 'Delete failed', description: e.message, variant: 'destructive' });
     }
   };
+  const handleRecategorize = async () => {
+    if (!recategorizingDoc) return;
+    try {
+      const updates: Record<string, any> = { document_category: newCategory };
+      updates.credential_id = newLinkedCredential === 'none' ? null : newLinkedCredential;
+      await supabase.from('credential_documents').update(updates).eq('id', recategorizingDoc.id);
+      queryClient.invalidateQueries({ queryKey: ['credential_documents'] });
+      toast({ title: 'Document updated', description: 'Category and linked credential saved.' });
+      setRecategorizingDoc(null);
+    } catch (e: any) {
+      toast({ title: 'Update failed', description: e.message, variant: 'destructive' });
+    }
+  };
+
+  const openRecategorize = (doc: CredentialDocument) => {
+    setRecategorizingDoc(doc);
+    setNewCategory(doc.document_category);
+    setNewLinkedCredential(doc.credential_id || 'none');
+  };
+
   const handleRenameDoc = async (doc: CredentialDocument, newName: string) => {
     const trimmed = newName.trim();
     if (!trimmed) return;
