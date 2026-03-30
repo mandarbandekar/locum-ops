@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
+import { useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 import {
   Upload, Search, FileText, FileImage, File, Download, Trash2,
@@ -20,6 +21,7 @@ import {
   Folder, FolderPlus, ChevronRight, Home, ArrowLeft, MoveRight, Edit2, Check
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { DocumentUploadStepper } from './DocumentUploadStepper';
 
 type ViewMode = 'grid' | 'list';
 
