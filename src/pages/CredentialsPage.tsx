@@ -51,6 +51,9 @@ export default function CredentialsPage() {
 
   const [showOnboardingFlow, setShowOnboardingFlow] = useState(false);
 
+  // Auto-trigger onboarding for completely empty state (no credentials + never completed/skipped onboarding)
+  const isCompletelyEmpty = !isDemo && !onboardingLoading && credentialCount === 0 && needsOnboarding;
+
   // Show welcome modal for first-time users with no credentials
   const shouldShowWelcome = !isDemo && !onboardingLoading && showWelcome && credentialCount === 0;
   // Show onboarding flow after welcome
