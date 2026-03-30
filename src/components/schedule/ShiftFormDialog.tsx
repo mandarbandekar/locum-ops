@@ -64,6 +64,12 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
 
   const rateOptions = useMemo(() => buildRateOptions(terms, facilityId), [terms, facilityId]);
 
+  const bookedDates = useMemo(() => new Set(
+    shifts
+      .filter(s => s.status === 'booked' || s.status === 'proposed')
+      .map(s => format(new Date(s.start_datetime), 'yyyy-MM-dd'))
+  ), [shifts]);
+
   const handleFacilityChange = (newFacilityId: string) => {
     setFacilityId(newFacilityId);
     const newOptions = buildRateOptions(terms, newFacilityId);
@@ -143,6 +149,8 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
                   mode="multiple"
                   selected={selectedDates}
                   onSelect={(dates) => setSelectedDates(dates || [])}
+                  modifiers={{ booked: (date: Date) => bookedDates.has(format(date, 'yyyy-MM-dd')) }}
+                  modifiersClassNames={{ booked: "bg-destructive/20 text-destructive font-semibold" }}
                   className={cn("p-2 pointer-events-auto")}
                 />
               </div>
@@ -168,6 +176,8 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
                   selected={selectedDates[0]}
                   onSelect={(date) => date && setSelectedDates([date])}
                   initialFocus
+                  modifiers={{ booked: (date: Date) => bookedDates.has(format(date, 'yyyy-MM-dd')) }}
+                  modifiersClassNames={{ booked: "bg-destructive/20 text-destructive font-semibold" }}
                   className={cn("p-3 pointer-events-auto")}
                 />
               </PopoverContent>
