@@ -144,7 +144,7 @@ export default function LoginPage() {
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password *</Label>
                 {!isSignUp && (
-                  <button type="button" className="text-xs text-primary underline" onClick={() => navigate('/forgot-password')}>
+                  <button type="button" className="text-xs text-foreground underline" onClick={() => navigate('/forgot-password')}>
                     Forgot password?
                   </button>
                 )}
@@ -180,7 +180,7 @@ export default function LoginPage() {
           <div className="rounded-lg border border-border bg-muted/40 py-3 px-4 text-center">
             <p className="text-sm text-muted-foreground">
               {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
-              <button type="button" className="text-primary font-semibold underline underline-offset-2 hover:text-primary/80 transition-colors" onClick={resetForm}>
+              <button type="button" className="text-foreground font-semibold underline underline-offset-2 hover:text-foreground/80 transition-colors" onClick={resetForm}>
                 {isSignUp ? 'Sign In' : 'Sign Up'}
               </button>
             </p>
