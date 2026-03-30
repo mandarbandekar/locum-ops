@@ -624,7 +624,7 @@ export default function DocumentsVaultTab() {
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {docs.map(doc => (
-                  {renamingDocId === doc.id ? (
+                  renamingDocId === doc.id ? (
                     <Card key={doc.id} className="p-4">
                       <div className="flex items-center gap-2">
                         <Input
@@ -646,18 +646,18 @@ export default function DocumentsVaultTab() {
                       </div>
                     </Card>
                   ) : (
-                  <DocumentCard
-                    key={doc.id}
-                    doc={doc}
-                    credentialName={linkedCredentialName(doc.credential_id)}
-                    onPreview={() => handlePreview(doc)}
-                    onDownload={() => handleDownload(doc)}
-                    onDelete={() => handleDelete(doc)}
-                    onReplace={() => setReplacingDocId(doc.id)}
-                    onMove={() => setMovingDoc(doc)}
-                    onRename={() => { setRenamingDocId(doc.id); setDocRenameValue(doc.file_name); }}
-                  />
-                  )}
+                    <DocumentCard
+                      key={doc.id}
+                      doc={doc}
+                      credentialName={linkedCredentialName(doc.credential_id)}
+                      onPreview={() => handlePreview(doc)}
+                      onDownload={() => handleDownload(doc)}
+                      onDelete={() => handleDelete(doc)}
+                      onReplace={() => setReplacingDocId(doc.id)}
+                      onMove={() => setMovingDoc(doc)}
+                      onRename={() => { setRenamingDocId(doc.id); setDocRenameValue(doc.file_name); }}
+                    />
+                  )
                 ))}
               </div>
             </div>
