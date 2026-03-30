@@ -88,8 +88,9 @@ export default function DocumentsVaultTab() {
       const folder = (d as any).folder || '';
       if (folder) folders.add(folder);
     });
+    manualFolders.forEach(f => folders.add(f));
     return Array.from(folders).sort();
-  }, [documents]);
+  }, [documents, manualFolders]);
 
   // Get subfolders and docs for current path
   const { subfolders, currentDocs } = useMemo(() => {
@@ -282,15 +283,12 @@ export default function DocumentsVaultTab() {
   const handleCreateFolder = async () => {
     const name = newFolderName.trim();
     if (!name) return;
-    // Validate folder name
     if (name.includes('/') || name.includes('\\')) {
       toast({ title: 'Invalid folder name', description: 'Folder names cannot contain slashes.', variant: 'destructive' });
       return;
     }
     const fullPath = currentFolder ? `${currentFolder}/${name}` : name;
-    // Folders are implicit — they exist when documents are assigned to them.
-    // We create a "marker" by just navigating into it. But since empty folders won't persist,
-    // let's just navigate in and the user can upload files there.
+    setManualFolders(prev => new Set(prev).add(fullPath));
     setCurrentFolder(fullPath);
     setShowCreateFolder(false);
     setNewFolderName('');
@@ -909,7 +907,7 @@ function StatCard({ label, count, icon: Icon }: { label: string; count: number; 
   );
 }
 
-function DocumentCard({ doc, credentialName, onPreview, onDownload, onDelete, onReplace, onMove }: {
+function DocumentCard({ doc, credentialName, onPreview, onDownload, onDelete, onReplace, onMove, onRename }: {
   doc: CredentialDocument;
   credentialName: string | null;
   onPreview: () => void;
@@ -917,6 +915,7 @@ function DocumentCard({ doc, credentialName, onPreview, onDownload, onDelete, on
   onDelete: () => void;
   onReplace: () => void;
   onMove: () => void;
+  onRename: () => void;
 }) {
   const Icon = getFileIcon(doc.file_type);
   return (
@@ -930,6 +929,9 @@ function DocumentCard({ doc, credentialName, onPreview, onDownload, onDelete, on
             <Icon className="h-5 w-5 text-muted-foreground" />
           </div>
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onRename} title="Rename">
+              <Edit2 className="h-3.5 w-3.5" />
+            </Button>
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onDownload}>
               <Download className="h-3.5 w-3.5" />
             </Button>
