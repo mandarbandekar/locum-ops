@@ -66,8 +66,8 @@ export function MoneyToCollectCard({
   };
 
   return (
-    <Card className="h-full flex flex-col border-0 shadow-md">
-      <CardContent className="p-0 flex flex-col flex-1 min-h-0">
+    <Card className="flex flex-col border-0 shadow-md">
+      <CardContent className="p-0 flex flex-col min-h-0">
         {/* Header with total collectable */}
         <div className="px-5 pt-5 pb-2">
           <div className="flex items-center gap-2 mb-1">
@@ -89,11 +89,11 @@ export function MoneyToCollectCard({
         </div>
 
         {/* Individual invoice list */}
-        <div className="px-4 pt-2 flex-1 min-h-0">
+        <div className="px-4 pt-2 min-h-0">
           <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-2 px-1">
             Invoices to Review ({invoiceItems.length})
           </p>
-          <ScrollArea className="h-[180px]">
+          <ScrollArea className="max-h-[220px]">
             <div className="space-y-1.5 pr-2">
               {invoiceItems.length === 0 && (
                 <div className="py-4 text-center">
@@ -174,10 +174,10 @@ export function MoneyToCollectCard({
         </div>
 
         {/* CTA */}
-        <div className="px-4 pt-1 pb-4 mt-auto">
+        <div className="px-4 pt-3 pb-5">
           <Button
             variant="outline"
-            className="w-full h-9 font-semibold text-[12px]"
+            className="w-full h-10 font-bold text-[13px]"
             onClick={() => navigate('/invoices')}
           >
             Go to Invoicing
