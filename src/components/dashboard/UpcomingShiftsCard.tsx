@@ -52,7 +52,7 @@ export function UpcomingShiftsCard({ shifts, getFacilityName, greeting, firstNam
   const nextShift = upcoming[0];
 
   return (
-    <Card className="h-full flex flex-col border-0 shadow-md">
+    <Card className="flex flex-col border-0 shadow-md">
       <CardContent className="p-0 flex flex-col flex-1">
         {/* Greeting header */}
         <div className="px-5 pt-5 pb-4">

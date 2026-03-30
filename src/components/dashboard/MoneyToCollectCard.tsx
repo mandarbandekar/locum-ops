@@ -174,10 +174,10 @@ export function MoneyToCollectCard({
         </div>
 
         {/* CTA */}
-        <div className="px-4 pt-1 pb-4 mt-auto">
+        <div className="px-4 pt-3 pb-5">
           <Button
             variant="outline"
-            className="w-full h-9 font-semibold text-[12px]"
+            className="w-full h-10 font-bold text-[13px]"
             onClick={() => navigate('/invoices')}
           >
             Go to Invoicing
