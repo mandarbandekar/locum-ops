@@ -593,8 +593,14 @@ export default function DocumentsVaultTab() {
               return (
                 <Card
                   key={folder}
-                  className="group hover:shadow-md transition-shadow cursor-pointer"
+                  className={cn(
+                    'group hover:shadow-md transition-all cursor-pointer',
+                    dragOverFolder === folder && 'ring-2 ring-primary bg-primary/5 scale-[1.02]'
+                  )}
                   onClick={() => !isRenaming && setCurrentFolder(folder)}
+                  onDrop={(e) => handleFolderDrop(e, folder)}
+                  onDragOver={(e) => handleFolderDragOver(e, folder)}
+                  onDragLeave={handleFolderDragLeave}
                 >
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between mb-2">
