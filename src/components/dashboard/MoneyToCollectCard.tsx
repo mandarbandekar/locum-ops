@@ -66,8 +66,8 @@ export function MoneyToCollectCard({
   };
 
   return (
-    <Card className="h-full flex flex-col border-0 shadow-md">
-      <CardContent className="p-0 flex flex-col flex-1 min-h-0">
+    <Card className="flex flex-col border-0 shadow-md">
+      <CardContent className="p-0 flex flex-col min-h-0">
         {/* Header with total collectable */}
         <div className="px-5 pt-5 pb-2">
           <div className="flex items-center gap-2 mb-1">
