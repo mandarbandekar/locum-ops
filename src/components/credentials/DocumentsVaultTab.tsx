@@ -950,6 +950,53 @@ export default function DocumentsVaultTab() {
         </DialogContent>
       </Dialog>
 
+      {/* Recategorize Dialog */}
+      <Dialog open={!!recategorizingDoc} onOpenChange={open => { if (!open) setRecategorizingDoc(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Tag className="h-5 w-5" /> Change Category
+            </DialogTitle>
+            <DialogDescription>
+              Update category and linked credential for "{recategorizingDoc?.file_name}"
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Document Category</label>
+              <Select value={newCategory} onValueChange={setNewCategory}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(DOCUMENT_CATEGORY_LABELS).map(([k, v]) => (
+                    <SelectItem key={k} value={k}>{v}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Link to Credential (optional)</label>
+              <Select value={newLinkedCredential} onValueChange={setNewLinkedCredential}>
+                <SelectTrigger>
+                  <SelectValue placeholder="None" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  {credentials.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.custom_title}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setRecategorizingDoc(null)}>Cancel</Button>
+              <Button onClick={handleRecategorize}>Save Changes</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Upload Stepper Dialog */}
       <DocumentUploadStepper
         open={showUploadStepper}
