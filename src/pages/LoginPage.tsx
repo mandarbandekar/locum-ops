@@ -62,7 +62,15 @@ export default function LoginPage() {
       else setMessage('Account created! Please check your email to verify your account before signing in.');
     } else {
       const { error } = await signIn(email, password);
-      if (error) setError(error);
+      if (error) {
+        const msg = error.toLowerCase();
+        if (msg.includes('invalid login credentials') || msg.includes('invalid credentials')) {
+          setError('No account found with this email, or the password is incorrect.');
+          setMessage('sign_up_prompt');
+        } else {
+          setError(error);
+        }
+      }
     }
     setSubmitting(false);
   };
