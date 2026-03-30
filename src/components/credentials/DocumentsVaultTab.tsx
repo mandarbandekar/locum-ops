@@ -736,6 +736,9 @@ export default function DocumentsVaultTab() {
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handlePreview(doc)}>
                           <Eye className="h-3.5 w-3.5" />
                         </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setRenamingDocId(doc.id); setDocRenameValue(doc.file_name); }} title="Rename">
+                          <Edit2 className="h-3.5 w-3.5" />
+                        </Button>
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDownload(doc)}>
                           <Download className="h-3.5 w-3.5" />
                         </Button>
