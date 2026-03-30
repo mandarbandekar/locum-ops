@@ -681,6 +681,7 @@ export default function DocumentsVaultTab() {
                       onReplace={() => setReplacingDocId(doc.id)}
                       onMove={() => setMovingDoc(doc)}
                       onRename={() => { setRenamingDocId(doc.id); setDocRenameValue(doc.file_name); }}
+                      onRecategorize={() => openRecategorize(doc)}
                     />
                   )
                 ))}
