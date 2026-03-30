@@ -80,7 +80,17 @@ export default function DocumentsVaultTab() {
   const [movingDoc, setMovingDoc] = useState<CredentialDocument | null>(null);
   const [renamingFolder, setRenamingFolder] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
-  const [manualFolders, setManualFolders] = useState<Set<string>>(new Set());
+  const [manualFolders, setManualFolders] = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem('doc_vault_folders');
+      return saved ? new Set(JSON.parse(saved)) : new Set();
+    } catch { return new Set(); }
+  });
+
+  // Persist manual folders to localStorage
+  useEffect(() => {
+    localStorage.setItem('doc_vault_folders', JSON.stringify(Array.from(manualFolders)));
+  }, [manualFolders]);
 
   useEffect(() => {
     if (replacingDocId) {
@@ -329,10 +339,9 @@ export default function DocumentsVaultTab() {
     }
     const fullPath = currentFolder ? `${currentFolder}/${name}` : name;
     setManualFolders(prev => new Set(prev).add(fullPath));
-    setCurrentFolder(fullPath);
     setShowCreateFolder(false);
     setNewFolderName('');
-    toast({ title: 'Folder created', description: `"${name}" is ready. Upload files here.` });
+    toast({ title: 'Folder created', description: `"${name}" is ready. Drag & drop documents into it.` });
   };
 
   const handleMoveToFolder = async (doc: CredentialDocument, targetFolder: string) => {
@@ -423,7 +432,6 @@ export default function DocumentsVaultTab() {
       return f === folderPath || f.startsWith(folderPath + '/');
     });
     if (docsInFolder.length > 0) {
-      // Move docs to parent
       const parentPath = folderPath.includes('/') ? folderPath.substring(0, folderPath.lastIndexOf('/')) : '';
       for (const doc of docsInFolder) {
         await (supabase as any)
@@ -431,10 +439,21 @@ export default function DocumentsVaultTab() {
           .update({ folder: parentPath })
           .eq('id', doc.id);
       }
+      queryClient.invalidateQueries({ queryKey: ['credential_documents'] });
       toast({ title: 'Folder removed', description: `${docsInFolder.length} file(s) moved to ${parentPath || 'root'}.` });
     } else {
       toast({ title: 'Folder removed' });
     }
+    // Remove from persisted manual folders
+    setManualFolders(prev => {
+      const next = new Set(prev);
+      next.delete(folderPath);
+      // Also remove any sub-folders
+      for (const f of prev) {
+        if (f.startsWith(folderPath + '/')) next.delete(f);
+      }
+      return next;
+    });
     if (currentFolder === folderPath) {
       const parentPath = folderPath.includes('/') ? folderPath.substring(0, folderPath.lastIndexOf('/')) : '';
       setCurrentFolder(parentPath);
@@ -636,6 +655,11 @@ export default function DocumentsVaultTab() {
                       <>
                         <p className="font-medium text-sm truncate">{displayName}</p>
                         <p className="text-xs text-muted-foreground mt-0.5">{docCount} file{docCount !== 1 ? 's' : ''}</p>
+                        {dragOverFolder === folder ? (
+                          <p className="text-xs text-primary font-medium mt-1">Drop to move here</p>
+                        ) : (
+                          <p className="text-[11px] text-muted-foreground/60 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">Drag files here</p>
+                        )}
                       </>
                     )}
                   </CardContent>
