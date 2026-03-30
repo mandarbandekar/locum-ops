@@ -655,6 +655,11 @@ export default function DocumentsVaultTab() {
                       <>
                         <p className="font-medium text-sm truncate">{displayName}</p>
                         <p className="text-xs text-muted-foreground mt-0.5">{docCount} file{docCount !== 1 ? 's' : ''}</p>
+                        {dragOverFolder === folder ? (
+                          <p className="text-xs text-primary font-medium mt-1">Drop to move here</p>
+                        ) : (
+                          <p className="text-[11px] text-muted-foreground/60 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">Drag files here</p>
+                        )}
                       </>
                     )}
                   </CardContent>
