@@ -624,6 +624,28 @@ export default function DocumentsVaultTab() {
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {docs.map(doc => (
+                  {renamingDocId === doc.id ? (
+                    <Card key={doc.id} className="p-4">
+                      <div className="flex items-center gap-2">
+                        <Input
+                          value={docRenameValue}
+                          onChange={e => setDocRenameValue(e.target.value)}
+                          autoFocus
+                          className="h-8 text-sm"
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') handleRenameDoc(doc, docRenameValue);
+                            if (e.key === 'Escape') { setRenamingDocId(null); setDocRenameValue(''); }
+                          }}
+                        />
+                        <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleRenameDoc(doc, docRenameValue)}>
+                          <Check className="h-4 w-4" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => { setRenamingDocId(null); setDocRenameValue(''); }}>
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </Card>
+                  ) : (
                   <DocumentCard
                     key={doc.id}
                     doc={doc}
@@ -633,7 +655,9 @@ export default function DocumentsVaultTab() {
                     onDelete={() => handleDelete(doc)}
                     onReplace={() => setReplacingDocId(doc.id)}
                     onMove={() => setMovingDoc(doc)}
+                    onRename={() => { setRenamingDocId(doc.id); setDocRenameValue(doc.file_name); }}
                   />
+                  )}
                 ))}
               </div>
             </div>
