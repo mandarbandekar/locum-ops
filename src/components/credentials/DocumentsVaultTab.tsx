@@ -62,6 +62,10 @@ export default function DocumentsVaultTab() {
   const [showUploadStepper, setShowUploadStepper] = useState(false);
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
 
+  // Document rename state
+  const [renamingDocId, setRenamingDocId] = useState<string | null>(null);
+  const [docRenameValue, setDocRenameValue] = useState('');
+
   // Folder state
   const [currentFolder, setCurrentFolder] = useState('');
   const [showCreateFolder, setShowCreateFolder] = useState(false);
@@ -69,6 +73,7 @@ export default function DocumentsVaultTab() {
   const [movingDoc, setMovingDoc] = useState<CredentialDocument | null>(null);
   const [renamingFolder, setRenamingFolder] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
+  const [manualFolders, setManualFolders] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (replacingDocId) {
