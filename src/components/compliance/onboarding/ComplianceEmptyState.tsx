@@ -28,7 +28,7 @@ const VALUE_POINTS = [
   {
     icon: Bell,
     title: 'Smart renewal readiness',
-    description: 'See exactly what's needed for each renewal — CE hours, documents, and deadlines — at a glance.',
+    description: 'See exactly what\'s needed for each renewal — CE hours, documents, and deadlines — at a glance.',
   },
 ];
 
