@@ -20,6 +20,7 @@ import { MoneyToCollectCard } from '@/components/dashboard/MoneyToCollectCard';
 import { NeedsAttentionCard, AttentionItem } from '@/components/dashboard/NeedsAttentionCard';
 import { WorkReadinessStrip, ReadinessItem } from '@/components/dashboard/WorkReadinessStrip';
 import { QuickActions } from '@/components/dashboard/QuickActions';
+import { GettingStartedChecklist } from '@/components/dashboard/GettingStartedChecklist';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 
 const dashDb = (table: string) => supabase.from(table as any);
@@ -30,6 +31,15 @@ export default function DashboardPage() {
   const { profile } = useUserProfile();
   const navigate = useNavigate();
   const now = new Date();
+
+  // Getting started checklist dismiss
+  const [checklistDismissed, setChecklistDismissed] = useState(() => {
+    try { return localStorage.getItem('locumops_checklist_dismissed') === 'true'; } catch { return false; }
+  });
+  const handleDismissChecklist = () => {
+    setChecklistDismissed(true);
+    try { localStorage.setItem('locumops_checklist_dismissed', 'true'); } catch {}
+  };
 
   // Tax & subscription data
   const [taxChecklist, setTaxChecklist] = useState<{ completed: boolean }[]>([]);
@@ -272,6 +282,11 @@ export default function DashboardPage() {
       <div className="hidden sm:flex items-center justify-end">
         <QuickActions />
       </div>
+
+      {/* Getting Started Checklist */}
+      {!isDemo && !checklistDismissed && (
+        <GettingStartedChecklist onDismiss={handleDismissChecklist} />
+      )}
 
       {/* 3-Column Layout */}
       <div className="grid gap-4 sm:gap-5 grid-cols-1 lg:grid-cols-12 lg:min-h-[calc(100vh-190px)]">
