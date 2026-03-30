@@ -26,7 +26,7 @@ export default function InvoicesPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const { dataLoading } = useData();
+  
 
   const safeInvoices = Array.isArray(invoices) ? invoices : [];
   const allInvoices = safeInvoices
