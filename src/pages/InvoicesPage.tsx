@@ -93,7 +93,7 @@ export default function InvoicesPage() {
   }
 
   return (
-      <div className="page-header flex-col sm:flex-row gap-3">
+    <div>
         <h1 className="page-title">Invoices</h1>
         <div className="flex gap-2 flex-wrap w-full sm:w-auto">
           {selected.size > 0 && (
