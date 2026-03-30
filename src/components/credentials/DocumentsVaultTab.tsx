@@ -432,7 +432,6 @@ export default function DocumentsVaultTab() {
       return f === folderPath || f.startsWith(folderPath + '/');
     });
     if (docsInFolder.length > 0) {
-      // Move docs to parent
       const parentPath = folderPath.includes('/') ? folderPath.substring(0, folderPath.lastIndexOf('/')) : '';
       for (const doc of docsInFolder) {
         await (supabase as any)
@@ -440,10 +439,21 @@ export default function DocumentsVaultTab() {
           .update({ folder: parentPath })
           .eq('id', doc.id);
       }
+      queryClient.invalidateQueries({ queryKey: ['credential_documents'] });
       toast({ title: 'Folder removed', description: `${docsInFolder.length} file(s) moved to ${parentPath || 'root'}.` });
     } else {
       toast({ title: 'Folder removed' });
     }
+    // Remove from persisted manual folders
+    setManualFolders(prev => {
+      const next = new Set(prev);
+      next.delete(folderPath);
+      // Also remove any sub-folders
+      for (const f of prev) {
+        if (f.startsWith(folderPath + '/')) next.delete(f);
+      }
+      return next;
+    });
     if (currentFolder === folderPath) {
       const parentPath = folderPath.includes('/') ? folderPath.substring(0, folderPath.lastIndexOf('/')) : '';
       setCurrentFolder(parentPath);
