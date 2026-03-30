@@ -1089,7 +1089,7 @@ function StatCard({ label, count, icon: Icon }: { label: string; count: number; 
   );
 }
 
-function DocumentCard({ doc, credentialName, onPreview, onDownload, onDelete, onReplace, onMove, onRename, onRecategorize }: {
+function DocumentCard({ doc, credentialName, onPreview, onDownload, onDelete, onReplace, onMove, onRename, onRecategorize, onDragStart, isDragging }: {
   doc: CredentialDocument;
   credentialName: string | null;
   onPreview: () => void;
@@ -1099,10 +1099,17 @@ function DocumentCard({ doc, credentialName, onPreview, onDownload, onDelete, on
   onMove: () => void;
   onRename: () => void;
   onRecategorize: () => void;
+  onDragStart?: (e: React.DragEvent) => void;
+  isDragging?: boolean;
 }) {
   const Icon = getFileIcon(doc.file_type);
   return (
-    <Card className="group hover:shadow-md transition-shadow cursor-pointer" onClick={onPreview}>
+    <Card
+      className={cn('group hover:shadow-md transition-shadow cursor-pointer', isDragging && 'opacity-50')}
+      onClick={onPreview}
+      draggable
+      onDragStart={onDragStart}
+    >
       <CardContent className="p-4 space-y-3">
         <div className="flex items-start justify-between">
           <div className={cn(
