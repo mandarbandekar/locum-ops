@@ -51,8 +51,7 @@ export function InvoiceEmptyState({ onCreateManual }: Props) {
         <div className="space-y-2">
           <h2 className="text-2xl font-bold tracking-tight">Invoicing on Autopilot</h2>
           <p className="text-muted-foreground max-w-lg mx-auto leading-relaxed">
-            LocumOps automatically creates invoice drafts from your booked shifts. 
-            No more spreadsheets — just review, send, and track payments.
+            LocumOps automatically creates invoice drafts from your booked shifts and organizes them by status — overdue, sent, drafts, and paid — so you always know what needs attention first.
           </p>
         </div>
       </div>
