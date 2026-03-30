@@ -61,6 +61,8 @@ export default function DocumentsVaultTab() {
   const [uploadCredentialId, setUploadCredentialId] = useState('none');
   const [showUploadStepper, setShowUploadStepper] = useState(false);
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
+  const [draggingDocId, setDraggingDocId] = useState<string | null>(null);
+  const [dragOverFolder, setDragOverFolder] = useState<string | null>(null);
 
   // Document rename state
   const [renamingDocId, setRenamingDocId] = useState<string | null>(null);
