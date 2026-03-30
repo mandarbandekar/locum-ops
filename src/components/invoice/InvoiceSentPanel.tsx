@@ -120,7 +120,7 @@ export function InvoiceSentPanel({ invoice, items, invoicePayments, facility, bi
         <CardContent className="space-y-2 px-3 pb-3">
           <Button className="w-full text-sm justify-center" onClick={() => toast.info('Email sending coming soon!')}>
             <Send className="mr-2 h-4 w-4" />
-            Send Invoice to "{billingNameTo || 'Billing Contact'}" via Email
+            Send invoice to {billingNameTo || 'Billing Contact'} at {facility?.name || 'Facility'} via email
           </Button>
           <Button variant="outline" className="w-full text-sm" onClick={handleDownloadPdf} disabled={pdfLoading}>
             {pdfLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
