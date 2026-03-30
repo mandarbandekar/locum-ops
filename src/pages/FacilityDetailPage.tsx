@@ -8,9 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/StatusBadge';
-import { ArrowLeft, Plus, Trash2, Edit2, Save, Pencil, Check, X, Monitor, Wifi, KeyRound, DoorOpen, CalendarClock, Mail, Receipt, MapPin, Clock } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Edit2, Save, Pencil, Check, X, Monitor, Wifi, KeyRound, DoorOpen } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { FacilityContact, ContactRole, TermsSnapshot, SHIFT_COLORS, ShiftColor } from '@/types';
 import { generateId } from '@/lib/businessLogic';
@@ -52,20 +51,9 @@ export default function FacilityDetailPage() {
     toast.success('Rates saved');
   };
 
-  const CADENCE_LABELS: Record<string, string> = {
-    daily: 'Daily',
-    weekly: 'Weekly (Mon–Sun)',
-    biweekly: 'Biweekly',
-    monthly: 'Monthly',
-  };
-
-  const hasBillingContact = !!(facility.invoice_name_to?.trim() && facility.invoice_email_to?.trim());
-  const upcomingCount = shifts.filter(s => new Date(s.start_datetime) > new Date() && s.status !== 'canceled').length;
-
   return (
     <div>
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-4">
+      <div className="flex items-center gap-3 mb-6">
         <Button variant="ghost" size="icon" onClick={() => navigate('/facilities')}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
@@ -74,53 +62,6 @@ export default function FacilityDetailPage() {
         <div className="flex-1" />
       </div>
 
-      {/* Snapshot Strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
-        <Card className="p-3">
-          <div className="flex items-center gap-2 mb-1">
-            <CalendarClock className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Billing Cadence</span>
-          </div>
-          <p className="text-sm font-semibold">
-            {CADENCE_LABELS[facility.billing_cadence] || 'Monthly'}
-          </p>
-        </Card>
-
-        <Card className="p-3">
-          <div className="flex items-center gap-2 mb-1">
-            <Mail className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Billing Contact</span>
-          </div>
-          {hasBillingContact ? (
-            <div>
-              <p className="text-sm font-semibold truncate">{facility.invoice_name_to}</p>
-              <p className="text-[11px] text-muted-foreground truncate">{facility.invoice_email_to}</p>
-            </div>
-          ) : (
-            <Badge variant="outline" className="text-amber-600 dark:text-amber-400 border-amber-500/30 text-[11px]">Not set</Badge>
-          )}
-        </Card>
-
-        <Card className="p-3">
-          <div className="flex items-center gap-2 mb-1">
-            <Receipt className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Auto-Invoicing</span>
-          </div>
-          <Badge variant={facility.auto_generate_invoices ? 'default' : 'outline'} className="text-xs">
-            {facility.auto_generate_invoices ? 'On' : 'Off'}
-          </Badge>
-        </Card>
-
-        <Card className="p-3">
-          <div className="flex items-center gap-2 mb-1">
-            <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Upcoming Shifts</span>
-          </div>
-          <p className="text-sm font-semibold">{upcomingCount}</p>
-        </Card>
-      </div>
-
-      {/* Tabs */}
       <Tabs defaultValue="overview">
         <TabsList className="flex-wrap">
           <TabsTrigger value="overview">Overview</TabsTrigger>
