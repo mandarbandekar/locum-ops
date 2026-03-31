@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,9 @@ import { ShiftStatus, SHIFT_COLORS, ShiftColor, TermsSnapshot, Shift } from '@/t
 import { detectShiftConflicts } from '@/lib/businessLogic';
 import { cn } from '@/lib/utils';
 import { termsToRates, RateEntry } from '@/components/facilities/RatesEditor';
+import { useData } from '@/contexts/DataContext';
+import { Checkbox } from '@/components/ui/checkbox';
+import { toast } from 'sonner';
 
 interface ShiftFormDialogProps {
   open: boolean;
@@ -56,10 +59,14 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   const [status, setStatus] = useState<ShiftStatus>(existing?.status || 'proposed');
   const [rate, setRate] = useState(existing?.rate_applied?.toString() || '');
   const [isCustomRate, setIsCustomRate] = useState(false);
+  const [customRateLabel, setCustomRateLabel] = useState('');
+  const [saveCustomRate, setSaveCustomRate] = useState(true);
   const [notes, setNotes] = useState(existing?.notes || '');
   const [color, setColor] = useState<ShiftColor>(existing?.color || 'blue');
   const [showNotes, setShowNotes] = useState(!!existing?.notes);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { updateTerms } = useData();
 
   const isMultiMode = !existing;
 
@@ -104,10 +111,29 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     return allConflicts;
   }, [shifts, selectedDates, startTime, endTime, existing?.id]);
 
+  const saveCustomRateToTerms = useCallback(async () => {
+    if (!isCustomRate || !saveCustomRate || !rate || Number(rate) <= 0) return;
+    const label = customRateLabel.trim() || `Custom $${Number(rate).toLocaleString()}`;
+    const facilityTerms = terms.find(t => t.facility_id === facilityId);
+    if (facilityTerms) {
+      const existingCustom = facilityTerms.custom_rates || [];
+      // Don't add duplicate
+      if (existingCustom.some(cr => cr.amount === Number(rate) && cr.label === label)) return;
+      await updateTerms({
+        ...facilityTerms,
+        custom_rates: [...existingCustom, { label, amount: Number(rate) }],
+      });
+      toast.success(`Custom rate "${label}" saved to facility`);
+    }
+  }, [isCustomRate, saveCustomRate, rate, customRateLabel, facilityId, terms, updateTerms]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
+      // Save custom rate to facility terms if opted in
+      await saveCustomRateToTerms();
+
       if (existing) {
         const date = format(selectedDates[0] || new Date(), 'yyyy-MM-dd');
         await onSave({
@@ -280,13 +306,30 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
                   </Select>
                 </div>
               ) : (
-                <div className="space-y-1.5">
+                <div className="space-y-2">
+                  <Input
+                    type="text"
+                    value={customRateLabel}
+                    onChange={e => setCustomRateLabel(e.target.value)}
+                    placeholder="Rate label (e.g. Emergency Rate)"
+                    className="h-9 text-sm"
+                  />
                   <div className="relative">
                     <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                     <Input type="number" value={rate} onChange={e => setRate(e.target.value)} placeholder="0" min={0} className="pl-7 h-10" />
                   </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="save-custom-rate"
+                      checked={saveCustomRate}
+                      onCheckedChange={(v) => setSaveCustomRate(!!v)}
+                    />
+                    <label htmlFor="save-custom-rate" className="text-xs text-muted-foreground cursor-pointer">
+                      Save to facility rates
+                    </label>
+                  </div>
                   {rateOptions.length > 0 && isCustomRate && (
-                    <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => { setIsCustomRate(false); setRate(rateOptions[0]?.amount.toString() || ''); }}>
+                    <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => { setIsCustomRate(false); setCustomRateLabel(''); setRate(rateOptions[0]?.amount.toString() || ''); }}>
                       ← Back to preset rates
                     </Button>
                   )}
