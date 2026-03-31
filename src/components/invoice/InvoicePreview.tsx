@@ -62,7 +62,7 @@ export function InvoicePreview({ sender, billTo, invoiceNumber, invoiceDate, due
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Due Date</p>
-              <p className="text-sm font-medium">{dueDate ? format(new Date(dueDate), 'MMM d, yyyy') : '—'}</p>
+              <p className="text-sm font-medium">{dueDate ? format(new Date(dueDate.length === 10 ? dueDate + 'T00:00:00' : dueDate), 'MMM d, yyyy') : '—'}</p>
             </div>
           </div>
         </div>

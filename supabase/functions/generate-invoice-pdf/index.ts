@@ -227,14 +227,18 @@ Deno.serve(async (req) => {
     drawTextRight(formatDate(invoice.invoice_date), datesValX, y, { size: 10 });
     y -= 14;
 
-    if (billingContact?.name) {
-      drawText(billingContact.name, billToX, y, { size: 9, color: gray });
+    // Use facility billing fields first, fall back to facility_contacts
+    const billToName = facility?.invoice_name_to || billingContact?.name || '';
+    const billToEmail = facility?.invoice_email_to || billingContact?.email || '';
+
+    if (billToName) {
+      drawText(billToName, billToX, y, { size: 9, color: gray });
     }
     drawText('DUE DATE', datesX, y, { font: helveticaBold, size: 8, color: gray });
     y -= 14;
 
-    if (billingContact?.email) {
-      drawText(billingContact.email, billToX, y, { size: 9, color: gray });
+    if (billToEmail) {
+      drawText(billToEmail, billToX, y, { size: 9, color: gray });
     }
     drawTextRight(formatDate(invoice.due_date), datesValX, y, { size: 10 });
     y -= 14;
@@ -242,6 +246,13 @@ Deno.serve(async (req) => {
     // Facility address (wrapped, limited to left column)
     if (facility?.address) {
       y = drawWrapped(facility.address, billToX, y, 280, { size: 9, color: gray });
+    }
+
+    // CC / BCC info
+    if (facility?.invoice_name_cc || facility?.invoice_email_cc) {
+      y -= 4;
+      drawText(`CC: ${facility.invoice_name_cc || ''} ${facility.invoice_email_cc ? '<' + facility.invoice_email_cc + '>' : ''}`.trim(), billToX, y, { size: 8, color: gray });
+      y -= 12;
     }
 
     y -= 16;
