@@ -59,10 +59,14 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   const [status, setStatus] = useState<ShiftStatus>(existing?.status || 'proposed');
   const [rate, setRate] = useState(existing?.rate_applied?.toString() || '');
   const [isCustomRate, setIsCustomRate] = useState(false);
+  const [customRateLabel, setCustomRateLabel] = useState('');
+  const [saveCustomRate, setSaveCustomRate] = useState(true);
   const [notes, setNotes] = useState(existing?.notes || '');
   const [color, setColor] = useState<ShiftColor>(existing?.color || 'blue');
   const [showNotes, setShowNotes] = useState(!!existing?.notes);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { updateTerms } = useData();
 
   const isMultiMode = !existing;
 
