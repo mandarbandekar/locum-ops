@@ -26,7 +26,7 @@ const STEPS = [
   { label: 'Invoice Settings', description: 'Prefix, contacts & terms' },
 ];
 
-export function AddFacilityDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
+export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boolean; onOpenChange: (o: boolean) => void; onCreated?: (facilityId: string) => void }) {
   const { addFacility, updateTerms } = useData();
   const { saveSettings: saveConfirmationSettings } = useClinicConfirmations();
   const [step, setStep] = useState(0);
