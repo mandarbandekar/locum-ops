@@ -252,27 +252,44 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
                 <DollarSign className="h-3.5 w-3.5" />
                 Rate
               </Label>
-              {rateOptions.length > 0 ? (
-                <Select
-                  value={rateOptions.some(o => o.amount.toString() === rate) ? rate : 'custom'}
-                  onValueChange={(v) => { if (v !== 'custom') setRate(v); }}
-                >
-                  <SelectTrigger className="h-10">
-                    <SelectValue placeholder="Select rate" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {rateOptions.map((opt, i) => (
-                      <SelectItem key={`${opt.type}-${i}`} value={opt.amount.toString()}>
-                        {opt.label} — ${opt.amount.toLocaleString()}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="custom">Custom</SelectItem>
-                  </SelectContent>
-                </Select>
+              {rateOptions.length > 0 && !isCustomRate ? (
+                <div className="space-y-2">
+                  <Select
+                    value={rateOptions.some(o => o.amount.toString() === rate) ? rate : 'custom'}
+                    onValueChange={(v) => {
+                      if (v === 'custom') {
+                        setIsCustomRate(true);
+                        setRate('');
+                      } else {
+                        setRate(v);
+                        setIsCustomRate(false);
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="h-10">
+                      <SelectValue placeholder="Select rate" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {rateOptions.map((opt, i) => (
+                        <SelectItem key={`${opt.type}-${i}`} value={opt.amount.toString()}>
+                          {opt.label} — ${opt.amount.toLocaleString()}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="custom">Custom</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               ) : (
-                <div className="relative">
-                  <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                  <Input type="number" value={rate} onChange={e => setRate(e.target.value)} placeholder="0" min={0} className="pl-7 h-10" />
+                <div className="space-y-1.5">
+                  <div className="relative">
+                    <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                    <Input type="number" value={rate} onChange={e => setRate(e.target.value)} placeholder="0" min={0} className="pl-7 h-10" />
+                  </div>
+                  {rateOptions.length > 0 && isCustomRate && (
+                    <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => { setIsCustomRate(false); setRate(rateOptions[0]?.amount.toString() || ''); }}>
+                      ← Back to preset rates
+                    </Button>
+                  )}
                 </div>
               )}
             </div>
