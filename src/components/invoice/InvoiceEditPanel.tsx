@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -116,6 +116,24 @@ export function InvoiceEditPanel({
   // Expose fields for live preview (in useEffect to avoid infinite render loop)
   useEffect(() => {
     onInvoiceFieldChange?.({ invoiceNumber, invoiceDate, dueDate, notes, total });
+  }, [invoiceNumber, invoiceDate, dueDate, notes, total]);
+
+  // Auto-save draft on field changes (debounced)
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(async () => {
+      await onUpdateInvoice({
+        ...invoice,
+        invoice_number: invoiceNumber,
+        invoice_date: new Date(invoiceDate).toISOString(),
+        due_date: dueDate ? new Date(dueDate).toISOString() : null,
+        notes,
+        total_amount: total,
+        balance_due: total,
+      });
+    }, 800);
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
   }, [invoiceNumber, invoiceDate, dueDate, notes, total]);
 
   // Expose save function for action bar
