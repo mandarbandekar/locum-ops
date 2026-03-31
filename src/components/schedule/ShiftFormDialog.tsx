@@ -84,9 +84,12 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
 
   const handleFacilityChange = (newFacilityId: string) => {
     setFacilityId(newFacilityId);
+    setSelectedRateKey('');
+    setIsCustomRate(false);
     const newOptions = buildRateOptions(terms, newFacilityId);
     if (newOptions.length > 0 && !newOptions.some(o => o.amount.toString() === rate)) {
       setRate(newOptions[0].amount.toString());
+      setSelectedRateKey('rate-0');
     }
   };
 
