@@ -337,11 +337,11 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
               <p className="text-xs font-medium text-muted-foreground">To</p>
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
-                  <Label className="text-xs">Name</Label>
+                  <Label className="text-xs">Name <span className="text-destructive">*</span></Label>
                   <Input value={invoiceNameTo} onChange={e => setInvoiceNameTo(e.target.value)} placeholder="Billing Department" />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">Email</Label>
+                  <Label className="text-xs">Email <span className="text-destructive">*</span></Label>
                   <Input type="email" value={invoiceEmailTo} onChange={e => setInvoiceEmailTo(e.target.value)} placeholder="billing@clinic.com" />
                 </div>
               </div>
