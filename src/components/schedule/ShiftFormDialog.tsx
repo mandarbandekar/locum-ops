@@ -282,14 +282,20 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
               {rateOptions.length > 0 && !isCustomRate ? (
                 <div className="space-y-2">
                   <Select
-                    value={rateOptions.some(o => o.amount.toString() === rate) ? rate : 'custom'}
+                    value={selectedRateKey || (rateOptions.length > 0 && rate ? (rateOptions.findIndex(o => o.amount.toString() === rate) >= 0 ? `rate-${rateOptions.findIndex(o => o.amount.toString() === rate)}` : 'custom') : 'custom')}
                     onValueChange={(v) => {
                       if (v === 'custom') {
                         setIsCustomRate(true);
+                        setSelectedRateKey('');
                         setRate('');
                       } else {
-                        setRate(v);
-                        setIsCustomRate(false);
+                        const idx = parseInt(v.replace('rate-', ''));
+                        const opt = rateOptions[idx];
+                        if (opt) {
+                          setRate(opt.amount.toString());
+                          setSelectedRateKey(v);
+                          setIsCustomRate(false);
+                        }
                       }
                     }}
                   >
@@ -298,7 +304,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
                     </SelectTrigger>
                     <SelectContent>
                       {rateOptions.map((opt, i) => (
-                        <SelectItem key={`${opt.type}-${i}`} value={opt.amount.toString()}>
+                        <SelectItem key={`rate-${i}`} value={`rate-${i}`}>
                           {opt.label} — ${opt.amount.toLocaleString()}
                         </SelectItem>
                       ))}
