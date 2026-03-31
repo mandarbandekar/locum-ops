@@ -55,6 +55,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   const [endTime, setEndTime] = useState(existing ? format(new Date(existing.end_datetime), 'HH:mm') : defaultStartTime ? format(new Date(2026, 0, 1, parseInt(defaultStartTime.split(':')[0]) + 1, parseInt(defaultStartTime.split(':')[1] || '0')), 'HH:mm') : '18:00');
   const [status, setStatus] = useState<ShiftStatus>(existing?.status || 'proposed');
   const [rate, setRate] = useState(existing?.rate_applied?.toString() || '');
+  const [isCustomRate, setIsCustomRate] = useState(false);
   const [notes, setNotes] = useState(existing?.notes || '');
   const [color, setColor] = useState<ShiftColor>(existing?.color || 'blue');
   const [showNotes, setShowNotes] = useState(!!existing?.notes);
@@ -83,9 +84,10 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
 
   // Check conflicts for ALL selected dates, not just the first
   const conflicts = useMemo(() => {
+    if (selectedDates.length === 0) return [];
     const allConflicts: Shift[] = [];
     const seen = new Set<string>();
-    const datesToCheck = selectedDates.length > 0 ? selectedDates : [new Date()];
+    const datesToCheck = selectedDates;
     for (const d of datesToCheck) {
       const dateStr = format(d, 'yyyy-MM-dd');
       const startDt = `${dateStr}T${startTime}:00`;
@@ -250,27 +252,44 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
                 <DollarSign className="h-3.5 w-3.5" />
                 Rate
               </Label>
-              {rateOptions.length > 0 ? (
-                <Select
-                  value={rateOptions.some(o => o.amount.toString() === rate) ? rate : 'custom'}
-                  onValueChange={(v) => { if (v !== 'custom') setRate(v); }}
-                >
-                  <SelectTrigger className="h-10">
-                    <SelectValue placeholder="Select rate" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {rateOptions.map((opt, i) => (
-                      <SelectItem key={`${opt.type}-${i}`} value={opt.amount.toString()}>
-                        {opt.label} — ${opt.amount.toLocaleString()}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="custom">Custom</SelectItem>
-                  </SelectContent>
-                </Select>
+              {rateOptions.length > 0 && !isCustomRate ? (
+                <div className="space-y-2">
+                  <Select
+                    value={rateOptions.some(o => o.amount.toString() === rate) ? rate : 'custom'}
+                    onValueChange={(v) => {
+                      if (v === 'custom') {
+                        setIsCustomRate(true);
+                        setRate('');
+                      } else {
+                        setRate(v);
+                        setIsCustomRate(false);
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="h-10">
+                      <SelectValue placeholder="Select rate" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {rateOptions.map((opt, i) => (
+                        <SelectItem key={`${opt.type}-${i}`} value={opt.amount.toString()}>
+                          {opt.label} — ${opt.amount.toLocaleString()}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="custom">Custom</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               ) : (
-                <div className="relative">
-                  <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                  <Input type="number" value={rate} onChange={e => setRate(e.target.value)} placeholder="0" min={0} className="pl-7 h-10" />
+                <div className="space-y-1.5">
+                  <div className="relative">
+                    <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                    <Input type="number" value={rate} onChange={e => setRate(e.target.value)} placeholder="0" min={0} className="pl-7 h-10" />
+                  </div>
+                  {rateOptions.length > 0 && isCustomRate && (
+                    <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => { setIsCustomRate(false); setRate(rateOptions[0]?.amount.toString() || ''); }}>
+                      ← Back to preset rates
+                    </Button>
+                  )}
                 </div>
               )}
             </div>
