@@ -1,5 +1,33 @@
-import { format } from 'date-fns';
 import { Card } from '@/components/ui/card';
+
+/** Format a date string to 'MMM d, yyyy' without timezone shift.
+ *  Handles both 'YYYY-MM-DD' and ISO timestamps safely. */
+function formatDateSafe(dateStr: string | null | undefined): string {
+  if (!dateStr) return '—';
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  // If date-only string, parse parts directly to avoid UTC shift
+  const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    const [, y, m, d] = match;
+    return `${MONTHS[parseInt(m, 10) - 1]} ${parseInt(d, 10)}, ${y}`;
+  }
+  const dt = new Date(dateStr);
+  if (isNaN(dt.getTime())) return '—';
+  return `${MONTHS[dt.getMonth()]} ${dt.getDate()}, ${dt.getFullYear()}`;
+}
+
+function formatDateShort(dateStr: string | null | undefined): string {
+  if (!dateStr) return '—';
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    const [, , m, d] = match;
+    return `${MONTHS[parseInt(m, 10) - 1]} ${parseInt(d, 10)}`;
+  }
+  const dt = new Date(dateStr);
+  if (isNaN(dt.getTime())) return '—';
+  return `${MONTHS[dt.getMonth()]} ${dt.getDate()}`;
+}
 
 interface PreviewProps {
   sender: {
@@ -58,11 +86,11 @@ export function InvoicePreview({ sender, billTo, invoiceNumber, invoiceDate, due
           <div className="text-right space-y-1">
             <div>
               <p className="text-xs text-muted-foreground">Invoice Date</p>
-              <p className="text-sm font-medium">{invoiceDate ? format(new Date(invoiceDate.length === 10 ? invoiceDate + 'T00:00:00' : invoiceDate), 'MMM d, yyyy') : '—'}</p>
+              <p className="text-sm font-medium">{formatDateSafe(invoiceDate)}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Due Date</p>
-              <p className="text-sm font-medium">{dueDate ? format(new Date(dueDate.length === 10 ? dueDate + 'T00:00:00' : dueDate), 'MMM d, yyyy') : '—'}</p>
+              <p className="text-sm font-medium">{formatDateSafe(dueDate)}</p>
             </div>
           </div>
         </div>
@@ -83,7 +111,7 @@ export function InvoicePreview({ sender, billTo, invoiceNumber, invoiceDate, due
               {lineItems.map((li, i) => (
                 <tr key={i} className="border-t">
                   <td className="p-2.5">{li.description}</td>
-                  <td className="p-2.5 text-muted-foreground">{li.service_date ? format(new Date(li.service_date + 'T00:00:00'), 'MMM d') : '—'}</td>
+                  <td className="p-2.5 text-muted-foreground">{formatDateShort(li.service_date)}</td>
                   <td className="p-2.5 text-right">{li.qty}</td>
                   <td className="p-2.5 text-right">${li.unit_rate.toLocaleString()}</td>
                   <td className="p-2.5 text-right font-medium">${li.line_total.toLocaleString()}</td>

@@ -9,6 +9,22 @@ import { Plus, Pencil, Check, X, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
+/** Convert any date value to a timezone-safe YYYY-MM-DD string for storage.
+ *  Avoids the UTC-midnight shift that `new Date('YYYY-MM-DD').toISOString()` causes. */
+function toDateOnlyISO(v: string | Date | null | undefined): string {
+  if (!v) return '';
+  if (typeof v === 'string') {
+    // Already a date-only string
+    if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+    // ISO string or other – extract local date parts
+    const d = new Date(v);
+    if (isNaN(d.getTime())) return v;
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+  const d = v as Date;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 function EditableLineItemRow({ item, onUpdate, onDelete }: { item: any; onUpdate: (updated: any) => Promise<void>; onDelete: () => Promise<void> }) {
   const [editing, setEditing] = useState(false);
   const [desc, setDesc] = useState(item.description);
@@ -126,8 +142,8 @@ export function InvoiceEditPanel({
       await onUpdateInvoice({
         ...invoice,
         invoice_number: invoiceNumber,
-        invoice_date: new Date(invoiceDate).toISOString(),
-        due_date: dueDate ? new Date(dueDate).toISOString() : null,
+        invoice_date: toDateOnlyISO(invoiceDate),
+        due_date: dueDate ? toDateOnlyISO(dueDate) : null,
         notes,
         total_amount: total,
         balance_due: total,
@@ -141,8 +157,8 @@ export function InvoiceEditPanel({
     await onUpdateInvoice({
       ...invoice,
       invoice_number: invoiceNumber,
-      invoice_date: new Date(invoiceDate).toISOString(),
-      due_date: dueDate ? new Date(dueDate).toISOString() : null,
+      invoice_date: toDateOnlyISO(invoiceDate),
+      due_date: dueDate ? toDateOnlyISO(dueDate) : null,
       notes,
       total_amount: total,
       balance_due: total,
