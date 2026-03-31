@@ -386,20 +386,6 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
         </div>
       </div>
 
-      {/* Conflict warning */}
-      {conflicts.length > 0 && (
-        <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
-          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
-          <div>
-            <p className="font-medium text-xs">Scheduling conflict!</p>
-            {conflicts.map(c => (
-              <p key={c.id} className="text-xs">
-                {facilities.find((cl: any) => cl.id === c.facility_id)?.name}: {format(new Date(c.start_datetime), 'MMM d, h:mm a')} – {format(new Date(c.end_datetime), 'h:mm a')}
-              </p>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Actions */}
       <div className="flex gap-2">
