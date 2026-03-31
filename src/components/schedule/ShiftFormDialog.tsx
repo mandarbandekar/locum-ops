@@ -66,6 +66,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   const [notes, setNotes] = useState(existing?.notes || '');
   const [color, setColor] = useState<ShiftColor>(existing?.color || 'blue');
   const [showNotes, setShowNotes] = useState(!!existing?.notes);
+  const [showAddFacility, setShowAddFacility] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { updateTerms } = useData();
