@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { AlertTriangle, Trash2, CalendarDays, DollarSign, Clock, Building2, StickyNote, Palette } from 'lucide-react';
+import { AlertTriangle, Trash2, CalendarDays, DollarSign, Clock, Building2, StickyNote, Palette, Plus } from 'lucide-react';
+import { AddFacilityDialog } from '@/components/AddFacilityDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
 import { ShiftStatus, SHIFT_COLORS, ShiftColor, TermsSnapshot, Shift } from '@/types';
@@ -65,6 +66,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   const [notes, setNotes] = useState(existing?.notes || '');
   const [color, setColor] = useState<ShiftColor>(existing?.color || 'blue');
   const [showNotes, setShowNotes] = useState(!!existing?.notes);
+  const [showAddFacility, setShowAddFacility] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { updateTerms } = useData();
@@ -241,14 +243,30 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
               <Building2 className="h-3.5 w-3.5" />
               Facility
             </Label>
-            <Select value={facilityId} onValueChange={handleFacilityChange}>
+            <Select value={facilityId} onValueChange={(v) => {
+              if (v === '__add_new__') {
+                setShowAddFacility(true);
+                return;
+              }
+              handleFacilityChange(v);
+            }}>
               <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {facilities.map(c => (
                   <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                 ))}
+                <SelectItem value="__add_new__" className="text-primary font-medium">
+                  <span className="flex items-center gap-1.5">
+                    <Plus className="h-3.5 w-3.5" /> Add New Facility
+                  </span>
+                </SelectItem>
               </SelectContent>
             </Select>
+            <AddFacilityDialog
+              open={showAddFacility}
+              onOpenChange={setShowAddFacility}
+              onCreated={(newId) => handleFacilityChange(newId)}
+            />
           </div>
 
           {/* Time row */}
