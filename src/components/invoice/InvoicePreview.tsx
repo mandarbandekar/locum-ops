@@ -111,7 +111,7 @@ export function InvoicePreview({ sender, billTo, invoiceNumber, invoiceDate, due
               {lineItems.map((li, i) => (
                 <tr key={i} className="border-t">
                   <td className="p-2.5">{li.description}</td>
-                  <td className="p-2.5 text-muted-foreground">{li.service_date ? format(new Date(li.service_date + 'T00:00:00'), 'MMM d') : '—'}</td>
+                  <td className="p-2.5 text-muted-foreground">{formatDateShort(li.service_date)}</td>
                   <td className="p-2.5 text-right">{li.qty}</td>
                   <td className="p-2.5 text-right">${li.unit_rate.toLocaleString()}</td>
                   <td className="p-2.5 text-right font-medium">${li.line_total.toLocaleString()}</td>
