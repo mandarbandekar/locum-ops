@@ -118,6 +118,24 @@ export function InvoiceEditPanel({
     onInvoiceFieldChange?.({ invoiceNumber, invoiceDate, dueDate, notes, total });
   }, [invoiceNumber, invoiceDate, dueDate, notes, total]);
 
+  // Auto-save draft on field changes (debounced)
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(async () => {
+      await onUpdateInvoice({
+        ...invoice,
+        invoice_number: invoiceNumber,
+        invoice_date: new Date(invoiceDate).toISOString(),
+        due_date: dueDate ? new Date(dueDate).toISOString() : null,
+        notes,
+        total_amount: total,
+        balance_due: total,
+      });
+    }, 800);
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
+  }, [invoiceNumber, invoiceDate, dueDate, notes, total]);
+
   // Expose save function for action bar
   const handleSave = async () => {
     await onUpdateInvoice({
