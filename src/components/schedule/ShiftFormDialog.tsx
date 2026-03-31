@@ -111,10 +111,29 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     return allConflicts;
   }, [shifts, selectedDates, startTime, endTime, existing?.id]);
 
+  const saveCustomRateToTerms = useCallback(async () => {
+    if (!isCustomRate || !saveCustomRate || !rate || Number(rate) <= 0) return;
+    const label = customRateLabel.trim() || `Custom $${Number(rate).toLocaleString()}`;
+    const facilityTerms = terms.find(t => t.facility_id === facilityId);
+    if (facilityTerms) {
+      const existingCustom = facilityTerms.custom_rates || [];
+      // Don't add duplicate
+      if (existingCustom.some(cr => cr.amount === Number(rate) && cr.label === label)) return;
+      await updateTerms({
+        ...facilityTerms,
+        custom_rates: [...existingCustom, { label, amount: Number(rate) }],
+      });
+      toast.success(`Custom rate "${label}" saved to facility`);
+    }
+  }, [isCustomRate, saveCustomRate, rate, customRateLabel, facilityId, terms, updateTerms]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
+      // Save custom rate to facility terms if opted in
+      await saveCustomRateToTerms();
+
       if (existing) {
         const date = format(selectedDates[0] || new Date(), 'yyyy-MM-dd');
         await onSave({
