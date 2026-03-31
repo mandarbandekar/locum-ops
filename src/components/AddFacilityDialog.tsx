@@ -70,10 +70,10 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
   };
 
   const handleSubmit = async () => {
-    if (!name.trim()) {
-      toast.error('Please enter a facility name');
-      setStep(0);
-      return;
+    // Validate all mandatory steps
+    for (const s of [0, 4, 6]) {
+      const err = validateStep(s);
+      if (err) { toast.error(err); setStep(s); return; }
     }
 
     const prefix = invoicePrefix || getInitials(name);
