@@ -339,7 +339,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
                     </label>
                   </div>
                   {rateOptions.length > 0 && isCustomRate && (
-                    <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => { setIsCustomRate(false); setCustomRateLabel(''); setRate(rateOptions[0]?.amount.toString() || ''); }}>
+                    <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => { setIsCustomRate(false); setCustomRateLabel(''); setSelectedRateKey('rate-0'); setRate(rateOptions[0]?.amount.toString() || ''); }}>
                       ← Back to preset rates
                     </Button>
                   )}
