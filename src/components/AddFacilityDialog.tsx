@@ -70,10 +70,10 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
   };
 
   const handleSubmit = async () => {
-    if (!name.trim()) {
-      toast.error('Please enter a facility name');
-      setStep(0);
-      return;
+    // Validate all mandatory steps
+    for (const s of [0, 4, 6]) {
+      const err = validateStep(s);
+      if (err) { toast.error(err); setStep(s); return; }
     }
 
     const prefix = invoicePrefix || getInitials(name);
@@ -114,23 +114,21 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
         });
       }
 
-      // Save scheduling contact if provided
-      if (schedulingContactEmail.trim()) {
-        await saveConfirmationSettings({
-          id: '',
-          facility_id: facility.id,
-          primary_contact_name: schedulingContactName.trim(),
-          primary_contact_email: schedulingContactEmail.trim(),
-          secondary_contact_email: '',
-          monthly_enabled: true,
-          monthly_send_offset_days: 7,
-          preshift_enabled: false,
-          preshift_send_offset_days: 3,
-          auto_send_enabled: false,
-          auto_send_monthly: false,
-          auto_send_preshift: false,
-        });
-      }
+      // Save scheduling contact (mandatory)
+      await saveConfirmationSettings({
+        id: '',
+        facility_id: facility.id,
+        primary_contact_name: schedulingContactName.trim(),
+        primary_contact_email: schedulingContactEmail.trim(),
+        secondary_contact_email: '',
+        monthly_enabled: true,
+        monthly_send_offset_days: 7,
+        preshift_enabled: false,
+        preshift_send_offset_days: 3,
+        auto_send_enabled: false,
+        auto_send_monthly: false,
+        auto_send_preshift: false,
+      });
 
       toast.success('Practice facility added');
       onCreated?.(facility.id);
@@ -141,12 +139,26 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
     }
   };
 
-  const handleSkipAndAdd = () => {
-    if (!name.trim()) {
-      toast.error('Please enter a facility name first');
-      setStep(0);
-      return;
+  const isEmailValid = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+  const validateStep = (s: number): string | null => {
+    if (s === 0 && !name.trim()) return 'Please enter a facility name';
+    if (s === 4) {
+      if (!schedulingContactName.trim()) return 'Scheduling contact name is required';
+      if (!schedulingContactEmail.trim()) return 'Scheduling contact email is required';
+      if (!isEmailValid(schedulingContactEmail.trim())) return 'Please enter a valid scheduling contact email';
     }
+    if (s === 6) {
+      if (!invoiceNameTo.trim()) return 'Billing contact name (To) is required';
+      if (!invoiceEmailTo.trim()) return 'Billing contact email (To) is required';
+      if (!isEmailValid(invoiceEmailTo.trim())) return 'Please enter a valid billing email';
+    }
+    return null;
+  };
+
+  const handleSkipAndAdd = () => {
+    const err = validateStep(step);
+    if (err) { toast.error(err); return; }
     if (step < totalSteps - 1) {
       setStep(step + 1);
     } else {
@@ -155,10 +167,8 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
   };
 
   const handleNext = () => {
-    if (step === 0 && !name.trim()) {
-      toast.error('Please enter a facility name');
-      return;
-    }
+    const err = validateStep(step);
+    if (err) { toast.error(err); return; }
     if (step < totalSteps - 1) {
       setStep(step + 1);
     } else {
@@ -181,7 +191,7 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>Step {step + 1} of {totalSteps} — {STEPS[step].label}</span>
-            {step > 0 && (
+           {step > 0 && step !== 4 && step !== 5 && step !== 6 && (
               <button
                 type="button"
                 onClick={handleSkipAndAdd}
@@ -266,11 +276,11 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
               <p className="text-sm text-muted-foreground">Add the scheduling contact for shift confirmations. This person will receive monthly and pre-shift confirmation emails.</p>
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-2">
-                  <Label>Contact Name</Label>
+                  <Label>Contact Name <span className="text-destructive">*</span></Label>
                   <Input value={schedulingContactName} onChange={e => setSchedulingContactName(e.target.value)} placeholder="Practice Manager" />
                 </div>
                 <div className="space-y-2">
-                  <Label>Contact Email</Label>
+                  <Label>Contact Email <span className="text-destructive">*</span></Label>
                   <Input type="email" value={schedulingContactEmail} onChange={e => setSchedulingContactEmail(e.target.value)} placeholder="manager@clinic.com" />
                 </div>
               </div>
@@ -325,11 +335,11 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
               <p className="text-xs font-medium text-muted-foreground">To</p>
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
-                  <Label className="text-xs">Name</Label>
+                  <Label className="text-xs">Name <span className="text-destructive">*</span></Label>
                   <Input value={invoiceNameTo} onChange={e => setInvoiceNameTo(e.target.value)} placeholder="Billing Department" />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">Email</Label>
+                  <Label className="text-xs">Email <span className="text-destructive">*</span></Label>
                   <Input type="email" value={invoiceEmailTo} onChange={e => setInvoiceEmailTo(e.target.value)} placeholder="billing@clinic.com" />
                 </div>
               </div>
