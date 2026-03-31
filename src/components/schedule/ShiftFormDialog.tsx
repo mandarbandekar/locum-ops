@@ -14,6 +14,9 @@ import { ShiftStatus, SHIFT_COLORS, ShiftColor, TermsSnapshot, Shift } from '@/t
 import { detectShiftConflicts } from '@/lib/businessLogic';
 import { cn } from '@/lib/utils';
 import { termsToRates, RateEntry } from '@/components/facilities/RatesEditor';
+import { useData } from '@/contexts/DataContext';
+import { Checkbox } from '@/components/ui/checkbox';
+import { toast } from 'sonner';
 
 interface ShiftFormDialogProps {
   open: boolean;
