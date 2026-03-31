@@ -141,8 +141,8 @@ export function InvoiceEditPanel({
     await onUpdateInvoice({
       ...invoice,
       invoice_number: invoiceNumber,
-      invoice_date: new Date(invoiceDate).toISOString(),
-      due_date: dueDate ? new Date(dueDate).toISOString() : null,
+      invoice_date: toDateOnlyISO(invoiceDate),
+      due_date: dueDate ? toDateOnlyISO(dueDate) : null,
       notes,
       total_amount: total,
       balance_due: total,
