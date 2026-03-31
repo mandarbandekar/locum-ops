@@ -278,11 +278,11 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
               <p className="text-sm text-muted-foreground">Add the scheduling contact for shift confirmations. This person will receive monthly and pre-shift confirmation emails.</p>
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-2">
-                  <Label>Contact Name</Label>
+                  <Label>Contact Name <span className="text-destructive">*</span></Label>
                   <Input value={schedulingContactName} onChange={e => setSchedulingContactName(e.target.value)} placeholder="Practice Manager" />
                 </div>
                 <div className="space-y-2">
-                  <Label>Contact Email</Label>
+                  <Label>Contact Email <span className="text-destructive">*</span></Label>
                   <Input type="email" value={schedulingContactEmail} onChange={e => setSchedulingContactEmail(e.target.value)} placeholder="manager@clinic.com" />
                 </div>
               </div>
