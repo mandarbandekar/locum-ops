@@ -84,9 +84,10 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
 
   // Check conflicts for ALL selected dates, not just the first
   const conflicts = useMemo(() => {
+    if (selectedDates.length === 0) return [];
     const allConflicts: Shift[] = [];
     const seen = new Set<string>();
-    const datesToCheck = selectedDates.length > 0 ? selectedDates : [new Date()];
+    const datesToCheck = selectedDates;
     for (const d of datesToCheck) {
       const dateStr = format(d, 'yyyy-MM-dd');
       const startDt = `${dateStr}T${startTime}:00`;
