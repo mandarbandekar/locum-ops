@@ -58,6 +58,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   const [endTime, setEndTime] = useState(existing ? format(new Date(existing.end_datetime), 'HH:mm') : defaultStartTime ? format(new Date(2026, 0, 1, parseInt(defaultStartTime.split(':')[0]) + 1, parseInt(defaultStartTime.split(':')[1] || '0')), 'HH:mm') : '18:00');
   const [status, setStatus] = useState<ShiftStatus>(existing?.status || 'proposed');
   const [rate, setRate] = useState(existing?.rate_applied?.toString() || '');
+  const [selectedRateKey, setSelectedRateKey] = useState<string>('');
   const [isCustomRate, setIsCustomRate] = useState(false);
   const [customRateLabel, setCustomRateLabel] = useState('');
   const [saveCustomRate, setSaveCustomRate] = useState(true);
@@ -83,9 +84,12 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
 
   const handleFacilityChange = (newFacilityId: string) => {
     setFacilityId(newFacilityId);
+    setSelectedRateKey('');
+    setIsCustomRate(false);
     const newOptions = buildRateOptions(terms, newFacilityId);
     if (newOptions.length > 0 && !newOptions.some(o => o.amount.toString() === rate)) {
       setRate(newOptions[0].amount.toString());
+      setSelectedRateKey('rate-0');
     }
   };
 
@@ -281,14 +285,20 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
               {rateOptions.length > 0 && !isCustomRate ? (
                 <div className="space-y-2">
                   <Select
-                    value={rateOptions.some(o => o.amount.toString() === rate) ? rate : 'custom'}
+                    value={selectedRateKey || (rateOptions.length > 0 && rate ? (rateOptions.findIndex(o => o.amount.toString() === rate) >= 0 ? `rate-${rateOptions.findIndex(o => o.amount.toString() === rate)}` : 'custom') : 'custom')}
                     onValueChange={(v) => {
                       if (v === 'custom') {
                         setIsCustomRate(true);
+                        setSelectedRateKey('');
                         setRate('');
                       } else {
-                        setRate(v);
-                        setIsCustomRate(false);
+                        const idx = parseInt(v.replace('rate-', ''));
+                        const opt = rateOptions[idx];
+                        if (opt) {
+                          setRate(opt.amount.toString());
+                          setSelectedRateKey(v);
+                          setIsCustomRate(false);
+                        }
                       }
                     }}
                   >
@@ -297,7 +307,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
                     </SelectTrigger>
                     <SelectContent>
                       {rateOptions.map((opt, i) => (
-                        <SelectItem key={`${opt.type}-${i}`} value={opt.amount.toString()}>
+                        <SelectItem key={`rate-${i}`} value={`rate-${i}`}>
                           {opt.label} — ${opt.amount.toLocaleString()}
                         </SelectItem>
                       ))}
@@ -329,7 +339,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
                     </label>
                   </div>
                   {rateOptions.length > 0 && isCustomRate && (
-                    <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => { setIsCustomRate(false); setCustomRateLabel(''); setRate(rateOptions[0]?.amount.toString() || ''); }}>
+                    <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => { setIsCustomRate(false); setCustomRateLabel(''); setSelectedRateKey('rate-0'); setRate(rateOptions[0]?.amount.toString() || ''); }}>
                       ← Back to preset rates
                     </Button>
                   )}
