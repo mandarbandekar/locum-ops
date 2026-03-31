@@ -306,13 +306,30 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
                   </Select>
                 </div>
               ) : (
-                <div className="space-y-1.5">
+                <div className="space-y-2">
+                  <Input
+                    type="text"
+                    value={customRateLabel}
+                    onChange={e => setCustomRateLabel(e.target.value)}
+                    placeholder="Rate label (e.g. Emergency Rate)"
+                    className="h-9 text-sm"
+                  />
                   <div className="relative">
                     <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                     <Input type="number" value={rate} onChange={e => setRate(e.target.value)} placeholder="0" min={0} className="pl-7 h-10" />
                   </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="save-custom-rate"
+                      checked={saveCustomRate}
+                      onCheckedChange={(v) => setSaveCustomRate(!!v)}
+                    />
+                    <label htmlFor="save-custom-rate" className="text-xs text-muted-foreground cursor-pointer">
+                      Save to facility rates
+                    </label>
+                  </div>
                   {rateOptions.length > 0 && isCustomRate && (
-                    <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => { setIsCustomRate(false); setRate(rateOptions[0]?.amount.toString() || ''); }}>
+                    <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => { setIsCustomRate(false); setCustomRateLabel(''); setRate(rateOptions[0]?.amount.toString() || ''); }}>
                       ← Back to preset rates
                     </Button>
                   )}
