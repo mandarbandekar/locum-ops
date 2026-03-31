@@ -114,23 +114,21 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
         });
       }
 
-      // Save scheduling contact if provided
-      if (schedulingContactEmail.trim()) {
-        await saveConfirmationSettings({
-          id: '',
-          facility_id: facility.id,
-          primary_contact_name: schedulingContactName.trim(),
-          primary_contact_email: schedulingContactEmail.trim(),
-          secondary_contact_email: '',
-          monthly_enabled: true,
-          monthly_send_offset_days: 7,
-          preshift_enabled: false,
-          preshift_send_offset_days: 3,
-          auto_send_enabled: false,
-          auto_send_monthly: false,
-          auto_send_preshift: false,
-        });
-      }
+      // Save scheduling contact (mandatory)
+      await saveConfirmationSettings({
+        id: '',
+        facility_id: facility.id,
+        primary_contact_name: schedulingContactName.trim(),
+        primary_contact_email: schedulingContactEmail.trim(),
+        secondary_contact_email: '',
+        monthly_enabled: true,
+        monthly_send_offset_days: 7,
+        preshift_enabled: false,
+        preshift_send_offset_days: 3,
+        auto_send_enabled: false,
+        auto_send_monthly: false,
+        auto_send_preshift: false,
+      });
 
       toast.success('Practice facility added');
       onCreated?.(facility.id);
