@@ -193,7 +193,7 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>Step {step + 1} of {totalSteps} — {STEPS[step].label}</span>
-            {step > 0 && (
+           {step > 0 && step !== 4 && step !== 5 && step !== 6 && (
               <button
                 type="button"
                 onClick={handleSkipAndAdd}
