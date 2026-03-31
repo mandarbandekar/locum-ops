@@ -110,8 +110,8 @@ export default function PublicInvoicePage() {
             }}
             billTo={{
               facilityName: facility?.name || 'Unknown',
-              contactName: billingContact?.name,
-              email: billingContact?.email,
+              contactName: billingContact?.name || facility?.invoice_name_to,
+              email: billingContact?.email || facility?.invoice_email_to,
               address: facility?.address,
             }}
             invoiceNumber={invoice.invoice_number}

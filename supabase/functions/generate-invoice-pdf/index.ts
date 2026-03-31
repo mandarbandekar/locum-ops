@@ -110,9 +110,9 @@ Deno.serve(async (req) => {
     // Fetch related data
     const [liRes, facRes, profileRes, contactRes] = await Promise.all([
       supabase.from('invoice_line_items').select('*').eq('invoice_id', invoice.id).order('created_at'),
-      supabase.from('facilities').select('name, address').eq('id', invoice.facility_id).single(),
+      supabase.from('facilities').select('name, address, invoice_name_to, invoice_email_to, invoice_name_cc, invoice_email_cc, invoice_name_bcc, invoice_email_bcc').eq('id', invoice.facility_id).single(),
       supabase.from('user_profiles').select('first_name, last_name, company_name, company_address, invoice_email, invoice_phone').eq('user_id', invoice.user_id).single(),
-      supabase.from('facility_contacts').select('name, email').eq('facility_id', invoice.facility_id).or('is_primary.eq.true,role.eq.billing').limit(1).single(),
+      supabase.from('facility_contacts').select('name, email, phone, role').eq('facility_id', invoice.facility_id).or('is_primary.eq.true,role.eq.billing').limit(1).single(),
     ]);
 
     const lineItems = liRes.data || [];
@@ -227,14 +227,18 @@ Deno.serve(async (req) => {
     drawTextRight(formatDate(invoice.invoice_date), datesValX, y, { size: 10 });
     y -= 14;
 
-    if (billingContact?.name) {
-      drawText(billingContact.name, billToX, y, { size: 9, color: gray });
+    // Use facility billing fields first, fall back to facility_contacts
+    const billToName = facility?.invoice_name_to || billingContact?.name || '';
+    const billToEmail = facility?.invoice_email_to || billingContact?.email || '';
+
+    if (billToName) {
+      drawText(billToName, billToX, y, { size: 9, color: gray });
     }
     drawText('DUE DATE', datesX, y, { font: helveticaBold, size: 8, color: gray });
     y -= 14;
 
-    if (billingContact?.email) {
-      drawText(billingContact.email, billToX, y, { size: 9, color: gray });
+    if (billToEmail) {
+      drawText(billToEmail, billToX, y, { size: 9, color: gray });
     }
     drawTextRight(formatDate(invoice.due_date), datesValX, y, { size: 10 });
     y -= 14;
@@ -242,6 +246,13 @@ Deno.serve(async (req) => {
     // Facility address (wrapped, limited to left column)
     if (facility?.address) {
       y = drawWrapped(facility.address, billToX, y, 280, { size: 9, color: gray });
+    }
+
+    // CC / BCC info
+    if (facility?.invoice_name_cc || facility?.invoice_email_cc) {
+      y -= 4;
+      drawText(`CC: ${facility.invoice_name_cc || ''} ${facility.invoice_email_cc ? '<' + facility.invoice_email_cc + '>' : ''}`.trim(), billToX, y, { size: 8, color: gray });
+      y -= 12;
     }
 
     y -= 16;

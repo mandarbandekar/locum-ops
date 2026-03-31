@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
   // Fetch related data
   const [liRes, facRes, profileRes, contactRes] = await Promise.all([
     supabase.from('invoice_line_items').select('description, service_date, qty, unit_rate, line_total, shift_id').eq('invoice_id', invoice.id),
-    supabase.from('facilities').select('name, address').eq('id', invoice.facility_id).single(),
+    supabase.from('facilities').select('name, address, invoice_name_to, invoice_email_to').eq('id', invoice.facility_id).single(),
     supabase.from('user_profiles').select('first_name, last_name, company_name, company_address, invoice_email, invoice_phone').eq('user_id', invoice.user_id).single(),
     supabase.from('facility_contacts').select('name, email').eq('facility_id', invoice.facility_id).or('is_primary.eq.true,role.eq.billing').limit(1).single(),
   ]);
