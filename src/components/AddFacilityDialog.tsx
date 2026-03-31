@@ -133,6 +133,7 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
       }
 
       toast.success('Practice facility added');
+      onCreated?.(facility.id);
       resetForm();
       onOpenChange(false);
     } catch {
