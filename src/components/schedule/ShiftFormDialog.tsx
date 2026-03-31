@@ -264,16 +264,8 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
             </Select>
             <AddFacilityDialog
               open={showAddFacility}
-              onOpenChange={(o) => {
-                setShowAddFacility(o);
-                // After closing, select the newest facility if one was added
-                if (!o && facilities.length > 0) {
-                  const newest = facilities[facilities.length - 1];
-                  if (newest && newest.id !== facilityId) {
-                    handleFacilityChange(newest.id);
-                  }
-                }
-              }}
+              onOpenChange={setShowAddFacility}
+              onCreated={(newId) => handleFacilityChange(newId)}
             />
           </div>
 
