@@ -1,5 +1,33 @@
-import { format } from 'date-fns';
 import { Card } from '@/components/ui/card';
+
+/** Format a date string to 'MMM d, yyyy' without timezone shift.
+ *  Handles both 'YYYY-MM-DD' and ISO timestamps safely. */
+function formatDateSafe(dateStr: string | null | undefined): string {
+  if (!dateStr) return '—';
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  // If date-only string, parse parts directly to avoid UTC shift
+  const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    const [, y, m, d] = match;
+    return `${MONTHS[parseInt(m, 10) - 1]} ${parseInt(d, 10)}, ${y}`;
+  }
+  const dt = new Date(dateStr);
+  if (isNaN(dt.getTime())) return '—';
+  return `${MONTHS[dt.getMonth()]} ${dt.getDate()}, ${dt.getFullYear()}`;
+}
+
+function formatDateShort(dateStr: string | null | undefined): string {
+  if (!dateStr) return '—';
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    const [, , m, d] = match;
+    return `${MONTHS[parseInt(m, 10) - 1]} ${parseInt(d, 10)}`;
+  }
+  const dt = new Date(dateStr);
+  if (isNaN(dt.getTime())) return '—';
+  return `${MONTHS[dt.getMonth()]} ${dt.getDate()}`;
+}
 
 interface PreviewProps {
   sender: {
