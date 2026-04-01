@@ -293,7 +293,12 @@ Deno.serve(async (req) => {
         }));
 
         const total = lineItems.reduce((sum, li) => sum + li.line_total, 0);
-        const dueDate = addDays(now, facility.invoice_due_days || 15);
+
+        // Invoice date = date of the last shift (not today)
+        const lastShift = eligibleShifts[eligibleShifts.length - 1];
+        const lastShiftDate = new Date(lastShift.start_datetime);
+        const invoiceDate = new Date(lastShiftDate.getFullYear(), lastShiftDate.getMonth(), lastShiftDate.getDate(), 12, 0, 0);
+        const dueDate = addDays(invoiceDate, facility.invoice_due_days || 15);
 
         // Create invoice
         const { data: invData, error: invErr } = await supabase
@@ -302,7 +307,7 @@ Deno.serve(async (req) => {
             user_id: facility.user_id,
             facility_id: facility.id,
             invoice_number: invoiceNumber,
-            invoice_date: now.toISOString(),
+            invoice_date: invoiceDate.toISOString(),
             period_start: period.start.toISOString(),
             period_end: period.end.toISOString(),
             total_amount: total,

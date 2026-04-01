@@ -211,14 +211,19 @@ export function buildAutoInvoiceDraft(
   }));
 
   const total = lineItems.reduce((sum, li) => sum + li.line_total, 0);
-  const dueDate = new Date();
+
+  // Invoice date = date of the last shift in the period (not today)
+  const lastShiftDate = new Date(eligibleShifts[eligibleShifts.length - 1].start_datetime);
+  const invoiceDate = new Date(lastShiftDate.getFullYear(), lastShiftDate.getMonth(), lastShiftDate.getDate(), 12, 0, 0);
+
+  const dueDate = new Date(invoiceDate);
   dueDate.setDate(dueDate.getDate() + (facility.invoice_due_days || 15));
 
   return {
     invoice: {
       facility_id: facility.id,
       invoice_number: invoiceNumber,
-      invoice_date: new Date().toISOString(),
+      invoice_date: invoiceDate.toISOString(),
       period_start: periodStart.toISOString(),
       period_end: periodEnd.toISOString(),
       total_amount: total,
