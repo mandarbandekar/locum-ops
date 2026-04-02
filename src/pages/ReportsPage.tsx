@@ -352,8 +352,7 @@ export default function ReportsPage() {
   const revenueChartConfig = {
     collected: { label: 'Collected', color: 'hsl(142, 71%, 45%)' },
     outstanding: { label: 'Outstanding', color: 'hsl(38, 92%, 50%)' },
-    pipeline: { label: 'Pipeline', color: 'hsl(215, 25%, 75%)' },
-    cumulativeCollected: { label: 'Cumulative Collected', color: 'hsl(142, 71%, 35%)' },
+    anticipated: { label: 'Anticipated Income', color: 'hsl(215, 25%, 75%)' },
   };
 
   const paymentSpeedConfig = {
