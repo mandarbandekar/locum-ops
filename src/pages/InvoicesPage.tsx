@@ -112,8 +112,8 @@ export default function InvoicesPage() {
               <Trash2 className="mr-1 h-4 w-4" /> Delete ({selected.size})
             </Button>
           )}
-          <Button size="sm" onClick={() => setShowCreate(true)} className="flex-1 sm:flex-none">
-            <Plus className="mr-1 h-4 w-4" /> Create Invoice
+          <Button size="sm" variant="outline" onClick={() => setShowCreate(true)} className="flex-1 sm:flex-none">
+            <Plus className="mr-1 h-4 w-4" /> Create Manual Invoice
           </Button>
         </div>
       </div>
@@ -132,6 +132,18 @@ export default function InvoicesPage() {
       <div className="my-3">
         <InvoiceWorkflowHint />
       </div>
+
+      {readyToReview.length > 0 && (
+        <div className="flex items-center justify-between gap-3 px-4 py-3 mb-4 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40">
+          <div className="flex items-center gap-2 text-sm font-medium text-amber-800 dark:text-amber-300">
+            <FileEdit className="h-4 w-4 shrink-0" />
+            You have {readyToReview.length} invoice{readyToReview.length !== 1 ? 's' : ''} ready to review — review and send to get paid.
+          </div>
+          <Button size="sm" className="shrink-0" onClick={() => navigate(`/invoices/${readyToReview[0].id}`)}>
+            Review Next →
+          </Button>
+        </div>
+      )}
 
       <div className="space-y-4">
         <div ref={overdueRef}>
@@ -187,7 +199,7 @@ export default function InvoicesPage() {
             onToggleSelect={toggleSelect}
             onDelete={deleteInvoice}
             getFacilityName={getFacilityName}
-            emptyMessage="No invoices ready to review — check back after your shifts are completed."
+            emptyMessage="Invoices are auto-generated from your shifts — no need to create them manually. They'll appear here once shifts are completed."
             defaultOpen={true}
             groupByFacility={true}
             headerRight={readyToReview.length > 0 ? (
