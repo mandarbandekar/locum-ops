@@ -123,55 +123,103 @@ export default function InvoicesPage() {
         </div>
       </div>
 
+      {/* Summary Stats */}
+      <InvoiceSummaryStrip
+        overdue={{ count: overdue.length, total: sumBalance(overdue) }}
+        awaiting={{ count: [...sent, ...partial].length, total: sumBalance([...sent, ...partial]) }}
+        drafts={{ count: draft.length, total: sumTotal(draft) }}
+        paidThisMonth={{ count: paidThisMonth.length, total: sumTotal(paidThisMonth) }}
+        onScrollTo={scrollTo}
+      />
+
+      {/* Workflow Hint */}
+      <div className="my-3">
+        <InvoiceWorkflowHint />
+      </div>
+
       <div className="space-y-4">
-        <InvoiceStatusGroup
-          title="Overdue"
-          icon={<AlertTriangle className="h-4 w-4 text-destructive" />}
-          invoices={overdue}
-          selected={selected}
-          onToggleSelect={toggleSelect}
-          onDelete={deleteInvoice}
-          getFacilityName={getFacilityName}
-          emptyMessage="No overdue invoices — you're all caught up!"
-          defaultOpen={true}
-        />
+        <div ref={overdueRef}>
+          <InvoiceStatusGroup
+            title="Overdue"
+            icon={<AlertTriangle className="h-4 w-4 text-destructive" />}
+            invoices={overdue}
+            selected={selected}
+            onToggleSelect={toggleSelect}
+            onDelete={deleteInvoice}
+            getFacilityName={getFacilityName}
+            emptyMessage="No overdue invoices — you're all caught up!"
+            defaultOpen={true}
+            headerRight={overdue.length > 0 ? (
+              <span className="text-sm font-bold text-destructive bg-destructive/10 px-2 py-0.5 rounded-md">
+                ${sumBalance(overdue).toLocaleString()} overdue
+              </span>
+            ) : undefined}
+            alertBanner={overdue.length > 0 ? (
+              <div className="flex items-center gap-2 px-5 py-3 text-sm text-destructive bg-destructive/5 border-t border-destructive/10">
+                <AlertTriangle className="h-4 w-4 shrink-0" />
+                You have ${sumBalance(overdue).toLocaleString()} overdue across {overdue.length} invoice{overdue.length !== 1 ? 's' : ''}. Follow up with facilities to collect payment.
+              </div>
+            ) : undefined}
+          />
+        </div>
 
-        <InvoiceStatusGroup
-          title="Sent & Awaiting Payment"
-          icon={<Send className="h-4 w-4 text-blue-500" />}
-          invoices={[...sent, ...partial]}
-          selected={selected}
-          onToggleSelect={toggleSelect}
-          onDelete={deleteInvoice}
-          getFacilityName={getFacilityName}
-          emptyMessage="No invoices awaiting payment right now."
-          defaultOpen={true}
-        />
+        <div ref={awaitingRef}>
+          <InvoiceStatusGroup
+            title="Sent & Awaiting Payment"
+            icon={<Send className="h-4 w-4 text-blue-500" />}
+            invoices={[...sent, ...partial]}
+            selected={selected}
+            onToggleSelect={toggleSelect}
+            onDelete={deleteInvoice}
+            getFacilityName={getFacilityName}
+            emptyMessage="No invoices awaiting payment right now."
+            defaultOpen={true}
+            headerRight={[...sent, ...partial].length > 0 ? (
+              <span className="text-sm font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-md">
+                ${sumBalance([...sent, ...partial]).toLocaleString()} outstanding
+              </span>
+            ) : undefined}
+          />
+        </div>
 
-        <InvoiceStatusGroup
-          title="Drafts"
-          icon={<FileEdit className="h-4 w-4 text-muted-foreground" />}
-          invoices={draft}
-          selected={selected}
-          onToggleSelect={toggleSelect}
-          onDelete={deleteInvoice}
-          getFacilityName={getFacilityName}
-          emptyMessage="No draft invoices — everything has been sent."
-          defaultOpen={true}
-          groupByFacility={true}
-        />
+        <div ref={draftsRef}>
+          <InvoiceStatusGroup
+            title="Drafts"
+            icon={<FileEdit className="h-4 w-4 text-muted-foreground" />}
+            invoices={draft}
+            selected={selected}
+            onToggleSelect={toggleSelect}
+            onDelete={deleteInvoice}
+            getFacilityName={getFacilityName}
+            emptyMessage="No draft invoices — everything has been sent."
+            defaultOpen={true}
+            groupByFacility={true}
+            headerRight={draft.length > 0 ? (
+              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => navigate(`/invoices/${draft[0].id}`)}>
+                Review & Send
+              </Button>
+            ) : undefined}
+          />
+        </div>
 
-        <InvoiceStatusGroup
-          title="Paid"
-          icon={<CheckCircle className="h-4 w-4 text-primary" />}
-          invoices={paid}
-          selected={selected}
-          onToggleSelect={toggleSelect}
-          onDelete={deleteInvoice}
-          getFacilityName={getFacilityName}
-          emptyMessage="No paid invoices yet."
-          defaultOpen={false}
-        />
+        <div ref={paidRef}>
+          <InvoiceStatusGroup
+            title="Paid"
+            icon={<CheckCircle className="h-4 w-4 text-primary" />}
+            invoices={paid}
+            selected={selected}
+            onToggleSelect={toggleSelect}
+            onDelete={deleteInvoice}
+            getFacilityName={getFacilityName}
+            emptyMessage="No paid invoices yet."
+            defaultOpen={false}
+            headerRight={paidThisMonth.length > 0 ? (
+              <span className="text-sm font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md">
+                ${sumTotal(paidThisMonth).toLocaleString()} this month
+              </span>
+            ) : undefined}
+          />
+        </div>
       </div>
 
       <CreateInvoiceDialog open={showCreate} onOpenChange={setShowCreate} />
