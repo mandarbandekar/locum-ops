@@ -8,7 +8,7 @@ import {
   Send, ShieldAlert, CheckSquare, Zap, Clock,
 } from 'lucide-react';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
-import { format, differenceInDays, differenceInHours, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachMonthOfInterval, isWithinInterval, isToday, parseISO } from 'date-fns';
+import { format, differenceInDays, differenceInHours, addMonths, subMonths, startOfMonth, endOfMonth, endOfDay, startOfWeek, endOfWeek, eachMonthOfInterval, isWithinInterval, isToday, isAfter, parseISO } from 'date-fns';
 import { getChecklistBadge } from '@/types/contracts';
 import { useClinicConfirmations } from '@/hooks/useClinicConfirmations';
 import { useCredentials } from '@/hooks/useCredentials';
@@ -219,7 +219,7 @@ export default function DashboardPage() {
         title: `${summary.draftInvoices.length} draft invoice${summary.draftInvoices.length > 1 ? 's' : ''}`,
         context: 'Ready to review and send',
         link: '/invoices', icon: FileText, urgency: 2,
-        amount: `$${summary.draftTotal.toLocaleString()}`,
+        amount: `$${summary.draftInvoices.reduce((s, i) => s + i.total_amount, 0).toLocaleString()}`,
       });
     }
 
@@ -347,7 +347,7 @@ export default function DashboardPage() {
   const briefing = useMemo(() => {
     const todayShifts = shifts.filter(s => isToday(parseISO(s.start_datetime)) && s.status !== 'canceled');
     const todayEarnings = todayShifts.reduce((sum, s) => sum + (s.rate_applied || 0), 0);
-    const totalCollectable = summary.outstandingTotal + summary.draftTotal;
+    const totalCollectable = summary.outstandingTotal;
     const overdueCount = invoices.filter(i => computeInvoiceStatus(i) === 'overdue').length;
 
     const parts: string[] = [];
