@@ -31,7 +31,7 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
   const { saveSettings: saveConfirmationSettings } = useClinicConfirmations();
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
-  const [status, setStatus] = useState<FacilityStatus>('prospect');
+  const [status] = useState<FacilityStatus>('active');
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
   const [rates, setRates] = useState<RateEntry[]>([]);
