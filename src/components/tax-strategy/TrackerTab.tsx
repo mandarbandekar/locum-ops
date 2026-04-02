@@ -18,7 +18,11 @@ import {
   aggregateQuarterlyIncome,
   calculateSetAside,
   getDefaultDueDates,
+  estimateTotalTax,
+  estimateQuarterlyPayments,
+  type FilingStatus,
 } from '@/lib/taxCalculations';
+import TaxEstimatorCard from './TaxEstimatorCard';
 
 const db = (table: string) => supabase.from(table as any);
 
