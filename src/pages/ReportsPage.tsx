@@ -11,6 +11,9 @@ import { DollarSign, TrendingUp, Calendar, Building2 } from 'lucide-react';
 
 const db = (table: string) => supabase.from(table as any);
 
+const truncateName = (name: string, max = 18) =>
+  name.length > max ? name.slice(0, max - 1) + '…' : name;
+
 export default function ReportsPage() {
   const { shifts, invoices, facilities } = useData();
   const { user, isDemo } = useAuth();
