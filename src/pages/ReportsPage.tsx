@@ -1,5 +1,6 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
 import { useData } from '@/contexts/DataContext';
+import { computeInvoiceStatus } from '@/lib/businessLogic';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -83,34 +84,53 @@ export default function ReportsPage() {
   }, [months, monthRange]);
 
   const revenueData = useMemo(() => {
+    let cumulativeCollected = 0;
     return months.map(month => {
       const monthEnd = endOfMonth(month);
       const monthInvoices = invoices.filter(inv => {
         const periodEnd = parseISO(inv.period_end);
         return isWithinInterval(periodEnd, { start: month, end: monthEnd });
       });
-      const total = monthInvoices.reduce((sum, inv) => sum + inv.total_amount, 0);
-      const paid = monthInvoices.filter(i => i.status === 'paid').reduce((sum, inv) => sum + inv.total_amount, 0);
-      const outstanding = total - paid;
+
+      const collected = monthInvoices.filter(i => i.status === 'paid').reduce((sum, inv) => sum + inv.total_amount, 0);
+
+      // Outstanding = sent/partial/overdue (money owed to user)
+      const outstanding = monthInvoices
+        .filter(i => {
+          const s = computeInvoiceStatus(i);
+          return s === 'sent' || s === 'partial' || s === 'overdue';
+        })
+        .reduce((sum, inv) => sum + (inv.balance_due ?? inv.total_amount), 0);
+
+      // Pipeline = draft invoices + uninvoiced booked/proposed shifts
+      const draftTotal = monthInvoices
+        .filter(i => i.status === 'draft')
+        .reduce((sum, inv) => sum + inv.total_amount, 0);
 
       const invoicedShiftIds = new Set(
         monthInvoices.flatMap(inv => (inv as any).line_items?.map((li: any) => li.shift_id) || [])
       );
-      const anticipatedShifts = shifts.filter(s => {
+      const uninvoicedShiftTotal = shifts.filter(s => {
         const shiftDate = parseISO(s.start_datetime);
         return isWithinInterval(shiftDate, { start: month, end: monthEnd }) &&
           (s.status === 'proposed' || s.status === 'booked') &&
           !invoicedShiftIds.has(s.id);
-      });
-      const anticipated = anticipatedShifts.reduce((sum, s) => sum + s.rate_applied, 0);
+      }).reduce((sum, s) => sum + s.rate_applied, 0);
 
-      const anticipatedTax = taxSetAsidePercent > 0
-        ? Math.round((taxSetAsidePercent / 100) * anticipated * 100) / 100
-        : 0;
+      const pipeline = draftTotal + uninvoicedShiftTotal;
 
-      return { month: format(month, 'MMM yyyy'), total, paid, outstanding, anticipated, anticipatedTax };
+      cumulativeCollected += collected;
+
+      return {
+        month: format(month, 'MMM yyyy'),
+        collected,
+        outstanding,
+        pipeline,
+        cumulativeCollected,
+        isCurrentMonth: format(month, 'yyyy-MM') === format(new Date(), 'yyyy-MM'),
+      };
     });
-  }, [months, invoices, shifts, taxSetAsidePercent]);
+  }, [months, invoices, shifts]);
 
   // Previous period revenue for comparison
   const prevRevenue = useMemo(() => {
