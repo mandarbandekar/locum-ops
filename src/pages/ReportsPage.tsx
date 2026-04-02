@@ -222,6 +222,14 @@ export default function ReportsPage() {
     avgRate: { label: 'Avg Rate', color: 'hsl(38, 92%, 50%)' },
   };
 
+  const earningsByDayConfig = {
+    total: { label: 'Total Earnings', color: 'hsl(260, 50%, 55%)' },
+  };
+
+  const monthlyHoursConfig = {
+    hours: { label: 'Hours Worked', color: 'hsl(173, 58%, 39%)' },
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
