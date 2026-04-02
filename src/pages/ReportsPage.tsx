@@ -84,7 +84,12 @@ export default function ReportsPage() {
   }, [months, monthRange]);
 
   const revenueData = useMemo(() => {
-    let cumulativeCollected = 0;
+    const now = new Date();
+    // Build set of shift IDs that are already on any invoice
+    const invoicedShiftIds = new Set(
+      lineItems.filter(li => li.shift_id).map(li => li.shift_id)
+    );
+
     return months.map(month => {
       const monthEnd = endOfMonth(month);
       const monthInvoices = invoices.filter(inv => {
@@ -94,7 +99,6 @@ export default function ReportsPage() {
 
       const collected = monthInvoices.filter(i => i.status === 'paid').reduce((sum, inv) => sum + inv.total_amount, 0);
 
-      // Outstanding = sent/partial/overdue (money owed to user)
       const outstanding = monthInvoices
         .filter(i => {
           const s = computeInvoiceStatus(i);
@@ -102,35 +106,33 @@ export default function ReportsPage() {
         })
         .reduce((sum, inv) => sum + (inv.balance_due ?? inv.total_amount), 0);
 
-      // Pipeline = draft invoices + uninvoiced booked/proposed shifts
-      const draftTotal = monthInvoices
-        .filter(i => i.status === 'draft')
-        .reduce((sum, inv) => sum + inv.total_amount, 0);
+      // Anticipated income: only for the current month
+      const isCurrentMonth = format(month, 'yyyy-MM') === format(now, 'yyyy-MM');
+      let anticipated = 0;
+      if (isCurrentMonth) {
+        const draftTotal = monthInvoices
+          .filter(i => i.status === 'draft')
+          .reduce((sum, inv) => sum + inv.total_amount, 0);
 
-      const invoicedShiftIds = new Set(
-        monthInvoices.flatMap(inv => (inv as any).line_items?.map((li: any) => li.shift_id) || [])
-      );
-      const uninvoicedShiftTotal = shifts.filter(s => {
-        const shiftDate = parseISO(s.start_datetime);
-        return isWithinInterval(shiftDate, { start: month, end: monthEnd }) &&
-          (s.status === 'proposed' || s.status === 'booked') &&
-          !invoicedShiftIds.has(s.id);
-      }).reduce((sum, s) => sum + s.rate_applied, 0);
+        const uninvoicedShiftTotal = shifts.filter(s => {
+          const shiftDate = parseISO(s.start_datetime);
+          return isWithinInterval(shiftDate, { start: month, end: monthEnd }) &&
+            (s.status === 'proposed' || s.status === 'booked') &&
+            !invoicedShiftIds.has(s.id);
+        }).reduce((sum, s) => sum + s.rate_applied, 0);
 
-      const pipeline = draftTotal + uninvoicedShiftTotal;
-
-      cumulativeCollected += collected;
+        anticipated = draftTotal + uninvoicedShiftTotal;
+      }
 
       return {
         month: format(month, 'MMM yyyy'),
         collected,
         outstanding,
-        pipeline,
-        cumulativeCollected,
-        isCurrentMonth: format(month, 'yyyy-MM') === format(new Date(), 'yyyy-MM'),
+        anticipated,
+        isCurrentMonth,
       };
     });
-  }, [months, invoices, shifts]);
+  }, [months, invoices, shifts, lineItems]);
 
   // Previous period revenue for comparison
   const prevRevenue = useMemo(() => {
