@@ -363,8 +363,20 @@ export default function DashboardPage() {
       parts.push(`$${totalCollectable.toLocaleString()} to collect`);
     }
 
+    // Next credential expiring within 60 days
+    if (credentialsList) {
+      const upcoming = credentialsList
+        .filter(c => c.status !== 'archived' && c.expiration_date)
+        .map(c => ({ title: c.custom_title, days: differenceInDays(parseISO(c.expiration_date!), now) }))
+        .filter(c => c.days >= 0 && c.days <= 60)
+        .sort((a, b) => a.days - b.days);
+      if (upcoming.length > 0) {
+        parts.push(`${upcoming[0].title} expires in ${upcoming[0].days}d`);
+      }
+    }
+
     return parts.join(' · ');
-  }, [shifts, summary, invoices, thisWeekEarnings, now]);
+  }, [shifts, summary, invoices, thisWeekEarnings, credentialsList, now]);
 
   return (
     <div className="space-y-4 h-full">
