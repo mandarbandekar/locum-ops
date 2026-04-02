@@ -5,7 +5,21 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDown, ChevronRight, Trash2, Zap, CheckCircle2, PartyPopper } from 'lucide-react';
-import { format, differenceInCalendarDays } from 'date-fns';
+import { differenceInCalendarDays } from 'date-fns';
+
+/** Format a date string to 'MMM d, yyyy' without timezone shift. */
+function formatDateSafe(dateStr: string | null | undefined): string {
+  if (!dateStr) return '—';
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    const [, y, m, d] = match;
+    return `${MONTHS[parseInt(m, 10) - 1]} ${parseInt(d, 10)}, ${y}`;
+  }
+  const dt = new Date(dateStr);
+  if (isNaN(dt.getTime())) return '—';
+  return `${MONTHS[dt.getMonth()]} ${dt.getDate()}, ${dt.getFullYear()}`;
+}
 import { toast } from 'sonner';
 import type { Invoice } from '@/types';
 
