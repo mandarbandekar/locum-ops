@@ -64,7 +64,7 @@ export default function SchedulePage() {
     return d >= rangeStart && d <= rangeEnd;
   }).sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime());
 
-  const activeRangeShifts = rangeShifts.filter(s => s.status !== 'canceled');
+  const activeRangeShifts = rangeShifts;
   const totalShiftsInRange = activeRangeShifts.length;
   const totalHoursInRange = activeRangeShifts.reduce((sum, s) => {
     return sum + Math.max(0, differenceInHours(new Date(s.end_datetime), new Date(s.start_datetime)));
