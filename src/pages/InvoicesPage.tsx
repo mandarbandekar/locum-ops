@@ -199,7 +199,7 @@ export default function InvoicesPage() {
             onToggleSelect={toggleSelect}
             onDelete={deleteInvoice}
             getFacilityName={getFacilityName}
-            emptyMessage="No invoices ready to review — check back after your shifts are completed."
+            emptyMessage="Invoices are auto-generated from your shifts — no need to create them manually. They'll appear here once shifts are completed."
             defaultOpen={true}
             groupByFacility={true}
             headerRight={readyToReview.length > 0 ? (
