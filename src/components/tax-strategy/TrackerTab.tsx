@@ -379,7 +379,7 @@ export default function TrackerTab() {
                 <div className="grid grid-cols-3 gap-2 text-sm">
                   <p className="text-muted-foreground">Income: <span className="font-medium text-foreground">${(qi?.income || 0).toLocaleString()}</span></p>
                   <p className="text-muted-foreground">Reserve: <span className="font-medium text-foreground">${(sa?.amount || 0).toLocaleString()}</span></p>
-                  <p className="text-muted-foreground">Est. Payment: <span className="font-medium text-foreground">${(eqp?.amount || 0).toLocaleString()}</span></p>
+                  <p className="text-muted-foreground">Est. Payment: <span className="font-medium text-foreground">${(eqp?.installmentPayment || 0).toLocaleString()}</span></p>
                 </div>
 
                 {/* Status Selector */}
