@@ -323,17 +323,35 @@ export default function SchedulePage() {
                 </div>
               </div>
             </div>
+            {totalShiftsInRange === 0 && (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <CalendarPlus className="h-12 w-12 text-muted-foreground/40 mb-4" />
+                <h3 className="text-lg font-semibold mb-1">No shifts this month</h3>
+                <p className="text-sm text-muted-foreground max-w-xs mb-4">Add shifts to track your schedule, auto-generate invoices, and sync to your calendar.</p>
+                <Button onClick={() => setShowAdd(true)}><Plus className="mr-1.5 h-4 w-4" /> Add Your First Shift</Button>
+              </div>
+            )}
           ) : view === 'week' ? (
-            <WeekTimeGrid
-              weekDays={weekDays}
-              shifts={calendarFilters.shifts ? shifts : []}
-              getFacilityName={getFacilityName}
-              onEditShift={setEditShift}
-              onDropOnTime={handleDropOnTime}
-              onCellClick={openAddShiftAt}
-              calendarFilters={{ credentials: calendarFilters.credentials, subscriptions: calendarFilters.subscriptions }}
-              getEventsForDay={getEventsForDay}
-            />
+            <>
+              <WeekTimeGrid
+                weekDays={weekDays}
+                shifts={calendarFilters.shifts ? shifts : []}
+                getFacilityName={getFacilityName}
+                onEditShift={setEditShift}
+                onDropOnTime={handleDropOnTime}
+                onCellClick={openAddShiftAt}
+                calendarFilters={{ credentials: calendarFilters.credentials, subscriptions: calendarFilters.subscriptions }}
+                getEventsForDay={getEventsForDay}
+              />
+              {totalShiftsInRange === 0 && (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <CalendarPlus className="h-12 w-12 text-muted-foreground/40 mb-4" />
+                  <h3 className="text-lg font-semibold mb-1">No shifts this week</h3>
+                  <p className="text-sm text-muted-foreground max-w-xs mb-4">Add shifts to track your schedule, auto-generate invoices, and sync to your calendar.</p>
+                  <Button onClick={() => setShowAdd(true)}><Plus className="mr-1.5 h-4 w-4" /> Add Your First Shift</Button>
+                </div>
+              )}
+            </>
           ) : (
             <div className="rounded-lg border bg-card overflow-x-auto -mx-3 sm:mx-0">
               <table className="w-full text-sm min-w-[500px] sm:min-w-0">
@@ -341,41 +359,67 @@ export default function SchedulePage() {
                   <th className="text-left p-3 font-medium text-muted-foreground">Date</th>
                   <th className="text-left p-3 font-medium text-muted-foreground">Facility</th>
                   <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Time</th>
-                  <th className="text-left p-3 font-medium text-muted-foreground">Rate</th>
+                  <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Hours</th>
+                  <th className="text-left p-3 font-medium text-muted-foreground">Earnings</th>
                   <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
                   <th className="w-10" />
                 </tr></thead>
                 <tbody>
-                  {rangeShifts.map(s => (
-                    <tr key={s.id} className="border-b last:border-0 hover:bg-muted/30 cursor-pointer" onClick={() => setEditShift(s.id)}>
-                      <td className="p-3">{format(new Date(s.start_datetime), 'EEE, MMM d')}</td>
-                      <td className="p-3 font-medium">{getFacilityName(s.facility_id)}</td>
-                      <td className="p-3 text-muted-foreground hidden md:table-cell">{format(new Date(s.start_datetime), 'h:mm a')} - {format(new Date(s.end_datetime), 'h:mm a')}</td>
-                      <td className="p-3">${s.rate_applied}</td>
-                      <td className="p-3"><StatusBadge status={s.status} /></td>
-                      <td className="p-3" onClick={e => e.stopPropagation()}>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive">
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete this shift?</AlertDialogTitle>
-                              <AlertDialogDescription>{getFacilityName(s.facility_id)} — {format(new Date(s.start_datetime), 'MMM d, yyyy')}</AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => { deleteShift(s.id); toast.success('Shift deleted'); }}>Delete</AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </td>
-                    </tr>
-                  ))}
-                  {rangeShifts.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">No shifts to display</td></tr>}
+                  {rangeShifts.map(s => {
+                    const hrs = Math.max(0, differenceInHours(new Date(s.end_datetime), new Date(s.start_datetime)));
+                    return (
+                      <tr key={s.id} className="border-b last:border-0 hover:bg-muted/30 cursor-pointer" onClick={() => setEditShift(s.id)}>
+                        <td className="p-3">{format(new Date(s.start_datetime), 'EEE, MMM d')}</td>
+                        <td className="p-3 font-medium">{getFacilityName(s.facility_id)}</td>
+                        <td className="p-3 text-muted-foreground hidden md:table-cell">{format(new Date(s.start_datetime), 'h:mm a')} – {format(new Date(s.end_datetime), 'h:mm a')}</td>
+                        <td className="p-3 text-muted-foreground hidden md:table-cell">{hrs}h</td>
+                        <td className="p-3 font-medium">${s.rate_applied}</td>
+                        <td className="p-3"><StatusBadge status={s.status} /></td>
+                        <td className="p-3" onClick={e => e.stopPropagation()}>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive">
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete this shift?</AlertDialogTitle>
+                                <AlertDialogDescription>{getFacilityName(s.facility_id)} — {format(new Date(s.start_datetime), 'MMM d, yyyy')}</AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => { deleteShift(s.id); toast.success('Shift deleted'); }}>Delete</AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {rangeShifts.length === 0 && (
+                    <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">
+                      <div className="flex flex-col items-center py-8">
+                        <CalendarPlus className="h-10 w-10 text-muted-foreground/40 mb-3" />
+                        <p className="mb-3">No shifts to display</p>
+                        <Button size="sm" onClick={() => setShowAdd(true)}><Plus className="mr-1.5 h-3.5 w-3.5" /> Add Shift</Button>
+                      </div>
+                    </td></tr>
+                  )}
                 </tbody>
+                {rangeShifts.length > 0 && (
+                  <tfoot>
+                    <tr className="border-t bg-muted/30 font-medium text-sm">
+                      <td className="p-3">{totalShiftsInRange} shifts</td>
+                      <td className="p-3" />
+                      <td className="p-3 hidden md:table-cell" />
+                      <td className="p-3 hidden md:table-cell">{totalHoursInRange}h</td>
+                      <td className="p-3">${totalRevenueInRange.toLocaleString()}</td>
+                      <td className="p-3" />
+                      <td />
+                    </tr>
+                  </tfoot>
+                )}
               </table>
             </div>
           )}
