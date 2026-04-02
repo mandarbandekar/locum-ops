@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,7 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from 'recharts';
 import { format, parseISO, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths, addMonths, isWithinInterval, differenceInDays, differenceInHours, getDay } from 'date-fns';
-import { DollarSign, TrendingUp, TrendingDown, Calendar, Clock, ArrowUp, ArrowDown, Minus } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, Calendar, Clock, ArrowUp, ArrowDown, Minus, Sparkles, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 const db = (table: string) => supabase.from(table as any);
 
@@ -38,6 +40,8 @@ export default function ReportsPage() {
   const { user, isDemo } = useAuth();
   const [monthRange, setMonthRange] = useState('6');
   const [taxSetAsidePercent, setTaxSetAsidePercent] = useState<number>(0);
+  const [aiSummary, setAiSummary] = useState<string>('');
+  const [aiSummaryLoading, setAiSummaryLoading] = useState(false);
 
   useEffect(() => {
     if (isDemo || !user) return;
@@ -280,6 +284,45 @@ export default function ReportsPage() {
     return `${top.name} has your highest avg rate at $${top.avgRate}`;
   }, [avgRatePerFacility]);
 
+  const fetchAiSummary = useCallback(async () => {
+    if (totalRevenue === 0 && totalShifts === 0) return;
+    setAiSummaryLoading(true);
+    try {
+      const prevTotal = prevRevenue.total;
+      const revDelta = prevTotal === 0 ? 'N/A' : `${Math.round(((totalRevenue - prevTotal) / prevTotal) * 100)}%`;
+      const prevShiftsVal = prevRevenue.shifts;
+      const shiftsDelta = prevShiftsVal === 0 ? 'N/A' : `${Math.round(((totalShifts - prevShiftsVal) / prevShiftsVal) * 100)}%`;
+      const metrics = {
+        periodLabel: `${monthRange} months`,
+        totalRevenue,
+        totalPaid,
+        collectionRate: totalRevenue > 0 ? Math.round((totalPaid / totalRevenue) * 100) : 0,
+        revenueDelta: revDelta,
+        totalShifts,
+        shiftsDelta,
+        effectiveRate,
+        totalHours: totalHoursWorked,
+        fastestPayer: facilityPaymentSpeed.length > 0 ? `${facilityPaymentSpeed[0].name} (${facilityPaymentSpeed[0].avgDays}d)` : null,
+        topRevenueFacility: revenueByFacility.length > 0 ? revenueByFacility[0].name : null,
+        bestDay: bestDayInsight,
+      };
+      const { data, error } = await supabase.functions.invoke('business-summary', { body: { metrics } });
+      if (error) throw error;
+      if (data?.summary) setAiSummary(data.summary);
+    } catch (e: any) {
+      console.error('AI summary error:', e);
+      toast.error('Could not generate summary');
+    } finally {
+      setAiSummaryLoading(false);
+    }
+  }, [totalRevenue, totalPaid, totalShifts, effectiveRate, totalHoursWorked, monthRange, prevRevenue, facilityPaymentSpeed, revenueByFacility, bestDayInsight]);
+
+  useEffect(() => {
+    if (totalRevenue > 0 || totalShifts > 0) {
+      fetchAiSummary();
+    }
+  }, [monthRange]);
+
   const revenueChartConfig = {
     paid: { label: 'Paid', color: 'hsl(142, 71%, 45%)' },
     outstanding: { label: 'Outstanding', color: 'hsl(38, 92%, 50%)' },
@@ -322,6 +365,42 @@ export default function ReportsPage() {
           </SelectContent>
         </Select>
       </div>
+
+      {/* AI Business Summary */}
+      <Card className="border-primary/20 bg-primary/5">
+        <CardContent className="py-4">
+          <div className="flex items-start gap-3">
+            <div className="p-1.5 rounded-md bg-primary/10 mt-0.5">
+              <Sparkles className="h-4 w-4 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <p className="text-sm font-medium text-foreground">AI Business Summary</p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-xs text-muted-foreground"
+                  onClick={fetchAiSummary}
+                  disabled={aiSummaryLoading}
+                >
+                  <RefreshCw className={`h-3 w-3 mr-1 ${aiSummaryLoading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
+              </div>
+              {aiSummaryLoading && !aiSummary ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                  Analyzing your business data…
+                </div>
+              ) : aiSummary ? (
+                <p className="text-sm text-muted-foreground leading-relaxed">{aiSummary}</p>
+              ) : (
+                <p className="text-sm text-muted-foreground">Add shifts and invoices to get your AI-powered business summary.</p>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* KPI Cards with period-over-period deltas */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
