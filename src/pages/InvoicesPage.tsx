@@ -112,8 +112,8 @@ export default function InvoicesPage() {
               <Trash2 className="mr-1 h-4 w-4" /> Delete ({selected.size})
             </Button>
           )}
-          <Button size="sm" onClick={() => setShowCreate(true)} className="flex-1 sm:flex-none">
-            <Plus className="mr-1 h-4 w-4" /> Create Invoice
+          <Button size="sm" variant="outline" onClick={() => setShowCreate(true)} className="flex-1 sm:flex-none">
+            <Plus className="mr-1 h-4 w-4" /> Create Manual Invoice
           </Button>
         </div>
       </div>
