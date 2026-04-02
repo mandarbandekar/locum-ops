@@ -60,7 +60,7 @@ export function ConfirmationsPanel() {
       );
       // Simple hash comparison — if any shift data changed, the hash changes
       const currentHash = facilityShifts
-        .map(s => `${s.start_datetime}|${s.end_datetime}|${s.rate_applied}|${s.status}`)
+        .map(s => `${s.start_datetime}|${s.end_datetime}|${s.rate_applied}`)
         .sort()
         .join(',');
       const metaHashMatch = lastLog.body.match(/\[meta_shift_hash:([^\]]+)\]/);
