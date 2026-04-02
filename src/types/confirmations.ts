@@ -31,9 +31,9 @@ export interface ConfirmationActivity {
   created_at: string;
 }
 
-export function computeShiftHash(shifts: { id: string; start_datetime: string; end_datetime: string; rate_applied: number; status: string }[]): string {
+export function computeShiftHash(shifts: { id: string; start_datetime: string; end_datetime: string; rate_applied: number }[]): string {
   return shifts
-    .map(s => `${s.id}|${s.start_datetime}|${s.end_datetime}|${s.rate_applied}|${s.status}`)
+    .map(s => `${s.id}|${s.start_datetime}|${s.end_datetime}|${s.rate_applied}`)
     .sort()
     .join(',');
 }

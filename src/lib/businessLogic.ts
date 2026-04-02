@@ -20,8 +20,6 @@ export function detectShiftConflicts(shifts: Shift[], newShift: { start_datetime
 
   return shifts.filter(s => {
     if (s.id === newShift.id) return false;
-    if (s.status === 'canceled') return false;
-    if (!['booked', 'proposed', 'prebooked'].includes(s.status)) return false;
 
     const sStart = toLocalSlot(s.start_datetime);
     const sEnd = toLocalSlot(s.end_datetime);
