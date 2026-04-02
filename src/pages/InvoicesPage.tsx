@@ -41,7 +41,7 @@ export default function InvoicesPage() {
   const safeInvoices = Array.isArray(invoices) ? invoices : [];
   const allInvoices = safeInvoices
     .map(inv => ({ ...inv, computedStatus: computeInvoiceStatus(inv) }))
-    .sort((a, b) => new Date(b.invoice_date || b.period_end).getTime() - new Date(a.invoice_date || a.period_end).getTime());
+    .sort((a, b) => new Date(a.invoice_date || a.period_end).getTime() - new Date(b.invoice_date || b.period_end).getTime());
 
   const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
 
