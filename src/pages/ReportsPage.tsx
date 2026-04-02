@@ -111,7 +111,7 @@ export default function ReportsPage() {
     });
     return Object.entries(facilityDays)
       .map(([facilityId, days]) => ({
-        name: facilities.find(c => c.id === facilityId)?.name || 'Unknown',
+        name: truncateName(facilities.find(c => c.id === facilityId)?.name || 'Unknown'),
         avgDays: Math.round(days.reduce((a, b) => a + b, 0) / days.length),
       }))
       .sort((a, b) => a.avgDays - b.avgDays);
