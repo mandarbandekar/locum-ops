@@ -5,11 +5,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Calculator, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import {
   estimateTotalTax,
+  estimateQuarterlyInstallments,
   FILING_STATUS_LABELS,
   type FilingStatus,
-  type TaxEstimate,
   type QuarterlyIncome,
-  type SetAsideResult,
+  type QuarterlyInstallment,
 } from '@/lib/taxCalculations';
 
 interface TaxEstimatorCardProps {
@@ -19,6 +19,7 @@ interface TaxEstimatorCardProps {
   onFilingStatusChange: (v: FilingStatus) => void;
   onDeductionsChange: (v: number) => void;
   totalReserve: number;
+  quarterlyIncome: QuarterlyIncome[];
 }
 
 function fmt(n: number) {
@@ -32,8 +33,10 @@ export default function TaxEstimatorCard({
   onFilingStatusChange,
   onDeductionsChange,
   totalReserve,
+  quarterlyIncome,
 }: TaxEstimatorCardProps) {
   const estimate = estimateTotalTax(grossIncome, filingStatus, estimatedDeductions);
+  const installments = estimateQuarterlyInstallments(quarterlyIncome, filingStatus, estimatedDeductions);
   const delta = totalReserve - estimate.totalEstimatedTax;
   const deltaAbs = Math.abs(delta);
 
@@ -44,7 +47,7 @@ export default function TaxEstimatorCard({
           <Calculator className="h-4 w-4" /> Tax Estimator
         </CardTitle>
         <p className="text-xs text-muted-foreground">
-          Planning estimate based on your paid invoices. Does not include state taxes, credits, or other income. Confirm with your CPA.
+          Planning estimate based on your paid invoices using the IRS annualized income installment method. Does not include state taxes, credits, or other income. Confirm with your CPA.
         </p>
       </CardHeader>
       <CardContent className="space-y-5">
@@ -75,7 +78,7 @@ export default function TaxEstimatorCard({
           </div>
         </div>
 
-        {/* Results Grid */}
+        {/* Annual Summary */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <ResultItem label="Gross 1099 Income" value={`$${fmt(estimate.grossIncome)}`} />
           <ResultItem label="Business Deductions" value={`−$${fmt(estimate.businessDeductions)}`} muted />
@@ -88,16 +91,46 @@ export default function TaxEstimatorCard({
         {/* Total + Effective Rate */}
         <div className="rounded-lg bg-muted/50 p-4 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Total Estimated Tax</span>
+            <span className="text-sm font-medium">Total Estimated Tax (Annual)</span>
             <span className="text-lg font-bold">${fmt(estimate.totalEstimatedTax)}</span>
           </div>
           <div className="flex items-center justify-between text-sm text-muted-foreground">
             <span>Effective Rate</span>
             <span>{estimate.effectiveRate}%</span>
           </div>
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <span>Per-Quarter Payment</span>
-            <span>${fmt(estimate.quarterlyPayment)}</span>
+        </div>
+
+        {/* Quarterly Installments */}
+        <div className="space-y-2">
+          <p className="text-sm font-medium">Quarterly Estimated Payments</p>
+          <p className="text-[10px] text-muted-foreground">Based on the IRS annualized income installment method — each quarter's payment is computed from cumulative YTD income, not a simple annual ÷ 4.</p>
+          <div className="rounded-lg border overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-muted/50">
+                  <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">Quarter</th>
+                  <th className="text-right px-3 py-2 text-xs font-medium text-muted-foreground">YTD Income</th>
+                  <th className="text-right px-3 py-2 text-xs font-medium text-muted-foreground">Annualized</th>
+                  <th className="text-right px-3 py-2 text-xs font-medium text-muted-foreground">Payment</th>
+                </tr>
+              </thead>
+              <tbody>
+                {installments.map(inst => (
+                  <tr key={inst.quarter} className="border-t border-border/50">
+                    <td className="px-3 py-2 font-medium">Q{inst.quarter}</td>
+                    <td className="px-3 py-2 text-right text-muted-foreground">${fmt(inst.cumulativeIncome)}</td>
+                    <td className="px-3 py-2 text-right text-muted-foreground">${fmt(inst.annualizedIncome)}</td>
+                    <td className="px-3 py-2 text-right font-medium">${fmt(inst.installmentPayment)}</td>
+                  </tr>
+                ))}
+                <tr className="border-t bg-muted/30">
+                  <td className="px-3 py-2 font-medium" colSpan={3}>Total</td>
+                  <td className="px-3 py-2 text-right font-bold">
+                    ${fmt(installments.reduce((s, i) => s + i.installmentPayment, 0))}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 

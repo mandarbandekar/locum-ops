@@ -19,7 +19,7 @@ import {
   calculateSetAside,
   getDefaultDueDates,
   estimateTotalTax,
-  estimateQuarterlyPayments,
+  estimateQuarterlyInstallments,
   type FilingStatus,
 } from '@/lib/taxCalculations';
 import TaxEstimatorCard from './TaxEstimatorCard';
@@ -222,8 +222,8 @@ export default function TrackerTab() {
   );
 
   const estimatedQuarterly = useMemo(
-    () => estimateQuarterlyPayments(taxEstimate.totalEstimatedTax, quarterlyIncome),
-    [taxEstimate.totalEstimatedTax, quarterlyIncome]
+    () => estimateQuarterlyInstallments(quarterlyIncome, settings.filing_status, settings.estimated_deductions),
+    [quarterlyIncome, settings.filing_status, settings.estimated_deductions]
   );
 
   const activeChecklist = checklist.filter(c => !c.ignored);
@@ -293,6 +293,7 @@ export default function TrackerTab() {
         onFilingStatusChange={v => setSettings(s => ({ ...s, filing_status: v }))}
         onDeductionsChange={v => setSettings(s => ({ ...s, estimated_deductions: v }))}
         totalReserve={totalSetAside}
+        quarterlyIncome={quarterlyIncome}
       />
       <Card>
         <CardHeader>
@@ -378,7 +379,7 @@ export default function TrackerTab() {
                 <div className="grid grid-cols-3 gap-2 text-sm">
                   <p className="text-muted-foreground">Income: <span className="font-medium text-foreground">${(qi?.income || 0).toLocaleString()}</span></p>
                   <p className="text-muted-foreground">Reserve: <span className="font-medium text-foreground">${(sa?.amount || 0).toLocaleString()}</span></p>
-                  <p className="text-muted-foreground">Est. Payment: <span className="font-medium text-foreground">${(eqp?.amount || 0).toLocaleString()}</span></p>
+                  <p className="text-muted-foreground">Est. Payment: <span className="font-medium text-foreground">${(eqp?.installmentPayment || 0).toLocaleString()}</span></p>
                 </div>
 
                 {/* Status Selector */}
