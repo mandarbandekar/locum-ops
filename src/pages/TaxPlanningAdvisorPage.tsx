@@ -1,14 +1,12 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MessageSquare, ClipboardList, HelpCircle, FileText, BookOpen } from 'lucide-react';
+import { MessageSquare, ClipboardList, FileText } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { AdvisorDisclaimerBanner } from '@/components/tax-advisor/AdvisorDisclaimer';
 import { IntakeCard } from '@/components/tax-advisor/IntakeCard';
 import { useTaxAdvisor } from '@/hooks/useTaxAdvisor';
 import AskAdvisorTab from '@/components/tax-advisor/AskAdvisorTab';
 import OpportunityReviewTab from '@/components/tax-advisor/OpportunityReviewTab';
-import MyCPAQuestionsTab from '@/components/tax-advisor/MyCPAQuestionsTab';
 import CPAPrepSummaryTab from '@/components/tax-advisor/CPAPrepSummaryTab';
-import GuidanceTab from '@/components/tax-strategy/GuidanceTab';
 
 export default function TaxPlanningAdvisorPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -42,43 +40,41 @@ export default function TaxPlanningAdvisorPage() {
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
         <div>
           <Tabs value={activeTab} onValueChange={handleTabChange}>
-            <TabsList className="grid grid-cols-5 w-full sm:w-auto sm:inline-flex">
+            <TabsList className="grid grid-cols-3 w-full sm:w-auto sm:inline-flex">
               <TabsTrigger value="ask" className="gap-1.5 text-xs sm:text-sm">
                 <MessageSquare className="h-3.5 w-3.5" />
                 Ask Advisor
-              </TabsTrigger>
-              <TabsTrigger value="guidance" className="gap-1.5 text-xs sm:text-sm">
-                <BookOpen className="h-3.5 w-3.5" />
-                Entity Guidance
               </TabsTrigger>
               <TabsTrigger value="review" className="gap-1.5 text-xs sm:text-sm">
                 <ClipboardList className="h-3.5 w-3.5" />
                 Opportunity Review
               </TabsTrigger>
-              <TabsTrigger value="questions" className="gap-1.5 text-xs sm:text-sm">
-                <HelpCircle className="h-3.5 w-3.5" />
-                My CPA Questions
-              </TabsTrigger>
-              <TabsTrigger value="summary" className="gap-1.5 text-xs sm:text-sm">
+              <TabsTrigger value="prep" className="gap-1.5 text-xs sm:text-sm">
                 <FileText className="h-3.5 w-3.5" />
-                CPA Prep Summary
+                CPA Prep
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="ask" className="mt-6">
               <AskAdvisorTab profile={profile} sessions={sessions} onSaveSession={saveSession} onSaveQuestion={saveQuestion} />
             </TabsContent>
-            <TabsContent value="guidance" className="mt-6">
-              <GuidanceTab />
-            </TabsContent>
             <TabsContent value="review" className="mt-6">
-              <OpportunityReviewTab reviewItems={reviewItems} profile={profile} onUpdateItem={updateReviewItem} />
+              <OpportunityReviewTab
+                reviewItems={reviewItems}
+                profile={profile}
+                onUpdateItem={updateReviewItem}
+                onSaveQuestion={saveQuestion}
+              />
             </TabsContent>
-            <TabsContent value="questions" className="mt-6">
-              <MyCPAQuestionsTab questions={questions} onSave={saveQuestion} onUpdate={updateQuestion} onDelete={deleteQuestion} />
-            </TabsContent>
-            <TabsContent value="summary" className="mt-6">
-              <CPAPrepSummaryTab questions={questions} reviewItems={reviewItems} profile={profile} />
+            <TabsContent value="prep" className="mt-6">
+              <CPAPrepSummaryTab
+                questions={questions}
+                reviewItems={reviewItems}
+                profile={profile}
+                onSave={saveQuestion}
+                onUpdate={updateQuestion}
+                onDelete={deleteQuestion}
+              />
             </TabsContent>
           </Tabs>
         </div>

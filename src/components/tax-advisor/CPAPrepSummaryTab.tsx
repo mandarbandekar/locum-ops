@@ -1,6 +1,10 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Copy, FileText } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Copy, FileText, Plus, Pencil, Check, X, Trash2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useData } from '@/contexts/DataContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
@@ -10,14 +14,38 @@ interface Props {
   questions: SavedTaxQuestion[];
   reviewItems: TaxOpportunityReviewItem[];
   profile: TaxAdvisorProfile | null;
+  onSave: (q: string, topic: string) => Promise<void>;
+  onUpdate: (id: string, updates: Partial<SavedTaxQuestion>) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
 }
 
-export default function CPAPrepSummaryTab({ questions, reviewItems, profile }: Props) {
+const TOPICS = ['general', 'ce_travel', 'vehicle', 'credentials', 'equipment', 'retirement', 'multi_state', 'entity', 'home_office', 'advisor'];
+
+export default function CPAPrepSummaryTab({ questions, reviewItems, profile, onSave, onUpdate, onDelete }: Props) {
   const { facilities } = useData();
   const { profile: userProfile } = useUserProfile();
 
+  const [newQ, setNewQ] = useState('');
+  const [newTopic, setNewTopic] = useState('general');
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editText, setEditText] = useState('');
+
   const includedQuestions = questions.filter(q => q.include_in_summary);
   const reviewedAreas = reviewItems.filter(r => r.status !== 'not_started');
+
+  const handleAdd = async () => {
+    if (!newQ.trim()) return;
+    await onSave(newQ.trim(), newTopic);
+    setNewQ('');
+  };
+
+  const startEdit = (q: SavedTaxQuestion) => { setEditId(q.id); setEditText(q.question_text); };
+  const cancelEdit = () => { setEditId(null); setEditText(''); };
+  const saveEdit = async () => {
+    if (!editId || !editText.trim()) return;
+    await onUpdate(editId, { question_text: editText.trim() });
+    cancelEdit();
+  };
 
   const buildSummaryText = () => {
     const lines: string[] = [];
@@ -26,7 +54,6 @@ export default function CPAPrepSummaryTab({ questions, reviewItems, profile }: P
     lines.push('================================================');
     lines.push('');
 
-    // Business context
     lines.push('BUSINESS CONTEXT');
     lines.push('----------------');
     if (userProfile?.company_name) lines.push(`Business Name: ${userProfile.company_name}`);
@@ -42,7 +69,6 @@ export default function CPAPrepSummaryTab({ questions, reviewItems, profile }: P
     }
     lines.push('');
 
-    // Planning profile
     if (profile) {
       lines.push('PLANNING PROFILE');
       lines.push('-----------------');
@@ -56,7 +82,6 @@ export default function CPAPrepSummaryTab({ questions, reviewItems, profile }: P
       lines.push('');
     }
 
-    // Reviewed areas
     if (reviewedAreas.length > 0) {
       lines.push('REVIEWED PLANNING AREAS');
       lines.push('------------------------');
@@ -68,7 +93,6 @@ export default function CPAPrepSummaryTab({ questions, reviewItems, profile }: P
       lines.push('');
     }
 
-    // Questions
     if (includedQuestions.length > 0) {
       lines.push('QUESTIONS FOR CPA');
       lines.push('------------------');
@@ -92,43 +116,110 @@ export default function CPAPrepSummaryTab({ questions, reviewItems, profile }: P
   };
 
   return (
-    <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
-        Export the questions and topics you want to review with your CPA.
-      </p>
-
-      <div className="flex gap-2">
-        <Button onClick={handleCopy} variant="outline">
-          <Copy className="h-4 w-4 mr-2" /> Copy as Text
-        </Button>
-      </div>
-
-      {/* Preview */}
+    <div className="space-y-5">
+      {/* Add question inline */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <FileText className="h-5 w-5 text-primary" />
-            CPA Prep Summary Preview
-          </CardTitle>
-          <CardDescription>This is what will be exported. Toggle questions on/off in the My CPA Questions tab.</CardDescription>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Your CPA Questions</CardTitle>
+          <CardDescription>Collect questions to bring to your next meeting. Check the box to include in the summary below.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex gap-2">
+            <Input
+              value={newQ}
+              onChange={e => setNewQ(e.target.value)}
+              placeholder="Add a question for your CPA…"
+              onKeyDown={e => { if (e.key === 'Enter') handleAdd(); }}
+              className="flex-1"
+            />
+            <Select value={newTopic} onValueChange={setNewTopic}>
+              <SelectTrigger className="w-[130px] text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {TOPICS.map(t => <SelectItem key={t} value={t}>{t.replace(/_/g, ' ')}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Button onClick={handleAdd} disabled={!newQ.trim()} size="icon" className="shrink-0"><Plus className="h-4 w-4" /></Button>
+          </div>
+
+          {questions.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">No questions yet. Add one above or save from the Advisor or Opportunity Review.</p>
+          ) : (
+            <div className="space-y-1.5">
+              {questions.map(q => (
+                <div key={q.id} className="flex items-start gap-2.5 rounded-md border p-2.5">
+                  <Checkbox
+                    checked={q.include_in_summary}
+                    onCheckedChange={v => onUpdate(q.id, { include_in_summary: !!v })}
+                    className="mt-0.5"
+                  />
+                  <div className="flex-1 min-w-0">
+                    {editId === q.id ? (
+                      <div className="flex gap-1.5">
+                        <Input value={editText} onChange={e => setEditText(e.target.value)} className="flex-1 h-7 text-sm" autoFocus
+                          onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') cancelEdit(); }} />
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={saveEdit}><Check className="h-3.5 w-3.5" /></Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={cancelEdit}><X className="h-3.5 w-3.5" /></Button>
+                      </div>
+                    ) : (
+                      <>
+                        <p className="text-sm leading-snug">{q.question_text}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          {q.topic.replace(/_/g, ' ')} · {new Date(q.created_at).toLocaleDateString()}
+                        </p>
+                      </>
+                    )}
+                  </div>
+                  {editId !== q.id && (
+                    <div className="flex gap-0.5 shrink-0">
+                      <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => startEdit(q)}><Pencil className="h-3 w-3" /></Button>
+                      <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive" onClick={() => onDelete(q.id)}><Trash2 className="h-3 w-3" /></Button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Summary preview */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <FileText className="h-4 w-4 text-primary" />
+              CPA Prep Summary
+            </CardTitle>
+            <Button onClick={handleCopy} variant="outline" size="sm">
+              <Copy className="h-3.5 w-3.5 mr-1.5" /> Copy
+            </Button>
+          </div>
+          <CardDescription className="text-xs">Preview of what you'll share with your CPA. Toggle questions above to include/exclude.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-6">
+          <div className="space-y-5">
             {/* Context */}
             <div>
-              <h4 className="font-semibold text-sm mb-2">Business Context</h4>
-              <div className="text-sm text-muted-foreground space-y-1">
+              <h4 className="font-semibold text-xs uppercase tracking-wide text-muted-foreground mb-2">Business Context</h4>
+              <div className="text-sm text-muted-foreground space-y-0.5">
                 {userProfile?.company_name && <p>Business: {userProfile.company_name}</p>}
                 {profile?.entity_type && <p>Entity: {profile.entity_type.replace(/_/g, ' ')}</p>}
                 {facilities && <p>Facilities: {facilities.length}</p>}
+                {facilities && facilities.length > 0 && (() => {
+                  const states = new Set(facilities.map(f => {
+                    const parts = f.address?.split(',');
+                    return parts?.[parts.length - 1]?.trim()?.split(' ')?.[0];
+                  }).filter(Boolean));
+                  return states.size > 0 ? <p>States: {[...states].join(', ')}</p> : null;
+                })()}
               </div>
             </div>
 
             {/* Reviewed areas */}
             {reviewedAreas.length > 0 && (
               <div>
-                <h4 className="font-semibold text-sm mb-2">Reviewed Areas ({reviewedAreas.length})</h4>
-                <div className="space-y-1">
+                <h4 className="font-semibold text-xs uppercase tracking-wide text-muted-foreground mb-2">Reviewed Areas ({reviewedAreas.length})</h4>
+                <div className="space-y-0.5">
                   {reviewedAreas.map(r => {
                     const cat = OPPORTUNITY_CATEGORIES.find(c => c.key === r.category);
                     return (
@@ -144,15 +235,15 @@ export default function CPAPrepSummaryTab({ questions, reviewItems, profile }: P
             {/* Questions */}
             {includedQuestions.length > 0 ? (
               <div>
-                <h4 className="font-semibold text-sm mb-2">Questions for CPA ({includedQuestions.length})</h4>
-                <ol className="list-decimal list-inside space-y-1">
+                <h4 className="font-semibold text-xs uppercase tracking-wide text-muted-foreground mb-2">Questions for CPA ({includedQuestions.length})</h4>
+                <ol className="list-decimal list-inside space-y-0.5">
                   {includedQuestions.map(q => (
                     <li key={q.id} className="text-sm text-muted-foreground">{q.question_text}</li>
                   ))}
                 </ol>
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">No questions selected for summary. Add or enable questions in the My CPA Questions tab.</p>
+              <p className="text-sm text-muted-foreground">No questions selected for summary. Check the boxes above to include them.</p>
             )}
           </div>
         </CardContent>
