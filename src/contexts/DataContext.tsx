@@ -91,7 +91,10 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
       .on('postgres_changes', { event: '*', schema: 'public', table: 'shifts' }, () => refetchTable('shifts'))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'invoices' }, () => refetchTable('invoices'))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'invoice_line_items' }, () => refetchTable('invoice_line_items'))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'invoice_payments' }, () => refetchTable('invoice_payments'))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'invoice_activity' }, () => refetchTable('invoice_activity'))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'email_logs' }, () => refetchTable('email_logs'))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contract_checklist_items' }, () => refetchTable('contract_checklist_items'))
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
