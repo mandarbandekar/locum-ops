@@ -239,8 +239,7 @@ export default function InvoicesPage() {
         </div>
       </div>
 
-      <CreateInvoiceDialog open={showCreate} onOpenChange={setShowCreate} />
-      <BulkInvoiceDialog open={showBulkCreate} onOpenChange={setShowBulkCreate} />
+      <BulkInvoiceDialog open={showCreate} onOpenChange={setShowCreate} />
 
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent>
