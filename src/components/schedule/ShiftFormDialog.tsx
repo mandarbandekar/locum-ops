@@ -102,8 +102,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
       const dateStr = format(d, 'yyyy-MM-dd');
       const startDt = `${dateStr}T${startTime}:00`;
       const endDt = `${dateStr}T${endTime}:00`;
-      const activeShifts = shifts.filter(s => s.status !== 'canceled');
-      for (const c of detectShiftConflicts(activeShifts, { start_datetime: startDt, end_datetime: endDt, id: existing?.id })) {
+      for (const c of detectShiftConflicts(shifts, { start_datetime: startDt, end_datetime: endDt, id: existing?.id })) {
         if (!seen.has(c.id)) {
           seen.add(c.id);
           allConflicts.push(c);
