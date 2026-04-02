@@ -94,6 +94,170 @@ export function calculateSetAside(
   }));
 }
 
+// ── Tax Estimation ──────────────────────────────────────────────
+
+export type FilingStatus = 'single' | 'married_joint' | 'married_separate' | 'head_of_household';
+
+const FILING_STATUS_LABELS: Record<FilingStatus, string> = {
+  single: 'Single',
+  married_joint: 'Married Filing Jointly',
+  married_separate: 'Married Filing Separately',
+  head_of_household: 'Head of Household',
+};
+
+export { FILING_STATUS_LABELS };
+
+// 2026 standard deductions (projected / approximate)
+const STANDARD_DEDUCTIONS: Record<FilingStatus, number> = {
+  single: 15700,
+  married_joint: 31400,
+  married_separate: 15700,
+  head_of_household: 23500,
+};
+
+// 2026 federal marginal brackets (projected)
+const BRACKETS: Record<FilingStatus, { limit: number; rate: number }[]> = {
+  single: [
+    { limit: 11925, rate: 0.10 },
+    { limit: 48475, rate: 0.12 },
+    { limit: 103350, rate: 0.22 },
+    { limit: 197300, rate: 0.24 },
+    { limit: 250525, rate: 0.32 },
+    { limit: 626350, rate: 0.35 },
+    { limit: Infinity, rate: 0.37 },
+  ],
+  married_joint: [
+    { limit: 23850, rate: 0.10 },
+    { limit: 96950, rate: 0.12 },
+    { limit: 206700, rate: 0.22 },
+    { limit: 394600, rate: 0.24 },
+    { limit: 501050, rate: 0.32 },
+    { limit: 751600, rate: 0.35 },
+    { limit: Infinity, rate: 0.37 },
+  ],
+  married_separate: [
+    { limit: 11925, rate: 0.10 },
+    { limit: 48475, rate: 0.12 },
+    { limit: 103350, rate: 0.22 },
+    { limit: 197300, rate: 0.24 },
+    { limit: 250525, rate: 0.32 },
+    { limit: 375800, rate: 0.35 },
+    { limit: Infinity, rate: 0.37 },
+  ],
+  head_of_household: [
+    { limit: 17000, rate: 0.10 },
+    { limit: 64850, rate: 0.12 },
+    { limit: 103350, rate: 0.22 },
+    { limit: 197300, rate: 0.24 },
+    { limit: 250500, rate: 0.32 },
+    { limit: 626350, rate: 0.35 },
+    { limit: Infinity, rate: 0.37 },
+  ],
+};
+
+const SS_WAGE_CAP_2026 = 174900; // projected 2026 SS wage base
+const SE_TAX_RATE = 0.153; // 12.4% SS + 2.9% Medicare
+const SE_TAXABLE_FACTOR = 0.9235; // 92.35% of net earnings subject to SE tax
+
+/**
+ * Estimate self-employment tax. Applies 92.35% factor, then 15.3% with SS wage cap.
+ */
+export function estimateSelfEmploymentTax(netIncome: number): { total: number; socialSecurity: number; medicare: number; deductibleHalf: number } {
+  if (netIncome <= 0) return { total: 0, socialSecurity: 0, medicare: 0, deductibleHalf: 0 };
+  const taxableBase = netIncome * SE_TAXABLE_FACTOR;
+  const ssBase = Math.min(taxableBase, SS_WAGE_CAP_2026);
+  const socialSecurity = round2(ssBase * 0.124);
+  const medicare = round2(taxableBase * 0.029);
+  const total = round2(socialSecurity + medicare);
+  return { total, socialSecurity, medicare, deductibleHalf: round2(total / 2) };
+}
+
+/**
+ * Estimate federal income tax using marginal brackets.
+ * Subtracts standard deduction (or override) and the deductible half of SE tax.
+ */
+export function estimateFederalIncomeTax(
+  netIncome: number,
+  filingStatus: FilingStatus,
+  deductionOverride?: number,
+  seTaxDeductibleHalf: number = 0,
+): number {
+  const standardDeduction = deductionOverride ?? STANDARD_DEDUCTIONS[filingStatus];
+  const taxableIncome = Math.max(0, netIncome - standardDeduction - seTaxDeductibleHalf);
+  const brackets = BRACKETS[filingStatus];
+
+  let tax = 0;
+  let prev = 0;
+  for (const { limit, rate } of brackets) {
+    if (taxableIncome <= prev) break;
+    const bracketIncome = Math.min(taxableIncome, limit) - prev;
+    tax += bracketIncome * rate;
+    prev = limit;
+  }
+  return round2(tax);
+}
+
+export interface TaxEstimate {
+  grossIncome: number;
+  businessDeductions: number;
+  netIncome: number;
+  selfEmploymentTax: number;
+  seTaxDeductibleHalf: number;
+  federalIncomeTax: number;
+  totalEstimatedTax: number;
+  effectiveRate: number;
+  quarterlyPayment: number;
+}
+
+/**
+ * Full tax estimate from gross 1099 income.
+ */
+export function estimateTotalTax(
+  grossIncome: number,
+  filingStatus: FilingStatus,
+  businessDeductions: number = 0,
+): TaxEstimate {
+  const netIncome = Math.max(0, grossIncome - businessDeductions);
+  const se = estimateSelfEmploymentTax(netIncome);
+  const federalIncomeTax = estimateFederalIncomeTax(netIncome, filingStatus, undefined, se.deductibleHalf);
+  const totalEstimatedTax = round2(se.total + federalIncomeTax);
+  const effectiveRate = grossIncome > 0 ? round2((totalEstimatedTax / grossIncome) * 100) : 0;
+  const quarterlyPayment = round2(totalEstimatedTax / 4);
+
+  return {
+    grossIncome,
+    businessDeductions,
+    netIncome,
+    selfEmploymentTax: se.total,
+    seTaxDeductibleHalf: se.deductibleHalf,
+    federalIncomeTax,
+    totalEstimatedTax,
+    effectiveRate,
+    quarterlyPayment,
+  };
+}
+
+/**
+ * Distribute annual tax proportionally across quarters based on income distribution.
+ */
+export function estimateQuarterlyPayments(
+  annualTax: number,
+  quarterlyIncome: QuarterlyIncome[],
+): { quarter: number; amount: number }[] {
+  const totalIncome = quarterlyIncome.reduce((s, q) => s + q.income, 0);
+  if (totalIncome === 0) {
+    return quarterlyIncome.map(q => ({ quarter: q.quarter, amount: round2(annualTax / 4) }));
+  }
+  return quarterlyIncome.map(q => ({
+    quarter: q.quarter,
+    amount: round2((q.income / totalIncome) * annualTax),
+  }));
+}
+
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
 /**
  * Generate CSV content for accountant export.
  */

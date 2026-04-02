@@ -18,7 +18,11 @@ import {
   aggregateQuarterlyIncome,
   calculateSetAside,
   getDefaultDueDates,
+  estimateTotalTax,
+  estimateQuarterlyPayments,
+  type FilingStatus,
 } from '@/lib/taxCalculations';
+import TaxEstimatorCard from './TaxEstimatorCard';
 
 const db = (table: string) => supabase.from(table as any);
 
@@ -49,6 +53,8 @@ interface TaxSettings {
   set_aside_mode: 'percent' | 'fixed';
   set_aside_percent: number;
   set_aside_fixed_monthly: number;
+  filing_status: FilingStatus;
+  estimated_deductions: number;
 }
 
 interface QuarterStatus {
@@ -82,6 +88,8 @@ export default function TrackerTab() {
     set_aside_mode: 'percent',
     set_aside_percent: 30,
     set_aside_fixed_monthly: 0,
+    filing_status: 'single',
+    estimated_deductions: 0,
   });
   const [settingsId, setSettingsId] = useState<string>();
   const [quarterStatuses, setQuarterStatuses] = useState<QuarterStatus[]>([]);
@@ -115,7 +123,13 @@ export default function TrackerTab() {
       if ((settingsRes.data as any)) {
         const d = settingsRes.data as any;
         setSettingsId(d.id);
-        setSettings({ set_aside_mode: d.set_aside_mode, set_aside_percent: Number(d.set_aside_percent), set_aside_fixed_monthly: Number(d.set_aside_fixed_monthly) });
+        setSettings({
+          set_aside_mode: d.set_aside_mode,
+          set_aside_percent: Number(d.set_aside_percent),
+          set_aside_fixed_monthly: Number(d.set_aside_fixed_monthly),
+          filing_status: d.filing_status || 'single',
+          estimated_deductions: Number(d.estimated_deductions) || 0,
+        });
       }
 
       if ((qsRes.data as any)?.length > 0) {
@@ -148,7 +162,13 @@ export default function TrackerTab() {
   async function saveSettings() {
     if (isDemo) { toast.success('Settings saved (demo)'); return; }
     if (!user) return;
-    const payload = { set_aside_mode: settings.set_aside_mode, set_aside_percent: settings.set_aside_percent, set_aside_fixed_monthly: settings.set_aside_fixed_monthly };
+    const payload = {
+      set_aside_mode: settings.set_aside_mode,
+      set_aside_percent: settings.set_aside_percent,
+      set_aside_fixed_monthly: settings.set_aside_fixed_monthly,
+      filing_status: settings.filing_status,
+      estimated_deductions: settings.estimated_deductions,
+    };
     if (settingsId) {
       await db('tax_settings').update(payload).eq('id', settingsId);
     } else {
@@ -196,6 +216,16 @@ export default function TrackerTab() {
   const totalIncome = quarterlyIncome.reduce((s, q) => s + q.income, 0);
   const totalSetAside = setAsideData.reduce((s, q) => s + q.amount, 0);
 
+  const taxEstimate = useMemo(
+    () => estimateTotalTax(totalIncome, settings.filing_status, settings.estimated_deductions),
+    [totalIncome, settings.filing_status, settings.estimated_deductions]
+  );
+
+  const estimatedQuarterly = useMemo(
+    () => estimateQuarterlyPayments(taxEstimate.totalEstimatedTax, quarterlyIncome),
+    [taxEstimate.totalEstimatedTax, quarterlyIncome]
+  );
+
   const activeChecklist = checklist.filter(c => !c.ignored);
   const completedCount = activeChecklist.filter(c => c.completed).length;
   const readinessPercent = activeChecklist.length > 0 ? Math.round((completedCount / activeChecklist.length) * 100) : 0;
@@ -228,16 +258,20 @@ export default function TrackerTab() {
         </Card>
         <Card>
           <CardContent className="pt-4 pb-3 px-4">
-            <p className="text-xs text-muted-foreground">Est. Reserve</p>
-            <p className="text-xl font-bold">${totalSetAside.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
-            <p className="text-xs text-muted-foreground">User-set planning number</p>
+            <p className="text-xs text-muted-foreground">Est. Tax Liability</p>
+            <p className="text-xl font-bold">${taxEstimate.totalEstimatedTax.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+            <p className="text-xs text-muted-foreground">{taxEstimate.effectiveRate}% effective</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-3 px-4">
-            <p className="text-xs text-muted-foreground">Tax Readiness</p>
-            <p className="text-xl font-bold">{readinessPercent}%</p>
-            <p className="text-xs text-muted-foreground">{completedCount}/{activeChecklist.length} tasks</p>
+            <p className="text-xs text-muted-foreground">Your Reserve</p>
+            <p className="text-xl font-bold">${totalSetAside.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+            {totalSetAside > 0 && (
+              <p className={`text-xs font-medium ${totalSetAside >= taxEstimate.totalEstimatedTax ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                {totalSetAside >= taxEstimate.totalEstimatedTax ? '✓ Covers estimate' : '⚠ Under estimate'}
+              </p>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -251,7 +285,15 @@ export default function TrackerTab() {
 
       <p className="text-xs text-muted-foreground">Use this as a planning tracker for your relief / locum income. Confirm actual amounts and due dates with your CPA.</p>
 
-      {/* Set-Aside Preference */}
+      {/* Tax Estimator */}
+      <TaxEstimatorCard
+        grossIncome={totalIncome}
+        filingStatus={settings.filing_status}
+        estimatedDeductions={settings.estimated_deductions}
+        onFilingStatusChange={v => setSettings(s => ({ ...s, filing_status: v }))}
+        onDeductionsChange={v => setSettings(s => ({ ...s, estimated_deductions: v }))}
+        totalReserve={totalSetAside}
+      />
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2"><DollarSign className="h-4 w-4" /> Reserve Preference</CardTitle>
@@ -304,6 +346,7 @@ export default function TrackerTab() {
           {quarterStatuses.map(qs => {
             const qi = quarterlyIncome.find(q => q.quarter === qs.quarter);
             const sa = setAsideData.find(q => q.quarter === qs.quarter);
+            const eqp = estimatedQuarterly.find(q => q.quarter === qs.quarter);
             const isPast = new Date(qs.due_date) < new Date();
             const quarterCompletedCount = activeChecklist.filter(c => c.completed).length;
             const quarterProgress = activeChecklist.length > 0 ? Math.round((quarterCompletedCount / activeChecklist.length) * 100) : 0;
@@ -332,9 +375,10 @@ export default function TrackerTab() {
             const quarterBody = (
               <>
                 {/* Income & Reserve */}
-                <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="grid grid-cols-3 gap-2 text-sm">
                   <p className="text-muted-foreground">Income: <span className="font-medium text-foreground">${(qi?.income || 0).toLocaleString()}</span></p>
                   <p className="text-muted-foreground">Reserve: <span className="font-medium text-foreground">${(sa?.amount || 0).toLocaleString()}</span></p>
+                  <p className="text-muted-foreground">Est. Payment: <span className="font-medium text-foreground">${(eqp?.amount || 0).toLocaleString()}</span></p>
                 </div>
 
                 {/* Status Selector */}
