@@ -5,20 +5,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from 'recharts';
-import { format, parseISO, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths, addMonths, isWithinInterval } from 'date-fns';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { format, parseISO, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths, addMonths, isWithinInterval, differenceInDays } from 'date-fns';
 import { DollarSign, TrendingUp, Calendar, Building2 } from 'lucide-react';
-
-const COLORS = [
-  'hsl(173, 58%, 39%)',
-  'hsl(215, 25%, 27%)',
-  'hsl(38, 92%, 50%)',
-  'hsl(142, 71%, 45%)',
-  'hsl(0, 72%, 51%)',
-  'hsl(173, 40%, 55%)',
-  'hsl(260, 50%, 55%)',
-  'hsl(30, 70%, 50%)',
-];
 
 const db = (table: string) => supabase.from(table as any);
 
@@ -28,7 +17,6 @@ export default function ReportsPage() {
   const [monthRange, setMonthRange] = useState('6');
   const [taxSetAsidePercent, setTaxSetAsidePercent] = useState<number>(0);
 
-  // Fetch tax set-aside settings
   useEffect(() => {
     if (isDemo || !user) return;
     const currentYear = new Date().getFullYear();
@@ -44,18 +32,15 @@ export default function ReportsPage() {
       });
   }, [user, isDemo]);
 
-  // Extend range to include future months that have shifts
   const months = useMemo(() => {
     const now = new Date();
     const pastStart = subMonths(startOfMonth(now), parseInt(monthRange) - 1);
-    // Find the latest shift date to determine how far into the future to show
     const futureShifts = shifts.filter(s => s.status === 'proposed' || s.status === 'booked');
     let futureEnd = endOfMonth(now);
     futureShifts.forEach(s => {
       const d = parseISO(s.start_datetime);
       if (d > futureEnd) futureEnd = endOfMonth(d);
     });
-    // Cap at 6 months into the future
     const maxFuture = endOfMonth(addMonths(now, 6));
     if (futureEnd > maxFuture) futureEnd = maxFuture;
     return eachMonthOfInterval({ start: pastStart, end: futureEnd });
@@ -72,7 +57,6 @@ export default function ReportsPage() {
       const paid = monthInvoices.filter(i => i.status === 'paid').reduce((sum, inv) => sum + inv.total_amount, 0);
       const outstanding = total - paid;
 
-      // Anticipated income from future proposed/booked shifts not yet invoiced
       const invoicedShiftIds = new Set(
         monthInvoices.flatMap(inv => (inv as any).line_items?.map((li: any) => li.shift_id) || [])
       );
@@ -110,30 +94,72 @@ export default function ReportsPage() {
       .sort((a, b) => b.shifts - a.shifts);
   }, [months, shifts, facilities]);
 
-  const paymentTrends = useMemo(() => {
-    return months.map(month => {
-      const monthEnd = endOfMonth(month);
-      const monthInvoices = invoices.filter(inv => {
-        const periodEnd = parseISO(inv.period_end);
-        return isWithinInterval(periodEnd, { start: month, end: monthEnd });
-      });
-      return {
-        month: format(month, 'MMM'),
-        paid: monthInvoices.filter(i => i.status === 'paid').length,
-        sent: monthInvoices.filter(i => i.status === 'sent').length,
-        overdue: monthInvoices.filter(i => i.status === 'overdue').length,
-        draft: monthInvoices.filter(i => i.status === 'draft').length,
-      };
+  // Facility Payment Speed: avg days from sent_at to paid_at
+  const facilityPaymentSpeed = useMemo(() => {
+    const facilityDays: Record<string, number[]> = {};
+    invoices.forEach(inv => {
+      if (inv.status === 'paid' && inv.sent_at && inv.paid_at) {
+        const days = differenceInDays(parseISO(inv.paid_at), parseISO(inv.sent_at));
+        if (days >= 0) {
+          if (!facilityDays[inv.facility_id]) facilityDays[inv.facility_id] = [];
+          facilityDays[inv.facility_id].push(days);
+        }
+      }
     });
-  }, [months, invoices]);
+    return Object.entries(facilityDays)
+      .map(([facilityId, days]) => ({
+        name: facilities.find(c => c.id === facilityId)?.name || 'Unknown',
+        avgDays: Math.round(days.reduce((a, b) => a + b, 0) / days.length),
+      }))
+      .sort((a, b) => a.avgDays - b.avgDays);
+  }, [invoices, facilities]);
+
+  // Revenue by Facility: total paid amount
+  const revenueByFacility = useMemo(() => {
+    const rangeStart = months[0];
+    const rangeEnd = endOfMonth(months[months.length - 1]);
+    const facilityRevenue: Record<string, number> = {};
+    invoices.forEach(inv => {
+      if (inv.status === 'paid') {
+        const periodEnd = parseISO(inv.period_end);
+        if (isWithinInterval(periodEnd, { start: rangeStart, end: rangeEnd })) {
+          facilityRevenue[inv.facility_id] = (facilityRevenue[inv.facility_id] || 0) + inv.total_amount;
+        }
+      }
+    });
+    return Object.entries(facilityRevenue)
+      .map(([facilityId, revenue]) => ({
+        name: facilities.find(c => c.id === facilityId)?.name || 'Unknown',
+        revenue: Math.round(revenue * 100) / 100,
+      }))
+      .sort((a, b) => b.revenue - a.revenue);
+  }, [months, invoices, facilities]);
+
+  // Avg Rate per Facility
+  const avgRatePerFacility = useMemo(() => {
+    const rangeStart = months[0];
+    const rangeEnd = endOfMonth(months[months.length - 1]);
+    const facilityRates: Record<string, number[]> = {};
+    shifts.forEach(shift => {
+      const shiftDate = parseISO(shift.start_datetime);
+      if (isWithinInterval(shiftDate, { start: rangeStart, end: rangeEnd }) && shift.status !== 'canceled' && shift.rate_applied > 0) {
+        if (!facilityRates[shift.facility_id]) facilityRates[shift.facility_id] = [];
+        facilityRates[shift.facility_id].push(shift.rate_applied);
+      }
+    });
+    return Object.entries(facilityRates)
+      .map(([facilityId, rates]) => ({
+        name: facilities.find(c => c.id === facilityId)?.name || 'Unknown',
+        avgRate: Math.round(rates.reduce((a, b) => a + b, 0) / rates.length),
+      }))
+      .sort((a, b) => b.avgRate - a.avgRate);
+  }, [months, shifts, facilities]);
 
   const totalRevenue = revenueData.reduce((s, d) => s + d.total, 0);
   const totalPaid = revenueData.reduce((s, d) => s + d.paid, 0);
   const totalShifts = shiftsPerFacility.reduce((s, d) => s + d.shifts, 0);
   const activeFacilities = shiftsPerFacility.length;
-
   const totalAnticipated = revenueData.reduce((s, d) => s + d.anticipated, 0);
-  const totalAnticipatedTax = revenueData.reduce((s, d) => s + d.anticipatedTax, 0);
 
   const revenueChartConfig = {
     paid: { label: 'Paid', color: 'hsl(142, 71%, 45%)' },
@@ -141,15 +167,20 @@ export default function ReportsPage() {
     anticipated: { label: 'Anticipated Income', color: 'hsl(215, 25%, 75%)' },
   };
 
-  const paymentChartConfig = {
-    paid: { label: 'Paid', color: 'hsl(142, 71%, 45%)' },
-    sent: { label: 'Sent', color: 'hsl(173, 58%, 39%)' },
-    overdue: { label: 'Overdue', color: 'hsl(0, 72%, 51%)' },
-    draft: { label: 'Draft', color: 'hsl(215, 13%, 50%)' },
+  const paymentSpeedConfig = {
+    avgDays: { label: 'Avg Days to Pay', color: 'hsl(173, 58%, 39%)' },
+  };
+
+  const revenueByFacilityConfig = {
+    revenue: { label: 'Revenue', color: 'hsl(142, 71%, 45%)' },
   };
 
   const shiftsChartConfig = {
-    shifts: { label: 'Shifts', color: 'hsl(173, 58%, 39%)' },
+    shifts: { label: 'Shifts', color: 'hsl(215, 25%, 27%)' },
+  };
+
+  const avgRateConfig = {
+    avgRate: { label: 'Avg Rate', color: 'hsl(38, 92%, 50%)' },
   };
 
   return (
@@ -208,6 +239,7 @@ export default function ReportsPage() {
         </Card>
       </div>
 
+      {/* Monthly Revenue — full width */}
       <Card>
         <CardHeader>
           <CardTitle>Monthly Revenue</CardTitle>
@@ -234,6 +266,58 @@ export default function ReportsPage() {
         </CardContent>
       </Card>
 
+      {/* Row 1: Payment Speed + Revenue by Facility */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Facility Payment Speed</CardTitle>
+            <CardDescription>Average days from invoice sent to payment received</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {facilityPaymentSpeed.length === 0 ? (
+              <div className="flex items-center justify-center h-[250px] text-sm text-muted-foreground">
+                No paid invoices with sent dates yet
+              </div>
+            ) : (
+              <ChartContainer config={paymentSpeedConfig} className="h-[300px] w-full">
+                <BarChart data={facilityPaymentSpeed} layout="vertical" margin={{ top: 5, right: 20, bottom: 5, left: 80 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                  <XAxis type="number" fontSize={12} className="text-muted-foreground" tickFormatter={v => `${v}d`} />
+                  <YAxis dataKey="name" type="category" fontSize={12} className="text-muted-foreground" width={75} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar dataKey="avgDays" fill="var(--color-avgDays)" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ChartContainer>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Revenue by Facility</CardTitle>
+            <CardDescription>Total paid revenue per facility in this period</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {revenueByFacility.length === 0 ? (
+              <div className="flex items-center justify-center h-[250px] text-sm text-muted-foreground">
+                No paid invoices in this period
+              </div>
+            ) : (
+              <ChartContainer config={revenueByFacilityConfig} className="h-[300px] w-full">
+                <BarChart data={revenueByFacility} layout="vertical" margin={{ top: 5, right: 20, bottom: 5, left: 80 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                  <XAxis type="number" fontSize={12} className="text-muted-foreground" tickFormatter={v => `$${v}`} />
+                  <YAxis dataKey="name" type="category" fontSize={12} className="text-muted-foreground" width={75} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar dataKey="revenue" fill="var(--color-revenue)" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ChartContainer>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Row 2: Shifts per Facility + Avg Rate */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
@@ -241,35 +325,45 @@ export default function ReportsPage() {
             <CardDescription>Distribution of shifts across facilities</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={shiftsChartConfig} className="h-[300px] w-full">
-              <BarChart data={shiftsPerFacility} layout="vertical" margin={{ top: 5, right: 20, bottom: 5, left: 80 }}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                <XAxis type="number" fontSize={12} className="text-muted-foreground" />
-                <YAxis dataKey="name" type="category" fontSize={12} className="text-muted-foreground" width={75} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="shifts" fill="var(--color-shifts)" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ChartContainer>
+            {shiftsPerFacility.length === 0 ? (
+              <div className="flex items-center justify-center h-[250px] text-sm text-muted-foreground">
+                No shifts in this period
+              </div>
+            ) : (
+              <ChartContainer config={shiftsChartConfig} className="h-[300px] w-full">
+                <BarChart data={shiftsPerFacility} layout="vertical" margin={{ top: 5, right: 20, bottom: 5, left: 80 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                  <XAxis type="number" fontSize={12} className="text-muted-foreground" />
+                  <YAxis dataKey="name" type="category" fontSize={12} className="text-muted-foreground" width={75} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar dataKey="shifts" fill="var(--color-shifts)" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ChartContainer>
+            )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Payment Trends</CardTitle>
-            <CardDescription>Invoice status distribution over time</CardDescription>
+            <CardTitle>Avg Rate per Facility</CardTitle>
+            <CardDescription>Average shift rate across your facilities</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={paymentChartConfig} className="h-[300px] w-full">
-              <LineChart data={paymentTrends} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                <XAxis dataKey="month" fontSize={12} className="text-muted-foreground" />
-                <YAxis fontSize={12} className="text-muted-foreground" />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Line type="monotone" dataKey="paid" stroke="var(--color-paid)" strokeWidth={2} dot={{ r: 4 }} />
-                <Line type="monotone" dataKey="sent" stroke="var(--color-sent)" strokeWidth={2} dot={{ r: 4 }} />
-                <Line type="monotone" dataKey="overdue" stroke="var(--color-overdue)" strokeWidth={2} dot={{ r: 4 }} />
-              </LineChart>
-            </ChartContainer>
+            {avgRatePerFacility.length === 0 ? (
+              <div className="flex items-center justify-center h-[250px] text-sm text-muted-foreground">
+                No shifts with rates in this period
+              </div>
+            ) : (
+              <ChartContainer config={avgRateConfig} className="h-[300px] w-full">
+                <BarChart data={avgRatePerFacility} layout="vertical" margin={{ top: 5, right: 20, bottom: 5, left: 80 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                  <XAxis type="number" fontSize={12} className="text-muted-foreground" tickFormatter={v => `$${v}`} />
+                  <YAxis dataKey="name" type="category" fontSize={12} className="text-muted-foreground" width={75} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar dataKey="avgRate" fill="var(--color-avgRate)" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ChartContainer>
+            )}
           </CardContent>
         </Card>
       </div>
