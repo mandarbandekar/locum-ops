@@ -295,7 +295,7 @@ export default function DashboardPage() {
         items.push({
           title: `Q${nextQuarter.quarter} estimated tax due`,
           context: `Due in ${daysUntil} days`,
-          link: '/business?tab=tax-copilot', icon: DollarSign, urgency: 4,
+          link: '/business?tab=tax-strategy&subtab=tracker', icon: DollarSign, urgency: 4,
         });
       }
     }
@@ -335,7 +335,7 @@ export default function DashboardPage() {
     if (taxChecklist.length > 0) {
       const completed = taxChecklist.filter(c => c.completed).length;
       const percent = Math.round((completed / taxChecklist.length) * 100);
-      if (percent < 100) lines.push({ text: `Tax readiness: ${percent}%`, link: '/business?tab=tax-copilot' });
+      if (percent < 100) lines.push({ text: `Tax readiness: ${percent}%`, link: '/business?tab=tax-strategy&subtab=tracker' });
     }
 
     return lines;

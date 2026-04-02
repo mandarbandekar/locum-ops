@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { getCheckerOutput, DEFAULT_PROFILE } from '@/components/tax-strategy/GuidanceTab';
-import { DEFAULT_DEDUCTION_CATEGORIES, DEFAULT_CPA_QUESTIONS, DEFAULT_CHECKLIST_ITEMS } from '@/hooks/useTaxCopilot';
+import { DEFAULT_DEDUCTION_CATEGORIES } from '@/components/tax-strategy/DeductionsTab';
+import { DEFAULT_CPA_QUESTIONS } from '@/components/tax-strategy/CPAPacketTab';
+import { DEFAULT_CHECKLIST_ITEMS } from '@/components/tax-strategy/TrackerTab';
 import { aggregateQuarterlyIncome, calculateSetAside, generateTaxExportCSV, getDefaultDueDates } from '@/lib/taxCalculations';
 import type { Invoice } from '@/types';
 
