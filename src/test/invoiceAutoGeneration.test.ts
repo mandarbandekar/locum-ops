@@ -116,7 +116,7 @@ describe('Invoice Auto-Generation (New Rules)', () => {
     const futureEnd = new Date();
     futureEnd.setHours(futureEnd.getHours() + 5);
     const shift: Shift = {
-      id: 's1', facility_id: 'f1', status: 'booked',
+      id: 's1', facility_id: 'f1',
       start_datetime: new Date().toISOString(),
       end_datetime: futureEnd.toISOString(),
       rate_applied: 850, notes: '', color: 'blue',

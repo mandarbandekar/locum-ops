@@ -43,8 +43,7 @@ export function UpcomingShiftsCard({ shifts, getFacilityName, greeting, firstNam
   const upcoming = shifts
     .filter(s =>
       new Date(s.start_datetime) >= now &&
-      new Date(s.start_datetime) <= in7Days &&
-      (s.status === 'booked' || s.status === 'proposed')
+      new Date(s.start_datetime) <= in7Days
     )
     .sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime())
     .slice(0, 5);
