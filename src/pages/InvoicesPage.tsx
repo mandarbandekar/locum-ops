@@ -2,12 +2,8 @@ import { useState, useRef, useCallback } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, Layers, AlertTriangle, Send, FileEdit, CheckCircle, Clock } from 'lucide-react';
-import { format, subDays, startOfMonth, isAfter, isBefore, startOfDay } from 'date-fns';
+import { Plus, Trash2, AlertTriangle, Send, FileEdit, CheckCircle, Clock } from 'lucide-react';
+import { startOfMonth, isAfter, isBefore, startOfDay } from 'date-fns';
 import { computeInvoiceStatus, generateInvoiceNumber } from '@/lib/businessLogic';
 import { toast } from 'sonner';
 import { BulkInvoiceDialog } from '@/components/invoice/BulkInvoiceDialog';
@@ -24,7 +20,6 @@ export default function InvoicesPage() {
   const { invoices, facilities, shifts, addInvoice, deleteInvoice, dataLoading } = useData();
   const navigate = useNavigate();
   const [showCreate, setShowCreate] = useState(false);
-  const [showBulkCreate, setShowBulkCreate] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -102,7 +97,7 @@ export default function InvoicesPage() {
           <h1 className="page-title">Invoices</h1>
         </div>
         <InvoiceEmptyState onCreateManual={() => setShowCreate(true)} />
-        <CreateInvoiceDialog open={showCreate} onOpenChange={setShowCreate} />
+        <BulkInvoiceDialog open={showCreate} onOpenChange={setShowCreate} />
       </div>
     );
   }
@@ -117,11 +112,8 @@ export default function InvoicesPage() {
               <Trash2 className="mr-1 h-4 w-4" /> Delete ({selected.size})
             </Button>
           )}
-          <Button size="sm" variant="outline" onClick={() => setShowBulkCreate(true)} className="flex-1 sm:flex-none">
-            <Layers className="mr-1 h-4 w-4" /> Bulk
-          </Button>
           <Button size="sm" onClick={() => setShowCreate(true)} className="flex-1 sm:flex-none">
-            <Plus className="mr-1 h-4 w-4" /> Create
+            <Plus className="mr-1 h-4 w-4" /> Create Invoice
           </Button>
         </div>
       </div>
@@ -247,8 +239,7 @@ export default function InvoicesPage() {
         </div>
       </div>
 
-      <CreateInvoiceDialog open={showCreate} onOpenChange={setShowCreate} />
-      <BulkInvoiceDialog open={showBulkCreate} onOpenChange={setShowBulkCreate} />
+      <BulkInvoiceDialog open={showCreate} onOpenChange={setShowCreate} />
 
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent>
@@ -267,92 +258,5 @@ export default function InvoicesPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  );
-}
-
-function CreateInvoiceDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
-  const { facilities, shifts, invoices, addInvoice } = useData();
-  const navigate = useNavigate();
-  const [facilityId, setFacilityId] = useState(facilities[0]?.id || '');
-  const [periodStart, setPeriodStart] = useState(format(subDays(new Date(), 30), 'yyyy-MM-dd'));
-  const [periodEnd, setPeriodEnd] = useState(format(new Date(), 'yyyy-MM-dd'));
-
-  const handleCreate = async () => {
-    if (!facilityId) return;
-    const eligibleShifts = shifts.filter(s =>
-      s.facility_id === facilityId &&
-      s.status !== 'canceled' &&
-      new Date(s.start_datetime) >= new Date(periodStart) &&
-      new Date(s.end_datetime) <= new Date(periodEnd + 'T23:59:59')
-    );
-
-    const lineItems = eligibleShifts.map(s => ({
-      shift_id: s.id,
-      description: `Shift - ${format(new Date(s.start_datetime), 'MMM d, yyyy')} (${format(new Date(s.start_datetime), 'h:mm a')} - ${format(new Date(s.end_datetime), 'h:mm a')})`,
-      service_date: new Date(s.start_datetime).toISOString().split('T')[0],
-      qty: 1,
-      unit_rate: s.rate_applied,
-      line_total: s.rate_applied,
-    }));
-
-    const total = lineItems.reduce((sum, li) => sum + li.line_total, 0);
-
-    try {
-      const facility = facilities.find(f => f.id === facilityId);
-      const dueDays = (facility as any)?.invoice_due_days || 15;
-      const invoice = await addInvoice(
-        {
-          facility_id: facilityId,
-          invoice_number: generateInvoiceNumber(invoices, facility?.invoice_prefix || 'INV'),
-          invoice_date: new Date().toISOString(),
-          period_start: new Date(periodStart).toISOString(),
-          period_end: new Date(periodEnd).toISOString(),
-          total_amount: total,
-          balance_due: total,
-          status: 'draft',
-          sent_at: null,
-          paid_at: null,
-          due_date: new Date(new Date(periodEnd).getTime() + dueDays * 86400000).toISOString(),
-          notes: '',
-          share_token: null,
-          share_token_created_at: null,
-          share_token_revoked_at: null,
-          invoice_type: 'single',
-          generation_type: 'manual',
-          billing_cadence: null,
-        },
-        lineItems
-      );
-
-      toast.success(`Invoice created with ${lineItems.length} line items`);
-      onOpenChange(false);
-      navigate(`/invoices/${invoice.id}`);
-    } catch { /* error toast handled in DataContext */ }
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader><DialogTitle>Create Invoice</DialogTitle></DialogHeader>
-        <div className="space-y-4">
-          <div><Label>Facility</Label>
-            <Select value={facilityId} onValueChange={setFacilityId}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {facilities.filter(c => c.status === 'active').map(c => (
-                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><Label>Period Start</Label><Input type="date" value={periodStart} onChange={e => setPeriodStart(e.target.value)} /></div>
-            <div><Label>Period End</Label><Input type="date" value={periodEnd} onChange={e => setPeriodEnd(e.target.value)} /></div>
-          </div>
-          <p className="text-xs text-muted-foreground">Booked and completed shifts in this range will be auto-added as line items.</p>
-          <Button onClick={handleCreate} className="w-full">Create Invoice</Button>
-        </div>
-      </DialogContent>
-    </Dialog>
   );
 }

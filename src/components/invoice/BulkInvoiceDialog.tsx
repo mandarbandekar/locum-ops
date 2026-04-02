@@ -123,7 +123,7 @@ export function BulkInvoiceDialog({ open, onOpenChange, preselectedFacilityId }:
         lineItemsData
       );
 
-      toast.success(`Bulk invoice created with ${selectedShifts.length} shifts`);
+      toast.success(`Invoice created with ${selectedShifts.length} shifts`);
       onOpenChange(false);
       navigate(`/invoices/${invoice.id}`);
     } catch {
@@ -148,7 +148,7 @@ export function BulkInvoiceDialog({ open, onOpenChange, preselectedFacilityId }:
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
-            Create Bulk Invoice
+            Create Invoice
           </DialogTitle>
         </DialogHeader>
 
