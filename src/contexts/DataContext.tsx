@@ -298,7 +298,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
           .select('*')
           .eq('facility_id', facility.id)
           .eq('user_id', user!.id)
-          .neq('status', 'canceled')
+          .eq('user_id', user!.id)
           .gte('start_datetime', period.start.toISOString())
           .lte('start_datetime', period.end.toISOString())
           .order('start_datetime', { ascending: true });

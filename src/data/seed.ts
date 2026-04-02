@@ -59,24 +59,24 @@ const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
 const nmDay = (d: number) => new Date(nextMonth.getFullYear(), nextMonth.getMonth(), d);
 
 export const seedShifts: Shift[] = [
-  { id: 's1', facility_id: 'c1', start_datetime: fmt(setTime(addDays(today, -12), 8)), end_datetime: fmt(setTime(addDays(today, -12), 18)), status: 'completed', rate_applied: 850, notes: 'Regular day shift', color: 'blue' },
-  { id: 's2', facility_id: 'c1', start_datetime: fmt(setTime(addDays(today, -5), 8)), end_datetime: fmt(setTime(addDays(today, -5), 18)), status: 'completed', rate_applied: 850, notes: '', color: 'blue' },
-  { id: 's3', facility_id: 'c2', start_datetime: fmt(setTime(addDays(today, -8), 7)), end_datetime: fmt(setTime(addDays(today, -8), 19)), status: 'completed', rate_applied: 900, notes: 'Extended coverage', color: 'green' },
-  { id: 's4', facility_id: 'c2', start_datetime: fmt(setTime(addDays(today, -3), 8)), end_datetime: fmt(setTime(addDays(today, -3), 16)), status: 'completed', rate_applied: 1200, notes: 'Weekend shift', color: 'orange' },
-  { id: 's5', facility_id: 'c1', start_datetime: fmt(setTime(addDays(today, 2), 8)), end_datetime: fmt(setTime(addDays(today, 2), 18)), status: 'booked', rate_applied: 850, notes: '', color: 'blue' },
-  { id: 's6', facility_id: 'c4', start_datetime: fmt(setTime(addDays(today, 3), 9)), end_datetime: fmt(setTime(addDays(today, 3), 17)), status: 'booked', rate_applied: 800, notes: '', color: 'purple' },
-  { id: 's7', facility_id: 'c2', start_datetime: fmt(setTime(addDays(today, 5), 7)), end_datetime: fmt(setTime(addDays(today, 5), 19)), status: 'booked', rate_applied: 900, notes: 'Full day coverage', color: 'green' },
-  { id: 's8', facility_id: 'c4', start_datetime: fmt(setTime(addDays(today, 10), 9)), end_datetime: fmt(setTime(addDays(today, 10), 17)), status: 'proposed', rate_applied: 800, notes: 'Tentative', color: 'purple' },
-  { id: 's9', facility_id: 'c1', start_datetime: fmt(setTime(addDays(today, 14), 8)), end_datetime: fmt(setTime(addDays(today, 14), 18)), status: 'proposed', rate_applied: 850, notes: '', color: 'teal' },
-  // Next month booked shifts for confirmations
-  { id: 'snm1', facility_id: 'c1', start_datetime: fmt(setTime(nmDay(3), 8)), end_datetime: fmt(setTime(nmDay(3), 18)), status: 'booked', rate_applied: 850, notes: '', color: 'blue' },
-  { id: 'snm2', facility_id: 'c1', start_datetime: fmt(setTime(nmDay(10), 8)), end_datetime: fmt(setTime(nmDay(10), 18)), status: 'booked', rate_applied: 850, notes: '', color: 'blue' },
-  { id: 'snm3', facility_id: 'c1', start_datetime: fmt(setTime(nmDay(17), 8)), end_datetime: fmt(setTime(nmDay(17), 18)), status: 'booked', rate_applied: 850, notes: '', color: 'blue' },
-  { id: 'snm4', facility_id: 'c2', start_datetime: fmt(setTime(nmDay(5), 7)), end_datetime: fmt(setTime(nmDay(5), 19)), status: 'booked', rate_applied: 900, notes: '', color: 'green' },
-  { id: 'snm5', facility_id: 'c2', start_datetime: fmt(setTime(nmDay(12), 7)), end_datetime: fmt(setTime(nmDay(12), 19)), status: 'booked', rate_applied: 900, notes: '', color: 'green' },
-  { id: 'snm6', facility_id: 'c4', start_datetime: fmt(setTime(nmDay(8), 9)), end_datetime: fmt(setTime(nmDay(8), 17)), status: 'booked', rate_applied: 800, notes: '', color: 'purple' },
-  { id: 'snm7', facility_id: 'c4', start_datetime: fmt(setTime(nmDay(15), 9)), end_datetime: fmt(setTime(nmDay(15), 17)), status: 'booked', rate_applied: 800, notes: '', color: 'purple' },
-  { id: 'snm8', facility_id: 'c4', start_datetime: fmt(setTime(nmDay(22), 9)), end_datetime: fmt(setTime(nmDay(22), 17)), status: 'booked', rate_applied: 800, notes: '', color: 'purple' },
+  { id: 's1', facility_id: 'c1', start_datetime: fmt(setTime(addDays(today, -12), 8)), end_datetime: fmt(setTime(addDays(today, -12), 18)), rate_applied: 850, notes: 'Regular day shift', color: 'blue' },
+  { id: 's2', facility_id: 'c1', start_datetime: fmt(setTime(addDays(today, -5), 8)), end_datetime: fmt(setTime(addDays(today, -5), 18)), rate_applied: 850, notes: '', color: 'blue' },
+  { id: 's3', facility_id: 'c2', start_datetime: fmt(setTime(addDays(today, -8), 7)), end_datetime: fmt(setTime(addDays(today, -8), 19)), rate_applied: 900, notes: 'Extended coverage', color: 'green' },
+  { id: 's4', facility_id: 'c2', start_datetime: fmt(setTime(addDays(today, -3), 8)), end_datetime: fmt(setTime(addDays(today, -3), 16)), rate_applied: 1200, notes: 'Weekend shift', color: 'orange' },
+  { id: 's5', facility_id: 'c1', start_datetime: fmt(setTime(addDays(today, 2), 8)), end_datetime: fmt(setTime(addDays(today, 2), 18)), rate_applied: 850, notes: '', color: 'blue' },
+  { id: 's6', facility_id: 'c4', start_datetime: fmt(setTime(addDays(today, 3), 9)), end_datetime: fmt(setTime(addDays(today, 3), 17)), rate_applied: 800, notes: '', color: 'purple' },
+  { id: 's7', facility_id: 'c2', start_datetime: fmt(setTime(addDays(today, 5), 7)), end_datetime: fmt(setTime(addDays(today, 5), 19)), rate_applied: 900, notes: 'Full day coverage', color: 'green' },
+  { id: 's8', facility_id: 'c4', start_datetime: fmt(setTime(addDays(today, 10), 9)), end_datetime: fmt(setTime(addDays(today, 10), 17)), rate_applied: 800, notes: 'Tentative', color: 'purple' },
+  { id: 's9', facility_id: 'c1', start_datetime: fmt(setTime(addDays(today, 14), 8)), end_datetime: fmt(setTime(addDays(today, 14), 18)), rate_applied: 850, notes: '', color: 'teal' },
+  // Next month shifts for confirmations
+  { id: 'snm1', facility_id: 'c1', start_datetime: fmt(setTime(nmDay(3), 8)), end_datetime: fmt(setTime(nmDay(3), 18)), rate_applied: 850, notes: '', color: 'blue' },
+  { id: 'snm2', facility_id: 'c1', start_datetime: fmt(setTime(nmDay(10), 8)), end_datetime: fmt(setTime(nmDay(10), 18)), rate_applied: 850, notes: '', color: 'blue' },
+  { id: 'snm3', facility_id: 'c1', start_datetime: fmt(setTime(nmDay(17), 8)), end_datetime: fmt(setTime(nmDay(17), 18)), rate_applied: 850, notes: '', color: 'blue' },
+  { id: 'snm4', facility_id: 'c2', start_datetime: fmt(setTime(nmDay(5), 7)), end_datetime: fmt(setTime(nmDay(5), 19)), rate_applied: 900, notes: '', color: 'green' },
+  { id: 'snm5', facility_id: 'c2', start_datetime: fmt(setTime(nmDay(12), 7)), end_datetime: fmt(setTime(nmDay(12), 19)), rate_applied: 900, notes: '', color: 'green' },
+  { id: 'snm6', facility_id: 'c4', start_datetime: fmt(setTime(nmDay(8), 9)), end_datetime: fmt(setTime(nmDay(8), 17)), rate_applied: 800, notes: '', color: 'purple' },
+  { id: 'snm7', facility_id: 'c4', start_datetime: fmt(setTime(nmDay(15), 9)), end_datetime: fmt(setTime(nmDay(15), 17)), rate_applied: 800, notes: '', color: 'purple' },
+  { id: 'snm8', facility_id: 'c4', start_datetime: fmt(setTime(nmDay(22), 9)), end_datetime: fmt(setTime(nmDay(22), 17)), rate_applied: 800, notes: '', color: 'purple' },
 ];
 
 const invDefaults = { generation_type: 'manual' as const, billing_cadence: null };
