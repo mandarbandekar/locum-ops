@@ -335,7 +335,7 @@ export default function DashboardPage() {
     if (taxChecklist.length > 0) {
       const completed = taxChecklist.filter(c => c.completed).length;
       const percent = Math.round((completed / taxChecklist.length) * 100);
-      if (percent < 100) lines.push({ text: `Tax readiness: ${percent}%`, link: '/business?tab=tax-strategy&subtab=tracker' });
+      if (percent < 100) lines.push({ text: `Tax readiness: ${percent}%`, link: '/business?tab=tax-copilot' });
     }
 
     return lines;
