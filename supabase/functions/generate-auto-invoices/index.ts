@@ -384,6 +384,43 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Fix stale invoice dates on existing drafts where invoice_date != last shift date
+    try {
+      const { data: allDrafts } = await supabase
+        .from("invoices")
+        .select("id, invoice_date, due_date, facility_id")
+        .eq("status", "draft")
+        .eq("generation_type", "automatic");
+
+      for (const draft of (allDrafts || [])) {
+        const { data: draftLines } = await supabase
+          .from("invoice_line_items")
+          .select("service_date")
+          .eq("invoice_id", draft.id)
+          .not("service_date", "is", null)
+          .order("service_date", { ascending: false })
+          .limit(1);
+
+        if (draftLines && draftLines.length > 0) {
+          const lastServiceDate = draftLines[0].service_date;
+          const currentInvDate = draft.invoice_date ? formatDate(new Date(draft.invoice_date)) : null;
+          if (lastServiceDate && currentInvDate !== lastServiceDate) {
+            const fac = (facilities as Facility[]).find(f => f.id === draft.facility_id);
+            const dueDays = fac?.invoice_due_days || 15;
+            const newInvDate = new Date(lastServiceDate + "T12:00:00");
+            const newDueDate = addDays(newInvDate, dueDays);
+            await supabase
+              .from("invoices")
+              .update({ invoice_date: newInvDate.toISOString(), due_date: newDueDate.toISOString() })
+              .eq("id", draft.id);
+            results.push({ facility: fac?.name || "unknown", action: "fixed_draft_dates", invoiceNumber: undefined, period: lastServiceDate });
+          }
+        }
+      }
+    } catch (fixErr) {
+      console.error("Date fix pass error:", fixErr);
+    }
+
     return new Response(
       JSON.stringify({ message: "Auto-invoice generation complete", results }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
