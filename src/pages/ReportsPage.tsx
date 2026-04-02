@@ -284,6 +284,45 @@ export default function ReportsPage() {
     return `${top.name} has your highest avg rate at $${top.avgRate}`;
   }, [avgRatePerFacility]);
 
+  const fetchAiSummary = useCallback(async () => {
+    if (totalRevenue === 0 && totalShifts === 0) return;
+    setAiSummaryLoading(true);
+    try {
+      const prevTotal = prevRevenue.total;
+      const revDelta = prevTotal === 0 ? 'N/A' : `${Math.round(((totalRevenue - prevTotal) / prevTotal) * 100)}%`;
+      const prevShiftsVal = prevRevenue.shifts;
+      const shiftsDelta = prevShiftsVal === 0 ? 'N/A' : `${Math.round(((totalShifts - prevShiftsVal) / prevShiftsVal) * 100)}%`;
+      const metrics = {
+        periodLabel: `${monthRange} months`,
+        totalRevenue,
+        totalPaid,
+        collectionRate: totalRevenue > 0 ? Math.round((totalPaid / totalRevenue) * 100) : 0,
+        revenueDelta: revDelta,
+        totalShifts,
+        shiftsDelta,
+        effectiveRate,
+        totalHours: totalHoursWorked,
+        fastestPayer: facilityPaymentSpeed.length > 0 ? `${facilityPaymentSpeed[0].name} (${facilityPaymentSpeed[0].avgDays}d)` : null,
+        topRevenueFacility: revenueByFacility.length > 0 ? revenueByFacility[0].name : null,
+        bestDay: bestDayInsight,
+      };
+      const { data, error } = await supabase.functions.invoke('business-summary', { body: { metrics } });
+      if (error) throw error;
+      if (data?.summary) setAiSummary(data.summary);
+    } catch (e: any) {
+      console.error('AI summary error:', e);
+      toast.error('Could not generate summary');
+    } finally {
+      setAiSummaryLoading(false);
+    }
+  }, [totalRevenue, totalPaid, totalShifts, effectiveRate, totalHoursWorked, monthRange, prevRevenue, facilityPaymentSpeed, revenueByFacility, bestDayInsight]);
+
+  useEffect(() => {
+    if (totalRevenue > 0 || totalShifts > 0) {
+      fetchAiSummary();
+    }
+  }, [monthRange]);
+
   const revenueChartConfig = {
     paid: { label: 'Paid', color: 'hsl(142, 71%, 45%)' },
     outstanding: { label: 'Outstanding', color: 'hsl(38, 92%, 50%)' },
