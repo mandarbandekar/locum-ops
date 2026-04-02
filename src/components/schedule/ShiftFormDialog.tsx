@@ -152,7 +152,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
             facility_id: facilityId,
             start_datetime: new Date(`${date}T${startTime}:00`).toISOString(),
             end_datetime: new Date(`${date}T${endTime}:00`).toISOString(),
-            status, rate_applied: Number(rate), notes, color,
+            rate_applied: Number(rate), notes, color,
           });
         }
       }
