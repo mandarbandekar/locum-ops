@@ -149,40 +149,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     }
   }
 
-  // ─── Auto-complete past booked shifts ────────────────────
-  useEffect(() => {
-    const now = new Date();
-    const pastBooked = shifts.filter(
-      s => s.status === 'booked' && new Date(s.end_datetime) < now
-    );
-    if (pastBooked.length === 0) return;
-
-    if (isDemo) {
-      setShifts(prev =>
-        prev.map(s =>
-          s.status === 'booked' && new Date(s.end_datetime) < now
-            ? { ...s, status: 'completed' }
-            : s
-        )
-      );
-      toast.info(`${pastBooked.length} past shift${pastBooked.length > 1 ? 's' : ''} auto-marked as Completed`);
-      return;
-    }
-
-    // Batch update in DB
-    (async () => {
-      const ids = pastBooked.map(s => s.id);
-      const { error } = await db('shifts').update({ status: 'completed' }).in('id', ids);
-      if (error) {
-        console.error('Auto-complete shifts error:', error);
-        return;
-      }
-      setShifts(prev =>
-        prev.map(s => ids.includes(s.id) ? { ...s, status: 'completed' } : s)
-      );
-      toast.info(`${ids.length} past shift${ids.length > 1 ? 's' : ''} auto-marked as Completed`);
-    })();
-  }, [dataLoading]); // runs once after initial data load
+  // (Auto-complete removed — shift statuses no longer exist)
 
   // ─── Facilities ──────────────────────────────────────────
 
