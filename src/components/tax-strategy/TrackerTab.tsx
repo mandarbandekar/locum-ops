@@ -162,7 +162,13 @@ export default function TrackerTab() {
   async function saveSettings() {
     if (isDemo) { toast.success('Settings saved (demo)'); return; }
     if (!user) return;
-    const payload = { set_aside_mode: settings.set_aside_mode, set_aside_percent: settings.set_aside_percent, set_aside_fixed_monthly: settings.set_aside_fixed_monthly };
+    const payload = {
+      set_aside_mode: settings.set_aside_mode,
+      set_aside_percent: settings.set_aside_percent,
+      set_aside_fixed_monthly: settings.set_aside_fixed_monthly,
+      filing_status: settings.filing_status,
+      estimated_deductions: settings.estimated_deductions,
+    };
     if (settingsId) {
       await db('tax_settings').update(payload).eq('id', settingsId);
     } else {
