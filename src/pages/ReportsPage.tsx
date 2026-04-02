@@ -132,7 +132,7 @@ export default function ReportsPage() {
     });
     return Object.entries(facilityRevenue)
       .map(([facilityId, revenue]) => ({
-        name: facilities.find(c => c.id === facilityId)?.name || 'Unknown',
+        name: truncateName(facilities.find(c => c.id === facilityId)?.name || 'Unknown'),
         revenue: Math.round(revenue * 100) / 100,
       }))
       .sort((a, b) => b.revenue - a.revenue);
