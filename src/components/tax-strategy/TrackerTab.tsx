@@ -23,6 +23,7 @@ import {
   type FilingStatus,
 } from '@/lib/taxCalculations';
 import TaxEstimatorCard from './TaxEstimatorCard';
+import TaxReserveStatusStrip from './TaxReserveStatusStrip';
 
 const db = (table: string) => supabase.from(table as any);
 
@@ -248,6 +249,13 @@ export default function TrackerTab() {
 
   return (
     <div className="space-y-8">
+      {/* Status Strip */}
+      <TaxReserveStatusStrip
+        totalIncome={totalIncome}
+        estimatedTax={taxEstimate.totalEstimatedTax}
+        totalReserve={totalSetAside}
+      />
+
       {/* Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card>

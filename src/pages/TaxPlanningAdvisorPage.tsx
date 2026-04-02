@@ -1,14 +1,15 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MessageSquare, ClipboardList, HelpCircle, FileText, BookOpen } from 'lucide-react';
+import { MessageSquare, BookOpen, FileText } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { AdvisorDisclaimerBanner } from '@/components/tax-advisor/AdvisorDisclaimer';
 import { IntakeCard } from '@/components/tax-advisor/IntakeCard';
 import { useTaxAdvisor } from '@/hooks/useTaxAdvisor';
 import AskAdvisorTab from '@/components/tax-advisor/AskAdvisorTab';
+import GuidanceTab from '@/components/tax-strategy/GuidanceTab';
 import OpportunityReviewTab from '@/components/tax-advisor/OpportunityReviewTab';
 import MyCPAQuestionsTab from '@/components/tax-advisor/MyCPAQuestionsTab';
 import CPAPrepSummaryTab from '@/components/tax-advisor/CPAPrepSummaryTab';
-import GuidanceTab from '@/components/tax-strategy/GuidanceTab';
+import CPAPacketTab from '@/components/tax-strategy/CPAPacketTab';
 
 export default function TaxPlanningAdvisorPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -31,7 +32,7 @@ export default function TaxPlanningAdvisorPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold">Tax Planning Advisor</h2>
+        <h2 className="text-xl font-bold">Tax Planning</h2>
         <p className="text-sm text-muted-foreground mt-1">
           Explore locum-specific tax topics, organize your thinking, and prepare smarter CPA questions.
         </p>
@@ -42,26 +43,18 @@ export default function TaxPlanningAdvisorPage() {
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
         <div>
           <Tabs value={activeTab} onValueChange={handleTabChange}>
-            <TabsList className="grid grid-cols-5 w-full sm:w-auto sm:inline-flex">
+            <TabsList className="grid grid-cols-3 w-full sm:w-auto sm:inline-flex">
               <TabsTrigger value="ask" className="gap-1.5 text-xs sm:text-sm">
                 <MessageSquare className="h-3.5 w-3.5" />
                 Ask Advisor
               </TabsTrigger>
               <TabsTrigger value="guidance" className="gap-1.5 text-xs sm:text-sm">
                 <BookOpen className="h-3.5 w-3.5" />
-                Entity Guidance
+                Write-Offs & Entity Guide
               </TabsTrigger>
-              <TabsTrigger value="review" className="gap-1.5 text-xs sm:text-sm">
-                <ClipboardList className="h-3.5 w-3.5" />
-                Opportunity Review
-              </TabsTrigger>
-              <TabsTrigger value="questions" className="gap-1.5 text-xs sm:text-sm">
-                <HelpCircle className="h-3.5 w-3.5" />
-                My CPA Questions
-              </TabsTrigger>
-              <TabsTrigger value="summary" className="gap-1.5 text-xs sm:text-sm">
+              <TabsTrigger value="cpa-prep" className="gap-1.5 text-xs sm:text-sm">
                 <FileText className="h-3.5 w-3.5" />
-                CPA Prep Summary
+                CPA Prep
               </TabsTrigger>
             </TabsList>
 
@@ -69,16 +62,17 @@ export default function TaxPlanningAdvisorPage() {
               <AskAdvisorTab profile={profile} sessions={sessions} onSaveSession={saveSession} onSaveQuestion={saveQuestion} />
             </TabsContent>
             <TabsContent value="guidance" className="mt-6">
-              <GuidanceTab />
+              <div className="space-y-8">
+                <GuidanceTab />
+                <OpportunityReviewTab reviewItems={reviewItems} profile={profile} onUpdateItem={updateReviewItem} />
+              </div>
             </TabsContent>
-            <TabsContent value="review" className="mt-6">
-              <OpportunityReviewTab reviewItems={reviewItems} profile={profile} onUpdateItem={updateReviewItem} />
-            </TabsContent>
-            <TabsContent value="questions" className="mt-6">
-              <MyCPAQuestionsTab questions={questions} onSave={saveQuestion} onUpdate={updateQuestion} onDelete={deleteQuestion} />
-            </TabsContent>
-            <TabsContent value="summary" className="mt-6">
-              <CPAPrepSummaryTab questions={questions} reviewItems={reviewItems} profile={profile} />
+            <TabsContent value="cpa-prep" className="mt-6">
+              <div className="space-y-8">
+                <MyCPAQuestionsTab questions={questions} onSave={saveQuestion} onUpdate={updateQuestion} onDelete={deleteQuestion} />
+                <CPAPrepSummaryTab questions={questions} reviewItems={reviewItems} profile={profile} />
+                <CPAPacketTab />
+              </div>
             </TabsContent>
           </Tabs>
         </div>
