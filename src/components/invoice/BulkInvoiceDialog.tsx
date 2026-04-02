@@ -123,7 +123,7 @@ export function BulkInvoiceDialog({ open, onOpenChange, preselectedFacilityId }:
         lineItemsData
       );
 
-      toast.success(`Bulk invoice created with ${selectedShifts.length} shifts`);
+      toast.success(`Invoice created with ${selectedShifts.length} shifts`);
       onOpenChange(false);
       navigate(`/invoices/${invoice.id}`);
     } catch {
