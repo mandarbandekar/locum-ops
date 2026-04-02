@@ -40,6 +40,8 @@ export default function ReportsPage() {
   const { user, isDemo } = useAuth();
   const [monthRange, setMonthRange] = useState('6');
   const [taxSetAsidePercent, setTaxSetAsidePercent] = useState<number>(0);
+  const [aiSummary, setAiSummary] = useState<string>('');
+  const [aiSummaryLoading, setAiSummaryLoading] = useState(false);
 
   useEffect(() => {
     if (isDemo || !user) return;
