@@ -105,6 +105,34 @@ export default function DashboardPage() {
       .reduce((sum, s) => sum + (s.rate_applied || 0), 0);
   }, [shifts, now]);
 
+  // ── Monthly pace ──
+  const monthlyPace = useMemo(() => {
+    const monthStart = startOfMonth(now);
+    const monthEnd = endOfMonth(now);
+    return shifts
+      .filter(s => {
+        const d = parseISO(s.start_datetime);
+        return isWithinInterval(d, { start: monthStart, end: monthEnd }) && s.status !== 'canceled';
+      })
+      .reduce((sum, s) => sum + (s.rate_applied || 0), 0);
+  }, [shifts, now]);
+
+  // ── Oldest unpaid invoice ──
+  const oldestUnpaid = useMemo(() => {
+    const unpaid = invoices.filter(i => {
+      const st = computeInvoiceStatus(i);
+      return (st === 'sent' || st === 'partial' || st === 'overdue') && i.sent_at;
+    });
+    if (unpaid.length === 0) return undefined;
+    const oldest = unpaid.reduce((a, b) => (a.sent_at! < b.sent_at! ? a : b));
+    return {
+      id: oldest.id,
+      invoice_number: oldest.invoice_number,
+      facility_name: getFacilityName(oldest.facility_id),
+      daysOutstanding: differenceInDays(now, parseISO(oldest.sent_at!)),
+    };
+  }, [invoices, facilities, now]);
+
   // ── Summary data ──
   const summary = useMemo(() => {
     const draftInvoices = invoices.filter(i => i.status === 'draft');
