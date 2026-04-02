@@ -87,6 +87,14 @@ export function MoneyToCollectCard({
             <span className="text-muted-foreground">Collected this month:</span>
             <span className="font-bold text-success">${paidThisMonth.toLocaleString()}</span>
           </div>
+          {monthlyPace > 0 && (
+            <div className="flex items-center gap-2 text-[12px] mt-1">
+              <Target className="h-3.5 w-3.5 text-primary" />
+              <span className="text-muted-foreground">On pace for</span>
+              <span className="font-bold text-foreground">${monthlyPace.toLocaleString()}</span>
+              <span className="text-muted-foreground">this month</span>
+            </div>
+          )}
         </div>
 
         {/* This Week's Earnings */}
