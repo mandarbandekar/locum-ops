@@ -112,7 +112,7 @@ export default function DashboardPage() {
     return shifts
       .filter(s => {
         const d = parseISO(s.start_datetime);
-        return isWithinInterval(d, { start: monthStart, end: monthEnd }) && s.status !== 'canceled';
+        return isWithinInterval(d, { start: monthStart, end: monthEnd });
       })
       .reduce((sum, s) => sum + (s.rate_applied || 0), 0);
   }, [shifts, now]);
