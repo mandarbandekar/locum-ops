@@ -245,7 +245,7 @@ function FacilitySubGroup({ name, invoices, selected, onToggleSelect, onDelete, 
 
   return (
     <Collapsible open={subOpen} onOpenChange={setSubOpen} className="border-b last:border-0">
-      <CollapsibleTrigger className="flex items-center justify-between w-full px-5 py-3 hover:bg-muted/20 transition-colors">
+      <CollapsibleTrigger className="flex items-center justify-between w-full px-5 py-3 hover:bg-amber-100/60 dark:hover:bg-amber-900/20 bg-amber-50/70 dark:bg-amber-950/15 transition-colors">
         <div className="flex items-center gap-2">
           {subOpen ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />}
           <span className="font-medium text-sm">{name}</span>
