@@ -130,7 +130,8 @@ export default function InvoicesPage() {
       <InvoiceSummaryStrip
         overdue={{ count: overdue.length, total: sumBalance(overdue) }}
         awaiting={{ count: [...sent, ...partial].length, total: sumBalance([...sent, ...partial]) }}
-        drafts={{ count: draft.length, total: sumTotal(draft) }}
+        readyToReview={{ count: readyToReview.length, total: sumTotal(readyToReview) }}
+        upcomingCount={upcoming.length}
         paidThisMonth={{ count: paidThisMonth.length, total: sumTotal(paidThisMonth) }}
         onScrollTo={scrollTo}
       />
