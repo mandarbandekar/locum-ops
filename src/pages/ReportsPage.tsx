@@ -91,7 +91,7 @@ export default function ReportsPage() {
     });
     return Object.entries(counts)
       .map(([facilityId, count]) => ({
-        name: facilities.find(c => c.id === facilityId)?.name || 'Unknown',
+        name: truncateName(facilities.find(c => c.id === facilityId)?.name || 'Unknown'),
         shifts: count,
       }))
       .sort((a, b) => b.shifts - a.shifts);
