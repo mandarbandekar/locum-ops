@@ -251,7 +251,7 @@ function FacilitySubGroup({ name, invoices, selected, onToggleSelect, onDelete, 
           <span className="font-medium text-sm">{name}</span>
           <Badge variant="secondary" className="text-[11px] ml-1">{invoices.length}</Badge>
         </div>
-        <span className="text-xs text-muted-foreground font-medium">${total.toLocaleString()}</span>
+        <span className="text-sm font-bold text-amber-700 dark:text-amber-400 bg-amber-100/80 dark:bg-amber-900/30 px-2 py-0.5 rounded-md">${total.toLocaleString()}</span>
       </CollapsibleTrigger>
       <CollapsibleContent>
         <div className="overflow-x-auto">
