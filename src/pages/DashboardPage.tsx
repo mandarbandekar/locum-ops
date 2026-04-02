@@ -100,7 +100,7 @@ export default function DashboardPage() {
     return shifts
       .filter(s => {
         const d = parseISO(s.start_datetime);
-        return isWithinInterval(d, { start: weekStart, end: weekEnd }) && s.status === 'completed';
+        return isWithinInterval(d, { start: weekStart, end: weekEnd }) && new Date(s.end_datetime) < now;
       })
       .reduce((sum, s) => sum + (s.rate_applied || 0), 0);
   }, [shifts, now]);
