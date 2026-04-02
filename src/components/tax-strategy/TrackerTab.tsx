@@ -274,8 +274,6 @@ export default function TrackerTab() {
             )}
           </CardContent>
         </Card>
-          </CardContent>
-        </Card>
         <Card>
           <CardContent className="pt-4 pb-3 px-4">
             <p className="text-xs text-muted-foreground">Next Due</p>
@@ -287,7 +285,15 @@ export default function TrackerTab() {
 
       <p className="text-xs text-muted-foreground">Use this as a planning tracker for your relief / locum income. Confirm actual amounts and due dates with your CPA.</p>
 
-      {/* Set-Aside Preference */}
+      {/* Tax Estimator */}
+      <TaxEstimatorCard
+        grossIncome={totalIncome}
+        filingStatus={settings.filing_status}
+        estimatedDeductions={settings.estimated_deductions}
+        onFilingStatusChange={v => setSettings(s => ({ ...s, filing_status: v }))}
+        onDeductionsChange={v => setSettings(s => ({ ...s, estimated_deductions: v }))}
+        totalReserve={totalSetAside}
+      />
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2"><DollarSign className="h-4 w-4" /> Reserve Preference</CardTitle>
