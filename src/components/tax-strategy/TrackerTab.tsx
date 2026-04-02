@@ -258,16 +258,22 @@ export default function TrackerTab() {
         </Card>
         <Card>
           <CardContent className="pt-4 pb-3 px-4">
-            <p className="text-xs text-muted-foreground">Est. Reserve</p>
-            <p className="text-xl font-bold">${totalSetAside.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
-            <p className="text-xs text-muted-foreground">User-set planning number</p>
+            <p className="text-xs text-muted-foreground">Est. Tax Liability</p>
+            <p className="text-xl font-bold">${taxEstimate.totalEstimatedTax.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+            <p className="text-xs text-muted-foreground">{taxEstimate.effectiveRate}% effective</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-3 px-4">
-            <p className="text-xs text-muted-foreground">Tax Readiness</p>
-            <p className="text-xl font-bold">{readinessPercent}%</p>
-            <p className="text-xs text-muted-foreground">{completedCount}/{activeChecklist.length} tasks</p>
+            <p className="text-xs text-muted-foreground">Your Reserve</p>
+            <p className="text-xl font-bold">${totalSetAside.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+            {totalSetAside > 0 && (
+              <p className={`text-xs font-medium ${totalSetAside >= taxEstimate.totalEstimatedTax ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                {totalSetAside >= taxEstimate.totalEstimatedTax ? '✓ Covers estimate' : '⚠ Under estimate'}
+              </p>
+            )}
+          </CardContent>
+        </Card>
           </CardContent>
         </Card>
         <Card>
