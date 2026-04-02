@@ -219,7 +219,7 @@ export default function ReportsPage() {
     const facilityRates: Record<string, number[]> = {};
     shifts.forEach(shift => {
       const shiftDate = parseISO(shift.start_datetime);
-      if (isWithinInterval(shiftDate, { start: rangeStart, end: rangeEnd }) && shift.status !== 'canceled' && shift.rate_applied > 0) {
+      if (isWithinInterval(shiftDate, { start: rangeStart, end: rangeEnd }) && shift.rate_applied > 0) {
         if (!facilityRates[shift.facility_id]) facilityRates[shift.facility_id] = [];
         facilityRates[shift.facility_id].push(shift.rate_applied);
       }
