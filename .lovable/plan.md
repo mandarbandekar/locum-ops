@@ -1,19 +1,29 @@
 
 
-# Update Workflow Hint Labels
+# Merge Create & Bulk Invoice into One Dialog
 
-**What changes**: Update the step labels in `src/components/invoice/InvoiceWorkflowHint.tsx` to be more descriptive:
+## What changes
+Replace the two separate invoice creation flows (simple "Create" and "Bulk" wizard) with a single "Create Invoice" button that opens the existing `BulkInvoiceDialog` wizard. The wizard already covers the complete flow: facility → period → shift selection → review.
 
-| Current | Updated |
-|---------|---------|
-| Auto-Generated | Auto-Generated Upcoming Invoices |
-| Review & Send | Review & Send |
-| Send to Facility | Sent to Facility |
-| Awaiting Payment | Awaiting Payment |
-| Record Payment | Record Payment |
-| Paid | Paid |
+## Files to modify
 
-The first step changes from "Auto-Generated" to "Auto-Generated Upcoming Invoices" to clarify that auto-generated invoices start as upcoming/future items before becoming actionable.
+### `src/pages/InvoicesPage.tsx`
+- Remove `showBulkCreate` state and the separate "Bulk" button
+- Rename `showCreate` usage to open `BulkInvoiceDialog` instead of `CreateInvoiceDialog`
+- Remove the entire `CreateInvoiceDialog` function (lines 273-358)
+- Remove `CreateInvoiceDialog` from both render locations (empty state + main view)
+- Keep single "Create Invoice" button that opens `BulkInvoiceDialog`
+- Remove unused imports (`Layers`, `subDays`, `Label`, `Input`, `Select` components only used by `CreateInvoiceDialog`)
+- Update `InvoiceEmptyState` callback to open the same dialog
 
-**File**: `src/components/invoice/InvoiceWorkflowHint.tsx` — update the `steps` array label for step 1.
+### `src/components/invoice/BulkInvoiceDialog.tsx`
+- Rename dialog title from "Create Bulk Invoice" to "Create Invoice"
+- Update success toast from "Bulk invoice created..." to "Invoice created..."
+
+### No changes to:
+- Invoice logic, status computation, auto-generation, line item handling, or any other existing functionality
+- `bulkInvoiceHelpers.ts`, `DataContext.tsx`, `InvoiceStatusGroup.tsx`, or any other file
+
+## Why this is safe
+The `BulkInvoiceDialog` already does everything `CreateInvoiceDialog` does (and more). It uses `getEligibleShiftsForBulkInvoice` which properly excludes shifts on sent/paid invoices and flags draft-linked shifts. All shifts are auto-selected in step 3, so the "simple" flow is just clicking through the wizard. No invoice logic changes.
 
