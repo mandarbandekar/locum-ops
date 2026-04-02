@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { DollarSign, FileText, ArrowRight, TrendingUp, Send, Clock, Wallet } from 'lucide-react';
+import { DollarSign, FileText, ArrowRight, TrendingUp, Send, Clock, Wallet, Target, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -23,6 +23,13 @@ interface InvoiceItem {
   due_date: string | null;
 }
 
+interface OldestUnpaid {
+  id: string;
+  invoice_number: string;
+  facility_name: string;
+  daysOutstanding: number;
+}
+
 interface MoneyToCollectCardProps {
   outstandingTotal: number;
   draftTotal: number;
@@ -30,6 +37,8 @@ interface MoneyToCollectCardProps {
   revenueData: RevenueMonth[];
   invoiceItems: InvoiceItem[];
   thisWeekEarnings?: number;
+  monthlyPace?: number;
+  oldestUnpaid?: OldestUnpaid;
 }
 
 export function MoneyToCollectCard({
@@ -39,6 +48,8 @@ export function MoneyToCollectCard({
   revenueData,
   invoiceItems,
   thisWeekEarnings = 0,
+  monthlyPace = 0,
+  oldestUnpaid,
 }: MoneyToCollectCardProps) {
   const navigate = useNavigate();
   const totalCollectable = outstandingTotal + draftTotal;
@@ -76,6 +87,14 @@ export function MoneyToCollectCard({
             <span className="text-muted-foreground">Collected this month:</span>
             <span className="font-bold text-success">${paidThisMonth.toLocaleString()}</span>
           </div>
+          {monthlyPace > 0 && (
+            <div className="flex items-center gap-2 text-[12px] mt-1">
+              <Target className="h-3.5 w-3.5 text-primary" />
+              <span className="text-muted-foreground">On pace for</span>
+              <span className="font-bold text-foreground">${monthlyPace.toLocaleString()}</span>
+              <span className="text-muted-foreground">this month</span>
+            </div>
+          )}
         </div>
 
         {/* This Week's Earnings */}
@@ -87,6 +106,21 @@ export function MoneyToCollectCard({
           </div>
           <p className="text-[10px] text-muted-foreground mt-0.5 pl-5">Earned from completed shifts</p>
         </div>
+
+        {/* Oldest unpaid invoice */}
+        {oldestUnpaid && (
+          <div
+            className="mx-5 mt-1 mb-1 px-3 py-2 rounded-lg bg-warning/5 border border-warning/10 cursor-pointer hover:bg-warning/10 transition-colors"
+            onClick={() => navigate(`/invoices/${oldestUnpaid.id}`)}
+          >
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-3.5 w-3.5 text-warning shrink-0" />
+              <span className="text-[11px] text-muted-foreground truncate">
+                Oldest unpaid: <span className="font-semibold text-foreground">{oldestUnpaid.invoice_number}</span> · {oldestUnpaid.facility_name} · <span className="font-semibold text-warning">{oldestUnpaid.daysOutstanding}d</span>
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Individual invoice list */}
         <div className="px-4 pt-3 min-h-0">

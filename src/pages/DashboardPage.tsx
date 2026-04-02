@@ -105,6 +105,34 @@ export default function DashboardPage() {
       .reduce((sum, s) => sum + (s.rate_applied || 0), 0);
   }, [shifts, now]);
 
+  // ── Monthly pace ──
+  const monthlyPace = useMemo(() => {
+    const monthStart = startOfMonth(now);
+    const monthEnd = endOfMonth(now);
+    return shifts
+      .filter(s => {
+        const d = parseISO(s.start_datetime);
+        return isWithinInterval(d, { start: monthStart, end: monthEnd }) && s.status !== 'canceled';
+      })
+      .reduce((sum, s) => sum + (s.rate_applied || 0), 0);
+  }, [shifts, now]);
+
+  // ── Oldest unpaid invoice ──
+  const oldestUnpaid = useMemo(() => {
+    const unpaid = invoices.filter(i => {
+      const st = computeInvoiceStatus(i);
+      return (st === 'sent' || st === 'partial' || st === 'overdue') && i.sent_at;
+    });
+    if (unpaid.length === 0) return undefined;
+    const oldest = unpaid.reduce((a, b) => (a.sent_at! < b.sent_at! ? a : b));
+    return {
+      id: oldest.id,
+      invoice_number: oldest.invoice_number,
+      facility_name: getFacilityName(oldest.facility_id),
+      daysOutstanding: differenceInDays(now, parseISO(oldest.sent_at!)),
+    };
+  }, [invoices, facilities, now]);
+
   // ── Summary data ──
   const summary = useMemo(() => {
     const draftInvoices = invoices.filter(i => i.status === 'draft');
@@ -335,8 +363,20 @@ export default function DashboardPage() {
       parts.push(`$${totalCollectable.toLocaleString()} to collect`);
     }
 
+    // Next credential expiring within 60 days
+    if (credentialsList) {
+      const upcoming = credentialsList
+        .filter(c => c.status !== 'archived' && c.expiration_date)
+        .map(c => ({ title: c.custom_title, days: differenceInDays(parseISO(c.expiration_date!), now) }))
+        .filter(c => c.days >= 0 && c.days <= 60)
+        .sort((a, b) => a.days - b.days);
+      if (upcoming.length > 0) {
+        parts.push(`${upcoming[0].title} expires in ${upcoming[0].days}d`);
+      }
+    }
+
     return parts.join(' · ');
-  }, [shifts, summary, invoices, thisWeekEarnings, now]);
+  }, [shifts, summary, invoices, thisWeekEarnings, credentialsList, now]);
 
   return (
     <div className="space-y-4 h-full">
@@ -373,6 +413,8 @@ export default function DashboardPage() {
             revenueData={summary.revenueData}
             invoiceItems={summary.invoiceItems}
             thisWeekEarnings={thisWeekEarnings}
+            monthlyPace={monthlyPace}
+            oldestUnpaid={oldestUnpaid}
           />
         </div>
 
