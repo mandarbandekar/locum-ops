@@ -312,7 +312,7 @@ export default function DashboardPage() {
 
   // ── Daily Briefing computation ──
   const briefing = useMemo(() => {
-    const todayShifts = shifts.filter(s => isToday(parseISO(s.start_datetime)) && s.status !== 'cancelled');
+    const todayShifts = shifts.filter(s => isToday(parseISO(s.start_datetime)) && s.status !== 'canceled');
     const todayEarnings = todayShifts.reduce((sum, s) => sum + (s.rate_applied || 0), 0);
     const totalCollectable = summary.outstandingTotal + summary.draftTotal;
     const overdueCount = invoices.filter(i => computeInvoiceStatus(i) === 'overdue').length;
