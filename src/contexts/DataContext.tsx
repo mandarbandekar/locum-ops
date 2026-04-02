@@ -354,8 +354,8 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
           );
 
           if (existingDraft) {
-            // Update existing draft: rebuild line items
-            const { lineItems: newItems } = buildAutoInvoiceDraft(
+            // Update existing draft: rebuild line items and recalculate dates
+            const { invoice: rebuiltInv, lineItems: newItems } = buildAutoInvoiceDraft(
               facility, eligible, period.start, period.end, existingDraft.invoice_number
             );
             const total = newItems.reduce((sum, li) => sum + li.line_total, 0);
@@ -373,9 +373,20 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
               setLineItems(prev => [...prev, ...(liData).map(stripDbFields) as InvoiceLineItem[]]);
             }
 
-            // Update invoice total
-            const updatedInv = { ...existingDraft, total_amount: total, balance_due: total };
-            const { error: updateDraftError } = await db('invoices').update({ total_amount: total, balance_due: total }).eq('id', existingDraft.id);
+            // Update invoice total + recalculated invoice_date and due_date
+            const updatedInv = {
+              ...existingDraft,
+              total_amount: total,
+              balance_due: total,
+              invoice_date: rebuiltInv.invoice_date,
+              due_date: rebuiltInv.due_date,
+            };
+            const { error: updateDraftError } = await db('invoices').update({
+              total_amount: total,
+              balance_due: total,
+              invoice_date: rebuiltInv.invoice_date,
+              due_date: rebuiltInv.due_date,
+            }).eq('id', existingDraft.id);
             if (updateDraftError) throw updateDraftError;
             setInvoices(prev => prev.map(i => i.id === existingDraft.id ? updatedInv : i));
 
