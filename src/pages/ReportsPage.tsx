@@ -1,11 +1,12 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
 import { useData } from '@/contexts/DataContext';
+import { computeInvoiceStatus } from '@/lib/businessLogic';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, ComposedChart } from 'recharts';
 import { format, parseISO, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths, addMonths, isWithinInterval, differenceInDays, differenceInHours, getDay } from 'date-fns';
 import { DollarSign, TrendingUp, TrendingDown, Calendar, Clock, ArrowUp, ArrowDown, Minus, Sparkles, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -83,34 +84,53 @@ export default function ReportsPage() {
   }, [months, monthRange]);
 
   const revenueData = useMemo(() => {
+    let cumulativeCollected = 0;
     return months.map(month => {
       const monthEnd = endOfMonth(month);
       const monthInvoices = invoices.filter(inv => {
         const periodEnd = parseISO(inv.period_end);
         return isWithinInterval(periodEnd, { start: month, end: monthEnd });
       });
-      const total = monthInvoices.reduce((sum, inv) => sum + inv.total_amount, 0);
-      const paid = monthInvoices.filter(i => i.status === 'paid').reduce((sum, inv) => sum + inv.total_amount, 0);
-      const outstanding = total - paid;
+
+      const collected = monthInvoices.filter(i => i.status === 'paid').reduce((sum, inv) => sum + inv.total_amount, 0);
+
+      // Outstanding = sent/partial/overdue (money owed to user)
+      const outstanding = monthInvoices
+        .filter(i => {
+          const s = computeInvoiceStatus(i);
+          return s === 'sent' || s === 'partial' || s === 'overdue';
+        })
+        .reduce((sum, inv) => sum + (inv.balance_due ?? inv.total_amount), 0);
+
+      // Pipeline = draft invoices + uninvoiced booked/proposed shifts
+      const draftTotal = monthInvoices
+        .filter(i => i.status === 'draft')
+        .reduce((sum, inv) => sum + inv.total_amount, 0);
 
       const invoicedShiftIds = new Set(
         monthInvoices.flatMap(inv => (inv as any).line_items?.map((li: any) => li.shift_id) || [])
       );
-      const anticipatedShifts = shifts.filter(s => {
+      const uninvoicedShiftTotal = shifts.filter(s => {
         const shiftDate = parseISO(s.start_datetime);
         return isWithinInterval(shiftDate, { start: month, end: monthEnd }) &&
           (s.status === 'proposed' || s.status === 'booked') &&
           !invoicedShiftIds.has(s.id);
-      });
-      const anticipated = anticipatedShifts.reduce((sum, s) => sum + s.rate_applied, 0);
+      }).reduce((sum, s) => sum + s.rate_applied, 0);
 
-      const anticipatedTax = taxSetAsidePercent > 0
-        ? Math.round((taxSetAsidePercent / 100) * anticipated * 100) / 100
-        : 0;
+      const pipeline = draftTotal + uninvoicedShiftTotal;
 
-      return { month: format(month, 'MMM yyyy'), total, paid, outstanding, anticipated, anticipatedTax };
+      cumulativeCollected += collected;
+
+      return {
+        month: format(month, 'MMM yyyy'),
+        collected,
+        outstanding,
+        pipeline,
+        cumulativeCollected,
+        isCurrentMonth: format(month, 'yyyy-MM') === format(new Date(), 'yyyy-MM'),
+      };
     });
-  }, [months, invoices, shifts, taxSetAsidePercent]);
+  }, [months, invoices, shifts]);
 
   // Previous period revenue for comparison
   const prevRevenue = useMemo(() => {
@@ -247,12 +267,16 @@ export default function ReportsPage() {
     });
   }, [months, shifts]);
 
-  const totalRevenue = revenueData.reduce((s, d) => s + d.total, 0);
-  const totalPaid = revenueData.reduce((s, d) => s + d.paid, 0);
+  const totalCollected = revenueData.reduce((s, d) => s + d.collected, 0);
+  const totalOutstanding = revenueData.reduce((s, d) => s + d.outstanding, 0);
+  const totalPipeline = revenueData.reduce((s, d) => s + d.pipeline, 0);
+  const totalRevenue = totalCollected + totalOutstanding;
+  const totalPaid = totalCollected;
   const totalShifts = shiftsPerFacility.reduce((s, d) => s + d.shifts, 0);
-  const totalAnticipated = revenueData.reduce((s, d) => s + d.anticipated, 0);
   const totalHoursWorked = monthlyHoursWorked.reduce((s, d) => s + d.hours, 0);
   const effectiveRate = totalHoursWorked > 0 ? Math.round((totalPaid / totalHoursWorked) * 100) / 100 : 0;
+  const collectionRate = (totalCollected + totalOutstanding) > 0 ? Math.round((totalCollected / (totalCollected + totalOutstanding)) * 100) : 0;
+  const outstandingInvoiceCount = invoices.filter(i => { const s = computeInvoiceStatus(i); return s === 'sent' || s === 'partial' || s === 'overdue'; }).length;
 
   // Insight strings
   const paymentSpeedInsight = useMemo(() => {
@@ -324,9 +348,10 @@ export default function ReportsPage() {
   }, [monthRange]);
 
   const revenueChartConfig = {
-    paid: { label: 'Paid', color: 'hsl(142, 71%, 45%)' },
+    collected: { label: 'Collected', color: 'hsl(142, 71%, 45%)' },
     outstanding: { label: 'Outstanding', color: 'hsl(38, 92%, 50%)' },
-    anticipated: { label: 'Anticipated Income', color: 'hsl(215, 25%, 75%)' },
+    pipeline: { label: 'Pipeline', color: 'hsl(215, 25%, 75%)' },
+    cumulativeCollected: { label: 'Cumulative Collected', color: 'hsl(142, 71%, 35%)' },
   };
 
   const paymentSpeedConfig = {
@@ -415,6 +440,9 @@ export default function ReportsPage() {
               <DeltaBadge current={totalRevenue} previous={prevRevenue.total} />
               <span className="text-xs text-muted-foreground">vs prev {monthRange}mo</span>
             </div>
+            {totalPipeline > 0 && (
+              <p className="text-xs text-muted-foreground mt-1">+ ${totalPipeline.toLocaleString()} pipeline</p>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -459,26 +487,46 @@ export default function ReportsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Monthly Revenue</CardTitle>
-          <CardDescription>Paid vs outstanding invoice amounts · anticipated income shown separately</CardDescription>
+          <CardDescription>Collected, outstanding, and pipeline revenue at a glance</CardDescription>
         </CardHeader>
         <CardContent>
-          {totalAnticipated > 0 && (
-            <div className="flex flex-wrap gap-4 text-xs text-muted-foreground mb-2">
-              <span>Anticipated income: <span className="font-semibold">${totalAnticipated.toLocaleString()}</span></span>
-              <span className="italic">(not included in Total Revenue)</span>
+          {/* Summary legend row */}
+          <div className="flex flex-wrap gap-6 text-sm mb-4">
+            <div className="flex items-center gap-2">
+              <div className="h-3 w-3 rounded-sm" style={{ backgroundColor: 'hsl(142, 71%, 45%)' }} />
+              <span className="text-muted-foreground">Collected:</span>
+              <span className="font-semibold">${totalCollected.toLocaleString()}</span>
             </div>
-          )}
+            <div className="flex items-center gap-2">
+              <div className="h-3 w-3 rounded-sm" style={{ backgroundColor: 'hsl(38, 92%, 50%)' }} />
+              <span className="text-muted-foreground">Outstanding:</span>
+              <span className="font-semibold">${totalOutstanding.toLocaleString()}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-3 w-3 rounded-sm opacity-50" style={{ backgroundColor: 'hsl(215, 25%, 75%)' }} />
+              <span className="text-muted-foreground">Pipeline:</span>
+              <span className="font-semibold">${totalPipeline.toLocaleString()}</span>
+            </div>
+          </div>
           <ChartContainer config={revenueChartConfig} className="h-[300px] w-full">
-            <BarChart data={revenueData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+            <ComposedChart data={revenueData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
               <XAxis dataKey="month" className="text-muted-foreground" fontSize={12} />
-              <YAxis className="text-muted-foreground" fontSize={12} tickFormatter={v => `$${v}`} />
+              <YAxis yAxisId="left" className="text-muted-foreground" fontSize={12} tickFormatter={v => `$${v}`} />
+              <YAxis yAxisId="right" orientation="right" className="text-muted-foreground" fontSize={12} tickFormatter={v => `$${v}`} hide />
               <ChartTooltip content={<ChartTooltipContent />} />
-              <Bar dataKey="paid" stackId="a" fill="var(--color-paid)" radius={[0, 0, 0, 0]} />
-              <Bar dataKey="outstanding" stackId="a" fill="var(--color-outstanding)" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="anticipated" fill="var(--color-anticipated)" radius={[4, 4, 0, 0]} fillOpacity={0.5} strokeDasharray="4 2" stroke="var(--color-anticipated)" />
-            </BarChart>
+              <Bar yAxisId="left" dataKey="collected" stackId="revenue" fill="var(--color-collected)" radius={[0, 0, 0, 0]} />
+              <Bar yAxisId="left" dataKey="outstanding" stackId="revenue" fill="var(--color-outstanding)" radius={[0, 0, 0, 0]} />
+              <Bar yAxisId="left" dataKey="pipeline" stackId="revenue" fill="var(--color-pipeline)" radius={[4, 4, 0, 0]} fillOpacity={0.5} strokeDasharray="4 2" stroke="var(--color-pipeline)" />
+              <Line yAxisId="left" type="monotone" dataKey="cumulativeCollected" stroke="var(--color-cumulativeCollected)" strokeWidth={2} dot={false} />
+            </ComposedChart>
           </ChartContainer>
+          {/* Insight callout */}
+          <InsightCallout text={
+            totalCollected > 0 || totalOutstanding > 0
+              ? `You've collected ${collectionRate}% of invoiced revenue.${totalOutstanding > 0 ? ` $${totalOutstanding.toLocaleString()} is awaiting payment across ${outstandingInvoiceCount} invoice${outstandingInvoiceCount !== 1 ? 's' : ''}.` : ''}${totalPipeline > 0 ? ` Pipeline shows $${totalPipeline.toLocaleString()} in upcoming work.` : ''}`
+              : null
+          } />
         </CardContent>
       </Card>
 
