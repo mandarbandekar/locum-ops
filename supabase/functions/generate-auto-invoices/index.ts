@@ -6,8 +6,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const SYSTEM_RUN_HOUR = 5;
-
 interface Facility {
   id: string;
   name: string;
@@ -110,14 +108,6 @@ function formatDate(d: Date): string {
   return d.toISOString().split("T")[0];
 }
 
-function formatDateTime(d: Date): string {
-  const h = d.getHours().toString().padStart(2, "0");
-  const m = d.getMinutes().toString().padStart(2, "0");
-  const ampm = d.getHours() >= 12 ? "PM" : "AM";
-  const h12 = d.getHours() % 12 || 12;
-  return `${h12}:${m.padStart(2, "0")} ${ampm}`;
-}
-
 const MONTHS = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
@@ -138,8 +128,7 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
     const now = new Date();
-    const today = startOfDay(now);
-    const results: { facility: string; action: string; invoiceNumber?: string }[] = [];
+    const results: { facility: string; action: string; invoiceNumber?: string; period?: string }[] = [];
 
     // Get all facilities with auto_generate enabled
     const { data: facilities, error: facErr } = await supabase
@@ -158,44 +147,29 @@ Deno.serve(async (req) => {
     // Process each facility
     for (const facility of facilities as Facility[]) {
       const cadence = facility.billing_cadence;
-      const period = getBillingPeriod(cadence, today, facility.billing_cycle_anchor_date);
 
-      // Get all booked/completed shifts for this facility in the period
-      const { data: shifts } = await supabase
+      // Get ALL booked/completed shifts for this facility (not just current period)
+      const { data: allShifts } = await supabase
         .from("shifts")
         .select("*")
         .eq("facility_id", facility.id)
         .eq("user_id", facility.user_id)
         .neq("status", "canceled")
-        .gte("start_datetime", period.start.toISOString())
-        .lte("start_datetime", period.end.toISOString())
+        .neq("status", "proposed")
         .order("start_datetime");
 
-      if (!shifts || shifts.length === 0) {
+      if (!allShifts || allShifts.length === 0) {
         results.push({ facility: facility.name, action: "no_shifts" });
         continue;
       }
 
-      // For non-daily cadences: only generate on the day of the last scheduled shift
-      if (cadence !== "daily") {
-        const lastShiftDate = startOfDay(
-          new Date(shifts[shifts.length - 1].start_datetime)
-        );
-        if (today.getTime() !== lastShiftDate.getTime()) {
-          results.push({ facility: facility.name, action: "not_trigger_day" });
-          continue;
-        }
-      }
-
-      // Check existing invoices for this period
+      // Get all existing invoices and line items for this facility
       const { data: existingInvoices } = await supabase
         .from("invoices")
         .select("*")
         .eq("facility_id", facility.id)
-        .eq("user_id", facility.user_id)
-        .eq("generation_type", "automatic");
+        .eq("user_id", facility.user_id);
 
-      // Check existing line items to find already-invoiced shifts
       const { data: existingLineItems } = await supabase
         .from("invoice_line_items")
         .select("*")
@@ -204,7 +178,7 @@ Deno.serve(async (req) => {
       const allInvoices = (existingInvoices || []) as Invoice[];
       const allLineItems = (existingLineItems || []) as LineItem[];
 
-      // Get shift IDs on sent/paid invoices (protected)
+      // Get shift IDs on sent/paid invoices (protected — can't be re-invoiced)
       const sentInvoiceIds = new Set(
         allInvoices.filter((i) => i.status !== "draft").map((i) => i.id)
       );
@@ -214,135 +188,199 @@ Deno.serve(async (req) => {
           .map((li) => li.shift_id!)
       );
 
-      // Filter eligible shifts
-      const eligibleShifts = (shifts as Shift[]).filter(
-        (s) => !protectedShiftIds.has(s.id)
+      // Get shift IDs already on ANY invoice (including drafts)
+      const allInvoicedShiftIds = new Set(
+        allLineItems
+          .filter((li) => li.shift_id)
+          .map((li) => li.shift_id!)
       );
 
-      if (eligibleShifts.length === 0) {
+      // Find uninvoiced eligible shifts
+      const uninvoicedShifts = (allShifts as Shift[]).filter(
+        (s) => !allInvoicedShiftIds.has(s.id)
+      );
+
+      if (uninvoicedShifts.length === 0) {
         results.push({ facility: facility.name, action: "all_shifts_invoiced" });
         continue;
       }
 
-      // Check for existing draft for this period
-      const periodStartStr = formatDate(period.start);
-      const periodEndStr = formatDate(period.end);
-      const existingDraft = allInvoices.find(
-        (inv) =>
-          inv.status === "draft" &&
-          inv.facility_id === facility.id &&
-          formatDate(new Date(inv.period_start)) === periodStartStr &&
-          formatDate(new Date(inv.period_end)) === periodEndStr
-      );
+      // Group uninvoiced shifts by billing period
+      const periodMap = new Map<string, { period: { start: Date; end: Date }; shifts: Shift[] }>();
+      for (const shift of uninvoicedShifts) {
+        const shiftDate = new Date(shift.start_datetime);
+        const period = getBillingPeriod(cadence, shiftDate, facility.billing_cycle_anchor_date);
+        const key = `${formatDate(period.start)}|${formatDate(period.end)}`;
+        if (!periodMap.has(key)) {
+          periodMap.set(key, { period, shifts: [] });
+        }
+        periodMap.get(key)!.shifts.push(shift);
+      }
 
-      if (existingDraft) {
-        // Update existing draft: rebuild line items
-        await supabase
-          .from("invoice_line_items")
-          .delete()
-          .eq("invoice_id", existingDraft.id);
+      // Process each billing period that has uninvoiced shifts
+      for (const [periodKey, { period, shifts: periodShifts }] of periodMap) {
+        const periodStartStr = formatDate(period.start);
+        const periodEndStr = formatDate(period.end);
 
-        const newLineItems = eligibleShifts.map((s) => ({
-          user_id: facility.user_id,
-          invoice_id: existingDraft.id,
-          shift_id: s.id,
-          description: `${formatShortDate(new Date(s.start_datetime))} — Relief coverage`,
-          service_date: formatDate(new Date(s.start_datetime)),
-          qty: 1,
-          unit_rate: s.rate_applied,
-          line_total: s.rate_applied,
-        }));
+        // Also include any shifts already on a draft for this period (to rebuild correctly)
+        const existingDraft = allInvoices.find(
+          (inv) =>
+            inv.status === "draft" &&
+            inv.generation_type === "automatic" &&
+            inv.facility_id === facility.id &&
+            formatDate(new Date(inv.period_start)) === periodStartStr &&
+            formatDate(new Date(inv.period_end)) === periodEndStr
+        );
 
-        await supabase.from("invoice_line_items").insert(newLineItems);
-
-        const total = newLineItems.reduce((sum, li) => sum + li.line_total, 0);
-        await supabase
-          .from("invoices")
-          .update({ total_amount: total, balance_due: total })
-          .eq("id", existingDraft.id);
-
-        results.push({
-          facility: facility.name,
-          action: "updated_draft",
-          invoiceNumber: existingDraft.invoice_number,
-        });
-      } else {
-        // Generate invoice number
-        const { data: allFacInvoices } = await supabase
-          .from("invoices")
-          .select("invoice_number")
-          .eq("user_id", facility.user_id);
-
-        const prefix = facility.invoice_prefix || "INV";
-        const year = now.getFullYear();
-        const existing = (allFacInvoices || [])
-          .map((i: { invoice_number: string }) => i.invoice_number)
-          .filter((n: string) => n.startsWith(`${prefix}-${year}`))
-          .map((n: string) => parseInt(n.split("-")[2]) || 0);
-        const next = existing.length > 0 ? Math.max(...existing) + 1 : 1;
-        const invoiceNumber = `${prefix}-${year}-${String(next).padStart(3, "0")}`;
-
-        // Build line items
-        const lineItems = eligibleShifts.map((s) => ({
-          shift_id: s.id,
-          description: `${formatShortDate(new Date(s.start_datetime))} — Relief coverage`,
-          service_date: formatDate(new Date(s.start_datetime)),
-          qty: 1,
-          unit_rate: s.rate_applied,
-          line_total: s.rate_applied,
-        }));
-
-        const total = lineItems.reduce((sum, li) => sum + li.line_total, 0);
-
-        // Invoice date = date of the last shift (not today)
-        const lastShift = eligibleShifts[eligibleShifts.length - 1];
-        const lastShiftDate = new Date(lastShift.start_datetime);
-        const invoiceDate = new Date(lastShiftDate.getFullYear(), lastShiftDate.getMonth(), lastShiftDate.getDate(), 12, 0, 0);
-        const dueDate = addDays(invoiceDate, facility.invoice_due_days || 15);
-
-        // Create invoice
-        const { data: invData, error: invErr } = await supabase
-          .from("invoices")
-          .insert({
-            user_id: facility.user_id,
-            facility_id: facility.id,
-            invoice_number: invoiceNumber,
-            invoice_date: invoiceDate.toISOString(),
-            period_start: period.start.toISOString(),
-            period_end: period.end.toISOString(),
-            total_amount: total,
-            balance_due: total,
-            status: "draft",
-            sent_at: null,
-            paid_at: null,
-            due_date: dueDate.toISOString(),
-            notes: "",
-            invoice_type: "bulk",
-            generation_type: "automatic",
-            billing_cadence: cadence,
-          })
-          .select()
-          .single();
-
-        if (invErr) {
-          console.error(`Failed to create invoice for ${facility.name}:`, invErr);
-          results.push({ facility: facility.name, action: "error" });
-          continue;
+        // Combine: uninvoiced shifts for this period + shifts already on draft (minus protected)
+        let allEligibleForPeriod = [...periodShifts];
+        if (existingDraft) {
+          // Get shifts already on this draft
+          const draftLineItems = allLineItems.filter(li => li.invoice_id === existingDraft.id && li.shift_id);
+          const draftShiftIds = new Set(draftLineItems.map(li => li.shift_id!));
+          // Add existing draft shifts that aren't protected
+          const existingDraftShifts = (allShifts as Shift[]).filter(
+            s => draftShiftIds.has(s.id) && !protectedShiftIds.has(s.id)
+          );
+          // Merge without duplicates
+          const mergedIds = new Set(allEligibleForPeriod.map(s => s.id));
+          for (const s of existingDraftShifts) {
+            if (!mergedIds.has(s.id)) {
+              allEligibleForPeriod.push(s);
+            }
+          }
         }
 
-        // Insert line items
-        const toInsert = lineItems.map((li) => ({
-          user_id: facility.user_id,
-          invoice_id: invData.id,
-          ...li,
-        }));
-        await supabase.from("invoice_line_items").insert(toInsert);
+        // Sort by start_datetime
+        allEligibleForPeriod.sort(
+          (a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime()
+        );
 
-        results.push({
-          facility: facility.name,
-          action: "created_draft",
-          invoiceNumber,
-        });
+        if (allEligibleForPeriod.length === 0) continue;
+
+        if (existingDraft) {
+          // Update existing draft: rebuild line items
+          await supabase
+            .from("invoice_line_items")
+            .delete()
+            .eq("invoice_id", existingDraft.id);
+
+          const newLineItems = allEligibleForPeriod.map((s) => ({
+            user_id: facility.user_id,
+            invoice_id: existingDraft.id,
+            shift_id: s.id,
+            description: `${formatShortDate(new Date(s.start_datetime))} — Relief coverage`,
+            service_date: formatDate(new Date(s.start_datetime)),
+            qty: 1,
+            unit_rate: s.rate_applied,
+            line_total: s.rate_applied,
+          }));
+
+          await supabase.from("invoice_line_items").insert(newLineItems);
+
+          const total = newLineItems.reduce((sum, li) => sum + li.line_total, 0);
+
+          // Invoice date = last shift date in period
+          const lastShift = allEligibleForPeriod[allEligibleForPeriod.length - 1];
+          const lastShiftDate = new Date(lastShift.start_datetime);
+          const invoiceDate = new Date(lastShiftDate.getFullYear(), lastShiftDate.getMonth(), lastShiftDate.getDate(), 12, 0, 0);
+          const dueDate = addDays(invoiceDate, facility.invoice_due_days || 15);
+
+          await supabase
+            .from("invoices")
+            .update({
+              total_amount: total,
+              balance_due: total,
+              invoice_date: invoiceDate.toISOString(),
+              due_date: dueDate.toISOString(),
+            })
+            .eq("id", existingDraft.id);
+
+          results.push({
+            facility: facility.name,
+            action: "updated_draft",
+            invoiceNumber: existingDraft.invoice_number,
+            period: `${periodStartStr} to ${periodEndStr}`,
+          });
+        } else {
+          // Generate invoice number
+          const { data: allFacInvoices } = await supabase
+            .from("invoices")
+            .select("invoice_number")
+            .eq("user_id", facility.user_id);
+
+          const prefix = facility.invoice_prefix || "INV";
+          const year = now.getFullYear();
+          const existing = (allFacInvoices || [])
+            .map((i: { invoice_number: string }) => i.invoice_number)
+            .filter((n: string) => n.startsWith(`${prefix}-${year}`))
+            .map((n: string) => parseInt(n.split("-")[2]) || 0);
+          const next = existing.length > 0 ? Math.max(...existing) + 1 : 1;
+          const invoiceNumber = `${prefix}-${year}-${String(next).padStart(3, "0")}`;
+
+          // Build line items
+          const lineItems = allEligibleForPeriod.map((s) => ({
+            shift_id: s.id,
+            description: `${formatShortDate(new Date(s.start_datetime))} — Relief coverage`,
+            service_date: formatDate(new Date(s.start_datetime)),
+            qty: 1,
+            unit_rate: s.rate_applied,
+            line_total: s.rate_applied,
+          }));
+
+          const total = lineItems.reduce((sum, li) => sum + li.line_total, 0);
+
+          // Invoice date = last shift date in period
+          const lastShift = allEligibleForPeriod[allEligibleForPeriod.length - 1];
+          const lastShiftDate = new Date(lastShift.start_datetime);
+          const invoiceDate = new Date(lastShiftDate.getFullYear(), lastShiftDate.getMonth(), lastShiftDate.getDate(), 12, 0, 0);
+          const dueDate = addDays(invoiceDate, facility.invoice_due_days || 15);
+
+          // Create invoice
+          const { data: invData, error: invErr } = await supabase
+            .from("invoices")
+            .insert({
+              user_id: facility.user_id,
+              facility_id: facility.id,
+              invoice_number: invoiceNumber,
+              invoice_date: invoiceDate.toISOString(),
+              period_start: period.start.toISOString(),
+              period_end: period.end.toISOString(),
+              total_amount: total,
+              balance_due: total,
+              status: "draft",
+              sent_at: null,
+              paid_at: null,
+              due_date: dueDate.toISOString(),
+              notes: "",
+              invoice_type: "bulk",
+              generation_type: "automatic",
+              billing_cadence: cadence,
+            })
+            .select()
+            .single();
+
+          if (invErr) {
+            console.error(`Failed to create invoice for ${facility.name}:`, invErr);
+            results.push({ facility: facility.name, action: "error", period: `${periodStartStr} to ${periodEndStr}` });
+            continue;
+          }
+
+          // Insert line items
+          const toInsert = lineItems.map((li) => ({
+            user_id: facility.user_id,
+            invoice_id: invData.id,
+            ...li,
+          }));
+          await supabase.from("invoice_line_items").insert(toInsert);
+
+          results.push({
+            facility: facility.name,
+            action: "created_draft",
+            invoiceNumber,
+            period: `${periodStartStr} to ${periodEndStr}`,
+          });
+        }
       }
     }
 
