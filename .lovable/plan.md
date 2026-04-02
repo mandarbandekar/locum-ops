@@ -1,81 +1,108 @@
 
 
-# Schedule Module UX Evaluation and Improvements
+# Dashboard UX Evaluation and Improvement Plan
 
 ## Current State Assessment
 
-The Schedule module has five tabs (Month, Week, List, Clinic Confirm, Sync), a date navigator, calendar layer filters, drag-and-drop rescheduling, and a multi-date ShiftFormDialog. Here's what needs improvement:
+The dashboard has a 3-column layout (Shifts / Money / Attention), a Getting Started checklist for new users, Quick Actions buttons, and a Work Readiness strip. Here are the key issues:
 
 ### Issues Identified
 
-1. **No context when the calendar is empty** — New users land on a blank month grid with no guidance. There's no empty state encouraging them to add their first shift. This is the #1 adoption blocker since shifts drive revenue and invoices.
+1. **No narrative or summary** — Users land on three data-dense cards with no plain-language "here's how you're doing" context. The Business Insights page now has an AI summary, but the dashboard (the first thing users see every day) does not.
 
-2. **No shift summary strip** — Users can't see at a glance how many shifts, hours, or expected revenue they have for the current period without counting pills manually.
+2. **Quick Actions are buried** — On desktop, the "+ Shift / + Invoice / + CE Entry" buttons float in the top-right corner with no visual weight. On mobile they're pushed below the 3 cards. These are the primary value-driving actions.
 
-3. **"Add Shift" button competes with view toggles** — The primary CTA sits inline with 5 view toggle buttons, making it easy to miss. On mobile the button row wraps awkwardly.
+3. **No "streak" or engagement hook** — There's nothing that rewards consistent usage (e.g., "You've logged shifts for 4 consecutive weeks" or "3-day streak"). This is a proven stickiness driver.
 
-4. **No "Today" indicator in month view header** — There's a small "Today" button but the current day cell only gets a faint `bg-primary/5` tint that's easy to miss.
+4. **Work Readiness strip is easy to miss** — It sits below all cards as plain pill-shaped buttons. Users may never scroll to see it on desktop since the 3 cards can fill the viewport.
 
-5. **List view lacks earnings column** — The list table shows Rate but not total earnings (rate × hours), which is the number users actually care about.
+5. **Money card is tall and chart-heavy for a dashboard** — The revenue trend mini-chart takes up significant vertical space but provides the same data available in Business > Insights. The invoice list is valuable but competes with the chart for attention.
 
-6. **No weekly/monthly summary in list view** — The list is just a flat table with no totals row showing aggregate hours and earnings.
+6. **No "today's earnings" or "this week's earnings" number** — Locum providers think in terms of "what did I earn today/this week." There's no quick answer to that question.
 
 ---
 
-## Recommended Plan
+## Recommended Improvements
 
-### Change 1: Add an empty state when no shifts exist for the visible period
-When `rangeShifts.length === 0` and the user is on month/week view, show a centered empty state card with an illustration prompt and "Add Your First Shift" CTA that opens the shift dialog. This directly drives adoption.
+### Change 1: Add a Daily Briefing strip at the top
+A single-line contextual strip above the 3-column grid that gives an instant status read. Computed from existing data — no AI call needed.
 
-**In `src/pages/SchedulePage.tsx`:**
-- Add an empty state component above/overlaying the calendar when no shifts exist in the range
-- Include a brief value proposition: "Add shifts to track your schedule, auto-generate invoices, and sync to your calendar"
+Examples:
+- "You have 2 shifts today worth $1,200 · 1 invoice overdue · All credentials current"
+- "No shifts today · Next shift: Tomorrow at Riverside Clinic · $4,500 to collect"
+- "3 shifts this week · $2,400 earned so far · 1 draft invoice ready to send"
 
-### Change 2: Add a Schedule Summary Strip below the navigation
-A compact row showing key stats for the visible period: **X shifts · Y hours · $Z expected revenue**. Gives instant context without reading the calendar.
+**In `src/pages/DashboardPage.tsx`:**
+- Compute today's shifts, this week's earnings, top attention item
+- Render a compact strip with icon + text between the header and the grid
 
-**In `src/pages/SchedulePage.tsx`:**
-- Compute `totalShifts`, `totalHours`, `totalRevenue` from `rangeShifts` (non-canceled)
-- Render a small strip between the date nav and the calendar grid
-- Only show when there are shifts in range
+### Change 2: Integrate Quick Actions into the greeting card
+Move the Quick Actions (+ Shift, + Invoice, + CE Entry) into the UpcomingShiftsCard footer area, replacing the current separate QuickActions component. This puts actions right next to the context that motivates them.
 
-### Change 3: Elevate the "Add Shift" button
-Move "Add Shift" out of the view toggle row. Place it as a floating action or prominently separated primary button so it's always visible and clearly the main action.
+**In `src/components/dashboard/UpcomingShiftsCard.tsx`:**
+- Add inline quick-action buttons below "Add Shift" (which already exists)
+- Add a small "+ Invoice" and "+ CE" link row
 
-**In `src/pages/SchedulePage.tsx`:**
-- Move "Add Shift" to the page header row next to the title, separated from view toggles
-- Keep it as the primary variant button
+**In `src/pages/DashboardPage.tsx`:**
+- Remove the separate QuickActions sections (desktop header and mobile footer)
 
-### Change 4: Add earnings column and totals row to List view
-Add an "Earnings" column computed as `rate × hours` and a summary footer row with totals.
+### Change 3: Add a "This Week's Earnings" highlight to MoneyToCollectCard
+Replace the mini revenue chart (which duplicates Business > Insights) with a compact "This Week" earnings number and a simpler breakdown.
 
-**In `src/pages/SchedulePage.tsx`:**
-- Add "Earnings" column: `rate_applied * (duration in hours)`
-- Add a `<tfoot>` with total shifts, total hours, total earnings
+**In `src/components/dashboard/MoneyToCollectCard.tsx`:**
+- Add a "This Week" section showing earnings from completed shifts this week
+- Keep the invoice list (high value) but make it the primary focus
+- Shrink or remove the 6-month revenue chart (available in Insights)
 
-### Change 5: Strengthen today indicator in month view
-Make today's date number more prominent with a filled circle background (already partially done) and add a subtle left-border accent to the cell.
+### Change 4: Elevate Work Readiness into the Needs Attention card
+Instead of a separate strip at the bottom, merge readiness items into the Needs Attention card as a secondary "Readiness" section with a visual divider. This ensures users always see credential/compliance status without scrolling.
 
-**In `src/pages/SchedulePage.tsx`:**
-- Add `border-l-2 border-l-primary` to today's cell in `renderDayCell`
+**In `src/components/dashboard/NeedsAttentionCard.tsx`:**
+- Accept `readinessItems` as a prop
+- After the attention items list, show a "Work Readiness" section with the readiness chips
+
+**In `src/pages/DashboardPage.tsx`:**
+- Pass `readinessItems` to NeedsAttentionCard
+- Remove the standalone WorkReadinessStrip
+
+### Change 5: Add an engagement streak counter
+Show a small "streak" indicator in the greeting area — "Active for 12 days" or "4-week streak." Tracked via localStorage (last visit dates). Simple but effective for habit formation.
+
+**In `src/components/dashboard/UpcomingShiftsCard.tsx`:**
+- Accept a `streakDays` prop
+- Show below the greeting: a small flame/zap icon + "X-day streak" when streak > 1
+
+**In `src/pages/DashboardPage.tsx`:**
+- Compute streak from localStorage (store array of recent visit dates, count consecutive days)
 
 ---
 
 ## Files to modify
 
-### `src/pages/SchedulePage.tsx`
-- Add schedule summary strip (shifts/hours/revenue) below date nav
-- Add empty state overlay when no shifts in range
-- Move "Add Shift" button to header row, separate from view toggles
-- Add earnings column + totals footer to list view
-- Strengthen today cell styling
+### `src/pages/DashboardPage.tsx`
+- Add daily briefing strip computation and rendering
+- Remove standalone QuickActions and WorkReadinessStrip
+- Compute streak from localStorage
+- Pass readinessItems to NeedsAttentionCard
+- Compute thisWeekEarnings for MoneyToCollectCard
 
-### No new files, no database changes, no backend changes. All presentation-layer.
+### `src/components/dashboard/UpcomingShiftsCard.tsx`
+- Add quick-action links (+ Invoice, + CE) below the Add Shift button
+- Add streak display in greeting area
+
+### `src/components/dashboard/MoneyToCollectCard.tsx`
+- Add "This Week" earnings section
+- Reduce revenue chart height or replace with a simpler sparkline
+
+### `src/components/dashboard/NeedsAttentionCard.tsx`
+- Add readinessItems prop and render a "Work Readiness" section below attention items
+
+### No database changes, no new files, no backend changes.
 
 ## Technical Detail
 
-- Hours computed via `differenceInHours(end, start)` from date-fns (already imported)
-- Revenue = `shift.rate_applied` (this is already the total for the shift, not hourly — confirmed from the data model where `rate_applied` is per-shift)
-- Summary strip uses the existing `rangeShifts` filtered array
-- Empty state only shows when `rangeShifts.length === 0` and view is month/week/list (not confirmations/sync)
+- Daily briefing computed from: `shifts` filtered to today (for "X shifts today"), `summary.outstandingTotal + summary.draftTotal` (for collectable), and `attentionItems[0]` (for top priority)
+- This week's earnings: filter shifts where `start_datetime` is within current Mon-Sun and status is `completed`, sum `rate_applied`
+- Streak: store `locumops_last_visits` in localStorage as ISO date strings, compute consecutive days ending today
+- All changes are presentation-layer, no new API calls
 
