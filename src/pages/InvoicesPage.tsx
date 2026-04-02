@@ -188,20 +188,41 @@ export default function InvoicesPage() {
 
         <div ref={draftsRef}>
           <InvoiceStatusGroup
-            title="Drafts"
-            icon={<FileEdit className="h-4 w-4 text-muted-foreground" />}
-            invoices={draft}
+            title="Ready to Review"
+            icon={<FileEdit className="h-4 w-4 text-amber-500" />}
+            invoices={readyToReview}
             selected={selected}
             onToggleSelect={toggleSelect}
             onDelete={deleteInvoice}
             getFacilityName={getFacilityName}
-            emptyMessage="No draft invoices — everything has been sent."
+            emptyMessage="No invoices ready to review — check back after your shifts are completed."
             defaultOpen={true}
             groupByFacility={true}
-            headerRight={draft.length > 0 ? (
-              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => navigate(`/invoices/${draft[0].id}`)}>
+            headerRight={readyToReview.length > 0 ? (
+              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => navigate(`/invoices/${readyToReview[0].id}`)}>
                 Review & Send
               </Button>
+            ) : undefined}
+          />
+        </div>
+
+        <div>
+          <InvoiceStatusGroup
+            title="Upcoming"
+            icon={<Clock className="h-4 w-4 text-muted-foreground" />}
+            invoices={upcoming}
+            selected={selected}
+            onToggleSelect={toggleSelect}
+            onDelete={deleteInvoice}
+            getFacilityName={getFacilityName}
+            emptyMessage="No upcoming invoices."
+            defaultOpen={false}
+            groupByFacility={true}
+            alertBanner={upcoming.length > 0 ? (
+              <div className="flex items-center gap-2 px-5 py-2.5 text-xs text-muted-foreground bg-muted/30 border-t">
+                <Clock className="h-3.5 w-3.5 shrink-0" />
+                These invoices will be ready to review after the shifts are completed.
+              </div>
             ) : undefined}
           />
         </div>

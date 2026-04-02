@@ -74,6 +74,7 @@ export function InvoiceSummaryStrip({ overdue, awaiting, readyToReview, upcoming
           </div>
           <div className="text-[11px] text-muted-foreground mt-0.5">
             {card.count} invoice{card.count !== 1 ? 's' : ''}
+            {card.annotation && <span className="ml-1 opacity-60">({card.annotation})</span>}
           </div>
         </button>
       ))}
