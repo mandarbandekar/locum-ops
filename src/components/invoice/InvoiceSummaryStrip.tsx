@@ -13,7 +13,8 @@ interface StatCard {
 interface Props {
   overdue: { count: number; total: number };
   awaiting: { count: number; total: number };
-  drafts: { count: number; total: number };
+  readyToReview: { count: number; total: number };
+  upcomingCount?: number;
   paidThisMonth: { count: number; total: number };
   onScrollTo: (group: string) => void;
 }
