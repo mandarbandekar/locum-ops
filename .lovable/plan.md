@@ -1,42 +1,38 @@
 
 
-# Fix Monthly Revenue Chart: Pipeline → Anticipated Income
+# Fix "To Collect" Card: Show Only Awaiting Payment
 
-## Problems Found
+## Problems
 
-1. **Pipeline calculation is broken**: The code tries to read `inv.line_items` (line 111) but invoices don't have embedded line items — they're a separate `lineItems` array from `useData()`. Result: `invoicedShiftIds` is always empty, so uninvoiced shift calculation double-counts shifts that already have draft invoices.
+1. **"To Collect" total** combines `draftTotal + outstandingTotal`. It should only show `outstandingTotal` (sent, partial, overdue invoices — money the user is actually owed).
 
-2. **"Pipeline" label is unclear** — rename to "Anticipated Income."
+2. **"Invoices to Review" list** includes ALL drafts + unpaid invoices. It should only show drafts where `invoice_date <= today` (ready to review), matching the Invoices page logic. Upcoming drafts and sent invoices shouldn't appear here — sent invoices are already counted in the total, and upcoming drafts aren't actionable yet.
 
-3. **Anticipated income shows across all months** — users only want it for the current month (future work they can plan around), not retroactively on past months.
+## Changes
 
-4. **Cumulative collected line** is redundant since Total Revenue is already shown as a KPI above.
+### File: `src/pages/DashboardPage.tsx`
 
-## Changes (all in `src/pages/ReportsPage.tsx`)
+**Summary computation (lines 137-191):**
+- Add a `readyToReviewInvoices` filter: drafts where `invoice_date <= endOfToday`
+- Change `invoiceItems` to only include `readyToReviewInvoices` (not all drafts, not unpaid)
+- Keep `outstandingTotal` as-is (it's already correct — sent/partial/overdue)
+- Remove `draftTotal` from the return (no longer needed by the card)
 
-### 1. Fix anticipated income calculation
-- Import `lineItems` from `useData()` alongside `shifts`, `invoices`, `facilities`.
-- Replace the broken `inv.line_items` lookup with a proper `lineItems.filter(li => li.invoice_id === inv.id)` to build `invoicedShiftIds`.
-- This ensures uninvoiced shifts aren't double-counted with draft invoice amounts.
+### File: `src/components/dashboard/MoneyToCollectCard.tsx`
 
-### 2. Rename Pipeline → Anticipated Income
-- Rename `pipeline` data key to `anticipated` throughout.
-- Update chart config label from "Pipeline" to "Anticipated Income."
-- Update legend, insight callout, and KPI subtitle text.
-- Update `CardDescription` to say "Collected, outstanding, and anticipated income."
+**Header section:**
+- Remove `draftTotal` from props and from `totalCollectable` calculation
+- `totalCollectable` = just `outstandingTotal` (money awaiting payment)
+- Update the label from "To Collect" to "Awaiting Payment" or keep "To Collect" but now it accurately reflects only sent invoices
 
-### 3. Only show anticipated income for current month
-- In the `revenueData` computation, set `anticipated = 0` for any month that is not the current month. Past months should only show collected + outstanding. Future months beyond current show nothing anticipated either (shifts there aren't actionable yet).
+**Invoice list section:**
+- Rename "Invoices to Review" to "Ready to Review" to clarify these are actionable drafts
+- The list will now only contain ready-to-review drafts (filtered in DashboardPage)
 
-### 4. Remove cumulative collected line
-- Remove `cumulativeCollected` from the data computation (delete running sum logic).
-- Remove the `<Line>` element for cumulative collected from the `ComposedChart`.
-- Remove the hidden right `<YAxis>`.
-- Remove the `cumulativeCollected` entry from `revenueChartConfig`.
+### What Users See After
 
-### Summary of what users see after
-- **Green bars**: Collected (money in bank)
-- **Amber bars**: Outstanding (sent invoices awaiting payment)
-- **Gray dashed bar on current month only**: Anticipated Income (drafts + uninvoiced upcoming shifts)
-- Clear legend with totals, plain-language insight callout, no cumulative line clutter
+- **"To Collect: $X"** — only money from sent invoices awaiting payment
+- **"Ready to Review (N)"** — only today's actionable draft invoices
+- No upcoming/future drafts cluttering the dashboard
+- Sent invoices still visible via "Go to Invoicing" button
 
