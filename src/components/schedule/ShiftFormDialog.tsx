@@ -278,20 +278,8 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
             </div>
           </div>
 
-          {/* Status + Rate row */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Status</Label>
-              <Select value={status} onValueChange={v => setStatus(v as ShiftStatus)}>
-                <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="proposed">Proposed</SelectItem>
-                  <SelectItem value="booked">Booked</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="canceled">Canceled</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          {/* Rate */}
+          <div>
             <div>
               <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
                 <DollarSign className="h-3.5 w-3.5" />

@@ -448,10 +448,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
     setShifts(prev => prev.map(x => x.id === s.id ? s : x));
 
-    // If shift was just canceled, clean up its invoice
-    if (s.status === 'canceled' && oldShift?.status !== 'canceled') {
-      await handleInvoiceCleanupAfterShiftRemoval(s.id);
-    }
+    // (Cancel logic removed — shifts are deleted, not canceled)
   }, [isDemo, shifts, handleInvoiceCleanupAfterShiftRemoval]);
 
   const deleteShift = useCallback(async (id: string) => {
