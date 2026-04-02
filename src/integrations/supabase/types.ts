@@ -2646,6 +2646,8 @@ export type Database = {
         Row: {
           created_at: string
           disclaimer_accepted_at: string | null
+          estimated_deductions: number
+          filing_status: string
           filing_type_label: string
           id: string
           set_aside_fixed_monthly: number
@@ -2659,6 +2661,8 @@ export type Database = {
         Insert: {
           created_at?: string
           disclaimer_accepted_at?: string | null
+          estimated_deductions?: number
+          filing_status?: string
           filing_type_label?: string
           id?: string
           set_aside_fixed_monthly?: number
@@ -2672,6 +2676,8 @@ export type Database = {
         Update: {
           created_at?: string
           disclaimer_accepted_at?: string | null
+          estimated_deductions?: number
+          filing_status?: string
           filing_type_label?: string
           id?: string
           set_aside_fixed_monthly?: number
