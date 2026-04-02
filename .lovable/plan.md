@@ -1,43 +1,81 @@
 
 
-# Dashboard: Add 3 High-Value Micro-Insights
+# Tax Estimator from Real Data
 
-Three compact, data-derived additions that answer questions locum vets ask themselves daily — no new tables, no API calls, minimal UI footprint.
+## What It Does
+
+Replace the current "user picks a %" reserve approach with an actual tax estimator that computes estimated federal income tax + self-employment tax (15.3%) from the user's real paid invoice data — broken down by quarter, with a running "you should have set aside $X by now" indicator.
+
+## Current State
+
+- TrackerTab already pulls paid invoices via `aggregateQuarterlyIncome` and shows YTD income
+- Reserve is a user-set flat % or fixed monthly amount — not a real estimate
+- No self-employment tax (SE tax) calculation exists
+- No filing status or standard deduction awareness
 
 ## Changes
 
-### 1. Longest Unpaid Invoice callout (Money card)
-Add a single line below the "This Week" section showing the oldest unpaid invoice: **"Oldest unpaid: INV-0042 · Riverside Clinic · 38 days"**. Clickable, navigates to that invoice. Only shows when there's at least one outstanding invoice.
+### 1. Add tax estimation logic to `src/lib/taxCalculations.ts`
 
-**In `src/pages/DashboardPage.tsx`:**
-- Compute `oldestUnpaid` from existing `invoices` array: find the sent/partial/overdue invoice with the earliest `sent_at`, compute `differenceInDays(now, sent_at)`
-- Pass as prop to MoneyToCollectCard
+New exported functions:
 
-**In `src/components/dashboard/MoneyToCollectCard.tsx`:**
-- Accept optional `oldestUnpaid: { id, invoice_number, facility_name, daysOutstanding }` prop
-- Render a compact amber/warning row below "This Week" when present
+- **`estimateSelfEmploymentTax(netIncome)`** — computes 92.35% × income × 15.3% (Social Security + Medicare), with the $168,600 SS wage cap for 2026
+- **`estimateFederalIncomeTax(netIncome, filingStatus, deductionOverride?)`** — applies standard deduction based on filing status (single/married_joint/married_separate/head_of_household), then 2026 marginal brackets (10/12/22/24/32/35/37%)
+- **`estimateQuarterlyPayments(annualTax, quarterlyIncome)`** — splits annual estimated liability proportionally by quarter income, returns per-quarter amounts
+- **`estimateTotalTax(netIncome, filingStatus, deductionOverride?)`** — returns `{ federalIncome, selfEmployment, total, effectiveRate, quarterlyPayment }`
 
-### 2. Next Credential Expiring countdown (Briefing strip)
-Append to the daily briefing string: **" · DEA expires in 18 days"**. Only shows when the nearest credential expiration is within 60 days.
+All functions are pure math with a disclaimer constant: these are planning estimates only.
 
-**In `src/pages/DashboardPage.tsx`:**
-- In the `briefing` memo, find the credential with the nearest `expiration_date` from `credentialsList`
-- If within 60 days, append `· {custom_title} expires in {N} days` to the briefing string
+### 2. Add a `TaxEstimatorCard` component
 
-### 3. Monthly Pace Indicator (Money card)
-Show **"On pace for $X this month"** based on completed shifts + booked/proposed shifts in the current month. One line below the collected-this-month stat.
+New file: `src/components/tax-strategy/TaxEstimatorCard.tsx`
 
-**In `src/pages/DashboardPage.tsx`:**
-- Compute `monthlyPace`: sum `rate_applied` for all non-canceled shifts in the current month
-- Pass to MoneyToCollectCard
+A card shown above the quarterly planning section in TrackerTab that displays:
 
-**In `src/components/dashboard/MoneyToCollectCard.tsx`:**
-- Accept optional `monthlyPace: number` prop
-- Render below "Collected this month" as a muted text line
+- **Filing status selector** (single, married filing jointly, married filing separately, head of household) — persisted to `tax_settings`
+- **Business expense deduction** — optional override input so users can subtract known deductions from gross income before estimating (defaults to $0)
+- **Computed results**:
+  - Gross 1099 income (from paid invoices — already computed)
+  - Deductible portion of SE tax (50% of SE tax)
+  - Estimated SE tax
+  - Estimated federal income tax
+  - **Total estimated tax liability**
+  - **Effective tax rate** (total / gross)
+  - **Per-quarter payment** (total / 4, or proportional to income)
+- **"vs. Your Reserve" comparison** — shows the delta between the user's current reserve setting and the estimated liability: "Your 30% reserve = $24,000. Estimated liability = $21,400. You're $2,600 ahead."
 
-## Files to modify
-- `src/pages/DashboardPage.tsx` — compute oldestUnpaid, monthlyPace, credential countdown
-- `src/components/dashboard/MoneyToCollectCard.tsx` — render oldestUnpaid + monthlyPace
+### 3. Update TrackerTab to integrate the estimator
 
-No new files, no database changes, no backend changes.
+In `src/components/tax-strategy/TrackerTab.tsx`:
+
+- Import and render `TaxEstimatorCard` between the summary cards and the reserve preference card
+- Add `filing_status` and `estimated_deductions` to the settings state (read/write from `tax_settings`)
+- Pass quarterly income data + settings to the estimator card
+- Update the quarterly cards to show "Estimated payment: $X" alongside the existing reserve amount
+
+### 4. Update `tax_settings` table
+
+Add two columns via migration:
+- `filing_status` (text, default `'single'`)
+- `estimated_deductions` (numeric, default `0`)
+
+### 5. Update summary cards
+
+Replace the "Est. Reserve" summary card with two rows:
+- **Est. Tax Liability** (computed) — the real estimate
+- **Your Reserve** (user-set) — kept for comparison
+
+Add a small delta indicator: green if reserve >= liability, amber if under.
+
+## Files to Modify
+
+- `src/lib/taxCalculations.ts` — add SE tax, federal tax, and total estimate functions
+- `src/components/tax-strategy/TaxEstimatorCard.tsx` — new component
+- `src/components/tax-strategy/TrackerTab.tsx` — integrate estimator card, pass new settings
+- `src/test/taxCalculations.test.ts` — add tests for new functions
+- Database migration — add `filing_status` and `estimated_deductions` to `tax_settings`
+
+## Disclaimer
+
+Every computed number includes the existing disclaimer pattern: "Planning estimate only — confirm with your CPA." The estimator does not account for state taxes, credits, other income sources, or itemized deductions beyond the standard deduction.
 
