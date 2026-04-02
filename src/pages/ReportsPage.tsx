@@ -62,7 +62,7 @@ export default function ReportsPage() {
   const months = useMemo(() => {
     const now = new Date();
     const pastStart = subMonths(startOfMonth(now), parseInt(monthRange) - 1);
-    const futureShifts = shifts.filter(s => s.status === 'proposed' || s.status === 'booked');
+    const futureShifts = shifts.filter(s => new Date(s.start_datetime) > new Date());
     let futureEnd = endOfMonth(now);
     futureShifts.forEach(s => {
       const d = parseISO(s.start_datetime);
