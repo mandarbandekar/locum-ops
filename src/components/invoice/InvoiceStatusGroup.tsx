@@ -61,6 +61,10 @@ function getDueBadge(dueDate: string | null, status: string) {
   if (!dueDate || status === 'paid') return null;
   const days = differenceInCalendarDays(new Date(dueDate), new Date());
   if (days < 0) {
+    // Only show "overdue" for sent/partial invoices — drafts were never sent so the due date isn't actionable yet
+    if (status === 'draft') {
+      return <span className="text-[11px] text-muted-foreground">Due date passed</span>;
+    }
     return <span className="text-[11px] font-medium text-destructive">{Math.abs(days)}d overdue</span>;
   }
   if (days === 0) {
