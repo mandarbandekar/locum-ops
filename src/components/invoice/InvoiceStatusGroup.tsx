@@ -142,11 +142,11 @@ export function InvoiceStatusGroup({
                       )}
                     </td>
                     <td className="p-3 text-muted-foreground hidden sm:table-cell">
-                      {inv.invoice_date ? format(new Date(inv.invoice_date), 'MMM d, yyyy') : '—'}
+                      {formatDateSafe(inv.invoice_date)}
                     </td>
                     <td className="p-3 hidden md:table-cell">
                       <div className="text-muted-foreground">
-                        {inv.due_date ? format(new Date(inv.due_date), 'MMM d, yyyy') : '—'}
+                        {formatDateSafe(inv.due_date)}
                       </div>
                       {inv.due_date && getDueBadge(inv.due_date, inv.computedStatus)}
                     </td>
