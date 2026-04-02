@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -7,12 +7,14 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Trash2, Layers, AlertTriangle, Send, FileEdit, CheckCircle } from 'lucide-react';
-import { format, subDays } from 'date-fns';
+import { format, subDays, startOfMonth, isAfter } from 'date-fns';
 import { computeInvoiceStatus, generateInvoiceNumber } from '@/lib/businessLogic';
 import { toast } from 'sonner';
 import { BulkInvoiceDialog } from '@/components/invoice/BulkInvoiceDialog';
 import { InvoiceEmptyState } from '@/components/invoice/InvoiceEmptyState';
 import { InvoiceStatusGroup } from '@/components/invoice/InvoiceStatusGroup';
+import { InvoiceSummaryStrip } from '@/components/invoice/InvoiceSummaryStrip';
+import { InvoiceWorkflowHint } from '@/components/invoice/InvoiceWorkflowHint';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -25,6 +27,19 @@ export default function InvoicesPage() {
   const [showBulkCreate, setShowBulkCreate] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Refs for scroll-to
+  const overdueRef = useRef<HTMLDivElement>(null);
+  const awaitingRef = useRef<HTMLDivElement>(null);
+  const draftsRef = useRef<HTMLDivElement>(null);
+  const paidRef = useRef<HTMLDivElement>(null);
+
+  const scrollTo = useCallback((group: string) => {
+    const map: Record<string, React.RefObject<HTMLDivElement>> = {
+      overdue: overdueRef, awaiting: awaitingRef, drafts: draftsRef, paid: paidRef,
+    };
+    map[group]?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
 
   
 
@@ -61,6 +76,12 @@ export default function InvoicesPage() {
     .filter(i => i.computedStatus === 'draft')
     .sort((a, b) => new Date(a.invoice_date || a.period_end).getTime() - new Date(b.invoice_date || b.period_end).getTime());
   const paid = allInvoices.filter(i => i.computedStatus === 'paid');
+
+  const monthStart = startOfMonth(new Date());
+  const paidThisMonth = paid.filter(i => i.paid_at && isAfter(new Date(i.paid_at), monthStart));
+
+  const sumTotal = (arr: typeof allInvoices) => arr.reduce((s, i) => s + (i.total_amount ?? 0), 0);
+  const sumBalance = (arr: typeof allInvoices) => arr.reduce((s, i) => s + (i.balance_due ?? 0), 0);
 
   if (dataLoading) {
     return (
@@ -102,55 +123,103 @@ export default function InvoicesPage() {
         </div>
       </div>
 
+      {/* Summary Stats */}
+      <InvoiceSummaryStrip
+        overdue={{ count: overdue.length, total: sumBalance(overdue) }}
+        awaiting={{ count: [...sent, ...partial].length, total: sumBalance([...sent, ...partial]) }}
+        drafts={{ count: draft.length, total: sumTotal(draft) }}
+        paidThisMonth={{ count: paidThisMonth.length, total: sumTotal(paidThisMonth) }}
+        onScrollTo={scrollTo}
+      />
+
+      {/* Workflow Hint */}
+      <div className="my-3">
+        <InvoiceWorkflowHint />
+      </div>
+
       <div className="space-y-4">
-        <InvoiceStatusGroup
-          title="Overdue"
-          icon={<AlertTriangle className="h-4 w-4 text-destructive" />}
-          invoices={overdue}
-          selected={selected}
-          onToggleSelect={toggleSelect}
-          onDelete={deleteInvoice}
-          getFacilityName={getFacilityName}
-          emptyMessage="No overdue invoices — you're all caught up!"
-          defaultOpen={true}
-        />
+        <div ref={overdueRef}>
+          <InvoiceStatusGroup
+            title="Overdue"
+            icon={<AlertTriangle className="h-4 w-4 text-destructive" />}
+            invoices={overdue}
+            selected={selected}
+            onToggleSelect={toggleSelect}
+            onDelete={deleteInvoice}
+            getFacilityName={getFacilityName}
+            emptyMessage="No overdue invoices — you're all caught up!"
+            defaultOpen={true}
+            headerRight={overdue.length > 0 ? (
+              <span className="text-sm font-bold text-destructive bg-destructive/10 px-2 py-0.5 rounded-md">
+                ${sumBalance(overdue).toLocaleString()} overdue
+              </span>
+            ) : undefined}
+            alertBanner={overdue.length > 0 ? (
+              <div className="flex items-center gap-2 px-5 py-3 text-sm text-destructive bg-destructive/5 border-t border-destructive/10">
+                <AlertTriangle className="h-4 w-4 shrink-0" />
+                You have ${sumBalance(overdue).toLocaleString()} overdue across {overdue.length} invoice{overdue.length !== 1 ? 's' : ''}. Follow up with facilities to collect payment.
+              </div>
+            ) : undefined}
+          />
+        </div>
 
-        <InvoiceStatusGroup
-          title="Sent & Awaiting Payment"
-          icon={<Send className="h-4 w-4 text-blue-500" />}
-          invoices={[...sent, ...partial]}
-          selected={selected}
-          onToggleSelect={toggleSelect}
-          onDelete={deleteInvoice}
-          getFacilityName={getFacilityName}
-          emptyMessage="No invoices awaiting payment right now."
-          defaultOpen={true}
-        />
+        <div ref={awaitingRef}>
+          <InvoiceStatusGroup
+            title="Sent & Awaiting Payment"
+            icon={<Send className="h-4 w-4 text-blue-500" />}
+            invoices={[...sent, ...partial]}
+            selected={selected}
+            onToggleSelect={toggleSelect}
+            onDelete={deleteInvoice}
+            getFacilityName={getFacilityName}
+            emptyMessage="No invoices awaiting payment right now."
+            defaultOpen={true}
+            headerRight={[...sent, ...partial].length > 0 ? (
+              <span className="text-sm font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-md">
+                ${sumBalance([...sent, ...partial]).toLocaleString()} outstanding
+              </span>
+            ) : undefined}
+          />
+        </div>
 
-        <InvoiceStatusGroup
-          title="Drafts"
-          icon={<FileEdit className="h-4 w-4 text-muted-foreground" />}
-          invoices={draft}
-          selected={selected}
-          onToggleSelect={toggleSelect}
-          onDelete={deleteInvoice}
-          getFacilityName={getFacilityName}
-          emptyMessage="No draft invoices — everything has been sent."
-          defaultOpen={true}
-          groupByFacility={true}
-        />
+        <div ref={draftsRef}>
+          <InvoiceStatusGroup
+            title="Drafts"
+            icon={<FileEdit className="h-4 w-4 text-muted-foreground" />}
+            invoices={draft}
+            selected={selected}
+            onToggleSelect={toggleSelect}
+            onDelete={deleteInvoice}
+            getFacilityName={getFacilityName}
+            emptyMessage="No draft invoices — everything has been sent."
+            defaultOpen={true}
+            groupByFacility={true}
+            headerRight={draft.length > 0 ? (
+              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => navigate(`/invoices/${draft[0].id}`)}>
+                Review & Send
+              </Button>
+            ) : undefined}
+          />
+        </div>
 
-        <InvoiceStatusGroup
-          title="Paid"
-          icon={<CheckCircle className="h-4 w-4 text-primary" />}
-          invoices={paid}
-          selected={selected}
-          onToggleSelect={toggleSelect}
-          onDelete={deleteInvoice}
-          getFacilityName={getFacilityName}
-          emptyMessage="No paid invoices yet."
-          defaultOpen={false}
-        />
+        <div ref={paidRef}>
+          <InvoiceStatusGroup
+            title="Paid"
+            icon={<CheckCircle className="h-4 w-4 text-primary" />}
+            invoices={paid}
+            selected={selected}
+            onToggleSelect={toggleSelect}
+            onDelete={deleteInvoice}
+            getFacilityName={getFacilityName}
+            emptyMessage="No paid invoices yet."
+            defaultOpen={false}
+            headerRight={paidThisMonth.length > 0 ? (
+              <span className="text-sm font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md">
+                ${sumTotal(paidThisMonth).toLocaleString()} this month
+              </span>
+            ) : undefined}
+          />
+        </div>
       </div>
 
       <CreateInvoiceDialog open={showCreate} onOpenChange={setShowCreate} />

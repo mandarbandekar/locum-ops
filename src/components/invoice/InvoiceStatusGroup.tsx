@@ -37,6 +37,8 @@ interface Props {
   getFacilityName: (id: string) => string;
   emptyMessage: string;
   defaultOpen?: boolean;
+  headerRight?: React.ReactNode;
+  alertBanner?: React.ReactNode;
 }
 
 const statusStyles: Record<string, string> = {
@@ -162,6 +164,7 @@ function InvoiceTable({ invoices, selected, onToggleSelect, onDelete, getFacilit
 export function InvoiceStatusGroup({
   title, icon, invoices, selected, onToggleSelect, onDelete,
   getFacilityName, emptyMessage, defaultOpen = true, groupByFacility = false,
+  headerRight, alertBanner,
 }: Props & { groupByFacility?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
   const navigate = useNavigate();
@@ -191,9 +194,11 @@ export function InvoiceStatusGroup({
           </span>
           <Badge variant="secondary" className="text-xs ml-1">{invoices.length}</Badge>
         </div>
+        {headerRight && <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>{headerRight}</div>}
       </CollapsibleTrigger>
 
       <CollapsibleContent>
+        {alertBanner}
         {invoices.length === 0 ? (
           <div className="flex items-center gap-2.5 px-5 py-6 text-sm text-muted-foreground border-t">
             <CheckCircle2 className="h-4 w-4 text-primary" />
