@@ -1,5 +1,5 @@
 import { Card, CardContent } from '@/components/ui/card';
-import { CalendarDays, Clock, ArrowRight, Plus } from 'lucide-react';
+import { CalendarDays, Clock, ArrowRight, Plus, FileText, BookOpen, Flame } from 'lucide-react';
 import { format, isToday, isTomorrow, addDays } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ interface UpcomingShiftsCardProps {
   getFacilityName: (id: string) => string;
   greeting: string;
   firstName: string;
+  streakDays?: number;
 }
 
 function getRelativeDay(date: Date): string {
@@ -35,7 +36,7 @@ const ACCENT_COLORS = [
   'border-l-destructive',
 ];
 
-export function UpcomingShiftsCard({ shifts, getFacilityName, greeting, firstName }: UpcomingShiftsCardProps) {
+export function UpcomingShiftsCard({ shifts, getFacilityName, greeting, firstName, streakDays = 0 }: UpcomingShiftsCardProps) {
   const navigate = useNavigate();
   const now = new Date();
   const in7Days = addDays(now, 7);
@@ -60,7 +61,15 @@ export function UpcomingShiftsCard({ shifts, getFacilityName, greeting, firstNam
             <div className="p-2.5 rounded-xl bg-primary/10">
               <CalendarDays className="h-5 w-5 text-primary" />
             </div>
-            <h2 className="text-xl font-bold tracking-tight text-foreground">{greeting}</h2>
+            <div className="flex-1">
+              <h2 className="text-xl font-bold tracking-tight text-foreground">{greeting}</h2>
+              {streakDays > 1 && (
+                <div className="flex items-center gap-1 mt-0.5">
+                  <Flame className="h-3 w-3 text-warning" />
+                  <span className="text-[11px] font-semibold text-warning">{streakDays}-day streak</span>
+                </div>
+              )}
+            </div>
           </div>
           {nextShift ? (
             <div className="space-y-0.5 text-sm text-muted-foreground">
@@ -131,7 +140,7 @@ export function UpcomingShiftsCard({ shifts, getFacilityName, greeting, firstNam
           )}
         </div>
 
-        {/* Footer - flows with content */}
+        {/* Footer with integrated quick actions */}
         <div className="px-5 pb-5 pt-4 space-y-3">
           <Button
             className="w-full h-10 text-[13px] font-bold gap-2 shadow-sm"
@@ -140,6 +149,21 @@ export function UpcomingShiftsCard({ shifts, getFacilityName, greeting, firstNam
             <Plus className="h-4 w-4" />
             Add Shift
           </Button>
+          <div className="flex items-center justify-center gap-4">
+            <button
+              className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium hover:text-foreground transition-colors"
+              onClick={() => navigate('/invoices')}
+            >
+              <FileText className="h-3 w-3" /> + Invoice
+            </button>
+            <span className="text-muted-foreground/30">|</span>
+            <button
+              className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium hover:text-foreground transition-colors"
+              onClick={() => navigate('/credentials?tab=ce')}
+            >
+              <BookOpen className="h-3 w-3" /> + CE Entry
+            </button>
+          </div>
           <button
             className="flex items-center gap-1.5 text-xs text-primary font-semibold hover:underline mx-auto"
             onClick={() => navigate('/schedule')}
