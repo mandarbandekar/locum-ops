@@ -10,7 +10,7 @@ import { Progress } from '@/components/ui/progress';
 import { useData } from '@/contexts/DataContext';
 import { useClinicConfirmations } from '@/hooks/useClinicConfirmations';
 import { generateId } from '@/lib/businessLogic';
-import { FacilityStatus } from '@/types';
+import type { FacilityStatus } from '@/types';
 import { toast } from 'sonner';
 import { ArrowLeft, ArrowRight, SkipForward, AlertTriangle } from 'lucide-react';
 import { RatesEditor, RateEntry, ratesToTermsFields } from '@/components/facilities/RatesEditor';
