@@ -57,7 +57,9 @@ export default function InvoicesPage() {
   const overdue = allInvoices.filter(i => i.computedStatus === 'overdue');
   const sent = allInvoices.filter(i => i.computedStatus === 'sent');
   const partial = allInvoices.filter(i => i.computedStatus === 'partial');
-  const draft = allInvoices.filter(i => i.computedStatus === 'draft');
+  const draft = allInvoices
+    .filter(i => i.computedStatus === 'draft')
+    .sort((a, b) => new Date(b.invoice_date || b.period_end).getTime() - new Date(a.invoice_date || a.period_end).getTime());
   const paid = allInvoices.filter(i => i.computedStatus === 'paid');
 
   if (dataLoading) {
