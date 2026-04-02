@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { DollarSign, FileText, ArrowRight, TrendingUp, Send, Clock, Wallet } from 'lucide-react';
+import { DollarSign, FileText, ArrowRight, TrendingUp, Send, Clock, Wallet, Target, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ScrollArea } from '@/components/ui/scroll-area';
