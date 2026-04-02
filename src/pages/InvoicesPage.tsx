@@ -28,6 +28,19 @@ export default function InvoicesPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+  // Refs for scroll-to
+  const overdueRef = useRef<HTMLDivElement>(null);
+  const awaitingRef = useRef<HTMLDivElement>(null);
+  const draftsRef = useRef<HTMLDivElement>(null);
+  const paidRef = useRef<HTMLDivElement>(null);
+
+  const scrollTo = useCallback((group: string) => {
+    const map: Record<string, React.RefObject<HTMLDivElement>> = {
+      overdue: overdueRef, awaiting: awaitingRef, drafts: draftsRef, paid: paidRef,
+    };
+    map[group]?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
+
   
 
   const safeInvoices = Array.isArray(invoices) ? invoices : [];
