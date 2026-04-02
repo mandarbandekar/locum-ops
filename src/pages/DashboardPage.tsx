@@ -162,7 +162,10 @@ export default function DashboardPage() {
         return isWithinInterval(periodEnd, { start: month, end: monthEnd });
       });
       const paid = monthInvoices.filter(i => i.status === 'paid').reduce((s, i) => s + i.total_amount, 0);
-      const outstanding = monthInvoices.filter(i => i.status !== 'paid').reduce((s, i) => s + i.total_amount, 0);
+      const outstanding = monthInvoices.filter(i => {
+        const st = computeInvoiceStatus(i);
+        return st === 'sent' || st === 'partial' || st === 'overdue';
+      }).reduce((s, i) => s + i.balance_due, 0);
 
       const invoicedShiftIds = new Set(
         monthInvoices.flatMap(inv => (inv as any).line_items?.map((li: any) => li.shift_id) || [])
