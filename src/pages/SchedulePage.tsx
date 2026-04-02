@@ -203,7 +203,7 @@ export default function SchedulePage() {
     return (
       <div
         key={dayKey}
-        className={`${minHeight} border-t border-r p-1 transition-colors cursor-pointer ${isToday ? 'bg-primary/5' : ''} ${isDragOver ? 'bg-primary/10 ring-2 ring-inset ring-primary/30' : ''} ${isDoubleBooked ? 'ring-1 ring-inset ring-amber-500/40' : ''}`}
+        className={`${minHeight} border-t border-r p-1 transition-colors cursor-pointer ${isToday ? 'bg-primary/5 border-l-2 border-l-primary' : ''} ${isDragOver ? 'bg-primary/10 ring-2 ring-inset ring-primary/30' : ''} ${isDoubleBooked ? 'ring-1 ring-inset ring-amber-500/40' : ''}`}
         onDragOver={(e) => onDragOver(e, dayKey)}
         onDragLeave={onDragLeave}
         onDrop={(e) => onDrop(e, day)}
