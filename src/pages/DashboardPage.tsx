@@ -413,6 +413,8 @@ export default function DashboardPage() {
             revenueData={summary.revenueData}
             invoiceItems={summary.invoiceItems}
             thisWeekEarnings={thisWeekEarnings}
+            monthlyPace={monthlyPace}
+            oldestUnpaid={oldestUnpaid}
           />
         </div>
 

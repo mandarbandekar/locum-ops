@@ -107,6 +107,21 @@ export function MoneyToCollectCard({
           <p className="text-[10px] text-muted-foreground mt-0.5 pl-5">Earned from completed shifts</p>
         </div>
 
+        {/* Oldest unpaid invoice */}
+        {oldestUnpaid && (
+          <div
+            className="mx-5 mt-1 mb-1 px-3 py-2 rounded-lg bg-warning/5 border border-warning/10 cursor-pointer hover:bg-warning/10 transition-colors"
+            onClick={() => navigate(`/invoices/${oldestUnpaid.id}`)}
+          >
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-3.5 w-3.5 text-warning shrink-0" />
+              <span className="text-[11px] text-muted-foreground truncate">
+                Oldest unpaid: <span className="font-semibold text-foreground">{oldestUnpaid.invoice_number}</span> · {oldestUnpaid.facility_name} · <span className="font-semibold text-warning">{oldestUnpaid.daysOutstanding}d</span>
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Individual invoice list */}
         <div className="px-4 pt-3 min-h-0">
           <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-2 px-1">
