@@ -254,6 +254,74 @@ export function estimateQuarterlyPayments(
   }));
 }
 
+// ── Annualized Income Installment Method ────────────────────────
+
+/**
+ * IRS annualized income installment method for quarterly estimated payments.
+ *
+ * For each quarter:
+ *   1. Sum cumulative YTD income through that quarter
+ *   2. Annualize it (multiply by annualization factor)
+ *   3. Compute full-year tax on the annualized amount
+ *   4. Multiply by the cumulative percentage for that quarter
+ *   5. Subtract prior quarter payments to get this quarter's installment
+ *
+ * Annualization factors: Q1 ×4, Q2 ×2, Q3 ×4/3, Q4 ×1
+ * Cumulative percentages: Q1 25%, Q2 50%, Q3 75%, Q4 100%
+ */
+export interface QuarterlyInstallment {
+  quarter: number;
+  cumulativeIncome: number;
+  annualizedIncome: number;
+  annualizedTax: number;
+  cumulativeRequired: number;
+  installmentPayment: number;
+}
+
+const ANNUALIZATION_FACTORS = [4, 2, 4 / 3, 1];
+const CUMULATIVE_PERCENTAGES = [0.25, 0.50, 0.75, 1.00];
+
+export function estimateQuarterlyInstallments(
+  quarterlyIncome: QuarterlyIncome[],
+  filingStatus: FilingStatus,
+  businessDeductions: number = 0,
+): QuarterlyInstallment[] {
+  const results: QuarterlyInstallment[] = [];
+  let cumulativeIncome = 0;
+  let priorPayments = 0;
+
+  for (let i = 0; i < 4; i++) {
+    const qi = quarterlyIncome.find(q => q.quarter === i + 1);
+    cumulativeIncome += qi?.income ?? 0;
+
+    // Annualize the cumulative income
+    const annualizedGross = cumulativeIncome * ANNUALIZATION_FACTORS[i];
+    // Scale deductions proportionally
+    const annualizedDeductions = businessDeductions * ANNUALIZATION_FACTORS[i] * ((i + 1) / 4);
+    // Use the full-year estimator on annualized amounts
+    const estimate = estimateTotalTax(annualizedGross, filingStatus, annualizedDeductions);
+    const annualizedTax = estimate.totalEstimatedTax;
+
+    // Cumulative amount required through this quarter
+    const cumulativeRequired = round2(annualizedTax * CUMULATIVE_PERCENTAGES[i]);
+
+    // This quarter's installment (never negative — safe harbor)
+    const installmentPayment = Math.max(0, round2(cumulativeRequired - priorPayments));
+    priorPayments += installmentPayment;
+
+    results.push({
+      quarter: i + 1,
+      cumulativeIncome,
+      annualizedIncome: annualizedGross,
+      annualizedTax,
+      cumulativeRequired,
+      installmentPayment,
+    });
+  }
+
+  return results;
+}
+
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
