@@ -330,10 +330,10 @@ export default function ReportsPage() {
               </div>
             ) : (
               <ChartContainer config={paymentSpeedConfig} className="h-[300px] w-full">
-                <BarChart data={facilityPaymentSpeed} layout="vertical" margin={{ top: 5, right: 20, bottom: 5, left: 80 }}>
+                <BarChart data={facilityPaymentSpeed} layout="vertical" margin={{ top: 5, right: 20, bottom: 5, left: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                   <XAxis type="number" fontSize={12} className="text-muted-foreground" tickFormatter={v => `${v}d`} />
-                  <YAxis dataKey="name" type="category" fontSize={12} className="text-muted-foreground" width={75} />
+                  <YAxis dataKey="name" type="category" fontSize={12} className="text-muted-foreground" width={120} />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Bar dataKey="avgDays" fill="var(--color-avgDays)" radius={[0, 4, 4, 0]} />
                 </BarChart>
@@ -354,10 +354,10 @@ export default function ReportsPage() {
               </div>
             ) : (
               <ChartContainer config={revenueByFacilityConfig} className="h-[300px] w-full">
-                <BarChart data={revenueByFacility} layout="vertical" margin={{ top: 5, right: 20, bottom: 5, left: 80 }}>
+                <BarChart data={revenueByFacility} layout="vertical" margin={{ top: 5, right: 20, bottom: 5, left: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                   <XAxis type="number" fontSize={12} className="text-muted-foreground" tickFormatter={v => `$${v}`} />
-                  <YAxis dataKey="name" type="category" fontSize={12} className="text-muted-foreground" width={75} />
+                  <YAxis dataKey="name" type="category" fontSize={12} className="text-muted-foreground" width={120} />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Bar dataKey="revenue" fill="var(--color-revenue)" radius={[0, 4, 4, 0]} />
                 </BarChart>
@@ -381,10 +381,10 @@ export default function ReportsPage() {
               </div>
             ) : (
               <ChartContainer config={shiftsChartConfig} className="h-[300px] w-full">
-                <BarChart data={shiftsPerFacility} layout="vertical" margin={{ top: 5, right: 20, bottom: 5, left: 80 }}>
+                <BarChart data={shiftsPerFacility} layout="vertical" margin={{ top: 5, right: 20, bottom: 5, left: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                   <XAxis type="number" fontSize={12} className="text-muted-foreground" />
-                  <YAxis dataKey="name" type="category" fontSize={12} className="text-muted-foreground" width={75} />
+                  <YAxis dataKey="name" type="category" fontSize={12} className="text-muted-foreground" width={120} />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Bar dataKey="shifts" fill="var(--color-shifts)" radius={[0, 4, 4, 0]} />
                 </BarChart>
@@ -405,10 +405,10 @@ export default function ReportsPage() {
               </div>
             ) : (
               <ChartContainer config={avgRateConfig} className="h-[300px] w-full">
-                <BarChart data={avgRatePerFacility} layout="vertical" margin={{ top: 5, right: 20, bottom: 5, left: 80 }}>
+                <BarChart data={avgRatePerFacility} layout="vertical" margin={{ top: 5, right: 20, bottom: 5, left: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                   <XAxis type="number" fontSize={12} className="text-muted-foreground" tickFormatter={v => `$${v}`} />
-                  <YAxis dataKey="name" type="category" fontSize={12} className="text-muted-foreground" width={75} />
+                  <YAxis dataKey="name" type="category" fontSize={12} className="text-muted-foreground" width={120} />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Bar dataKey="avgRate" fill="var(--color-avgRate)" radius={[0, 4, 4, 0]} />
                 </BarChart>
