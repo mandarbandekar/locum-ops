@@ -23,6 +23,13 @@ interface InvoiceItem {
   due_date: string | null;
 }
 
+interface OldestUnpaid {
+  id: string;
+  invoice_number: string;
+  facility_name: string;
+  daysOutstanding: number;
+}
+
 interface MoneyToCollectCardProps {
   outstandingTotal: number;
   draftTotal: number;
@@ -30,6 +37,8 @@ interface MoneyToCollectCardProps {
   revenueData: RevenueMonth[];
   invoiceItems: InvoiceItem[];
   thisWeekEarnings?: number;
+  monthlyPace?: number;
+  oldestUnpaid?: OldestUnpaid;
 }
 
 export function MoneyToCollectCard({
@@ -39,6 +48,8 @@ export function MoneyToCollectCard({
   revenueData,
   invoiceItems,
   thisWeekEarnings = 0,
+  monthlyPace = 0,
+  oldestUnpaid,
 }: MoneyToCollectCardProps) {
   const navigate = useNavigate();
   const totalCollectable = outstandingTotal + draftTotal;
