@@ -242,10 +242,19 @@ export default function SchedulePage() {
     );
   };
 
+  const isCalendarView = view === 'month' || view === 'week' || view === 'list';
+
   return (
     <div>
       <div className="page-header flex-col sm:flex-row gap-3">
-        <h1 className="page-title">Schedule</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="page-title">Schedule</h1>
+          {isCalendarView && (
+            <Button size="sm" onClick={() => setShowAdd(true)} className="h-8 text-[12px] sm:text-[13px] px-3 sm:px-4">
+              <Plus className="mr-1 sm:mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" /> Add Shift
+            </Button>
+          )}
+        </div>
         <div className="flex gap-1.5 sm:gap-2 flex-wrap">
           <Button size="sm" variant={view === 'month' ? 'default' : 'outline'} onClick={() => setView('month')} className="h-8 text-[12px] sm:text-[13px] px-2.5 sm:px-4">
             <CalendarDays className="mr-1 sm:mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" /> Month
@@ -262,11 +271,6 @@ export default function SchedulePage() {
           <Button size="sm" variant={view === 'sync' ? 'default' : 'outline'} onClick={() => setView('sync')} className="h-8 text-[12px] sm:text-[13px] px-2.5 sm:px-4">
             <RefreshCw className="mr-1 sm:mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" /> Sync
           </Button>
-          {view !== 'confirmations' && view !== 'sync' && (
-            <Button size="sm" onClick={() => setShowAdd(true)} className="h-8 text-[12px] sm:text-[13px] px-2.5 sm:px-4">
-              <Plus className="mr-1 sm:mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" /> Add Shift
-            </Button>
-          )}
         </div>
       </div>
 
