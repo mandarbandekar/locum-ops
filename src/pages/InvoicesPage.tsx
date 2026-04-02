@@ -72,8 +72,8 @@ export default function InvoicesPage() {
     .sort((a, b) => new Date(a.invoice_date || a.period_end).getTime() - new Date(b.invoice_date || b.period_end).getTime());
   const today = startOfDay(new Date());
   const endOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
-  const readyToReview = allDrafts.filter(i => !isAfter(new Date(i.period_end), endOfToday));
-  const upcoming = allDrafts.filter(i => isAfter(new Date(i.period_end), endOfToday));
+  const readyToReview = allDrafts.filter(i => !isAfter(new Date(i.invoice_date || i.period_end), endOfToday));
+  const upcoming = allDrafts.filter(i => isAfter(new Date(i.invoice_date || i.period_end), endOfToday));
   const paid = allInvoices.filter(i => i.computedStatus === 'paid');
 
   const monthStart = startOfMonth(new Date());
