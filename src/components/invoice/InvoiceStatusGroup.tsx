@@ -164,6 +164,7 @@ function InvoiceTable({ invoices, selected, onToggleSelect, onDelete, getFacilit
 export function InvoiceStatusGroup({
   title, icon, invoices, selected, onToggleSelect, onDelete,
   getFacilityName, emptyMessage, defaultOpen = true, groupByFacility = false,
+  headerRight, alertBanner,
 }: Props & { groupByFacility?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
   const navigate = useNavigate();
