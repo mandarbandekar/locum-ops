@@ -1,71 +1,112 @@
 
 
-# Improve Tax Advisor UX — Output-First, Input-Light
+# Remove Shift & Facility Statuses — Simplification Plan
 
-## Problem
+## Summary
 
-The current Tax Advisor is tab-heavy (5 tabs), input-heavy, and doesn't reward users with visible value until they've done significant work. The Opportunity Review shows 8 fully-expanded cards of text. The sidebar intake form feels like homework. Users need to see value first, then be nudged to provide more context.
+Remove the shift status dropdown entirely (proposed/booked/completed/canceled/prebooked) and simplify facility status from 3 options (prospect/active/paused) to a single implicit model. Shifts exist = they're real and invoiceable. Delete a shift = it's gone. Facilities are simply "active" or "archived."
 
-## Design Approach
+## Current Dependencies on Shift Status
 
-**Principle**: Show useful output immediately. Use what we already know (facilities, invoices, profile). Nudge for input only when it unlocks better results.
+These are the areas that reference shift status and need updating:
 
-## Changes
+| Area | Current Behavior | New Behavior |
+|------|-----------------|-------------|
+| **Invoice eligibility** | Only booked/completed → invoiced; proposed/canceled excluded | All shifts are invoice-eligible (they exist = invoiceable) |
+| **Auto-complete** | Booked → completed after end time passes | Remove entirely — no status to transition |
+| **Conflict detection** | Filters to booked/proposed/prebooked | All shifts conflict (since deleted = gone) |
+| **Calendar sync/ICS** | Only booked shifts synced | All shifts synced |
+| **Dashboard KPIs** | `status === 'completed'` for earned revenue; `!== 'canceled'` for projections | All shifts count; past shifts = earned, future = projected |
+| **Reports** | Filters `!== 'canceled'` | All shifts count (no filter needed) |
+| **Confirmations** | Hash includes status | Hash without status field |
+| **Edge function (generate-auto-invoices)** | Filters `neq('status', 'canceled')` | No status filter needed |
+| **Shift form dialog** | Status dropdown in form | Remove status field from form |
+| **Schedule page** | StatusBadge on shifts, filter by status | No status badge, no status filter |
 
-### 1. Reduce tabs from 5 to 3
+## Current Dependencies on Facility Status
 
-Merge "Entity Guidance" into the Ask Advisor tab as suggested prompt chips. Merge "My CPA Questions" into "CPA Prep Summary" as a single "CPA Prep" tab.
+| Area | Current Behavior | New Behavior |
+|------|-----------------|-------------|
+| **Invoice onboarding** | Filters `f.status === 'active'` | All non-archived facilities |
+| **Bulk invoice dialog** | Filters `f.status === 'active'` | All non-archived facilities |
+| **Confirmations** | Filters active facilities | All non-archived facilities |
+| **Auto-promote on shift add** | Sets facility to 'active' when shift is added | No auto-promotion needed |
+| **Reminder engine** | Prospect-specific outreach reminders | Archive-based logic |
+| **Facility detail page** | Status badge + status select | Archive toggle |
 
-New tabs: **Ask Advisor** | **Opportunity Review** | **CPA Prep**
+## Facility Status Simplification
 
-### 2. Redesign Ask Advisor tab — prompt chips + profile nudge
-
-- Add a row of quick-start prompt chips above the input: "CE & travel deductions", "Vehicle mileage strategies", "S-Corp vs sole proprietor", "Retirement account options", "Multi-state filing", "Home office rules"
-- Clicking a chip pre-fills the input and sends immediately
-- If no profile is saved, show a soft inline banner above the input: "Complete your planning profile to get personalized suggestions" with a "Set up profile" link that scrolls/focuses the sidebar
-- Show facility count and entity type as small context chips below the input so users see the system already knows things about them
-
-### 3. Redesign Opportunity Review — collapsed by default, suggested first
-
-- Cards start **collapsed** (title + status badge only)
-- Click to expand details (why, docs, cautions, CPA questions)
-- Sort: suggested categories first, then the rest
-- Add a progress strip at top: "3 of 8 areas reviewed" with a small progress bar
-- Add one-click "Save question to CPA list" buttons on each suggested CPA question inside the expanded card
-
-### 4. Redesign sidebar IntakeCard — progress + value framing
-
-- Add a completion indicator: "Profile 3/8 complete" with a thin progress bar
-- Reframe the title from "Your Planning Profile" to "Personalize Your Results"
-- Add a subtle note under incomplete fields: "Answering this helps us surface relevant deductions"
-- After saving, show a brief confirmation with what changed: "Updated — your Opportunity Review now highlights Vehicle & Mileage"
-
-### 5. Merge CPA Questions + Summary into single "CPA Prep" tab
-
-- Top section: question list (add, edit, delete, toggle include — same as current MyCPAQuestionsTab)
-- Bottom section: live preview of the CPA summary (same as current CPAPrepSummaryTab)
-- Remove the need to switch tabs to see how questions appear in the summary
-- Keep the "Copy as Text" button
-
-### 6. Auto-populate insights from existing data
-
-- In the CPA Prep summary, auto-include: facility count, states worked, YTD income from invoices, entity type
-- In the Opportunity Review, auto-mark "Multi-State Work" as suggested if user has facilities in 2+ states (even without profile toggle)
+Replace `prospect | active | paused` with a boolean `archived` concept:
+- Default: facility is active (no status badge needed)
+- User can "Archive" a facility (soft-hide from lists)
+- No DB migration needed initially — we just treat `paused` as "archived" in the UI and stop showing the status dropdown. The `status` column stays in DB for backward compat; code defaults all non-paused to "active."
 
 ## Files to Change
 
-| File | Action |
-|------|--------|
-| `src/pages/TaxPlanningAdvisorPage.tsx` | Reduce to 3 tabs, remove Entity Guidance and MyCPAQuestions tab imports |
-| `src/components/tax-advisor/AskAdvisorTab.tsx` | Add prompt chips, profile nudge banner, context chips |
-| `src/components/tax-advisor/OpportunityReviewTab.tsx` | Collapsible cards, sort suggested first, progress strip, save-question buttons |
-| `src/components/tax-advisor/IntakeCard.tsx` | Progress indicator, reframed copy, contextual hints |
-| `src/components/tax-advisor/CPAPrepSummaryTab.tsx` | Merge in MyCPAQuestionsTab content (add/edit/delete questions inline above preview), auto-populate data context |
+### Core Types & Logic (6 files)
+1. **`src/types/index.ts`** — Remove `ShiftStatus`, `FacilityStatus` types. Remove `status` from `Shift` interface. Change facility status to just `'active' | 'archived'`.
+2. **`src/lib/businessLogic.ts`** — `detectShiftConflicts`: remove status filters (all shifts conflict). Remove status checks.
+3. **`src/lib/invoiceAutoGeneration.ts`** — `isShiftInvoiceEligible`: remove status check (only check if already invoiced). 
+4. **`src/lib/icsGenerator.ts`** — Remove `STATUS:CANCELLED/CONFIRMED` logic, always `CONFIRMED`.
+5. **`src/types/confirmations.ts`** — Remove `status` from shift hash computation.
+6. **`src/data/seed.ts`** — Remove `status` from seed shift data.
 
-## What Users See After
+### DataContext (1 file)
+7. **`src/contexts/DataContext.tsx`** — Remove auto-complete booked→completed effect. Remove `status !== 'canceled'` filter in auto-invoice logic. Remove facility auto-promote to 'active' on shift add. Remove `.neq('status', 'canceled')` from DB queries.
 
-- **Ask Advisor**: One-click topic chips get instant AI responses. A gentle nudge to complete their profile, not a wall of switches.
-- **Opportunity Review**: Clean collapsed cards, suggested ones highlighted at top, progress tracking, one-click CPA question saving.
-- **CPA Prep**: Questions and summary preview in one place — no tab-switching.
-- **Sidebar**: Feels like unlocking better results, not filling out forms.
+### UI Components (5 files)
+8. **`src/components/schedule/ShiftFormDialog.tsx`** — Remove status state, status dropdown, status in onSave payload. Default to `'booked'` in DB for backward compat.
+9. **`src/components/onboarding/ManualShiftForm.tsx`** — No status field (already doesn't have one — good).
+10. **`src/components/schedule/WeekTimeGrid.tsx`** — Remove status-based filtering/display.
+11. **`src/components/StatusBadge.tsx`** — Remove shift-related statuses (proposed/booked/completed/canceled). Keep invoice statuses. Add 'archived' for facilities.
+12. **`src/components/AddFacilityDialog.tsx`** — Remove status dropdown. Default to 'active'.
+
+### Pages (6 files)
+13. **`src/pages/SchedulePage.tsx`** — Remove `s.status !== 'canceled'` filters. Remove status badge from list view. Remove facility auto-promote logic.
+14. **`src/pages/DashboardPage.tsx`** — Remove `s.status === 'completed'` / `!== 'canceled'` filters. Past shifts = earned, all shifts count.
+15. **`src/pages/ReportsPage.tsx`** — Remove all `shift.status` filters.
+16. **`src/pages/FacilityDetailPage.tsx`** — Remove status badge, status select. Add archive/unarchive toggle. Remove `s.status !== 'canceled'` filter.
+17. **`src/pages/FacilitiesPage.tsx`** — Replace status filter with active/archived toggle. Remove status column.
+18. **`src/pages/OnboardingPage.tsx`** — Remove status from shift creation.
+
+### Invoice Components (2 files)
+19. **`src/components/invoice/BulkInvoiceDialog.tsx`** — Replace `f.status === 'active'` with `f.status !== 'archived'` (or just `!== 'paused'` for DB compat).
+20. **`src/components/invoice/InvoiceOnboardingStepper.tsx`** — Same filter update.
+
+### Edge Function (1 file)
+21. **`supabase/functions/generate-auto-invoices/index.ts`** — Remove `.neq('status', 'canceled')` filter on shifts query.
+
+### Tests (5 files)
+22. **`src/test/businessLogic.test.ts`** — Update conflict detection tests (no status filtering).
+23. **`src/test/invoiceAutoGeneration.test.ts`** — Update eligibility tests.
+24. **`src/test/dashboard.test.ts`** — Remove status checks.
+25. **`src/test/confirmations.test.ts`** — Update hash tests.
+26. **`src/test/clinicConfirmations.test.ts`** — Update if status-dependent.
+
+### Hooks (2 files)
+27. **`src/hooks/useManualSetup.ts`** — Hardcode `status: 'booked'` when inserting shifts.
+28. **`src/hooks/useReminders.ts`** / **`src/lib/reminderEngine.ts`** — Replace `f.status === 'prospect'` with archive-based logic.
+
+## DB Strategy
+
+**No migration needed.** The `status` column on `shifts` and `facilities` tables stays. We simply:
+- Always insert shifts with `status: 'booked'` (hardcoded, hidden from users)
+- Never filter by shift status in queries
+- Map facility `status: 'paused'` → "archived" in UI; everything else = active
+- The column remains for backward compatibility and data integrity
+
+## Risk Mitigation
+
+- Invoice auto-generation rules stay identical in structure — we just remove the status filter. Since users said "delete = gone" (no cancel), every existing shift is invoice-eligible by definition.
+- The `generate-auto-invoices` edge function gets the same simplification.
+- All existing data with `status: 'booked'` or `'completed'` continues to work unchanged.
+
+## Implementation Order
+
+1. Types + core logic (no UI breakage)
+2. DataContext (remove auto-complete, simplify queries)
+3. ShiftFormDialog + SchedulePage (biggest UX change)
+4. Dashboard + Reports (filter cleanup)
+5. Facility pages (archive toggle)
+6. Edge function + tests
 
