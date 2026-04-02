@@ -28,7 +28,7 @@ export function ConfirmationsPanel() {
   const facilityGroups = useMemo(() => {
     const booked = shifts.filter(s => {
       const d = new Date(s.start_datetime);
-      return d >= mStart && d <= mEnd && s.status === 'booked';
+      return d >= mStart && d <= mEnd;
     });
 
     return booked.reduce<Record<string, typeof booked>>((acc, s) => {
