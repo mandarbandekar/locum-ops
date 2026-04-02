@@ -11,6 +11,9 @@ import { DollarSign, TrendingUp, Calendar, Building2 } from 'lucide-react';
 
 const db = (table: string) => supabase.from(table as any);
 
+const truncateName = (name: string, max = 18) =>
+  name.length > max ? name.slice(0, max - 1) + '…' : name;
+
 export default function ReportsPage() {
   const { shifts, invoices, facilities } = useData();
   const { user, isDemo } = useAuth();
@@ -88,7 +91,7 @@ export default function ReportsPage() {
     });
     return Object.entries(counts)
       .map(([facilityId, count]) => ({
-        name: facilities.find(c => c.id === facilityId)?.name || 'Unknown',
+        name: truncateName(facilities.find(c => c.id === facilityId)?.name || 'Unknown'),
         shifts: count,
       }))
       .sort((a, b) => b.shifts - a.shifts);
@@ -108,7 +111,7 @@ export default function ReportsPage() {
     });
     return Object.entries(facilityDays)
       .map(([facilityId, days]) => ({
-        name: facilities.find(c => c.id === facilityId)?.name || 'Unknown',
+        name: truncateName(facilities.find(c => c.id === facilityId)?.name || 'Unknown'),
         avgDays: Math.round(days.reduce((a, b) => a + b, 0) / days.length),
       }))
       .sort((a, b) => a.avgDays - b.avgDays);
@@ -129,7 +132,7 @@ export default function ReportsPage() {
     });
     return Object.entries(facilityRevenue)
       .map(([facilityId, revenue]) => ({
-        name: facilities.find(c => c.id === facilityId)?.name || 'Unknown',
+        name: truncateName(facilities.find(c => c.id === facilityId)?.name || 'Unknown'),
         revenue: Math.round(revenue * 100) / 100,
       }))
       .sort((a, b) => b.revenue - a.revenue);
@@ -149,7 +152,7 @@ export default function ReportsPage() {
     });
     return Object.entries(facilityRates)
       .map(([facilityId, rates]) => ({
-        name: facilities.find(c => c.id === facilityId)?.name || 'Unknown',
+        name: truncateName(facilities.find(c => c.id === facilityId)?.name || 'Unknown'),
         avgRate: Math.round(rates.reduce((a, b) => a + b, 0) / rates.length),
       }))
       .sort((a, b) => b.avgRate - a.avgRate);
@@ -327,10 +330,10 @@ export default function ReportsPage() {
               </div>
             ) : (
               <ChartContainer config={paymentSpeedConfig} className="h-[300px] w-full">
-                <BarChart data={facilityPaymentSpeed} layout="vertical" margin={{ top: 5, right: 20, bottom: 5, left: 80 }}>
+                <BarChart data={facilityPaymentSpeed} layout="vertical" margin={{ top: 5, right: 20, bottom: 5, left: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                   <XAxis type="number" fontSize={12} className="text-muted-foreground" tickFormatter={v => `${v}d`} />
-                  <YAxis dataKey="name" type="category" fontSize={12} className="text-muted-foreground" width={75} />
+                  <YAxis dataKey="name" type="category" fontSize={12} className="text-muted-foreground" width={120} />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Bar dataKey="avgDays" fill="var(--color-avgDays)" radius={[0, 4, 4, 0]} />
                 </BarChart>
@@ -351,10 +354,10 @@ export default function ReportsPage() {
               </div>
             ) : (
               <ChartContainer config={revenueByFacilityConfig} className="h-[300px] w-full">
-                <BarChart data={revenueByFacility} layout="vertical" margin={{ top: 5, right: 20, bottom: 5, left: 80 }}>
+                <BarChart data={revenueByFacility} layout="vertical" margin={{ top: 5, right: 20, bottom: 5, left: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                   <XAxis type="number" fontSize={12} className="text-muted-foreground" tickFormatter={v => `$${v}`} />
-                  <YAxis dataKey="name" type="category" fontSize={12} className="text-muted-foreground" width={75} />
+                  <YAxis dataKey="name" type="category" fontSize={12} className="text-muted-foreground" width={120} />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Bar dataKey="revenue" fill="var(--color-revenue)" radius={[0, 4, 4, 0]} />
                 </BarChart>
@@ -378,10 +381,10 @@ export default function ReportsPage() {
               </div>
             ) : (
               <ChartContainer config={shiftsChartConfig} className="h-[300px] w-full">
-                <BarChart data={shiftsPerFacility} layout="vertical" margin={{ top: 5, right: 20, bottom: 5, left: 80 }}>
+                <BarChart data={shiftsPerFacility} layout="vertical" margin={{ top: 5, right: 20, bottom: 5, left: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                   <XAxis type="number" fontSize={12} className="text-muted-foreground" />
-                  <YAxis dataKey="name" type="category" fontSize={12} className="text-muted-foreground" width={75} />
+                  <YAxis dataKey="name" type="category" fontSize={12} className="text-muted-foreground" width={120} />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Bar dataKey="shifts" fill="var(--color-shifts)" radius={[0, 4, 4, 0]} />
                 </BarChart>
@@ -402,10 +405,10 @@ export default function ReportsPage() {
               </div>
             ) : (
               <ChartContainer config={avgRateConfig} className="h-[300px] w-full">
-                <BarChart data={avgRatePerFacility} layout="vertical" margin={{ top: 5, right: 20, bottom: 5, left: 80 }}>
+                <BarChart data={avgRatePerFacility} layout="vertical" margin={{ top: 5, right: 20, bottom: 5, left: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                   <XAxis type="number" fontSize={12} className="text-muted-foreground" tickFormatter={v => `$${v}`} />
-                  <YAxis dataKey="name" type="category" fontSize={12} className="text-muted-foreground" width={75} />
+                  <YAxis dataKey="name" type="category" fontSize={12} className="text-muted-foreground" width={120} />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Bar dataKey="avgRate" fill="var(--color-avgRate)" radius={[0, 4, 4, 0]} />
                 </BarChart>
