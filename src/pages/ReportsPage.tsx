@@ -240,7 +240,7 @@ export default function ReportsPage() {
     const rangeEnd = endOfMonth(months[months.length - 1]);
     shifts.forEach(shift => {
       const shiftDate = parseISO(shift.start_datetime);
-      if (isWithinInterval(shiftDate, { start: rangeStart, end: rangeEnd }) && shift.status !== 'canceled' && shift.rate_applied > 0) {
+      if (isWithinInterval(shiftDate, { start: rangeStart, end: rangeEnd }) && shift.rate_applied > 0) {
         const day = getDay(shiftDate);
         dayTotals[day] += shift.rate_applied;
         dayCounts[day] += 1;
