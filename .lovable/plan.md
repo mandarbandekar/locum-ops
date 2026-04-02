@@ -1,34 +1,19 @@
 
 
-# Split Drafts into "Upcoming" and "Ready to Review"
+# Update Workflow Hint Labels
 
-## The Problem
-Currently all draft invoices sit in one "Drafts" bucket, but some cover future shifts that haven't happened yet. Users can't meaningfully review or send an invoice for shifts that haven't been worked.
+**What changes**: Update the step labels in `src/components/invoice/InvoiceWorkflowHint.tsx` to be more descriptive:
 
-## Proposed Change
-Split the current Drafts section into two distinct groups:
+| Current | Updated |
+|---------|---------|
+| Auto-Generated | Auto-Generated Upcoming Invoices |
+| Review & Send | Review & Send |
+| Send to Facility | Sent to Facility |
+| Awaiting Payment | Awaiting Payment |
+| Record Payment | Record Payment |
+| Paid | Paid |
 
-1. **Ready to Review** — Draft invoices where `period_end` is in the past (all shifts completed). These are actionable — user should review and send them.
-2. **Upcoming** — Draft invoices where `period_end` is today or in the future. These are pre-generated but not yet actionable. Shown in a muted/informational style.
+The first step changes from "Auto-Generated" to "Auto-Generated Upcoming Invoices" to clarify that auto-generated invoices start as upcoming/future items before becoming actionable.
 
-### Visual treatment
-- **Ready to Review**: Amber highlight (current draft styling), with "Review & Send" button — this is the action zone
-- **Upcoming**: Subtle gray/muted styling, with a note like "These invoices will be ready to review after the shifts are completed"
-- Both remain grouped by facility with the existing sub-group pattern
-
-### Summary Strip update
-- The "Drafts to Review" card would only count **Ready to Review** invoices
-- Add no new card for Upcoming (keeps the strip clean) — or show a small "(+N upcoming)" annotation
-
-### Workflow Hint update
-- Change "Review Draft" to "Review & Send" to match the new section name
-
-## Technical Details
-
-### Files to modify:
-- **`src/pages/InvoicesPage.tsx`** — Split the `draft` array into `readyToReview` (period_end < today) and `upcoming` (period_end >= today). Render two separate `InvoiceStatusGroup` components. Update summary strip to use `readyToReview` count/total.
-- **`src/components/invoice/InvoiceSummaryStrip.tsx`** — Update label from "Drafts to Review" to "Ready to Review"
-- **`src/components/invoice/InvoiceWorkflowHint.tsx`** — Update "Review Draft" label
-
-### No database or backend changes needed.
+**File**: `src/components/invoice/InvoiceWorkflowHint.tsx` — update the `steps` array label for step 1.
 
