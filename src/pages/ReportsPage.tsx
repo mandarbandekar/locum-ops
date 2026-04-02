@@ -327,6 +327,42 @@ export default function ReportsPage() {
         </Select>
       </div>
 
+      {/* AI Business Summary */}
+      <Card className="border-primary/20 bg-primary/5">
+        <CardContent className="py-4">
+          <div className="flex items-start gap-3">
+            <div className="p-1.5 rounded-md bg-primary/10 mt-0.5">
+              <Sparkles className="h-4 w-4 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <p className="text-sm font-medium text-foreground">AI Business Summary</p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-xs text-muted-foreground"
+                  onClick={fetchAiSummary}
+                  disabled={aiSummaryLoading}
+                >
+                  <RefreshCw className={`h-3 w-3 mr-1 ${aiSummaryLoading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
+              </div>
+              {aiSummaryLoading && !aiSummary ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                  Analyzing your business data…
+                </div>
+              ) : aiSummary ? (
+                <p className="text-sm text-muted-foreground leading-relaxed">{aiSummary}</p>
+              ) : (
+                <p className="text-sm text-muted-foreground">Add shifts and invoices to get your AI-powered business summary.</p>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* KPI Cards with period-over-period deltas */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
