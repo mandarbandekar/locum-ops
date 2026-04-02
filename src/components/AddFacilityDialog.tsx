@@ -60,7 +60,7 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
 
   const resetForm = () => {
     setStep(0);
-    setName(''); setAddress(''); setNotes(''); setStatus('prospect');
+    setRates([]);
     setRates([]);
     setTechComputer(''); setTechWifi(''); setTechPims('');
     setClinicAccess(''); setInvoicePrefix(''); setInvoiceDueDays(15);
