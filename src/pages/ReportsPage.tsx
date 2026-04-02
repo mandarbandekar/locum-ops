@@ -155,6 +155,45 @@ export default function ReportsPage() {
       .sort((a, b) => b.avgRate - a.avgRate);
   }, [months, shifts, facilities]);
 
+  // Earnings by Day of Week
+  const earningsByDayOfWeek = useMemo(() => {
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const dayTotals = [0, 0, 0, 0, 0, 0, 0];
+    const dayCounts = [0, 0, 0, 0, 0, 0, 0];
+    const rangeStart = months[0];
+    const rangeEnd = endOfMonth(months[months.length - 1]);
+    shifts.forEach(shift => {
+      const shiftDate = parseISO(shift.start_datetime);
+      if (isWithinInterval(shiftDate, { start: rangeStart, end: rangeEnd }) && shift.status !== 'canceled' && shift.rate_applied > 0) {
+        const day = getDay(shiftDate);
+        dayTotals[day] += shift.rate_applied;
+        dayCounts[day] += 1;
+      }
+    });
+    return dayNames.map((name, i) => ({
+      day: name,
+      total: Math.round(dayTotals[i]),
+      shifts: dayCounts[i],
+      avg: dayCounts[i] > 0 ? Math.round(dayTotals[i] / dayCounts[i]) : 0,
+    }));
+  }, [months, shifts]);
+
+  // Monthly Hours Worked
+  const monthlyHoursWorked = useMemo(() => {
+    return months.map(month => {
+      const monthEnd = endOfMonth(month);
+      let totalHours = 0;
+      shifts.forEach(shift => {
+        const shiftDate = parseISO(shift.start_datetime);
+        if (isWithinInterval(shiftDate, { start: month, end: monthEnd }) && shift.status !== 'canceled') {
+          const hours = differenceInHours(parseISO(shift.end_datetime), parseISO(shift.start_datetime));
+          if (hours > 0) totalHours += hours;
+        }
+      });
+      return { month: format(month, 'MMM yyyy'), hours: totalHours };
+    });
+  }, [months, shifts]);
+
   const totalRevenue = revenueData.reduce((s, d) => s + d.total, 0);
   const totalPaid = revenueData.reduce((s, d) => s + d.paid, 0);
   const totalShifts = shiftsPerFacility.reduce((s, d) => s + d.shifts, 0);
