@@ -1,82 +1,42 @@
 
 
-# Improve Monthly Revenue Chart
+# Fix Monthly Revenue Chart: Pipeline → Anticipated Income
 
-## Current State
+## Problems Found
 
-The Monthly Revenue chart in ReportsPage already computes three data series per month:
-- **Paid** — invoices with `status === 'paid'`
-- **Outstanding** — `total - paid` (combines sent, partial, overdue, and draft invoices)
-- **Anticipated** — shifts that are `proposed` or `booked` but not yet on any invoice
+1. **Pipeline calculation is broken**: The code tries to read `inv.line_items` (line 111) but invoices don't have embedded line items — they're a separate `lineItems` array from `useData()`. Result: `invoicedShiftIds` is always empty, so uninvoiced shift calculation double-counts shifts that already have draft invoices.
 
-The chart renders Paid and Outstanding as a stacked bar, with Anticipated as a separate semi-transparent dashed bar beside it.
+2. **"Pipeline" label is unclear** — rename to "Anticipated Income."
 
-## Problems
+3. **Anticipated income shows across all months** — users only want it for the current month (future work they can plan around), not retroactively on past months.
 
-1. **Outstanding conflates two very different things**: invoices that have been sent and are awaiting payment vs. draft invoices the user hasn't even reviewed yet. Users need to know "money I'm owed" (sent) vs "money I need to invoice" (draft).
-2. **Anticipated definition is too narrow**: it only counts shifts with no invoice. But draft/upcoming invoices also represent anticipated money — they haven't been sent yet. The user's mental model is: "How much am I expecting to come in?"
-3. **No cumulative view**: Users want to see "total earned so far this year" as a running total, not just month-by-month bars.
-4. **No summary callout** under the chart explaining the numbers in plain language.
-5. **Legend is implicit** — relies on tooltip hover. A visible legend row with totals would help.
+4. **Cumulative collected line** is redundant since Total Revenue is already shown as a KPI above.
 
-## Recommended Approach
+## Changes (all in `src/pages/ReportsPage.tsx`)
 
-### Revised Data Categories (3 tiers)
+### 1. Fix anticipated income calculation
+- Import `lineItems` from `useData()` alongside `shifts`, `invoices`, `facilities`.
+- Replace the broken `inv.line_items` lookup with a proper `lineItems.filter(li => li.invoice_id === inv.id)` to build `invoicedShiftIds`.
+- This ensures uninvoiced shifts aren't double-counted with draft invoice amounts.
 
-| Category | Color | Definition | User Meaning |
-|---|---|---|---|
-| **Collected** | Green (solid) | Invoices with `status === 'paid'` | Money in your bank |
-| **Outstanding** | Amber (solid) | Sent/partial/overdue invoices (`computeInvoiceStatus` returns `sent`, `partial`, or `overdue`) | Money you're owed |
-| **Pipeline** | Gray (dashed, 50% opacity) | Draft invoices + uninvoiced booked/proposed shifts | Money coming your way |
+### 2. Rename Pipeline → Anticipated Income
+- Rename `pipeline` data key to `anticipated` throughout.
+- Update chart config label from "Pipeline" to "Anticipated Income."
+- Update legend, insight callout, and KPI subtitle text.
+- Update `CardDescription` to say "Collected, outstanding, and anticipated income."
 
-This gives users a clear 3-layer picture: earned, owed, expected.
+### 3. Only show anticipated income for current month
+- In the `revenueData` computation, set `anticipated = 0` for any month that is not the current month. Past months should only show collected + outstanding. Future months beyond current show nothing anticipated either (shifts there aren't actionable yet).
 
-### Chart Improvements
+### 4. Remove cumulative collected line
+- Remove `cumulativeCollected` from the data computation (delete running sum logic).
+- Remove the `<Line>` element for cumulative collected from the `ComposedChart`.
+- Remove the hidden right `<YAxis>`.
+- Remove the `cumulativeCollected` entry from `revenueChartConfig`.
 
-1. **Stacked bar with 3 segments**: Collected (bottom) + Outstanding (middle) + Pipeline (top, dashed/translucent) — all in one stack so the total bar height = total potential revenue.
-
-2. **Summary legend row above chart**: Show inline totals for each category with colored dots, e.g.:
-   - `Collected: $12,400` · `Outstanding: $3,200` · `Pipeline: $5,800`
-
-3. **Running total line overlay**: Add a thin cumulative line (Collected only) overlaid on the bar chart using a `ComposedChart`, so users can see their earnings trajectory.
-
-4. **Insight callout**: Auto-generate a plain-language sentence below the chart, e.g.:
-   - "You've collected 65% of invoiced revenue. $3,200 is awaiting payment across 4 invoices."
-   - "Your pipeline shows $5,800 in upcoming work over the next 2 months."
-
-5. **Current month highlight**: Visually distinguish the current month's bar (subtle border or background) so users orient quickly.
-
-### Technical Changes
-
-**File: `src/pages/ReportsPage.tsx`**
-
-- **revenueData computation** (lines 85-113): Split current `outstanding` into two:
-  - `outstanding`: sum of invoices where `computeInvoiceStatus(inv)` is `sent`, `partial`, or `overdue`
-  - `pipeline`: sum of draft invoices + anticipated shifts (uninvoiced booked/proposed shifts)
-  - `cumulativeCollected`: running sum of `paid` across months (for overlay line)
-
-- **Chart config** (lines 326-330): Update to 3 categories + cumulative line:
-  ```
-  collected: green, outstanding: amber, pipeline: gray-dashed
-  cumulativeCollected: thin green line
-  ```
-
-- **Chart rendering** (lines 458-483): Switch from `BarChart` to Recharts `ComposedChart` to support both stacked bars and a line overlay. Stack all three segments. Add `<Line>` for cumulative collected.
-
-- **Legend row**: Add a flex row above the chart with colored dots and dollar totals for each category.
-
-- **Insight callout**: Add an `InsightCallout` below the chart with collection rate and pipeline summary.
-
-- **KPI card update**: Rename "Total Revenue" KPI to show Collected + Outstanding + Pipeline breakdown in the subtitle.
-
-**No database changes required** — all data already exists in invoices and shifts.
-
-### What the User Sees After
-
-A single chart that answers three questions at a glance:
-1. "How much have I actually been paid?" (green bars + cumulative line)
-2. "How much am I waiting on?" (amber bars)  
-3. "What's coming up?" (gray dashed bars)
-
-With a plain-language summary below and totals above.
+### Summary of what users see after
+- **Green bars**: Collected (money in bank)
+- **Amber bars**: Outstanding (sent invoices awaiting payment)
+- **Gray dashed bar on current month only**: Anticipated Income (drafts + uninvoiced upcoming shifts)
+- Clear legend with totals, plain-language insight callout, no cumulative line clutter
 
