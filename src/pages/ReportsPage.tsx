@@ -152,7 +152,7 @@ export default function ReportsPage() {
     });
     return Object.entries(facilityRates)
       .map(([facilityId, rates]) => ({
-        name: facilities.find(c => c.id === facilityId)?.name || 'Unknown',
+        name: truncateName(facilities.find(c => c.id === facilityId)?.name || 'Unknown'),
         avgRate: Math.round(rates.reduce((a, b) => a + b, 0) / rates.length),
       }))
       .sort((a, b) => b.avgRate - a.avgRate);
