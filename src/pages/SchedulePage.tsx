@@ -165,13 +165,12 @@ export default function SchedulePage() {
   }, []);
 
   const hasDoubleBooking = useCallback((dayShifts: any[]) => {
-    const active = dayShifts.filter(s => s.status !== 'canceled');
-    for (let i = 0; i < active.length; i++) {
-      for (let j = i + 1; j < active.length; j++) {
-        const aStart = new Date(active[i].start_datetime).getTime();
-        const aEnd = new Date(active[i].end_datetime).getTime();
-        const bStart = new Date(active[j].start_datetime).getTime();
-        const bEnd = new Date(active[j].end_datetime).getTime();
+    for (let i = 0; i < dayShifts.length; i++) {
+      for (let j = i + 1; j < dayShifts.length; j++) {
+        const aStart = new Date(dayShifts[i].start_datetime).getTime();
+        const aEnd = new Date(dayShifts[i].end_datetime).getTime();
+        const bStart = new Date(dayShifts[j].start_datetime).getTime();
+        const bEnd = new Date(dayShifts[j].end_datetime).getTime();
         if (aStart < bEnd && bStart < aEnd) return true;
       }
     }
