@@ -20,7 +20,6 @@ export default function InvoicesPage() {
   const { invoices, facilities, shifts, addInvoice, deleteInvoice, dataLoading } = useData();
   const navigate = useNavigate();
   const [showCreate, setShowCreate] = useState(false);
-  const [showBulkCreate, setShowBulkCreate] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
