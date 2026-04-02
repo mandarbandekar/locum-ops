@@ -62,7 +62,7 @@ export default function ReportsPage() {
   const months = useMemo(() => {
     const now = new Date();
     const pastStart = subMonths(startOfMonth(now), parseInt(monthRange) - 1);
-    const futureShifts = shifts.filter(s => s.status === 'proposed' || s.status === 'booked');
+    const futureShifts = shifts.filter(s => new Date(s.start_datetime) > new Date());
     let futureEnd = endOfMonth(now);
     futureShifts.forEach(s => {
       const d = parseISO(s.start_datetime);
@@ -117,7 +117,7 @@ export default function ReportsPage() {
         const uninvoicedShiftTotal = shifts.filter(s => {
           const shiftDate = parseISO(s.start_datetime);
           return isWithinInterval(shiftDate, { start: month, end: monthEnd }) &&
-            (s.status === 'proposed' || s.status === 'booked') &&
+            
             !invoicedShiftIds.has(s.id);
         }).reduce((sum, s) => sum + s.rate_applied, 0);
 
@@ -149,7 +149,7 @@ export default function ReportsPage() {
     });
     shifts.forEach(shift => {
       const shiftDate = parseISO(shift.start_datetime);
-      if (isWithinInterval(shiftDate, { start: rangeStart, end: rangeEnd }) && shift.status !== 'canceled') {
+      if (isWithinInterval(shiftDate, { start: rangeStart, end: rangeEnd })) {
         shiftCount++;
       }
     });
@@ -162,7 +162,7 @@ export default function ReportsPage() {
     const rangeEnd = endOfMonth(months[months.length - 1]);
     shifts.forEach(shift => {
       const shiftDate = parseISO(shift.start_datetime);
-      if (isWithinInterval(shiftDate, { start: rangeStart, end: rangeEnd }) && shift.status !== 'canceled') {
+      if (isWithinInterval(shiftDate, { start: rangeStart, end: rangeEnd })) {
         counts[shift.facility_id] = (counts[shift.facility_id] || 0) + 1;
       }
     });
@@ -219,7 +219,7 @@ export default function ReportsPage() {
     const facilityRates: Record<string, number[]> = {};
     shifts.forEach(shift => {
       const shiftDate = parseISO(shift.start_datetime);
-      if (isWithinInterval(shiftDate, { start: rangeStart, end: rangeEnd }) && shift.status !== 'canceled' && shift.rate_applied > 0) {
+      if (isWithinInterval(shiftDate, { start: rangeStart, end: rangeEnd }) && shift.rate_applied > 0) {
         if (!facilityRates[shift.facility_id]) facilityRates[shift.facility_id] = [];
         facilityRates[shift.facility_id].push(shift.rate_applied);
       }
@@ -240,7 +240,7 @@ export default function ReportsPage() {
     const rangeEnd = endOfMonth(months[months.length - 1]);
     shifts.forEach(shift => {
       const shiftDate = parseISO(shift.start_datetime);
-      if (isWithinInterval(shiftDate, { start: rangeStart, end: rangeEnd }) && shift.status !== 'canceled' && shift.rate_applied > 0) {
+      if (isWithinInterval(shiftDate, { start: rangeStart, end: rangeEnd }) && shift.rate_applied > 0) {
         const day = getDay(shiftDate);
         dayTotals[day] += shift.rate_applied;
         dayCounts[day] += 1;
@@ -260,7 +260,7 @@ export default function ReportsPage() {
       let totalHours = 0;
       shifts.forEach(shift => {
         const shiftDate = parseISO(shift.start_datetime);
-        if (isWithinInterval(shiftDate, { start: month, end: monthEnd }) && shift.status !== 'canceled') {
+        if (isWithinInterval(shiftDate, { start: month, end: monthEnd })) {
           const hours = differenceInHours(parseISO(shift.end_datetime), parseISO(shift.start_datetime));
           if (hours > 0) totalHours += hours;
         }

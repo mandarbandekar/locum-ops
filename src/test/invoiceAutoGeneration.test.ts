@@ -15,13 +15,13 @@ import { SYSTEM_RUN_HOUR } from '@/lib/invoiceAutoGeneration';
 import { getDefaultBillingConfig, DEFAULT_BILLING_WEEK_END_DAY, validateSenderProfile, hasBillingContact } from '@/lib/invoiceBillingDefaults';
 import type { Shift, Invoice, InvoiceLineItem, Facility } from '@/types';
 
-const makeShift = (id: string, facilityId: string, status: string, dateStr: string, startHour = 8, endHour = 18): Shift => {
+const makeShift = (id: string, facilityId: string, _status: string, dateStr: string, startHour = 8, endHour = 18): Shift => {
   const start = new Date(dateStr);
   start.setHours(startHour, 0, 0, 0);
   const end = new Date(dateStr);
   end.setHours(endHour, 0, 0, 0);
   return {
-    id, facility_id: facilityId, status: status as any,
+    id, facility_id: facilityId,
     start_datetime: start.toISOString(),
     end_datetime: end.toISOString(),
     rate_applied: 850, notes: '', color: 'blue',
@@ -116,7 +116,7 @@ describe('Invoice Auto-Generation (New Rules)', () => {
     const futureEnd = new Date();
     futureEnd.setHours(futureEnd.getHours() + 5);
     const shift: Shift = {
-      id: 's1', facility_id: 'f1', status: 'booked',
+      id: 's1', facility_id: 'f1',
       start_datetime: new Date().toISOString(),
       end_datetime: futureEnd.toISOString(),
       rate_applied: 850, notes: '', color: 'blue',
