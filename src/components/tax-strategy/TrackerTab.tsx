@@ -222,8 +222,8 @@ export default function TrackerTab() {
   );
 
   const estimatedQuarterly = useMemo(
-    () => estimateQuarterlyPayments(taxEstimate.totalEstimatedTax, quarterlyIncome),
-    [taxEstimate.totalEstimatedTax, quarterlyIncome]
+    () => estimateQuarterlyInstallments(quarterlyIncome, settings.filing_status, settings.estimated_deductions),
+    [quarterlyIncome, settings.filing_status, settings.estimated_deductions]
   );
 
   const activeChecklist = checklist.filter(c => !c.ignored);
@@ -293,6 +293,7 @@ export default function TrackerTab() {
         onFilingStatusChange={v => setSettings(s => ({ ...s, filing_status: v }))}
         onDeductionsChange={v => setSettings(s => ({ ...s, estimated_deductions: v }))}
         totalReserve={totalSetAside}
+        quarterlyIncome={quarterlyIncome}
       />
       <Card>
         <CardHeader>
