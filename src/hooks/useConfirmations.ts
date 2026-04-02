@@ -54,7 +54,7 @@ export function useConfirmations() {
     const mEnd = endOfMonth(new Date(year, month - 1));
     return shifts.filter(s => {
       const d = new Date(s.start_datetime);
-      return s.facility_id === facilityId && d >= mStart && d <= mEnd && s.status === 'booked';
+      return s.facility_id === facilityId && d >= mStart && d <= mEnd;
     }).sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime());
   }, [shifts]);
 
@@ -227,7 +227,7 @@ export function useConfirmations() {
     const facilityIds = new Set<string>();
     shifts.forEach(s => {
       const d = new Date(s.start_datetime);
-      if (d >= mStart && d <= mEnd && s.status === 'booked') {
+      if (d >= mStart && d <= mEnd) {
         facilityIds.add(s.facility_id);
       }
     });

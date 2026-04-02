@@ -11,7 +11,7 @@ import { AlertTriangle, Trash2, CalendarDays, DollarSign, Clock, Building2, Stic
 import { AddFacilityDialog } from '@/components/AddFacilityDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
-import { ShiftStatus, SHIFT_COLORS, ShiftColor, TermsSnapshot, Shift } from '@/types';
+import { SHIFT_COLORS, ShiftColor, TermsSnapshot, Shift } from '@/types';
 import { detectShiftConflicts } from '@/lib/businessLogic';
 import { cn } from '@/lib/utils';
 import { termsToRates, RateEntry } from '@/components/facilities/RatesEditor';
@@ -57,7 +57,6 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   );
   const [startTime, setStartTime] = useState(existing ? format(new Date(existing.start_datetime), 'HH:mm') : defaultStartTime || '08:00');
   const [endTime, setEndTime] = useState(existing ? format(new Date(existing.end_datetime), 'HH:mm') : defaultStartTime ? format(new Date(2026, 0, 1, parseInt(defaultStartTime.split(':')[0]) + 1, parseInt(defaultStartTime.split(':')[1] || '0')), 'HH:mm') : '18:00');
-  const [status, setStatus] = useState<ShiftStatus>(existing?.status || 'proposed');
   const [rate, setRate] = useState(existing?.rate_applied?.toString() || '');
   const [selectedRateKey, setSelectedRateKey] = useState<string>('');
   const [isCustomRate, setIsCustomRate] = useState(false);
@@ -77,7 +76,6 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
 
   const bookedDateObjects = useMemo(() =>
     shifts
-      .filter(s => ['booked', 'proposed', 'prebooked'].includes(s.status))
       .map(s => {
         const d = new Date(s.start_datetime);
         return new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -104,8 +102,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
       const dateStr = format(d, 'yyyy-MM-dd');
       const startDt = `${dateStr}T${startTime}:00`;
       const endDt = `${dateStr}T${endTime}:00`;
-      const activeShifts = shifts.filter(s => s.status !== 'canceled');
-      for (const c of detectShiftConflicts(activeShifts, { start_datetime: startDt, end_datetime: endDt, id: existing?.id })) {
+      for (const c of detectShiftConflicts(shifts, { start_datetime: startDt, end_datetime: endDt, id: existing?.id })) {
         if (!seen.has(c.id)) {
           seen.add(c.id);
           allConflicts.push(c);
@@ -145,7 +142,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
           facility_id: facilityId,
           start_datetime: new Date(`${date}T${startTime}:00`).toISOString(),
           end_datetime: new Date(`${date}T${endTime}:00`).toISOString(),
-          status, rate_applied: Number(rate), notes, color,
+          rate_applied: Number(rate), notes, color,
         });
       } else {
         const orderedDates = [...selectedDates].sort((a, b) => a.getTime() - b.getTime());
@@ -155,7 +152,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
             facility_id: facilityId,
             start_datetime: new Date(`${date}T${startTime}:00`).toISOString(),
             end_datetime: new Date(`${date}T${endTime}:00`).toISOString(),
-            status, rate_applied: Number(rate), notes, color,
+            rate_applied: Number(rate), notes, color,
           });
         }
       }
@@ -281,20 +278,8 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
             </div>
           </div>
 
-          {/* Status + Rate row */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Status</Label>
-              <Select value={status} onValueChange={v => setStatus(v as ShiftStatus)}>
-                <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="proposed">Proposed</SelectItem>
-                  <SelectItem value="booked">Booked</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="canceled">Canceled</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          {/* Rate */}
+          <div>
             <div>
               <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
                 <DollarSign className="h-3.5 w-3.5" />

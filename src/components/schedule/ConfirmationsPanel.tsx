@@ -28,7 +28,7 @@ export function ConfirmationsPanel() {
   const facilityGroups = useMemo(() => {
     const booked = shifts.filter(s => {
       const d = new Date(s.start_datetime);
-      return d >= mStart && d <= mEnd && s.status === 'booked';
+      return d >= mStart && d <= mEnd;
     });
 
     return booked.reduce<Record<string, typeof booked>>((acc, s) => {
@@ -60,7 +60,7 @@ export function ConfirmationsPanel() {
       );
       // Simple hash comparison — if any shift data changed, the hash changes
       const currentHash = facilityShifts
-        .map(s => `${s.start_datetime}|${s.end_datetime}|${s.rate_applied}|${s.status}`)
+        .map(s => `${s.start_datetime}|${s.end_datetime}|${s.rate_applied}`)
         .sort()
         .join(',');
       const metaHashMatch = lastLog.body.match(/\[meta_shift_hash:([^\]]+)\]/);
@@ -104,7 +104,7 @@ export function ConfirmationsPanel() {
 
     // Create a hash of current shifts for change detection
     const shiftHash = fShifts
-      .map(s => `${s.start_datetime}|${s.end_datetime}|${s.rate_applied}|${s.status}`)
+      .map(s => `${s.start_datetime}|${s.end_datetime}|${s.rate_applied}`)
       .sort()
       .join(',');
 

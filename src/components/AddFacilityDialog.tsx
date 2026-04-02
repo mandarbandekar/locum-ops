@@ -10,7 +10,7 @@ import { Progress } from '@/components/ui/progress';
 import { useData } from '@/contexts/DataContext';
 import { useClinicConfirmations } from '@/hooks/useClinicConfirmations';
 import { generateId } from '@/lib/businessLogic';
-import { FacilityStatus } from '@/types';
+import type { FacilityStatus } from '@/types';
 import { toast } from 'sonner';
 import { ArrowLeft, ArrowRight, SkipForward, AlertTriangle } from 'lucide-react';
 import { RatesEditor, RateEntry, ratesToTermsFields } from '@/components/facilities/RatesEditor';
@@ -31,7 +31,7 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
   const { saveSettings: saveConfirmationSettings } = useClinicConfirmations();
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
-  const [status, setStatus] = useState<FacilityStatus>('prospect');
+  const [status] = useState<FacilityStatus>('active');
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
   const [rates, setRates] = useState<RateEntry[]>([]);
@@ -60,7 +60,7 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
 
   const resetForm = () => {
     setStep(0);
-    setName(''); setAddress(''); setNotes(''); setStatus('prospect');
+    setRates([]);
     setRates([]);
     setTechComputer(''); setTechWifi(''); setTechPims('');
     setClinicAccess(''); setInvoicePrefix(''); setInvoiceDueDays(15);
@@ -213,17 +213,6 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
               <div className="space-y-2">
                 <Label>Name <span className="text-destructive">*</span></Label>
                 <Input value={name} onChange={e => setName(e.target.value)} placeholder="Practice facility name" autoFocus />
-              </div>
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select value={status} onValueChange={v => setStatus(v as FacilityStatus)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="prospect">Prospect</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="paused">Paused</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
               <div className="space-y-2">
                 <Label>Address</Label>

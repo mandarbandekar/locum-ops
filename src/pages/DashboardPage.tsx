@@ -100,7 +100,7 @@ export default function DashboardPage() {
     return shifts
       .filter(s => {
         const d = parseISO(s.start_datetime);
-        return isWithinInterval(d, { start: weekStart, end: weekEnd }) && s.status === 'completed';
+        return isWithinInterval(d, { start: weekStart, end: weekEnd }) && new Date(s.end_datetime) < now;
       })
       .reduce((sum, s) => sum + (s.rate_applied || 0), 0);
   }, [shifts, now]);
@@ -112,7 +112,7 @@ export default function DashboardPage() {
     return shifts
       .filter(s => {
         const d = parseISO(s.start_datetime);
-        return isWithinInterval(d, { start: monthStart, end: monthEnd }) && s.status !== 'canceled';
+        return isWithinInterval(d, { start: monthStart, end: monthEnd });
       })
       .reduce((sum, s) => sum + (s.rate_applied || 0), 0);
   }, [shifts, now]);
@@ -173,7 +173,6 @@ export default function DashboardPage() {
       const anticipatedShifts = shifts.filter(s => {
         const shiftDate = parseISO(s.start_datetime);
         return isWithinInterval(shiftDate, { start: month, end: monthEnd }) &&
-          (s.status === 'proposed' || s.status === 'booked') &&
           !invoicedShiftIds.has(s.id);
       });
       const anticipated = anticipatedShifts.reduce((s, sh) => s + sh.rate_applied, 0);
@@ -348,7 +347,7 @@ export default function DashboardPage() {
 
   // ── Daily Briefing computation ──
   const briefing = useMemo(() => {
-    const todayShifts = shifts.filter(s => isToday(parseISO(s.start_datetime)) && s.status !== 'canceled');
+    const todayShifts = shifts.filter(s => isToday(parseISO(s.start_datetime)));
     const todayEarnings = todayShifts.reduce((sum, s) => sum + (s.rate_applied || 0), 0);
     const totalCollectable = summary.outstandingTotal;
     const overdueCount = invoices.filter(i => computeInvoiceStatus(i) === 'overdue').length;

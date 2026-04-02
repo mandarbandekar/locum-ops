@@ -49,7 +49,7 @@ export function shiftToIcsEvent(input: IcsEventInput): string {
     descParts.push(`Notes: ${shift.notes}`);
   }
   lines.push(`DESCRIPTION:${escapeIcsText(descParts.join('\\n'))}`);
-  lines.push(`STATUS:${shift.status === 'canceled' ? 'CANCELLED' : 'CONFIRMED'}`);
+  lines.push(`STATUS:CONFIRMED`);
   lines.push('END:VEVENT');
 
   return lines.join('\r\n');

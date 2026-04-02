@@ -128,7 +128,7 @@ export function useClinicConfirmations() {
     const mEnd = endOfMonth(new Date(year, month - 1));
     return shifts.filter(s => {
       const d = new Date(s.start_datetime);
-      return s.facility_id === facilityId && d >= mStart && d <= mEnd && s.status === 'booked';
+      return s.facility_id === facilityId && d >= mStart && d <= mEnd;
     }).sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime());
   }, [shifts]);
 
@@ -136,7 +136,7 @@ export function useClinicConfirmations() {
   const getUpcomingBookedShifts = useCallback((facilityId: string) => {
     const now = new Date();
     return shifts.filter(s =>
-      s.facility_id === facilityId && new Date(s.start_datetime) >= now && s.status === 'booked'
+      s.facility_id === facilityId && new Date(s.start_datetime) >= now
     ).sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime());
   }, [shifts]);
 
@@ -302,7 +302,7 @@ export function useClinicConfirmations() {
     const facilityIds = new Set<string>();
     shifts.forEach(s => {
       const d = new Date(s.start_datetime);
-      if (d >= mStart && d <= mEnd && s.status === 'booked') {
+      if (d >= mStart && d <= mEnd) {
         facilityIds.add(s.facility_id);
       }
     });

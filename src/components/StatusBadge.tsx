@@ -2,12 +2,7 @@ import { cn } from '@/lib/utils';
 
 const statusStyles: Record<string, string> = {
   active: 'chip-success',
-  prospect: 'chip-warning',
-  paused: 'bg-muted text-muted-foreground',
-  proposed: 'chip-warning',
-  booked: 'chip-info',
-  completed: 'chip-success',
-  canceled: 'bg-muted text-muted-foreground line-through',
+  archived: 'bg-muted text-muted-foreground',
   draft: 'bg-muted text-muted-foreground',
   sent: 'chip-info',
   paid: 'chip-success',

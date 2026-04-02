@@ -6,7 +6,7 @@ export interface User {
   created_at: string;
 }
 
-export type FacilityStatus = 'prospect' | 'active' | 'paused';
+export type FacilityStatus = 'active' | 'archived';
 export type BillingCadence = 'daily' | 'weekly' | 'biweekly' | 'monthly';
 export interface Facility {
   id: string;
@@ -60,7 +60,6 @@ export interface TermsSnapshot {
   custom_rates?: Array<{ label: string; amount: number }>;
 }
 
-export type ShiftStatus = 'proposed' | 'booked' | 'completed' | 'canceled';
 export type ShiftColor = 'blue' | 'green' | 'red' | 'orange' | 'purple' | 'pink' | 'teal' | 'yellow';
 export const SHIFT_COLORS: { value: ShiftColor; label: string; bg: string; text: string }[] = [
   { value: 'blue', label: 'Blue', bg: 'bg-blue-500/15', text: 'text-blue-700 dark:text-blue-400' },
@@ -77,7 +76,6 @@ export interface Shift {
   facility_id: string;
   start_datetime: string;
   end_datetime: string;
-  status: ShiftStatus;
   rate_applied: number;
   notes: string;
   color: ShiftColor;

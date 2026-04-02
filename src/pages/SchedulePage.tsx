@@ -64,7 +64,7 @@ export default function SchedulePage() {
     return d >= rangeStart && d <= rangeEnd;
   }).sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime());
 
-  const activeRangeShifts = rangeShifts.filter(s => s.status !== 'canceled');
+  const activeRangeShifts = rangeShifts;
   const totalShiftsInRange = activeRangeShifts.length;
   const totalHoursInRange = activeRangeShifts.reduce((sum, s) => {
     return sum + Math.max(0, differenceInHours(new Date(s.end_datetime), new Date(s.start_datetime)));
@@ -76,22 +76,10 @@ export default function SchedulePage() {
   const handleSaveShift = async (s: any) => {
     if (s.id) {
       await updateShift(s as any);
-      const facility = facilities.find(f => f.id === s.facility_id);
-      if (facility && facility.status !== 'active') {
-        await updateFacility({ ...facility, status: 'active' });
-        toast.success(`Shift updated — "${facility.name}" has been set to Active`);
-      } else {
-        toast.success('Shift updated');
-      }
+      toast.success('Shift updated');
     } else {
       await addShift(s);
-      const facility = facilities.find(f => f.id === s.facility_id);
-      if (facility && facility.status !== 'active') {
-        await updateFacility({ ...facility, status: 'active' });
-        toast.success(`Shift added — "${facility.name}" has been set to Active`);
-      } else {
-        toast.success('Shift added');
-      }
+      toast.success('Shift added');
     }
   };
 
@@ -105,8 +93,7 @@ export default function SchedulePage() {
     newStart.setHours(oldStart.getHours(), oldStart.getMinutes(), oldStart.getSeconds(), 0);
     const newEnd = new Date(newStart.getTime() + duration);
     if (newStart.getTime() === oldStart.getTime()) return;
-    // Check conflicts against current shifts excluding the one being moved and canceled ones
-    const otherShifts = shifts.filter(s => s.id !== shiftId && s.status !== 'canceled');
+    const otherShifts = shifts.filter(s => s.id !== shiftId);
     const conflicts = detectShiftConflicts(otherShifts, { start_datetime: newStart.toISOString(), end_datetime: newEnd.toISOString() });
     if (conflicts.length > 0) {
       toast.warning(`Scheduling conflict on ${format(newStart, 'EEE, MMM d')} with ${getFacilityName(conflicts[0].facility_id)}`);
@@ -128,7 +115,7 @@ export default function SchedulePage() {
     newStart.setHours(fullHours, minutes, 0, 0);
     const newEnd = new Date(newStart.getTime() + duration);
     if (newStart.getTime() === oldStart.getTime()) return;
-    const otherShifts = shifts.filter(s => s.id !== shiftId && s.status !== 'canceled');
+    const otherShifts = shifts.filter(s => s.id !== shiftId);
     const conflicts = detectShiftConflicts(otherShifts, { start_datetime: newStart.toISOString(), end_datetime: newEnd.toISOString() });
     if (conflicts.length > 0) {
       toast.warning(`Scheduling conflict at ${format(newStart, 'h:mm a')} with ${getFacilityName(conflicts[0].facility_id)}`);
@@ -178,13 +165,12 @@ export default function SchedulePage() {
   }, []);
 
   const hasDoubleBooking = useCallback((dayShifts: any[]) => {
-    const active = dayShifts.filter(s => s.status !== 'canceled');
-    for (let i = 0; i < active.length; i++) {
-      for (let j = i + 1; j < active.length; j++) {
-        const aStart = new Date(active[i].start_datetime).getTime();
-        const aEnd = new Date(active[i].end_datetime).getTime();
-        const bStart = new Date(active[j].start_datetime).getTime();
-        const bEnd = new Date(active[j].end_datetime).getTime();
+    for (let i = 0; i < dayShifts.length; i++) {
+      for (let j = i + 1; j < dayShifts.length; j++) {
+        const aStart = new Date(dayShifts[i].start_datetime).getTime();
+        const aEnd = new Date(dayShifts[i].end_datetime).getTime();
+        const bStart = new Date(dayShifts[j].start_datetime).getTime();
+        const bEnd = new Date(dayShifts[j].end_datetime).getTime();
         if (aStart < bEnd && bStart < aEnd) return true;
       }
     }
@@ -376,7 +362,6 @@ export default function SchedulePage() {
                         <td className="p-3 text-muted-foreground hidden md:table-cell">{format(new Date(s.start_datetime), 'h:mm a')} – {format(new Date(s.end_datetime), 'h:mm a')}</td>
                         <td className="p-3 text-muted-foreground hidden md:table-cell">{hrs}h</td>
                         <td className="p-3 font-medium">${s.rate_applied}</td>
-                        <td className="p-3"><StatusBadge status={s.status} /></td>
                         <td className="p-3" onClick={e => e.stopPropagation()}>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>

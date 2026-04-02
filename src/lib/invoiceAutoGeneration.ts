@@ -18,7 +18,6 @@ export function isShiftInvoiceEligible(
   shift: Shift,
   invoicedShiftIds: Set<string>,
 ): boolean {
-  if (shift.status === 'canceled' || shift.status === 'proposed') return false;
   if (invoicedShiftIds.has(shift.id)) return false;
   return true;
 }

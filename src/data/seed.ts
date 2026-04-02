@@ -22,7 +22,7 @@ export const starterTerms: TermsSnapshot[] = [
 ];
 
 export const starterShifts: Shift[] = [
-  { id: 's5', facility_id: 'c1', start_datetime: fmt(setTime(addDays(today, 2), 8)), end_datetime: fmt(setTime(addDays(today, 2), 18)), status: 'booked', rate_applied: 850, notes: 'Example shift', color: 'blue' },
+  { id: 's5', facility_id: 'c1', start_datetime: fmt(setTime(addDays(today, 2), 8)), end_datetime: fmt(setTime(addDays(today, 2), 18)), rate_applied: 850, notes: 'Example shift', color: 'blue' },
 ];
 
 export const starterInvoices: Invoice[] = [];
@@ -35,9 +35,9 @@ const facDefaults = { billing_cadence: 'monthly' as const, billing_cycle_anchor_
 export const seedFacilities: Facility[] = [
   { id: 'c1', name: 'Greenfield Medical Center', status: 'active', address: '123 Oak St, Portland, OR 97201', timezone: 'America/Los_Angeles', notes: 'Great team, flexible scheduling', outreach_last_sent_at: fmt(addDays(today, -15)), tech_computer_info: 'Desktop login: locum1 / pass: Gr33nfield!', tech_wifi_info: 'Network: GFC-Staff, Password: wellness2026', tech_pims_info: 'Cornerstone — user: locum.vet / pass: temp1234', clinic_access_info: 'Front door code: 4521. Park in lot B. Keys at reception.', invoice_prefix: 'GMC', invoice_due_days: 14, invoice_name_to: 'Billing Dept', invoice_email_to: 'billing@greenfield.com', invoice_name_cc: '', invoice_email_cc: '', invoice_name_bcc: '', invoice_email_bcc: '', ...facDefaults },
   { id: 'c2', name: 'Evergreen Health Clinic', status: 'active', address: '456 Pine Ave, Seattle, WA 98101', timezone: 'America/Los_Angeles', notes: 'Busy facility, weekend shifts common', outreach_last_sent_at: fmt(addDays(today, -30)), tech_computer_info: '', tech_wifi_info: 'EHC-Guest / evergreen99', tech_pims_info: 'eVetPractice — ask front desk for temp login', clinic_access_info: 'Ring buzzer at side entrance. After hours use code 7890.', invoice_prefix: 'EHC', invoice_due_days: 30, invoice_name_to: 'Dr. Emily Park', invoice_email_to: 'emily@evergreen-hc.com', invoice_name_cc: '', invoice_email_cc: '', invoice_name_bcc: '', invoice_email_bcc: '', ...facDefaults, billing_cadence: 'weekly' as const },
-  { id: 'c3', name: 'Sunrise Care Center', status: 'prospect', address: '789 Elm Dr, Boise, ID 83701', timezone: 'America/Boise', notes: 'Initial outreach sent, awaiting response', outreach_last_sent_at: null, tech_computer_info: '', tech_wifi_info: '', tech_pims_info: '', clinic_access_info: '', invoice_prefix: 'SCC', invoice_due_days: 15, invoice_name_to: '', invoice_email_to: '', invoice_name_cc: '', invoice_email_cc: '', invoice_name_bcc: '', invoice_email_bcc: '', ...facDefaults },
+  { id: 'c3', name: 'Sunrise Care Center', status: 'active', address: '789 Elm Dr, Boise, ID 83701', timezone: 'America/Boise', notes: 'Initial outreach sent, awaiting response', outreach_last_sent_at: null, tech_computer_info: '', tech_wifi_info: '', tech_pims_info: '', clinic_access_info: '', invoice_prefix: 'SCC', invoice_due_days: 15, invoice_name_to: '', invoice_email_to: '', invoice_name_cc: '', invoice_email_cc: '', invoice_name_bcc: '', invoice_email_bcc: '', ...facDefaults },
   { id: 'c4', name: 'Mountain View Practice', status: 'active', address: '321 Birch Ln, Denver, CO 80201', timezone: 'America/Denver', notes: 'Monthly regular shifts', outreach_last_sent_at: fmt(addDays(today, -10)), tech_computer_info: 'Shared laptop in break room', tech_wifi_info: 'MVP-Clinic / mountain2026', tech_pims_info: 'Avimark — locum account pre-configured', clinic_access_info: 'Main entrance unlocked 7am–7pm. After hours call Rachel.', invoice_prefix: 'MVP', invoice_due_days: 14, invoice_name_to: '', invoice_email_to: '', invoice_name_cc: '', invoice_email_cc: '', invoice_name_bcc: '', invoice_email_bcc: '', ...facDefaults },
-  { id: 'c5', name: 'Coastal Wellness Group', status: 'paused', address: '555 Beach Blvd, San Diego, CA 92101', timezone: 'America/Los_Angeles', notes: 'Paused due to staffing changes', outreach_last_sent_at: fmt(addDays(today, -60)), tech_computer_info: '', tech_wifi_info: '', tech_pims_info: '', clinic_access_info: '', invoice_prefix: 'CWG', invoice_due_days: 15, invoice_name_to: '', invoice_email_to: '', invoice_name_cc: '', invoice_email_cc: '', invoice_name_bcc: '', invoice_email_bcc: '', ...facDefaults },
+  { id: 'c5', name: 'Coastal Wellness Group', status: 'archived', address: '555 Beach Blvd, San Diego, CA 92101', timezone: 'America/Los_Angeles', notes: 'Archived due to staffing changes', outreach_last_sent_at: fmt(addDays(today, -60)), tech_computer_info: '', tech_wifi_info: '', tech_pims_info: '', clinic_access_info: '', invoice_prefix: 'CWG', invoice_due_days: 15, invoice_name_to: '', invoice_email_to: '', invoice_name_cc: '', invoice_email_cc: '', invoice_name_bcc: '', invoice_email_bcc: '', ...facDefaults },
 ];
 
 export const seedContacts: FacilityContact[] = [
@@ -59,24 +59,24 @@ const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
 const nmDay = (d: number) => new Date(nextMonth.getFullYear(), nextMonth.getMonth(), d);
 
 export const seedShifts: Shift[] = [
-  { id: 's1', facility_id: 'c1', start_datetime: fmt(setTime(addDays(today, -12), 8)), end_datetime: fmt(setTime(addDays(today, -12), 18)), status: 'completed', rate_applied: 850, notes: 'Regular day shift', color: 'blue' },
-  { id: 's2', facility_id: 'c1', start_datetime: fmt(setTime(addDays(today, -5), 8)), end_datetime: fmt(setTime(addDays(today, -5), 18)), status: 'completed', rate_applied: 850, notes: '', color: 'blue' },
-  { id: 's3', facility_id: 'c2', start_datetime: fmt(setTime(addDays(today, -8), 7)), end_datetime: fmt(setTime(addDays(today, -8), 19)), status: 'completed', rate_applied: 900, notes: 'Extended coverage', color: 'green' },
-  { id: 's4', facility_id: 'c2', start_datetime: fmt(setTime(addDays(today, -3), 8)), end_datetime: fmt(setTime(addDays(today, -3), 16)), status: 'completed', rate_applied: 1200, notes: 'Weekend shift', color: 'orange' },
-  { id: 's5', facility_id: 'c1', start_datetime: fmt(setTime(addDays(today, 2), 8)), end_datetime: fmt(setTime(addDays(today, 2), 18)), status: 'booked', rate_applied: 850, notes: '', color: 'blue' },
-  { id: 's6', facility_id: 'c4', start_datetime: fmt(setTime(addDays(today, 3), 9)), end_datetime: fmt(setTime(addDays(today, 3), 17)), status: 'booked', rate_applied: 800, notes: '', color: 'purple' },
-  { id: 's7', facility_id: 'c2', start_datetime: fmt(setTime(addDays(today, 5), 7)), end_datetime: fmt(setTime(addDays(today, 5), 19)), status: 'booked', rate_applied: 900, notes: 'Full day coverage', color: 'green' },
-  { id: 's8', facility_id: 'c4', start_datetime: fmt(setTime(addDays(today, 10), 9)), end_datetime: fmt(setTime(addDays(today, 10), 17)), status: 'proposed', rate_applied: 800, notes: 'Tentative', color: 'purple' },
-  { id: 's9', facility_id: 'c1', start_datetime: fmt(setTime(addDays(today, 14), 8)), end_datetime: fmt(setTime(addDays(today, 14), 18)), status: 'proposed', rate_applied: 850, notes: '', color: 'teal' },
-  // Next month booked shifts for confirmations
-  { id: 'snm1', facility_id: 'c1', start_datetime: fmt(setTime(nmDay(3), 8)), end_datetime: fmt(setTime(nmDay(3), 18)), status: 'booked', rate_applied: 850, notes: '', color: 'blue' },
-  { id: 'snm2', facility_id: 'c1', start_datetime: fmt(setTime(nmDay(10), 8)), end_datetime: fmt(setTime(nmDay(10), 18)), status: 'booked', rate_applied: 850, notes: '', color: 'blue' },
-  { id: 'snm3', facility_id: 'c1', start_datetime: fmt(setTime(nmDay(17), 8)), end_datetime: fmt(setTime(nmDay(17), 18)), status: 'booked', rate_applied: 850, notes: '', color: 'blue' },
-  { id: 'snm4', facility_id: 'c2', start_datetime: fmt(setTime(nmDay(5), 7)), end_datetime: fmt(setTime(nmDay(5), 19)), status: 'booked', rate_applied: 900, notes: '', color: 'green' },
-  { id: 'snm5', facility_id: 'c2', start_datetime: fmt(setTime(nmDay(12), 7)), end_datetime: fmt(setTime(nmDay(12), 19)), status: 'booked', rate_applied: 900, notes: '', color: 'green' },
-  { id: 'snm6', facility_id: 'c4', start_datetime: fmt(setTime(nmDay(8), 9)), end_datetime: fmt(setTime(nmDay(8), 17)), status: 'booked', rate_applied: 800, notes: '', color: 'purple' },
-  { id: 'snm7', facility_id: 'c4', start_datetime: fmt(setTime(nmDay(15), 9)), end_datetime: fmt(setTime(nmDay(15), 17)), status: 'booked', rate_applied: 800, notes: '', color: 'purple' },
-  { id: 'snm8', facility_id: 'c4', start_datetime: fmt(setTime(nmDay(22), 9)), end_datetime: fmt(setTime(nmDay(22), 17)), status: 'booked', rate_applied: 800, notes: '', color: 'purple' },
+  { id: 's1', facility_id: 'c1', start_datetime: fmt(setTime(addDays(today, -12), 8)), end_datetime: fmt(setTime(addDays(today, -12), 18)), rate_applied: 850, notes: 'Regular day shift', color: 'blue' },
+  { id: 's2', facility_id: 'c1', start_datetime: fmt(setTime(addDays(today, -5), 8)), end_datetime: fmt(setTime(addDays(today, -5), 18)), rate_applied: 850, notes: '', color: 'blue' },
+  { id: 's3', facility_id: 'c2', start_datetime: fmt(setTime(addDays(today, -8), 7)), end_datetime: fmt(setTime(addDays(today, -8), 19)), rate_applied: 900, notes: 'Extended coverage', color: 'green' },
+  { id: 's4', facility_id: 'c2', start_datetime: fmt(setTime(addDays(today, -3), 8)), end_datetime: fmt(setTime(addDays(today, -3), 16)), rate_applied: 1200, notes: 'Weekend shift', color: 'orange' },
+  { id: 's5', facility_id: 'c1', start_datetime: fmt(setTime(addDays(today, 2), 8)), end_datetime: fmt(setTime(addDays(today, 2), 18)), rate_applied: 850, notes: '', color: 'blue' },
+  { id: 's6', facility_id: 'c4', start_datetime: fmt(setTime(addDays(today, 3), 9)), end_datetime: fmt(setTime(addDays(today, 3), 17)), rate_applied: 800, notes: '', color: 'purple' },
+  { id: 's7', facility_id: 'c2', start_datetime: fmt(setTime(addDays(today, 5), 7)), end_datetime: fmt(setTime(addDays(today, 5), 19)), rate_applied: 900, notes: 'Full day coverage', color: 'green' },
+  { id: 's8', facility_id: 'c4', start_datetime: fmt(setTime(addDays(today, 10), 9)), end_datetime: fmt(setTime(addDays(today, 10), 17)), rate_applied: 800, notes: 'Tentative', color: 'purple' },
+  { id: 's9', facility_id: 'c1', start_datetime: fmt(setTime(addDays(today, 14), 8)), end_datetime: fmt(setTime(addDays(today, 14), 18)), rate_applied: 850, notes: '', color: 'teal' },
+  // Next month shifts for confirmations
+  { id: 'snm1', facility_id: 'c1', start_datetime: fmt(setTime(nmDay(3), 8)), end_datetime: fmt(setTime(nmDay(3), 18)), rate_applied: 850, notes: '', color: 'blue' },
+  { id: 'snm2', facility_id: 'c1', start_datetime: fmt(setTime(nmDay(10), 8)), end_datetime: fmt(setTime(nmDay(10), 18)), rate_applied: 850, notes: '', color: 'blue' },
+  { id: 'snm3', facility_id: 'c1', start_datetime: fmt(setTime(nmDay(17), 8)), end_datetime: fmt(setTime(nmDay(17), 18)), rate_applied: 850, notes: '', color: 'blue' },
+  { id: 'snm4', facility_id: 'c2', start_datetime: fmt(setTime(nmDay(5), 7)), end_datetime: fmt(setTime(nmDay(5), 19)), rate_applied: 900, notes: '', color: 'green' },
+  { id: 'snm5', facility_id: 'c2', start_datetime: fmt(setTime(nmDay(12), 7)), end_datetime: fmt(setTime(nmDay(12), 19)), rate_applied: 900, notes: '', color: 'green' },
+  { id: 'snm6', facility_id: 'c4', start_datetime: fmt(setTime(nmDay(8), 9)), end_datetime: fmt(setTime(nmDay(8), 17)), rate_applied: 800, notes: '', color: 'purple' },
+  { id: 'snm7', facility_id: 'c4', start_datetime: fmt(setTime(nmDay(15), 9)), end_datetime: fmt(setTime(nmDay(15), 17)), rate_applied: 800, notes: '', color: 'purple' },
+  { id: 'snm8', facility_id: 'c4', start_datetime: fmt(setTime(nmDay(22), 9)), end_datetime: fmt(setTime(nmDay(22), 17)), rate_applied: 800, notes: '', color: 'purple' },
 ];
 
 const invDefaults = { generation_type: 'manual' as const, billing_cadence: null };

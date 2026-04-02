@@ -149,40 +149,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     }
   }
 
-  // ─── Auto-complete past booked shifts ────────────────────
-  useEffect(() => {
-    const now = new Date();
-    const pastBooked = shifts.filter(
-      s => s.status === 'booked' && new Date(s.end_datetime) < now
-    );
-    if (pastBooked.length === 0) return;
-
-    if (isDemo) {
-      setShifts(prev =>
-        prev.map(s =>
-          s.status === 'booked' && new Date(s.end_datetime) < now
-            ? { ...s, status: 'completed' }
-            : s
-        )
-      );
-      toast.info(`${pastBooked.length} past shift${pastBooked.length > 1 ? 's' : ''} auto-marked as Completed`);
-      return;
-    }
-
-    // Batch update in DB
-    (async () => {
-      const ids = pastBooked.map(s => s.id);
-      const { error } = await db('shifts').update({ status: 'completed' }).in('id', ids);
-      if (error) {
-        console.error('Auto-complete shifts error:', error);
-        return;
-      }
-      setShifts(prev =>
-        prev.map(s => ids.includes(s.id) ? { ...s, status: 'completed' } : s)
-      );
-      toast.info(`${ids.length} past shift${ids.length > 1 ? 's' : ''} auto-marked as Completed`);
-    })();
-  }, [dataLoading]); // runs once after initial data load
+  // (Auto-complete removed — shift statuses no longer exist)
 
   // ─── Facilities ──────────────────────────────────────────
 
@@ -299,7 +266,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     // Auto-generate invoice draft if applicable
     try {
       const facility = facilities.find(f => f.id === shift.facility_id);
-      if (facility && facility.auto_generate_invoices && shift.status !== 'canceled') {
+      if (facility && facility.auto_generate_invoices) {
         const cadence = facility.billing_cadence as BillingCadence;
         const shiftStart = new Date(shift.start_datetime);
         const period = getBillingPeriod(
@@ -331,7 +298,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
           .select('*')
           .eq('facility_id', facility.id)
           .eq('user_id', user!.id)
-          .neq('status', 'canceled')
+          .eq('user_id', user!.id)
           .gte('start_datetime', period.start.toISOString())
           .lte('start_datetime', period.end.toISOString())
           .order('start_datetime', { ascending: true });
@@ -481,10 +448,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
     setShifts(prev => prev.map(x => x.id === s.id ? s : x));
 
-    // If shift was just canceled, clean up its invoice
-    if (s.status === 'canceled' && oldShift?.status !== 'canceled') {
-      await handleInvoiceCleanupAfterShiftRemoval(s.id);
-    }
+    // (Cancel logic removed — shifts are deleted, not canceled)
   }, [isDemo, shifts, handleInvoiceCleanupAfterShiftRemoval]);
 
   const deleteShift = useCallback(async (id: string) => {

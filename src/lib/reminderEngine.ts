@@ -128,7 +128,7 @@ export function generateOutreachReminders(
 ): GeneratedReminder[] {
   const items: GeneratedReminder[] = [];
   facilities
-    .filter(f => f.status === 'prospect')
+    .filter(f => f.status === 'active' && f.outreach_last_sent_at)
     .forEach(f => {
       if (f.outreach_last_sent_at) {
         const daysSince = differenceInDays(now, new Date(f.outreach_last_sent_at));
