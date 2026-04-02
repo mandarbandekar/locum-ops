@@ -137,6 +137,7 @@ export default function InvoicesPage() {
           getFacilityName={getFacilityName}
           emptyMessage="No draft invoices — everything has been sent."
           defaultOpen={true}
+          groupByFacility={true}
         />
 
         <InvoiceStatusGroup
