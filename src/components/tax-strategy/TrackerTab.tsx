@@ -53,6 +53,8 @@ interface TaxSettings {
   set_aside_mode: 'percent' | 'fixed';
   set_aside_percent: number;
   set_aside_fixed_monthly: number;
+  filing_status: FilingStatus;
+  estimated_deductions: number;
 }
 
 interface QuarterStatus {
