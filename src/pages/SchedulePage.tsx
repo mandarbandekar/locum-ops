@@ -209,8 +209,8 @@ export default function SchedulePage() {
         onDrop={(e) => onDrop(e, day)}
         onClick={() => openAddShiftAt(day)}
       >
-        <div className={`text-xs font-medium mb-1 flex items-center gap-1 ${isToday ? 'text-primary' : 'text-muted-foreground'}`}>
-          {format(day, 'd')}
+        <div className={`text-xs font-medium mb-1 flex items-center gap-1 ${isToday ? 'text-primary font-bold' : 'text-muted-foreground'}`}>
+          {isToday ? <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary text-primary-foreground text-[11px]">{format(day, 'd')}</span> : format(day, 'd')}
           {isDoubleBooked && (
             <span className="inline-flex items-center gap-0.5 text-[9px] text-amber-600 dark:text-amber-400" title="Overlapping shifts">
               <AlertTriangle className="h-3 w-3" />
