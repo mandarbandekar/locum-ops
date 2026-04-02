@@ -2,7 +2,8 @@ import { useState, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Send, Save, Loader2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Send, Save, Loader2, Lightbulb, Building2, Briefcase } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import type { TaxAdvisorProfile, TaxAdvisorSession } from '@/hooks/useTaxAdvisor';
 import { useData } from '@/contexts/DataContext';
@@ -16,6 +17,15 @@ interface Props {
 }
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tax-advisor-chat`;
+
+const PROMPT_CHIPS = [
+  { label: 'CE & travel deductions', prompt: 'What CE and travel expenses can I typically deduct as a relief veterinarian? What documentation do I need?' },
+  { label: 'Vehicle mileage strategies', prompt: 'What are the best strategies for tracking and deducting vehicle mileage as a locum professional?' },
+  { label: 'S-Corp vs sole proprietor', prompt: 'What are the pros and cons of operating as an S-Corp vs sole proprietor for locum work? At what income level should I consider switching?' },
+  { label: 'Retirement account options', prompt: 'What retirement account options are available to me as a self-employed relief professional? What are the contribution limits and deadlines?' },
+  { label: 'Multi-state filing', prompt: 'I work in multiple states. What are my filing obligations and how should I track income by state?' },
+  { label: 'Home office rules', prompt: 'Can I deduct a home office if I do administrative work from home for my locum practice? What are the requirements?' },
+];
 
 export default function AskAdvisorTab({ profile, sessions, onSaveSession, onSaveQuestion }: Props) {
   const [input, setInput] = useState('');
@@ -41,9 +51,9 @@ export default function AskAdvisorTab({ profile, sessions, onSaveSession, onSave
     };
   };
 
-  const handleSend = async () => {
-    if (!input.trim() || streaming) return;
-    const prompt = input.trim();
+  const handleSend = async (overridePrompt?: string) => {
+    const prompt = (overridePrompt || input).trim();
+    if (!prompt || streaming) return;
     setInput('');
     setCurrentPrompt(prompt);
     setCurrentResponse('');
@@ -121,8 +131,58 @@ export default function AskAdvisorTab({ profile, sessions, onSaveSession, onSave
     return section.split('\n').filter(l => l.trim().startsWith('-') || l.trim().match(/^\d+\./)).map(l => l.replace(/^[-\d.)\s]+/, '').trim()).filter(Boolean);
   };
 
+  const profileComplete = profile != null;
+  const facilityCount = facilities?.length || 0;
+  const entityLabel = profile?.entity_type?.replace(/_/g, ' ') || null;
+
   return (
     <div className="space-y-4">
+      {/* Profile nudge */}
+      {!profileComplete && (
+        <div className="flex items-center gap-3 rounded-lg border border-primary/20 bg-primary/5 p-3">
+          <Lightbulb className="h-4 w-4 text-primary shrink-0" />
+          <p className="text-sm text-muted-foreground">
+            <span className="font-medium text-foreground">Get personalized suggestions</span> — complete your planning profile in the sidebar to unlock tailored advice.
+          </p>
+        </div>
+      )}
+
+      {/* Quick-start prompt chips */}
+      {!currentPrompt && !streaming && (
+        <div>
+          <p className="text-sm font-medium mb-2">Quick topics</p>
+          <div className="flex flex-wrap gap-2">
+            {PROMPT_CHIPS.map(chip => (
+              <Button
+                key={chip.label}
+                variant="outline"
+                size="sm"
+                className="text-xs h-8"
+                onClick={() => handleSend(chip.prompt)}
+              >
+                {chip.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Context chips — show what we know */}
+      {(facilityCount > 0 || entityLabel) && !currentPrompt && (
+        <div className="flex flex-wrap gap-1.5">
+          {facilityCount > 0 && (
+            <Badge variant="secondary" className="text-xs gap-1 font-normal">
+              <Building2 className="h-3 w-3" /> {facilityCount} {facilityCount === 1 ? 'facility' : 'facilities'}
+            </Badge>
+          )}
+          {entityLabel && (
+            <Badge variant="secondary" className="text-xs gap-1 font-normal">
+              <Briefcase className="h-3 w-3" /> {entityLabel}
+            </Badge>
+          )}
+        </div>
+      )}
+
       {/* Current conversation */}
       {(currentPrompt || currentResponse) && (
         <Card>
@@ -165,7 +225,7 @@ export default function AskAdvisorTab({ profile, sessions, onSaveSession, onSave
               className="min-h-[60px] resize-none"
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
             />
-            <Button onClick={handleSend} disabled={!input.trim() || streaming} size="icon" className="shrink-0 h-[60px] w-[60px]">
+            <Button onClick={() => handleSend()} disabled={!input.trim() || streaming} size="icon" className="shrink-0 h-[60px] w-[60px]">
               {streaming ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
             </Button>
           </div>

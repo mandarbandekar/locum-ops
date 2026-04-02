@@ -1,14 +1,21 @@
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { useState } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Progress } from '@/components/ui/progress';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { OPPORTUNITY_CATEGORIES, type ReviewStatus, type TaxOpportunityReviewItem, type TaxAdvisorProfile } from '@/hooks/useTaxAdvisor';
-import { CheckCircle2, Circle, Clock, BookmarkCheck } from 'lucide-react';
+import { useData } from '@/contexts/DataContext';
+import { CheckCircle2, Circle, Clock, BookmarkCheck, ChevronDown, Plus } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 interface Props {
   reviewItems: TaxOpportunityReviewItem[];
   profile: TaxAdvisorProfile | null;
   onUpdateItem: (category: string, status: ReviewStatus, notes?: string) => Promise<void>;
+  onSaveQuestion: (q: string, topic: string) => Promise<void>;
 }
 
 const STATUS_CONFIG: Record<ReviewStatus, { label: string; icon: React.ReactNode; color: string }> = {
@@ -69,11 +76,14 @@ const CATEGORY_DETAILS: Record<string, { why: string; docs: string; cautions: st
   },
 };
 
-export default function OpportunityReviewTab({ reviewItems, profile, onUpdateItem }: Props) {
+export default function OpportunityReviewTab({ reviewItems, profile, onUpdateItem, onSaveQuestion }: Props) {
+  const [openCards, setOpenCards] = useState<Set<string>>(new Set());
+  const { facilities } = useData();
+
   const getStatus = (cat: string): ReviewStatus => reviewItems.find(r => r.category === cat)?.status || 'not_started';
   const getNotes = (cat: string): string => reviewItems.find(r => r.category === cat)?.notes || '';
 
-  // Suggest categories based on profile
+  // Suggest categories based on profile + data
   const suggested = new Set<string>();
   if (profile?.travels_for_ce) suggested.add('ce_travel');
   if (profile?.uses_personal_vehicle) suggested.add('vehicle_mileage');
@@ -84,74 +94,142 @@ export default function OpportunityReviewTab({ reviewItems, profile, onUpdateIte
   if (profile?.entity_type && profile.entity_type !== 'sole_proprietor') suggested.add('entity_structure');
   if (profile?.combines_business_personal_travel) suggested.add('home_office');
 
+  // Auto-suggest multi-state if facilities span 2+ states
+  if (facilities && facilities.length >= 2) {
+    const states = new Set(facilities.map(f => {
+      const parts = f.address?.split(',');
+      return parts?.[parts.length - 1]?.trim()?.split(' ')?.[0];
+    }).filter(Boolean));
+    if (states.size >= 2) suggested.add('multi_state_work');
+  }
+
+  // Sort: suggested first, then rest
+  const sortedCategories = [...OPPORTUNITY_CATEGORIES].sort((a, b) => {
+    const aS = suggested.has(a.key) ? 0 : 1;
+    const bS = suggested.has(b.key) ? 0 : 1;
+    return aS - bS;
+  });
+
+  // Progress
+  const reviewedCount = OPPORTUNITY_CATEGORIES.filter(c => getStatus(c.key) !== 'not_started').length;
+  const totalCount = OPPORTUNITY_CATEGORIES.length;
+  const progressPct = Math.round((reviewedCount / totalCount) * 100);
+
+  const toggleCard = (key: string) => {
+    setOpenCards(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  };
+
+  const handleSaveQuestion = async (question: string, topic: string) => {
+    await onSaveQuestion(question, topic);
+    toast({ title: 'Question saved to CPA list' });
+  };
+
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
-        Review common planning areas and gather what you'll want to discuss with your CPA.
-      </p>
+      {/* Progress strip */}
+      <div className="flex items-center gap-3">
+        <div className="flex-1">
+          <div className="flex items-center justify-between mb-1.5">
+            <p className="text-sm font-medium">{reviewedCount} of {totalCount} areas reviewed</p>
+            <p className="text-xs text-muted-foreground">{progressPct}%</p>
+          </div>
+          <Progress value={progressPct} className="h-2" />
+        </div>
+      </div>
 
-      {OPPORTUNITY_CATEGORIES.map(cat => {
+      {/* Cards */}
+      {sortedCategories.map(cat => {
         const status = getStatus(cat.key);
         const notes = getNotes(cat.key);
         const detail = CATEGORY_DETAILS[cat.key];
         const isSuggested = suggested.has(cat.key);
         const cfg = STATUS_CONFIG[status];
+        const isOpen = openCards.has(cat.key);
 
         return (
-          <Card key={cat.key} className={isSuggested ? 'border-primary/30' : ''}>
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <CardTitle className="text-base">{cat.label}</CardTitle>
-                    {isSuggested && <Badge variant="secondary" className="text-xs">Suggested</Badge>}
+          <Collapsible key={cat.key} open={isOpen} onOpenChange={() => toggleCard(cat.key)}>
+            <Card className={isSuggested ? 'border-primary/30' : ''}>
+              <CollapsibleTrigger asChild>
+                <div className="flex items-center justify-between gap-3 p-4 cursor-pointer hover:bg-muted/30 transition-colors">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="font-medium text-sm">{cat.label}</span>
+                    {isSuggested && <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Suggested</Badge>}
+                    <Badge className={`text-[10px] px-1.5 py-0 ${cfg.color} border-0`}>
+                      {cfg.label}
+                    </Badge>
                   </div>
-                  <CardDescription className="mt-1">{cat.description}</CardDescription>
+                  <ChevronDown className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
                 </div>
-                <Select value={status} onValueChange={(v) => onUpdateItem(cat.key, v as ReviewStatus)}>
-                  <SelectTrigger className="w-[160px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(STATUS_CONFIG).map(([k, v]) => (
-                      <SelectItem key={k} value={k}>
-                        <span className="flex items-center gap-1.5">{v.icon}{v.label}</span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardHeader>
-            {detail && (
-              <CardContent className="space-y-3 text-sm">
-                <div>
-                  <p className="font-medium text-foreground mb-1">Why this may matter</p>
-                  <p className="text-muted-foreground">{detail.why}</p>
-                </div>
-                <div>
-                  <p className="font-medium text-foreground mb-1">What to gather / document</p>
-                  <p className="text-muted-foreground">{detail.docs}</p>
-                </div>
-                <div>
-                  <p className="font-medium text-foreground mb-1">Caution areas</p>
-                  <p className="text-muted-foreground">{detail.cautions}</p>
-                </div>
-                <div>
-                  <p className="font-medium text-foreground mb-1">Suggested CPA questions</p>
-                  <ul className="list-disc list-inside text-muted-foreground">
-                    {detail.cpaQuestions.map((q, i) => <li key={i}>{q}</li>)}
-                  </ul>
-                </div>
-                <Textarea
-                  placeholder="Your notes for this area…"
-                  value={notes}
-                  onChange={e => onUpdateItem(cat.key, status, e.target.value)}
-                  className="mt-2"
-                  rows={2}
-                />
-              </CardContent>
-            )}
-          </Card>
+              </CollapsibleTrigger>
+
+              <CollapsibleContent>
+                {detail && (
+                  <CardContent className="pt-0 pb-4 space-y-3 text-sm border-t">
+                    <p className="text-muted-foreground pt-3">{cat.description}</p>
+
+                    <div>
+                      <p className="font-medium text-foreground mb-1">Why this may matter</p>
+                      <p className="text-muted-foreground">{detail.why}</p>
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground mb-1">What to gather / document</p>
+                      <p className="text-muted-foreground">{detail.docs}</p>
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground mb-1">Caution areas</p>
+                      <p className="text-muted-foreground">{detail.cautions}</p>
+                    </div>
+
+                    {/* CPA questions with save buttons */}
+                    <div>
+                      <p className="font-medium text-foreground mb-2">Suggested CPA questions</p>
+                      <div className="space-y-1.5">
+                        {detail.cpaQuestions.map((q, i) => (
+                          <div key={i} className="flex items-start gap-2 group">
+                            <p className="text-muted-foreground flex-1 text-sm">• {q}</p>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 px-2 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                              onClick={(e) => { e.stopPropagation(); handleSaveQuestion(q, cat.key); }}
+                            >
+                              <Plus className="h-3 w-3 mr-1" /> Save
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Status + Notes */}
+                    <div className="flex items-center gap-3 pt-2">
+                      <Select value={status} onValueChange={(v) => onUpdateItem(cat.key, v as ReviewStatus)}>
+                        <SelectTrigger className="w-[160px] h-8 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(STATUS_CONFIG).map(([k, v]) => (
+                            <SelectItem key={k} value={k}>
+                              <span className="flex items-center gap-1.5">{v.icon}{v.label}</span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Textarea
+                      placeholder="Your notes for this area…"
+                      value={notes}
+                      onChange={e => onUpdateItem(cat.key, status, e.target.value)}
+                      rows={2}
+                    />
+                  </CardContent>
+                )}
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
         );
       })}
     </div>
