@@ -22,7 +22,7 @@ export const starterTerms: TermsSnapshot[] = [
 ];
 
 export const starterShifts: Shift[] = [
-  { id: 's5', facility_id: 'c1', start_datetime: fmt(setTime(addDays(today, 2), 8)), end_datetime: fmt(setTime(addDays(today, 2), 18)), status: 'booked', rate_applied: 850, notes: 'Example shift', color: 'blue' },
+  { id: 's5', facility_id: 'c1', start_datetime: fmt(setTime(addDays(today, 2), 8)), end_datetime: fmt(setTime(addDays(today, 2), 18)), rate_applied: 850, notes: 'Example shift', color: 'blue' },
 ];
 
 export const starterInvoices: Invoice[] = [];
