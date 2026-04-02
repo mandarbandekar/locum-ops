@@ -149,7 +149,7 @@ export default function ReportsPage() {
     });
     shifts.forEach(shift => {
       const shiftDate = parseISO(shift.start_datetime);
-      if (isWithinInterval(shiftDate, { start: rangeStart, end: rangeEnd }) && shift.status !== 'canceled') {
+      if (isWithinInterval(shiftDate, { start: rangeStart, end: rangeEnd })) {
         shiftCount++;
       }
     });
