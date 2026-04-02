@@ -77,6 +77,12 @@ export default function InvoicesPage() {
     .sort((a, b) => new Date(a.invoice_date || a.period_end).getTime() - new Date(b.invoice_date || b.period_end).getTime());
   const paid = allInvoices.filter(i => i.computedStatus === 'paid');
 
+  const monthStart = startOfMonth(new Date());
+  const paidThisMonth = paid.filter(i => i.paid_at && isAfter(new Date(i.paid_at), monthStart));
+
+  const sumTotal = (arr: typeof allInvoices) => arr.reduce((s, i) => s + (i.total_amount ?? 0), 0);
+  const sumBalance = (arr: typeof allInvoices) => arr.reduce((s, i) => s + (i.balance_due ?? 0), 0);
+
   if (dataLoading) {
     return (
       <div className="p-6">
