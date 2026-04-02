@@ -133,6 +133,18 @@ export default function InvoicesPage() {
         <InvoiceWorkflowHint />
       </div>
 
+      {readyToReview.length > 0 && (
+        <div className="flex items-center justify-between gap-3 px-4 py-3 mb-4 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40">
+          <div className="flex items-center gap-2 text-sm font-medium text-amber-800 dark:text-amber-300">
+            <FileEdit className="h-4 w-4 shrink-0" />
+            You have {readyToReview.length} invoice{readyToReview.length !== 1 ? 's' : ''} ready to review — review and send to get paid.
+          </div>
+          <Button size="sm" className="shrink-0" onClick={() => navigate(`/invoices/${readyToReview[0].id}`)}>
+            Review Next →
+          </Button>
+        </div>
+      )}
+
       <div className="space-y-4">
         <div ref={overdueRef}>
           <InvoiceStatusGroup
