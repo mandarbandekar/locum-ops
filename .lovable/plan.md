@@ -1,81 +1,81 @@
-# Business Module UX Evaluation and Improvements
+
+
+# Schedule Module UX Evaluation and Improvements
 
 ## Current State Assessment
 
-The Business module has three tabs: **Reports**, **Estimated Tax Tracker**, and **Tax Planning Advisor**. Here's what I found:
+The Schedule module has five tabs (Month, Week, List, Clinic Confirm, Sync), a date navigator, calendar layer filters, drag-and-drop rescheduling, and a multi-date ShiftFormDialog. Here's what needs improvement:
 
 ### Issues Identified
 
-1. **Reports page is chart-heavy with no actionable context** -- Users see 7 charts but no guidance on what they mean or what to do. There are no callouts, highlights, or plain-language insights.
-2. **No "at a glance" summary when landing on Business** -- Users land on the Reports tab and immediately face a time-range selector and 4 generic KPI cards. There's no narrative telling them how their business is doing.
-3. **KPI cards lack comparison context** -- "Total Revenue: $12,000" means nothing without knowing if that's up or down from last period. No deltas or trend indicators.
-4. **Charts have no inline insights** -- Each chart shows data but doesn't highlight the key takeaway (e.g., "Weekend shifts earn 40% more" or "Clinic A pays in 8 days on average").
-5. **Tab naming is unclear** -- "Reports" is vague. "Estimated Tax Tracker" is wordy. Users may not know which tab to visit for what.
+1. **No context when the calendar is empty** — New users land on a blank month grid with no guidance. There's no empty state encouraging them to add their first shift. This is the #1 adoption blocker since shifts drive revenue and invoices.
+
+2. **No shift summary strip** — Users can't see at a glance how many shifts, hours, or expected revenue they have for the current period without counting pills manually.
+
+3. **"Add Shift" button competes with view toggles** — The primary CTA sits inline with 5 view toggle buttons, making it easy to miss. On mobile the button row wraps awkwardly.
+
+4. **No "Today" indicator in month view header** — There's a small "Today" button but the current day cell only gets a faint `bg-primary/5` tint that's easy to miss.
+
+5. **List view lacks earnings column** — The list table shows Rate but not total earnings (rate × hours), which is the number users actually care about.
+
+6. **No weekly/monthly summary in list view** — The list is just a flat table with no totals row showing aggregate hours and earnings.
 
 ---
 
 ## Recommended Plan
 
-### Change 1: Add a Business Snapshot section at the top of Reports
+### Change 1: Add an empty state when no shifts exist for the visible period
+When `rangeShifts.length === 0` and the user is on month/week view, show a centered empty state card with an illustration prompt and "Add Your First Shift" CTA that opens the shift dialog. This directly drives adoption.
 
-Replace the plain KPI cards with a **Business Health strip** that includes period-over-period comparison arrows and one-line insights.
+**In `src/pages/SchedulePage.tsx`:**
+- Add an empty state component above/overlaying the calendar when no shifts exist in the range
+- Include a brief value proposition: "Add shifts to track your schedule, auto-generate invoices, and sync to your calendar"
 
-**In `src/pages/ReportsPage.tsx`:**
+### Change 2: Add a Schedule Summary Strip below the navigation
+A compact row showing key stats for the visible period: **X shifts · Y hours · $Z expected revenue**. Gives instant context without reading the calendar.
 
-- Compute previous-period values for each KPI (revenue, collected, shifts, facilities)
-- Show a green/red arrow with "up X%" or "down X%" vs. the prior equivalent period
-- Add a subtitle like "vs. previous 6 months" under each delta
+**In `src/pages/SchedulePage.tsx`:**
+- Compute `totalShifts`, `totalHours`, `totalRevenue` from `rangeShifts` (non-canceled)
+- Render a small strip between the date nav and the calendar grid
+- Only show when there are shifts in range
 
-### Change 2: Add auto-generated insight callouts below key charts
+### Change 3: Elevate the "Add Shift" button
+Move "Add Shift" out of the view toggle row. Place it as a floating action or prominently separated primary button so it's always visible and clearly the main action.
 
-Add a small text insight beneath each chart card that summarizes the key finding in plain English.
+**In `src/pages/SchedulePage.tsx`:**
+- Move "Add Shift" to the page header row next to the title, separated from view toggles
+- Keep it as the primary variant button
 
-**In `src/pages/ReportsPage.tsx`:**
+### Change 4: Add earnings column and totals row to List view
+Add an "Earnings" column computed as `rate × hours` and a summary footer row with totals.
 
-- Below Facility Payment Speed: `"Fastest payer: {name} ({N} days avg)"` or `"All facilities pay within {N} days on average"`
-- Below Revenue by Facility: `"{name} accounts for {X}% of your revenue"`  
-- Below Earnings by Day: `"Your highest-earning day is {day} — averaging ${X}/shift"`
-- Below Avg Rate: `"{name} has your highest avg rate at ${X}"`
+**In `src/pages/SchedulePage.tsx`:**
+- Add "Earnings" column: `rate_applied * (duration in hours)`
+- Add a `<tfoot>` with total shifts, total hours, total earnings
 
-These are computed from the existing memos — no new data needed.
+### Change 5: Strengthen today indicator in month view
+Make today's date number more prominent with a filled circle background (already partially done) and add a subtle left-border accent to the cell.
 
-### Change 3: Rename tabs for clarity
-
-**In `src/pages/BusinessPage.tsx`:**
-
-- "Reports" → "Insights" (signals actionable analysis, not just data dumps)
-- "Estimated Tax Tracker" → "Estimated Tax Tracker" (shorter, mobile-friendly)
-- "Tax Planning Advisor" → "Tax Advisor" (shorter)
-
-### Change 4: Add an effective rate KPI card
-
-Replace "Active Facilities" (low value — users know how many clinics they work at) with **Effective Hourly Rate** (total revenue / total hours worked). This is the single number locum providers care about most.
-
-**In `src/pages/ReportsPage.tsx`:**
-
-- Compute `effectiveRate = totalPaid / totalHoursWorked` from existing `monthlyHoursWorked` data
-- Show as a KPI card with `$/hr` formatting
+**In `src/pages/SchedulePage.tsx`:**
+- Add `border-l-2 border-l-primary` to today's cell in `renderDayCell`
 
 ---
 
 ## Files to modify
 
-### `src/pages/BusinessPage.tsx`
+### `src/pages/SchedulePage.tsx`
+- Add schedule summary strip (shifts/hours/revenue) below date nav
+- Add empty state overlay when no shifts in range
+- Move "Add Shift" button to header row, separate from view toggles
+- Add earnings column + totals footer to list view
+- Strengthen today cell styling
 
-- Rename tab labels: "Insights", "Tax Tracker", "Tax Advisor"
-
-### `src/pages/ReportsPage.tsx`
-
-- Add period-over-period delta computation for KPI cards
-- Add trend arrows (up/down/flat) with percentage change
-- Replace "Active Facilities" KPI with "Effective Rate" ($/hr)
-- Add plain-language insight text below each chart card
-- Compute insights from existing memos (top payer, revenue concentration, best day, etc.)
-
-### No database changes, no new files, no backend changes.
+### No new files, no database changes, no backend changes. All presentation-layer.
 
 ## Technical Detail
 
-- Period comparison uses the same `months` logic but shifted back by `monthRange` to compute the "previous period" values
-- Insight strings are derived from existing `facilityPaymentSpeed`, `revenueByFacility`, `earningsByDayOfWeek`, and `avgRatePerFacility` memos — no additional data fetching
-- All changes are presentation-layer only
+- Hours computed via `differenceInHours(end, start)` from date-fns (already imported)
+- Revenue = `shift.rate_applied` (this is already the total for the shift, not hourly — confirmed from the data model where `rate_applied` is per-shift)
+- Summary strip uses the existing `rangeShifts` filtered array
+- Empty state only shows when `rangeShifts.length === 0` and view is month/week/list (not confirmations/sync)
+
