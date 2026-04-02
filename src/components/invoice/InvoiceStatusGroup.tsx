@@ -37,6 +37,8 @@ interface Props {
   getFacilityName: (id: string) => string;
   emptyMessage: string;
   defaultOpen?: boolean;
+  headerRight?: React.ReactNode;
+  alertBanner?: React.ReactNode;
 }
 
 const statusStyles: Record<string, string> = {
