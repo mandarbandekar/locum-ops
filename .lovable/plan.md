@@ -1,81 +1,82 @@
 
 
-# Tax Estimator from Real Data
-
-## What It Does
-
-Replace the current "user picks a %" reserve approach with an actual tax estimator that computes estimated federal income tax + self-employment tax (15.3%) from the user's real paid invoice data — broken down by quarter, with a running "you should have set aside $X by now" indicator.
+# Improve Monthly Revenue Chart
 
 ## Current State
 
-- TrackerTab already pulls paid invoices via `aggregateQuarterlyIncome` and shows YTD income
-- Reserve is a user-set flat % or fixed monthly amount — not a real estimate
-- No self-employment tax (SE tax) calculation exists
-- No filing status or standard deduction awareness
+The Monthly Revenue chart in ReportsPage already computes three data series per month:
+- **Paid** — invoices with `status === 'paid'`
+- **Outstanding** — `total - paid` (combines sent, partial, overdue, and draft invoices)
+- **Anticipated** — shifts that are `proposed` or `booked` but not yet on any invoice
 
-## Changes
+The chart renders Paid and Outstanding as a stacked bar, with Anticipated as a separate semi-transparent dashed bar beside it.
 
-### 1. Add tax estimation logic to `src/lib/taxCalculations.ts`
+## Problems
 
-New exported functions:
+1. **Outstanding conflates two very different things**: invoices that have been sent and are awaiting payment vs. draft invoices the user hasn't even reviewed yet. Users need to know "money I'm owed" (sent) vs "money I need to invoice" (draft).
+2. **Anticipated definition is too narrow**: it only counts shifts with no invoice. But draft/upcoming invoices also represent anticipated money — they haven't been sent yet. The user's mental model is: "How much am I expecting to come in?"
+3. **No cumulative view**: Users want to see "total earned so far this year" as a running total, not just month-by-month bars.
+4. **No summary callout** under the chart explaining the numbers in plain language.
+5. **Legend is implicit** — relies on tooltip hover. A visible legend row with totals would help.
 
-- **`estimateSelfEmploymentTax(netIncome)`** — computes 92.35% × income × 15.3% (Social Security + Medicare), with the $168,600 SS wage cap for 2026
-- **`estimateFederalIncomeTax(netIncome, filingStatus, deductionOverride?)`** — applies standard deduction based on filing status (single/married_joint/married_separate/head_of_household), then 2026 marginal brackets (10/12/22/24/32/35/37%)
-- **`estimateQuarterlyPayments(annualTax, quarterlyIncome)`** — splits annual estimated liability proportionally by quarter income, returns per-quarter amounts
-- **`estimateTotalTax(netIncome, filingStatus, deductionOverride?)`** — returns `{ federalIncome, selfEmployment, total, effectiveRate, quarterlyPayment }`
+## Recommended Approach
 
-All functions are pure math with a disclaimer constant: these are planning estimates only.
+### Revised Data Categories (3 tiers)
 
-### 2. Add a `TaxEstimatorCard` component
+| Category | Color | Definition | User Meaning |
+|---|---|---|---|
+| **Collected** | Green (solid) | Invoices with `status === 'paid'` | Money in your bank |
+| **Outstanding** | Amber (solid) | Sent/partial/overdue invoices (`computeInvoiceStatus` returns `sent`, `partial`, or `overdue`) | Money you're owed |
+| **Pipeline** | Gray (dashed, 50% opacity) | Draft invoices + uninvoiced booked/proposed shifts | Money coming your way |
 
-New file: `src/components/tax-strategy/TaxEstimatorCard.tsx`
+This gives users a clear 3-layer picture: earned, owed, expected.
 
-A card shown above the quarterly planning section in TrackerTab that displays:
+### Chart Improvements
 
-- **Filing status selector** (single, married filing jointly, married filing separately, head of household) — persisted to `tax_settings`
-- **Business expense deduction** — optional override input so users can subtract known deductions from gross income before estimating (defaults to $0)
-- **Computed results**:
-  - Gross 1099 income (from paid invoices — already computed)
-  - Deductible portion of SE tax (50% of SE tax)
-  - Estimated SE tax
-  - Estimated federal income tax
-  - **Total estimated tax liability**
-  - **Effective tax rate** (total / gross)
-  - **Per-quarter payment** (total / 4, or proportional to income)
-- **"vs. Your Reserve" comparison** — shows the delta between the user's current reserve setting and the estimated liability: "Your 30% reserve = $24,000. Estimated liability = $21,400. You're $2,600 ahead."
+1. **Stacked bar with 3 segments**: Collected (bottom) + Outstanding (middle) + Pipeline (top, dashed/translucent) — all in one stack so the total bar height = total potential revenue.
 
-### 3. Update TrackerTab to integrate the estimator
+2. **Summary legend row above chart**: Show inline totals for each category with colored dots, e.g.:
+   - `Collected: $12,400` · `Outstanding: $3,200` · `Pipeline: $5,800`
 
-In `src/components/tax-strategy/TrackerTab.tsx`:
+3. **Running total line overlay**: Add a thin cumulative line (Collected only) overlaid on the bar chart using a `ComposedChart`, so users can see their earnings trajectory.
 
-- Import and render `TaxEstimatorCard` between the summary cards and the reserve preference card
-- Add `filing_status` and `estimated_deductions` to the settings state (read/write from `tax_settings`)
-- Pass quarterly income data + settings to the estimator card
-- Update the quarterly cards to show "Estimated payment: $X" alongside the existing reserve amount
+4. **Insight callout**: Auto-generate a plain-language sentence below the chart, e.g.:
+   - "You've collected 65% of invoiced revenue. $3,200 is awaiting payment across 4 invoices."
+   - "Your pipeline shows $5,800 in upcoming work over the next 2 months."
 
-### 4. Update `tax_settings` table
+5. **Current month highlight**: Visually distinguish the current month's bar (subtle border or background) so users orient quickly.
 
-Add two columns via migration:
-- `filing_status` (text, default `'single'`)
-- `estimated_deductions` (numeric, default `0`)
+### Technical Changes
 
-### 5. Update summary cards
+**File: `src/pages/ReportsPage.tsx`**
 
-Replace the "Est. Reserve" summary card with two rows:
-- **Est. Tax Liability** (computed) — the real estimate
-- **Your Reserve** (user-set) — kept for comparison
+- **revenueData computation** (lines 85-113): Split current `outstanding` into two:
+  - `outstanding`: sum of invoices where `computeInvoiceStatus(inv)` is `sent`, `partial`, or `overdue`
+  - `pipeline`: sum of draft invoices + anticipated shifts (uninvoiced booked/proposed shifts)
+  - `cumulativeCollected`: running sum of `paid` across months (for overlay line)
 
-Add a small delta indicator: green if reserve >= liability, amber if under.
+- **Chart config** (lines 326-330): Update to 3 categories + cumulative line:
+  ```
+  collected: green, outstanding: amber, pipeline: gray-dashed
+  cumulativeCollected: thin green line
+  ```
 
-## Files to Modify
+- **Chart rendering** (lines 458-483): Switch from `BarChart` to Recharts `ComposedChart` to support both stacked bars and a line overlay. Stack all three segments. Add `<Line>` for cumulative collected.
 
-- `src/lib/taxCalculations.ts` — add SE tax, federal tax, and total estimate functions
-- `src/components/tax-strategy/TaxEstimatorCard.tsx` — new component
-- `src/components/tax-strategy/TrackerTab.tsx` — integrate estimator card, pass new settings
-- `src/test/taxCalculations.test.ts` — add tests for new functions
-- Database migration — add `filing_status` and `estimated_deductions` to `tax_settings`
+- **Legend row**: Add a flex row above the chart with colored dots and dollar totals for each category.
 
-## Disclaimer
+- **Insight callout**: Add an `InsightCallout` below the chart with collection rate and pipeline summary.
 
-Every computed number includes the existing disclaimer pattern: "Planning estimate only — confirm with your CPA." The estimator does not account for state taxes, credits, other income sources, or itemized deductions beyond the standard deduction.
+- **KPI card update**: Rename "Total Revenue" KPI to show Collected + Outstanding + Pipeline breakdown in the subtitle.
+
+**No database changes required** — all data already exists in invoices and shifts.
+
+### What the User Sees After
+
+A single chart that answers three questions at a glance:
+1. "How much have I actually been paid?" (green bars + cumulative line)
+2. "How much am I waiting on?" (amber bars)  
+3. "What's coming up?" (gray dashed bars)
+
+With a plain-language summary below and totals above.
 
