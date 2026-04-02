@@ -162,7 +162,7 @@ export default function ReportsPage() {
     const rangeEnd = endOfMonth(months[months.length - 1]);
     shifts.forEach(shift => {
       const shiftDate = parseISO(shift.start_datetime);
-      if (isWithinInterval(shiftDate, { start: rangeStart, end: rangeEnd }) && shift.status !== 'canceled') {
+      if (isWithinInterval(shiftDate, { start: rangeStart, end: rangeEnd })) {
         counts[shift.facility_id] = (counts[shift.facility_id] || 0) + 1;
       }
     });
