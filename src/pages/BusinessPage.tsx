@@ -55,9 +55,9 @@ export default function BusinessPage() {
       </div>
 
       {activeTab === 'reports' && <ReportsPage />}
-      {activeTab === 'tax-reserve' && <TaxStrategyPage />}
+      {(activeTab === 'tax-reserve' || activeTab === 'tax-strategy') && <TaxStrategyPage />}
       {activeTab === 'deductions' && <DeductionsTab />}
-      {activeTab === 'tax-planning' && <TaxPlanningAdvisorPage />}
+      {(activeTab === 'tax-planning' || activeTab === 'tax-advisor') && <TaxPlanningAdvisorPage />}
     </div>
   );
 }
