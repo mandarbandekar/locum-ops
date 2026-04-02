@@ -346,6 +346,7 @@ export default function TrackerTab() {
           {quarterStatuses.map(qs => {
             const qi = quarterlyIncome.find(q => q.quarter === qs.quarter);
             const sa = setAsideData.find(q => q.quarter === qs.quarter);
+            const eqp = estimatedQuarterly.find(q => q.quarter === qs.quarter);
             const isPast = new Date(qs.due_date) < new Date();
             const quarterCompletedCount = activeChecklist.filter(c => c.completed).length;
             const quarterProgress = activeChecklist.length > 0 ? Math.round((quarterCompletedCount / activeChecklist.length) * 100) : 0;
@@ -374,9 +375,10 @@ export default function TrackerTab() {
             const quarterBody = (
               <>
                 {/* Income & Reserve */}
-                <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="grid grid-cols-3 gap-2 text-sm">
                   <p className="text-muted-foreground">Income: <span className="font-medium text-foreground">${(qi?.income || 0).toLocaleString()}</span></p>
                   <p className="text-muted-foreground">Reserve: <span className="font-medium text-foreground">${(sa?.amount || 0).toLocaleString()}</span></p>
+                  <p className="text-muted-foreground">Est. Payment: <span className="font-medium text-foreground">${(eqp?.amount || 0).toLocaleString()}</span></p>
                 </div>
 
                 {/* Status Selector */}
