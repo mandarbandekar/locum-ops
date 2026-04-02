@@ -19,7 +19,7 @@ import {
   calculateSetAside,
   getDefaultDueDates,
   estimateTotalTax,
-  estimateQuarterlyPayments,
+  estimateQuarterlyInstallments,
   type FilingStatus,
 } from '@/lib/taxCalculations';
 import TaxEstimatorCard from './TaxEstimatorCard';
