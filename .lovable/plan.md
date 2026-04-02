@@ -1,29 +1,41 @@
 
 
-# Merge Create & Bulk Invoice into One Dialog
+# Improve Invoice Dashboard UX — Guide Users to Auto-Generated Invoices
 
-## What changes
-Replace the two separate invoice creation flows (simple "Create" and "Bulk" wizard) with a single "Create Invoice" button that opens the existing `BulkInvoiceDialog` wizard. The wizard already covers the complete flow: facility → period → shift selection → review.
+## Problem
+Users may see the "Create Invoice" button and think they need to manually create invoices, missing the auto-generated drafts sitting in Ready to Review or Upcoming sections below.
+
+## Recommended Changes
+
+### 1. De-emphasize "Create Invoice" button
+- Change from primary filled button to `variant="outline"` with smaller text
+- This signals it's a secondary/advanced action, not the main workflow
+
+### 2. Add a contextual action banner when drafts exist
+When there are `readyToReview` invoices, show a prominent banner between the summary strip and the status groups:
+
+> **You have {count} invoices ready to review** — Review and send them to get paid.  [Review Next →]
+
+- Uses amber/highlight background to draw the eye
+- "Review Next" button navigates to the first ready-to-review invoice
+- Banner disappears when `readyToReview` is empty
+
+### 3. Smart empty-state messaging in "Ready to Review" group
+Update the empty message to reinforce the auto-generation model:
+> "Invoices are auto-generated from your shifts — no need to create them manually. They'll appear here once shifts are completed."
+
+### 4. Relabel "Create Invoice" to "Create Manual Invoice"
+Makes it explicit that this is the exception, not the norm.
 
 ## Files to modify
 
 ### `src/pages/InvoicesPage.tsx`
-- Remove `showBulkCreate` state and the separate "Bulk" button
-- Rename `showCreate` usage to open `BulkInvoiceDialog` instead of `CreateInvoiceDialog`
-- Remove the entire `CreateInvoiceDialog` function (lines 273-358)
-- Remove `CreateInvoiceDialog` from both render locations (empty state + main view)
-- Keep single "Create Invoice" button that opens `BulkInvoiceDialog`
-- Remove unused imports (`Layers`, `subDays`, `Label`, `Input`, `Select` components only used by `CreateInvoiceDialog`)
-- Update `InvoiceEmptyState` callback to open the same dialog
+- Change "Create Invoice" button to `variant="outline"` and relabel to "Create Manual Invoice"
+- Add a contextual banner component between the workflow hint and the status groups when `readyToReview.length > 0`
+- Update the "Ready to Review" empty message
 
-### `src/components/invoice/BulkInvoiceDialog.tsx`
-- Rename dialog title from "Create Bulk Invoice" to "Create Invoice"
-- Update success toast from "Bulk invoice created..." to "Invoice created..."
+### `src/components/invoice/InvoiceEmptyState.tsx`
+- No changes needed — it already emphasizes auto-generation well
 
-### No changes to:
-- Invoice logic, status computation, auto-generation, line item handling, or any other existing functionality
-- `bulkInvoiceHelpers.ts`, `DataContext.tsx`, `InvoiceStatusGroup.tsx`, or any other file
-
-## Why this is safe
-The `BulkInvoiceDialog` already does everything `CreateInvoiceDialog` does (and more). It uses `getEligibleShiftsForBulkInvoice` which properly excludes shifts on sent/paid invoices and flags draft-linked shifts. All shifts are auto-selected in step 3, so the "simple" flow is just clicking through the wizard. No invoice logic changes.
+### No new files, no database changes, no logic changes.
 
