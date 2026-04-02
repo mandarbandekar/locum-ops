@@ -117,7 +117,7 @@ export default function ReportsPage() {
         const uninvoicedShiftTotal = shifts.filter(s => {
           const shiftDate = parseISO(s.start_datetime);
           return isWithinInterval(shiftDate, { start: month, end: monthEnd }) &&
-            (s.status === 'proposed' || s.status === 'booked') &&
+            
             !invoicedShiftIds.has(s.id);
         }).reduce((sum, s) => sum + s.rate_applied, 0);
 
