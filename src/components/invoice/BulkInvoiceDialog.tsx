@@ -148,7 +148,7 @@ export function BulkInvoiceDialog({ open, onOpenChange, preselectedFacilityId }:
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
-            Create Bulk Invoice
+            Create Invoice
           </DialogTitle>
         </DialogHeader>
 
