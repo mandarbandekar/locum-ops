@@ -8,7 +8,7 @@ import {
   Send, ShieldAlert, CheckSquare, Zap, Clock,
 } from 'lucide-react';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
-import { format, differenceInDays, differenceInHours, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachMonthOfInterval, isWithinInterval, isToday, parseISO } from 'date-fns';
+import { format, differenceInDays, differenceInHours, addMonths, subMonths, startOfMonth, endOfMonth, endOfDay, startOfWeek, endOfWeek, eachMonthOfInterval, isWithinInterval, isToday, isAfter, parseISO } from 'date-fns';
 import { getChecklistBadge } from '@/types/contracts';
 import { useClinicConfirmations } from '@/hooks/useClinicConfirmations';
 import { useCredentials } from '@/hooks/useCredentials';
@@ -178,7 +178,12 @@ export default function DashboardPage() {
       return { month: format(month, 'MMM'), paid, outstanding, anticipated };
     });
 
-    const invoiceItems = [...draftInvoices, ...unpaidInvoices].map(inv => ({
+    const todayEnd = endOfDay(now);
+    const readyToReviewInvoices = draftInvoices.filter(inv =>
+      inv.invoice_date && !isAfter(parseISO(inv.invoice_date), todayEnd)
+    );
+
+    const invoiceItems = readyToReviewInvoices.map(inv => ({
       id: inv.id,
       invoice_number: inv.invoice_number,
       facility_name: getFacilityName(inv.facility_id),
@@ -188,7 +193,7 @@ export default function DashboardPage() {
       due_date: inv.due_date,
     }));
 
-    return { draftInvoices, draftTotal, unpaidInvoices, outstandingTotal, paidThisMonth, revenueData, invoiceItems };
+    return { draftInvoices, unpaidInvoices, outstandingTotal, paidThisMonth, revenueData, invoiceItems };
   }, [invoices, payments, now]);
 
   // ── Priorities / Attention items ──
@@ -214,7 +219,7 @@ export default function DashboardPage() {
         title: `${summary.draftInvoices.length} draft invoice${summary.draftInvoices.length > 1 ? 's' : ''}`,
         context: 'Ready to review and send',
         link: '/invoices', icon: FileText, urgency: 2,
-        amount: `$${summary.draftTotal.toLocaleString()}`,
+        amount: `$${summary.draftInvoices.reduce((s, i) => s + i.total_amount, 0).toLocaleString()}`,
       });
     }
 
@@ -342,7 +347,7 @@ export default function DashboardPage() {
   const briefing = useMemo(() => {
     const todayShifts = shifts.filter(s => isToday(parseISO(s.start_datetime)) && s.status !== 'canceled');
     const todayEarnings = todayShifts.reduce((sum, s) => sum + (s.rate_applied || 0), 0);
-    const totalCollectable = summary.outstandingTotal + summary.draftTotal;
+    const totalCollectable = summary.outstandingTotal;
     const overdueCount = invoices.filter(i => computeInvoiceStatus(i) === 'overdue').length;
 
     const parts: string[] = [];
@@ -406,9 +411,8 @@ export default function DashboardPage() {
 
         {/* Center: Money to Collect */}
         <div className="lg:col-span-4">
-          <MoneyToCollectCard
+           <MoneyToCollectCard
             outstandingTotal={summary.outstandingTotal}
-            draftTotal={summary.draftTotal}
             paidThisMonth={summary.paidThisMonth}
             revenueData={summary.revenueData}
             invoiceItems={summary.invoiceItems}
