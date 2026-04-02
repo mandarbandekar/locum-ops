@@ -173,7 +173,6 @@ export default function DashboardPage() {
       const anticipatedShifts = shifts.filter(s => {
         const shiftDate = parseISO(s.start_datetime);
         return isWithinInterval(shiftDate, { start: month, end: monthEnd }) &&
-          (s.status === 'proposed' || s.status === 'booked') &&
           !invoicedShiftIds.has(s.id);
       });
       const anticipated = anticipatedShifts.reduce((s, sh) => s + sh.rate_applied, 0);
