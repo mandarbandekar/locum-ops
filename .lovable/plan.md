@@ -1,41 +1,24 @@
 
 
-# Improve Invoice Dashboard UX — Guide Users to Auto-Generated Invoices
+# Sort All Invoice Groups in Ascending Date Order
 
-## Problem
-Users may see the "Create Invoice" button and think they need to manually create invoices, missing the auto-generated drafts sitting in Ready to Review or Upcoming sections below.
+## What changes
+Update the main `allInvoices` sort in `src/pages/InvoicesPage.tsx` (line 44) from **descending** (newest first) to **ascending** (earliest date first). This ensures that across all status groups (Overdue, Awaiting Payment, Ready to Review, Upcoming, Paid), the invoice closest to its closing/due date appears at the top.
 
-## Recommended Changes
+The `allDrafts` sort on line 72 is already ascending — no change needed there.
 
-### 1. De-emphasize "Create Invoice" button
-- Change from primary filled button to `variant="outline"` with smaller text
-- This signals it's a secondary/advanced action, not the main workflow
+## File to modify
 
-### 2. Add a contextual action banner when drafts exist
-When there are `readyToReview` invoices, show a prominent banner between the summary strip and the status groups:
+### `src/pages/InvoicesPage.tsx` — line 44
+Change the sort comparator from `b - a` (descending) to `a - b` (ascending):
 
-> **You have {count} invoices ready to review** — Review and send them to get paid.  [Review Next →]
+```
+// Before
+.sort((a, b) => new Date(b.invoice_date || b.period_end).getTime() - new Date(a.invoice_date || a.period_end).getTime());
 
-- Uses amber/highlight background to draw the eye
-- "Review Next" button navigates to the first ready-to-review invoice
-- Banner disappears when `readyToReview` is empty
+// After
+.sort((a, b) => new Date(a.invoice_date || a.period_end).getTime() - new Date(b.invoice_date || b.period_end).getTime());
+```
 
-### 3. Smart empty-state messaging in "Ready to Review" group
-Update the empty message to reinforce the auto-generation model:
-> "Invoices are auto-generated from your shifts — no need to create them manually. They'll appear here once shifts are completed."
-
-### 4. Relabel "Create Invoice" to "Create Manual Invoice"
-Makes it explicit that this is the exception, not the norm.
-
-## Files to modify
-
-### `src/pages/InvoicesPage.tsx`
-- Change "Create Invoice" button to `variant="outline"` and relabel to "Create Manual Invoice"
-- Add a contextual banner component between the workflow hint and the status groups when `readyToReview.length > 0`
-- Update the "Ready to Review" empty message
-
-### `src/components/invoice/InvoiceEmptyState.tsx`
-- No changes needed — it already emphasizes auto-generation well
-
-### No new files, no database changes, no logic changes.
+This is a one-line change. No other files affected.
 
