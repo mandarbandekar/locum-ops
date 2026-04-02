@@ -8,6 +8,7 @@ interface StatCard {
   accentClass: string;
   bgClass: string;
   onClick?: () => void;
+  annotation?: string;
 }
 
 interface Props {
