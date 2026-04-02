@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Trash2, Layers, AlertTriangle, Send, FileEdit, CheckCircle } from 'lucide-react';
-import { format, subDays, startOfMonth, isAfter } from 'date-fns';
+import { format, subDays, startOfMonth, isAfter, isBefore, startOfDay } from 'date-fns';
 import { computeInvoiceStatus, generateInvoiceNumber } from '@/lib/businessLogic';
 import { toast } from 'sonner';
 import { BulkInvoiceDialog } from '@/components/invoice/BulkInvoiceDialog';
