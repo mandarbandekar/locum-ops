@@ -1,7 +1,7 @@
 import { Zap, FileEdit, Send, Clock, DollarSign, CheckCircle } from 'lucide-react';
 
 const steps = [
-  { icon: <Zap className="h-3 w-3" />, label: 'Auto-Generated' },
+  { icon: <Zap className="h-3 w-3" />, label: 'Auto-Generated Upcoming Invoices' },
   { icon: <FileEdit className="h-3 w-3" />, label: 'Review & Send' },
   { icon: <Send className="h-3 w-3" />, label: 'Send to Facility' },
   { icon: <Clock className="h-3 w-3" />, label: 'Awaiting Payment' },
