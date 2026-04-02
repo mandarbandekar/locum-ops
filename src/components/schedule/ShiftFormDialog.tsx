@@ -95,18 +95,19 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     }
   };
 
-  // Check conflicts for ALL selected dates, not just the first
+  // Freeze the shifts snapshot when dialog opens so batch saves don't re-trigger conflicts
+  const [shiftsSnapshot] = useState(() => shifts);
+
+  // Check conflicts for ALL selected dates against the frozen snapshot
   const conflicts = useMemo(() => {
-    if (selectedDates.length === 0) return [];
+    if (isSubmitting || selectedDates.length === 0 || !facilityId || !startTime || !endTime) return [];
     const allConflicts: Shift[] = [];
     const seen = new Set<string>();
-    const datesToCheck = selectedDates;
-    for (const d of datesToCheck) {
+    for (const d of selectedDates) {
       const dateStr = format(d, 'yyyy-MM-dd');
       const startDt = `${dateStr}T${startTime}:00`;
       const endDt = `${dateStr}T${endTime}:00`;
-      // Filter out canceled/completed shifts before checking
-      const activeShifts = shifts.filter(s => s.status !== 'canceled');
+      const activeShifts = shiftsSnapshot.filter(s => s.status !== 'canceled');
       for (const c of detectShiftConflicts(activeShifts, { start_datetime: startDt, end_datetime: endDt, id: existing?.id })) {
         if (!seen.has(c.id)) {
           seen.add(c.id);
@@ -115,7 +116,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
       }
     }
     return allConflicts;
-  }, [shifts, selectedDates, startTime, endTime, existing?.id]);
+  }, [shiftsSnapshot, selectedDates, startTime, endTime, existing?.id, facilityId, isSubmitting]);
 
   const saveCustomRateToTerms = useCallback(async () => {
     if (!isCustomRate || !saveCustomRate || !rate || Number(rate) <= 0) return;
@@ -198,19 +199,21 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
               ) : (
                 <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">Tap to select dates</p>
               )}
-              {conflicts.length > 0 && (
-                <div className="mt-2 flex items-start gap-1.5 p-2 rounded-md bg-destructive/10 text-destructive">
-                  <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                  <div className="text-[11px] leading-snug">
-                    <p className="font-semibold">Scheduling conflict{conflicts.length > 1 ? 's' : ''}:</p>
-                    {conflicts.map(c => (
-                      <p key={c.id} className="mt-0.5">
-                        {facilities.find((f: any) => f.id === c.facility_id)?.name || 'Unknown'} — {format(new Date(c.start_datetime), 'MMM d, h:mm a')} to {format(new Date(c.end_datetime), 'h:mm a')}
-                      </p>
-                    ))}
+              <div className="min-h-[8px]">
+                {conflicts.length > 0 && (
+                  <div className="mt-2 flex items-start gap-1.5 p-2 rounded-md bg-destructive/10 text-destructive">
+                    <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                    <div className="text-[11px] leading-snug">
+                      <p className="font-semibold">Scheduling conflict{conflicts.length > 1 ? 's' : ''}:</p>
+                      {conflicts.map(c => (
+                        <p key={c.id} className="mt-0.5">
+                          {facilities.find((f: any) => f.id === c.facility_id)?.name || 'Unknown'} — {format(new Date(c.start_datetime), 'MMM d, h:mm a')} to {format(new Date(c.end_datetime), 'h:mm a')}
+                        </p>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           ) : (
             <Popover>
