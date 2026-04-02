@@ -1,7 +1,8 @@
 import { Card, CardContent } from '@/components/ui/card';
-import { AlertCircle, ArrowRight } from 'lucide-react';
+import { AlertCircle, ArrowRight, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
+import { ReadinessItem } from '@/components/dashboard/WorkReadinessStrip';
 
 export interface AttentionItem {
   title: string;
@@ -14,9 +15,10 @@ export interface AttentionItem {
 
 interface NeedsAttentionCardProps {
   items: AttentionItem[];
+  readinessItems?: ReadinessItem[];
 }
 
-export function NeedsAttentionCard({ items }: NeedsAttentionCardProps) {
+export function NeedsAttentionCard({ items, readinessItems = [] }: NeedsAttentionCardProps) {
   const navigate = useNavigate();
 
   return (
@@ -46,7 +48,7 @@ export function NeedsAttentionCard({ items }: NeedsAttentionCardProps) {
         <div className="h-px bg-border mx-5" />
 
         {/* Items */}
-        <div className="flex-1 px-5 pt-3 pb-4">
+        <div className="flex-1 px-5 pt-3 pb-2">
           {items.length === 0 ? (
             <div className="py-10 text-center">
               <p className="text-sm font-semibold text-foreground">You're all caught up! 🎉</p>
@@ -76,6 +78,31 @@ export function NeedsAttentionCard({ items }: NeedsAttentionCardProps) {
             </div>
           )}
         </div>
+
+        {/* Work Readiness Section */}
+        {readinessItems.length > 0 && (
+          <>
+            <div className="h-px bg-border mx-5" />
+            <div className="px-5 pt-3 pb-4">
+              <div className="flex items-center gap-1.5 mb-2">
+                <Zap className="h-3 w-3 text-warning" />
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.08em]">Work Readiness</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {readinessItems.map((item, i) => (
+                  <button
+                    key={i}
+                    className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-1 rounded-full border border-border/60 bg-card hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"
+                    onClick={() => navigate(item.link)}
+                  >
+                    <span className="truncate max-w-[140px]">{item.text}</span>
+                    <ArrowRight className="h-2.5 w-2.5 shrink-0" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   );

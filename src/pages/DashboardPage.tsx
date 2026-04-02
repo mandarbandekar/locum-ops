@@ -5,10 +5,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import {
   CalendarDays, FileText, DollarSign, AlertTriangle, ArrowRight,
-  Send, ShieldAlert, CheckSquare,
+  Send, ShieldAlert, CheckSquare, Zap, Clock,
 } from 'lucide-react';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
-import { format, differenceInDays, addMonths, subMonths, startOfMonth, endOfMonth, eachMonthOfInterval, isWithinInterval, parseISO } from 'date-fns';
+import { format, differenceInDays, differenceInHours, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachMonthOfInterval, isWithinInterval, isToday, parseISO } from 'date-fns';
 import { getChecklistBadge } from '@/types/contracts';
 import { useClinicConfirmations } from '@/hooks/useClinicConfirmations';
 import { useCredentials } from '@/hooks/useCredentials';
@@ -18,12 +18,41 @@ import { computeStatus as computeSubStatus } from '@/hooks/useSubscriptions';
 import { UpcomingShiftsCard } from '@/components/dashboard/UpcomingShiftsCard';
 import { MoneyToCollectCard } from '@/components/dashboard/MoneyToCollectCard';
 import { NeedsAttentionCard, AttentionItem } from '@/components/dashboard/NeedsAttentionCard';
-import { WorkReadinessStrip, ReadinessItem } from '@/components/dashboard/WorkReadinessStrip';
-import { QuickActions } from '@/components/dashboard/QuickActions';
 import { GettingStartedChecklist } from '@/components/dashboard/GettingStartedChecklist';
 import { useUserProfile } from '@/contexts/UserProfileContext';
+import { ReadinessItem } from '@/components/dashboard/WorkReadinessStrip';
 
 const dashDb = (table: string) => supabase.from(table as any);
+
+function computeStreak(): number {
+  try {
+    const key = 'locumops_last_visits';
+    const raw = localStorage.getItem(key);
+    const visits: string[] = raw ? JSON.parse(raw) : [];
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+
+    // Add today if not already there
+    if (!visits.includes(todayStr)) {
+      visits.push(todayStr);
+      // Keep last 90 days only
+      const recent = visits.slice(-90);
+      localStorage.setItem(key, JSON.stringify(recent));
+    }
+
+    // Count consecutive days ending today
+    const sorted = [...new Set(visits)].sort().reverse();
+    if (sorted[0] !== todayStr) return 0;
+    let streak = 1;
+    for (let i = 1; i < sorted.length; i++) {
+      const expected = format(new Date(new Date(sorted[0]).getTime() - i * 86400000), 'yyyy-MM-dd');
+      if (sorted[i] === expected) streak++;
+      else break;
+    }
+    return streak;
+  } catch {
+    return 0;
+  }
+}
 
 export default function DashboardPage() {
   const { shifts, invoices, facilities, payments, checklistItems } = useData();
@@ -61,6 +90,21 @@ export default function DashboardPage() {
 
   const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
 
+  // Streak
+  const streakDays = useMemo(() => computeStreak(), []);
+
+  // ── This week's earnings ──
+  const thisWeekEarnings = useMemo(() => {
+    const weekStart = startOfWeek(now, { weekStartsOn: 1 });
+    const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
+    return shifts
+      .filter(s => {
+        const d = parseISO(s.start_datetime);
+        return isWithinInterval(d, { start: weekStart, end: weekEnd }) && s.status === 'completed';
+      })
+      .reduce((sum, s) => sum + (s.rate_applied || 0), 0);
+  }, [shifts, now]);
+
   // ── Summary data ──
   const summary = useMemo(() => {
     const draftInvoices = invoices.filter(i => i.status === 'draft');
@@ -92,7 +136,6 @@ export default function DashboardPage() {
       const paid = monthInvoices.filter(i => i.status === 'paid').reduce((s, i) => s + i.total_amount, 0);
       const outstanding = monthInvoices.filter(i => i.status !== 'paid').reduce((s, i) => s + i.total_amount, 0);
 
-      // Anticipated income from proposed/booked shifts not yet invoiced
       const invoicedShiftIds = new Set(
         monthInvoices.flatMap(inv => (inv as any).line_items?.map((li: any) => li.shift_id) || [])
       );
@@ -138,7 +181,6 @@ export default function DashboardPage() {
   const attentionItems = useMemo(() => {
     const items: AttentionItem[] = [];
 
-    // Draft invoices (grouped)
     if (summary.draftInvoices.length > 0) {
       items.push({
         title: `${summary.draftInvoices.length} draft invoice${summary.draftInvoices.length > 1 ? 's' : ''}`,
@@ -148,7 +190,6 @@ export default function DashboardPage() {
       });
     }
 
-    // Overdue invoices
     const overdueInvoices = invoices.filter(i => computeInvoiceStatus(i) === 'overdue');
     if (overdueInvoices.length > 0) {
       const overdueTotal = overdueInvoices.reduce((s, i) => s + i.balance_due, 0);
@@ -160,7 +201,6 @@ export default function DashboardPage() {
       });
     }
 
-    // Confirmations - manual review queue
     if (confirmationBreakdown.manualReview > 0) {
       items.push({
         title: `${confirmationBreakdown.manualReview} confirmation${confirmationBreakdown.manualReview > 1 ? 's' : ''} to review`,
@@ -169,7 +209,6 @@ export default function DashboardPage() {
       });
     }
 
-    // Confirmations - needs update
     if (confirmationBreakdown.needsUpdate > 0) {
       items.push({
         title: `${confirmationBreakdown.needsUpdate} confirmation${confirmationBreakdown.needsUpdate > 1 ? 's' : ''} need update`,
@@ -178,7 +217,6 @@ export default function DashboardPage() {
       });
     }
 
-    // Missing contacts
     if (confirmationBreakdown.missingContact > 0) {
       items.push({
         title: `${confirmationBreakdown.missingContact} facilit${confirmationBreakdown.missingContact > 1 ? 'ies' : 'y'} missing contact`,
@@ -187,7 +225,6 @@ export default function DashboardPage() {
       });
     }
 
-    // Checklist items
     checklistItems
       .filter(item => getChecklistBadge(item) === 'due_soon' || getChecklistBadge(item) === 'overdue')
       .forEach(item => {
@@ -200,14 +237,12 @@ export default function DashboardPage() {
         });
       });
 
-    // Credential renewals
     if (credentialsList) {
       generateCredentialReminders(credentialsList, now, 30).forEach(r => {
         items.push({ title: r.title, context: r.body, link: r.link, icon: ShieldAlert, urgency: r.urgency });
       });
     }
 
-    // Subscriptions due soon
     const dueSoonSubs = subscriptions.filter(s => computeSubStatus(s.renewal_date, s.status) === 'due_soon');
     if (dueSoonSubs.length > 0) {
       items.push({
@@ -217,7 +252,6 @@ export default function DashboardPage() {
       });
     }
 
-    // Tax quarter
     const nextQuarter = taxQuarters.find(q => new Date(q.due_date) >= now && q.status !== 'paid');
     if (nextQuarter) {
       const daysUntil = differenceInDays(new Date(nextQuarter.due_date), now);
@@ -276,11 +310,40 @@ export default function DashboardPage() {
     return hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
   })();
 
+  // ── Daily Briefing computation ──
+  const briefing = useMemo(() => {
+    const todayShifts = shifts.filter(s => isToday(parseISO(s.start_datetime)) && s.status !== 'canceled');
+    const todayEarnings = todayShifts.reduce((sum, s) => sum + (s.rate_applied || 0), 0);
+    const totalCollectable = summary.outstandingTotal + summary.draftTotal;
+    const overdueCount = invoices.filter(i => computeInvoiceStatus(i) === 'overdue').length;
+
+    const parts: string[] = [];
+
+    if (todayShifts.length > 0) {
+      parts.push(`${todayShifts.length} shift${todayShifts.length > 1 ? 's' : ''} today worth $${todayEarnings.toLocaleString()}`);
+    } else {
+      parts.push('No shifts today');
+    }
+
+    if (thisWeekEarnings > 0) {
+      parts.push(`$${thisWeekEarnings.toLocaleString()} earned this week`);
+    }
+
+    if (overdueCount > 0) {
+      parts.push(`${overdueCount} invoice${overdueCount > 1 ? 's' : ''} overdue`);
+    } else if (totalCollectable > 0) {
+      parts.push(`$${totalCollectable.toLocaleString()} to collect`);
+    }
+
+    return parts.join(' · ');
+  }, [shifts, summary, invoices, thisWeekEarnings, now]);
+
   return (
     <div className="space-y-4 h-full">
-      {/* Header - hidden on mobile since greeting is in the card */}
-      <div className="hidden sm:flex items-center justify-end">
-        <QuickActions />
+      {/* Daily Briefing Strip */}
+      <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-primary/5 border border-primary/10">
+        <Zap className="h-3.5 w-3.5 text-primary shrink-0" />
+        <p className="text-[12px] sm:text-[13px] font-medium text-foreground">{briefing}</p>
       </div>
 
       {/* Getting Started Checklist */}
@@ -297,6 +360,7 @@ export default function DashboardPage() {
             getFacilityName={getFacilityName}
             greeting={`${greeting}, ${profile?.first_name || 'there'}`}
             firstName={profile?.first_name || 'there'}
+            streakDays={streakDays}
           />
         </div>
 
@@ -308,22 +372,15 @@ export default function DashboardPage() {
             paidThisMonth={summary.paidThisMonth}
             revenueData={summary.revenueData}
             invoiceItems={summary.invoiceItems}
+            thisWeekEarnings={thisWeekEarnings}
           />
         </div>
 
         {/* Right: Needs Attention */}
         <div className="lg:col-span-4">
-          <NeedsAttentionCard items={attentionItems} />
+          <NeedsAttentionCard items={attentionItems} readinessItems={readinessItems} />
         </div>
       </div>
-
-      {/* Mobile Quick Actions */}
-      <div className="sm:hidden">
-        <QuickActions />
-      </div>
-
-      {/* Work Readiness Strip */}
-      <WorkReadinessStrip items={readinessItems} />
     </div>
   );
 }

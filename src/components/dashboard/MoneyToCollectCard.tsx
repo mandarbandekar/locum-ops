@@ -1,10 +1,8 @@
 import { useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { DollarSign, FileText, ArrowRight, TrendingUp, Send, Clock } from 'lucide-react';
+import { DollarSign, FileText, ArrowRight, TrendingUp, Send, Clock, Wallet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { ChartContainer } from '@/components/ui/chart';
-import { BarChart, Bar, XAxis, Tooltip } from 'recharts';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
@@ -31,6 +29,7 @@ interface MoneyToCollectCardProps {
   paidThisMonth: number;
   revenueData: RevenueMonth[];
   invoiceItems: InvoiceItem[];
+  thisWeekEarnings?: number;
 }
 
 export function MoneyToCollectCard({
@@ -39,19 +38,10 @@ export function MoneyToCollectCard({
   paidThisMonth,
   revenueData,
   invoiceItems,
+  thisWeekEarnings = 0,
 }: MoneyToCollectCardProps) {
   const navigate = useNavigate();
   const totalCollectable = outstandingTotal + draftTotal;
-
-  const totalRevenue = useMemo(() => revenueData.reduce((s, d) => s + d.paid + d.outstanding, 0), [revenueData]);
-
-  const totalAnticipated = useMemo(() => revenueData.reduce((s, d) => s + (d.anticipated || 0), 0), [revenueData]);
-
-  const chartConfig = {
-    paid: { label: 'Collected', color: 'hsl(var(--success))' },
-    outstanding: { label: 'Outstanding', color: 'hsl(var(--warning))' },
-    anticipated: { label: 'Anticipated', color: 'hsl(var(--muted-foreground))' },
-  };
 
   const getIcon = (status: string) => {
     if (status === 'draft') return <FileText className="h-3.5 w-3.5 text-warning" />;
@@ -88,12 +78,22 @@ export function MoneyToCollectCard({
           </div>
         </div>
 
+        {/* This Week's Earnings */}
+        <div className="mx-5 mt-2 mb-1 px-3 py-2.5 rounded-lg bg-primary/5 border border-primary/10">
+          <div className="flex items-center gap-2">
+            <Wallet className="h-3.5 w-3.5 text-primary" />
+            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">This Week</span>
+            <span className="ml-auto text-[15px] font-extrabold text-foreground">${thisWeekEarnings.toLocaleString()}</span>
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-0.5 pl-5">Earned from completed shifts</p>
+        </div>
+
         {/* Individual invoice list */}
-        <div className="px-4 pt-2 min-h-0">
+        <div className="px-4 pt-3 min-h-0">
           <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-2 px-1">
             Invoices to Review ({invoiceItems.length})
           </p>
-          <ScrollArea className="max-h-[220px]">
+          <ScrollArea className="max-h-[180px]">
             <div className="space-y-1.5 pr-2">
               {invoiceItems.length === 0 && (
                 <div className="py-4 text-center">
@@ -127,50 +127,6 @@ export function MoneyToCollectCard({
               ))}
             </div>
           </ScrollArea>
-        </div>
-
-        {/* Revenue mini chart */}
-        <div className="px-4 pt-3">
-          <div className="flex items-center justify-between mb-1">
-            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Revenue Trend</p>
-            <div className="text-[11px] text-muted-foreground text-right">
-              <span>Total: <span className="font-semibold text-foreground">${totalRevenue.toLocaleString()}</span></span>
-              {totalAnticipated > 0 && (
-                <span className="ml-2">Est: <span className="font-semibold text-muted-foreground">${totalAnticipated.toLocaleString()}</span></span>
-              )}
-            </div>
-          </div>
-          <ChartContainer config={chartConfig} className="h-[90px] w-full">
-            <BarChart data={revenueData} barGap={0} barCategoryGap="20%">
-              <XAxis
-                dataKey="month"
-                tickLine={false}
-                axisLine={false}
-                tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-              />
-              <Tooltip
-                cursor={{ fill: 'hsl(var(--muted)/0.3)' }}
-                content={({ active, payload, label }) => {
-                  if (!active || !payload?.length) return null;
-                  return (
-                    <div className="rounded-lg border bg-background px-3 py-2 shadow-md text-[11px]">
-                      <p className="font-semibold mb-1">{label}</p>
-                      {payload.map((p: any) => (
-                        <div key={p.dataKey} className="flex items-center gap-2">
-                          <span className="h-2 w-2 rounded-full" style={{ background: p.fill }} />
-                          <span className="text-muted-foreground">{p.dataKey === 'paid' ? 'Collected' : 'Outstanding'}:</span>
-                          <span className="font-medium">${p.value?.toLocaleString()}</span>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                }}
-              />
-              <Bar dataKey="paid" stackId="a" fill="hsl(var(--success))" radius={[0, 0, 0, 0]} />
-              <Bar dataKey="outstanding" stackId="a" fill="hsl(var(--warning))" radius={[3, 3, 0, 0]} />
-              <Bar dataKey="anticipated" fill="hsl(var(--muted-foreground))" radius={[3, 3, 0, 0]} fillOpacity={0.4} strokeDasharray="4 2" stroke="hsl(var(--muted-foreground))" />
-            </BarChart>
-          </ChartContainer>
         </div>
 
         {/* CTA */}
