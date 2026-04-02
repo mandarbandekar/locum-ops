@@ -488,7 +488,7 @@ export default function ReportsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Monthly Revenue</CardTitle>
-          <CardDescription>Collected, outstanding, and pipeline revenue at a glance</CardDescription>
+          <CardDescription>Collected, outstanding, and anticipated income at a glance</CardDescription>
         </CardHeader>
         <CardContent>
           {/* Summary legend row */}
@@ -503,29 +503,29 @@ export default function ReportsPage() {
               <span className="text-muted-foreground">Outstanding:</span>
               <span className="font-semibold">${totalOutstanding.toLocaleString()}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="h-3 w-3 rounded-sm opacity-50" style={{ backgroundColor: 'hsl(215, 25%, 75%)' }} />
-              <span className="text-muted-foreground">Pipeline:</span>
-              <span className="font-semibold">${totalPipeline.toLocaleString()}</span>
-            </div>
+            {totalAnticipated > 0 && (
+              <div className="flex items-center gap-2">
+                <div className="h-3 w-3 rounded-sm opacity-50" style={{ backgroundColor: 'hsl(215, 25%, 75%)' }} />
+                <span className="text-muted-foreground">Anticipated:</span>
+                <span className="font-semibold">${totalAnticipated.toLocaleString()}</span>
+              </div>
+            )}
           </div>
           <ChartContainer config={revenueChartConfig} className="h-[300px] w-full">
             <ComposedChart data={revenueData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
               <XAxis dataKey="month" className="text-muted-foreground" fontSize={12} />
-              <YAxis yAxisId="left" className="text-muted-foreground" fontSize={12} tickFormatter={v => `$${v}`} />
-              <YAxis yAxisId="right" orientation="right" className="text-muted-foreground" fontSize={12} tickFormatter={v => `$${v}`} hide />
+              <YAxis className="text-muted-foreground" fontSize={12} tickFormatter={v => `$${v}`} />
               <ChartTooltip content={<ChartTooltipContent />} />
-              <Bar yAxisId="left" dataKey="collected" stackId="revenue" fill="var(--color-collected)" radius={[0, 0, 0, 0]} />
-              <Bar yAxisId="left" dataKey="outstanding" stackId="revenue" fill="var(--color-outstanding)" radius={[0, 0, 0, 0]} />
-              <Bar yAxisId="left" dataKey="pipeline" stackId="revenue" fill="var(--color-pipeline)" radius={[4, 4, 0, 0]} fillOpacity={0.5} strokeDasharray="4 2" stroke="var(--color-pipeline)" />
-              <Line yAxisId="left" type="monotone" dataKey="cumulativeCollected" stroke="var(--color-cumulativeCollected)" strokeWidth={2} dot={false} />
+              <Bar dataKey="collected" stackId="revenue" fill="var(--color-collected)" radius={[0, 0, 0, 0]} />
+              <Bar dataKey="outstanding" stackId="revenue" fill="var(--color-outstanding)" radius={[0, 0, 0, 0]} />
+              <Bar dataKey="anticipated" stackId="revenue" fill="var(--color-anticipated)" radius={[4, 4, 0, 0]} fillOpacity={0.5} strokeDasharray="4 2" stroke="var(--color-anticipated)" />
             </ComposedChart>
           </ChartContainer>
           {/* Insight callout */}
           <InsightCallout text={
             totalCollected > 0 || totalOutstanding > 0
-              ? `You've collected ${collectionRate}% of invoiced revenue.${totalOutstanding > 0 ? ` $${totalOutstanding.toLocaleString()} is awaiting payment across ${outstandingInvoiceCount} invoice${outstandingInvoiceCount !== 1 ? 's' : ''}.` : ''}${totalPipeline > 0 ? ` Pipeline shows $${totalPipeline.toLocaleString()} in upcoming work.` : ''}`
+              ? `You've collected ${collectionRate}% of invoiced revenue.${totalOutstanding > 0 ? ` $${totalOutstanding.toLocaleString()} is awaiting payment across ${outstandingInvoiceCount} invoice${outstandingInvoiceCount !== 1 ? 's' : ''}.` : ''}${totalAnticipated > 0 ? ` Anticipated income this month: $${totalAnticipated.toLocaleString()}.` : ''}`
               : null
           } />
         </CardContent>
