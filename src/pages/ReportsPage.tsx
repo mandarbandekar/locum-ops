@@ -271,7 +271,7 @@ export default function ReportsPage() {
 
   const totalCollected = revenueData.reduce((s, d) => s + d.collected, 0);
   const totalOutstanding = revenueData.reduce((s, d) => s + d.outstanding, 0);
-  const totalPipeline = revenueData.reduce((s, d) => s + d.pipeline, 0);
+  const totalAnticipated = revenueData.reduce((s, d) => s + d.anticipated, 0);
   const totalRevenue = totalCollected + totalOutstanding;
   const totalPaid = totalCollected;
   const totalShifts = shiftsPerFacility.reduce((s, d) => s + d.shifts, 0);
