@@ -64,6 +64,13 @@ export default function SchedulePage() {
     return d >= rangeStart && d <= rangeEnd;
   }).sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime());
 
+  const activeRangeShifts = rangeShifts.filter(s => s.status !== 'canceled');
+  const totalShiftsInRange = activeRangeShifts.length;
+  const totalHoursInRange = activeRangeShifts.reduce((sum, s) => {
+    return sum + Math.max(0, differenceInHours(new Date(s.end_datetime), new Date(s.start_datetime)));
+  }, 0);
+  const totalRevenueInRange = activeRangeShifts.reduce((sum, s) => sum + (s.rate_applied || 0), 0);
+
   const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
 
   const handleSaveShift = async (s: any) => {
