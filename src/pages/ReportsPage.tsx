@@ -414,6 +414,45 @@ export default function ReportsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Row 3: Earnings by Day of Week + Monthly Hours Worked */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Earnings by Day of Week</CardTitle>
+            <CardDescription>Which days are most profitable for scheduling</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={earningsByDayConfig} className="h-[300px] w-full">
+              <BarChart data={earningsByDayOfWeek} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                <XAxis dataKey="day" fontSize={12} className="text-muted-foreground" />
+                <YAxis fontSize={12} className="text-muted-foreground" tickFormatter={v => `$${v}`} />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Bar dataKey="total" fill="var(--color-total)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Monthly Hours Worked</CardTitle>
+            <CardDescription>Total shift hours per month over time</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={monthlyHoursConfig} className="h-[300px] w-full">
+              <LineChart data={monthlyHoursWorked} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                <XAxis dataKey="month" fontSize={12} className="text-muted-foreground" />
+                <YAxis fontSize={12} className="text-muted-foreground" tickFormatter={v => `${v}h`} />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Line type="monotone" dataKey="hours" stroke="var(--color-hours)" strokeWidth={2} dot={{ r: 4 }} />
+              </LineChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
