@@ -88,6 +88,8 @@ export default function TrackerTab() {
     set_aside_mode: 'percent',
     set_aside_percent: 30,
     set_aside_fixed_monthly: 0,
+    filing_status: 'single',
+    estimated_deductions: 0,
   });
   const [settingsId, setSettingsId] = useState<string>();
   const [quarterStatuses, setQuarterStatuses] = useState<QuarterStatus[]>([]);
@@ -121,7 +123,13 @@ export default function TrackerTab() {
       if ((settingsRes.data as any)) {
         const d = settingsRes.data as any;
         setSettingsId(d.id);
-        setSettings({ set_aside_mode: d.set_aside_mode, set_aside_percent: Number(d.set_aside_percent), set_aside_fixed_monthly: Number(d.set_aside_fixed_monthly) });
+        setSettings({
+          set_aside_mode: d.set_aside_mode,
+          set_aside_percent: Number(d.set_aside_percent),
+          set_aside_fixed_monthly: Number(d.set_aside_fixed_monthly),
+          filing_status: d.filing_status || 'single',
+          estimated_deductions: Number(d.estimated_deductions) || 0,
+        });
       }
 
       if ((qsRes.data as any)?.length > 0) {
