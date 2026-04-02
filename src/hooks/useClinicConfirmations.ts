@@ -136,7 +136,7 @@ export function useClinicConfirmations() {
   const getUpcomingBookedShifts = useCallback((facilityId: string) => {
     const now = new Date();
     return shifts.filter(s =>
-      s.facility_id === facilityId && new Date(s.start_datetime) >= now && s.status === 'booked'
+      s.facility_id === facilityId && new Date(s.start_datetime) >= now
     ).sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime());
   }, [shifts]);
 
