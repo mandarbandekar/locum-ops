@@ -216,6 +216,16 @@ export default function TrackerTab() {
   const totalIncome = quarterlyIncome.reduce((s, q) => s + q.income, 0);
   const totalSetAside = setAsideData.reduce((s, q) => s + q.amount, 0);
 
+  const taxEstimate = useMemo(
+    () => estimateTotalTax(totalIncome, settings.filing_status, settings.estimated_deductions),
+    [totalIncome, settings.filing_status, settings.estimated_deductions]
+  );
+
+  const estimatedQuarterly = useMemo(
+    () => estimateQuarterlyPayments(taxEstimate.totalEstimatedTax, quarterlyIncome),
+    [taxEstimate.totalEstimatedTax, quarterlyIncome]
+  );
+
   const activeChecklist = checklist.filter(c => !c.ignored);
   const completedCount = activeChecklist.filter(c => c.completed).length;
   const readinessPercent = activeChecklist.length > 0 ? Math.round((completedCount / activeChecklist.length) * 100) : 0;
