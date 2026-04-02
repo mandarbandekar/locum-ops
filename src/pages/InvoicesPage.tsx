@@ -97,7 +97,7 @@ export default function InvoicesPage() {
           <h1 className="page-title">Invoices</h1>
         </div>
         <InvoiceEmptyState onCreateManual={() => setShowCreate(true)} />
-        <CreateInvoiceDialog open={showCreate} onOpenChange={setShowCreate} />
+        <BulkInvoiceDialog open={showCreate} onOpenChange={setShowCreate} />
       </div>
     );
   }
