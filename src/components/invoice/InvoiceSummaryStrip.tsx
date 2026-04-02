@@ -19,7 +19,7 @@ interface Props {
   onScrollTo: (group: string) => void;
 }
 
-export function InvoiceSummaryStrip({ overdue, awaiting, drafts, paidThisMonth, onScrollTo }: Props) {
+export function InvoiceSummaryStrip({ overdue, awaiting, readyToReview, upcomingCount, paidThisMonth, onScrollTo }: Props) {
   const cards: StatCard[] = [
     {
       label: 'Overdue',
