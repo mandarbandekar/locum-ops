@@ -7,12 +7,31 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from 'recharts';
 import { format, parseISO, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths, addMonths, isWithinInterval, differenceInDays, differenceInHours, getDay } from 'date-fns';
-import { DollarSign, TrendingUp, Calendar, Building2 } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, Calendar, Clock, ArrowUp, ArrowDown, Minus } from 'lucide-react';
 
 const db = (table: string) => supabase.from(table as any);
 
 const truncateName = (name: string, max = 18) =>
   name.length > max ? name.slice(0, max - 1) + '…' : name;
+
+function DeltaBadge({ current, previous, format: fmt = 'percent' }: { current: number; previous: number; format?: 'percent' | 'value' }) {
+  if (previous === 0 && current === 0) return <span className="text-xs text-muted-foreground flex items-center gap-0.5"><Minus className="h-3 w-3" /> No change</span>;
+  if (previous === 0) return <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5"><ArrowUp className="h-3 w-3" /> New</span>;
+  const delta = ((current - previous) / previous) * 100;
+  const rounded = Math.abs(Math.round(delta));
+  if (rounded === 0) return <span className="text-xs text-muted-foreground flex items-center gap-0.5"><Minus className="h-3 w-3" /> No change</span>;
+  if (delta > 0) return <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5"><ArrowUp className="h-3 w-3" /> {rounded}%</span>;
+  return <span className="text-xs text-red-500 flex items-center gap-0.5"><ArrowDown className="h-3 w-3" /> {rounded}%</span>;
+}
+
+function InsightCallout({ text }: { text: string | null }) {
+  if (!text) return null;
+  return (
+    <div className="mt-3 px-3 py-2 rounded-md bg-muted/50 text-xs text-muted-foreground">
+      💡 {text}
+    </div>
+  );
+}
 
 export default function ReportsPage() {
   const { shifts, invoices, facilities } = useData();
@@ -49,6 +68,16 @@ export default function ReportsPage() {
     return eachMonthOfInterval({ start: pastStart, end: futureEnd });
   }, [monthRange, shifts]);
 
+  // Previous period months for comparison
+  const prevMonths = useMemo(() => {
+    const rangeNum = parseInt(monthRange);
+    const pastStart = months[0];
+    const prevStart = subMonths(pastStart, rangeNum);
+    const prevEnd = subMonths(pastStart, 1);
+    if (prevEnd < prevStart) return [];
+    return eachMonthOfInterval({ start: prevStart, end: endOfMonth(prevEnd) });
+  }, [months, monthRange]);
+
   const revenueData = useMemo(() => {
     return months.map(month => {
       const monthEnd = endOfMonth(month);
@@ -79,6 +108,28 @@ export default function ReportsPage() {
     });
   }, [months, invoices, shifts, taxSetAsidePercent]);
 
+  // Previous period revenue for comparison
+  const prevRevenue = useMemo(() => {
+    if (prevMonths.length === 0) return { total: 0, paid: 0, shifts: 0 };
+    const rangeStart = prevMonths[0];
+    const rangeEnd = endOfMonth(prevMonths[prevMonths.length - 1]);
+    let total = 0, paid = 0, shiftCount = 0;
+    invoices.forEach(inv => {
+      const periodEnd = parseISO(inv.period_end);
+      if (isWithinInterval(periodEnd, { start: rangeStart, end: rangeEnd })) {
+        total += inv.total_amount;
+        if (inv.status === 'paid') paid += inv.total_amount;
+      }
+    });
+    shifts.forEach(shift => {
+      const shiftDate = parseISO(shift.start_datetime);
+      if (isWithinInterval(shiftDate, { start: rangeStart, end: rangeEnd }) && shift.status !== 'canceled') {
+        shiftCount++;
+      }
+    });
+    return { total, paid, shifts: shiftCount };
+  }, [prevMonths, invoices, shifts]);
+
   const shiftsPerFacility = useMemo(() => {
     const counts: Record<string, number> = {};
     const rangeStart = months[0];
@@ -97,7 +148,6 @@ export default function ReportsPage() {
       .sort((a, b) => b.shifts - a.shifts);
   }, [months, shifts, facilities]);
 
-  // Facility Payment Speed: avg days from sent_at to paid_at
   const facilityPaymentSpeed = useMemo(() => {
     const facilityDays: Record<string, number[]> = {};
     invoices.forEach(inv => {
@@ -117,7 +167,6 @@ export default function ReportsPage() {
       .sort((a, b) => a.avgDays - b.avgDays);
   }, [invoices, facilities]);
 
-  // Revenue by Facility: total paid amount
   const revenueByFacility = useMemo(() => {
     const rangeStart = months[0];
     const rangeEnd = endOfMonth(months[months.length - 1]);
@@ -138,7 +187,6 @@ export default function ReportsPage() {
       .sort((a, b) => b.revenue - a.revenue);
   }, [months, invoices, facilities]);
 
-  // Avg Rate per Facility
   const avgRatePerFacility = useMemo(() => {
     const rangeStart = months[0];
     const rangeEnd = endOfMonth(months[months.length - 1]);
@@ -158,7 +206,6 @@ export default function ReportsPage() {
       .sort((a, b) => b.avgRate - a.avgRate);
   }, [months, shifts, facilities]);
 
-  // Earnings by Day of Week
   const earningsByDayOfWeek = useMemo(() => {
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const dayTotals = [0, 0, 0, 0, 0, 0, 0];
@@ -181,7 +228,6 @@ export default function ReportsPage() {
     }));
   }, [months, shifts]);
 
-  // Monthly Hours Worked
   const monthlyHoursWorked = useMemo(() => {
     return months.map(month => {
       const monthEnd = endOfMonth(month);
@@ -200,8 +246,39 @@ export default function ReportsPage() {
   const totalRevenue = revenueData.reduce((s, d) => s + d.total, 0);
   const totalPaid = revenueData.reduce((s, d) => s + d.paid, 0);
   const totalShifts = shiftsPerFacility.reduce((s, d) => s + d.shifts, 0);
-  const activeFacilities = shiftsPerFacility.length;
   const totalAnticipated = revenueData.reduce((s, d) => s + d.anticipated, 0);
+  const totalHoursWorked = monthlyHoursWorked.reduce((s, d) => s + d.hours, 0);
+  const effectiveRate = totalHoursWorked > 0 ? Math.round((totalPaid / totalHoursWorked) * 100) / 100 : 0;
+
+  // Insight strings
+  const paymentSpeedInsight = useMemo(() => {
+    if (facilityPaymentSpeed.length === 0) return null;
+    const fastest = facilityPaymentSpeed[0];
+    if (facilityPaymentSpeed.length === 1) return `${fastest.name} pays in ${fastest.avgDays} days on average`;
+    return `Fastest payer: ${fastest.name} (${fastest.avgDays} days avg)`;
+  }, [facilityPaymentSpeed]);
+
+  const revenueConcentrationInsight = useMemo(() => {
+    if (revenueByFacility.length === 0) return null;
+    const totalRev = revenueByFacility.reduce((s, d) => s + d.revenue, 0);
+    if (totalRev === 0) return null;
+    const top = revenueByFacility[0];
+    const pct = Math.round((top.revenue / totalRev) * 100);
+    return `${top.name} accounts for ${pct}% of your revenue`;
+  }, [revenueByFacility]);
+
+  const bestDayInsight = useMemo(() => {
+    const withEarnings = earningsByDayOfWeek.filter(d => d.shifts > 0);
+    if (withEarnings.length === 0) return null;
+    const best = withEarnings.reduce((a, b) => b.avg > a.avg ? b : a);
+    return `Your highest-earning day is ${best.day} — averaging $${best.avg}/shift`;
+  }, [earningsByDayOfWeek]);
+
+  const avgRateInsight = useMemo(() => {
+    if (avgRatePerFacility.length === 0) return null;
+    const top = avgRatePerFacility[0];
+    return `${top.name} has your highest avg rate at $${top.avgRate}`;
+  }, [avgRatePerFacility]);
 
   const revenueChartConfig = {
     paid: { label: 'Paid', color: 'hsl(142, 71%, 45%)' },
@@ -246,6 +323,7 @@ export default function ReportsPage() {
         </Select>
       </div>
 
+      {/* KPI Cards with period-over-period deltas */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -254,7 +332,10 @@ export default function ReportsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">${totalRevenue.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">{monthRange}-month period</p>
+            <div className="flex items-center gap-2 mt-1">
+              <DeltaBadge current={totalRevenue} previous={prevRevenue.total} />
+              <span className="text-xs text-muted-foreground">vs prev {monthRange}mo</span>
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -264,7 +345,10 @@ export default function ReportsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">${totalPaid.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">{totalRevenue > 0 ? Math.round((totalPaid / totalRevenue) * 100) : 0}% collection rate</p>
+            <div className="flex items-center gap-2 mt-1">
+              <DeltaBadge current={totalPaid} previous={prevRevenue.paid} />
+              <span className="text-xs text-muted-foreground">{totalRevenue > 0 ? Math.round((totalPaid / totalRevenue) * 100) : 0}% rate</span>
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -274,17 +358,20 @@ export default function ReportsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalShifts}</div>
-            <p className="text-xs text-muted-foreground">Non-canceled shifts</p>
+            <div className="flex items-center gap-2 mt-1">
+              <DeltaBadge current={totalShifts} previous={prevRevenue.shifts} />
+              <span className="text-xs text-muted-foreground">vs prev {monthRange}mo</span>
+            </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Active Facilities</CardTitle>
-            <Building2 className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">Effective Rate</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{activeFacilities}</div>
-            <p className="text-xs text-muted-foreground">With shifts in period</p>
+            <div className="text-2xl font-bold">${effectiveRate.toLocaleString()}/hr</div>
+            <p className="text-xs text-muted-foreground mt-1">{totalHoursWorked}h worked · {totalPaid > 0 ? 'from collected' : 'no payments yet'}</p>
           </CardContent>
         </Card>
       </div>
@@ -339,6 +426,7 @@ export default function ReportsPage() {
                 </BarChart>
               </ChartContainer>
             )}
+            <InsightCallout text={paymentSpeedInsight} />
           </CardContent>
         </Card>
 
@@ -363,6 +451,7 @@ export default function ReportsPage() {
                 </BarChart>
               </ChartContainer>
             )}
+            <InsightCallout text={revenueConcentrationInsight} />
           </CardContent>
         </Card>
       </div>
@@ -414,6 +503,7 @@ export default function ReportsPage() {
                 </BarChart>
               </ChartContainer>
             )}
+            <InsightCallout text={avgRateInsight} />
           </CardContent>
         </Card>
       </div>
@@ -435,6 +525,7 @@ export default function ReportsPage() {
                 <Bar dataKey="total" fill="var(--color-total)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ChartContainer>
+            <InsightCallout text={bestDayInsight} />
           </CardContent>
         </Card>
 

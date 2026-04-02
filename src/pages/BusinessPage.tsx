@@ -28,7 +28,7 @@ export default function BusinessPage() {
           className={`primary-tab-btn ${activeTab === 'reports' ? 'primary-tab-btn--active' : 'primary-tab-btn--inactive'}`}
         >
           <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5" />
-          <span className="text-xs sm:text-sm">Reports</span>
+          <span className="text-xs sm:text-sm">Insights</span>
         </button>
         <button
           onClick={() => setSearchParams({ tab: 'tax-strategy' }, { replace: true })}
@@ -42,7 +42,7 @@ export default function BusinessPage() {
           className={`primary-tab-btn ${activeTab === 'tax-advisor' ? 'primary-tab-btn--active' : 'primary-tab-btn--inactive'}`}
         >
           <BrainCircuit className="h-4 w-4 sm:h-5 sm:w-5" />
-          <span className="text-xs sm:text-sm">Tax <span className="hidden sm:inline">Planning </span>Advisor</span>
+          <span className="text-xs sm:text-sm">Tax Advisor</span>
         </button>
       </div>
 
