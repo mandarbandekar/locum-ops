@@ -260,7 +260,7 @@ export default function ReportsPage() {
       let totalHours = 0;
       shifts.forEach(shift => {
         const shiftDate = parseISO(shift.start_datetime);
-        if (isWithinInterval(shiftDate, { start: month, end: monthEnd }) && shift.status !== 'canceled') {
+        if (isWithinInterval(shiftDate, { start: month, end: monthEnd })) {
           const hours = differenceInHours(parseISO(shift.end_datetime), parseISO(shift.start_datetime));
           if (hours > 0) totalHours += hours;
         }

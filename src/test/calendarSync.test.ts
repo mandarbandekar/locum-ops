@@ -43,32 +43,19 @@ const bookedShift: Shift = {
   facility_id: 'fac-1',
   start_datetime: futureDate.toISOString(),
   end_datetime: futureEnd.toISOString(),
-  status: 'booked',
   rate_applied: 1200,
   notes: 'Bring lunch',
   color: 'blue',
 };
 
-const proposedShift: Shift = {
+const anotherShift: Shift = {
   id: 'shift-2',
   facility_id: 'fac-1',
   start_datetime: futureDate.toISOString(),
   end_datetime: futureEnd.toISOString(),
-  status: 'proposed',
   rate_applied: 1000,
   notes: '',
   color: 'green',
-};
-
-const canceledShift: Shift = {
-  id: 'shift-3',
-  facility_id: 'fac-1',
-  start_datetime: futureDate.toISOString(),
-  end_datetime: futureEnd.toISOString(),
-  status: 'canceled',
-  rate_applied: 1200,
-  notes: '',
-  color: 'red',
 };
 
 const pastShift: Shift = {
@@ -76,7 +63,6 @@ const pastShift: Shift = {
   facility_id: 'fac-1',
   start_datetime: pastDate.toISOString(),
   end_datetime: pastEnd.toISOString(),
-  status: 'booked',
   rate_applied: 1200,
   notes: '',
   color: 'blue',
@@ -137,15 +123,7 @@ describe('ICS Generator', () => {
     expect(event).not.toContain('Bring lunch');
   });
 
-  it('sets STATUS:CANCELLED for canceled shifts', () => {
-    const event = shiftToIcsEvent({
-      shift: canceledShift,
-      facilityName: 'Test',
-    });
-    expect(event).toContain('STATUS:CANCELLED');
-  });
-
-  it('sets STATUS:CONFIRMED for booked shifts', () => {
+  it('sets STATUS:CONFIRMED for all shifts', () => {
     const event = shiftToIcsEvent({
       shift: bookedShift,
       facilityName: 'Test',
@@ -177,12 +155,9 @@ describe('ICS Generator', () => {
 });
 
 describe('Calendar Sync Rules', () => {
-  it('only booked shifts should be synced in v1', () => {
-    // This tests the filtering logic expectation
-    const allShifts = [bookedShift, proposedShift, canceledShift, pastShift];
-    const bookedOnly = allShifts.filter(s => s.status === 'booked');
-    expect(bookedOnly).toHaveLength(2);
-    expect(bookedOnly.every(s => s.status === 'booked')).toBe(true);
+  it('all shifts are synced (no status filtering)', () => {
+    const allShifts = [bookedShift, anotherShift, pastShift];
+    expect(allShifts).toHaveLength(3);
   });
 
   it('only future shifts should be included when sync_future_only is true', () => {

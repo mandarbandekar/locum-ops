@@ -10,7 +10,6 @@ interface Shift {
   start_datetime: string;
   end_datetime: string;
   facility_id: string;
-  status: string;
   agency?: string;
 }
 

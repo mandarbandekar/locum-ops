@@ -38,7 +38,7 @@ export default function FacilitiesPage() {
       const facility = await addFacility({
         name,
         address: displayName,
-        status: 'prospect',
+        status: 'active',
         timezone: 'America/Los_Angeles',
         notes: '',
         outreach_last_sent_at: null,
