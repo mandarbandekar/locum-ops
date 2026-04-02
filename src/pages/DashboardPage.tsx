@@ -158,8 +158,8 @@ export default function DashboardPage() {
     const revenueData = months.map(month => {
       const monthEnd = endOfMonth(month);
       const monthInvoices = invoices.filter(inv => {
-        const periodEnd = parseISO(inv.period_end);
-        return isWithinInterval(periodEnd, { start: month, end: monthEnd });
+        const invDate = parseISO(inv.invoice_date);
+        return isWithinInterval(invDate, { start: month, end: monthEnd });
       });
       const paid = monthInvoices.filter(i => i.status === 'paid').reduce((s, i) => s + i.total_amount, 0);
       const outstanding = monthInvoices.filter(i => {
