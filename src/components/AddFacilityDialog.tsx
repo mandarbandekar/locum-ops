@@ -215,17 +215,6 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
                 <Input value={name} onChange={e => setName(e.target.value)} placeholder="Practice facility name" autoFocus />
               </div>
               <div className="space-y-2">
-                <Label>Status</Label>
-                <Select value={status} onValueChange={v => setStatus(v as FacilityStatus)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="prospect">Prospect</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="paused">Paused</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
                 <Label>Address</Label>
                 <Input value={address} onChange={e => setAddress(e.target.value)} placeholder="Full address" />
               </div>

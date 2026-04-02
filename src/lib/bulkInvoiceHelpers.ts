@@ -42,7 +42,6 @@ export function getEligibleShiftsForBulkInvoice(
 
   const eligibleFacilityShifts = allShifts.filter(s => {
     if (s.facility_id !== facilityId) return false;
-    if (s.status === 'canceled' || s.status === 'proposed') return false;
     const shiftStart = new Date(s.start_datetime).getTime();
     return shiftStart >= periodStartTime && shiftStart <= periodEndTime;
   }).sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime());

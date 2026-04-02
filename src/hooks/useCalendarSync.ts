@@ -259,7 +259,6 @@ export function useCalendarSync() {
     }
 
     return shifts.filter(s => {
-      if (preferences.sync_booked_only && s.status !== 'booked') return false;
       const shiftDate = new Date(s.start_datetime);
       return shiftDate >= start && shiftDate <= end;
     });

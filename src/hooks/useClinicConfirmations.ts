@@ -302,7 +302,7 @@ export function useClinicConfirmations() {
     const facilityIds = new Set<string>();
     shifts.forEach(s => {
       const d = new Date(s.start_datetime);
-      if (d >= mStart && d <= mEnd && s.status === 'booked') {
+      if (d >= mStart && d <= mEnd) {
         facilityIds.add(s.facility_id);
       }
     });

@@ -104,7 +104,7 @@ export function ConfirmationsPanel() {
 
     // Create a hash of current shifts for change detection
     const shiftHash = fShifts
-      .map(s => `${s.start_datetime}|${s.end_datetime}|${s.rate_applied}|${s.status}`)
+      .map(s => `${s.start_datetime}|${s.end_datetime}|${s.rate_applied}`)
       .sort()
       .join(',');
 
