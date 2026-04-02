@@ -194,6 +194,7 @@ export function InvoiceStatusGroup({
           </span>
           <Badge variant="secondary" className="text-xs ml-1">{invoices.length}</Badge>
         </div>
+        {headerRight && <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>{headerRight}</div>}
       </CollapsibleTrigger>
 
       <CollapsibleContent>
