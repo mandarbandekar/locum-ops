@@ -6,8 +6,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, Layers, AlertTriangle, Send, FileEdit, CheckCircle } from 'lucide-react';
-import { format, subDays, startOfMonth, isAfter } from 'date-fns';
+import { Plus, Trash2, Layers, AlertTriangle, Send, FileEdit, CheckCircle, Clock } from 'lucide-react';
+import { format, subDays, startOfMonth, isAfter, isBefore, startOfDay } from 'date-fns';
 import { computeInvoiceStatus, generateInvoiceNumber } from '@/lib/businessLogic';
 import { toast } from 'sonner';
 import { BulkInvoiceDialog } from '@/components/invoice/BulkInvoiceDialog';
@@ -72,9 +72,12 @@ export default function InvoicesPage() {
   const overdue = allInvoices.filter(i => i.computedStatus === 'overdue');
   const sent = allInvoices.filter(i => i.computedStatus === 'sent');
   const partial = allInvoices.filter(i => i.computedStatus === 'partial');
-  const draft = allInvoices
+  const allDrafts = allInvoices
     .filter(i => i.computedStatus === 'draft')
     .sort((a, b) => new Date(a.invoice_date || a.period_end).getTime() - new Date(b.invoice_date || b.period_end).getTime());
+  const today = startOfDay(new Date());
+  const readyToReview = allDrafts.filter(i => isBefore(new Date(i.period_end), today));
+  const upcoming = allDrafts.filter(i => !isBefore(new Date(i.period_end), today));
   const paid = allInvoices.filter(i => i.computedStatus === 'paid');
 
   const monthStart = startOfMonth(new Date());
@@ -127,7 +130,8 @@ export default function InvoicesPage() {
       <InvoiceSummaryStrip
         overdue={{ count: overdue.length, total: sumBalance(overdue) }}
         awaiting={{ count: [...sent, ...partial].length, total: sumBalance([...sent, ...partial]) }}
-        drafts={{ count: draft.length, total: sumTotal(draft) }}
+        readyToReview={{ count: readyToReview.length, total: sumTotal(readyToReview) }}
+        upcomingCount={upcoming.length}
         paidThisMonth={{ count: paidThisMonth.length, total: sumTotal(paidThisMonth) }}
         onScrollTo={scrollTo}
       />
@@ -184,20 +188,41 @@ export default function InvoicesPage() {
 
         <div ref={draftsRef}>
           <InvoiceStatusGroup
-            title="Drafts"
-            icon={<FileEdit className="h-4 w-4 text-muted-foreground" />}
-            invoices={draft}
+            title="Ready to Review"
+            icon={<FileEdit className="h-4 w-4 text-amber-500" />}
+            invoices={readyToReview}
             selected={selected}
             onToggleSelect={toggleSelect}
             onDelete={deleteInvoice}
             getFacilityName={getFacilityName}
-            emptyMessage="No draft invoices — everything has been sent."
+            emptyMessage="No invoices ready to review — check back after your shifts are completed."
             defaultOpen={true}
             groupByFacility={true}
-            headerRight={draft.length > 0 ? (
-              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => navigate(`/invoices/${draft[0].id}`)}>
+            headerRight={readyToReview.length > 0 ? (
+              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => navigate(`/invoices/${readyToReview[0].id}`)}>
                 Review & Send
               </Button>
+            ) : undefined}
+          />
+        </div>
+
+        <div>
+          <InvoiceStatusGroup
+            title="Upcoming"
+            icon={<Clock className="h-4 w-4 text-muted-foreground" />}
+            invoices={upcoming}
+            selected={selected}
+            onToggleSelect={toggleSelect}
+            onDelete={deleteInvoice}
+            getFacilityName={getFacilityName}
+            emptyMessage="No upcoming invoices."
+            defaultOpen={false}
+            groupByFacility={true}
+            alertBanner={upcoming.length > 0 ? (
+              <div className="flex items-center gap-2 px-5 py-2.5 text-xs text-muted-foreground bg-muted/30 border-t">
+                <Clock className="h-3.5 w-3.5 shrink-0" />
+                These invoices will be ready to review after the shifts are completed.
+              </div>
             ) : undefined}
           />
         </div>

@@ -8,17 +8,19 @@ interface StatCard {
   accentClass: string;
   bgClass: string;
   onClick?: () => void;
+  annotation?: string;
 }
 
 interface Props {
   overdue: { count: number; total: number };
   awaiting: { count: number; total: number };
-  drafts: { count: number; total: number };
+  readyToReview: { count: number; total: number };
+  upcomingCount?: number;
   paidThisMonth: { count: number; total: number };
   onScrollTo: (group: string) => void;
 }
 
-export function InvoiceSummaryStrip({ overdue, awaiting, drafts, paidThisMonth, onScrollTo }: Props) {
+export function InvoiceSummaryStrip({ overdue, awaiting, readyToReview, upcomingCount, paidThisMonth, onScrollTo }: Props) {
   const cards: StatCard[] = [
     {
       label: 'Overdue',
@@ -37,12 +39,13 @@ export function InvoiceSummaryStrip({ overdue, awaiting, drafts, paidThisMonth, 
       onClick: () => onScrollTo('awaiting'),
     },
     {
-      label: 'Drafts to Review',
-      ...drafts,
+      label: 'Ready to Review',
+      ...readyToReview,
       icon: <FileEdit className="h-4 w-4" />,
       accentClass: 'text-amber-600 dark:text-amber-400',
       bgClass: 'bg-amber-500/10 border-amber-500/20',
       onClick: () => onScrollTo('drafts'),
+      annotation: upcomingCount && upcomingCount > 0 ? `+${upcomingCount} upcoming` : undefined,
     },
     {
       label: 'Paid This Month',
@@ -71,6 +74,7 @@ export function InvoiceSummaryStrip({ overdue, awaiting, drafts, paidThisMonth, 
           </div>
           <div className="text-[11px] text-muted-foreground mt-0.5">
             {card.count} invoice{card.count !== 1 ? 's' : ''}
+            {card.annotation && <span className="ml-1 opacity-60">({card.annotation})</span>}
           </div>
         </button>
       ))}
