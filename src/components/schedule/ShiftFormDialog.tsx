@@ -76,7 +76,6 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
 
   const bookedDateObjects = useMemo(() =>
     shifts
-      .filter(s => ['booked', 'proposed', 'prebooked'].includes(s.status))
       .map(s => {
         const d = new Date(s.start_datetime);
         return new Date(d.getFullYear(), d.getMonth(), d.getDate());
