@@ -38,12 +38,13 @@ export function InvoiceSummaryStrip({ overdue, awaiting, readyToReview, upcoming
       onClick: () => onScrollTo('awaiting'),
     },
     {
-      label: 'Drafts to Review',
-      ...drafts,
+      label: 'Ready to Review',
+      ...readyToReview,
       icon: <FileEdit className="h-4 w-4" />,
       accentClass: 'text-amber-600 dark:text-amber-400',
       bgClass: 'bg-amber-500/10 border-amber-500/20',
       onClick: () => onScrollTo('drafts'),
+      annotation: upcomingCount && upcomingCount > 0 ? `+${upcomingCount} upcoming` : undefined,
     },
     {
       label: 'Paid This Month',
