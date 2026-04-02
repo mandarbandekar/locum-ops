@@ -95,10 +95,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     }
   };
 
-  // Freeze the shifts snapshot when dialog opens so batch saves don't re-trigger conflicts
-  const [shiftsSnapshot] = useState(() => shifts);
-
-  // Check conflicts for ALL selected dates against the frozen snapshot
+  // Use live shifts for conflict detection, but suppress recalculation during batch submission
   const conflicts = useMemo(() => {
     if (isSubmitting || selectedDates.length === 0 || !facilityId || !startTime || !endTime) return [];
     const allConflicts: Shift[] = [];
@@ -107,7 +104,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
       const dateStr = format(d, 'yyyy-MM-dd');
       const startDt = `${dateStr}T${startTime}:00`;
       const endDt = `${dateStr}T${endTime}:00`;
-      const activeShifts = shiftsSnapshot.filter(s => s.status !== 'canceled');
+      const activeShifts = shifts.filter(s => s.status !== 'canceled');
       for (const c of detectShiftConflicts(activeShifts, { start_datetime: startDt, end_datetime: endDt, id: existing?.id })) {
         if (!seen.has(c.id)) {
           seen.add(c.id);
@@ -116,7 +113,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
       }
     }
     return allConflicts;
-  }, [shiftsSnapshot, selectedDates, startTime, endTime, existing?.id, facilityId, isSubmitting]);
+  }, [shifts, selectedDates, startTime, endTime, existing?.id, facilityId, isSubmitting]);
 
   const saveCustomRateToTerms = useCallback(async () => {
     if (!isCustomRate || !saveCustomRate || !rate || Number(rate) <= 0) return;
