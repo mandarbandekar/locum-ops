@@ -198,6 +198,7 @@ export function InvoiceStatusGroup({
       </CollapsibleTrigger>
 
       <CollapsibleContent>
+        {alertBanner}
         {invoices.length === 0 ? (
           <div className="flex items-center gap-2.5 px-5 py-6 text-sm text-muted-foreground border-t">
             <CheckCircle2 className="h-4 w-4 text-primary" />
