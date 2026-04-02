@@ -5,8 +5,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { format, parseISO, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths, addMonths, isWithinInterval, differenceInDays } from 'date-fns';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from 'recharts';
+import { format, parseISO, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths, addMonths, isWithinInterval, differenceInDays, differenceInHours, getDay } from 'date-fns';
 import { DollarSign, TrendingUp, Calendar, Building2 } from 'lucide-react';
 
 const db = (table: string) => supabase.from(table as any);
@@ -155,6 +155,45 @@ export default function ReportsPage() {
       .sort((a, b) => b.avgRate - a.avgRate);
   }, [months, shifts, facilities]);
 
+  // Earnings by Day of Week
+  const earningsByDayOfWeek = useMemo(() => {
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const dayTotals = [0, 0, 0, 0, 0, 0, 0];
+    const dayCounts = [0, 0, 0, 0, 0, 0, 0];
+    const rangeStart = months[0];
+    const rangeEnd = endOfMonth(months[months.length - 1]);
+    shifts.forEach(shift => {
+      const shiftDate = parseISO(shift.start_datetime);
+      if (isWithinInterval(shiftDate, { start: rangeStart, end: rangeEnd }) && shift.status !== 'canceled' && shift.rate_applied > 0) {
+        const day = getDay(shiftDate);
+        dayTotals[day] += shift.rate_applied;
+        dayCounts[day] += 1;
+      }
+    });
+    return dayNames.map((name, i) => ({
+      day: name,
+      total: Math.round(dayTotals[i]),
+      shifts: dayCounts[i],
+      avg: dayCounts[i] > 0 ? Math.round(dayTotals[i] / dayCounts[i]) : 0,
+    }));
+  }, [months, shifts]);
+
+  // Monthly Hours Worked
+  const monthlyHoursWorked = useMemo(() => {
+    return months.map(month => {
+      const monthEnd = endOfMonth(month);
+      let totalHours = 0;
+      shifts.forEach(shift => {
+        const shiftDate = parseISO(shift.start_datetime);
+        if (isWithinInterval(shiftDate, { start: month, end: monthEnd }) && shift.status !== 'canceled') {
+          const hours = differenceInHours(parseISO(shift.end_datetime), parseISO(shift.start_datetime));
+          if (hours > 0) totalHours += hours;
+        }
+      });
+      return { month: format(month, 'MMM yyyy'), hours: totalHours };
+    });
+  }, [months, shifts]);
+
   const totalRevenue = revenueData.reduce((s, d) => s + d.total, 0);
   const totalPaid = revenueData.reduce((s, d) => s + d.paid, 0);
   const totalShifts = shiftsPerFacility.reduce((s, d) => s + d.shifts, 0);
@@ -181,6 +220,14 @@ export default function ReportsPage() {
 
   const avgRateConfig = {
     avgRate: { label: 'Avg Rate', color: 'hsl(38, 92%, 50%)' },
+  };
+
+  const earningsByDayConfig = {
+    total: { label: 'Total Earnings', color: 'hsl(260, 50%, 55%)' },
+  };
+
+  const monthlyHoursConfig = {
+    hours: { label: 'Hours Worked', color: 'hsl(173, 58%, 39%)' },
   };
 
   return (
@@ -364,6 +411,45 @@ export default function ReportsPage() {
                 </BarChart>
               </ChartContainer>
             )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Row 3: Earnings by Day of Week + Monthly Hours Worked */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Earnings by Day of Week</CardTitle>
+            <CardDescription>Which days are most profitable for scheduling</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={earningsByDayConfig} className="h-[300px] w-full">
+              <BarChart data={earningsByDayOfWeek} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                <XAxis dataKey="day" fontSize={12} className="text-muted-foreground" />
+                <YAxis fontSize={12} className="text-muted-foreground" tickFormatter={v => `$${v}`} />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Bar dataKey="total" fill="var(--color-total)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Monthly Hours Worked</CardTitle>
+            <CardDescription>Total shift hours per month over time</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={monthlyHoursConfig} className="h-[300px] w-full">
+              <LineChart data={monthlyHoursWorked} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                <XAxis dataKey="month" fontSize={12} className="text-muted-foreground" />
+                <YAxis fontSize={12} className="text-muted-foreground" tickFormatter={v => `${v}h`} />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Line type="monotone" dataKey="hours" stroke="var(--color-hours)" strokeWidth={2} dot={{ r: 4 }} />
+              </LineChart>
+            </ChartContainer>
           </CardContent>
         </Card>
       </div>
