@@ -362,7 +362,6 @@ export default function SchedulePage() {
                         <td className="p-3 text-muted-foreground hidden md:table-cell">{format(new Date(s.start_datetime), 'h:mm a')} – {format(new Date(s.end_datetime), 'h:mm a')}</td>
                         <td className="p-3 text-muted-foreground hidden md:table-cell">{hrs}h</td>
                         <td className="p-3 font-medium">${s.rate_applied}</td>
-                        <td className="p-3"><StatusBadge status={s.status} /></td>
                         <td className="p-3" onClick={e => e.stopPropagation()}>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
