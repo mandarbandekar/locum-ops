@@ -441,8 +441,8 @@ export default function ReportsPage() {
               <DeltaBadge current={totalRevenue} previous={prevRevenue.total} />
               <span className="text-xs text-muted-foreground">vs prev {monthRange}mo</span>
             </div>
-            {totalPipeline > 0 && (
-              <p className="text-xs text-muted-foreground mt-1">+ ${totalPipeline.toLocaleString()} pipeline</p>
+            {totalAnticipated > 0 && (
+              <p className="text-xs text-muted-foreground mt-1">+ ${totalAnticipated.toLocaleString()} anticipated</p>
             )}
           </CardContent>
         </Card>
