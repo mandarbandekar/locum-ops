@@ -1,59 +1,34 @@
 
 
-# Invoice Dashboard UX Improvements
+# Split Drafts into "Upcoming" and "Ready to Review"
 
-## Current State
-The page has four collapsible status groups (Overdue, Sent & Awaiting Payment, Drafts, Paid) with invoice tables inside each. It works but lacks context about the workflow, summary metrics, and inline actions to guide users through the lifecycle.
+## The Problem
+Currently all draft invoices sit in one "Drafts" bucket, but some cover future shifts that haven't happened yet. Users can't meaningfully review or send an invoice for shifts that haven't been worked.
 
-## Proposed Improvements
+## Proposed Change
+Split the current Drafts section into two distinct groups:
 
-### 1. Summary Stats Strip (top of page, above groups)
-A horizontal row of 4 compact metric cards showing at-a-glance financial health:
-- **Overdue** -- count + total dollar amount, red accent
-- **Awaiting Payment** -- count + total, blue accent
-- **Drafts to Review** -- count + total, amber accent
-- **Paid (this month)** -- count + total, green accent
+1. **Ready to Review** — Draft invoices where `period_end` is in the past (all shifts completed). These are actionable — user should review and send them.
+2. **Upcoming** — Draft invoices where `period_end` is today or in the future. These are pre-generated but not yet actionable. Shown in a muted/informational style.
 
-Each card is clickable and scrolls/focuses the corresponding group below.
+### Visual treatment
+- **Ready to Review**: Amber highlight (current draft styling), with "Review & Send" button — this is the action zone
+- **Upcoming**: Subtle gray/muted styling, with a note like "These invoices will be ready to review after the shifts are completed"
+- Both remain grouped by facility with the existing sub-group pattern
 
-### 2. Workflow Progress Indicator
-A small horizontal stepper or breadcrumb-style strip between the stats and the groups, showing the invoice lifecycle:
+### Summary Strip update
+- The "Drafts to Review" card would only count **Ready to Review** invoices
+- Add no new card for Upcoming (keeps the strip clean) — or show a small "(+N upcoming)" annotation
 
-```text
-[Auto-Generated] → [Review Draft] → [Send to Facility] → [Awaiting Payment] → [Record Payment] → [Paid]
-```
-
-This is purely educational -- it helps new users understand the flow at a glance. It appears only when there are invoices. Uses subtle styling, not a large banner.
-
-### 3. Inline Quick Actions per Group
-Add contextual action hints inside each group header (right side, next to the count badge):
-
-- **Drafts**: "Review & Send" button that navigates to the first draft invoice
-- **Sent & Awaiting Payment**: Show aggregate total owed prominently (like the facility sub-totals in Drafts)
-- **Overdue**: Show "days overdue" summary and a "Send Reminder" hint
-- **Paid**: Show monthly/period total earned
-
-### 4. Sent & Awaiting Payment -- Show Aggregate Total
-Mirror the Drafts pattern: display a bold total dollar amount in the group header so users immediately see how much money is outstanding without expanding.
-
-### 5. Overdue Group -- Add Urgency Cues
-- Show the total overdue amount in red in the group header
-- Add a subtle alert banner inside when there are overdue invoices: "You have $X overdue across N invoices. Follow up with facilities to collect payment."
-
-### 6. Paid Group -- Monthly Summary
-Show "Collected this month: $X" in the Paid group header to give users a sense of accomplishment.
-
----
+### Workflow Hint update
+- Change "Review Draft" to "Review & Send" to match the new section name
 
 ## Technical Details
 
 ### Files to modify:
-- **`src/pages/InvoicesPage.tsx`** -- Add the summary stats strip and workflow indicator components above the status groups. Compute totals from the already-grouped arrays (overdue, sent, draft, paid).
-- **`src/components/invoice/InvoiceStatusGroup.tsx`** -- Extend to accept an optional `headerRight` render prop for showing totals/actions in group headers. Add aggregate total display for non-draft groups.
+- **`src/pages/InvoicesPage.tsx`** — Split the `draft` array into `readyToReview` (period_end < today) and `upcoming` (period_end >= today). Render two separate `InvoiceStatusGroup` components. Update summary strip to use `readyToReview` count/total.
+- **`src/components/invoice/InvoiceSummaryStrip.tsx`** — Update label from "Drafts to Review" to "Ready to Review"
+- **`src/components/invoice/InvoiceWorkflowHint.tsx`** — Update "Review Draft" label
 
-### New component:
-- **`src/components/invoice/InvoiceSummaryStrip.tsx`** -- The 4 metric cards. Pure presentational, receives counts and totals as props.
-- **`src/components/invoice/InvoiceWorkflowHint.tsx`** -- The small lifecycle stepper. Stateless, purely visual.
-
-### No database or backend changes needed. All data is already available client-side.
+### No database or backend changes needed.
 
