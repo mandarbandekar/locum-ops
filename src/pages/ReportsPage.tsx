@@ -37,7 +37,7 @@ function InsightCallout({ text }: { text: string | null }) {
 }
 
 export default function ReportsPage() {
-  const { shifts, invoices, facilities } = useData();
+  const { shifts, invoices, facilities, lineItems } = useData();
   const { user, isDemo } = useAuth();
   const [monthRange, setMonthRange] = useState('6');
   const [taxSetAsidePercent, setTaxSetAsidePercent] = useState<number>(0);
