@@ -70,12 +70,115 @@ function getDueBadge(dueDate: string | null, status: string) {
   return <span className="text-[11px] text-muted-foreground">Due in {days}d</span>;
 }
 
+function InvoiceTable({ invoices, selected, onToggleSelect, onDelete, getFacilityName, navigate, showFacility = true }: {
+  invoices: InvoiceWithStatus[];
+  selected: Set<string>;
+  onToggleSelect: (id: string, e: React.MouseEvent) => void;
+  onDelete: (id: string) => Promise<void>;
+  getFacilityName: (id: string) => string;
+  navigate: (path: string) => void;
+  showFacility?: boolean;
+}) {
+  return (
+    <table className="w-full text-[13px] min-w-[600px] sm:min-w-0">
+      <thead>
+        <tr className="bg-muted/30">
+          <th className="p-3 w-10"><span className="sr-only">Select</span></th>
+          <th className="text-left p-3 font-semibold text-muted-foreground text-xs">Invoice #</th>
+          {showFacility && <th className="text-left p-3 font-semibold text-muted-foreground text-xs">Facility</th>}
+          <th className="text-left p-3 font-semibold text-muted-foreground text-xs hidden sm:table-cell">Invoice Date</th>
+          <th className="text-left p-3 font-semibold text-muted-foreground text-xs hidden md:table-cell">Due Date</th>
+          <th className="text-right p-3 font-semibold text-muted-foreground text-xs">Total</th>
+          <th className="text-right p-3 font-semibold text-muted-foreground text-xs hidden sm:table-cell">Balance</th>
+          <th className="text-left p-3 font-semibold text-muted-foreground text-xs">Status</th>
+          <th className="w-10" />
+        </tr>
+      </thead>
+      <tbody>
+        {invoices.map(inv => (
+          <tr
+            key={inv.id}
+            className={`border-b last:border-0 hover:bg-muted/30 cursor-pointer transition-colors ${selected.has(inv.id) ? 'bg-primary/5' : ''}`}
+            onClick={() => navigate(`/invoices/${inv.id}`)}
+          >
+            <td className="p-3" onClick={e => onToggleSelect(inv.id, e)}>
+              <Checkbox checked={selected.has(inv.id)} />
+            </td>
+            <td className="p-3 font-semibold">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {inv.invoice_number}
+                {inv.invoice_type === 'bulk' && (
+                  <Badge variant="outline" className="text-[10px] px-1 py-0">Bulk</Badge>
+                )}
+                {inv.generation_type === 'automatic' && (
+                  <Badge variant="outline" className="text-[10px] px-1 py-0 text-primary border-primary/30">
+                    <Zap className="h-2.5 w-2.5 mr-0.5" />Auto
+                  </Badge>
+                )}
+              </div>
+            </td>
+            {showFacility && (
+              <td className="p-3">
+                <div>{getFacilityName(inv.facility_id)}</div>
+                {inv.billing_cadence && (
+                  <span className="text-[11px] text-muted-foreground">{inv.billing_cadence.charAt(0).toUpperCase() + inv.billing_cadence.slice(1)}</span>
+                )}
+              </td>
+            )}
+            <td className="p-3 text-muted-foreground hidden sm:table-cell">
+              {formatDateSafe(inv.invoice_date)}
+            </td>
+            <td className="p-3 hidden md:table-cell">
+              <div className="text-muted-foreground">
+                {formatDateSafe(inv.due_date)}
+              </div>
+              {inv.due_date && getDueBadge(inv.due_date, inv.computedStatus)}
+            </td>
+            <td className="p-3 text-right font-medium">${(inv.total_amount ?? 0).toLocaleString()}</td>
+            <td className="p-3 text-right hidden sm:table-cell">
+              {(inv.balance_due ?? 0) > 0 ? <span className="font-medium">${(inv.balance_due ?? 0).toLocaleString()}</span> : <span className="text-muted-foreground">—</span>}
+            </td>
+            <td className="p-3">
+              <Badge className={`${statusStyles[inv.computedStatus] || statusStyles.draft} text-xs font-medium`}>
+                {statusLabels[inv.computedStatus] || inv.computedStatus}
+              </Badge>
+            </td>
+            <td className="p-3" onClick={e => e.stopPropagation()}>
+              <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                onClick={async () => {
+                  await onDelete(inv.id);
+                  toast.success('Invoice deleted');
+                }}>
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
 export function InvoiceStatusGroup({
   title, icon, invoices, selected, onToggleSelect, onDelete,
-  getFacilityName, emptyMessage, defaultOpen = true,
-}: Props) {
+  getFacilityName, emptyMessage, defaultOpen = true, groupByFacility = false,
+}: Props & { groupByFacility?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
   const navigate = useNavigate();
+
+  // Group invoices by facility
+  const facilityGroups = groupByFacility && invoices.length > 0
+    ? Object.entries(
+        invoices.reduce<Record<string, InvoiceWithStatus[]>>((acc, inv) => {
+          const fId = inv.facility_id;
+          if (!acc[fId]) acc[fId] = [];
+          acc[fId].push(inv);
+          return acc;
+        }, {})
+      )
+        .map(([fId, invs]) => ({ facilityId: fId, name: getFacilityName(fId), invoices: invs }))
+        .sort((a, b) => a.name.localeCompare(b.name))
+    : null;
 
   return (
     <Collapsible open={open} onOpenChange={setOpen} className="rounded-xl border bg-card overflow-hidden">
@@ -96,84 +199,72 @@ export function InvoiceStatusGroup({
             <CheckCircle2 className="h-4 w-4 text-primary" />
             {emptyMessage}
           </div>
+        ) : facilityGroups ? (
+          <div className="border-t">
+            {facilityGroups.map(group => (
+              <FacilitySubGroup
+                key={group.facilityId}
+                name={group.name}
+                invoices={group.invoices}
+                selected={selected}
+                onToggleSelect={onToggleSelect}
+                onDelete={onDelete}
+                getFacilityName={getFacilityName}
+                navigate={navigate}
+              />
+            ))}
+          </div>
         ) : (
           <div className="overflow-x-auto border-t">
-            <table className="w-full text-[13px] min-w-[600px] sm:min-w-0">
-              <thead>
-                <tr className="bg-muted/30">
-                  <th className="p-3 w-10"><span className="sr-only">Select</span></th>
-                  <th className="text-left p-3 font-semibold text-muted-foreground text-xs">Invoice #</th>
-                  <th className="text-left p-3 font-semibold text-muted-foreground text-xs">Facility</th>
-                  <th className="text-left p-3 font-semibold text-muted-foreground text-xs hidden sm:table-cell">Invoice Date</th>
-                  <th className="text-left p-3 font-semibold text-muted-foreground text-xs hidden md:table-cell">Due Date</th>
-                  <th className="text-right p-3 font-semibold text-muted-foreground text-xs">Total</th>
-                  <th className="text-right p-3 font-semibold text-muted-foreground text-xs hidden sm:table-cell">Balance</th>
-                  <th className="text-left p-3 font-semibold text-muted-foreground text-xs">Status</th>
-                  <th className="w-10" />
-                </tr>
-              </thead>
-              <tbody>
-                {invoices.map(inv => (
-                  <tr
-                    key={inv.id}
-                    className={`border-b last:border-0 hover:bg-muted/30 cursor-pointer transition-colors ${selected.has(inv.id) ? 'bg-primary/5' : ''}`}
-                    onClick={() => navigate(`/invoices/${inv.id}`)}
-                  >
-                    <td className="p-3" onClick={e => onToggleSelect(inv.id, e)}>
-                      <Checkbox checked={selected.has(inv.id)} />
-                    </td>
-                    <td className="p-3 font-semibold">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        {inv.invoice_number}
-                        {inv.invoice_type === 'bulk' && (
-                          <Badge variant="outline" className="text-[10px] px-1 py-0">Bulk</Badge>
-                        )}
-                        {inv.generation_type === 'automatic' && (
-                          <Badge variant="outline" className="text-[10px] px-1 py-0 text-primary border-primary/30">
-                            <Zap className="h-2.5 w-2.5 mr-0.5" />Auto
-                          </Badge>
-                        )}
-                      </div>
-                    </td>
-                    <td className="p-3">
-                      <div>{getFacilityName(inv.facility_id)}</div>
-                      {inv.billing_cadence && (
-                        <span className="text-[11px] text-muted-foreground">{inv.billing_cadence.charAt(0).toUpperCase() + inv.billing_cadence.slice(1)}</span>
-                      )}
-                    </td>
-                    <td className="p-3 text-muted-foreground hidden sm:table-cell">
-                      {formatDateSafe(inv.invoice_date)}
-                    </td>
-                    <td className="p-3 hidden md:table-cell">
-                      <div className="text-muted-foreground">
-                        {formatDateSafe(inv.due_date)}
-                      </div>
-                      {inv.due_date && getDueBadge(inv.due_date, inv.computedStatus)}
-                    </td>
-                    <td className="p-3 text-right font-medium">${(inv.total_amount ?? 0).toLocaleString()}</td>
-                    <td className="p-3 text-right hidden sm:table-cell">
-                      {(inv.balance_due ?? 0) > 0 ? <span className="font-medium">${(inv.balance_due ?? 0).toLocaleString()}</span> : <span className="text-muted-foreground">—</span>}
-                    </td>
-                    <td className="p-3">
-                      <Badge className={`${statusStyles[inv.computedStatus] || statusStyles.draft} text-xs font-medium`}>
-                        {statusLabels[inv.computedStatus] || inv.computedStatus}
-                      </Badge>
-                    </td>
-                    <td className="p-3" onClick={e => e.stopPropagation()}>
-                      <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                        onClick={async () => {
-                          await onDelete(inv.id);
-                          toast.success('Invoice deleted');
-                        }}>
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <InvoiceTable
+              invoices={invoices}
+              selected={selected}
+              onToggleSelect={onToggleSelect}
+              onDelete={onDelete}
+              getFacilityName={getFacilityName}
+              navigate={navigate}
+            />
           </div>
         )}
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
+function FacilitySubGroup({ name, invoices, selected, onToggleSelect, onDelete, getFacilityName, navigate }: {
+  name: string;
+  invoices: InvoiceWithStatus[];
+  selected: Set<string>;
+  onToggleSelect: (id: string, e: React.MouseEvent) => void;
+  onDelete: (id: string) => Promise<void>;
+  getFacilityName: (id: string) => string;
+  navigate: (path: string) => void;
+}) {
+  const [subOpen, setSubOpen] = useState(true);
+  const total = invoices.reduce((s, i) => s + (i.total_amount ?? 0), 0);
+
+  return (
+    <Collapsible open={subOpen} onOpenChange={setSubOpen} className="border-b last:border-0">
+      <CollapsibleTrigger className="flex items-center justify-between w-full px-5 py-3 hover:bg-muted/20 transition-colors">
+        <div className="flex items-center gap-2">
+          {subOpen ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />}
+          <span className="font-medium text-sm">{name}</span>
+          <Badge variant="secondary" className="text-[11px] ml-1">{invoices.length}</Badge>
+        </div>
+        <span className="text-xs text-muted-foreground font-medium">${total.toLocaleString()}</span>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="overflow-x-auto">
+          <InvoiceTable
+            invoices={invoices}
+            selected={selected}
+            onToggleSelect={onToggleSelect}
+            onDelete={onDelete}
+            getFacilityName={getFacilityName}
+            navigate={navigate}
+            showFacility={false}
+          />
+        </div>
       </CollapsibleContent>
     </Collapsible>
   );
