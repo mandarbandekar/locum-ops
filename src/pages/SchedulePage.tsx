@@ -308,29 +308,31 @@ export default function SchedulePage() {
           </div>
 
           {view === 'month' ? (
-            <div className="rounded-lg border bg-card overflow-x-auto">
-              <div className="min-w-[500px]">
-                <div className="grid grid-cols-7 bg-muted/50">
-                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-                    <div key={d} className="p-1.5 sm:p-2 text-center text-[10px] sm:text-xs font-medium text-muted-foreground">{d}</div>
-                  ))}
-                </div>
-                <div className="grid grid-cols-7">
-                  {Array.from({ length: startDow }).map((_, i) => (
-                    <div key={`empty-${i}`} className="min-h-[60px] sm:min-h-[80px] border-t border-r bg-muted/20" />
-                  ))}
-                  {monthDays.map(day => renderDayCell(day, 'min-h-[60px] sm:min-h-[80px]'))}
+            <>
+              <div className="rounded-lg border bg-card overflow-x-auto">
+                <div className="min-w-[500px]">
+                  <div className="grid grid-cols-7 bg-muted/50">
+                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+                      <div key={d} className="p-1.5 sm:p-2 text-center text-[10px] sm:text-xs font-medium text-muted-foreground">{d}</div>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-7">
+                    {Array.from({ length: startDow }).map((_, i) => (
+                      <div key={`empty-${i}`} className="min-h-[60px] sm:min-h-[80px] border-t border-r bg-muted/20" />
+                    ))}
+                    {monthDays.map(day => renderDayCell(day, 'min-h-[60px] sm:min-h-[80px]'))}
+                  </div>
                 </div>
               </div>
-            </div>
-            {totalShiftsInRange === 0 && (
-              <div className="flex flex-col items-center justify-center py-16 text-center">
-                <CalendarPlus className="h-12 w-12 text-muted-foreground/40 mb-4" />
-                <h3 className="text-lg font-semibold mb-1">No shifts this month</h3>
-                <p className="text-sm text-muted-foreground max-w-xs mb-4">Add shifts to track your schedule, auto-generate invoices, and sync to your calendar.</p>
-                <Button onClick={() => setShowAdd(true)}><Plus className="mr-1.5 h-4 w-4" /> Add Your First Shift</Button>
-              </div>
-            )}
+              {totalShiftsInRange === 0 && (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <CalendarPlus className="h-12 w-12 text-muted-foreground/40 mb-4" />
+                  <h3 className="text-lg font-semibold mb-1">No shifts this month</h3>
+                  <p className="text-sm text-muted-foreground max-w-xs mb-4">Add shifts to track your schedule, auto-generate invoices, and sync to your calendar.</p>
+                  <Button onClick={() => setShowAdd(true)}><Plus className="mr-1.5 h-4 w-4" /> Add Your First Shift</Button>
+                </div>
+              )}
+            </>
           ) : view === 'week' ? (
             <>
               <WeekTimeGrid
