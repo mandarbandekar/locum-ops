@@ -266,7 +266,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     // Auto-generate invoice draft if applicable
     try {
       const facility = facilities.find(f => f.id === shift.facility_id);
-      if (facility && facility.auto_generate_invoices && shift.status !== 'canceled') {
+      if (facility && facility.auto_generate_invoices) {
         const cadence = facility.billing_cadence as BillingCadence;
         const shiftStart = new Date(shift.start_datetime);
         const period = getBillingPeriod(
