@@ -178,7 +178,12 @@ export default function DashboardPage() {
       return { month: format(month, 'MMM'), paid, outstanding, anticipated };
     });
 
-    const invoiceItems = [...draftInvoices, ...unpaidInvoices].map(inv => ({
+    const todayEnd = endOfDay(now);
+    const readyToReviewInvoices = draftInvoices.filter(inv =>
+      inv.invoice_date && !isAfter(parseISO(inv.invoice_date), todayEnd)
+    );
+
+    const invoiceItems = readyToReviewInvoices.map(inv => ({
       id: inv.id,
       invoice_number: inv.invoice_number,
       facility_name: getFacilityName(inv.facility_id),
@@ -188,7 +193,7 @@ export default function DashboardPage() {
       due_date: inv.due_date,
     }));
 
-    return { draftInvoices, draftTotal, unpaidInvoices, outstandingTotal, paidThisMonth, revenueData, invoiceItems };
+    return { draftInvoices, unpaidInvoices, outstandingTotal, paidThisMonth, revenueData, invoiceItems };
   }, [invoices, payments, now]);
 
   // ── Priorities / Attention items ──
@@ -406,9 +411,8 @@ export default function DashboardPage() {
 
         {/* Center: Money to Collect */}
         <div className="lg:col-span-4">
-          <MoneyToCollectCard
+           <MoneyToCollectCard
             outstandingTotal={summary.outstandingTotal}
-            draftTotal={summary.draftTotal}
             paidThisMonth={summary.paidThisMonth}
             revenueData={summary.revenueData}
             invoiceItems={summary.invoiceItems}

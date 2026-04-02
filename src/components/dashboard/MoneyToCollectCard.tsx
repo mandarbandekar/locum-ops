@@ -32,7 +32,6 @@ interface OldestUnpaid {
 
 interface MoneyToCollectCardProps {
   outstandingTotal: number;
-  draftTotal: number;
   paidThisMonth: number;
   revenueData: RevenueMonth[];
   invoiceItems: InvoiceItem[];
@@ -43,7 +42,6 @@ interface MoneyToCollectCardProps {
 
 export function MoneyToCollectCard({
   outstandingTotal,
-  draftTotal,
   paidThisMonth,
   revenueData,
   invoiceItems,
@@ -52,7 +50,7 @@ export function MoneyToCollectCard({
   oldestUnpaid,
 }: MoneyToCollectCardProps) {
   const navigate = useNavigate();
-  const totalCollectable = outstandingTotal + draftTotal;
+  const totalCollectable = outstandingTotal;
 
   const getIcon = (status: string) => {
     if (status === 'draft') return <FileText className="h-3.5 w-3.5 text-warning" />;
@@ -125,7 +123,7 @@ export function MoneyToCollectCard({
         {/* Individual invoice list */}
         <div className="px-4 pt-3 min-h-0">
           <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-2 px-1">
-            Invoices to Review ({invoiceItems.length})
+            Ready to Review ({invoiceItems.length})
           </p>
           <ScrollArea className="max-h-[180px]">
             <div className="space-y-1.5 pr-2">
