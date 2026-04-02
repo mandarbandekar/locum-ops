@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { aggregateQuarterlyIncome, calculateSetAside } from '@/lib/taxCalculations';
+import {
+  aggregateQuarterlyIncome,
+  calculateSetAside,
+  estimateSelfEmploymentTax,
+  estimateFederalIncomeTax,
+  estimateTotalTax,
+  estimateQuarterlyPayments,
+} from '@/lib/taxCalculations';
 import { Invoice } from '@/types';
 
 function makeInvoice(overrides: Partial<Invoice>): Invoice {
