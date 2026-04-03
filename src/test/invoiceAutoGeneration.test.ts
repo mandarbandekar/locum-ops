@@ -130,10 +130,10 @@ describe('Invoice Auto-Generation (New Rules)', () => {
     expect(isShiftInvoiceEligible(shift, new Set())).toBe(true);
   });
 
-  // 6) Canceled shifts are excluded
-  it('excludes canceled shifts', () => {
-    const shift = makeShift('s1', 'f1', 'canceled', '2026-03-10');
-    expect(isShiftInvoiceEligible(shift, new Set())).toBe(false);
+  // 6) All existing shifts are eligible (no status filtering — delete to remove)
+  it('all shifts are eligible regardless of former status', () => {
+    const shift = makeShift('s1', 'f1', 'any', '2026-03-10');
+    expect(isShiftInvoiceEligible(shift, new Set())).toBe(true);
   });
 
   // 7) Draft invoices update when shifts are added or removed before sending
