@@ -241,7 +241,7 @@ Deno.serve(async (req) => {
         await supabase.rpc('enqueue_email', {
           queue_name: 'transactional_emails',
           payload: {
-            run_id: crypto.randomUUID(),
+            idempotency_key: messageId,
             message_id: messageId,
             to: recipientEmail,
             from: `${SITE_NAME} <reminders@${FROM_DOMAIN}>`,
@@ -316,7 +316,7 @@ async function enqueueDraftReminder(
   await supabase.rpc('enqueue_email', {
     queue_name: 'transactional_emails',
     payload: {
-      run_id: crypto.randomUUID(), message_id: messageId, to: recipientEmail,
+      idempotency_key: messageId, message_id: messageId, to: recipientEmail,
       from: `${SITE_NAME} <reminders@${FROM_DOMAIN}>`, sender_domain: SENDER_DOMAIN,
       subject, html, text, purpose: 'transactional', label: 'invoice_reminder',
       queued_at: now.toISOString(),
@@ -358,7 +358,7 @@ async function enqueueOverdueReminder(
   await supabase.rpc('enqueue_email', {
     queue_name: 'transactional_emails',
     payload: {
-      run_id: crypto.randomUUID(), message_id: messageId, to: recipientEmail,
+      idempotency_key: messageId, message_id: messageId, to: recipientEmail,
       from: `${SITE_NAME} <reminders@${FROM_DOMAIN}>`, sender_domain: SENDER_DOMAIN,
       subject, html, text, purpose: 'transactional', label: 'invoice_reminder',
       queued_at: now.toISOString(),
@@ -438,7 +438,7 @@ async function handlePaymentReminder(supabase: any, body: any, apiKey: string) {
   await supabase.rpc('enqueue_email', {
     queue_name: 'transactional_emails',
     payload: {
-      run_id: crypto.randomUUID(), message_id: messageId, to: recipientEmail,
+      idempotency_key: messageId, message_id: messageId, to: recipientEmail,
       from: `${senderName} via ${SITE_NAME} <reminders@${FROM_DOMAIN}>`,
       sender_domain: SENDER_DOMAIN, subject, html, text,
       purpose: 'transactional', label: 'payment_reminder',
