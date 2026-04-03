@@ -188,9 +188,42 @@ export default function InvoiceDetailPage() {
         {computedStatus === 'overdue' && (
           <div className="rounded-md border border-destructive/50 bg-destructive/5 p-3 flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />
-            <p className="text-sm text-destructive font-medium">
+            <p className="text-sm text-destructive font-medium flex-1">
               This invoice is overdue. Due date was {invoice.due_date ? format(new Date(invoice.due_date), 'MMM d, yyyy') : 'not set'}.
             </p>
+            <Button
+              size="sm"
+              variant="destructive"
+              className="shrink-0 gap-1.5"
+              disabled={sendingReminder}
+              onClick={async () => {
+                const billingEmail = (invoice as any).billing_email_to || facility?.invoice_email_to;
+                if (!billingEmail) {
+                  toast.error('No billing email set — add one in facility settings');
+                  return;
+                }
+                setSendingReminder(true);
+                try {
+                  const { supabase } = await import('@/integrations/supabase/client');
+                  await supabase.functions.invoke('send-reminder-emails', {
+                    body: {
+                      mode: 'payment_reminder',
+                      invoice_id: invoice.id,
+                      user_id: user?.id,
+                    },
+                  });
+                  await addActivity({ invoice_id: invoice.id, action: 'payment_reminder_sent', description: `Payment reminder sent to ${billingEmail}` });
+                  toast.success(`Payment reminder sent to ${billingEmail}`);
+                } catch (e) {
+                  toast.error('Failed to send reminder');
+                } finally {
+                  setSendingReminder(false);
+                }
+              }}
+            >
+              <Mail className="h-3.5 w-3.5" />
+              Send Reminder
+            </Button>
           </div>
         )}
         {invoice.generation_type === 'automatic' && (
