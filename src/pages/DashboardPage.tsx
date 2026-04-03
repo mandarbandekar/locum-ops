@@ -325,6 +325,7 @@ export default function DashboardPage() {
         title: 'S-Corp structure may be worth exploring',
         context: 'Your income is in the range commonly reviewed',
         link: '/business?tab=tax-advisor&advisortab=scorp', icon: DollarSign, urgency: 9,
+        module: 'taxes',
       });
     }
 
