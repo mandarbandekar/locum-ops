@@ -2425,6 +2425,7 @@ export type Database = {
           notes: string | null
           pays_own_subscriptions: boolean | null
           retirement_planning_interest: boolean | null
+          scorp_assessment_result: Json | null
           travels_for_ce: boolean | null
           updated_at: string
           user_id: string
@@ -2440,6 +2441,7 @@ export type Database = {
           notes?: string | null
           pays_own_subscriptions?: boolean | null
           retirement_planning_interest?: boolean | null
+          scorp_assessment_result?: Json | null
           travels_for_ce?: boolean | null
           updated_at?: string
           user_id?: string
@@ -2455,6 +2457,7 @@ export type Database = {
           notes?: string | null
           pays_own_subscriptions?: boolean | null
           retirement_planning_interest?: boolean | null
+          scorp_assessment_result?: Json | null
           travels_for_ce?: boolean | null
           updated_at?: string
           user_id?: string
