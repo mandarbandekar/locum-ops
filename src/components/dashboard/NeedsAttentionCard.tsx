@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { ReadinessItem } from '@/components/dashboard/WorkReadinessStrip';
 
+export type ReminderModule = 'invoices' | 'confirmations' | 'credentials' | 'contracts' | 'taxes' | 'outreach' | 'shifts';
+
 export interface AttentionItem {
   title: string;
   context: string;
@@ -11,6 +13,7 @@ export interface AttentionItem {
   icon: React.ElementType;
   urgency: number;
   amount?: string;
+  module?: ReminderModule;
 }
 
 interface NeedsAttentionCardProps {

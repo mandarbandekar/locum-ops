@@ -23,6 +23,16 @@ const CATEGORY_LABELS: Record<ReminderCategory, string> = {
   taxes: 'Taxes',
 };
 
+const CATEGORY_DESCRIPTIONS: Partial<Record<ReminderCategory, string>> = {
+  invoices: 'Draft invoices, overdue payments, and uninvoiced shift nudges',
+  shifts: 'Pre-shift-end email & SMS alerts (1 hour before shift ends)',
+  confirmations: 'Monthly and pre-shift clinic confirmations',
+  credentials: 'Credential expirations, CE deadlines, and renewals',
+  contracts: 'Contract checklist due dates and overdue items',
+  outreach: 'Facility outreach follow-ups',
+  taxes: 'Quarterly estimated tax deadlines & S-Corp assessment nudge',
+};
+
 const TIMING_OPTIONS = [
   { key: 'same_day', label: 'Same day' },
   { key: '1_day_before', label: '1 day before' },
