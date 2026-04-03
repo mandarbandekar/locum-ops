@@ -564,7 +564,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     if (isDemo) { setActivities(prev => [...prev, { ...a, id: generateId(), created_at: new Date().toISOString() }]); return; }
     const { data, error } = await db('invoice_activity').insert({ user_id: user!.id, ...a }).select().single();
     if (error) { console.error(error); return; }
-    setActivities(prev => [...prev, stripDbFields(data) as InvoiceActivity]);
+    setActivities(prev => [...prev, stripDbFieldsKeepTimestamp(data) as InvoiceActivity]);
   }, [isDemo, user]);
 
   // ─── Computed ────────────────────────────────────────────
