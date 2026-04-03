@@ -142,7 +142,7 @@ export default function CPAPrepSummaryTab({ questions, reviewItems, profile, onS
           </div>
 
           {questions.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">No questions yet. Add one above or save from the Advisor or Opportunity Review.</p>
+            <p className="text-sm text-muted-foreground text-center py-4">No questions yet. Add one above or save from the Advisor or Relief Deduction Guide.</p>
           ) : (
             <div className="space-y-1.5">
               {questions.map(q => (
