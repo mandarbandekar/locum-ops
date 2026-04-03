@@ -55,7 +55,7 @@ function computeStreak(): number {
 }
 
 export default function DashboardPage() {
-  const { shifts, invoices, facilities, payments, checklistItems } = useData();
+  const { shifts, invoices, facilities, payments, checklistItems, lineItems } = useData();
   const { user, isDemo } = useAuth();
   const { profile } = useUserProfile();
   const navigate = useNavigate();
