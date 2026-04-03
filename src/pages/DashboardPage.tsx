@@ -224,6 +224,7 @@ export default function DashboardPage() {
         context: 'Ready to review and send',
         link: '/invoices', icon: FileText, urgency: 2,
         amount: `$${summary.draftInvoices.reduce((s, i) => s + i.total_amount, 0).toLocaleString()}`,
+        module: 'invoices',
       });
     }
 
