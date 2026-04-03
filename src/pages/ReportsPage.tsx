@@ -106,10 +106,10 @@ export default function ReportsPage() {
         })
         .reduce((sum, inv) => sum + (inv.balance_due ?? inv.total_amount), 0);
 
-      // Anticipated income: only for the current month
-      const isCurrentMonth = format(month, 'yyyy-MM') === format(now, 'yyyy-MM');
+      // Anticipated income: current month + 3 months ahead
+      const isCurrentOrFuture = month >= startOfMonth(now) && month <= endOfMonth(addMonths(now, 3));
       let anticipated = 0;
-      if (isCurrentMonth) {
+      if (isCurrentOrFuture) {
         const draftTotal = monthInvoices
           .filter(i => i.status === 'draft')
           .reduce((sum, inv) => sum + inv.total_amount, 0);
@@ -117,13 +117,13 @@ export default function ReportsPage() {
         const uninvoicedShiftTotal = shifts.filter(s => {
           const shiftDate = parseISO(s.start_datetime);
           return isWithinInterval(shiftDate, { start: month, end: monthEnd }) &&
-            
             !invoicedShiftIds.has(s.id);
         }).reduce((sum, s) => sum + s.rate_applied, 0);
 
         anticipated = draftTotal + uninvoicedShiftTotal;
       }
 
+      const isCurrentMonth = format(month, 'yyyy-MM') === format(now, 'yyyy-MM');
       return {
         month: format(month, 'MMM yyyy'),
         collected,
