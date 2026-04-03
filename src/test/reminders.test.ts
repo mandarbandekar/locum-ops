@@ -166,7 +166,7 @@ describe('Reminder Engine', () => {
       const now = new Date('2026-03-15T10:00:00');
       const shifts = [
         { id: 's1', facility_id: 'f1', start_datetime: '2026-03-13T08:00:00', end_datetime: '2026-03-13T17:00:00', rate_applied: 800 },
-        { id: 's2', facility_id: 'f1', start_datetime: '2026-03-14T08:00:00', end_datetime: '2026-03-14T12:00:00', rate_applied: 400 },
+        { id: 's2', facility_id: 'f1', start_datetime: '2026-03-13T12:00:00', end_datetime: '2026-03-13T18:00:00', rate_applied: 400 },
       ];
       const lineItems: { shift_id: string | null }[] = [];
       const result = generateUninvoicedShiftReminders(shifts, lineItems, getFacName, now);
