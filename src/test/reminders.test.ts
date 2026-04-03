@@ -101,7 +101,7 @@ describe('Reminder Engine', () => {
   });
 
   describe('generateOutreachReminders', () => {
-    it('no longer triggers for any facility (outreach reminders removed with status simplification)', () => {
+    it('triggers for active facility with overdue outreach', () => {
       const now = new Date();
       const tenDaysAgo = new Date(now);
       tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
@@ -110,7 +110,8 @@ describe('Reminder Engine', () => {
         status: 'active' as const, outreach_last_sent_at: tenDaysAgo.toISOString(),
       }] as any[];
       const result = generateOutreachReminders(facilities, now);
-      expect(result).toHaveLength(0);
+      expect(result).toHaveLength(1);
+      expect(result[0].title).toContain('Riverfront');
     });
   });
 
