@@ -148,9 +148,20 @@ export function useTaxAdvisor() {
     }
   };
 
+  const saveScorpResult = async (result: any) => {
+    if (!user || !profile) return;
+    const { error } = await supabase.from('tax_advisor_profiles').update({
+      scorp_assessment_result: result,
+    } as any).eq('id', profile.id);
+    if (error) { toast({ title: 'Error saving assessment', description: error.message, variant: 'destructive' }); return; }
+    setProfile(prev => prev ? { ...prev, scorp_assessment_result: result } : prev);
+    toast({ title: 'Assessment saved' });
+  };
+
   return {
     profile, sessions, questions, reviewItems, loading,
     saveProfile, saveSession, saveQuestion, updateQuestion, deleteQuestion, updateReviewItem,
+    saveScorpResult,
     refetch: fetchAll,
   };
 }
