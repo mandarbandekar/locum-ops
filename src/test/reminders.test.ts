@@ -158,4 +158,73 @@ describe('Reminder Engine', () => {
       expect(filterByPreferences(reminders, settings)).toHaveLength(0);
     });
   });
+
+  describe('generateUninvoicedShiftReminders', () => {
+    const getFacName = (id: string) => id === 'f1' ? 'Westside Clinic' : 'East Clinic';
+
+    it('detects shifts ended >24h ago with no invoice line item', () => {
+      const now = new Date('2026-03-15T10:00:00');
+      const shifts = [
+        { id: 's1', facility_id: 'f1', start_datetime: '2026-03-13T08:00:00', end_datetime: '2026-03-13T17:00:00', rate_applied: 800 },
+        { id: 's2', facility_id: 'f1', start_datetime: '2026-03-14T08:00:00', end_datetime: '2026-03-14T12:00:00', rate_applied: 400 },
+      ];
+      const lineItems: { shift_id: string | null }[] = [];
+      const result = generateUninvoicedShiftReminders(shifts, lineItems, getFacName, now);
+      expect(result).toHaveLength(1);
+      expect(result[0].title).toContain('2 uninvoiced shifts');
+      expect(result[0].title).toContain('Westside Clinic');
+      expect(result[0].body).toContain('$1,200');
+    });
+
+    it('excludes shifts that have invoice line items', () => {
+      const now = new Date('2026-03-15T10:00:00');
+      const shifts = [
+        { id: 's1', facility_id: 'f1', start_datetime: '2026-03-13T08:00:00', end_datetime: '2026-03-13T17:00:00', rate_applied: 800 },
+      ];
+      const lineItems = [{ shift_id: 's1' }];
+      const result = generateUninvoicedShiftReminders(shifts, lineItems, getFacName, now);
+      expect(result).toHaveLength(0);
+    });
+
+    it('excludes shifts ended less than 24h ago', () => {
+      const now = new Date('2026-03-15T10:00:00');
+      const shifts = [
+        { id: 's1', facility_id: 'f1', start_datetime: '2026-03-15T08:00:00', end_datetime: '2026-03-15T09:00:00', rate_applied: 800 },
+      ];
+      const result = generateUninvoicedShiftReminders(shifts, [], getFacName, now);
+      expect(result).toHaveLength(0);
+    });
+
+    it('groups by facility', () => {
+      const now = new Date('2026-03-15T10:00:00');
+      const shifts = [
+        { id: 's1', facility_id: 'f1', start_datetime: '2026-03-12T08:00:00', end_datetime: '2026-03-12T17:00:00', rate_applied: 800 },
+        { id: 's2', facility_id: 'f2', start_datetime: '2026-03-12T08:00:00', end_datetime: '2026-03-12T17:00:00', rate_applied: 600 },
+      ];
+      const result = generateUninvoicedShiftReminders(shifts, [], getFacName, now);
+      expect(result).toHaveLength(2);
+    });
+  });
+
+  describe('getShiftsEndingSoon', () => {
+    it('returns shifts ending within the window', () => {
+      const now = new Date('2026-03-15T14:00:00');
+      const shifts = [
+        { id: 's1', facility_id: 'f1', end_datetime: '2026-03-15T15:00:00', rate_applied: 800 },
+        { id: 's2', facility_id: 'f1', end_datetime: '2026-03-15T16:30:00', rate_applied: 800 },
+      ];
+      const result = getShiftsEndingSoon(shifts, now, 65);
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('s1');
+    });
+
+    it('excludes shifts already ended', () => {
+      const now = new Date('2026-03-15T16:00:00');
+      const shifts = [
+        { id: 's1', facility_id: 'f1', end_datetime: '2026-03-15T15:00:00', rate_applied: 800 },
+      ];
+      const result = getShiftsEndingSoon(shifts, now, 65);
+      expect(result).toHaveLength(0);
+    });
+  });
 });
