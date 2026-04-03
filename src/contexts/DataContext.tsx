@@ -27,6 +27,12 @@ function stripDbFields(row: any): any {
   return rest;
 }
 
+function stripDbFieldsKeepTimestamp(row: any): any {
+  if (!row) return row;
+  const { user_id, updated_at, ...rest } = row;
+  return rest;
+}
+
 interface DataContextType {
   facilities: Facility[];
   contacts: FacilityContact[];
@@ -111,7 +117,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
       case 'invoices': setInvoices(rows); break;
       case 'invoice_line_items': setLineItems(rows); break;
       case 'invoice_payments': setPayments(rows); break;
-      case 'invoice_activity': setActivities(rows); break;
+      case 'invoice_activity': setActivities((data || []).map(stripDbFieldsKeepTimestamp)); break;
       case 'email_logs': setEmailLogs(rows); break;
       case 'contract_checklist_items': setChecklistItems(rows); break;
     }
@@ -139,7 +145,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
       setLineItems((liRes.data || []).map(stripDbFields));
       setEmailLogs((eRes.data || []).map(stripDbFields));
       setPayments((pRes.data || []).map(stripDbFields));
-      setActivities((aRes.data || []).map(stripDbFields));
+      setActivities((aRes.data || []).map(stripDbFieldsKeepTimestamp));
       setChecklistItems((clRes.data || []).map(stripDbFields));
     } catch (err: any) {
       console.error('Failed to load data:', err);
@@ -558,7 +564,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     if (isDemo) { setActivities(prev => [...prev, { ...a, id: generateId(), created_at: new Date().toISOString() }]); return; }
     const { data, error } = await db('invoice_activity').insert({ user_id: user!.id, ...a }).select().single();
     if (error) { console.error(error); return; }
-    setActivities(prev => [...prev, stripDbFields(data) as InvoiceActivity]);
+    setActivities(prev => [...prev, stripDbFieldsKeepTimestamp(data) as InvoiceActivity]);
   }, [isDemo, user]);
 
   // ─── Computed ────────────────────────────────────────────
