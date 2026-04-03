@@ -27,6 +27,12 @@ function stripDbFields(row: any): any {
   return rest;
 }
 
+function stripDbFieldsKeepTimestamp(row: any): any {
+  if (!row) return row;
+  const { user_id, updated_at, ...rest } = row;
+  return rest;
+}
+
 interface DataContextType {
   facilities: Facility[];
   contacts: FacilityContact[];
