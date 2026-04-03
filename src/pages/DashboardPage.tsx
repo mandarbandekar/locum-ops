@@ -12,7 +12,7 @@ import { format, differenceInDays, differenceInHours, addMonths, subMonths, star
 import { getChecklistBadge } from '@/types/contracts';
 import { useClinicConfirmations } from '@/hooks/useClinicConfirmations';
 import { useCredentials } from '@/hooks/useCredentials';
-import { generateCredentialReminders } from '@/lib/reminderEngine';
+import { generateCredentialReminders, generateUninvoicedShiftReminders } from '@/lib/reminderEngine';
 import { computeStatus as computeSubStatus } from '@/hooks/useSubscriptions';
 
 import { UpcomingShiftsCard } from '@/components/dashboard/UpcomingShiftsCard';
