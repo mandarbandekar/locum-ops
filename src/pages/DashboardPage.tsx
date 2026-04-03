@@ -245,6 +245,7 @@ export default function DashboardPage() {
         title: `${confirmationBreakdown.manualReview} confirmation${confirmationBreakdown.manualReview > 1 ? 's' : ''} to review`,
         context: 'Review and send to clinic contacts',
         link: '/schedule', icon: CheckSquare, urgency: 3,
+        module: 'confirmations',
       });
     }
 
