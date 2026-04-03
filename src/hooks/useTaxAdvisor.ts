@@ -16,6 +16,7 @@ export interface TaxAdvisorProfile {
   combines_business_personal_travel: boolean | null;
   buys_supplies_equipment: boolean | null;
   notes: string | null;
+  scorp_assessment_result: any | null;
 }
 
 export interface TaxAdvisorSession {
