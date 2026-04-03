@@ -232,10 +232,29 @@ export default function TrackerTab() {
     return DEFAULT_CHECKLIST_ITEMS.find(d => d.key === itemKey)?.instruction || '';
   }
 
+  // Annualize YTD income for S-Corp nudge
+  const monthsElapsed = Math.max(1, now.getMonth() + 1);
+  const annualizedIncome = (totalIncome / monthsElapsed) * 12;
+  const showScorpNudge = annualizedIncome >= 80000 && totalIncome > 0;
+
   if (loading) return <p className="text-muted-foreground py-8 text-center">Loading…</p>;
 
   return (
     <div className="space-y-8">
+      {/* S-Corp Nudge */}
+      {showScorpNudge && (
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 flex items-center gap-3">
+          <Building2 className="h-5 w-5 text-primary shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium">Your income may be in the range where an S-Corp structure is commonly reviewed.</p>
+            <p className="text-xs text-muted-foreground">Want to explore if it's worth discussing with your CPA?</p>
+          </div>
+          <a href="/business?tab=tax-advisor&advisortab=scorp" className="shrink-0">
+            <Button variant="outline" size="sm" className="text-xs">Explore S-Corp →</Button>
+          </a>
+        </div>
+      )}
+
       {/* KPI Strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card>
