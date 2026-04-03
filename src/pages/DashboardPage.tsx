@@ -236,6 +236,7 @@ export default function DashboardPage() {
         context: 'Follow up on late payments',
         link: '/invoices', icon: AlertTriangle, urgency: 1,
         amount: `$${overdueTotal.toLocaleString()}`,
+        module: 'invoices',
       });
     }
 
