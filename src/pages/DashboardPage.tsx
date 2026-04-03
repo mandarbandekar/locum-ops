@@ -297,6 +297,7 @@ export default function DashboardPage() {
         title: `${dueSoonSubs.length} subscription${dueSoonSubs.length > 1 ? 's' : ''} renewing soon`,
         context: 'Review upcoming renewals',
         link: '/credentials?tab=subscriptions', icon: ShieldAlert, urgency: 6,
+        module: 'credentials',
       });
     }
 
