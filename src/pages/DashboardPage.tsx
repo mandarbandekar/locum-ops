@@ -282,7 +282,7 @@ export default function DashboardPage() {
 
     if (credentialsList) {
       generateCredentialReminders(credentialsList, now, 30).forEach(r => {
-        items.push({ title: r.title, context: r.body, link: r.link, icon: ShieldAlert, urgency: r.urgency });
+        items.push({ title: r.title, context: r.body, link: r.link, icon: ShieldAlert, urgency: r.urgency, module: 'credentials' });
       });
     }
 
