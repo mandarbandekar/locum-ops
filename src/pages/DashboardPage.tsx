@@ -18,7 +18,7 @@ import { useReminderPreferences } from '@/hooks/useReminderPreferences';
 
 import { UpcomingShiftsCard } from '@/components/dashboard/UpcomingShiftsCard';
 import { MoneyToCollectCard } from '@/components/dashboard/MoneyToCollectCard';
-import { NeedsAttentionCard, AttentionItem } from '@/components/dashboard/NeedsAttentionCard';
+import { NeedsAttentionCard, AttentionItem, type ReminderModule } from '@/components/dashboard/NeedsAttentionCard';
 import { GettingStartedChecklist } from '@/components/dashboard/GettingStartedChecklist';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { ReadinessItem } from '@/components/dashboard/WorkReadinessStrip';
