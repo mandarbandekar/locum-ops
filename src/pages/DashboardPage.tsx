@@ -254,6 +254,7 @@ export default function DashboardPage() {
         title: `${confirmationBreakdown.needsUpdate} confirmation${confirmationBreakdown.needsUpdate > 1 ? 's' : ''} need update`,
         context: 'Schedule changed after confirmation sent',
         link: '/schedule', icon: AlertTriangle, urgency: 2,
+        module: 'confirmations',
       });
     }
 
