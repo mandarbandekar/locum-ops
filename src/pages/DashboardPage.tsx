@@ -14,10 +14,11 @@ import { useClinicConfirmations } from '@/hooks/useClinicConfirmations';
 import { useCredentials } from '@/hooks/useCredentials';
 import { generateCredentialReminders, generateUninvoicedShiftReminders } from '@/lib/reminderEngine';
 import { computeStatus as computeSubStatus } from '@/hooks/useSubscriptions';
+import { useReminderPreferences } from '@/hooks/useReminderPreferences';
 
 import { UpcomingShiftsCard } from '@/components/dashboard/UpcomingShiftsCard';
 import { MoneyToCollectCard } from '@/components/dashboard/MoneyToCollectCard';
-import { NeedsAttentionCard, AttentionItem } from '@/components/dashboard/NeedsAttentionCard';
+import { NeedsAttentionCard, AttentionItem, type ReminderModule } from '@/components/dashboard/NeedsAttentionCard';
 import { GettingStartedChecklist } from '@/components/dashboard/GettingStartedChecklist';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { ReadinessItem } from '@/components/dashboard/WorkReadinessStrip';
@@ -58,6 +59,7 @@ export default function DashboardPage() {
   const { shifts, invoices, facilities, payments, checklistItems, lineItems } = useData();
   const { user, isDemo } = useAuth();
   const { profile } = useUserProfile();
+  const { categories: reminderCategories } = useReminderPreferences();
   const navigate = useNavigate();
   const now = new Date();
 
@@ -222,6 +224,7 @@ export default function DashboardPage() {
         context: 'Ready to review and send',
         link: '/invoices', icon: FileText, urgency: 2,
         amount: `$${summary.draftInvoices.reduce((s, i) => s + i.total_amount, 0).toLocaleString()}`,
+        module: 'invoices',
       });
     }
 
@@ -233,6 +236,7 @@ export default function DashboardPage() {
         context: 'Follow up on late payments',
         link: '/invoices', icon: AlertTriangle, urgency: 1,
         amount: `$${overdueTotal.toLocaleString()}`,
+        module: 'invoices',
       });
     }
 
@@ -241,6 +245,7 @@ export default function DashboardPage() {
         title: `${confirmationBreakdown.manualReview} confirmation${confirmationBreakdown.manualReview > 1 ? 's' : ''} to review`,
         context: 'Review and send to clinic contacts',
         link: '/schedule', icon: CheckSquare, urgency: 3,
+        module: 'confirmations',
       });
     }
 
@@ -249,6 +254,7 @@ export default function DashboardPage() {
         title: `${confirmationBreakdown.needsUpdate} confirmation${confirmationBreakdown.needsUpdate > 1 ? 's' : ''} need update`,
         context: 'Schedule changed after confirmation sent',
         link: '/schedule', icon: AlertTriangle, urgency: 2,
+        module: 'confirmations',
       });
     }
 
@@ -257,6 +263,7 @@ export default function DashboardPage() {
         title: `${confirmationBreakdown.missingContact} facilit${confirmationBreakdown.missingContact > 1 ? 'ies' : 'y'} missing contact`,
         context: 'Add scheduling contact to enable confirmations',
         link: '/schedule', icon: AlertTriangle, urgency: 5,
+        module: 'confirmations',
       });
     }
 
@@ -269,18 +276,19 @@ export default function DashboardPage() {
           title: item.title,
           context: badge === 'overdue' ? 'Overdue' : `Due in ${days} days`,
           link: '/facilities', icon: ShieldAlert, urgency: badge === 'overdue' ? 3 : 8,
+          module: 'contracts',
         });
       });
 
     if (credentialsList) {
       generateCredentialReminders(credentialsList, now, 30).forEach(r => {
-        items.push({ title: r.title, context: r.body, link: r.link, icon: ShieldAlert, urgency: r.urgency });
+        items.push({ title: r.title, context: r.body, link: r.link, icon: ShieldAlert, urgency: r.urgency, module: 'credentials' });
       });
     }
 
     // Uninvoiced shifts
     generateUninvoicedShiftReminders(shifts, lineItems, getFacilityName, now).forEach(r => {
-      items.push({ title: r.title, context: r.body, link: r.link, icon: Clock, urgency: r.urgency });
+      items.push({ title: r.title, context: r.body, link: r.link, icon: Clock, urgency: r.urgency, module: 'invoices' });
     });
 
     const dueSoonSubs = subscriptions.filter(s => computeSubStatus(s.renewal_date, s.status) === 'due_soon');
@@ -289,6 +297,7 @@ export default function DashboardPage() {
         title: `${dueSoonSubs.length} subscription${dueSoonSubs.length > 1 ? 's' : ''} renewing soon`,
         context: 'Review upcoming renewals',
         link: '/credentials?tab=subscriptions', icon: ShieldAlert, urgency: 6,
+        module: 'credentials',
       });
     }
 
@@ -300,6 +309,7 @@ export default function DashboardPage() {
           title: `Q${nextQuarter.quarter} estimated tax due`,
           context: `Due in ${daysUntil} days`,
           link: '/business?tab=tax-strategy&subtab=tracker', icon: DollarSign, urgency: 4,
+          module: 'taxes',
         });
       }
     }
@@ -315,11 +325,20 @@ export default function DashboardPage() {
         title: 'S-Corp structure may be worth exploring',
         context: 'Your income is in the range commonly reviewed',
         link: '/business?tab=tax-advisor&advisortab=scorp', icon: DollarSign, urgency: 9,
+        module: 'taxes',
       });
     }
 
-    return items.sort((a, b) => a.urgency - b.urgency);
-  }, [invoices, summary, checklistItems, confirmationBreakdown, credentialsList, subscriptions, taxQuarters, now]);
+    const sorted = items.sort((a, b) => a.urgency - b.urgency);
+
+    // Filter by user's reminder category preferences (in-app channel)
+    return sorted.filter(item => {
+      if (!item.module) return true;
+      const catSetting = reminderCategories.find(c => c.category === item.module);
+      if (!catSetting) return true;
+      return catSetting.enabled && catSetting.in_app_enabled;
+    });
+  }, [invoices, summary, checklistItems, confirmationBreakdown, credentialsList, subscriptions, taxQuarters, reminderCategories, now]);
 
   // ── Work Readiness ──
   const readinessItems = useMemo(() => {
