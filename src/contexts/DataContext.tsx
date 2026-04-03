@@ -117,7 +117,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
       case 'invoices': setInvoices(rows); break;
       case 'invoice_line_items': setLineItems(rows); break;
       case 'invoice_payments': setPayments(rows); break;
-      case 'invoice_activity': setActivities(rows); break;
+      case 'invoice_activity': setActivities((data || []).map(stripDbFieldsKeepTimestamp)); break;
       case 'email_logs': setEmailLogs(rows); break;
       case 'contract_checklist_items': setChecklistItems(rows); break;
     }
