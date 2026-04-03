@@ -145,7 +145,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
       setLineItems((liRes.data || []).map(stripDbFields));
       setEmailLogs((eRes.data || []).map(stripDbFields));
       setPayments((pRes.data || []).map(stripDbFields));
-      setActivities((aRes.data || []).map(stripDbFields));
+      setActivities((aRes.data || []).map(stripDbFieldsKeepTimestamp));
       setChecklistItems((clRes.data || []).map(stripDbFields));
     } catch (err: any) {
       console.error('Failed to load data:', err);
