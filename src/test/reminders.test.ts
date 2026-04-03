@@ -101,17 +101,16 @@ describe('Reminder Engine', () => {
   });
 
   describe('generateOutreachReminders', () => {
-    it('triggers when outreach is overdue', () => {
+    it('no longer triggers for any facility (outreach reminders removed with status simplification)', () => {
       const now = new Date();
       const tenDaysAgo = new Date(now);
       tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
       const facilities = [{
         id: 'f1', name: 'Riverfront Animal Hospital',
-        status: 'prospect' as const, outreach_last_sent_at: tenDaysAgo.toISOString(),
+        status: 'active' as const, outreach_last_sent_at: tenDaysAgo.toISOString(),
       }] as any[];
       const result = generateOutreachReminders(facilities, now);
-      expect(result).toHaveLength(1);
-      expect(result[0].title).toContain('Riverfront');
+      expect(result).toHaveLength(0);
     });
   });
 
