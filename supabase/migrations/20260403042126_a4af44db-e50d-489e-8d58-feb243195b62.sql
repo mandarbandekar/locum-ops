@@ -1,0 +1,1 @@
+ALTER TABLE public.tax_advisor_profiles ADD COLUMN IF NOT EXISTS scorp_assessment_result jsonb DEFAULT NULL;
