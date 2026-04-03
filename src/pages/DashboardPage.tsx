@@ -309,6 +309,7 @@ export default function DashboardPage() {
           title: `Q${nextQuarter.quarter} estimated tax due`,
           context: `Due in ${daysUntil} days`,
           link: '/business?tab=tax-strategy&subtab=tracker', icon: DollarSign, urgency: 4,
+          module: 'taxes',
         });
       }
     }
