@@ -299,6 +299,20 @@ export default function DashboardPage() {
       }
     }
 
+    // S-Corp nudge based on annualized income
+    const paidIncome = invoices
+      .filter(i => i.paid_at)
+      .reduce((s, i) => s + i.total_amount, 0);
+    const monthsElapsed = Math.max(1, now.getMonth() + 1);
+    const annualizedIncome = (paidIncome / monthsElapsed) * 12;
+    if (annualizedIncome >= 80000 && paidIncome > 0) {
+      items.push({
+        title: 'S-Corp structure may be worth exploring',
+        context: 'Your income is in the range commonly reviewed',
+        link: '/business?tab=tax-advisor&advisortab=scorp', icon: DollarSign, urgency: 9,
+      });
+    }
+
     return items.sort((a, b) => a.urgency - b.urgency);
   }, [invoices, summary, checklistItems, confirmationBreakdown, credentialsList, subscriptions, taxQuarters, now]);
 
