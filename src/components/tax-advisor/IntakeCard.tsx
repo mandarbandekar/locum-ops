@@ -49,7 +49,7 @@ export function IntakeCard({ profile, onSave }: Props) {
     setSaving(false);
     toast({
       title: 'Profile updated',
-      description: 'Your Opportunity Review and advisor responses are now personalized.',
+      description: 'Your Relief Deduction Guide and advisor responses are now personalized.',
     });
   };
 

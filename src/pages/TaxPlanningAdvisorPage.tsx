@@ -51,7 +51,7 @@ export default function TaxPlanningAdvisorPage() {
               </TabsTrigger>
               <TabsTrigger value="review" className="gap-1.5 text-xs sm:text-sm">
                 <ClipboardList className="h-3.5 w-3.5" />
-                Opportunity Review
+                Relief Deduction Guide
               </TabsTrigger>
               <TabsTrigger value="scorp" className="gap-1.5 text-xs sm:text-sm">
                 <Building2 className="h-3.5 w-3.5" />
