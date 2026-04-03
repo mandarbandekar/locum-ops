@@ -276,6 +276,7 @@ export default function DashboardPage() {
           title: item.title,
           context: badge === 'overdue' ? 'Overdue' : `Due in ${days} days`,
           link: '/facilities', icon: ShieldAlert, urgency: badge === 'overdue' ? 3 : 8,
+          module: 'contracts',
         });
       });
 
