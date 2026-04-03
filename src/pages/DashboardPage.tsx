@@ -263,6 +263,7 @@ export default function DashboardPage() {
         title: `${confirmationBreakdown.missingContact} facilit${confirmationBreakdown.missingContact > 1 ? 'ies' : 'y'} missing contact`,
         context: 'Add scheduling contact to enable confirmations',
         link: '/schedule', icon: AlertTriangle, urgency: 5,
+        module: 'confirmations',
       });
     }
 
