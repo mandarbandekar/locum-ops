@@ -192,7 +192,13 @@ export default function AskAdvisorTab({ profile, sessions, onSaveSession, onSave
               <p className="text-sm">{currentPrompt}</p>
             </div>
             {currentResponse && (
-              <div className="prose prose-sm dark:prose-invert max-w-none">
+              <div className="prose prose-sm dark:prose-invert max-w-none
+                prose-headings:text-base prose-headings:font-semibold prose-headings:mt-6 prose-headings:mb-2 prose-headings:border-b prose-headings:border-border prose-headings:pb-1.5
+                prose-p:leading-relaxed prose-p:text-muted-foreground
+                prose-li:text-muted-foreground prose-li:leading-relaxed
+                prose-ul:my-2 prose-ol:my-2
+                prose-strong:text-foreground prose-strong:font-semibold
+                first:prose-headings:mt-0">
                 <ReactMarkdown>{currentResponse}</ReactMarkdown>
               </div>
             )}
