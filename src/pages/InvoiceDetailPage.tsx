@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Trash2, AlertTriangle, Layers, Undo2, ArrowRight } from 'lucide-react';
+import { ArrowLeft, Trash2, AlertTriangle, Layers, Undo2, ArrowRight, Send, Mail } from 'lucide-react';
 import { format } from 'date-fns';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
 import { toast } from 'sonner';
