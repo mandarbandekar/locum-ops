@@ -278,6 +278,11 @@ export default function DashboardPage() {
       });
     }
 
+    // Uninvoiced shifts
+    generateUninvoicedShiftReminders(shifts, lineItems, getFacilityName, now).forEach(r => {
+      items.push({ title: r.title, context: r.body, link: r.link, icon: Clock, urgency: r.urgency });
+    });
+
     const dueSoonSubs = subscriptions.filter(s => computeSubStatus(s.renewal_date, s.status) === 'due_soon');
     if (dueSoonSubs.length > 0) {
       items.push({
