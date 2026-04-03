@@ -174,6 +174,81 @@ export function generateCredentialReminders(
   return items;
 }
 
+export interface UninvoicedShiftGroup {
+  facility_id: string;
+  facility_name: string;
+  shift_count: number;
+  total_amount: number;
+  oldest_shift_date: string;
+}
+
+/**
+ * Detect shifts that ended >24h ago with no linked invoice line item.
+ * Groups by facility and returns reminder items.
+ */
+export function generateUninvoicedShiftReminders(
+  shifts: Array<{ id: string; facility_id: string; start_datetime: string; end_datetime: string; rate_applied: number }>,
+  invoiceLineItems: Array<{ shift_id: string | null }>,
+  getFacilityName: (id: string) => string,
+  now: Date,
+): GeneratedReminder[] {
+  const invoicedShiftIds = new Set(
+    invoiceLineItems.filter(li => li.shift_id).map(li => li.shift_id!)
+  );
+
+  const cutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 24h ago
+
+  const uninvoiced = shifts.filter(s => {
+    const endDate = new Date(s.end_datetime);
+    return endDate < cutoff && !invoicedShiftIds.has(s.id);
+  });
+
+  if (uninvoiced.length === 0) return [];
+
+  // Group by facility
+  const byFacility = new Map<string, typeof uninvoiced>();
+  uninvoiced.forEach(s => {
+    const arr = byFacility.get(s.facility_id) || [];
+    arr.push(s);
+    byFacility.set(s.facility_id, arr);
+  });
+
+  const items: GeneratedReminder[] = [];
+  byFacility.forEach((facilityShifts, facilityId) => {
+    const total = facilityShifts.reduce((sum, s) => sum + (s.rate_applied || 0), 0);
+    const count = facilityShifts.length;
+    const name = getFacilityName(facilityId);
+    items.push({
+      module: 'invoices',
+      reminder_type: 'uninvoiced_shifts',
+      title: `${count} uninvoiced shift${count > 1 ? 's' : ''} at ${name}`,
+      body: `$${total.toLocaleString()} ready to invoice`,
+      link: '/invoices',
+      urgency: 2,
+      related_entity_type: 'facility',
+      related_entity_id: facilityId,
+    });
+  });
+
+  return items;
+}
+
+/**
+ * Detect shifts ending within a time window (for pre-shift-end reminders).
+ * Returns shifts ending between `now` and `now + windowMinutes`.
+ */
+export function getShiftsEndingSoon(
+  shifts: Array<{ id: string; facility_id: string; end_datetime: string; rate_applied: number }>,
+  now: Date,
+  windowMinutes = 65,
+): Array<{ id: string; facility_id: string; end_datetime: string; rate_applied: number }> {
+  const windowEnd = new Date(now.getTime() + windowMinutes * 60 * 1000);
+  return shifts.filter(s => {
+    const end = new Date(s.end_datetime);
+    return end > now && end <= windowEnd;
+  });
+}
+
 /** Check if a send_at time falls within quiet hours */
 export function isInQuietHours(
   sendAt: Date,

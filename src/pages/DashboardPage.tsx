@@ -12,7 +12,7 @@ import { format, differenceInDays, differenceInHours, addMonths, subMonths, star
 import { getChecklistBadge } from '@/types/contracts';
 import { useClinicConfirmations } from '@/hooks/useClinicConfirmations';
 import { useCredentials } from '@/hooks/useCredentials';
-import { generateCredentialReminders } from '@/lib/reminderEngine';
+import { generateCredentialReminders, generateUninvoicedShiftReminders } from '@/lib/reminderEngine';
 import { computeStatus as computeSubStatus } from '@/hooks/useSubscriptions';
 
 import { UpcomingShiftsCard } from '@/components/dashboard/UpcomingShiftsCard';
@@ -55,7 +55,7 @@ function computeStreak(): number {
 }
 
 export default function DashboardPage() {
-  const { shifts, invoices, facilities, payments, checklistItems } = useData();
+  const { shifts, invoices, facilities, payments, checklistItems, lineItems } = useData();
   const { user, isDemo } = useAuth();
   const { profile } = useUserProfile();
   const navigate = useNavigate();
@@ -277,6 +277,11 @@ export default function DashboardPage() {
         items.push({ title: r.title, context: r.body, link: r.link, icon: ShieldAlert, urgency: r.urgency });
       });
     }
+
+    // Uninvoiced shifts
+    generateUninvoicedShiftReminders(shifts, lineItems, getFacilityName, now).forEach(r => {
+      items.push({ title: r.title, context: r.body, link: r.link, icon: Clock, urgency: r.urgency });
+    });
 
     const dueSoonSubs = subscriptions.filter(s => computeSubStatus(s.renewal_date, s.status) === 'due_soon');
     if (dueSoonSubs.length > 0) {

@@ -1,13 +1,14 @@
 import { useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Trash2, AlertTriangle, Layers, Undo2, ArrowRight } from 'lucide-react';
+import { ArrowLeft, Trash2, AlertTriangle, Layers, Undo2, ArrowRight, Send, Mail } from 'lucide-react';
 import { format } from 'date-fns';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
 import { toast } from 'sonner';
@@ -46,10 +47,12 @@ export default function InvoiceDetailPage() {
   const navigate = useNavigate();
   const { invoices, lineItems, facilities, contacts, payments, activities, updateInvoice, deleteInvoice, addLineItem, updateLineItem, deleteLineItem, addPayment, addActivity, updateFacility } = useData();
   const { profile } = useUserProfile();
+  const { user } = useAuth();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [moveTarget, setMoveTarget] = useState<string | null>(null);
   const [billingDialogOpen, setBillingDialogOpen] = useState(false);
+  const [sendingReminder, setSendingReminder] = useState(false);
 
   // Live preview fields from edit panel
   const [liveFields, setLiveFields] = useState<{ invoiceNumber: string; invoiceDate: string; dueDate: string; notes: string; total: number } | null>(null);
@@ -185,9 +188,42 @@ export default function InvoiceDetailPage() {
         {computedStatus === 'overdue' && (
           <div className="rounded-md border border-destructive/50 bg-destructive/5 p-3 flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />
-            <p className="text-sm text-destructive font-medium">
+            <p className="text-sm text-destructive font-medium flex-1">
               This invoice is overdue. Due date was {invoice.due_date ? format(new Date(invoice.due_date), 'MMM d, yyyy') : 'not set'}.
             </p>
+            <Button
+              size="sm"
+              variant="destructive"
+              className="shrink-0 gap-1.5"
+              disabled={sendingReminder}
+              onClick={async () => {
+                const billingEmail = (invoice as any).billing_email_to || facility?.invoice_email_to;
+                if (!billingEmail) {
+                  toast.error('No billing email set — add one in facility settings');
+                  return;
+                }
+                setSendingReminder(true);
+                try {
+                  const { supabase } = await import('@/integrations/supabase/client');
+                  await supabase.functions.invoke('send-reminder-emails', {
+                    body: {
+                      mode: 'payment_reminder',
+                      invoice_id: invoice.id,
+                      user_id: user?.id,
+                    },
+                  });
+                  await addActivity({ invoice_id: invoice.id, action: 'payment_reminder_sent', description: `Payment reminder sent to ${billingEmail}` });
+                  toast.success(`Payment reminder sent to ${billingEmail}`);
+                } catch (e) {
+                  toast.error('Failed to send reminder');
+                } finally {
+                  setSendingReminder(false);
+                }
+              }}
+            >
+              <Mail className="h-3.5 w-3.5" />
+              Send Reminder
+            </Button>
           </div>
         )}
         {invoice.generation_type === 'automatic' && (
