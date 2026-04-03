@@ -59,6 +59,7 @@ export default function DashboardPage() {
   const { shifts, invoices, facilities, payments, checklistItems, lineItems } = useData();
   const { user, isDemo } = useAuth();
   const { profile } = useUserProfile();
+  const { categories: reminderCategories } = useReminderPreferences();
   const navigate = useNavigate();
   const now = new Date();
 
