@@ -1,112 +1,109 @@
 
 
-# Remove Shift & Facility Statuses — Simplification Plan
+# S-Corp Fit Assessment & Playbook
 
-## Summary
+## Concept
 
-Remove the shift status dropdown entirely (proposed/booked/completed/canceled/prebooked) and simplify facility status from 3 options (prospect/active/paused) to a single implicit model. Shifts exist = they're real and invoiceable. Delete a shift = it's gone. Facilities are simply "active" or "archived."
+Add an "S-Corp Assessment" module inside the Tax Advisor section that helps locum clinicians answer the #1 question: **"Should I be an S-Corp?"** — without giving tax advice. The module has two parts: a quick fit assessment (quiz-style) and an educational playbook (reference guide).
 
-## Current Dependencies on Shift Status
+## How It Works
 
-These are the areas that reference shift status and need updating:
+### 1. Income-Triggered Prompt (Smart Nudge)
 
-| Area | Current Behavior | New Behavior |
-|------|-----------------|-------------|
-| **Invoice eligibility** | Only booked/completed → invoiced; proposed/canceled excluded | All shifts are invoice-eligible (they exist = invoiceable) |
-| **Auto-complete** | Booked → completed after end time passes | Remove entirely — no status to transition |
-| **Conflict detection** | Filters to booked/proposed/prebooked | All shifts conflict (since deleted = gone) |
-| **Calendar sync/ICS** | Only booked shifts synced | All shifts synced |
-| **Dashboard KPIs** | `status === 'completed'` for earned revenue; `!== 'canceled'` for projections | All shifts count; past shifts = earned, future = projected |
-| **Reports** | Filters `!== 'canceled'` | All shifts count (no filter needed) |
-| **Confirmations** | Hash includes status | Hash without status field |
-| **Edge function (generate-auto-invoices)** | Filters `neq('status', 'canceled')` | No status filter needed |
-| **Shift form dialog** | Status dropdown in form | Remove status field from form |
-| **Schedule page** | StatusBadge on shifts, filter by status | No status badge, no status filter |
+When YTD income from paid invoices crosses **$80K** (annualized), a banner appears on the Tax Tracker and Dashboard:
 
-## Current Dependencies on Facility Status
+> "Your income may be in the range where an S-Corp structure is commonly reviewed. Want to explore if it's worth discussing with your CPA?"
 
-| Area | Current Behavior | New Behavior |
-|------|-----------------|-------------|
-| **Invoice onboarding** | Filters `f.status === 'active'` | All non-archived facilities |
-| **Bulk invoice dialog** | Filters `f.status === 'active'` | All non-archived facilities |
-| **Confirmations** | Filters active facilities | All non-archived facilities |
-| **Auto-promote on shift add** | Sets facility to 'active' when shift is added | No auto-promotion needed |
-| **Reminder engine** | Prospect-specific outreach reminders | Archive-based logic |
-| **Facility detail page** | Status badge + status select | Archive toggle |
+This links directly to the S-Corp Assessment tab. Users below the threshold can still access it manually — the nudge just surfaces it at the right time.
 
-## Facility Status Simplification
+### 2. S-Corp Fit Assessment (Interactive Quiz)
 
-Replace `prospect | active | paused` with a boolean `archived` concept:
-- Default: facility is active (no status badge needed)
-- User can "Archive" a facility (soft-hide from lists)
-- No DB migration needed initially — we just treat `paused` as "archived" in the UI and stop showing the status dropdown. The `status` column stays in DB for backward compat; code defaults all non-paused to "active."
+A 6-8 question guided assessment that produces a "fit score" with three outcomes:
 
-## Files to Change
+| Result | Meaning |
+|--------|---------|
+| **Worth Exploring** | Income level + work patterns suggest discussing S-Corp with a CPA |
+| **Maybe Later** | Some factors align but income or stability may not justify it yet |
+| **Likely Not Now** | Current situation doesn't strongly suggest S-Corp benefits |
 
-### Core Types & Logic (6 files)
-1. **`src/types/index.ts`** — Remove `ShiftStatus`, `FacilityStatus` types. Remove `status` from `Shift` interface. Change facility status to just `'active' | 'archived'`.
-2. **`src/lib/businessLogic.ts`** — `detectShiftConflicts`: remove status filters (all shifts conflict). Remove status checks.
-3. **`src/lib/invoiceAutoGeneration.ts`** — `isShiftInvoiceEligible`: remove status check (only check if already invoiced). 
-4. **`src/lib/icsGenerator.ts`** — Remove `STATUS:CANCELLED/CONFIRMED` logic, always `CONFIRMED`.
-5. **`src/types/confirmations.ts`** — Remove `status` from shift hash computation.
-6. **`src/data/seed.ts`** — Remove `status` from seed shift data.
+**Assessment questions** (all framed as educational, not advisory):
+- Projected annual 1099 income range ($0-60K / $60-100K / $100-150K / $150K+)
+- Income stability (steady monthly vs. seasonal/variable)
+- Current entity type (sole prop / LLC / already S-Corp / unsure)
+- Comfort with payroll admin (yes / no / would outsource)
+- Do you have a CPA or tax professional? (yes / no / looking)
+- Years in independent practice (< 1 / 1-3 / 3+)
 
-### DataContext (1 file)
-7. **`src/contexts/DataContext.tsx`** — Remove auto-complete booked→completed effect. Remove `status !== 'canceled'` filter in auto-invoice logic. Remove facility auto-promote to 'active' on shift add. Remove `.neq('status', 'canceled')` from DB queries.
+**Scoring logic** (all client-side, no DB needed for the quiz itself):
+- Income $100K+ = strong signal
+- Income $60-100K = moderate signal
+- Stable income + payroll comfort = positive factors
+- < 1 year in practice or very variable income = caution factors
 
-### UI Components (5 files)
-8. **`src/components/schedule/ShiftFormDialog.tsx`** — Remove status state, status dropdown, status in onSave payload. Default to `'booked'` in DB for backward compat.
-9. **`src/components/onboarding/ManualShiftForm.tsx`** — No status field (already doesn't have one — good).
-10. **`src/components/schedule/WeekTimeGrid.tsx`** — Remove status-based filtering/display.
-11. **`src/components/StatusBadge.tsx`** — Remove shift-related statuses (proposed/booked/completed/canceled). Keep invoice statuses. Add 'archived' for facilities.
-12. **`src/components/AddFacilityDialog.tsx`** — Remove status dropdown. Default to 'active'.
+The result is saved to the `tax_advisor_profiles` table (new column: `scorp_assessment_result`) so it persists and personalizes other advisor responses.
 
-### Pages (6 files)
-13. **`src/pages/SchedulePage.tsx`** — Remove `s.status !== 'canceled'` filters. Remove status badge from list view. Remove facility auto-promote logic.
-14. **`src/pages/DashboardPage.tsx`** — Remove `s.status === 'completed'` / `!== 'canceled'` filters. Past shifts = earned, all shifts count.
-15. **`src/pages/ReportsPage.tsx`** — Remove all `shift.status` filters.
-16. **`src/pages/FacilityDetailPage.tsx`** — Remove status badge, status select. Add archive/unarchive toggle. Remove `s.status !== 'canceled'` filter.
-17. **`src/pages/FacilitiesPage.tsx`** — Replace status filter with active/archived toggle. Remove status column.
-18. **`src/pages/OnboardingPage.tsx`** — Remove status from shift creation.
+### 3. S-Corp Playbook (Educational Reference)
 
-### Invoice Components (2 files)
-19. **`src/components/invoice/BulkInvoiceDialog.tsx`** — Replace `f.status === 'active'` with `f.status !== 'archived'` (or just `!== 'paused'` for DB compat).
-20. **`src/components/invoice/InvoiceOnboardingStepper.tsx`** — Same filter update.
+A static-content reference section with collapsible cards covering:
 
-### Edge Function (1 file)
-21. **`supabase/functions/generate-auto-invoices/index.ts`** — Remove `.neq('status', 'canceled')` filter on shifts query.
+1. **What Is an S-Corp?** — Plain-language overview for clinicians
+2. **How S-Corp Taxation Works** — Salary vs. distributions concept (no specific numbers)
+3. **Common Benefits Worth Reviewing** — SE tax reduction potential, reasonable compensation concept
+4. **Requirements & Ongoing Obligations** — Payroll, annual filings, state fees, bookkeeping
+5. **Cost of Running an S-Corp** — Typical admin costs to discuss with a CPA (payroll service, tax prep, state fees)
+6. **When It Typically Makes Sense** — Income thresholds commonly discussed, stability factors
+7. **Common Mistakes to Avoid** — Too-low salary, missing payroll deadlines, state-specific gotchas
+8. **Questions to Ask Your CPA** — 5-7 specific questions to bring to a meeting
 
-### Tests (5 files)
-22. **`src/test/businessLogic.test.ts`** — Update conflict detection tests (no status filtering).
-23. **`src/test/invoiceAutoGeneration.test.ts`** — Update eligibility tests.
-24. **`src/test/dashboard.test.ts`** — Remove status checks.
-25. **`src/test/confirmations.test.ts`** — Update hash tests.
-26. **`src/test/clinicConfirmations.test.ts`** — Update if status-dependent.
+Each card ends with a "Save to CPA Prep" button that adds the section's CPA questions to the existing CPA Prep tab.
 
-### Hooks (2 files)
-27. **`src/hooks/useManualSetup.ts`** — Hardcode `status: 'booked'` when inserting shifts.
-28. **`src/hooks/useReminders.ts`** / **`src/lib/reminderEngine.ts`** — Replace `f.status === 'prospect'` with archive-based logic.
+### 4. Personalized Savings Estimate (Educational Range)
 
-## DB Strategy
+Based on the assessment answers, show an **educational estimate range** (not a recommendation):
 
-**No migration needed.** The `status` column on `shifts` and `facilities` tables stays. We simply:
-- Always insert shifts with `status: 'booked'` (hardcoded, hidden from users)
-- Never filter by shift status in queries
-- Map facility `status: 'paused'` → "archived" in UI; everything else = active
-- The column remains for backward compatibility and data integrity
+> "Clinicians in your income range ($100-150K) who operate as S-Corps commonly report SE tax differences of approximately $X,XXX–$Y,YYY per year. Actual results depend on reasonable compensation, state rules, and your full tax situation. Discuss with your CPA."
 
-## Risk Mitigation
+Formula: `(income - reasonable_salary) × 15.3%` shown as a range using two reasonable salary benchmarks. Always with disclaimer.
 
-- Invoice auto-generation rules stay identical in structure — we just remove the status filter. Since users said "delete = gone" (no cancel), every existing shift is invoice-eligible by definition.
-- The `generate-auto-invoices` edge function gets the same simplification.
-- All existing data with `status: 'booked'` or `'completed'` continues to work unchanged.
+## Technical Plan
+
+### New Files
+1. **`src/components/tax-advisor/SCorpAssessmentTab.tsx`** — Quiz UI + results + savings estimate
+2. **`src/components/tax-advisor/SCorpPlaybook.tsx`** — Collapsible educational content cards
+3. **`src/lib/scorpAssessment.ts`** — Scoring logic, savings estimate calculator, content constants
+
+### Modified Files
+4. **`src/pages/TaxPlanningAdvisorPage.tsx`** — Add 4th tab: "S-Corp Explorer"
+5. **`src/hooks/useTaxAdvisor.ts`** — Add `scorp_assessment_result` field to profile type, save/load assessment
+6. **`src/components/tax-strategy/TrackerTab.tsx`** — Add income-triggered S-Corp nudge banner
+7. **`src/pages/DashboardPage.tsx`** — Add S-Corp nudge to attention items when income threshold is met
+
+### Database
+- Add column `scorp_assessment_result` (jsonb, nullable) to `tax_advisor_profiles` table — stores quiz answers + result label + timestamp
+
+### No Edge Function Needed
+All scoring is client-side. The existing `tax-advisor-chat` edge function already handles S-Corp questions via the Ask Advisor tab.
+
+## UX Flow
+
+```text
+User earns $80K+ annualized
+  → Nudge banner on Tax Tracker / Dashboard
+  → Click → S-Corp Explorer tab
+  → Take 6-question assessment (2 min)
+  → See result: "Worth Exploring" + savings range
+  → Browse Playbook cards for education
+  → Save CPA questions → CPA Prep tab
+  → Book CPA meeting with prepared questions
+```
 
 ## Implementation Order
 
-1. Types + core logic (no UI breakage)
-2. DataContext (remove auto-complete, simplify queries)
-3. ShiftFormDialog + SchedulePage (biggest UX change)
-4. Dashboard + Reports (filter cleanup)
-5. Facility pages (archive toggle)
-6. Edge function + tests
+1. Scoring logic + content constants (`scorpAssessment.ts`)
+2. Assessment quiz UI (`SCorpAssessmentTab.tsx`)
+3. Playbook content (`SCorpPlaybook.tsx`)
+4. Wire into Tax Advisor page (4th tab)
+5. DB migration (add jsonb column)
+6. Income-triggered nudge banners
+7. Tests
 
