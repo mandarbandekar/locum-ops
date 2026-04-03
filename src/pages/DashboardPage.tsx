@@ -329,8 +329,16 @@ export default function DashboardPage() {
       });
     }
 
-    return items.sort((a, b) => a.urgency - b.urgency);
-  }, [invoices, summary, checklistItems, confirmationBreakdown, credentialsList, subscriptions, taxQuarters, now]);
+    const sorted = items.sort((a, b) => a.urgency - b.urgency);
+
+    // Filter by user's reminder category preferences (in-app channel)
+    return sorted.filter(item => {
+      if (!item.module) return true;
+      const catSetting = reminderCategories.find(c => c.category === item.module);
+      if (!catSetting) return true;
+      return catSetting.enabled && catSetting.in_app_enabled;
+    });
+  }, [invoices, summary, checklistItems, confirmationBreakdown, credentialsList, subscriptions, taxQuarters, reminderCategories, now]);
 
   // ── Work Readiness ──
   const readinessItems = useMemo(() => {

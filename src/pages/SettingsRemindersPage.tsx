@@ -175,6 +175,9 @@ export default function SettingsRemindersPage() {
                   <div key={cat} className="space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">{CATEGORY_LABELS[cat]}</span>
+                      {CATEGORY_DESCRIPTIONS[cat] && (
+                        <p className="text-[11px] text-muted-foreground mt-0.5">{CATEGORY_DESCRIPTIONS[cat]}</p>
+                      )}
                       <Switch checked={setting.enabled} onCheckedChange={val => handleCategoryToggle(cat, 'enabled', val)} />
                     </div>
                     {setting.enabled && (
