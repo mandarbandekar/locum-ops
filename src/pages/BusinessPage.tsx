@@ -1,7 +1,8 @@
-import { Activity, Heart, BarChart3 } from 'lucide-react';
+import { Activity, Heart, BarChart3, Building2 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import FinancialHealthTab from '@/components/business/FinancialHealthTab';
 import PerformanceInsightsTab from '@/components/business/PerformanceInsightsTab';
+import ClinicScorecardTab from '@/components/business/ClinicScorecardTab';
 
 export default function BusinessPage() {
   const [searchParams, setSearchParams] = useSearchParams();
