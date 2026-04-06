@@ -1432,6 +1432,111 @@ export type Database = {
         }
         Relationships: []
       }
+      expense_config: {
+        Row: {
+          created_at: string
+          home_office_rate_cents: number
+          id: string
+          irs_mileage_rate_cents: number
+          tax_year: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          home_office_rate_cents?: number
+          id?: string
+          irs_mileage_rate_cents?: number
+          tax_year?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          home_office_rate_cents?: number
+          id?: string
+          irs_mileage_rate_cents?: number
+          tax_year?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      expenses: {
+        Row: {
+          amount_cents: number
+          category: string
+          created_at: string
+          deductibility_type: string
+          deductible_amount_cents: number
+          description: string
+          expense_date: string
+          facility_id: string | null
+          home_office_sqft: number | null
+          id: string
+          mileage_miles: number | null
+          prorate_percent: number | null
+          receipt_url: string | null
+          shift_id: string | null
+          subcategory: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_cents?: number
+          category?: string
+          created_at?: string
+          deductibility_type?: string
+          deductible_amount_cents?: number
+          description?: string
+          expense_date?: string
+          facility_id?: string | null
+          home_office_sqft?: number | null
+          id?: string
+          mileage_miles?: number | null
+          prorate_percent?: number | null
+          receipt_url?: string | null
+          shift_id?: string | null
+          subcategory?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          amount_cents?: number
+          category?: string
+          created_at?: string
+          deductibility_type?: string
+          deductible_amount_cents?: number
+          description?: string
+          expense_date?: string
+          facility_id?: string | null
+          home_office_sqft?: number | null
+          id?: string
+          mileage_miles?: number | null
+          prorate_percent?: number | null
+          receipt_url?: string | null
+          shift_id?: string | null
+          subcategory?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "shifts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       facilities: {
         Row: {
           address: string
