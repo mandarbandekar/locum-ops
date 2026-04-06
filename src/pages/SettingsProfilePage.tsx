@@ -28,6 +28,7 @@ export default function SettingsProfilePage() {
   const [lastName, setLastName] = useState(profile?.last_name || '');
   const [companyName, setCompanyName] = useState(profile?.company_name || '');
   const [companyAddress, setCompanyAddress] = useState(profile?.company_address || '');
+  const [homeAddress, setHomeAddress] = useState(profile?.home_address || '');
   const [invoiceEmail, setInvoiceEmail] = useState(profile?.invoice_email || '');
   const [invoicePhone, setInvoicePhone] = useState(profile?.invoice_phone || '');
   const [timezone, setTimezone] = useState(profile?.timezone || '');
@@ -43,6 +44,7 @@ export default function SettingsProfilePage() {
       last_name: lastName.trim(),
       company_name: companyName.trim(),
       company_address: companyAddress.trim(),
+      home_address: homeAddress.trim(),
       invoice_email: invoiceEmail.trim() || null,
       invoice_phone: invoicePhone.trim() || null,
       timezone,
@@ -116,6 +118,16 @@ export default function SettingsProfilePage() {
                 rows={3}
               />
               <p className="text-xs text-muted-foreground mt-1">Used in: Invoices, outreach profile.</p>
+            </div>
+            <div>
+              <Label>Home address (for mileage)</Label>
+              <Textarea
+                value={homeAddress}
+                onChange={e => setHomeAddress(e.target.value)}
+                placeholder="742 Evergreen Terrace&#10;Portland, OR 97201"
+                rows={3}
+              />
+              <p className="text-xs text-muted-foreground mt-1">Used to calculate driving distance to clinics. Not shared.</p>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>

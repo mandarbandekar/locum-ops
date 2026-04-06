@@ -98,6 +98,15 @@ export default function ExpenseLogTab({ expenses, loading, config, addExpense, e
 
   return (
     <div className="space-y-4">
+      {/* Mileage Review Banner */}
+      <MileageReviewBanner
+        drafts={draftMileageExpenses}
+        onConfirm={confirmMileage}
+        onDismiss={dismissMileage}
+        onConfirmAll={confirmAllMileage}
+        onEdit={openEdit}
+      />
+
       {/* YTD Stat Strip */}
       <div className="grid grid-cols-3 gap-3">
         {[
