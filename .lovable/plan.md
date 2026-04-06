@@ -1,142 +1,57 @@
 
 
-# Expense Tracker Module
+# Improve Expenses UX
 
-## How It Fits Into the Existing System
+## Current Pain Points
 
-The app already has:
-- **Relief Deduction Guide** (Tax Advisor > Relief Deduction Guide) — educational reference cards about *what* is deductible, with CPA discussion status tracking
-- **Deductions Tab** (Tax Strategy > DeductionsTab) — manual YTD category totals and documentation status tracking (no individual transactions)
-- **CPA Packet Tab** — exports summary with deduction totals for CPA prep
+1. **Dialog is tall and scrolly** -- 8+ fields stacked vertically in a narrow dialog; user must scroll to reach Submit
+2. **No inline YTD context** -- the Log tab shows raw entries but no running totals; user must switch tabs to see impact
+3. **No quick-add shortcuts** -- common expenses (mileage, CE, meals) require navigating a 30+ item dropdown every time
+4. **Delete is too easy** -- single click deletes with no confirmation
+5. **No edit capability** -- users can only delete and re-add to fix mistakes
+6. **Summary tab is bland when empty** -- shows "No expenses logged" with no guidance
+7. **Tab labels are generic** -- "Log" and "Summary" don't communicate value
 
-The Expense Tracker fills the gap: **actual transaction-level expense logging** that feeds real data into those existing summary/export views. The Deduction Guide tells you *what* to track; the Expense Tracker is *where* you track it.
+## Changes
 
-## Architecture
+### 1. Inline YTD strip above the expense list (ExpenseLogTab)
+Add a compact 3-stat strip at the top of the log view (only when expenses exist): **YTD Spent** | **YTD Write-Offs** | **This Month**. Gives immediate context without tab-switching. Uses data already available from `useExpenses`.
 
-### New Database Table: `expenses`
+### 2. Quick-add chips for common expenses (ExpenseLogTab)
+Below the toolbar, render 4-5 shortcut pills: "Mileage", "Business Meal", "CE Course", "License Fee", "Other". Clicking one opens the Add dialog with the category pre-selected, saving the dropdown step. These are the most frequent relief vet entries.
 
-```text
-expenses
-├── id (uuid, PK)
-├── user_id (uuid, FK auth.users)
-├── expense_date (date, NOT NULL)
-├── amount_cents (integer, NOT NULL)  -- USD cents
-├── category (text, NOT NULL)         -- e.g. 'mileage'
-├── subcategory (text, default '')    -- e.g. 'Tolls & parking'
-├── description (text, default '')
-├── facility_id (uuid, nullable)      -- optional clinic link
-├── shift_id (uuid, nullable)         -- optional shift link
-├── receipt_url (text, nullable)      -- storage path
-├── deductible_amount_cents (integer) -- auto-calculated
-├── deductibility_type (text)         -- 'full' | 'fifty_percent' | 'above_the_line' | 'retirement' | 'other'
-├── mileage_miles (numeric, nullable) -- only for mileage entries
-├── home_office_sqft (numeric, nullable)
-├── prorate_percent (numeric, nullable) -- for phone/internet
-├── created_at, updated_at
-```
+### 3. Wider, two-column dialog layout (AddExpenseDialog)
+Expand to `max-w-[680px]` per the project's dialog convention. Left column: Date + Category + conditional inputs (mileage/sqft/prorate). Right column: Amount + Description + Clinic + Receipt. Reduces vertical scrolling and makes the form feel spacious.
 
-RLS: `auth.uid() = user_id` for all operations.
+### 4. Delete confirmation (ExpenseLogTab)
+Wrap the delete action in an `AlertDialog` asking "Delete this expense?" with Cancel/Delete buttons. Prevents accidental loss.
 
-### New Config Table: `expense_config`
+### 5. Edit support via dialog (ExpenseLogTab + AddExpenseDialog)
+- Add an `editExpense` function to `useExpenses` hook (PATCH to expenses table)
+- Clicking an expense row opens the dialog pre-filled with existing values
+- Dialog title changes to "Edit Expense" and submit becomes "Save Changes"
+- Pass optional `editingExpense` prop to `AddExpenseDialog`
 
-```text
-expense_config
-├── id (uuid, PK)
-├── user_id (uuid)
-├── irs_mileage_rate_cents (integer, default 70) -- 2025: $0.70/mile
-├── home_office_rate_cents (integer, default 500) -- $5/sq ft simplified
-├── tax_year (integer)
-├── created_at, updated_at
-```
+### 6. Friendlier tab labels + summary empty state
+- Rename tabs: "Log" becomes "Expenses", "Summary" becomes "Write-Off Summary"
+- When summary has no data, show a mini version of the onboarding message with a CTA to log the first expense
 
-### Storage Bucket
+### 7. Receipt indicator improvement (ExpenseLogTab)
+Replace the raw `Image` icon with a small "Receipt" badge that's more recognizable. Add a subtle green checkmark overlay so users can quickly scan which entries have receipts attached.
 
-- `expense-receipts` (private) for receipt photo uploads
+## Files to Modify
 
-## New Tab in Business Page
+| File | Changes |
+|------|---------|
+| `src/pages/ExpensesPage.tsx` | Rename tab labels, pass `addExpense`/`editExpense` props |
+| `src/components/expenses/ExpenseLogTab.tsx` | Add YTD strip, quick-add chips, delete confirmation, click-to-edit, receipt badge |
+| `src/components/expenses/AddExpenseDialog.tsx` | Two-column layout, accept `editingExpense` prop, pre-fill form for edits |
+| `src/components/expenses/ExpenseSummaryTab.tsx` | Friendly empty state with CTA |
+| `src/hooks/useExpenses.ts` | Add `editExpense` function |
 
-Add an **"Expenses"** tab (with Receipt icon) to the Business page tab bar, between Insights and Tax Tracker. This renders a new `ExpensesPage` component.
-
-## UI Components
-
-### 1. `src/pages/ExpensesPage.tsx`
-Top-level page with sub-tabs: **Log** (default) and **Summary**.
-
-### 2. `src/components/expenses/ExpenseLogTab.tsx`
-- List of expense entries (sortable by date, filterable by category/clinic/date range)
-- "Add Expense" button opens a slide-up dialog
-- Each row: date, description, category badge, amount, receipt indicator, clinic tag
-- Empty state: "Every mile and every license fee adds up. Start logging and we'll track what's deductible."
-
-### 3. `src/components/expenses/AddExpenseDialog.tsx`
-Quick-entry form (target: under 30 seconds):
-- Date (default today)
-- Category dropdown (searchable, grouped by the 11 top-level groups)
-- **Conditional fields based on category:**
-  - Mileage → "Miles driven" input, auto-calculates amount showing IRS rate
-  - Home Office → "Square footage" input, auto-calculates using simplified method
-  - Phone/Internet → "Business use %" slider, auto-calculates deductible portion
-  - Business Meals → auto-flags 50% deductible, shows both amounts
-- Amount ($) — pre-filled for calculated categories, editable for others
-- Description (optional free text)
-- Clinic tag (optional, dropdown from facilities)
-- Shift tag (optional, dropdown from recent shifts at selected clinic)
-- Receipt upload (camera/file button)
-- Each category shows a one-line tooltip explaining why it's deductible
-
-### 4. `src/components/expenses/ExpenseSummaryTab.tsx`
-Dashboard view:
-- **3 summary cards**: YTD Total Expenses, YTD Deductible Total, Categories Tracked
-- **Category breakdown**: card grid showing each category with YTD total and progress bar
-- **Deductibility breakdown**: grouped by type (Schedule C, Above-the-line, Retirement, 50% meals)
-- **"Export for CPA"** button → generates CSV with columns: Date, Category, Description, Amount, Deductible Amount, Deductibility Type, Clinic, Notes
-- Date range and category filters
-
-### 5. `src/hooks/useExpenses.ts`
-Hook for CRUD operations, YTD aggregations, config loading/saving.
-
-### 6. `src/lib/expenseCategories.ts`
-Defines the full category taxonomy with:
-- Category key, label, parent group, tooltip, default deductibility type
-- IRS rate lookups
-- Deductibility calculation logic
-
-## Deductibility Auto-Calculation Rules
-
-| Category | Type | Logic |
-|----------|------|-------|
-| Business Meals | `fifty_percent` | `deductible = amount * 0.5` |
-| Health Insurance | `above_the_line` | `deductible = amount` (flagged Schedule 1) |
-| SEP-IRA / Solo 401(k) | `retirement` | `deductible = amount` (tracked separately) |
-| Home Office | `full` | Calculated from sqft × $5 (simplified method) |
-| Everything else | `full` | `deductible = amount` |
-
-## Integration with Existing Modules
-
-1. **Deductions Tab (DeductionsTab.tsx)**: After expenses exist, the YTD amounts in deduction categories can optionally pull from actual expense totals instead of manual entry. We add a "Sync from expenses" indicator.
-
-2. **CPA Packet Tab**: The CSV export already includes deduction data. We enhance it to include itemized expense totals by category from the expenses table.
-
-3. **Relief Deduction Guide**: No changes needed — it remains the educational/planning layer.
-
-4. **Dashboard**: Add an optional "Recent expenses" or "Log expense" quick action.
-
-## Files to Create/Modify
-
-**New files (6):**
-- `src/lib/expenseCategories.ts` — category taxonomy + deductibility logic
-- `src/hooks/useExpenses.ts` — CRUD hook
-- `src/pages/ExpensesPage.tsx` — top-level page
-- `src/components/expenses/ExpenseLogTab.tsx` — transaction list
-- `src/components/expenses/AddExpenseDialog.tsx` — entry form
-- `src/components/expenses/ExpenseSummaryTab.tsx` — dashboard + export
-
-**Modified files (3):**
-- `src/pages/BusinessPage.tsx` — add Expenses tab
-- `src/components/dashboard/QuickActions.tsx` — add "Log Expense" action
-- `src/components/tax-strategy/CPAPacketTab.tsx` — include expense totals in export
-
-**Database:**
-- Migration: create `expenses` table, `expense_config` table, RLS policies
-- Storage: create `expense-receipts` bucket
+## Technical Notes
+- The `editExpense` function uses `db('expenses').update(row).eq('id', id).select().single()` and updates local state
+- Quick-add chips pass an `initialSubcategory` prop to `AddExpenseDialog`, which sets `subcategoryKey` on open
+- Two-column layout uses `grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4` inside the dialog
+- Delete confirmation uses the existing `AlertDialog` component from `src/components/ui/alert-dialog.tsx`
 
