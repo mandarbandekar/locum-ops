@@ -355,28 +355,8 @@ export default function ReportsPage() {
     anticipated: { label: 'Anticipated Income', color: 'hsl(215, 25%, 75%)' },
   };
 
-  const paymentSpeedConfig = {
-    avgDays: { label: 'Avg Days to Pay', color: 'hsl(173, 58%, 39%)' },
-  };
-
   const revenueByFacilityConfig = {
     revenue: { label: 'Revenue', color: 'hsl(142, 71%, 45%)' },
-  };
-
-  const shiftsChartConfig = {
-    shifts: { label: 'Shifts', color: 'hsl(215, 25%, 27%)' },
-  };
-
-  const avgRateConfig = {
-    avgRate: { label: 'Avg Rate', color: 'hsl(38, 92%, 50%)' },
-  };
-
-  const earningsByDayConfig = {
-    total: { label: 'Total Earnings', color: 'hsl(260, 50%, 55%)' },
-  };
-
-  const monthlyHoursConfig = {
-    hours: { label: 'Hours Worked', color: 'hsl(173, 58%, 39%)' },
   };
 
   return (
