@@ -36,7 +36,7 @@ function SectionHeader({ title, icon: Icon, open, onToggle }: { title: string; i
 export default function FinancialHealthTab() {
   const { invoices, facilities, payments } = useData();
   const { user, isDemo } = useAuth();
-  const [, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const expenseData = useExpenses();
 
   const [openSections, setOpenSections] = useState({ revenue: true, cashflow: true, taxReserve: true, expenses: true });
@@ -300,7 +300,7 @@ export default function FinancialHealthTab() {
                 variant="ghost"
                 size="sm"
                 className="text-xs gap-1"
-                onClick={() => setSearchParams({ tab: 'tax-estimate' }, { replace: true })}
+                onClick={() => navigate('/tax-estimate')}
               >
                 View detailed tax estimate <ArrowRight className="h-3 w-3" />
               </Button>
