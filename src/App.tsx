@@ -23,6 +23,8 @@ import InvoiceDetailPage from "@/pages/InvoiceDetailPage";
 import CredentialsPage from "@/pages/CredentialsPage";
 import BusinessPage from "@/pages/BusinessPage";
 import ExpensesPage from "@/pages/ExpensesPage";
+import TaxEstimatePage from "@/pages/TaxEstimatePage";
+import CPAPrepPage from "@/pages/CPAPrepPage";
 import TaxPlanningAdvisorPage from "@/pages/TaxPlanningAdvisorPage";
 import WaitlistPage from "@/pages/WaitlistPage";
 import QuizPage from "@/pages/QuizPage";
@@ -82,11 +84,13 @@ function AuthenticatedApp() {
           <Route path="/confirmations/public/:token" element={<PublicConfirmationPage />} />
           <Route path="/business" element={<BusinessPage />} />
           <Route path="/expenses" element={<ExpensesPage />} />
-          <Route path="/tax-planning" element={<Navigate to="/business?tab=tax-estimate" replace />} />
+          <Route path="/tax-estimate" element={<TaxEstimatePage />} />
+          <Route path="/cpa-prep" element={<CPAPrepPage />} />
+          <Route path="/tax-planning" element={<Navigate to="/tax-estimate" replace />} />
           <Route path="/credentials" element={<CredentialsPage />} />
-          <Route path="/reports" element={<Navigate to="/business?tab=reports" replace />} />
-          <Route path="/taxes" element={<Navigate to="/business?tab=taxes" replace />} />
-          <Route path="/tax-strategy" element={<Navigate to="/business?tab=tax-strategy" replace />} />
+          <Route path="/reports" element={<Navigate to="/business" replace />} />
+          <Route path="/taxes" element={<Navigate to="/tax-estimate" replace />} />
+          <Route path="/tax-strategy" element={<Navigate to="/tax-estimate" replace />} />
           {/* Settings */}
           <Route path="/settings/profile" element={<SettingsProfilePage />} />
           <Route path="/settings/scheduling" element={<SettingsSchedulingPage />} />
