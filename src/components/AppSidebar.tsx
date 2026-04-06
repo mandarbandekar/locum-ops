@@ -65,14 +65,9 @@ export function AppSidebar() {
       items: [
         { title: 'Financial Health', url: '/business', icon: Activity },
         { title: 'Expenses & Mileage', url: '/expenses', icon: Receipt },
-        { title: 'Credentials & CE', url: '/credentials', icon: ShieldCheck },
-      ],
-    },
-    {
-      label: 'Tax Center',
-      items: [
         { title: 'Tax Estimate', url: '/tax-estimate', icon: Landmark },
         { title: 'CPA Prep', url: '/cpa-prep', icon: FileText },
+        { title: 'Credentials & CE', url: '/credentials', icon: ShieldCheck },
       ],
     },
   ];
