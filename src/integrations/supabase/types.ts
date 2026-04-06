@@ -2101,6 +2101,33 @@ export type Database = {
           },
         ]
       }
+      production_benchmarks: {
+        Row: {
+          avg_daily_production_cents: number
+          created_at: string
+          id: string
+          onboarding_completed: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avg_daily_production_cents?: number
+          created_at?: string
+          id?: string
+          onboarding_completed?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          avg_daily_production_cents?: number
+          created_at?: string
+          id?: string
+          onboarding_completed?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
