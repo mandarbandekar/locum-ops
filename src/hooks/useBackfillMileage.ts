@@ -29,8 +29,7 @@ export function useBackfillMileage(onComplete?: () => void) {
       const facilityMap: Record<string, string> = {};
       facilities.forEach(f => { facilityMap[f.id] = f.name; });
       const pastShifts = shifts.filter(s =>
-        new Date(s.end_datetime) < new Date() &&
-        (s.status === 'completed' || s.status === 'booked')
+        new Date(s.end_datetime) < new Date()
       );
       const mock: BackfillShift[] = pastShifts.slice(0, 10).map(s => ({
         id: s.id,

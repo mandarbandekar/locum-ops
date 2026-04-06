@@ -31,6 +31,14 @@ export default function MileageBackfillCard({ onComplete }: Props) {
     }
   }, [eligible]);
 
+  const totalMiles = useMemo(() =>
+    (eligible || []).filter(s => selected.has(s.id)).reduce((a, s) => a + s.estimated_miles, 0),
+  [eligible, selected]);
+
+  const totalDeduction = useMemo(() =>
+    (eligible || []).filter(s => selected.has(s.id)).reduce((a, s) => a + s.estimated_deduction_cents, 0),
+  [eligible, selected]);
+
   if (dismissed && !eligible) return null;
 
   const handleDismiss = () => {
@@ -53,14 +61,6 @@ export default function MileageBackfillCard({ onComplete }: Props) {
     if (next.has(id)) next.delete(id); else next.add(id);
     setSelected(next);
   };
-
-  const totalMiles = useMemo(() =>
-    (eligible || []).filter(s => selected.has(s.id)).reduce((a, s) => a + s.estimated_miles, 0),
-  [eligible, selected]);
-
-  const totalDeduction = useMemo(() =>
-    (eligible || []).filter(s => selected.has(s.id)).reduce((a, s) => a + s.estimated_deduction_cents, 0),
-  [eligible, selected]);
 
   // Initial state — no scan yet
   if (!eligible) {
@@ -102,9 +102,9 @@ export default function MileageBackfillCard({ onComplete }: Props) {
   // No eligible shifts
   if (eligible.length === 0) {
     return (
-      <Card className="border-green-200 dark:border-green-900">
+      <Card className="border-muted">
         <CardContent className="py-4 px-4 flex items-center gap-2.5">
-          <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
+          <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
           <div>
             <p className="text-sm font-medium">All shifts already tracked</p>
             <p className="text-[11px] text-muted-foreground">No additional mileage entries to import</p>
