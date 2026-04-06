@@ -4,19 +4,20 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, Trash2, Search, Receipt, Car, Utensils, GraduationCap, FileText, DollarSign, TrendingUp, CalendarDays } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Plus, Trash2, Search, Receipt, Car, DollarSign, TrendingUp, CalendarDays, MapPin, CheckCircle2, AlertCircle, Info, Hash } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
+import { useUserProfile } from '@/contexts/UserProfileContext';
 import { EXPENSE_CATEGORIES, findSubcategory } from '@/lib/expenseCategories';
 import AddExpenseDialog from './AddExpenseDialog';
 import { ExpenseOnboarding } from './ExpenseOnboarding';
+import ExpenseCategoryGrid from './ExpenseCategoryGrid';
+import { MileageReviewBanner } from './MileageReviewBanner';
+import MileageBackfillCard from './MileageBackfillCard';
 import type { Expense } from '@/hooks/useExpenses';
-const QUICK_ADD_CHIPS = [
-  { label: 'Mileage', subcategory: 'mileage', icon: Car },
-  { label: 'Business Meal', subcategory: 'business_meals', icon: Utensils },
-  { label: 'CE Course', subcategory: 'ce_courses', icon: GraduationCap },
-  { label: 'License Fee', subcategory: 'state_license', icon: FileText },
-];
 
 interface Props {
   expenses: Expense[];
@@ -30,19 +31,33 @@ interface Props {
   ytdDeductibleCents: number;
   thisMonthCents: number;
   draftMileageExpenses: Expense[];
+  confirmedMileageExpenses: Expense[];
+  ytdMileageMiles: number;
+  ytdMileageDeductionCents: number;
   confirmMileage: (id: string) => Promise<void>;
   dismissMileage: (id: string) => Promise<void>;
   confirmAllMileage: () => Promise<void>;
+  reload: () => void;
 }
 
-export default function ExpenseLogTab({ expenses, loading, config, addExpense, editExpense, deleteExpense, uploadReceipt, ytdTotalCents, ytdDeductibleCents, thisMonthCents, draftMileageExpenses, confirmMileage, dismissMileage, confirmAllMileage }: Props) {
+export default function ExpenseLogTab({
+  expenses, loading, config, addExpense, editExpense, deleteExpense, uploadReceipt,
+  ytdTotalCents, ytdDeductibleCents, thisMonthCents,
+  draftMileageExpenses, confirmedMileageExpenses, ytdMileageMiles, ytdMileageDeductionCents,
+  confirmMileage, dismissMileage, confirmAllMileage, reload,
+}: Props) {
+  const navigate = useNavigate();
   const { facilities } = useData();
+  const { profile: userProfile } = useUserProfile();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [initialSubcategory, setInitialSubcategory] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<Expense | null>(null);
+
+  const homeAddressSet = !!(userProfile as any)?.home_address;
+  const irsRate = config.irs_mileage_rate_cents;
 
   const filtered = useMemo(() => {
     let list = expenses;
@@ -63,7 +78,7 @@ export default function ExpenseLogTab({ expenses, loading, config, addExpense, e
     return m;
   }, [facilities]);
 
-  function openQuickAdd(subcategory: string) {
+  function openCategoryAdd(subcategory: string) {
     setEditingExpense(null);
     setInitialSubcategory(subcategory);
     setDialogOpen(true);
@@ -95,13 +110,14 @@ export default function ExpenseLogTab({ expenses, loading, config, addExpense, e
   const fmt = (cents: number) => '$' + (cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
 
       {/* YTD Stat Strip */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { label: 'YTD Spent', value: fmt(ytdTotalCents), icon: DollarSign, color: 'text-primary' },
           { label: 'YTD Write-Offs', value: fmt(ytdDeductibleCents), icon: TrendingUp, color: 'text-green-600' },
+          { label: 'YTD Mileage', value: `${ytdMileageMiles.toLocaleString()} mi`, icon: Car, color: 'text-blue-600' },
           { label: 'This Month', value: fmt(thisMonthCents), icon: CalendarDays, color: 'text-muted-foreground' },
         ].map(stat => (
           <Card key={stat.label}>
@@ -116,92 +132,139 @@ export default function ExpenseLogTab({ expenses, loading, config, addExpense, e
         ))}
       </div>
 
-      {/* Quick-add chips */}
-      <div className="flex flex-wrap gap-2">
-        {QUICK_ADD_CHIPS.map(chip => (
-          <Button key={chip.subcategory} variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => openQuickAdd(chip.subcategory)}>
-            <chip.icon className="h-3.5 w-3.5" />
-            {chip.label}
-          </Button>
-        ))}
-      </div>
+      {/* Mileage Setup Status */}
+      <Card className={homeAddressSet ? 'border-green-200 dark:border-green-900' : 'border-amber-200 dark:border-amber-900'}>
+        <CardContent className="py-3 px-4 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            {homeAddressSet ? (
+              <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
+            ) : (
+              <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
+            )}
+            <div>
+              <p className="text-sm font-medium">
+                {homeAddressSet ? 'Auto-mileage active' : 'Set your home address for auto-mileage'}
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                IRS rate: ${(irsRate / 100).toFixed(2)}/mile ({new Date().getFullYear()})
+              </p>
+            </div>
+          </div>
+          {!homeAddressSet && (
+            <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => navigate('/settings/profile')}>
+              <MapPin className="h-3.5 w-3.5" />
+              Set Address
+            </Button>
+          )}
+        </CardContent>
+      </Card>
 
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search expenses…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
-        </div>
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="All categories" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
-            {EXPENSE_CATEGORIES.map(g => (
-              <SelectItem key={g.key} value={g.key}>{g.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Button onClick={openNew}>
-          <Plus className="h-4 w-4 mr-1" /> Add Expense
+      {/* Backfill Past Shifts */}
+      <MileageBackfillCard onComplete={reload} />
+
+      {/* Pending Mileage Review */}
+      <MileageReviewBanner
+        drafts={draftMileageExpenses}
+        onConfirm={confirmMileage}
+        onDismiss={dismissMileage}
+        onConfirmAll={confirmAllMileage}
+        onEdit={openEdit}
+      />
+
+      {/* Category Grid */}
+      <ExpenseCategoryGrid onSelectCategory={openCategoryAdd} />
+
+      {/* Secondary manual add */}
+      <div className="flex justify-center">
+        <Button variant="outline" size="sm" className="gap-1.5" onClick={openNew}>
+          <Plus className="h-3.5 w-3.5" />
+          Log Expense Manually
         </Button>
       </div>
 
-      {/* Expense list */}
-      <div className="space-y-2">
-        {filtered.map(exp => {
-          const sub = findSubcategory(exp.subcategory);
-          const catGroup = EXPENSE_CATEGORIES.find(g => g.key === exp.category);
-          return (
-            <Card key={exp.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => openEdit(exp)}>
-              <CardContent className="py-3 px-4 flex items-center gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-medium text-sm truncate">
-                      {sub?.label || exp.subcategory || 'Expense'}
-                    </span>
-                    <Badge variant="secondary" className="text-[10px] shrink-0">
-                      {catGroup?.label || exp.category}
-                    </Badge>
-                    {exp.receipt_url && (
-                      <Badge variant="outline" className="text-[10px] gap-1 text-green-700 border-green-300 bg-green-50 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800 shrink-0">
-                        <Receipt className="h-3 w-3" />
-                        Receipt
+      {/* IRS Receipt Reminder */}
+      <Alert className="border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20">
+        <Receipt className="h-4 w-4 text-amber-600" />
+        <AlertDescription className="text-xs text-amber-800 dark:text-amber-300">
+          <span className="font-medium">IRS Receipt Rule:</span> The IRS requires documentation for all business expenses over $75. Upload receipts when logging expenses to protect your deductions in case of audit.
+        </AlertDescription>
+      </Alert>
+
+      {/* Expense Log */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Expense Log</h3>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Search expenses…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+          </div>
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All categories" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              {EXPENSE_CATEGORIES.map(g => (
+                <SelectItem key={g.key} value={g.key}>{g.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          {filtered.map(exp => {
+            const sub = findSubcategory(exp.subcategory);
+            const catGroup = EXPENSE_CATEGORIES.find(g => g.key === exp.category);
+            return (
+              <Card key={exp.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => openEdit(exp)}>
+                <CardContent className="py-3 px-4 flex items-center gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium text-sm truncate">
+                        {sub?.label || exp.subcategory || 'Expense'}
+                      </span>
+                      <Badge variant="secondary" className="text-[10px] shrink-0">
+                        {catGroup?.label || exp.category}
                       </Badge>
+                      {exp.receipt_url && (
+                        <Badge variant="outline" className="text-[10px] gap-1 text-green-700 border-green-300 bg-green-50 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800 shrink-0">
+                          <Receipt className="h-3 w-3" />
+                          Receipt
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                      <span>{new Date(exp.expense_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                      {exp.description && <span className="truncate">· {exp.description}</span>}
+                      {exp.facility_id && facilityMap[exp.facility_id] && (
+                        <span className="truncate">· {facilityMap[exp.facility_id]}</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="font-semibold text-sm">${(exp.amount_cents / 100).toFixed(2)}</p>
+                    {exp.deductible_amount_cents !== exp.amount_cents && (
+                      <p className="text-[10px] text-muted-foreground">
+                        ${(exp.deductible_amount_cents / 100).toFixed(2)} deductible
+                      </p>
                     )}
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                    <span>{new Date(exp.expense_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                    {exp.description && <span className="truncate">· {exp.description}</span>}
-                    {exp.facility_id && facilityMap[exp.facility_id] && (
-                      <span className="truncate">· {facilityMap[exp.facility_id]}</span>
-                    )}
-                  </div>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="font-semibold text-sm">${(exp.amount_cents / 100).toFixed(2)}</p>
-                  {exp.deductible_amount_cents !== exp.amount_cents && (
-                    <p className="text-[10px] text-muted-foreground">
-                      ${(exp.deductible_amount_cents / 100).toFixed(2)} deductible
-                    </p>
-                  )}
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
-                  onClick={(e) => { e.stopPropagation(); setDeleteTarget(exp); }}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              </CardContent>
-            </Card>
-          );
-        })}
-        {filtered.length === 0 && (
-          <p className="text-center text-muted-foreground text-sm py-8">No expenses match your filters.</p>
-        )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                    onClick={(e) => { e.stopPropagation(); setDeleteTarget(exp); }}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </CardContent>
+              </Card>
+            );
+          })}
+          {filtered.length === 0 && (
+            <p className="text-center text-muted-foreground text-sm py-8">No expenses match your filters.</p>
+          )}
+        </div>
       </div>
 
       <AddExpenseDialog
