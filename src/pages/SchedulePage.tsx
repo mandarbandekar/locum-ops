@@ -183,6 +183,11 @@ export default function SchedulePage() {
 
   const renderDayCell = (day: Date, minHeight: string) => {
     const dayShifts = calendarFilters.shifts ? shifts.filter(s => isSameDay(new Date(s.start_datetime), day)) : [];
+    const dayBlocks = timeBlocks.filter(b => {
+      const bs = new Date(b.start_datetime);
+      const be = new Date(b.end_datetime);
+      return day >= new Date(bs.getFullYear(), bs.getMonth(), bs.getDate()) && day <= new Date(be.getFullYear(), be.getMonth(), be.getDate());
+    });
     const isToday = isSameDay(day, new Date());
     const markers = getMarkersForDay(day);
     const dayKey = day.toISOString();
@@ -212,18 +217,36 @@ export default function SchedulePage() {
             {m.type === 'tax' ? '💰' : '🔴'} {m.label}
           </div>
         ))}
+        {dayBlocks.map(b => {
+          const blockColor = BLOCK_COLORS.find(c => c.value === b.color) || BLOCK_COLORS[0];
+          const blockTypeInfo = BLOCK_TYPES.find(t => t.value === b.block_type);
+          return (
+            <div
+              key={b.id}
+              className={`text-[10px] px-1 py-0.5 rounded mb-0.5 truncate font-medium ${blockColor.bg} ${blockColor.text} border border-dashed border-current/20`}
+              onClick={(e) => { e.stopPropagation(); setEditBlock(b.id); }}
+              title={`${b.title} (${blockTypeInfo?.label || 'Block'})`}
+            >
+              {blockTypeInfo?.icon || '🔒'} {b.title}
+            </div>
+          );
+        })}
         {dayShifts.map(s => {
           const colorDef = SHIFT_COLORS.find(c => c.value === (s.color || 'blue')) || SHIFT_COLORS[0];
+          const start = new Date(s.start_datetime);
+          const end = new Date(s.end_datetime);
+          const hrs = Math.max(0, differenceInHours(end, start));
           return (
             <div
               key={s.id}
               draggable
               onDragStart={(e) => onDragStart(e, s.id)}
-              className={`text-xs p-1 rounded mb-0.5 cursor-grab active:cursor-grabbing truncate ${colorDef.bg} ${colorDef.text} hover:opacity-80 transition-opacity select-none`}
+              className={`text-[10px] p-1 rounded mb-0.5 cursor-grab active:cursor-grabbing ${colorDef.bg} ${colorDef.text} hover:opacity-80 transition-opacity select-none`}
               onClick={(e) => { e.stopPropagation(); setEditShift(s.id); }}
               title={`${getFacilityName(s.facility_id)} — drag to reschedule`}
             >
-              {format(new Date(s.start_datetime), 'ha')} {getFacilityName(s.facility_id).split(' ')[0]}
+              <div className="truncate font-semibold">{format(start, 'ha').toLowerCase()}–{format(end, 'ha').toLowerCase()} {getFacilityName(s.facility_id).split(' ')[0]}</div>
+              <div className="truncate opacity-80">${s.rate_applied} · {hrs}h</div>
             </div>
           );
         })}
