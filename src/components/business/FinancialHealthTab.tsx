@@ -15,7 +15,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { ChevronDown, FileText, Receipt, Shield, AlertTriangle, CheckCircle2, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { format, parseISO, differenceInDays, startOfMonth, eachMonthOfInterval, subMonths, endOfMonth, isWithinInterval } from 'date-fns';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 const db = (table: string) => supabase.from(table as any);
 const fmtDollars = (cents: number) => `$${(cents / 100).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
