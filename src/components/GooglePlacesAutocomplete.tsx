@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { MapPin, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Prediction {
   place_id: string;
@@ -19,10 +20,6 @@ interface Props {
   helperText?: string;
 }
 
-const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
-
-// We use the Places Autocomplete (New) REST API via session tokens
-// Fallback: if no key, just render a plain input
 export function GooglePlacesAutocomplete({
   value,
   onChange,
@@ -39,31 +36,23 @@ export function GooglePlacesAutocomplete({
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const containerRef = useRef<HTMLDivElement>(null);
-  const sessionTokenRef = useRef(crypto.randomUUID());
 
-  // Sync external value changes
   useEffect(() => {
     setQuery(value);
   }, [value]);
 
   const fetchPredictions = useCallback(async (input: string) => {
-    if (!GOOGLE_MAPS_API_KEY || input.trim().length < 3) {
+    if (input.trim().length < 3) {
       setPredictions([]);
       return;
     }
     setLoading(true);
     try {
-      const res = await fetch(
-        `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(input)}&types=address&key=${GOOGLE_MAPS_API_KEY}&sessiontoken=${sessionTokenRef.current}`
-      );
-      const data = await res.json();
-      if (data.predictions) {
-        setPredictions(
-          data.predictions.slice(0, 5).map((p: any) => ({
-            place_id: p.place_id,
-            description: p.description,
-          }))
-        );
+      const { data, error } = await supabase.functions.invoke('places-autocomplete', {
+        body: { input },
+      });
+      if (!error && data?.predictions) {
+        setPredictions(data.predictions.slice(0, 5));
       }
     } catch {
       setPredictions([]);
@@ -86,7 +75,7 @@ export function GooglePlacesAutocomplete({
         setPredictions([]);
         setIsOpen(false);
       }
-    }, 300);
+    }, 350);
   };
 
   const handleSelect = (prediction: Prediction) => {
@@ -94,13 +83,10 @@ export function GooglePlacesAutocomplete({
     onChange(prediction.description);
     setPredictions([]);
     setIsOpen(false);
-    // Reset session token after selection (per Google best practices)
-    sessionTokenRef.current = crypto.randomUUID();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!isOpen || predictions.length === 0) return;
-
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       setSelectedIndex(prev => (prev < predictions.length - 1 ? prev + 1 : 0));
@@ -115,7 +101,6 @@ export function GooglePlacesAutocomplete({
     }
   };
 
-  // Close on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -126,41 +111,9 @@ export function GooglePlacesAutocomplete({
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  // Cleanup debounce
   useEffect(() => {
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, []);
-
-  // If no API key, render plain input
-  if (!GOOGLE_MAPS_API_KEY) {
-    if (multiline) {
-      return (
-        <div>
-          <Textarea
-            value={value}
-            onChange={e => onChange(e.target.value)}
-            placeholder={placeholder}
-            rows={rows}
-            className={className}
-          />
-          {helperText && <p className="text-xs text-muted-foreground mt-1">{helperText}</p>}
-        </div>
-      );
-    }
-    return (
-      <div>
-        <Input
-          value={value}
-          onChange={e => onChange(e.target.value)}
-          placeholder={placeholder}
-          className={className}
-        />
-        {helperText && <p className="text-xs text-muted-foreground mt-1">{helperText}</p>}
-      </div>
-    );
-  }
 
   const InputComponent = multiline ? Textarea : Input;
   const inputProps = multiline ? { rows } : {};
