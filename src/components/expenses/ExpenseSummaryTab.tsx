@@ -156,7 +156,12 @@ export default function ExpenseSummaryTab({
             );
           })}
           {Object.keys(ytdByCategory).length === 0 && (
-            <p className="text-center text-muted-foreground text-sm py-4">No expenses logged this year.</p>
+            <div className="text-center py-8 space-y-3">
+              <p className="text-muted-foreground text-sm">No expenses logged this year yet.</p>
+              <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                Start tracking mileage, CE courses, and other deductible expenses to see your write-off breakdown here.
+              </p>
+            </div>
           )}
         </CardContent>
       </Card>
