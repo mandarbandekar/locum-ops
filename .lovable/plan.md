@@ -1,58 +1,74 @@
 
 
-# S-Corp Aware Tax Estimates
+# Backfill Mileage for Past Shifts
 
 ## Problem
 
-Currently, the tax estimate always calculates as a sole proprietor — applying 15.3% SE tax on all net income. If a user has selected S-Corp as their entity type (in the Tax Advisor profile's `entity_type` field) or selected "Already an S-Corp" in the S-Corp Explorer assessment, the estimates should reflect S-Corp tax treatment where only a "reasonable salary" portion is subject to payroll taxes.
+The auto-mileage tracker only processes shifts that ended in the last 60 minutes. Users with existing historical shifts have no way to generate mileage entries for them, leaving potential deductions unclaimed.
 
-## What Changes
+## Solution
 
-### 1. New S-Corp tax estimation function in `taxCalculations.ts`
+Add a "Backfill Past Shifts" feature to the Mileage Tracker tab. A new edge function handles the heavy lifting (distance lookups), and the UI provides a guided flow: preview eligible shifts, select which ones to process, then generate mileage entries in draft status for review.
 
-Add `estimateTotalTaxSCorp()` that:
-- Takes gross income, filing status, business deductions, and a reasonable salary amount
-- Applies payroll tax (7.65% employer-side FICA) only on the salary portion instead of 15.3% SE tax on all income
-- Calculates federal income tax on net income (after deducting employer FICA share)
-- Returns the same `TaxEstimate` shape plus an `sCorpSavings` field showing the difference vs sole prop
+## How It Works
 
-Add a helper `getDefaultReasonableSalary(grossIncome)` that picks a sensible default salary (~60% of income, capped) for display purposes, with a note to confirm with CPA.
+### 1. New Edge Function: `backfill-mileage`
 
-### 2. Pass entity type into TrackerTab
+Accepts a POST with the user's JWT and an optional date range filter. Logic mirrors `auto-mileage-tracker` but operates on all past shifts:
 
-- `TaxEstimateTab` reads `profile.entity_type` and `scorpResult?.answers?.currentEntity` to determine if the user is S-Corp
-- Passes `isScorp` boolean and a `reasonableSalary` value down to `TrackerTab` as new props
+- Fetches all shifts for the authenticated user that do NOT already have a mileage expense (`is_auto_mileage = true`)
+- Looks up home address from `user_profiles` and facility addresses from `facilities`
+- Uses `mileage_override_miles` first, then Google Maps Distance Matrix API as fallback
+- Returns a preview list (shift date, facility name, estimated miles, estimated deduction) without inserting anything
+- A second mode (`action: "confirm"`) accepts selected shift IDs and inserts the mileage expenses as `mileage_status: 'draft'`
 
-### 3. Update TrackerTab to show S-Corp adjusted numbers
+This two-step approach lets users preview before committing.
 
-- When `isScorp` is true, use `estimateTotalTaxSCorp()` instead of `estimateTotalTax()`
-- Show a badge/indicator "S-Corp" next to the Tax Snapshot header
-- Replace "SE Tax" card with "Payroll Tax (on salary)" showing the reduced amount
-- Add a "Savings vs Sole Prop" callout showing the estimated tax difference
-- Add a small editable "Reasonable Salary" input so users can adjust the salary assumption
-- Update the quarterly installments to use S-Corp figures
-- Update the "Filing as single" subtitle to also say "· S-Corp" when applicable
+### 2. UI: Backfill Card in MileageTrackerTab
 
-### 4. Detection logic
+Show a card between the setup status and pending review sections:
 
-Priority order for determining S-Corp status:
-1. `profile.entity_type === 'scorp'` (set in IntakeCard/settings)
-2. `scorpResult?.answers?.currentEntity === 'scorp'` (set in S-Corp Explorer)
+- **When no backfill has been run**: Card says "Have past shifts? Import mileage for previous work" with a "Scan Past Shifts" button
+- **After scanning**: Shows a list of eligible shifts with checkboxes (date, facility, estimated miles, estimated deduction). Select all / deselect all. "Generate Mileage Entries" button
+- **Processing state**: Progress indicator while the edge function inserts
+- **Done state**: Success message with count, entries appear in the draft review banner
+
+The card is dismissible and remembers dismissal in localStorage.
+
+### 3. Hook: `useBackfillMileage`
+
+New hook that manages:
+- `scan()` — calls the edge function in preview mode, returns eligible shifts
+- `confirm(shiftIds)` — calls the edge function in confirm mode
+- Loading/error states
+- Eligible shift list state
 
 ## Files to Change
 
 | File | Change |
 |------|--------|
-| `src/lib/taxCalculations.ts` | Add `estimateTotalTaxSCorp()` and `getDefaultReasonableSalary()` |
-| `src/components/business/TaxEstimateTab.tsx` | Detect S-Corp status, pass `isScorp` and `reasonableSalary` to TrackerTab |
-| `src/components/tax-strategy/TrackerTab.tsx` | Accept S-Corp props, conditionally use S-Corp estimator, show adjusted UI |
+| `supabase/functions/backfill-mileage/index.ts` | **Create** — Edge function with preview + confirm modes |
+| `src/hooks/useBackfillMileage.ts` | **Create** — Hook wrapping the edge function calls |
+| `src/components/expenses/MileageBackfillCard.tsx` | **Create** — UI card with scan, select, confirm flow |
+| `src/components/expenses/MileageTrackerTab.tsx` | Import and render `MileageBackfillCard` between setup status and review banner |
+| `src/hooks/useExpenses.ts` | Add `reload` to the returned interface (already exists) so backfill can trigger a refresh |
 
-## Technical Details
+## Edge Function API
 
-S-Corp tax calculation logic:
-- **Payroll taxes**: Salary × 7.65% (employer FICA) + Salary × 7.65% (employee FICA) = Salary × 15.3%
-- **Key difference from sole prop**: Only the salary portion is subject to payroll tax, not all net income
-- **Distribution**: (Net income - salary) flows as distribution, subject only to income tax
-- **Federal income tax**: Computed on full net income minus employer FICA deduction (similar to SE deductible half)
-- The reasonable salary defaults to ~60% of net income, clamped between $40K–$120K
+```
+POST /backfill-mileage
+Authorization: Bearer <jwt>
+Body: { action: "preview" } | { action: "confirm", shiftIds: string[] }
+
+Preview response: { shifts: [{ id, facility_name, shift_date, estimated_miles, estimated_deduction_cents }] }
+Confirm response: { inserted: number }
+```
+
+## Technical Notes
+
+- Reuses the same distance calculation logic as `auto-mileage-tracker` (override → Google Maps → skip)
+- All generated entries are `is_auto_mileage: true`, `mileage_status: 'draft'` so they appear in the review banner
+- The edge function authenticates via JWT (extracts user_id from token) rather than service-role-only
+- Shifts already linked to a mileage expense (via `shift_id` in expenses table) are excluded from the preview
+- In demo mode, the hook generates mock preview data from the local shifts/facilities context
 
