@@ -1,5 +1,5 @@
-import { BarChart3, Landmark, FileText } from 'lucide-react';
-import ReportsPage from '@/pages/ReportsPage';
+import { Activity, Landmark, FileText } from 'lucide-react';
+import FinancialHealthTab from '@/components/business/FinancialHealthTab';
 import TaxEstimateTab from '@/components/business/TaxEstimateTab';
 import CPAPrepTab from '@/components/business/CPAPrepTab';
 import { useSearchParams } from 'react-router-dom';
@@ -7,7 +7,7 @@ import { useTaxAdvisor } from '@/hooks/useTaxAdvisor';
 
 export default function BusinessPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = searchParams.get('tab') || 'reports';
+  const activeTab = searchParams.get('tab') || 'financial-health';
 
   const {
     profile, sessions, questions, reviewItems, loading,
@@ -22,7 +22,7 @@ export default function BusinessPage() {
       <div className="page-header">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-lg bg-primary/10">
-            <BarChart3 className="h-6 w-6 text-primary" />
+            <Activity className="h-6 w-6 text-primary" />
           </div>
           <div>
             <h1 className="page-title">Relief Business Insights</h1>
@@ -33,11 +33,11 @@ export default function BusinessPage() {
 
       <div className="flex gap-2 sm:gap-3 flex-wrap">
         <button
-          onClick={() => setSearchParams({ tab: 'reports' }, { replace: true })}
-          className={`primary-tab-btn ${activeTab === 'reports' ? 'primary-tab-btn--active' : 'primary-tab-btn--inactive'}`}
+          onClick={() => setSearchParams({ tab: 'financial-health' }, { replace: true })}
+          className={`primary-tab-btn ${activeTab === 'financial-health' ? 'primary-tab-btn--active' : 'primary-tab-btn--inactive'}`}
         >
-          <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5" />
-          <span className="text-xs sm:text-sm">Revenue & Work</span>
+          <Activity className="h-4 w-4 sm:h-5 sm:w-5" />
+          <span className="text-xs sm:text-sm">Financial Health</span>
         </button>
         <button
           onClick={() => setSearchParams({ tab: 'tax-estimate' }, { replace: true })}
@@ -55,7 +55,7 @@ export default function BusinessPage() {
         </button>
       </div>
 
-      {activeTab === 'reports' && <ReportsPage />}
+      {activeTab === 'financial-health' && <FinancialHealthTab />}
       {activeTab === 'tax-estimate' && (
         loading
           ? <p className="text-muted-foreground py-8 text-center">Loading…</p>
