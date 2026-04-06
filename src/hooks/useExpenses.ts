@@ -202,6 +202,22 @@ export function useExpenses() {
     expenses.filter(e => e.is_auto_mileage && e.mileage_status === 'draft'),
   [expenses]);
 
+  const confirmedMileageExpenses = useMemo(() =>
+    expenses.filter(e => e.subcategory === 'mileage' && e.mileage_status === 'confirmed'),
+  [expenses]);
+
+  const ytdMileageMiles = useMemo(() =>
+    confirmedMileageExpenses
+      .filter(e => new Date(e.expense_date).getFullYear() === currentYear)
+      .reduce((s, e) => s + (e.mileage_miles || 0), 0),
+  [confirmedMileageExpenses, currentYear]);
+
+  const ytdMileageDeductionCents = useMemo(() =>
+    confirmedMileageExpenses
+      .filter(e => new Date(e.expense_date).getFullYear() === currentYear)
+      .reduce((s, e) => s + e.deductible_amount_cents, 0),
+  [confirmedMileageExpenses, currentYear]);
+
   const confirmMileage = useCallback(async (id: string) => {
     if (isDemo) {
       setExpenses(prev => prev.map(e => e.id === id ? { ...e, mileage_status: 'confirmed' } : e));
