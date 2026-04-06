@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
-import { Facility, FacilityContact, TermsSnapshot, Shift, Invoice, InvoiceLineItem, InvoicePayment, InvoiceActivity, EmailLog } from '@/types';
+import { Facility, FacilityContact, TermsSnapshot, Shift, Invoice, InvoiceLineItem, InvoicePayment, InvoiceActivity, EmailLog, TimeBlock } from '@/types';
 import { ContractChecklistItem } from '@/types/contracts';
 import {
   seedFacilities, seedContacts, seedTerms, seedShifts, seedInvoices, seedLineItems, seedEmailLogs, seedChecklistItems,
@@ -44,6 +44,7 @@ interface DataContextType {
   activities: InvoiceActivity[];
   emailLogs: EmailLog[];
   checklistItems: ContractChecklistItem[];
+  timeBlocks: TimeBlock[];
   dataLoading: boolean;
   addFacility: (facility: Omit<Facility, 'id'>) => Promise<Facility>;
   updateFacility: (facility: Facility) => Promise<void>;
@@ -64,6 +65,9 @@ interface DataContextType {
   addPayment: (payment: Omit<InvoicePayment, 'id'>) => Promise<void>;
   addActivity: (activity: Omit<InvoiceActivity, 'id' | 'created_at'>) => Promise<void>;
   addEmailLog: (log: Omit<EmailLog, 'id'>) => Promise<void>;
+  addTimeBlock: (block: Omit<TimeBlock, 'id'>) => Promise<void>;
+  updateTimeBlock: (block: TimeBlock) => Promise<void>;
+  deleteTimeBlock: (id: string) => Promise<void>;
   getComputedInvoiceStatus: (invoice: Invoice) => Invoice['status'];
 }
 
