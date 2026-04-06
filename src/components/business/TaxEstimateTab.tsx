@@ -1,9 +1,11 @@
+import { useMemo } from 'react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDown, MessageSquare, Building2 } from 'lucide-react';
 import { TaxDisclaimerBanner } from '@/components/tax-strategy/TaxDisclaimer';
 import TrackerTab from '@/components/tax-strategy/TrackerTab';
 import AskAdvisorTab from '@/components/tax-advisor/AskAdvisorTab';
 import SCorpAssessmentTab from '@/components/tax-advisor/SCorpAssessmentTab';
+import { getDefaultReasonableSalary } from '@/lib/taxCalculations';
 import type { TaxAdvisorProfile, TaxAdvisorSession, SavedTaxQuestion } from '@/hooks/useTaxAdvisor';
 
 interface Props {
@@ -19,10 +21,17 @@ export default function TaxEstimateTab({
   profile, sessions, scorpResult,
   onSaveSession, onSaveQuestion, onSaveScorpResult,
 }: Props) {
+  // Detect S-Corp status from profile or S-Corp Explorer result
+  const isScorp = useMemo(() => {
+    if ((profile as any)?.entity_type === 'scorp') return true;
+    if (scorpResult?.answers?.currentEntity === 'scorp') return true;
+    return false;
+  }, [profile, scorpResult]);
+
   return (
     <div className="space-y-6">
       <TaxDisclaimerBanner />
-      <TrackerTab />
+      <TrackerTab isScorp={isScorp} />
 
       {/* Ask the Tax Advisor */}
       <Collapsible>

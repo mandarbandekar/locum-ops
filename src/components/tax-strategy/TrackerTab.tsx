@@ -23,8 +23,11 @@ import {
   calculateSetAside,
   getDefaultDueDates,
   estimateTotalTax,
+  estimateTotalTaxSCorp,
   estimateQuarterlyInstallments,
+  getDefaultReasonableSalary,
   type FilingStatus,
+  type SCorpTaxEstimate,
 } from '@/lib/taxCalculations';
 
 const db = (table: string) => supabase.from(table as any);
