@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { calculateDeductibleCents, findSubcategory } from '@/lib/expenseCategories';
+import { seedExpenses } from '@/data/seed';
 
 const db = (table: string) => supabase.from(table as any);
 
@@ -45,9 +46,9 @@ const DEFAULT_CONFIG: Omit<ExpenseConfig, 'id' | 'user_id'> = {
 
 export function useExpenses() {
   const { user, isDemo } = useAuth();
-  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>(isDemo ? (seedExpenses as unknown as Expense[]) : []);
   const [config, setConfig] = useState<ExpenseConfig | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!isDemo);
 
   const loadExpenses = useCallback(async () => {
     if (isDemo || !user) { setLoading(false); return; }

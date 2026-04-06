@@ -127,6 +127,54 @@ export const seedChecklistItems: ContractChecklistItem[] = [
   { id: 'cli10', facility_id: 'c4', type: 'coi', title: 'Certificate of Insurance (COI)', status: 'needed', due_date: fmt(addDays(today, 15)), notes: '' },
 ];
 
+// === EXPENSES seed data (demo mode) ===
+
+export interface SeedExpense {
+  id: string;
+  user_id: string;
+  expense_date: string;
+  amount_cents: number;
+  category: string;
+  subcategory: string;
+  description: string;
+  facility_id: string | null;
+  shift_id: string | null;
+  receipt_url: string | null;
+  deductible_amount_cents: number;
+  deductibility_type: string;
+  mileage_miles: number | null;
+  home_office_sqft: number | null;
+  prorate_percent: number | null;
+  is_auto_mileage: boolean;
+  mileage_status: string;
+  route_description: string;
+  created_at: string;
+  updated_at: string;
+}
+
+const irsRate = 70; // cents per mile
+const mile = (m: number) => Math.round(m * irsRate);
+
+export const seedExpenses: SeedExpense[] = [
+  // Draft mileage (pending review) — from recent shifts
+  { id: 'exp-m1', user_id: 'demo-user', expense_date: addDays(today, -5).toISOString().split('T')[0], amount_cents: mile(44), category: 'travel', subcategory: 'mileage', description: 'Round-trip to Greenfield Medical Center', facility_id: 'c1', shift_id: 's2', receipt_url: null, deductible_amount_cents: mile(44), deductibility_type: 'full', mileage_miles: 44, home_office_sqft: null, prorate_percent: null, is_auto_mileage: true, mileage_status: 'draft', route_description: 'Home → Greenfield Medical Center → Home', created_at: fmt(addDays(today, -5)), updated_at: fmt(addDays(today, -5)) },
+  { id: 'exp-m2', user_id: 'demo-user', expense_date: addDays(today, -3).toISOString().split('T')[0], amount_cents: mile(62), category: 'travel', subcategory: 'mileage', description: 'Round-trip to Evergreen Health Clinic', facility_id: 'c2', shift_id: 's4', receipt_url: null, deductible_amount_cents: mile(62), deductibility_type: 'full', mileage_miles: 62, home_office_sqft: null, prorate_percent: null, is_auto_mileage: true, mileage_status: 'draft', route_description: 'Home → Evergreen Health Clinic → Home', created_at: fmt(addDays(today, -3)), updated_at: fmt(addDays(today, -3)) },
+  { id: 'exp-m3', user_id: 'demo-user', expense_date: addDays(today, -8).toISOString().split('T')[0], amount_cents: mile(62), category: 'travel', subcategory: 'mileage', description: 'Round-trip to Evergreen Health Clinic', facility_id: 'c2', shift_id: 's3', receipt_url: null, deductible_amount_cents: mile(62), deductibility_type: 'full', mileage_miles: 62, home_office_sqft: null, prorate_percent: null, is_auto_mileage: true, mileage_status: 'draft', route_description: 'Home → Evergreen Health Clinic → Home', created_at: fmt(addDays(today, -8)), updated_at: fmt(addDays(today, -8)) },
+
+  // Confirmed mileage — older trips
+  { id: 'exp-m4', user_id: 'demo-user', expense_date: addDays(today, -12).toISOString().split('T')[0], amount_cents: mile(44), category: 'travel', subcategory: 'mileage', description: 'Round-trip to Greenfield Medical Center', facility_id: 'c1', shift_id: 's1', receipt_url: null, deductible_amount_cents: mile(44), deductibility_type: 'full', mileage_miles: 44, home_office_sqft: null, prorate_percent: null, is_auto_mileage: true, mileage_status: 'confirmed', route_description: 'Home → Greenfield Medical Center → Home', created_at: fmt(addDays(today, -12)), updated_at: fmt(addDays(today, -11)) },
+  { id: 'exp-m5', user_id: 'demo-user', expense_date: addDays(today, -20).toISOString().split('T')[0], amount_cents: mile(38), category: 'travel', subcategory: 'mileage', description: 'Round-trip to Mountain View Practice', facility_id: 'c4', shift_id: null, receipt_url: null, deductible_amount_cents: mile(38), deductibility_type: 'full', mileage_miles: 38, home_office_sqft: null, prorate_percent: null, is_auto_mileage: true, mileage_status: 'confirmed', route_description: 'Home → Mountain View Practice → Home', created_at: fmt(addDays(today, -20)), updated_at: fmt(addDays(today, -19)) },
+  { id: 'exp-m6', user_id: 'demo-user', expense_date: addDays(today, -30).toISOString().split('T')[0], amount_cents: mile(62), category: 'travel', subcategory: 'mileage', description: 'Round-trip to Evergreen Health Clinic', facility_id: 'c2', shift_id: null, receipt_url: null, deductible_amount_cents: mile(62), deductibility_type: 'full', mileage_miles: 62, home_office_sqft: null, prorate_percent: null, is_auto_mileage: true, mileage_status: 'confirmed', route_description: 'Home → Evergreen Health Clinic → Home', created_at: fmt(addDays(today, -30)), updated_at: fmt(addDays(today, -29)) },
+
+  // Regular expenses
+  { id: 'exp-r1', user_id: 'demo-user', expense_date: addDays(today, -2).toISOString().split('T')[0], amount_cents: 4500, category: 'travel', subcategory: 'parking_tolls', description: 'Parking at Evergreen Health Clinic', facility_id: 'c2', shift_id: 's4', receipt_url: null, deductible_amount_cents: 4500, deductibility_type: 'full', mileage_miles: null, home_office_sqft: null, prorate_percent: null, is_auto_mileage: false, mileage_status: 'confirmed', route_description: '', created_at: fmt(addDays(today, -2)), updated_at: fmt(addDays(today, -2)) },
+  { id: 'exp-r2', user_id: 'demo-user', expense_date: addDays(today, -7).toISOString().split('T')[0], amount_cents: 2850, category: 'travel', subcategory: 'meals_travel', description: 'Lunch during shift at Greenfield', facility_id: 'c1', shift_id: null, receipt_url: null, deductible_amount_cents: 1425, deductibility_type: 'half', mileage_miles: null, home_office_sqft: null, prorate_percent: null, is_auto_mileage: false, mileage_status: 'confirmed', route_description: '', created_at: fmt(addDays(today, -7)), updated_at: fmt(addDays(today, -7)) },
+  { id: 'exp-r3', user_id: 'demo-user', expense_date: addDays(today, -15).toISOString().split('T')[0], amount_cents: 35000, category: 'professional_compliance', subcategory: 'license_renewal', description: 'Oregon veterinary license renewal', facility_id: null, shift_id: null, receipt_url: null, deductible_amount_cents: 35000, deductibility_type: 'full', mileage_miles: null, home_office_sqft: null, prorate_percent: null, is_auto_mileage: false, mileage_status: 'confirmed', route_description: '', created_at: fmt(addDays(today, -15)), updated_at: fmt(addDays(today, -15)) },
+  { id: 'exp-r4', user_id: 'demo-user', expense_date: addDays(today, -22).toISOString().split('T')[0], amount_cents: 19900, category: 'ce', subcategory: 'ce_courses', description: 'AVMA CE webinar – Dental Radiology', facility_id: null, shift_id: null, receipt_url: null, deductible_amount_cents: 19900, deductibility_type: 'full', mileage_miles: null, home_office_sqft: null, prorate_percent: null, is_auto_mileage: false, mileage_status: 'confirmed', route_description: '', created_at: fmt(addDays(today, -22)), updated_at: fmt(addDays(today, -22)) },
+  { id: 'exp-r5', user_id: 'demo-user', expense_date: addDays(today, -35).toISOString().split('T')[0], amount_cents: 8900, category: 'equipment', subcategory: 'stethoscope_instruments', description: 'Replacement stethoscope tubing', facility_id: null, shift_id: null, receipt_url: null, deductible_amount_cents: 8900, deductibility_type: 'full', mileage_miles: null, home_office_sqft: null, prorate_percent: null, is_auto_mileage: false, mileage_status: 'confirmed', route_description: '', created_at: fmt(addDays(today, -35)), updated_at: fmt(addDays(today, -35)) },
+  { id: 'exp-r6', user_id: 'demo-user', expense_date: addDays(today, -40).toISOString().split('T')[0], amount_cents: 14999, category: 'technology', subcategory: 'software_subscriptions', description: 'Practice management app annual subscription', facility_id: null, shift_id: null, receipt_url: null, deductible_amount_cents: 14999, deductibility_type: 'full', mileage_miles: null, home_office_sqft: null, prorate_percent: null, is_auto_mileage: false, mileage_status: 'confirmed', route_description: '', created_at: fmt(addDays(today, -40)), updated_at: fmt(addDays(today, -40)) },
+];
+
 export const seedUserProfile: UserProfile = {
   id: 'demo-profile',
   user_id: 'demo-user',
