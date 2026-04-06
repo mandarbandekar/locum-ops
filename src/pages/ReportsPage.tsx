@@ -531,150 +531,31 @@ export default function ReportsPage() {
         </CardContent>
       </Card>
 
-      {/* Row 1: Payment Speed + Revenue by Facility */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Facility Payment Speed</CardTitle>
-            <CardDescription>Average days from invoice sent to payment received</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {facilityPaymentSpeed.length === 0 ? (
-              <div className="flex items-center justify-center h-[250px] text-sm text-muted-foreground">
-                No paid invoices with sent dates yet
-              </div>
-            ) : (
-              <ChartContainer config={paymentSpeedConfig} className="h-[300px] w-full">
-                <BarChart data={facilityPaymentSpeed} layout="vertical" margin={{ top: 5, right: 20, bottom: 5, left: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                  <XAxis type="number" fontSize={12} className="text-muted-foreground" tickFormatter={v => `${v}d`} />
-                  <YAxis dataKey="name" type="category" fontSize={12} className="text-muted-foreground" width={120} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="avgDays" fill="var(--color-avgDays)" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ChartContainer>
-            )}
-            <InsightCallout text={paymentSpeedInsight} />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Revenue by Facility</CardTitle>
-            <CardDescription>Total paid revenue per facility in this period</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {revenueByFacility.length === 0 ? (
-              <div className="flex items-center justify-center h-[250px] text-sm text-muted-foreground">
-                No paid invoices in this period
-              </div>
-            ) : (
-              <ChartContainer config={revenueByFacilityConfig} className="h-[300px] w-full">
-                <BarChart data={revenueByFacility} layout="vertical" margin={{ top: 5, right: 20, bottom: 5, left: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                  <XAxis type="number" fontSize={12} className="text-muted-foreground" tickFormatter={v => `$${v}`} />
-                  <YAxis dataKey="name" type="category" fontSize={12} className="text-muted-foreground" width={120} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="revenue" fill="var(--color-revenue)" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ChartContainer>
-            )}
-            <InsightCallout text={revenueConcentrationInsight} />
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Row 2: Shifts per Facility + Avg Rate */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Shifts per Facility</CardTitle>
-            <CardDescription>Distribution of shifts across facilities</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {shiftsPerFacility.length === 0 ? (
-              <div className="flex items-center justify-center h-[250px] text-sm text-muted-foreground">
-                No shifts in this period
-              </div>
-            ) : (
-              <ChartContainer config={shiftsChartConfig} className="h-[300px] w-full">
-                <BarChart data={shiftsPerFacility} layout="vertical" margin={{ top: 5, right: 20, bottom: 5, left: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                  <XAxis type="number" fontSize={12} className="text-muted-foreground" />
-                  <YAxis dataKey="name" type="category" fontSize={12} className="text-muted-foreground" width={120} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="shifts" fill="var(--color-shifts)" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ChartContainer>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Avg Rate per Facility</CardTitle>
-            <CardDescription>Average shift rate across your facilities</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {avgRatePerFacility.length === 0 ? (
-              <div className="flex items-center justify-center h-[250px] text-sm text-muted-foreground">
-                No shifts with rates in this period
-              </div>
-            ) : (
-              <ChartContainer config={avgRateConfig} className="h-[300px] w-full">
-                <BarChart data={avgRatePerFacility} layout="vertical" margin={{ top: 5, right: 20, bottom: 5, left: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                  <XAxis type="number" fontSize={12} className="text-muted-foreground" tickFormatter={v => `$${v}`} />
-                  <YAxis dataKey="name" type="category" fontSize={12} className="text-muted-foreground" width={120} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="avgRate" fill="var(--color-avgRate)" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ChartContainer>
-            )}
-            <InsightCallout text={avgRateInsight} />
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Row 3: Earnings by Day of Week + Monthly Hours Worked */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Earnings by Day of Week</CardTitle>
-            <CardDescription>Which days are most profitable for scheduling</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer config={earningsByDayConfig} className="h-[300px] w-full">
-              <BarChart data={earningsByDayOfWeek} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+      {/* Revenue by Facility */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Revenue by Facility</CardTitle>
+          <CardDescription>Total paid revenue per facility in this period</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {revenueByFacility.length === 0 ? (
+            <div className="flex items-center justify-center h-[250px] text-sm text-muted-foreground">
+              No paid invoices in this period
+            </div>
+          ) : (
+            <ChartContainer config={revenueByFacilityConfig} className="h-[300px] w-full">
+              <BarChart data={revenueByFacility} layout="vertical" margin={{ top: 5, right: 20, bottom: 5, left: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                <XAxis dataKey="day" fontSize={12} className="text-muted-foreground" />
-                <YAxis fontSize={12} className="text-muted-foreground" tickFormatter={v => `$${v}`} />
+                <XAxis type="number" fontSize={12} className="text-muted-foreground" tickFormatter={v => `$${v}`} />
+                <YAxis dataKey="name" type="category" fontSize={12} className="text-muted-foreground" width={120} />
                 <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="total" fill="var(--color-total)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="revenue" fill="var(--color-revenue)" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ChartContainer>
-            <InsightCallout text={bestDayInsight} />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Monthly Hours Worked</CardTitle>
-            <CardDescription>Total shift hours per month over time</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer config={monthlyHoursConfig} className="h-[300px] w-full">
-              <LineChart data={monthlyHoursWorked} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                <XAxis dataKey="month" fontSize={12} className="text-muted-foreground" />
-                <YAxis fontSize={12} className="text-muted-foreground" tickFormatter={v => `${v}h`} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Line type="monotone" dataKey="hours" stroke="var(--color-hours)" strokeWidth={2} dot={{ r: 4 }} />
-              </LineChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-      </div>
+          )}
+          <InsightCallout text={revenueConcentrationInsight} />
+        </CardContent>
+      </Card>
     </div>
   );
 }
