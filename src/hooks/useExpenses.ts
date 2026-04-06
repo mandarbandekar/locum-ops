@@ -22,6 +22,9 @@ export interface Expense {
   mileage_miles: number | null;
   home_office_sqft: number | null;
   prorate_percent: number | null;
+  is_auto_mileage: boolean;
+  mileage_status: string;
+  route_description: string;
   created_at: string;
   updated_at: string;
 }
@@ -95,7 +98,7 @@ export function useExpenses() {
     };
 
     if (isDemo) {
-      const fake: Expense = { ...row, id: crypto.randomUUID(), created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+      const fake: Expense = { ...row, id: crypto.randomUUID(), is_auto_mileage: false, mileage_status: 'confirmed', route_description: '', created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
       setExpenses(prev => [fake, ...prev]);
       toast.success('Expense logged');
       return fake;
@@ -194,6 +197,49 @@ export function useExpenses() {
     }).reduce((s, e) => s + e.amount_cents, 0);
   }, [expenses]);
 
+  // Draft mileage entries
+  const draftMileageExpenses = useMemo(() =>
+    expenses.filter(e => e.is_auto_mileage && e.mileage_status === 'draft'),
+  [expenses]);
+
+  const confirmMileage = useCallback(async (id: string) => {
+    if (isDemo) {
+      setExpenses(prev => prev.map(e => e.id === id ? { ...e, mileage_status: 'confirmed' } : e));
+      toast.success('Mileage confirmed');
+      return;
+    }
+    const { error } = await db('expenses').update({ mileage_status: 'confirmed' } as any).eq('id', id);
+    if (error) { toast.error('Failed to confirm'); return; }
+    setExpenses(prev => prev.map(e => e.id === id ? { ...e, mileage_status: 'confirmed' } : e));
+    toast.success('Mileage confirmed');
+  }, [isDemo]);
+
+  const dismissMileage = useCallback(async (id: string) => {
+    if (isDemo) {
+      setExpenses(prev => prev.map(e => e.id === id ? { ...e, mileage_status: 'dismissed' } : e));
+      toast.success('Mileage dismissed');
+      return;
+    }
+    const { error } = await db('expenses').update({ mileage_status: 'dismissed' } as any).eq('id', id);
+    if (error) { toast.error('Failed to dismiss'); return; }
+    setExpenses(prev => prev.map(e => e.id === id ? { ...e, mileage_status: 'dismissed' } : e));
+    toast.success('Mileage dismissed');
+  }, [isDemo]);
+
+  const confirmAllMileage = useCallback(async () => {
+    const ids = draftMileageExpenses.map(e => e.id);
+    if (ids.length === 0) return;
+    if (isDemo) {
+      setExpenses(prev => prev.map(e => ids.includes(e.id) ? { ...e, mileage_status: 'confirmed' } : e));
+      toast.success(`${ids.length} mileage entries confirmed`);
+      return;
+    }
+    const { error } = await db('expenses').update({ mileage_status: 'confirmed' } as any).in('id', ids);
+    if (error) { toast.error('Failed to confirm all'); return; }
+    setExpenses(prev => prev.map(e => ids.includes(e.id) ? { ...e, mileage_status: 'confirmed' } : e));
+    toast.success(`${ids.length} mileage entries confirmed`);
+  }, [isDemo, draftMileageExpenses]);
+
   return {
     expenses,
     loading,
@@ -209,5 +255,9 @@ export function useExpenses() {
     categoriesTracked,
     ytdExpenses,
     thisMonthCents,
+    draftMileageExpenses,
+    confirmMileage,
+    dismissMileage,
+    confirmAllMileage,
   };
 }

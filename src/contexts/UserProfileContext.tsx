@@ -38,6 +38,7 @@ export interface UserProfile {
   company_address: string;
   invoice_email: string | null;
   invoice_phone: string | null;
+  home_address: string;
 }
 
 const DEFAULT_TERMS_FIELDS: TermsFieldsEnabled = {
@@ -68,6 +69,7 @@ export const DEFAULT_PROFILE: Omit<UserProfile, 'id' | 'user_id'> = {
   company_address: '',
   invoice_email: null,
   invoice_phone: null,
+  home_address: '',
 };
 
 interface UserProfileContextType {
@@ -99,6 +101,7 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
           company_address: '2480 NW Thurman St, Suite 3\nPortland, OR 97210',
           invoice_email: 'sarah@mitchellvetrelief.com',
           invoice_phone: '503-555-0147',
+          home_address: '1234 Elm Street\nPortland, OR 97201',
         }
       : null
   );
@@ -172,6 +175,7 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
           company_address: d.company_address || '',
           invoice_email: d.invoice_email || null,
           invoice_phone: d.invoice_phone || null,
+          home_address: d.home_address || '',
         });
       } else {
         // Pull signup metadata from auth user to pre-populate profile
@@ -222,6 +226,7 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
             company_address: nd.company_address || '',
             invoice_email: nd.invoice_email || null,
             invoice_phone: nd.invoice_phone || null,
+            home_address: nd.home_address || '',
           });
         }
       }

@@ -151,4 +151,5 @@ export const seedUserProfile: UserProfile = {
   company_address: '100 Main St, Suite 200\nPortland, OR 97201',
   invoice_email: 'jane@smithvet.com',
   invoice_phone: '503-555-1234',
+  home_address: '742 Evergreen Terrace\nPortland, OR 97201',
 };

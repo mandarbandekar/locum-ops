@@ -1474,9 +1474,12 @@ export type Database = {
           facility_id: string | null
           home_office_sqft: number | null
           id: string
+          is_auto_mileage: boolean
           mileage_miles: number | null
+          mileage_status: string
           prorate_percent: number | null
           receipt_url: string | null
+          route_description: string
           shift_id: string | null
           subcategory: string
           updated_at: string
@@ -1493,9 +1496,12 @@ export type Database = {
           facility_id?: string | null
           home_office_sqft?: number | null
           id?: string
+          is_auto_mileage?: boolean
           mileage_miles?: number | null
+          mileage_status?: string
           prorate_percent?: number | null
           receipt_url?: string | null
+          route_description?: string
           shift_id?: string | null
           subcategory?: string
           updated_at?: string
@@ -1512,9 +1518,12 @@ export type Database = {
           facility_id?: string | null
           home_office_sqft?: number | null
           id?: string
+          is_auto_mileage?: boolean
           mileage_miles?: number | null
+          mileage_status?: string
           prorate_percent?: number | null
           receipt_url?: string | null
+          route_description?: string
           shift_id?: string | null
           subcategory?: string
           updated_at?: string
@@ -1546,6 +1555,7 @@ export type Database = {
           billing_week_end_day: string
           clinic_access_info: string
           created_at: string
+          facility_coordinates: Json | null
           id: string
           invoice_due_days: number
           invoice_email_bcc: string
@@ -1555,6 +1565,7 @@ export type Database = {
           invoice_name_cc: string
           invoice_name_to: string
           invoice_prefix: string
+          mileage_override_miles: number | null
           name: string
           notes: string
           outreach_last_sent_at: string | null
@@ -1574,6 +1585,7 @@ export type Database = {
           billing_week_end_day?: string
           clinic_access_info?: string
           created_at?: string
+          facility_coordinates?: Json | null
           id?: string
           invoice_due_days?: number
           invoice_email_bcc?: string
@@ -1583,6 +1595,7 @@ export type Database = {
           invoice_name_cc?: string
           invoice_name_to?: string
           invoice_prefix?: string
+          mileage_override_miles?: number | null
           name: string
           notes?: string
           outreach_last_sent_at?: string | null
@@ -1602,6 +1615,7 @@ export type Database = {
           billing_week_end_day?: string
           clinic_access_info?: string
           created_at?: string
+          facility_coordinates?: Json | null
           id?: string
           invoice_due_days?: number
           invoice_email_bcc?: string
@@ -1611,6 +1625,7 @@ export type Database = {
           invoice_name_cc?: string
           invoice_name_to?: string
           invoice_prefix?: string
+          mileage_override_miles?: number | null
           name?: string
           notes?: string
           outreach_last_sent_at?: string | null
@@ -2870,6 +2885,7 @@ export type Database = {
           email_tone: string
           facilities_count_band: string
           first_name: string
+          home_address: string
           id: string
           invoice_due_default_days: number
           invoice_email: string | null
@@ -2894,6 +2910,7 @@ export type Database = {
           email_tone?: string
           facilities_count_band?: string
           first_name?: string
+          home_address?: string
           id?: string
           invoice_due_default_days?: number
           invoice_email?: string | null
@@ -2918,6 +2935,7 @@ export type Database = {
           email_tone?: string
           facilities_count_band?: string
           first_name?: string
+          home_address?: string
           id?: string
           invoice_due_default_days?: number
           invoice_email?: string | null
