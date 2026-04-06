@@ -63,7 +63,7 @@ export function AppSidebar() {
     {
       label: 'Back Office',
       items: [
-        { title: 'Financial Health', url: '/business', icon: Activity },
+        { title: 'Relief Business Hub', url: '/business', icon: Activity },
         { title: 'Expenses & Mileage', url: '/expenses', icon: Receipt },
         { title: 'Tax Center', url: '/tax-center', icon: Landmark },
         { title: 'Credentials & CE', url: '/credentials', icon: ShieldCheck },
