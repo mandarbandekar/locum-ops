@@ -3,14 +3,15 @@ import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { StatusBadge } from '@/components/StatusBadge';
-import { Plus, ChevronLeft, ChevronRight, List, CalendarDays, Trash2, Calendar as CalendarIcon, CheckSquare, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, List, CalendarDays, Trash2, Calendar as CalendarIcon, CheckSquare, RefreshCw, AlertTriangle, Ban } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, getDay, startOfWeek, endOfWeek, addWeeks, subWeeks, differenceInMilliseconds, differenceInHours } from 'date-fns';
 import { CalendarPlus, Clock, DollarSign, TrendingUp } from 'lucide-react';
-import { SHIFT_COLORS, Shift } from '@/types';
+import { SHIFT_COLORS, Shift, BLOCK_TYPES, BLOCK_COLORS, TimeBlock } from '@/types';
 import { detectShiftConflicts } from '@/lib/businessLogic';
 import { toast } from 'sonner';
 import { ShiftFormDialog } from '@/components/schedule/ShiftFormDialog';
+import { BlockTimeDialog } from '@/components/schedule/BlockTimeDialog';
 import { WeekTimeGrid } from '@/components/schedule/WeekTimeGrid';
 import { ClinicConfirmationsTab } from '@/components/schedule/ClinicConfirmationsTab';
 import { getMarkersForDay } from '@/lib/calendarMarkers';
@@ -23,13 +24,16 @@ import { CalendarSyncPanel } from '@/components/schedule/CalendarSyncPanel';
 const STORAGE_KEY = 'schedule-view-pref';
 
 export default function SchedulePage() {
-  const { shifts, facilities, terms, addShift, updateShift, deleteShift, updateFacility } = useData();
+  const { shifts, facilities, terms, addShift, updateShift, deleteShift, updateFacility, timeBlocks, addTimeBlock, updateTimeBlock, deleteTimeBlock } = useData();
   const { getEventsForDay } = useCalendarEvents();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<'month' | 'week' | 'list' | 'confirmations' | 'sync'>('month');
   const [showAdd, setShowAdd] = useState(false);
+  const [showBlockTime, setShowBlockTime] = useState(false);
+  const [editBlock, setEditBlock] = useState<string | null>(null);
   const [addShiftDefaults, setAddShiftDefaults] = useState<{ date?: Date; startTime?: string }>({});
   const [editShift, setEditShift] = useState<string | null>(null);
+  const [blockTimeDefaultDate, setBlockTimeDefaultDate] = useState<Date | undefined>(undefined);
   const [dragOverDay, setDragOverDay] = useState<string | null>(null);
   const [calendarFilters, setCalendarFilters] = useState<CalendarLayerFilters>({
     shifts: true,
@@ -179,6 +183,11 @@ export default function SchedulePage() {
 
   const renderDayCell = (day: Date, minHeight: string) => {
     const dayShifts = calendarFilters.shifts ? shifts.filter(s => isSameDay(new Date(s.start_datetime), day)) : [];
+    const dayBlocks = timeBlocks.filter(b => {
+      const bs = new Date(b.start_datetime);
+      const be = new Date(b.end_datetime);
+      return day >= new Date(bs.getFullYear(), bs.getMonth(), bs.getDate()) && day <= new Date(be.getFullYear(), be.getMonth(), be.getDate());
+    });
     const isToday = isSameDay(day, new Date());
     const markers = getMarkersForDay(day);
     const dayKey = day.toISOString();
@@ -208,18 +217,36 @@ export default function SchedulePage() {
             {m.type === 'tax' ? '💰' : '🔴'} {m.label}
           </div>
         ))}
+        {dayBlocks.map(b => {
+          const blockColor = BLOCK_COLORS.find(c => c.value === b.color) || BLOCK_COLORS[0];
+          const blockTypeInfo = BLOCK_TYPES.find(t => t.value === b.block_type);
+          return (
+            <div
+              key={b.id}
+              className={`text-[10px] px-1 py-0.5 rounded mb-0.5 truncate font-medium ${blockColor.bg} ${blockColor.text} border border-dashed border-current/20`}
+              onClick={(e) => { e.stopPropagation(); setEditBlock(b.id); }}
+              title={`${b.title} (${blockTypeInfo?.label || 'Block'})`}
+            >
+              {blockTypeInfo?.icon || '🔒'} {b.title}
+            </div>
+          );
+        })}
         {dayShifts.map(s => {
           const colorDef = SHIFT_COLORS.find(c => c.value === (s.color || 'blue')) || SHIFT_COLORS[0];
+          const start = new Date(s.start_datetime);
+          const end = new Date(s.end_datetime);
+          const hrs = Math.max(0, differenceInHours(end, start));
           return (
             <div
               key={s.id}
               draggable
               onDragStart={(e) => onDragStart(e, s.id)}
-              className={`text-xs p-1 rounded mb-0.5 cursor-grab active:cursor-grabbing truncate ${colorDef.bg} ${colorDef.text} hover:opacity-80 transition-opacity select-none`}
+              className={`text-[10px] p-1 rounded mb-0.5 cursor-grab active:cursor-grabbing ${colorDef.bg} ${colorDef.text} hover:opacity-80 transition-opacity select-none`}
               onClick={(e) => { e.stopPropagation(); setEditShift(s.id); }}
               title={`${getFacilityName(s.facility_id)} — drag to reschedule`}
             >
-              {format(new Date(s.start_datetime), 'ha')} {getFacilityName(s.facility_id).split(' ')[0]}
+              <div className="truncate font-semibold">{format(start, 'ha').toLowerCase()}–{format(end, 'ha').toLowerCase()} {getFacilityName(s.facility_id).split(' ')[0]}</div>
+              <div className="truncate opacity-80">${s.rate_applied} · {hrs}h</div>
             </div>
           );
         })}
@@ -236,9 +263,14 @@ export default function SchedulePage() {
         <div className="flex items-center gap-3">
           <h1 className="page-title">Schedule</h1>
           {isCalendarView && (
-            <Button size="sm" onClick={() => setShowAdd(true)} className="h-8 text-[12px] sm:text-[13px] px-3 sm:px-4">
-              <Plus className="mr-1 sm:mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" /> Add Shift
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button size="sm" onClick={() => setShowAdd(true)} className="h-8 text-[12px] sm:text-[13px] px-3 sm:px-4">
+                <Plus className="mr-1 sm:mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" /> Add Shift
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => { setBlockTimeDefaultDate(undefined); setShowBlockTime(true); }} className="h-8 text-[12px] sm:text-[13px] px-3 sm:px-4">
+                <Ban className="mr-1 sm:mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" /> Block Time
+              </Button>
+            </div>
           )}
         </div>
         <div className="flex gap-1.5 sm:gap-2 flex-wrap">
@@ -330,6 +362,8 @@ export default function SchedulePage() {
                 onCellClick={openAddShiftAt}
                 calendarFilters={{ credentials: calendarFilters.credentials, subscriptions: calendarFilters.subscriptions }}
                 getEventsForDay={getEventsForDay}
+                timeBlocks={timeBlocks}
+                onEditBlock={setEditBlock}
               />
               {totalShiftsInRange === 0 && (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -434,6 +468,24 @@ export default function SchedulePage() {
           existing={shifts.find(s => s.id === editShift)}
           onSave={handleSaveShift}
           onDelete={(id) => { deleteShift(id); setEditShift(null); toast.success('Shift deleted'); }}
+        />
+      )}
+
+      <BlockTimeDialog
+        open={showBlockTime}
+        onOpenChange={setShowBlockTime}
+        onSave={async (b) => { await addTimeBlock(b as Omit<TimeBlock, 'id'>); toast.success('Time blocked'); }}
+        defaultDate={blockTimeDefaultDate}
+      />
+
+      {editBlock && (
+        <BlockTimeDialog
+          key={editBlock}
+          open={!!editBlock}
+          onOpenChange={() => setEditBlock(null)}
+          existing={timeBlocks.find(b => b.id === editBlock)}
+          onSave={async (b) => { await updateTimeBlock(b as TimeBlock); toast.success('Time block updated'); }}
+          onDelete={async (id) => { await deleteTimeBlock(id); setEditBlock(null); toast.success('Time block deleted'); }}
         />
       )}
     </div>

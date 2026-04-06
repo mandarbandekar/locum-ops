@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useMemo, DragEvent } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { format, isSameDay, getHours, getMinutes } from 'date-fns';
-import { SHIFT_COLORS } from '@/types';
+import { SHIFT_COLORS, BLOCK_COLORS, BLOCK_TYPES, TimeBlock } from '@/types';
 import { getMarkersForDay } from '@/lib/calendarMarkers';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { CalendarEvent } from '@/hooks/useCalendarEvents';
@@ -20,9 +20,11 @@ interface WeekTimeGridProps {
   onCellClick?: (date: Date, hour: number) => void;
   calendarFilters?: { credentials: boolean; subscriptions: boolean };
   getEventsForDay?: (day: Date, filters: { credentials: boolean; subscriptions: boolean }) => CalendarEvent[];
+  timeBlocks?: TimeBlock[];
+  onEditBlock?: (id: string) => void;
 }
 
-export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, onDropOnTime, onCellClick, calendarFilters, getEventsForDay }: WeekTimeGridProps) {
+export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, onDropOnTime, onCellClick, calendarFilters, getEventsForDay, timeBlocks = [], onEditBlock }: WeekTimeGridProps) {
   const [dragOverCell, setDragOverCell] = useState<string | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 
@@ -211,6 +213,56 @@ export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, o
                   {height >= 60 && (
                     <div className="opacity-70 truncate text-[10px] mt-0.5">${s.rate_applied}/hr</div>
                   )}
+                </div>
+              );
+            });
+          })}
+
+          {/* Time blocks – semi-transparent striped overlay bars */}
+          {weekDays.map((day, dayIndex) => {
+            const dayBlocks = timeBlocks.filter(b => {
+              const bs = new Date(b.start_datetime);
+              const be = new Date(b.end_datetime);
+              return day >= new Date(bs.getFullYear(), bs.getMonth(), bs.getDate()) && day <= new Date(be.getFullYear(), be.getMonth(), be.getDate());
+            });
+            return dayBlocks.map(b => {
+              const bStart = new Date(b.start_datetime);
+              const bEnd = new Date(b.end_datetime);
+              let startHour: number, endHour: number;
+              if (b.all_day) {
+                startHour = HOURS[0];
+                endHour = HOURS[HOURS.length - 1] + 1;
+              } else {
+                startHour = isSameDay(bStart, day) ? getHours(bStart) + getMinutes(bStart) / 60 : HOURS[0];
+                endHour = isSameDay(bEnd, day) ? getHours(bEnd) + getMinutes(bEnd) / 60 : HOURS[HOURS.length - 1] + 1;
+              }
+              const topOffset = Math.max((startHour - HOURS[0]) * HOUR_HEIGHT, 0);
+              const bottomOffset = Math.min((endHour - HOURS[0]) * HOUR_HEIGHT, HOURS.length * HOUR_HEIGHT);
+              const height = Math.max(bottomOffset - topOffset, 20);
+              const blockColor = BLOCK_COLORS.find(c => c.value === b.color) || BLOCK_COLORS[0];
+              const blockTypeInfo = BLOCK_TYPES.find(t => t.value === b.block_type);
+              const leftCalc = `calc(${GUTTER_WIDTH}px + (100% - ${GUTTER_WIDTH}px) * ${dayIndex} / 7 + 1px)`;
+              const widthCalc = `calc((100% - ${GUTTER_WIDTH}px) / 7 - 2px)`;
+
+              return (
+                <div
+                  key={b.id}
+                  className={`absolute rounded-md px-1.5 py-1 overflow-hidden text-[10px] leading-tight z-10 border border-dashed border-current/30 opacity-60 cursor-pointer hover:opacity-80 transition-opacity ${blockColor.bg} ${blockColor.text}`}
+                  style={{
+                    top: `${topOffset}px`,
+                    height: `${height}px`,
+                    left: leftCalc,
+                    width: widthCalc,
+                    backgroundImage: 'repeating-linear-gradient(135deg, transparent, transparent 4px, currentColor 4px, currentColor 5px)',
+                    backgroundSize: '8px 8px',
+                    backgroundClip: 'padding-box',
+                  }}
+                  onClick={() => onEditBlock?.(b.id)}
+                  title={`${blockTypeInfo?.icon || ''} ${b.title}`}
+                >
+                  <div className="font-semibold truncate bg-background/70 rounded px-0.5 inline-block">
+                    {blockTypeInfo?.icon} {b.title}
+                  </div>
                 </div>
               );
             });

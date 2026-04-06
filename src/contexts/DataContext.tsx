@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
-import { Facility, FacilityContact, TermsSnapshot, Shift, Invoice, InvoiceLineItem, InvoicePayment, InvoiceActivity, EmailLog } from '@/types';
+import { Facility, FacilityContact, TermsSnapshot, Shift, Invoice, InvoiceLineItem, InvoicePayment, InvoiceActivity, EmailLog, TimeBlock } from '@/types';
 import { ContractChecklistItem } from '@/types/contracts';
 import {
   seedFacilities, seedContacts, seedTerms, seedShifts, seedInvoices, seedLineItems, seedEmailLogs, seedChecklistItems,
@@ -44,6 +44,7 @@ interface DataContextType {
   activities: InvoiceActivity[];
   emailLogs: EmailLog[];
   checklistItems: ContractChecklistItem[];
+  timeBlocks: TimeBlock[];
   dataLoading: boolean;
   addFacility: (facility: Omit<Facility, 'id'>) => Promise<Facility>;
   updateFacility: (facility: Facility) => Promise<void>;
@@ -64,6 +65,9 @@ interface DataContextType {
   addPayment: (payment: Omit<InvoicePayment, 'id'>) => Promise<void>;
   addActivity: (activity: Omit<InvoiceActivity, 'id' | 'created_at'>) => Promise<void>;
   addEmailLog: (log: Omit<EmailLog, 'id'>) => Promise<void>;
+  addTimeBlock: (block: Omit<TimeBlock, 'id'>) => Promise<void>;
+  updateTimeBlock: (block: TimeBlock) => Promise<void>;
+  deleteTimeBlock: (id: string) => Promise<void>;
   getComputedInvoiceStatus: (invoice: Invoice) => Invoice['status'];
 }
 
@@ -83,6 +87,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
   const [payments, setPayments] = useState<InvoicePayment[]>([]);
   const [activities, setActivities] = useState<InvoiceActivity[]>([]);
   const [checklistItems, setChecklistItems] = useState<ContractChecklistItem[]>(isDemo ? seedChecklistItems : []);
+  const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>([]);
 
   useEffect(() => {
     if (isDemo || !user) return;
@@ -101,6 +106,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
       .on('postgres_changes', { event: '*', schema: 'public', table: 'invoice_activity' }, () => refetchTable('invoice_activity'))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'email_logs' }, () => refetchTable('email_logs'))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'contract_checklist_items' }, () => refetchTable('contract_checklist_items'))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'time_blocks' }, () => refetchTable('time_blocks'))
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
@@ -120,12 +126,13 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
       case 'invoice_activity': setActivities((data || []).map(stripDbFieldsKeepTimestamp)); break;
       case 'email_logs': setEmailLogs(rows); break;
       case 'contract_checklist_items': setChecklistItems(rows); break;
+      case 'time_blocks': setTimeBlocks(rows); break;
     }
   }
 
   async function fetchAll() {
     try {
-      const [fRes, cRes, tRes, sRes, iRes, liRes, eRes, pRes, aRes, clRes] = await Promise.all([
+      const [fRes, cRes, tRes, sRes, iRes, liRes, eRes, pRes, aRes, clRes, tbRes] = await Promise.all([
         db('facilities').select('*').order('created_at'),
         db('facility_contacts').select('*').order('created_at'),
         db('terms_snapshots').select('*').order('created_at'),
@@ -136,6 +143,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
         db('invoice_payments').select('*').order('created_at'),
         db('invoice_activity').select('*').order('created_at'),
         db('contract_checklist_items').select('*').order('created_at'),
+        db('time_blocks').select('*').order('start_datetime'),
       ]);
       setFacilities((fRes.data || []).map(stripDbFields));
       setContacts((cRes.data || []).map(stripDbFields));
@@ -147,6 +155,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
       setPayments((pRes.data || []).map(stripDbFields));
       setActivities((aRes.data || []).map(stripDbFieldsKeepTimestamp));
       setChecklistItems((clRes.data || []).map(stripDbFields));
+      setTimeBlocks((tbRes.data || []).map(stripDbFields));
     } catch (err: any) {
       console.error('Failed to load data:', err);
       toast.error('Failed to load data');
@@ -567,6 +576,29 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     setActivities(prev => [...prev, stripDbFieldsKeepTimestamp(data) as InvoiceActivity]);
   }, [isDemo, user]);
 
+  // ─── Time Blocks ─────────────────────────────────────────
+  const addTimeBlock = useCallback(async (b: Omit<TimeBlock, 'id'>) => {
+    if (isDemo) { setTimeBlocks(prev => [...prev, { ...b, id: generateId() }]); return; }
+    const { data, error } = await db('time_blocks').insert({ user_id: user!.id, ...b }).select().single();
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
+    setTimeBlocks(prev => [...prev, stripDbFields(data) as TimeBlock]);
+  }, [isDemo, user]);
+
+  const updateTimeBlock = useCallback(async (b: TimeBlock) => {
+    if (isDemo) { setTimeBlocks(prev => prev.map(x => x.id === b.id ? b : x)); return; }
+    const { id, ...rest } = b;
+    const { error } = await db('time_blocks').update(rest).eq('id', id);
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
+    setTimeBlocks(prev => prev.map(x => x.id === b.id ? b : x));
+  }, [isDemo, user]);
+
+  const deleteTimeBlock = useCallback(async (id: string) => {
+    if (isDemo) { setTimeBlocks(prev => prev.filter(x => x.id !== id)); return; }
+    const { error } = await db('time_blocks').delete().eq('id', id);
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
+    setTimeBlocks(prev => prev.filter(x => x.id !== id));
+  }, [isDemo, user]);
+
   // ─── Computed ────────────────────────────────────────────
 
   const getComputedInvoiceStatus = useCallback((invoice: Invoice) => {
@@ -583,7 +615,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
 
   return (
     <DataContext.Provider value={{
-      facilities, contacts, terms, shifts, invoices, lineItems, payments, activities, emailLogs, checklistItems, dataLoading,
+      facilities, contacts, terms, shifts, invoices, lineItems, payments, activities, emailLogs, checklistItems, timeBlocks, dataLoading,
       addFacility, updateFacility, deleteFacility,
       addContact, updateContact, deleteContact,
       updateTerms,
@@ -592,6 +624,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
       addLineItem, updateLineItem, deleteLineItem,
       addPayment, addActivity,
       addEmailLog,
+      addTimeBlock, updateTimeBlock, deleteTimeBlock,
       getComputedInvoiceStatus,
     }}>
       {children}
