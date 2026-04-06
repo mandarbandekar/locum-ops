@@ -57,6 +57,9 @@ export function useExpenses() {
     if (isDemo || !user) { setLoading(false); return; }
     setLoading(true);
     try {
+      // Trigger recurring expense generation in the background
+      supabase.functions.invoke('generate-recurring-expenses').catch(() => {});
+
       const [eRes, cRes] = await Promise.all([
         db('expenses').select('*').order('expense_date', { ascending: false }),
         db('expense_config').select('*').maybeSingle(),
