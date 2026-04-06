@@ -66,7 +66,28 @@ export function useTaxAdvisor() {
   const [loading, setLoading] = useState(true);
 
   const fetchAll = useCallback(async () => {
-    if (!user || isDemo) { setLoading(false); return; }
+    if (!user || isDemo) {
+      if (isDemo) {
+        setProfile({
+          id: 'demo-profile', user_id: 'demo', entity_type: 'sole_prop',
+          travels_for_ce: true, uses_personal_vehicle: true, multi_state_work: false,
+          pays_own_subscriptions: true, retirement_planning_interest: true,
+          combines_business_personal_travel: false, buys_supplies_equipment: true,
+          notes: null, scorp_assessment_result: null,
+        });
+        setQuestions([
+          { id: 'dq1', question_text: 'Can I deduct my veterinary license renewal fees?', topic: 'credentials_memberships', saved_from_session_id: null, include_in_summary: true, created_at: new Date().toISOString() },
+          { id: 'dq2', question_text: 'Should I switch to S-Corp given my current income level?', topic: 'entity_structure', saved_from_session_id: null, include_in_summary: true, created_at: new Date().toISOString() },
+        ]);
+        setReviewItems(OPPORTUNITY_CATEGORIES.map((cat, i) => ({
+          id: `demo-rev-${i}`, category: cat.key,
+          status: i < 2 ? 'saved_for_cpa' : i < 4 ? 'reviewing' : 'not_started',
+          notes: i === 0 ? 'Have $2,400 in CE expenses this year' : null,
+          last_reviewed_at: i < 4 ? new Date().toISOString() : null,
+        })));
+      }
+      setLoading(false); return;
+    }
     try {
       const [profRes, sessRes, qRes, revRes] = await Promise.all([
         supabase.from('tax_advisor_profiles').select('*').eq('user_id', user.id).maybeSingle(),

@@ -115,12 +115,33 @@ export default function TrackerTab({ isScorp = false }: TrackerTabProps) {
   useEffect(() => {
     if (isDemo) {
       const defaults = getDefaultDueDates(selectedYear);
-      setQuarterStatuses([1, 2, 3, 4].map(q => ({
-        quarter: q, tax_year: selectedYear, due_date: defaults[q], status: 'not_started', notes: '',
+      const isCurrentYear = selectedYear === new Date().getFullYear();
+      const cq = Math.ceil((new Date().getMonth() + 1) / 3);
+      const demoStatuses: Array<{ status: string; notes: string }> = isCurrentYear
+        ? [
+            { status: cq > 1 ? 'paid' : 'not_started', notes: cq > 1 ? 'Paid via EFTPS on time' : '' },
+            { status: cq > 2 ? 'paid' : cq === 2 ? 'scheduled' : 'not_started', notes: cq >= 2 ? 'Confirmed amount with CPA' : '' },
+            { status: cq > 3 ? 'paid' : cq === 3 ? 'discussed' : 'not_started', notes: cq >= 3 ? 'Reviewed with accountant — increase due to higher Q3 income' : '' },
+            { status: 'not_started', notes: '' },
+          ]
+        : [
+            { status: 'paid', notes: 'Paid on time' },
+            { status: 'paid', notes: 'Paid on time' },
+            { status: 'paid', notes: 'Paid on time' },
+            { status: 'paid', notes: 'Paid — included year-end adjustment' },
+          ];
+      setQuarterStatuses([1, 2, 3, 4].map((q, i) => ({
+        quarter: q, tax_year: selectedYear, due_date: defaults[q],
+        status: demoStatuses[i].status, notes: demoStatuses[i].notes,
       })));
+      const demoCompleted = ['entity_setup', 'cpa_consulted', 'deductions_reviewed'];
       setChecklist(DEFAULT_CHECKLIST_ITEMS.map(item => ({
-        item_key: item.key, label: item.label, completed: false, completed_at: null, ignored: false,
+        item_key: item.key, label: item.label,
+        completed: isCurrentYear && demoCompleted.includes(item.key),
+        completed_at: isCurrentYear && demoCompleted.includes(item.key) ? new Date().toISOString() : null,
+        ignored: false,
       })));
+      setSettings({ set_aside_mode: 'percent', set_aside_percent: 30, set_aside_fixed_monthly: 0 });
       setLoading(false);
       return;
     }
