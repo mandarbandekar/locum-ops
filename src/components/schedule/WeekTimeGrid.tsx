@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useMemo, DragEvent } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { format, isSameDay, getHours, getMinutes } from 'date-fns';
-import { SHIFT_COLORS } from '@/types';
+import { SHIFT_COLORS, BLOCK_COLORS, BLOCK_TYPES, TimeBlock } from '@/types';
 import { getMarkersForDay } from '@/lib/calendarMarkers';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { CalendarEvent } from '@/hooks/useCalendarEvents';
@@ -20,9 +20,11 @@ interface WeekTimeGridProps {
   onCellClick?: (date: Date, hour: number) => void;
   calendarFilters?: { credentials: boolean; subscriptions: boolean };
   getEventsForDay?: (day: Date, filters: { credentials: boolean; subscriptions: boolean }) => CalendarEvent[];
+  timeBlocks?: TimeBlock[];
+  onEditBlock?: (id: string) => void;
 }
 
-export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, onDropOnTime, onCellClick, calendarFilters, getEventsForDay }: WeekTimeGridProps) {
+export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, onDropOnTime, onCellClick, calendarFilters, getEventsForDay, timeBlocks = [], onEditBlock }: WeekTimeGridProps) {
   const [dragOverCell, setDragOverCell] = useState<string | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 
