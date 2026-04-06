@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Plus, Trash2, Search, Receipt, Car, DollarSign, TrendingUp, CalendarDays, MapPin, CheckCircle2, AlertCircle, Info, Hash } from 'lucide-react';
+import { Plus, Trash2, Search, Receipt, Car, DollarSign, TrendingUp, CalendarDays, MapPin, CheckCircle2, AlertCircle, Info, Hash, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
@@ -15,6 +15,7 @@ import { EXPENSE_CATEGORIES, findSubcategory } from '@/lib/expenseCategories';
 import AddExpenseDialog from './AddExpenseDialog';
 import { ExpenseOnboarding } from './ExpenseOnboarding';
 import ExpenseCategoryGrid from './ExpenseCategoryGrid';
+
 import { MileageReviewBanner } from './MileageReviewBanner';
 import MileageBackfillCard from './MileageBackfillCard';
 import type { Expense } from '@/hooks/useExpenses';
@@ -55,6 +56,9 @@ export default function ExpenseLogTab({
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [initialSubcategory, setInitialSubcategory] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<Expense | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    return localStorage.getItem('expense-onboarding-dismissed') !== 'true';
+  });
 
   const homeAddressSet = !!(userProfile as any)?.home_address;
   const irsRate = config.irs_mileage_rate_cents;
@@ -105,8 +109,26 @@ export default function ExpenseLogTab({
   return (
     <div className="space-y-5">
 
-      {/* Welcome header for new users OR YTD stats for returning users */}
-      {!hasExpenses ? (
+      {/* Dismissible onboarding for new users */}
+      {!hasExpenses && showOnboarding && (
+        <div className="relative">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute top-2 right-2 h-7 w-7 z-10 text-muted-foreground hover:text-foreground"
+            onClick={() => {
+              setShowOnboarding(false);
+              localStorage.setItem('expense-onboarding-dismissed', 'true');
+            }}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+          <ExpenseOnboarding onAddExpense={openNew} />
+        </div>
+      )}
+
+      {/* Welcome header for new users (always visible) OR YTD stats for returning users */}
+      {!hasExpenses && !showOnboarding ? (
         <Card className="border-primary/20 bg-primary/5">
           <CardContent className="py-6 px-4 text-center space-y-2">
             <div className="mx-auto w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -118,7 +140,7 @@ export default function ExpenseLogTab({
             </p>
           </CardContent>
         </Card>
-      ) : (
+      ) : hasExpenses ? (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             { label: 'YTD Spent', value: fmt(ytdTotalCents), icon: DollarSign, color: 'text-primary' },
@@ -137,7 +159,7 @@ export default function ExpenseLogTab({
             </Card>
           ))}
         </div>
-      )}
+      ) : null}
 
       {/* Category Grid — primary entry point */}
       <ExpenseCategoryGrid onSelectCategory={openCategoryAdd} />
