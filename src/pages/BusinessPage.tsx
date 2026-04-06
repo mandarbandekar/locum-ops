@@ -21,7 +21,8 @@ export default function BusinessPage() {
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
 
-    const ytdPaid = invoices
+    // Paid invoices
+    const paidTotal = invoices
       .filter(i => i.status === 'paid' && i.paid_at && new Date(i.paid_at).getFullYear() === year)
       .reduce((s, i) => s + i.total_amount, 0);
 
@@ -35,13 +36,21 @@ export default function BusinessPage() {
       if (status === 'overdue') overdueCount++;
     });
 
+    // Uninvoiced shift revenue
+    const invoicedShiftIds = new Set(lineItems.map(li => li.shift_id).filter(Boolean));
+    const uninvoicedRevenue = shifts
+      .filter(s => new Date(s.start_datetime).getFullYear() === year && !invoicedShiftIds.has(s.id))
+      .reduce((sum, s) => sum + (s.rate_applied || 0), 0);
+
+    const ytdAnticipated = paidTotal + outstanding + uninvoicedRevenue;
+
     const monthShifts = shifts.filter(s => {
       const d = new Date(s.start_datetime);
       return d >= monthStart && d <= monthEnd;
     }).length;
 
-    return { ytdPaid, outstanding, overdueCount, monthShifts };
-  }, [invoices, shifts]);
+    return { ytdAnticipated, outstanding, overdueCount, monthShifts };
+  }, [invoices, shifts, lineItems]);
 
   // Attention badges
   const badges = useMemo(() => {
