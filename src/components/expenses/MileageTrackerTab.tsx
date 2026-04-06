@@ -9,6 +9,7 @@ import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useData } from '@/contexts/DataContext';
 import { MileageOnboarding } from './MileageOnboarding';
 import { MileageReviewBanner } from './MileageReviewBanner';
+import MileageBackfillCard from './MileageBackfillCard';
 import type { Expense } from '@/hooks/useExpenses';
 
 const MILEAGE_ONBOARDING_KEY = 'locumops_mileage_tab_onboarding_dismissed';
