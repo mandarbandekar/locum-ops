@@ -245,8 +245,9 @@ export default function SchedulePage() {
               onClick={(e) => { e.stopPropagation(); setEditShift(s.id); }}
               title={`${getFacilityName(s.facility_id)} — drag to reschedule`}
             >
-              <div className="truncate font-semibold">{format(start, 'ha').toLowerCase()}–{format(end, 'ha').toLowerCase()} {getFacilityName(s.facility_id).split(' ')[0]}</div>
-              <div className="truncate opacity-80">${s.rate_applied} · {hrs}h</div>
+              <div className="font-semibold truncate leading-tight">{getFacilityName(s.facility_id)}</div>
+              <div className="truncate opacity-80">{format(start, 'h:mma').toLowerCase()}–{format(end, 'h:mma').toLowerCase()}</div>
+              <div className="truncate opacity-70">${s.rate_applied}/hr · {hrs}h</div>
             </div>
           );
         })}
