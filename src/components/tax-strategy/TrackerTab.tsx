@@ -11,22 +11,29 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { DollarSign, CalendarDays, CheckCircle2, AlertCircle, EyeOff, ChevronDown, TrendingUp, TrendingDown, Building2 } from 'lucide-react';
+import {
+  DollarSign, CalendarDays, CheckCircle2, AlertCircle, EyeOff,
+  ChevronDown, ChevronRight, TrendingUp, TrendingDown, Building2,
+  Calculator, Settings2, Receipt, ArrowRight,
+} from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
 import {
   aggregateQuarterlyIncome,
   calculateSetAside,
   getDefaultDueDates,
+  estimateTotalTax,
+  estimateQuarterlyInstallments,
+  type FilingStatus,
 } from '@/lib/taxCalculations';
 
 const db = (table: string) => supabase.from(table as any);
 
 const STATUS_OPTIONS = [
-  { value: 'not_started', label: 'Not started' },
-  { value: 'discussed', label: 'Reviewed with CPA' },
-  { value: 'scheduled', label: 'Payment scheduled' },
-  { value: 'paid', label: 'Paid' },
+  { value: 'not_started', label: 'Not started', icon: '○' },
+  { value: 'discussed', label: 'Reviewed with CPA', icon: '💬' },
+  { value: 'scheduled', label: 'Payment scheduled', icon: '📅' },
+  { value: 'paid', label: 'Paid', icon: '✓' },
 ];
 
 const DEFAULT_CHECKLIST_ITEMS: { key: string; label: string; instruction: string; quarter?: number }[] = [
@@ -70,8 +77,14 @@ interface ChecklistItem {
 }
 
 function fmt(n: number) {
+  return n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+
+function fmtDetailed(n: number) {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
+
+const QUARTER_LABELS = ['Jan – Mar', 'Apr – Jun', 'Jul – Sep', 'Oct – Dec'];
 
 export default function TrackerTab() {
   const { invoices } = useData();
@@ -81,6 +94,7 @@ export default function TrackerTab() {
   const currentQuarter = Math.ceil((now.getMonth() + 1) / 3);
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [loading, setLoading] = useState(!isDemo);
+  const [expandedQuarter, setExpandedQuarter] = useState<number | null>(currentQuarter);
 
   const [settings, setSettings] = useState<TaxSettings>({
     set_aside_mode: 'percent',
@@ -184,8 +198,8 @@ export default function TrackerTab() {
 
   async function toggleChecklist(idx: number) {
     const item = checklist[idx];
-    const now = new Date().toISOString();
-    const updated = { ...item, completed: !item.completed, completed_at: !item.completed ? now : null, ignored: false };
+    const nowStr = new Date().toISOString();
+    const updated = { ...item, completed: !item.completed, completed_at: !item.completed ? nowStr : null, ignored: false };
     setChecklist(prev => prev.map((c, i) => i === idx ? updated : c));
 
     if (isDemo || !user) return;
@@ -203,25 +217,34 @@ export default function TrackerTab() {
     toast.success(item.ignored ? `"${item.label}" restored` : `"${item.label}" ignored`);
   }
 
+  // ── Computed Values ──
   const quarterlyIncome = useMemo(() => aggregateQuarterlyIncome(invoices, selectedYear), [invoices, selectedYear]);
   const setAsideData = useMemo(() => calculateSetAside(quarterlyIncome, settings.set_aside_mode, settings.set_aside_percent, settings.set_aside_fixed_monthly), [quarterlyIncome, settings]);
   const totalIncome = quarterlyIncome.reduce((s, q) => s + q.income, 0);
   const totalSetAside = setAsideData.reduce((s, q) => s + q.amount, 0);
 
-  // Simple estimated tax = income × reserve %
-  const estimatedTax = settings.set_aside_mode === 'percent'
-    ? Math.round(totalIncome * (settings.set_aside_percent / 100) * 100) / 100
-    : Math.round(settings.set_aside_fixed_monthly * 12 * 100) / 100;
+  // Real tax estimate using IRS brackets
+  const filingStatus: FilingStatus = 'single'; // Default, could be made configurable
+  const taxEstimate = useMemo(() => estimateTotalTax(totalIncome, filingStatus, 0), [totalIncome]);
 
-  const reserveDelta = totalSetAside - estimatedTax;
+  // Annualized income installment method for quarterly payments
+  const quarterlyInstallments = useMemo(
+    () => estimateQuarterlyInstallments(quarterlyIncome, filingStatus, 0),
+    [quarterlyIncome]
+  );
+
+  const monthsElapsed = Math.max(1, now.getMonth() + 1);
+  const annualizedIncome = (totalIncome / monthsElapsed) * 12;
+  const annualizedEstimate = useMemo(() => estimateTotalTax(annualizedIncome, filingStatus, 0), [annualizedIncome]);
+  const showScorpNudge = annualizedIncome >= 80000 && totalIncome > 0;
 
   const activeChecklist = checklist.filter(c => !c.ignored);
   const completedCount = activeChecklist.filter(c => c.completed).length;
   const readinessPercent = activeChecklist.length > 0 ? Math.round((completedCount / activeChecklist.length) * 100) : 0;
-  const incompleteItems = checklist.filter(c => !c.completed && !c.ignored);
+
+  const paidQuarters = quarterStatuses.filter(q => q.status === 'paid').length;
 
   const nextDue = useMemo(() => {
-    const now = new Date();
     const upcoming = quarterStatuses
       .filter(q => new Date(q.due_date) >= now && q.status !== 'paid')
       .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
@@ -232,22 +255,95 @@ export default function TrackerTab() {
     return DEFAULT_CHECKLIST_ITEMS.find(d => d.key === itemKey)?.instruction || '';
   }
 
-  // Annualize YTD income for S-Corp nudge
-  const monthsElapsed = Math.max(1, now.getMonth() + 1);
-  const annualizedIncome = (totalIncome / monthsElapsed) * 12;
-  const showScorpNudge = annualizedIncome >= 80000 && totalIncome > 0;
+  function getStatusColor(status: string) {
+    switch (status) {
+      case 'paid': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border-green-200 dark:border-green-800';
+      case 'scheduled': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 border-blue-200 dark:border-blue-800';
+      case 'discussed': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 border-purple-200 dark:border-purple-800';
+      default: return 'bg-muted text-muted-foreground border-border';
+    }
+  }
 
   if (loading) return <p className="text-muted-foreground py-8 text-center">Loading…</p>;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      {/* ═══ TAX SNAPSHOT HERO ═══ */}
+      <Card className="overflow-hidden border-primary/20">
+        <div className="bg-gradient-to-br from-primary/5 via-primary/3 to-transparent p-5 sm:p-6">
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Calculator className="h-5 w-5 text-primary" />
+                {selectedYear} Tax Snapshot
+              </h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Based on ${fmt(totalIncome)} in paid income · Filing as single
+              </p>
+            </div>
+            <Select value={String(selectedYear)} onValueChange={v => setSelectedYear(Number(v))}>
+              <SelectTrigger className="w-[90px] h-8 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>{[currentYear - 1, currentYear, currentYear + 1].map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+
+          {/* Main Tax Numbers */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+            <div className="rounded-xl bg-background/80 backdrop-blur-sm border p-3.5">
+              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">YTD Income</p>
+              <p className="text-2xl font-bold mt-1">${fmt(totalIncome)}</p>
+              {totalIncome > 0 && (
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  ~${fmt(annualizedIncome)} annualized
+                </p>
+              )}
+            </div>
+            <div className="rounded-xl bg-background/80 backdrop-blur-sm border p-3.5">
+              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Estimated Tax</p>
+              <p className="text-2xl font-bold text-destructive mt-1">${fmt(taxEstimate.totalEstimatedTax)}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                {taxEstimate.effectiveRate}% effective rate
+              </p>
+            </div>
+            <div className="rounded-xl bg-background/80 backdrop-blur-sm border p-3.5">
+              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">SE Tax</p>
+              <p className="text-2xl font-bold mt-1">${fmt(taxEstimate.selfEmploymentTax)}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                15.3% on net earnings
+              </p>
+            </div>
+            <div className="rounded-xl bg-background/80 backdrop-blur-sm border p-3.5">
+              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Federal Income Tax</p>
+              <p className="text-2xl font-bold mt-1">${fmt(taxEstimate.federalIncomeTax)}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                After ${fmt(taxEstimate.businessDeductions || 15700)} deduction
+              </p>
+            </div>
+          </div>
+
+          {/* Projection callout */}
+          {totalIncome > 0 && (
+            <div className="rounded-lg bg-background/60 border border-dashed p-3 flex items-center gap-3">
+              <TrendingUp className="h-4 w-4 text-primary shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm">
+                  <span className="font-medium">At this pace</span>, you'll owe roughly{' '}
+                  <span className="font-bold">${fmt(annualizedEstimate.totalEstimatedTax)}</span> for {selectedYear}
+                  {' '}— or about <span className="font-bold">${fmt(annualizedEstimate.quarterlyPayment)}/quarter</span>
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </Card>
+
       {/* S-Corp Nudge */}
       {showScorpNudge && (
         <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 flex items-center gap-3">
           <Building2 className="h-5 w-5 text-primary shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium">Your income may be in the range where an S-Corp structure is commonly reviewed.</p>
-            <p className="text-xs text-muted-foreground">Want to explore if it's worth discussing with your CPA?</p>
+            <p className="text-sm font-medium">Your income may qualify for S-Corp savings.</p>
+            <p className="text-xs text-muted-foreground">Could reduce the 15.3% self-employment tax. Explore below.</p>
           </div>
           <a href="/business?tab=tax-estimate" className="shrink-0">
             <Button variant="outline" size="sm" className="text-xs">Explore S-Corp →</Button>
@@ -255,262 +351,252 @@ export default function TrackerTab() {
         </div>
       )}
 
-      {/* KPI Strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Card>
-          <CardContent className="pt-4 pb-3 px-4">
-            <p className="text-xs text-muted-foreground">Paid Income YTD</p>
-            <p className="text-xl font-bold">${fmt(totalIncome)}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 pb-3 px-4">
-            <p className="text-xs text-muted-foreground">Est. Tax ({settings.set_aside_mode === 'percent' ? `${settings.set_aside_percent}%` : 'fixed'})</p>
-            <p className="text-xl font-bold">${fmt(estimatedTax)}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 pb-3 px-4">
-            <p className="text-xs text-muted-foreground">Your Reserve</p>
-            <p className="text-xl font-bold">${fmt(totalSetAside)}</p>
-            {totalSetAside > 0 && (
-              <p className={`text-xs font-medium ${totalSetAside >= estimatedTax ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
-                {totalSetAside >= estimatedTax ? '✓ Covers estimate' : '⚠ Under estimate'}
-              </p>
-            )}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 pb-3 px-4">
-            <p className="text-xs text-muted-foreground">Next Due</p>
-            <p className="text-xl font-bold">{nextDue ? `Q${nextDue.quarter}` : '—'}</p>
-            {nextDue && <p className="text-xs text-muted-foreground">{new Date(nextDue.due_date).toLocaleDateString()}</p>}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Status Callout */}
-      {totalIncome > 0 && (
-        <div className={`rounded-lg border p-3 flex items-center gap-3 ${
-          reserveDelta >= 0
-            ? 'border-green-300 bg-green-50 dark:bg-green-950/20 dark:border-green-800'
-            : 'border-amber-300 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800'
-        }`}>
-          {reserveDelta >= 0 ? (
-            <TrendingUp className="h-4 w-4 text-green-600 shrink-0" />
-          ) : (
-            <TrendingDown className="h-4 w-4 text-amber-600 shrink-0" />
-          )}
-          <p className={`text-sm ${reserveDelta >= 0 ? 'text-green-800 dark:text-green-300' : 'text-amber-800 dark:text-amber-300'}`}>
-            {reserveDelta >= 0
-              ? "You're on track — your reserve covers your estimated taxes"
-              : `Your reserve is $${fmt(Math.abs(reserveDelta))} short of your estimated taxes — consider setting aside more`
-            }
-          </p>
+      {/* ═══ QUARTERLY PAYMENT GUIDE ═══ */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h3 className="text-base font-semibold flex items-center gap-2">
+              <CalendarDays className="h-4 w-4 text-primary" />
+              Quarterly Payment Guide
+            </h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {paidQuarters}/4 quarters completed · Confirm amounts with your CPA
+            </p>
+          </div>
         </div>
-      )}
 
-      <p className="text-xs text-muted-foreground">Use this as a planning tracker for your relief / locum income. Confirm actual amounts and due dates with your CPA.</p>
-
-      {/* Reserve Preference */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2"><DollarSign className="h-4 w-4" /> Reserve Preference</CardTitle>
-          <p className="text-xs text-muted-foreground">Most relief professionals set aside 25–35% for federal + state taxes. Adjust based on your CPA's recommendation.</p>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <RadioGroup value={settings.set_aside_mode} onValueChange={v => setSettings(s => ({ ...s, set_aside_mode: v as any }))} className="flex gap-4">
-            <div className="flex items-center gap-1.5"><RadioGroupItem value="percent" id="t-pct" /><Label htmlFor="t-pct" className="text-sm">% of paid income</Label></div>
-            <div className="flex items-center gap-1.5"><RadioGroupItem value="fixed" id="t-fix" /><Label htmlFor="t-fix" className="text-sm">Fixed $/month</Label></div>
-          </RadioGroup>
-          <div className="flex gap-4">
-            {settings.set_aside_mode === 'percent' ? (
-              <div className="w-40"><Label>Percent (%)</Label><Input type="number" min={0} max={100} value={settings.set_aside_percent} onChange={e => setSettings(s => ({ ...s, set_aside_percent: Number(e.target.value) }))} /></div>
-            ) : (
-              <div className="w-40"><Label>Monthly ($)</Label><Input type="number" min={0} value={settings.set_aside_fixed_monthly} onChange={e => setSettings(s => ({ ...s, set_aside_fixed_monthly: Number(e.target.value) }))} /></div>
-            )}
-          </div>
-          <Button size="sm" onClick={saveSettings}>Save</Button>
-        </CardContent>
-      </Card>
-
-      {/* Overall Readiness Progress */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-base flex items-center gap-2"><CheckCircle2 className="h-4 w-4" /> Tax Readiness Overview</CardTitle>
-              <p className="text-xs text-muted-foreground mt-1">{completedCount} of {activeChecklist.length} tasks complete · {checklist.filter(c => c.ignored).length} ignored</p>
-            </div>
-            <div className="text-right">
-              <p className="text-2xl font-bold">{readinessPercent}%</p>
-              <p className="text-xs text-muted-foreground">Readiness</p>
-            </div>
-          </div>
-          <Progress value={readinessPercent} className="mt-2" />
-        </CardHeader>
-      </Card>
-
-      {/* Quarterly Statuses with Checklist */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base flex items-center gap-2"><CalendarDays className="h-4 w-4" /> Quarterly Planning & Readiness</CardTitle>
-            <Select value={String(selectedYear)} onValueChange={v => setSelectedYear(Number(v))}>
-              <SelectTrigger className="w-[100px]"><SelectValue /></SelectTrigger>
-              <SelectContent>{[currentYear - 1, currentYear, currentYear + 1].map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {quarterStatuses.map(qs => {
-            const qi = quarterlyIncome.find(q => q.quarter === qs.quarter);
-            const sa = setAsideData.find(q => q.quarter === qs.quarter);
-            const quarterIncome = qi?.income || 0;
-            const quarterEstTax = settings.set_aside_mode === 'percent'
-              ? Math.round(quarterIncome * (settings.set_aside_percent / 100) * 100) / 100
-              : Math.round(settings.set_aside_fixed_monthly * 3 * 100) / 100;
-            const isPast = new Date(qs.due_date) < new Date();
-            const quarterCompletedCount = activeChecklist.filter(c => c.completed).length;
-            const quarterProgress = activeChecklist.length > 0 ? Math.round((quarterCompletedCount / activeChecklist.length) * 100) : 0;
-            const isCurrentQuarter = selectedYear === currentYear && qs.quarter === currentQuarter;
-
-            const quarterHeader = (
-              <div className="flex items-center justify-between w-full">
-                <div className="flex items-center gap-2">
-                  {!isCurrentQuarter && <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-0 -rotate-90" />}
-                  <div>
-                    <p className="font-medium text-base">Q{qs.quarter} — Due {new Date(qs.due_date).toLocaleDateString()}</p>
-                    {isPast && qs.status !== 'paid' && (
-                      <p className="text-xs text-destructive flex items-center gap-1 mt-0.5"><AlertCircle className="h-3 w-3" /> Past due</p>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {!isCurrentQuarter && <span className="text-xs text-muted-foreground">{quarterProgress}%</span>}
-                  <Badge variant={qs.status === 'paid' ? 'default' : 'secondary'}>
-                    {STATUS_OPTIONS.find(o => o.value === qs.status)?.label || qs.status}
-                  </Badge>
-                </div>
-              </div>
-            );
-
-            const quarterBody = (
-              <>
-                {/* Income, Reserve & Est. Tax */}
-                <div className="grid grid-cols-3 gap-2 text-sm">
-                  <p className="text-muted-foreground">Income: <span className="font-medium text-foreground">${fmt(quarterIncome)}</span></p>
-                  <p className="text-muted-foreground">Reserve: <span className="font-medium text-foreground">${fmt(sa?.amount || 0)}</span></p>
-                  <p className="text-muted-foreground">Est. Tax: <span className="font-medium text-foreground">${fmt(quarterEstTax)}</span></p>
-                </div>
-
-                {/* Status Selector */}
-                <div className="flex gap-2 items-end">
-                  <div className="flex-1">
-                    <Select value={qs.status} onValueChange={v => setQuarterStatuses(prev => prev.map(q => q.quarter === qs.quarter ? { ...q, status: v } : q))}>
-                      <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                      <SelectContent>{STATUS_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-                    </Select>
-                  </div>
-                  <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => saveQuarterStatus(qs)}>Save</Button>
-                </div>
-
-                {/* Readiness Progress Bar */}
-                <div className="pt-2 border-t">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-muted-foreground">Readiness Checklist</p>
-                    <span className="text-xs text-muted-foreground">{quarterProgress}%</span>
-                  </div>
-                  <Progress value={quarterProgress} className="h-2 mb-3" />
-
-                  {/* Checklist Items */}
-                  <div className="space-y-1">
-                    {checklist.map((item, i) => {
-                      const instruction = getInstruction(item.item_key);
-                      if (item.ignored) {
-                        return (
-                          <div key={item.item_key} className="flex items-center gap-2 py-1 opacity-50">
-                            <EyeOff className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                            <span className="text-xs text-muted-foreground line-through flex-1">{item.label}</span>
-                            <Button size="sm" variant="ghost" className="h-6 px-2 text-xs text-muted-foreground" onClick={() => toggleIgnore(i)}>Restore</Button>
-                          </div>
-                        );
-                      }
-
-                      return (
-                        <div key={item.item_key} className="rounded-md border px-3 py-2">
-                          <div className="flex items-start gap-3">
-                            <Checkbox checked={item.completed} onCheckedChange={() => toggleChecklist(i)} id={`q${qs.quarter}-${item.item_key}`} className="mt-0.5" />
-                            <div className="flex-1 min-w-0">
-                              <Label htmlFor={`q${qs.quarter}-${item.item_key}`} className={`text-sm cursor-pointer font-medium ${item.completed ? 'line-through text-muted-foreground' : ''}`}>
-                                {item.label}
-                              </Label>
-                              {!item.completed && instruction && (
-                                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{instruction}</p>
-                              )}
-                            </div>
-                            {!item.completed && (
-                              <Button size="sm" variant="ghost" className="h-6 px-2 text-xs text-muted-foreground shrink-0" onClick={() => toggleIgnore(i)} title="Ignore this item">
-                                <EyeOff className="h-3 w-3" />
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Incomplete Reminders */}
-                {incompleteItems.length > 0 && qs.status !== 'paid' && (
-                  <div className="rounded-md bg-warning/10 border border-warning/20 p-3 mt-2">
-                    <p className="text-xs font-medium text-warning mb-1 flex items-center gap-1"><AlertCircle className="h-3 w-3" /> Reminders</p>
-                    <ul className="space-y-0.5">
-                      {incompleteItems.slice(0, 3).map(item => (
-                        <li key={item.item_key} className="text-xs text-muted-foreground">• {item.label}</li>
-                      ))}
-                      {incompleteItems.length > 3 && (
-                        <li className="text-xs text-muted-foreground">+ {incompleteItems.length - 3} more</li>
-                      )}
-                    </ul>
-                  </div>
-                )}
-              </>
-            );
-
-            if (isCurrentQuarter) {
-              return (
-                <Card key={qs.quarter} className="border border-primary/30 shadow-sm">
-                  <CardContent className="p-4 space-y-4">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge variant="default" className="text-[10px] px-1.5 py-0">Current</Badge>
-                    </div>
-                    {quarterHeader}
-                    {quarterBody}
-                  </CardContent>
-                </Card>
-              );
-            }
+        {/* Quarterly Progress Timeline */}
+        <div className="flex items-center gap-0 mb-4 px-2">
+          {[1, 2, 3, 4].map((q, i) => {
+            const qs = quarterStatuses.find(s => s.quarter === q);
+            const isPaid = qs?.status === 'paid';
+            const isCurrent = selectedYear === currentYear && q === currentQuarter;
+            const isPast = qs ? new Date(qs.due_date) < now : false;
 
             return (
-              <Collapsible key={qs.quarter}>
-                <Card className="border">
-                  <CollapsibleTrigger asChild>
-                    <CardContent className="group p-4 cursor-pointer hover:bg-muted/50 transition-colors">
-                      {quarterHeader}
-                    </CardContent>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <CardContent className="p-4 pt-0 space-y-4">
-                      {quarterBody}
-                    </CardContent>
-                  </CollapsibleContent>
-                </Card>
-              </Collapsible>
+              <div key={q} className="flex items-center flex-1">
+                <button
+                  onClick={() => setExpandedQuarter(expandedQuarter === q ? null : q)}
+                  className={`
+                    relative flex flex-col items-center gap-1 flex-1 py-2 rounded-lg transition-all cursor-pointer
+                    ${expandedQuarter === q ? 'bg-primary/10' : 'hover:bg-muted/50'}
+                  `}
+                >
+                  <div className={`
+                    w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all
+                    ${isPaid ? 'bg-green-500 text-white' : ''}
+                    ${isCurrent && !isPaid ? 'bg-primary text-primary-foreground ring-2 ring-primary/30 ring-offset-2 ring-offset-background' : ''}
+                    ${!isPaid && !isCurrent && isPast ? 'bg-destructive/20 text-destructive border border-destructive/30' : ''}
+                    ${!isPaid && !isCurrent && !isPast ? 'bg-muted text-muted-foreground border border-border' : ''}
+                  `}>
+                    {isPaid ? <CheckCircle2 className="h-4 w-4" /> : `Q${q}`}
+                  </div>
+                  <span className="text-[10px] text-muted-foreground">{QUARTER_LABELS[i]}</span>
+                  {isCurrent && !isPaid && (
+                    <span className="absolute -top-1 -right-1 text-[8px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded-full font-medium">
+                      NOW
+                    </span>
+                  )}
+                </button>
+                {i < 3 && (
+                  <div className={`h-0.5 w-4 shrink-0 ${isPaid ? 'bg-green-400' : 'bg-border'}`} />
+                )}
+              </div>
             );
           })}
-        </CardContent>
-      </Card>
+        </div>
+
+        {/* Expanded Quarter Detail */}
+        {expandedQuarter && (() => {
+          const q = expandedQuarter;
+          const qs = quarterStatuses.find(s => s.quarter === q)!;
+          const qi = quarterlyIncome.find(s => s.quarter === q);
+          const installment = quarterlyInstallments.find(s => s.quarter === q);
+          const sa = setAsideData.find(s => s.quarter === q);
+          const quarterIncome = qi?.income || 0;
+          const isPast = new Date(qs.due_date) < now;
+          const isCurrent = selectedYear === currentYear && q === currentQuarter;
+
+          return (
+            <Card className={`border ${isCurrent ? 'border-primary/30 shadow-md' : ''}`}>
+              <CardContent className="p-4 sm:p-5 space-y-4">
+                {/* Quarter Header */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-lg font-semibold">Q{q} — {QUARTER_LABELS[q - 1]}</h4>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-sm text-muted-foreground">
+                        Due {new Date(qs.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </span>
+                      {isPast && qs.status !== 'paid' && (
+                        <Badge variant="destructive" className="text-[10px] px-1.5 py-0">PAST DUE</Badge>
+                      )}
+                    </div>
+                  </div>
+                  <div className={`px-3 py-1.5 rounded-full text-xs font-medium border ${getStatusColor(qs.status)}`}>
+                    {STATUS_OPTIONS.find(o => o.value === qs.status)?.label}
+                  </div>
+                </div>
+
+                {/* Income & Payment Breakdown */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="rounded-lg bg-muted/50 p-3">
+                    <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Quarter Income</p>
+                    <p className="text-lg font-bold mt-1">${fmt(quarterIncome)}</p>
+                    {qi && qi.monthlyBreakdown.length > 0 && (
+                      <div className="mt-1.5 space-y-0.5">
+                        {qi.monthlyBreakdown.map(m => (
+                          <p key={m.month} className="text-[10px] text-muted-foreground flex justify-between">
+                            <span>{m.monthLabel}</span>
+                            <span>${fmt(m.income)}</span>
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="rounded-lg bg-destructive/5 border border-destructive/10 p-3">
+                    <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Suggested Payment</p>
+                    <p className="text-lg font-bold text-destructive mt-1">${fmt(installment?.installmentPayment || 0)}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">IRS annualized method</p>
+                  </div>
+                  <div className="rounded-lg bg-muted/50 p-3">
+                    <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Your Reserve</p>
+                    <p className="text-lg font-bold mt-1">${fmt(sa?.amount || 0)}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      {settings.set_aside_mode === 'percent' ? `${settings.set_aside_percent}% of income` : `$${settings.set_aside_fixed_monthly}/mo`}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Guided Steps */}
+                <div className="rounded-lg border bg-muted/30 p-4">
+                  <p className="text-xs font-semibold mb-3 flex items-center gap-1.5">
+                    <ArrowRight className="h-3.5 w-3.5 text-primary" />
+                    Steps for Q{q}
+                  </p>
+                  <div className="space-y-2">
+                    {[
+                      { label: 'Review your income for this quarter', done: quarterIncome > 0 },
+                      { label: 'Set your reserve percentage', done: settings.set_aside_percent > 0 },
+                      { label: 'Review with your CPA', done: qs.status === 'discussed' || qs.status === 'scheduled' || qs.status === 'paid' },
+                      { label: 'Schedule or pay estimated tax', done: qs.status === 'scheduled' || qs.status === 'paid' },
+                      { label: 'Mark as paid', done: qs.status === 'paid' },
+                    ].map((step, i) => (
+                      <div key={i} className="flex items-center gap-2.5">
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold ${
+                          step.done
+                            ? 'bg-green-500 text-white'
+                            : 'bg-background border-2 border-muted-foreground/30 text-muted-foreground'
+                        }`}>
+                          {step.done ? '✓' : i + 1}
+                        </div>
+                        <span className={`text-sm ${step.done ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
+                          {step.label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Status Update */}
+                <div className="flex gap-2 items-end">
+                  <div className="flex-1">
+                    <Label className="text-xs text-muted-foreground mb-1 block">Update Status</Label>
+                    <Select value={qs.status} onValueChange={v => setQuarterStatuses(prev => prev.map(q2 => q2.quarter === qs.quarter ? { ...q2, status: v } : q2))}>
+                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>{STATUS_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.icon} {o.label}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <Button size="sm" onClick={() => saveQuarterStatus(qs)}>Save</Button>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })()}
+      </div>
+
+      {/* ═══ RESERVE SETTINGS (collapsible) ═══ */}
+      <Collapsible>
+        <CollapsibleTrigger className="flex items-center gap-2 w-full text-left py-2 px-1 group">
+          <Settings2 className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-medium flex-1">Reserve Settings</span>
+          <span className="text-xs text-muted-foreground mr-2">
+            {settings.set_aside_mode === 'percent' ? `${settings.set_aside_percent}%` : `$${settings.set_aside_fixed_monthly}/mo`}
+          </span>
+          <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <Card className="mt-2">
+            <CardContent className="p-4 space-y-4">
+              <p className="text-xs text-muted-foreground">Most relief professionals set aside 25–35% for federal + state taxes. Adjust based on your CPA's recommendation.</p>
+              <RadioGroup value={settings.set_aside_mode} onValueChange={v => setSettings(s => ({ ...s, set_aside_mode: v as any }))} className="flex gap-4">
+                <div className="flex items-center gap-1.5"><RadioGroupItem value="percent" id="t-pct" /><Label htmlFor="t-pct" className="text-sm">% of paid income</Label></div>
+                <div className="flex items-center gap-1.5"><RadioGroupItem value="fixed" id="t-fix" /><Label htmlFor="t-fix" className="text-sm">Fixed $/month</Label></div>
+              </RadioGroup>
+              <div className="flex gap-4 items-end">
+                {settings.set_aside_mode === 'percent' ? (
+                  <div className="w-40"><Label>Percent (%)</Label><Input type="number" min={0} max={100} value={settings.set_aside_percent} onChange={e => setSettings(s => ({ ...s, set_aside_percent: Number(e.target.value) }))} /></div>
+                ) : (
+                  <div className="w-40"><Label>Monthly ($)</Label><Input type="number" min={0} value={settings.set_aside_fixed_monthly} onChange={e => setSettings(s => ({ ...s, set_aside_fixed_monthly: Number(e.target.value) }))} /></div>
+                )}
+                <Button size="sm" onClick={saveSettings}>Save</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </CollapsibleContent>
+      </Collapsible>
+
+      {/* ═══ TAX READINESS CHECKLIST (collapsible) ═══ */}
+      <Collapsible>
+        <CollapsibleTrigger className="flex items-center gap-2 w-full text-left py-2 px-1 group">
+          <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-medium flex-1">Tax Readiness Checklist</span>
+          <div className="flex items-center gap-2 mr-2">
+            <Progress value={readinessPercent} className="h-1.5 w-16" />
+            <span className="text-xs text-muted-foreground">{readinessPercent}%</span>
+          </div>
+          <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <Card className="mt-2">
+            <CardContent className="p-4 space-y-1.5">
+              <p className="text-xs text-muted-foreground mb-3">{completedCount} of {activeChecklist.length} tasks · {checklist.filter(c => c.ignored).length} hidden</p>
+              {checklist.map((item, i) => {
+                const instruction = getInstruction(item.item_key);
+                if (item.ignored) {
+                  return (
+                    <div key={item.item_key} className="flex items-center gap-2 py-1 opacity-50">
+                      <EyeOff className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      <span className="text-xs text-muted-foreground line-through flex-1">{item.label}</span>
+                      <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={() => toggleIgnore(i)}>Restore</Button>
+                    </div>
+                  );
+                }
+                return (
+                  <div key={item.item_key} className="rounded-md border px-3 py-2">
+                    <div className="flex items-start gap-3">
+                      <Checkbox checked={item.completed} onCheckedChange={() => toggleChecklist(i)} id={`cl-${item.item_key}`} className="mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <Label htmlFor={`cl-${item.item_key}`} className={`text-sm cursor-pointer font-medium ${item.completed ? 'line-through text-muted-foreground' : ''}`}>
+                          {item.label}
+                        </Label>
+                        {!item.completed && instruction && (
+                          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{instruction}</p>
+                        )}
+                      </div>
+                      {!item.completed && (
+                        <Button size="sm" variant="ghost" className="h-6 px-2 text-xs text-muted-foreground shrink-0" onClick={() => toggleIgnore(i)} title="Ignore">
+                          <EyeOff className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   );
 }
