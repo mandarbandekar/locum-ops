@@ -300,7 +300,7 @@ export default function FinancialHealthTab() {
                 variant="ghost"
                 size="sm"
                 className="text-xs gap-1"
-                onClick={() => navigate('/tax-estimate')}
+                onClick={() => navigate('/tax-center?tab=tax-estimate')}
               >
                 View detailed tax estimate <ArrowRight className="h-3 w-3" />
               </Button>
