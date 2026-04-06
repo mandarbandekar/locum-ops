@@ -32,7 +32,7 @@ export default function MileageTrackerTab({
   confirmMileage, dismissMileage, confirmAllMileage,
 }: Props) {
   const navigate = useNavigate();
-  const { userProfile } = useUserProfile();
+  const { profile: userProfile } = useUserProfile();
   const { facilities } = useData();
   const [showOnboarding, setShowOnboarding] = useState(
     () => !localStorage.getItem(MILEAGE_ONBOARDING_KEY)
@@ -145,6 +145,7 @@ export default function MileageTrackerTab({
         onConfirm={confirmMileage}
         onDismiss={dismissMileage}
         onConfirmAll={confirmAllMileage}
+        onEdit={() => {}}
       />
 
       {/* Confirmed Mileage Log */}
