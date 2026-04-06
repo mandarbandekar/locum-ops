@@ -141,6 +141,9 @@ export default function MileageTrackerTab({
         </CardContent>
       </Card>
 
+      {/* Backfill Past Shifts */}
+      <MileageBackfillCard onComplete={reload} />
+
       {/* Pending Review */}
       <MileageReviewBanner
         drafts={draftMileageExpenses}
