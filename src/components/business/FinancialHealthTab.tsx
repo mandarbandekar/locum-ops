@@ -15,7 +15,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { ChevronDown, FileText, Receipt, Shield, AlertTriangle, CheckCircle2, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { format, parseISO, differenceInDays, startOfMonth, eachMonthOfInterval, subMonths, endOfMonth, isWithinInterval } from 'date-fns';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 const db = (table: string) => supabase.from(table as any);
 const fmtDollars = (cents: number) => `$${(cents / 100).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
@@ -36,7 +36,7 @@ function SectionHeader({ title, icon: Icon, open, onToggle }: { title: string; i
 export default function FinancialHealthTab() {
   const { invoices, facilities, payments } = useData();
   const { user, isDemo } = useAuth();
-  const [, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const expenseData = useExpenses();
 
   const [openSections, setOpenSections] = useState({ revenue: true, cashflow: true, taxReserve: true, expenses: true });
@@ -300,7 +300,7 @@ export default function FinancialHealthTab() {
                 variant="ghost"
                 size="sm"
                 className="text-xs gap-1"
-                onClick={() => setSearchParams({ tab: 'tax-estimate' }, { replace: true })}
+                onClick={() => navigate('/tax-estimate')}
               >
                 View detailed tax estimate <ArrowRight className="h-3 w-3" />
               </Button>
