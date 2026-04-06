@@ -109,6 +109,38 @@ export function useExpenses() {
     return newExp;
   }, [user, isDemo]);
 
+  const editExpense = useCallback(async (id: string, data: Partial<Expense>) => {
+    if (!user) return null;
+    const sub = findSubcategory(data.subcategory || '');
+    const deductibilityType = sub?.deductibilityType || 'full';
+    const deductibleCents = calculateDeductibleCents(data.amount_cents || 0, data.subcategory || '');
+
+    const updates: Record<string, unknown> = {};
+    if (data.expense_date !== undefined) updates.expense_date = data.expense_date;
+    if (data.amount_cents !== undefined) updates.amount_cents = data.amount_cents;
+    if (data.category !== undefined) updates.category = data.category;
+    if (data.subcategory !== undefined) { updates.subcategory = data.subcategory; updates.deductibility_type = deductibilityType; updates.deductible_amount_cents = deductibleCents; }
+    if (data.description !== undefined) updates.description = data.description;
+    if (data.facility_id !== undefined) updates.facility_id = data.facility_id;
+    if (data.receipt_url !== undefined) updates.receipt_url = data.receipt_url;
+    if (data.mileage_miles !== undefined) updates.mileage_miles = data.mileage_miles;
+    if (data.home_office_sqft !== undefined) updates.home_office_sqft = data.home_office_sqft;
+    if (data.prorate_percent !== undefined) updates.prorate_percent = data.prorate_percent;
+
+    if (isDemo) {
+      setExpenses(prev => prev.map(e => e.id === id ? { ...e, ...updates, updated_at: new Date().toISOString() } as Expense : e));
+      toast.success('Expense updated');
+      return;
+    }
+
+    const { data: updated, error } = await db('expenses').update(updates as any).eq('id', id).select().single();
+    if (error) { toast.error('Failed to update expense'); return null; }
+    const exp = updated as any as Expense;
+    setExpenses(prev => prev.map(e => e.id === id ? exp : e));
+    toast.success('Expense updated');
+    return exp;
+  }, [user, isDemo]);
+
   const deleteExpense = useCallback(async (id: string) => {
     if (isDemo) {
       setExpenses(prev => prev.filter(e => e.id !== id));
@@ -153,11 +185,21 @@ export function useExpenses() {
 
   const categoriesTracked = useMemo(() => Object.keys(ytdByCategory).length, [ytdByCategory]);
 
+  // This month's total
+  const thisMonthCents = useMemo(() => {
+    const now = new Date();
+    return expenses.filter(e => {
+      const d = new Date(e.expense_date);
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    }).reduce((s, e) => s + e.amount_cents, 0);
+  }, [expenses]);
+
   return {
     expenses,
     loading,
     config: effectiveConfig,
     addExpense,
+    editExpense,
     deleteExpense,
     uploadReceipt,
     reload: loadExpenses,
@@ -166,5 +208,6 @@ export function useExpenses() {
     ytdByCategory,
     categoriesTracked,
     ytdExpenses,
+    thisMonthCents,
   };
 }

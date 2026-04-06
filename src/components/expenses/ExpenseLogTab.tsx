@@ -4,27 +4,42 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, Receipt, Search, Image } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Plus, Trash2, Search, Receipt, Car, Utensils, GraduationCap, FileText, DollarSign, TrendingUp, CalendarDays } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
-import { EXPENSE_CATEGORIES, findSubcategory, getDeductibilityLabel } from '@/lib/expenseCategories';
+import { EXPENSE_CATEGORIES, findSubcategory } from '@/lib/expenseCategories';
 import AddExpenseDialog from './AddExpenseDialog';
 import { ExpenseOnboarding } from './ExpenseOnboarding';
 import type { Expense } from '@/hooks/useExpenses';
+
+const QUICK_ADD_CHIPS = [
+  { label: 'Mileage', subcategory: 'mileage', icon: Car },
+  { label: 'Business Meal', subcategory: 'business_meals', icon: Utensils },
+  { label: 'CE Course', subcategory: 'ce_courses', icon: GraduationCap },
+  { label: 'License Fee', subcategory: 'state_license', icon: FileText },
+];
 
 interface Props {
   expenses: Expense[];
   loading: boolean;
   config: { irs_mileage_rate_cents: number; home_office_rate_cents: number };
   addExpense: (data: Partial<Expense>) => Promise<Expense | null>;
+  editExpense: (id: string, data: Partial<Expense>) => Promise<any>;
   deleteExpense: (id: string) => Promise<void>;
   uploadReceipt: (file: File) => Promise<string | null>;
+  ytdTotalCents: number;
+  ytdDeductibleCents: number;
+  thisMonthCents: number;
 }
 
-export default function ExpenseLogTab({ expenses, loading, config, addExpense, deleteExpense, uploadReceipt }: Props) {
+export default function ExpenseLogTab({ expenses, loading, config, addExpense, editExpense, deleteExpense, uploadReceipt, ytdTotalCents, ytdDeductibleCents, thisMonthCents }: Props) {
   const { facilities } = useData();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [initialSubcategory, setInitialSubcategory] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<Expense | null>(null);
 
   const filtered = useMemo(() => {
     let list = expenses;
@@ -45,35 +60,73 @@ export default function ExpenseLogTab({ expenses, loading, config, addExpense, d
     return m;
   }, [facilities]);
 
+  function openQuickAdd(subcategory: string) {
+    setEditingExpense(null);
+    setInitialSubcategory(subcategory);
+    setDialogOpen(true);
+  }
+
+  function openNew() {
+    setEditingExpense(null);
+    setInitialSubcategory('');
+    setDialogOpen(true);
+  }
+
+  function openEdit(exp: Expense) {
+    setEditingExpense(exp);
+    setInitialSubcategory('');
+    setDialogOpen(true);
+  }
+
   if (loading) return <p className="text-muted-foreground py-8 text-center">Loading…</p>;
 
   if (expenses.length === 0) {
     return (
       <>
-        <ExpenseOnboarding onAddExpense={() => setDialogOpen(true)} />
-        <AddExpenseDialog
-          open={dialogOpen}
-          onOpenChange={setDialogOpen}
-          onSubmit={addExpense}
-          uploadReceipt={uploadReceipt}
-          config={config}
-        />
+        <ExpenseOnboarding onAddExpense={openNew} />
+        <AddExpenseDialog open={dialogOpen} onOpenChange={setDialogOpen} onSubmit={addExpense} uploadReceipt={uploadReceipt} config={config} />
       </>
     );
   }
 
+  const fmt = (cents: number) => '$' + (cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
   return (
     <div className="space-y-4">
+      {/* YTD Stat Strip */}
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { label: 'YTD Spent', value: fmt(ytdTotalCents), icon: DollarSign, color: 'text-primary' },
+          { label: 'YTD Write-Offs', value: fmt(ytdDeductibleCents), icon: TrendingUp, color: 'text-green-600' },
+          { label: 'This Month', value: fmt(thisMonthCents), icon: CalendarDays, color: 'text-muted-foreground' },
+        ].map(stat => (
+          <Card key={stat.label}>
+            <CardContent className="py-3 px-4 flex items-center gap-2.5">
+              <stat.icon className={`h-4 w-4 ${stat.color} shrink-0`} />
+              <div className="min-w-0">
+                <p className="text-[11px] text-muted-foreground truncate">{stat.label}</p>
+                <p className="font-semibold text-sm">{stat.value}</p>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Quick-add chips */}
+      <div className="flex flex-wrap gap-2">
+        {QUICK_ADD_CHIPS.map(chip => (
+          <Button key={chip.subcategory} variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => openQuickAdd(chip.subcategory)}>
+            <chip.icon className="h-3.5 w-3.5" />
+            {chip.label}
+          </Button>
+        ))}
+      </div>
+
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search expenses…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="pl-9"
-          />
+          <Input placeholder="Search expenses…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
         </div>
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
           <SelectTrigger className="w-[180px]">
@@ -86,7 +139,7 @@ export default function ExpenseLogTab({ expenses, loading, config, addExpense, d
             ))}
           </SelectContent>
         </Select>
-        <Button onClick={() => setDialogOpen(true)}>
+        <Button onClick={openNew}>
           <Plus className="h-4 w-4 mr-1" /> Add Expense
         </Button>
       </div>
@@ -97,7 +150,7 @@ export default function ExpenseLogTab({ expenses, loading, config, addExpense, d
           const sub = findSubcategory(exp.subcategory);
           const catGroup = EXPENSE_CATEGORIES.find(g => g.key === exp.category);
           return (
-            <Card key={exp.id} className="hover:shadow-md transition-shadow">
+            <Card key={exp.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => openEdit(exp)}>
               <CardContent className="py-3 px-4 flex items-center gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -108,7 +161,10 @@ export default function ExpenseLogTab({ expenses, loading, config, addExpense, d
                       {catGroup?.label || exp.category}
                     </Badge>
                     {exp.receipt_url && (
-                      <Image className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      <Badge variant="outline" className="text-[10px] gap-1 text-green-700 border-green-300 bg-green-50 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800 shrink-0">
+                        <Receipt className="h-3 w-3" />
+                        Receipt
+                      </Badge>
                     )}
                   </div>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
@@ -131,7 +187,7 @@ export default function ExpenseLogTab({ expenses, loading, config, addExpense, d
                   variant="ghost"
                   size="icon"
                   className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
-                  onClick={() => deleteExpense(exp.id)}
+                  onClick={(e) => { e.stopPropagation(); setDeleteTarget(exp); }}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>
@@ -148,9 +204,36 @@ export default function ExpenseLogTab({ expenses, loading, config, addExpense, d
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         onSubmit={addExpense}
+        onEdit={editExpense}
         uploadReceipt={uploadReceipt}
         config={config}
+        editingExpense={editingExpense}
+        initialSubcategory={initialSubcategory}
       />
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this expense?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget && (
+                <>
+                  <span className="font-medium">{findSubcategory(deleteTarget.subcategory)?.label || deleteTarget.subcategory}</span>
+                  {' — '}${(deleteTarget.amount_cents / 100).toFixed(2)} on {new Date(deleteTarget.expense_date).toLocaleDateString()}
+                </>
+              )}
+              <br />This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => { if (deleteTarget) { deleteExpense(deleteTarget.id); setDeleteTarget(null); } }}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
