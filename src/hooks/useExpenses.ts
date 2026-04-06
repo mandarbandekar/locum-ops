@@ -1,0 +1,170 @@
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
+import { calculateDeductibleCents, findSubcategory } from '@/lib/expenseCategories';
+
+const db = (table: string) => supabase.from(table as any);
+
+export interface Expense {
+  id: string;
+  user_id: string;
+  expense_date: string;
+  amount_cents: number;
+  category: string;
+  subcategory: string;
+  description: string;
+  facility_id: string | null;
+  shift_id: string | null;
+  receipt_url: string | null;
+  deductible_amount_cents: number;
+  deductibility_type: string;
+  mileage_miles: number | null;
+  home_office_sqft: number | null;
+  prorate_percent: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ExpenseConfig {
+  id: string;
+  user_id: string;
+  irs_mileage_rate_cents: number;
+  home_office_rate_cents: number;
+  tax_year: number;
+}
+
+const DEFAULT_CONFIG: Omit<ExpenseConfig, 'id' | 'user_id'> = {
+  irs_mileage_rate_cents: 70,
+  home_office_rate_cents: 500,
+  tax_year: new Date().getFullYear(),
+};
+
+export function useExpenses() {
+  const { user, isDemo } = useAuth();
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [config, setConfig] = useState<ExpenseConfig | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const loadExpenses = useCallback(async () => {
+    if (isDemo || !user) { setLoading(false); return; }
+    setLoading(true);
+    try {
+      const [eRes, cRes] = await Promise.all([
+        db('expenses').select('*').order('expense_date', { ascending: false }),
+        db('expense_config').select('*').maybeSingle(),
+      ]);
+      if (eRes.data) setExpenses(eRes.data as any as Expense[]);
+      if (cRes.data) setConfig(cRes.data as any as ExpenseConfig);
+    } catch (e) {
+      console.error('Failed to load expenses', e);
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.id, isDemo]);
+
+  useEffect(() => { loadExpenses(); }, [loadExpenses]);
+
+  const effectiveConfig = useMemo(() => ({
+    irs_mileage_rate_cents: config?.irs_mileage_rate_cents ?? DEFAULT_CONFIG.irs_mileage_rate_cents,
+    home_office_rate_cents: config?.home_office_rate_cents ?? DEFAULT_CONFIG.home_office_rate_cents,
+    tax_year: config?.tax_year ?? DEFAULT_CONFIG.tax_year,
+  }), [config]);
+
+  const addExpense = useCallback(async (data: Partial<Expense>) => {
+    if (!user) return null;
+    const sub = findSubcategory(data.subcategory || '');
+    const deductibilityType = sub?.deductibilityType || 'full';
+    const deductibleCents = calculateDeductibleCents(data.amount_cents || 0, data.subcategory || '');
+
+    const row = {
+      user_id: user.id,
+      expense_date: data.expense_date || new Date().toISOString().split('T')[0],
+      amount_cents: data.amount_cents || 0,
+      category: data.category || '',
+      subcategory: data.subcategory || '',
+      description: data.description || '',
+      facility_id: data.facility_id || null,
+      shift_id: data.shift_id || null,
+      receipt_url: data.receipt_url || null,
+      deductible_amount_cents: deductibleCents,
+      deductibility_type: deductibilityType,
+      mileage_miles: data.mileage_miles ?? null,
+      home_office_sqft: data.home_office_sqft ?? null,
+      prorate_percent: data.prorate_percent ?? null,
+    };
+
+    if (isDemo) {
+      const fake: Expense = { ...row, id: crypto.randomUUID(), created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+      setExpenses(prev => [fake, ...prev]);
+      toast.success('Expense logged');
+      return fake;
+    }
+
+    const { data: inserted, error } = await db('expenses').insert(row as any).select().single();
+    if (error) { toast.error('Failed to save expense'); return null; }
+    const newExp = inserted as any as Expense;
+    setExpenses(prev => [newExp, ...prev]);
+    toast.success('Expense logged');
+    return newExp;
+  }, [user, isDemo]);
+
+  const deleteExpense = useCallback(async (id: string) => {
+    if (isDemo) {
+      setExpenses(prev => prev.filter(e => e.id !== id));
+      toast.success('Expense deleted');
+      return;
+    }
+    const { error } = await db('expenses').delete().eq('id', id);
+    if (error) { toast.error('Failed to delete'); return; }
+    setExpenses(prev => prev.filter(e => e.id !== id));
+    toast.success('Expense deleted');
+  }, [isDemo]);
+
+  const uploadReceipt = useCallback(async (file: File): Promise<string | null> => {
+    if (!user) return null;
+    const ext = file.name.split('.').pop() || 'jpg';
+    const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
+    const { error } = await supabase.storage.from('expense-receipts').upload(path, file);
+    if (error) { toast.error('Failed to upload receipt'); return null; }
+    return path;
+  }, [user]);
+
+  // YTD aggregations
+  const currentYear = new Date().getFullYear();
+  const ytdExpenses = useMemo(() =>
+    expenses.filter(e => new Date(e.expense_date).getFullYear() === currentYear),
+  [expenses, currentYear]);
+
+  const ytdTotalCents = useMemo(() => ytdExpenses.reduce((s, e) => s + e.amount_cents, 0), [ytdExpenses]);
+  const ytdDeductibleCents = useMemo(() => ytdExpenses.reduce((s, e) => s + e.deductible_amount_cents, 0), [ytdExpenses]);
+
+  const ytdByCategory = useMemo(() => {
+    const map: Record<string, { totalCents: number; deductibleCents: number; count: number }> = {};
+    ytdExpenses.forEach(e => {
+      const key = e.category;
+      if (!map[key]) map[key] = { totalCents: 0, deductibleCents: 0, count: 0 };
+      map[key].totalCents += e.amount_cents;
+      map[key].deductibleCents += e.deductible_amount_cents;
+      map[key].count += 1;
+    });
+    return map;
+  }, [ytdExpenses]);
+
+  const categoriesTracked = useMemo(() => Object.keys(ytdByCategory).length, [ytdByCategory]);
+
+  return {
+    expenses,
+    loading,
+    config: effectiveConfig,
+    addExpense,
+    deleteExpense,
+    uploadReceipt,
+    reload: loadExpenses,
+    ytdTotalCents,
+    ytdDeductibleCents,
+    ytdByCategory,
+    categoriesTracked,
+    ytdExpenses,
+  };
+}
