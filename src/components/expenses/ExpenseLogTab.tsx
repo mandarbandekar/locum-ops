@@ -49,15 +49,8 @@ export default function ExpenseLogTab({ expenses, loading, config, addExpense, d
 
   if (expenses.length === 0) {
     return (
-      <div className="py-16 text-center space-y-4">
-        <Receipt className="h-12 w-12 text-muted-foreground mx-auto" />
-        <h3 className="text-lg font-semibold">No expenses yet</h3>
-        <p className="text-sm text-muted-foreground max-w-md mx-auto">
-          Every mile and every license fee adds up. Start logging and we'll track what's deductible.
-        </p>
-        <Button onClick={() => setDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-1" /> Log First Expense
-        </Button>
+      <>
+        <ExpenseOnboarding onAddExpense={() => setDialogOpen(true)} />
         <AddExpenseDialog
           open={dialogOpen}
           onOpenChange={setDialogOpen}
@@ -65,7 +58,7 @@ export default function ExpenseLogTab({ expenses, loading, config, addExpense, d
           uploadReceipt={uploadReceipt}
           config={config}
         />
-      </div>
+      </>
     );
   }
 
