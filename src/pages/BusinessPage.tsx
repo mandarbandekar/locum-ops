@@ -1,7 +1,8 @@
-import { Activity, Heart, BarChart3 } from 'lucide-react';
+import { Activity, Heart, BarChart3, Building2 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import FinancialHealthTab from '@/components/business/FinancialHealthTab';
 import PerformanceInsightsTab from '@/components/business/PerformanceInsightsTab';
+import ClinicScorecardTab from '@/components/business/ClinicScorecardTab';
 
 export default function BusinessPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -36,10 +37,18 @@ export default function BusinessPage() {
           <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5" />
           <span className="text-xs sm:text-sm">Performance Insights</span>
         </button>
+        <button
+          onClick={() => setSearchParams({ tab: 'scorecard' }, { replace: true })}
+          className={`primary-tab-btn ${activeTab === 'scorecard' ? 'primary-tab-btn--active' : 'primary-tab-btn--inactive'}`}
+        >
+          <Building2 className="h-4 w-4 sm:h-5 sm:w-5" />
+          <span className="text-xs sm:text-sm">Clinic Scorecard</span>
+        </button>
       </div>
 
       {activeTab === 'financial-health' && <FinancialHealthTab />}
       {activeTab === 'performance' && <PerformanceInsightsTab />}
+      {activeTab === 'scorecard' && <ClinicScorecardTab />}
     </div>
   );
 }
