@@ -54,14 +54,12 @@ export default function ClinicScorecardTab() {
         repeatFreq = 'One-time';
       }
 
+      let health: 'green' | 'amber' | 'red' = 'green';
+      if (overdueCount >= 3 || (avgDays !== null && avgDays > 30)) health = 'red';
+      else if (overdueCount >= 1 || (avgDays !== null && avgDays > 14)) health = 'amber';
+
       return {
-        facility,
-        totalShifts,
-        revenue,
-        avgPay,
-        avgDays,
-        overdueCount,
-        repeatFreq,
+        facility, totalShifts, revenue, avgPay, avgDays, overdueCount, repeatFreq, health,
       };
     }).sort((a, b) => b.totalShifts - a.totalShifts);
   }, [activeFacilities, shifts, invoices, cutoff]);
@@ -108,9 +106,12 @@ export default function ClinicScorecardTab() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {scorecards.map(({ facility, totalShifts, revenue, avgPay, avgDays, overdueCount, repeatFreq }) => (
-          <Card key={facility.id} className="hover:shadow-md transition-shadow">
-            <CardHeader className="pb-3">
+        {scorecards.map(({ facility, totalShifts, revenue, avgPay, avgDays, overdueCount, repeatFreq, health }) => (
+          <Card key={facility.id} className="hover:shadow-md transition-shadow relative">
+            <span className={`absolute top-3 right-3 h-3 w-3 rounded-full ${
+              health === 'green' ? 'bg-emerald-500' : health === 'amber' ? 'bg-amber-500' : 'bg-destructive'
+            }`} title={health === 'green' ? 'Healthy' : health === 'amber' ? 'Needs attention' : 'At risk'} />
+            <CardHeader className="pb-3 pr-8">
               <CardTitle
                 className="text-base cursor-pointer hover:text-primary transition-colors"
                 onClick={() => navigate(`/facilities/${facility.id}`)}

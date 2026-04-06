@@ -9,7 +9,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from 'rec
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Zap, TrendingUp, Pencil, CheckCircle2, Info } from 'lucide-react';
+import { Zap, TrendingUp, Pencil, CheckCircle2, Info, Calendar as CalendarDays } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, parseISO, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths, addMonths, isWithinInterval, differenceInDays, differenceInHours, getDay } from 'date-fns';
 
@@ -410,6 +410,14 @@ export default function PerformanceInsightsTab() {
         </Select>
       </div>
 
+      {/* ── Section: Rate & Payment Analysis ── */}
+      <div className="flex items-center gap-2 pt-2">
+        <div className="p-1.5 rounded-md bg-primary/10">
+          <TrendingUp className="h-4 w-4 text-primary" />
+        </div>
+        <h2 className="text-base font-semibold">Rate & Payment Analysis</h2>
+      </div>
+
       {/* Facility Payment Speed */}
       <Card>
         <CardHeader>
@@ -435,6 +443,14 @@ export default function PerformanceInsightsTab() {
           <InsightCallout text={paymentSpeedInsight} />
         </CardContent>
       </Card>
+
+      {/* ── Section: Work Distribution ── */}
+      <div className="flex items-center gap-2 pt-2">
+        <div className="p-1.5 rounded-md bg-primary/10">
+          <CalendarDays className="h-4 w-4 text-primary" />
+        </div>
+        <h2 className="text-base font-semibold">Work Distribution</h2>
+      </div>
 
       {/* Shifts per Facility + Avg Rate */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
