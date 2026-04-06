@@ -576,6 +576,29 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     setActivities(prev => [...prev, stripDbFieldsKeepTimestamp(data) as InvoiceActivity]);
   }, [isDemo, user]);
 
+  // ─── Time Blocks ─────────────────────────────────────────
+  const addTimeBlock = useCallback(async (b: Omit<TimeBlock, 'id'>) => {
+    if (isDemo) { setTimeBlocks(prev => [...prev, { ...b, id: generateId() }]); return; }
+    const { data, error } = await db('time_blocks').insert({ user_id: user!.id, ...b }).select().single();
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
+    setTimeBlocks(prev => [...prev, stripDbFields(data) as TimeBlock]);
+  }, [isDemo, user]);
+
+  const updateTimeBlock = useCallback(async (b: TimeBlock) => {
+    if (isDemo) { setTimeBlocks(prev => prev.map(x => x.id === b.id ? b : x)); return; }
+    const { id, ...rest } = b;
+    const { error } = await db('time_blocks').update(rest).eq('id', id);
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
+    setTimeBlocks(prev => prev.map(x => x.id === b.id ? b : x));
+  }, [isDemo, user]);
+
+  const deleteTimeBlock = useCallback(async (id: string) => {
+    if (isDemo) { setTimeBlocks(prev => prev.filter(x => x.id !== id)); return; }
+    const { error } = await db('time_blocks').delete().eq('id', id);
+    if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
+    setTimeBlocks(prev => prev.filter(x => x.id !== id));
+  }, [isDemo, user]);
+
   // ─── Computed ────────────────────────────────────────────
 
   const getComputedInvoiceStatus = useCallback((invoice: Invoice) => {
@@ -592,7 +615,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
 
   return (
     <DataContext.Provider value={{
-      facilities, contacts, terms, shifts, invoices, lineItems, payments, activities, emailLogs, checklistItems, dataLoading,
+      facilities, contacts, terms, shifts, invoices, lineItems, payments, activities, emailLogs, checklistItems, timeBlocks, dataLoading,
       addFacility, updateFacility, deleteFacility,
       addContact, updateContact, deleteContact,
       updateTerms,
@@ -601,6 +624,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
       addLineItem, updateLineItem, deleteLineItem,
       addPayment, addActivity,
       addEmailLog,
+      addTimeBlock, updateTimeBlock, deleteTimeBlock,
       getComputedInvoiceStatus,
     }}>
       {children}
