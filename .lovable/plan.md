@@ -1,85 +1,74 @@
 
 
-# Improve Sidebar Navigation UX
+# Redesign Business Module as a Revenue-to-Tax Workflow
 
-## Problem
+## Current Problem
 
-The current sidebar is a flat list of 7 items with generic labels. It doesn't communicate a workflow narrative — users see disconnected pages rather than a cohesive system for managing their locum practice. Key issues:
+The Business page has 4 tabs (Insights, Expenses, Tax Tracker, Tax Advisor), but Expenses and Tax Planning already have their own sidebar entries at `/expenses` and `/tax-planning`. This creates duplication and a fragmented experience. Users can't see how their revenue connects to their tax obligations or CPA prep.
 
-1. **Flat structure** — no grouping signals which items relate to each other
-2. **Generic labels** — "Business" and "Credential Management" don't convey workflow value
-3. **No live context** — sidebar doesn't surface counts, badges, or status that pull users toward action
-4. **No workflow grouping** — scheduling, invoicing, and facilities are the core loop but appear as peers to settings
+## New Structure: Three Focused Tabs
 
-## Proposed Changes
-
-### 1. Group nav items into labeled sections
-
-Organize into three visual groups using `SidebarGroupLabel`:
+Rename the page to **Relief Business Insights** and restructure into three tabs that tell a story: **Earn → Owe → Prepare**.
 
 ```text
-──────────────────
-  [Logo] LocumOps
-──────────────────
-  OVERVIEW
-    Dashboard
-
-  PRACTICE
-    Clinics & Facilities
-    Schedule
-    Invoices & Payments
-
-  BACK OFFICE
-    Expenses & Mileage
-    Credentials & CE
-    Tax Planning
-
-  ──────────────────
-  Settings
-  Logout
+┌─────────────────────────────────────────────────┐
+│ Relief Business Insights                        │
+│ Your revenue, tax obligations, and CPA prep     │
+├─────────────────────────────────────────────────┤
+│ [Revenue & Work]  [Tax Estimate]  [CPA Prep]    │
+└─────────────────────────────────────────────────┘
 ```
 
-This makes the core work loop (Practice) visually distinct from support functions (Back Office).
+### Tab 1: Revenue & Work (existing Insights/Reports)
+The current ReportsPage content stays here -- AI summary, KPI cards, charts. No changes to this tab's internals.
 
-### 2. Rename nav items for clarity
+### Tab 2: Tax Estimate (merge Tax Tracker + Tax Advisor's Ask/S-Corp)
+Combines the Estimated Tax Tracker (reserve calculations, quarterly status) with the Ask Advisor chat and S-Corp Explorer into one tab. The flow is: see what you owe, then ask questions about it.
 
-| Current | New | Why |
-|---------|-----|-----|
-| Practice Facilities | Clinics & Facilities | Matches how relief vets talk |
-| Business | split into Expenses & Tax | "Business" is vague; splitting surfaces the two distinct workflows |
-| Credential Management | Credentials & CE | Shorter, includes CE which lives there |
+Layout:
+- Top: KPI strip from TrackerTab (YTD income, estimated tax, reserve status, next due date)
+- Middle: Quarterly cards with status/checklist (from TrackerTab)
+- Bottom: Collapsible "Ask the Tax Advisor" section (the existing AskAdvisorTab) and "S-Corp Explorer" section (existing SCorpAssessmentTab)
 
-### 3. Add attention badges
+### Tab 3: CPA Prep (merge Relief Deduction Guide + CPA Prep Summary)
+Everything a user needs before meeting their CPA. Combines:
+- The Relief Deduction Guide (opportunity review cards)
+- The CPA Prep Summary (questions list + copy-able summary)
+- The Intake Profile sidebar card
 
-Show small count badges on nav items when action is needed:
-- **Invoices**: count of draft invoices ready to send
-- **Schedule**: count of unconfirmed upcoming shifts
-- **Credentials**: count of items expiring within 30 days
-- **Expenses & Mileage**: count of draft mileage entries pending review
+Layout:
+- Left (main): Relief Deduction Guide at top, then CPA Questions + Summary below
+- Right (sidebar): IntakeCard (existing)
 
-Badges use the existing `Badge` component, small and muted, appearing next to the label.
+### What gets removed from sidebar
+- **Tax Planning** (`/tax-planning`) sidebar entry is removed -- its content is absorbed into the Business module's Tab 2 and Tab 3
+- The `/tax-planning` route becomes a redirect to `/business?tab=tax-estimate`
 
-### 4. Promote Expenses to top-level nav
+### What stays separate
+- **Expenses & Mileage** stays as its own sidebar entry at `/expenses` -- it's a daily-use tool, not a periodic reporting view
+- Remove the Expenses tab from BusinessPage since it already has its own route
 
-Currently Expenses is buried inside the Business page as a tab. By giving it (and Tax Planning) their own sidebar entries under "Back Office," users can reach them directly. The Business page becomes the "Insights" / reports view only — or we remove it and link reports from Dashboard.
+## Cross-linking
 
-### 5. Collapsible groups
-
-Each section group is collapsible (using `Collapsible` from the existing UI library) but defaults to open. In collapsed sidebar mode (icon-only), groups are hidden and only icons show.
+- Add a "View in Tax Estimate" link on the Revenue tab's income KPI card, so users can jump from seeing revenue to seeing what they owe
+- Add a contextual banner on the Tax Estimate tab showing YTD revenue pulled from the same data, creating continuity
 
 ## Files to Change
 
 | File | Change |
 |------|--------|
-| `src/components/AppSidebar.tsx` | Restructure into grouped sections, rename items, add badge counts, split Business into separate entries |
-| `src/pages/ExpensesPage.tsx` | Ensure it works as a standalone route (it already does via `/business?tab=expenses`, but needs its own `/expenses` route) |
-| `src/App.tsx` | Add `/expenses` and `/tax-planning` routes pointing to `ExpensesPage` and `TaxStrategyPage` |
-| `src/pages/BusinessPage.tsx` | Remove Expenses and Tax tabs; keep only Insights/Reports + Tax Advisor (or merge Tax Advisor into tax-planning route) |
+| `src/pages/BusinessPage.tsx` | Remove Expenses and Tax Advisor tabs; restructure to 3 tabs: Revenue & Work, Tax Estimate, CPA Prep |
+| `src/pages/TaxStrategyPage.tsx` | Keep as-is (used inside BusinessPage Tab 2) |
+| `src/pages/TaxPlanningAdvisorPage.tsx` | Keep as-is but no longer used as standalone route |
+| `src/components/AppSidebar.tsx` | Remove "Tax Planning" nav item |
+| `src/App.tsx` | Change `/tax-planning` to redirect to `/business?tab=tax-estimate`; remove standalone TaxPlanningAdvisorPage import for that route |
+| `src/components/business/TaxEstimateTab.tsx` | **Create** -- wraps TrackerTab + AskAdvisorTab + SCorpAssessmentTab with collapsible sections |
+| `src/components/business/CPAPrepTab.tsx` | **Create** -- wraps OpportunityReviewTab + CPAPrepSummaryTab + IntakeCard in a 2-column layout |
 
 ## Technical Notes
 
-- Badge counts are derived from existing hooks: `useData()` for invoices/shifts, `useCredentials()` for credentials, `useExpenses()` for draft mileage
-- Groups use `SidebarGroup` + `SidebarGroupLabel` already available in the sidebar component library
-- Collapsed mode hides labels and group headers, showing only icons — no change needed there
-- Routes for `/expenses` and `/tax-planning` are simple additions to the existing router
+- TaxEstimateTab imports and renders TrackerTab directly, then adds collapsible sections for AskAdvisorTab and SCorpAssessmentTab below it, sharing the same `useTaxAdvisor()` hook
+- CPAPrepTab uses `useTaxAdvisor()` to get profile, questions, reviewItems and passes them to the existing sub-components
+- The disclaimer banners (AdvisorDisclaimerBanner, TaxDisclaimerBanner) are consolidated into a single banner shown once at the page level
+- Tab state uses `searchParams.get('tab')` as BusinessPage already does
 
