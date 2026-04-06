@@ -72,10 +72,21 @@ export function useCPAPrepData() {
   // ── Snapshot ──
   const snapshot = useMemo<CPASnapshot>(() => {
     const paidInvoices = invoices.filter(i => i.status === 'paid' && i.paid_at && new Date(i.paid_at).getFullYear() === currentYear);
-    const ytdIncomeCents = Math.round(paidInvoices.reduce((s, i) => s + i.total_amount, 0) * 100);
+    const paidCents = Math.round(paidInvoices.reduce((s, i) => s + i.total_amount, 0) * 100);
 
     const outstanding = invoices.filter(i => (i.status === 'sent' || i.status === 'overdue' || i.status === 'partial'));
     const outstandingCents = Math.round(outstanding.reduce((s, i) => s + i.balance_due, 0) * 100);
+
+    // Find uninvoiced YTD shifts (not linked to any line item)
+    const invoicedShiftIds = new Set(lineItems.map(li => li.shift_id).filter(Boolean));
+    const ytdShifts = shifts.filter(s => new Date(s.start_datetime).getFullYear() === currentYear);
+    const uninvoicedRevenueCents = Math.round(
+      ytdShifts
+        .filter(s => !invoicedShiftIds.has(s.id))
+        .reduce((sum, s) => sum + (s.rate_applied || 0), 0) * 100
+    );
+
+    const ytdIncomeCents = paidCents + outstandingCents + uninvoicedRevenueCents;
 
     const monthsElapsed = currentMonth + 1;
     const projectedAnnual = monthsElapsed > 0 ? Math.round((ytdIncomeCents / monthsElapsed) * 12) : 0;
@@ -87,14 +98,14 @@ export function useCPAPrepData() {
       ytdExpensesCents: ytdTotalCents,
       ytdDeductibleCents,
       netIncomeCents: ytdIncomeCents - ytdTotalCents,
-      taxesPaidCents: 0, // user tracks in TrackerTab
+      taxesPaidCents: 0,
       projectedAnnualCents: projectedAnnual,
       outstandingInvoiceCents: outstandingCents,
       outstandingInvoiceCount: outstanding.length,
       entityType,
       nextPaymentDue: null,
     };
-  }, [invoices, ytdTotalCents, ytdDeductibleCents, profile, currentMonth]);
+  }, [invoices, shifts, lineItems, ytdTotalCents, ytdDeductibleCents, profile, currentMonth]);
 
   // ── P&L Monthly ──
   const pnlMonthly = useMemo<PLMonthRow[]>(() => {

@@ -12,7 +12,7 @@ import ClinicScorecardTab from '@/components/business/ClinicScorecardTab';
 export default function BusinessPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'financial-health';
-  const { invoices, shifts, facilities } = useData();
+  const { invoices, shifts, facilities, lineItems } = useData();
 
   // Hero KPIs
   const kpis = useMemo(() => {
