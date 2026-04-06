@@ -132,6 +132,18 @@ export default function ExpenseLogTab({
         ))}
       </div>
 
+      {/* Category Grid — primary entry point */}
+      <ExpenseCategoryGrid onSelectCategory={openCategoryAdd} />
+
+      {/* Pending Mileage Review */}
+      <MileageReviewBanner
+        drafts={draftMileageExpenses}
+        onConfirm={confirmMileage}
+        onDismiss={dismissMileage}
+        onConfirmAll={confirmAllMileage}
+        onEdit={openEdit}
+      />
+
       {/* Mileage Setup Status */}
       <Card className={homeAddressSet ? 'border-green-200 dark:border-green-900' : 'border-amber-200 dark:border-amber-900'}>
         <CardContent className="py-3 px-4 flex items-center justify-between">
@@ -161,18 +173,6 @@ export default function ExpenseLogTab({
 
       {/* Backfill Past Shifts */}
       <MileageBackfillCard onComplete={reload} />
-
-      {/* Pending Mileage Review */}
-      <MileageReviewBanner
-        drafts={draftMileageExpenses}
-        onConfirm={confirmMileage}
-        onDismiss={dismissMileage}
-        onConfirmAll={confirmAllMileage}
-        onEdit={openEdit}
-      />
-
-      {/* Category Grid */}
-      <ExpenseCategoryGrid onSelectCategory={openCategoryAdd} />
 
       {/* Secondary manual add */}
       <div className="flex justify-center">
