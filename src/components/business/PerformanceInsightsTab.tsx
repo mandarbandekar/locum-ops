@@ -4,19 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from 'recharts';
-import { TrendingUp, CalendarDays } from 'lucide-react';
+import { TrendingUp, Calendar as CalendarDays } from 'lucide-react';
 import { format, parseISO, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths, addMonths, isWithinInterval, differenceInDays, differenceInHours, getDay } from 'date-fns';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from 'recharts';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Zap, TrendingUp, Pencil, CheckCircle2, Info, Calendar as CalendarDays } from 'lucide-react';
-import { toast } from 'sonner';
-import { format, parseISO, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths, addMonths, isWithinInterval, differenceInDays, differenceInHours, getDay } from 'date-fns';
-
-const db = (table: string) => supabase.from(table as any);
 
 const truncateName = (name: string, max = 18) =>
   name.length > max ? name.slice(0, max - 1) + '…' : name;
@@ -31,8 +20,7 @@ function InsightCallout({ text }: { text: string | null }) {
 }
 
 export default function PerformanceInsightsTab() {
-  const { shifts, invoices, facilities, lineItems } = useData();
-  const { user, isDemo } = useAuth();
+  const { shifts, invoices, facilities } = useData();
   const [monthRange, setMonthRange] = useState('6');
 
   const months = useMemo(() => {
@@ -48,20 +36,6 @@ export default function PerformanceInsightsTab() {
     if (futureEnd > maxFuture) futureEnd = maxFuture;
     return eachMonthOfInterval({ start: pastStart, end: futureEnd });
   }, [monthRange, shifts]);
-
-  // Avg day rate from shifts
-  const avgDayRate = useMemo(() => {
-    const rangeStart = months[0];
-    const rangeEnd = endOfMonth(months[months.length - 1]);
-    const rates = shifts
-      .filter(s => {
-        const d = parseISO(s.start_datetime);
-        return isWithinInterval(d, { start: rangeStart, end: rangeEnd }) && s.rate_applied > 0;
-      })
-      .map(s => s.rate_applied);
-    if (rates.length === 0) return 0;
-    return Math.round(rates.reduce((a, b) => a + b, 0) / rates.length);
-  }, [months, shifts]);
 
   const facilityPaymentSpeed = useMemo(() => {
     const facilityDays: Record<string, number[]> = {};
@@ -183,21 +157,8 @@ export default function PerformanceInsightsTab() {
   const earningsByDayConfig = { total: { label: 'Total Earnings', color: 'hsl(260, 50%, 55%)' } };
   const monthlyHoursConfig = { hours: { label: 'Hours Worked', color: 'hsl(173, 58%, 39%)' } };
 
-  const showOnboarding = !benchmarkLoading && (!benchmark?.onboarding_completed || editing);
-
   return (
     <div className="space-y-6">
-      {/* Production-to-Pay Ratio — Top Metric */}
-      {benchmarkLoading ? null : showOnboarding ? (
-        <ProductionOnboarding onComplete={saveBenchmark} />
-      ) : benchmark ? (
-        <ProductionToPayCard
-          dailyProductionCents={benchmark.avg_daily_production_cents}
-          avgDayRate={avgDayRate}
-          onEdit={() => setEditing(true)}
-        />
-      ) : null}
-
       <div className="flex items-center justify-between">
         <Select value={monthRange} onValueChange={setMonthRange}>
           <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
