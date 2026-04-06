@@ -66,7 +66,6 @@ export function AppSidebar() {
         { title: 'Relief Business Insights', url: '/business', icon: BarChart3 },
         { title: 'Expenses & Mileage', url: '/expenses', icon: Receipt },
         { title: 'Credentials & CE', url: '/credentials', icon: ShieldCheck },
-        { title: 'Tax Planning', url: '/tax-planning', icon: Landmark },
       ],
     },
   ];
