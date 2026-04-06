@@ -26,6 +26,9 @@ export interface Expense {
   is_auto_mileage: boolean;
   mileage_status: string;
   route_description: string;
+  recurrence_type: string;
+  recurrence_parent_id: string | null;
+  recurrence_end_date: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -96,10 +99,12 @@ export function useExpenses() {
       mileage_miles: data.mileage_miles ?? null,
       home_office_sqft: data.home_office_sqft ?? null,
       prorate_percent: data.prorate_percent ?? null,
+      recurrence_type: data.recurrence_type || 'none',
+      recurrence_end_date: data.recurrence_end_date || null,
     };
 
     if (isDemo) {
-      const fake: Expense = { ...row, id: crypto.randomUUID(), is_auto_mileage: false, mileage_status: 'confirmed', route_description: '', created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+      const fake: Expense = { ...row, id: crypto.randomUUID(), is_auto_mileage: false, mileage_status: 'confirmed', route_description: '', recurrence_type: data.recurrence_type || 'none', recurrence_parent_id: null, recurrence_end_date: data.recurrence_end_date || null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
       setExpenses(prev => [fake, ...prev]);
       toast.success('Expense logged');
       return fake;
@@ -130,6 +135,8 @@ export function useExpenses() {
     if (data.mileage_miles !== undefined) updates.mileage_miles = data.mileage_miles;
     if (data.home_office_sqft !== undefined) updates.home_office_sqft = data.home_office_sqft;
     if (data.prorate_percent !== undefined) updates.prorate_percent = data.prorate_percent;
+    if (data.recurrence_type !== undefined) updates.recurrence_type = data.recurrence_type;
+    if (data.recurrence_end_date !== undefined) updates.recurrence_end_date = data.recurrence_end_date;
 
     if (isDemo) {
       setExpenses(prev => prev.map(e => e.id === id ? { ...e, ...updates, updated_at: new Date().toISOString() } as Expense : e));
