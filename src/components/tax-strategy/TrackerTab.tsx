@@ -487,7 +487,8 @@ export default function TrackerTab({ isScorp = false }: TrackerTabProps) {
         {/* Expanded Quarter Detail */}
         {expandedQuarter && (() => {
           const q = expandedQuarter;
-          const qs = quarterStatuses.find(s => s.quarter === q)!;
+          const qs = quarterStatuses.find(s => s.quarter === q);
+          if (!qs) return null;
           const qi = quarterlyIncome.find(s => s.quarter === q);
           const installment = quarterlyInstallments.find(s => s.quarter === q);
           const sa = setAsideData.find(s => s.quarter === q);
