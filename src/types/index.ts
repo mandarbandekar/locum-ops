@@ -135,6 +135,31 @@ export interface InvoiceActivity {
   created_at: string;
 }
 
+export type BlockType = 'vacation' | 'family' | 'appointment' | 'training' | 'other';
+export const BLOCK_TYPES: { value: BlockType; label: string; icon: string }[] = [
+  { value: 'vacation', label: 'Vacation', icon: '🌴' },
+  { value: 'family', label: 'Family Time', icon: '👨‍👩‍👧' },
+  { value: 'appointment', label: 'Appointment', icon: '🏥' },
+  { value: 'training', label: 'Training', icon: '📚' },
+  { value: 'other', label: 'Other', icon: '🔒' },
+];
+export const BLOCK_COLORS: { value: string; label: string; bg: string; text: string }[] = [
+  { value: 'gray', label: 'Gray', bg: 'bg-gray-500/15', text: 'text-gray-700 dark:text-gray-400' },
+  { value: 'purple', label: 'Purple', bg: 'bg-purple-500/15', text: 'text-purple-700 dark:text-purple-400' },
+  { value: 'teal', label: 'Teal', bg: 'bg-teal-500/15', text: 'text-teal-700 dark:text-teal-400' },
+  { value: 'pink', label: 'Pink', bg: 'bg-pink-500/15', text: 'text-pink-700 dark:text-pink-400' },
+];
+export interface TimeBlock {
+  id: string;
+  title: string;
+  block_type: BlockType;
+  start_datetime: string;
+  end_datetime: string;
+  all_day: boolean;
+  notes: string;
+  color: string;
+}
+
 export type EmailLogType = 'outreach_open' | 'monthly_confirm' | 'invoice' | 'reminder';
 export interface EmailLog {
   id: string;
