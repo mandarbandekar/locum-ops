@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge } from '@/components/StatusBadge';
-import { ArrowLeft, Plus, Trash2, Edit2, Save, Pencil, Check, X, Monitor, Wifi, KeyRound, DoorOpen } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Edit2, Save, Pencil, Check, X, Monitor, Wifi, KeyRound, DoorOpen, Car, Info } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { FacilityContact, ContactRole, TermsSnapshot, SHIFT_COLORS, ShiftColor } from '@/types';
 import { generateId } from '@/lib/businessLogic';
@@ -230,6 +230,9 @@ function OverviewTab({ facility, shifts, contacts, onUpdate, onAddContact, onUpd
           settings={confirmationSettings}
           onSave={onSaveConfirmationSettings}
         />
+
+        {/* Mileage from Home */}
+        <MileageOverrideCard facility={facility} onUpdate={onUpdate} />
 
         {/* Upcoming Shifts */}
         <Card>
