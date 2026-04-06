@@ -254,7 +254,7 @@ export default function OnboardingPage() {
               </div>
               <div>
                 <Label>Business address</Label>
-                <Input value={companyAddress} onChange={e => setCompanyAddress(e.target.value)} placeholder="100 Main St, Suite 200, Portland, OR 97201" />
+                <GooglePlacesAutocomplete value={companyAddress} onChange={setCompanyAddress} placeholder="100 Main St, Suite 200, Portland, OR 97201" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
