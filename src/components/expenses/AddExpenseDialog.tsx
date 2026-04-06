@@ -5,10 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Camera, HelpCircle } from 'lucide-react';
+import { Camera, HelpCircle, Repeat } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
 import {
   EXPENSE_CATEGORIES,
@@ -46,6 +47,8 @@ export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit,
   const [sqftStr, setSqftStr] = useState('');
   const [proratePercent, setProratePercent] = useState(50);
   const [saving, setSaving] = useState(false);
+  const [recurrenceType, setRecurrenceType] = useState<string>('none');
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
 
   const sub = useMemo(() => findSubcategory(subcategoryKey), [subcategoryKey]);
   const parentGroup = useMemo(() =>
@@ -83,6 +86,8 @@ export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit,
       setSqftStr(editingExpense.home_office_sqft?.toString() || '');
       setProratePercent(editingExpense.prorate_percent ?? 50);
       setReceiptFile(null);
+      setRecurrenceType(editingExpense.recurrence_type || 'none');
+      setRecurrenceEndDate(editingExpense.recurrence_end_date || '');
     } else {
       setDate(today);
       setSubcategoryKey(initialSubcategory || '');
@@ -93,6 +98,8 @@ export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit,
       setMilesStr('');
       setSqftStr('');
       setProratePercent(50);
+      setRecurrenceType('none');
+      setRecurrenceEndDate('');
     }
   }, [open, editingExpense, initialSubcategory]);
 
@@ -115,6 +122,8 @@ export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit,
         mileage_miles: isMileage ? parseFloat(milesStr) || null : null,
         home_office_sqft: isHomeOffice ? parseFloat(sqftStr) || null : null,
         prorate_percent: isProrate ? proratePercent : null,
+        recurrence_type: recurrenceType,
+        recurrence_end_date: recurrenceEndDate || null,
       };
 
       if (isEditing && onEdit) {
