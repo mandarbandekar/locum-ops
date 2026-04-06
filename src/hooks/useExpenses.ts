@@ -49,8 +49,6 @@ export function useExpenses() {
   const [expenses, setExpenses] = useState<Expense[]>(isDemo ? (seedExpenses as unknown as Expense[]) : []);
   const [config, setConfig] = useState<ExpenseConfig | null>(null);
   const [loading, setLoading] = useState(!isDemo);
-  const [config, setConfig] = useState<ExpenseConfig | null>(null);
-  const [loading, setLoading] = useState(!isDemo);
 
   const loadExpenses = useCallback(async () => {
     if (isDemo || !user) { setLoading(false); return; }
