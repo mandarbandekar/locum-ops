@@ -1,47 +1,85 @@
 
 
-# Clinic Scorecard — New Sub-Tab in Relief Business Hub
+# Improve UX Across the Relief Business Hub
 
-## Overview
+## Current Issues Identified
 
-Add a third tab called **Clinic Scorecard** to the Relief Business Hub. It renders a card for each facility showing key metrics computed from existing shift, invoice, and facility data. No new database tables needed — everything derives from data already in `useData()`.
+1. **Financial Health embeds the entire ReportsPage** inside a collapsible — this creates a page-within-a-page with its own month selector, AI summary card, and full charts. It's overwhelming and redundant.
+2. **No top-level summary strip** — users land on a tab but don't get a quick pulse of their business before diving into sections.
+3. **Clinic Scorecard cards lack visual hierarchy** — all rows look the same; no at-a-glance health indicator per clinic.
+4. **Performance Insights has no section headers or grouping** — charts stack vertically with no visual separation or context.
+5. **Tab navigation doesn't show counts/badges** — users can't tell which tab needs attention without clicking into it.
+6. **No cross-tab quick links** — e.g., seeing an overdue invoice in Financial Health doesn't link to the Invoices page.
 
-## What Each Card Shows
+## Plan
 
-For every facility (sorted by total shifts descending):
+### 1. Add a Hero Summary Strip at the Top of the Page (above tabs)
 
-| Metric | Source |
+A horizontal row of 4 compact KPI cards always visible regardless of active tab:
+- **YTD Revenue** (from paid invoices)
+- **Outstanding** (unpaid invoice balance, red accent if overdue exists)
+- **This Month's Shifts** (count)
+- **Tax Reserve Status** (On Track / Behind badge)
+
+This gives an instant pulse before the user digs into any tab. Computed once in `BusinessPage.tsx` and passed down or rendered inline.
+
+### 2. Replace ReportsPage Embed in Financial Health
+
+Instead of embedding the full `ReportsPage` component inside the Revenue Overview collapsible, extract just the key visuals:
+- Monthly revenue bar chart (collected vs outstanding)
+- Revenue by facility horizontal bar chart
+- Month selector (keep)
+- AI summary card (keep, but make it a compact callout)
+
+Remove the duplicate KPI cards, delta badges, and page header that `ReportsPage` renders (since they clash with the hub layout). This is the biggest UX win — it eliminates the "page inside a page" feel.
+
+### 3. Add Health Indicator to Clinic Scorecard Cards
+
+Add a small colored dot or badge at the top-right of each clinic card:
+- **Green**: No overdue invoices, payment speed < 14 days
+- **Amber**: Payment speed 14-30 days or 1-2 overdue
+- **Red**: Payment speed > 30 days or 3+ overdue
+
+This lets users scan the grid and immediately spot problem clinics.
+
+### 4. Add Section Grouping to Performance Insights
+
+Group the 5+ charts into two labeled sections with subtle dividers:
+- **Work Distribution** — Shifts per facility, Earnings by day, Monthly hours
+- **Rate & Payment Analysis** — Avg rate per facility, Payment speed, Production-to-Pay
+
+Each group gets a small heading with an icon, matching the `SectionHeader` pattern used in Financial Health.
+
+### 5. Add Attention Badges to Tab Buttons
+
+Show a small red dot or count on the tab buttons when attention is needed:
+- **Financial Health tab**: dot if overdue invoices > 0 or tax status is "at risk"
+- **Clinic Scorecard tab**: dot if any clinic has 3+ overdue invoices
+- **Performance Insights**: no badge (informational only)
+
+Computed in `BusinessPage.tsx` and rendered as a tiny `<span>` inside the tab button.
+
+### 6. Add Quick Action Links
+
+- In the Invoice & Cash Flow section: "View all invoices →" button linking to `/invoices`
+- In the Expense section: "Manage expenses →" linking to `/expenses`
+- In Clinic Scorecard cards: already links to facility detail (keep as-is)
+- In Tax Reserve: already links to Tax Center (keep as-is)
+
+## Files to Change
+
+| File | Change |
 |---|---|
-| Total Shifts | Count of shifts in selected range |
-| Revenue Generated | Sum of `rate_applied` from shifts |
-| Avg Pay per Shift | Revenue / shifts |
-| Payment Speed | Avg days from `sent_at` to `paid_at` on paid invoices |
-| Overdue Invoice History | Count of invoices that reached overdue status |
-| Repeat Booking Frequency | Avg days between consecutive shifts |
-| Notes / Tags | Facility `notes` field + status badge |
+| `src/pages/BusinessPage.tsx` | Add hero summary strip, compute attention badges, pass to tabs |
+| `src/components/business/FinancialHealthTab.tsx` | Replace `<ReportsPage />` embed with extracted chart components; add quick-action links |
+| `src/components/business/ClinicScorecardTab.tsx` | Add health indicator dot/badge to each card |
+| `src/components/business/PerformanceInsightsTab.tsx` | Add grouped section headers around charts |
+| `src/pages/ReportsPage.tsx` | No changes (stays as standalone route for Reports nav item) |
 
-## Technical Plan
+## Design Direction
 
-### 1. Create `src/components/business/ClinicScorecardTab.tsx`
-
-- Import `useData()` for `shifts`, `invoices`, `facilities`
-- Month range selector (3/6/12 months) like the Performance tab
-- For each facility, compute all metrics via `useMemo`
-- Render as a responsive grid of Cards (1 col mobile, 2 col desktop)
-- Each card: facility name header, metric rows with labels and values, color-coded badges for payment speed (fast/average/slow) and overdue count (0 = green, 1-2 = amber, 3+ = red)
-- Empty state if no facilities exist
-
-### 2. Update `src/pages/BusinessPage.tsx`
-
-- Add a third tab button: "Clinic Scorecard" with `Building2` icon
-- Render `ClinicScorecardTab` when `tab=scorecard`
-
-### Design Details
-
-- Card layout: compact metric rows using flex with label left, value right
-- Payment speed shows "X days avg" with color badge
-- Repeat booking: "Every X days" or "One-time" if only 1 shift
-- Overdue history: "None" in green or "X invoices" in amber/red
-- Facility notes truncated to 2 lines with expand on click
-- Clicking facility name navigates to `/facilities/:id`
+- Hero strip uses the same `stat-card` pattern as the dashboard
+- Section headers reuse the existing `SectionHeader` component from Financial Health
+- Health indicators use the existing `chip-success` / `chip-warning` / `chip-error` CSS tokens
+- Tab badges use a minimal 8px dot positioned top-right of the icon
 
