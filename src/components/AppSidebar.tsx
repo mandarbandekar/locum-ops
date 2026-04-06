@@ -29,22 +29,14 @@ interface NavGroup {
 }
 
 function useBadgeCounts() {
-  const { invoices, shifts } = useData();
+  const { invoices } = useData();
 
   const draftInvoices = useMemo(
     () => invoices.filter(inv => computeInvoiceStatus(inv) === 'draft').length,
     [invoices],
   );
 
-  const unconfirmedShifts = useMemo(() => {
-    const now = new Date();
-    return shifts.filter(s => {
-      const start = new Date(s.start_datetime);
-      return start > now && s.status !== 'confirmed';
-    }).length;
-  }, [shifts]);
-
-  return { draftInvoices, unconfirmedShifts };
+  return { draftInvoices };
 }
 
 export function AppSidebar() {
