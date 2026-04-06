@@ -105,25 +105,39 @@ export default function ExpenseLogTab({
   return (
     <div className="space-y-5">
 
-      {/* YTD Stat Strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: 'YTD Spent', value: fmt(ytdTotalCents), icon: DollarSign, color: 'text-primary' },
-          { label: 'YTD Write-Offs', value: fmt(ytdDeductibleCents), icon: TrendingUp, color: 'text-green-600' },
-          { label: 'YTD Mileage', value: `${ytdMileageMiles.toLocaleString()} mi`, icon: Car, color: 'text-blue-600' },
-          { label: 'This Month', value: fmt(thisMonthCents), icon: CalendarDays, color: 'text-muted-foreground' },
-        ].map(stat => (
-          <Card key={stat.label}>
-            <CardContent className="py-3 px-4 flex items-center gap-2.5">
-              <stat.icon className={`h-4 w-4 ${stat.color} shrink-0`} />
-              <div className="min-w-0">
-                <p className="text-[11px] text-muted-foreground truncate">{stat.label}</p>
-                <p className="font-semibold text-sm">{stat.value}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {/* Welcome header for new users OR YTD stats for returning users */}
+      {!hasExpenses ? (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="py-6 px-4 text-center space-y-2">
+            <div className="mx-auto w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Receipt className="h-6 w-6 text-primary" />
+            </div>
+            <h2 className="text-lg font-bold tracking-tight">Track Every Deductible Expense</h2>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto">
+              Tap a category below to log your first expense. We'll auto-calculate deductions and build your YTD summary.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { label: 'YTD Spent', value: fmt(ytdTotalCents), icon: DollarSign, color: 'text-primary' },
+            { label: 'YTD Write-Offs', value: fmt(ytdDeductibleCents), icon: TrendingUp, color: 'text-green-600' },
+            { label: 'YTD Mileage', value: `${ytdMileageMiles.toLocaleString()} mi`, icon: Car, color: 'text-blue-600' },
+            { label: 'This Month', value: fmt(thisMonthCents), icon: CalendarDays, color: 'text-muted-foreground' },
+          ].map(stat => (
+            <Card key={stat.label}>
+              <CardContent className="py-3 px-4 flex items-center gap-2.5">
+                <stat.icon className={`h-4 w-4 ${stat.color} shrink-0`} />
+                <div className="min-w-0">
+                  <p className="text-[11px] text-muted-foreground truncate">{stat.label}</p>
+                  <p className="font-semibold text-sm">{stat.value}</p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {/* Category Grid — primary entry point */}
       <ExpenseCategoryGrid onSelectCategory={openCategoryAdd} />
