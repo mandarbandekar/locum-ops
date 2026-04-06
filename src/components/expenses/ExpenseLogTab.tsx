@@ -10,6 +10,7 @@ import { useData } from '@/contexts/DataContext';
 import { EXPENSE_CATEGORIES, findSubcategory } from '@/lib/expenseCategories';
 import AddExpenseDialog from './AddExpenseDialog';
 import { ExpenseOnboarding } from './ExpenseOnboarding';
+import { MileageReviewBanner } from './MileageReviewBanner';
 import type { Expense } from '@/hooks/useExpenses';
 
 const QUICK_ADD_CHIPS = [
@@ -30,9 +31,13 @@ interface Props {
   ytdTotalCents: number;
   ytdDeductibleCents: number;
   thisMonthCents: number;
+  draftMileageExpenses: Expense[];
+  confirmMileage: (id: string) => Promise<void>;
+  dismissMileage: (id: string) => Promise<void>;
+  confirmAllMileage: () => Promise<void>;
 }
 
-export default function ExpenseLogTab({ expenses, loading, config, addExpense, editExpense, deleteExpense, uploadReceipt, ytdTotalCents, ytdDeductibleCents, thisMonthCents }: Props) {
+export default function ExpenseLogTab({ expenses, loading, config, addExpense, editExpense, deleteExpense, uploadReceipt, ytdTotalCents, ytdDeductibleCents, thisMonthCents, draftMileageExpenses, confirmMileage, dismissMileage, confirmAllMileage }: Props) {
   const { facilities } = useData();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [search, setSearch] = useState('');
