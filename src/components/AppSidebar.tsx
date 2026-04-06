@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Building2, CalendarDays, FileText, LogOut, ShieldCheck, Settings,
-  Receipt, Landmark, ChevronDown,
+  Receipt, Landmark, ChevronDown, BarChart3,
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
@@ -63,6 +63,7 @@ export function AppSidebar() {
     {
       label: 'Back Office',
       items: [
+        { title: 'Relief Business Insights', url: '/business', icon: BarChart3 },
         { title: 'Expenses & Mileage', url: '/expenses', icon: Receipt },
         { title: 'Credentials & CE', url: '/credentials', icon: ShieldCheck },
         { title: 'Tax Planning', url: '/tax-planning', icon: Landmark },
