@@ -263,9 +263,14 @@ export default function SchedulePage() {
         <div className="flex items-center gap-3">
           <h1 className="page-title">Schedule</h1>
           {isCalendarView && (
-            <Button size="sm" onClick={() => setShowAdd(true)} className="h-8 text-[12px] sm:text-[13px] px-3 sm:px-4">
-              <Plus className="mr-1 sm:mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" /> Add Shift
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button size="sm" onClick={() => setShowAdd(true)} className="h-8 text-[12px] sm:text-[13px] px-3 sm:px-4">
+                <Plus className="mr-1 sm:mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" /> Add Shift
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => { setBlockTimeDefaultDate(undefined); setShowBlockTime(true); }} className="h-8 text-[12px] sm:text-[13px] px-3 sm:px-4">
+                <Ban className="mr-1 sm:mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" /> Block Time
+              </Button>
+            </div>
           )}
         </div>
         <div className="flex gap-1.5 sm:gap-2 flex-wrap">
