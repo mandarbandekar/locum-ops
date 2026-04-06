@@ -11,7 +11,10 @@ import { EXPENSE_CATEGORIES, findSubcategory } from '@/lib/expenseCategories';
 import AddExpenseDialog from './AddExpenseDialog';
 import { ExpenseOnboarding } from './ExpenseOnboarding';
 import { MileageReviewBanner } from './MileageReviewBanner';
+import { MileageOnboarding } from './MileageOnboarding';
 import type { Expense } from '@/hooks/useExpenses';
+
+const MILEAGE_ONBOARDING_KEY = 'locumops_mileage_onboarding_dismissed';
 
 const QUICK_ADD_CHIPS = [
   { label: 'Mileage', subcategory: 'mileage', icon: Car },
@@ -45,6 +48,9 @@ export default function ExpenseLogTab({ expenses, loading, config, addExpense, e
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [initialSubcategory, setInitialSubcategory] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<Expense | null>(null);
+  const [showMileageOnboarding, setShowMileageOnboarding] = useState(
+    () => !localStorage.getItem(MILEAGE_ONBOARDING_KEY)
+  );
 
   const filtered = useMemo(() => {
     let list = expenses;
@@ -106,6 +112,14 @@ export default function ExpenseLogTab({ expenses, loading, config, addExpense, e
         onConfirmAll={confirmAllMileage}
         onEdit={openEdit}
       />
+
+      {/* Mileage Tracker Onboarding */}
+      {showMileageOnboarding && (
+        <MileageOnboarding onDismiss={() => {
+          setShowMileageOnboarding(false);
+          localStorage.setItem(MILEAGE_ONBOARDING_KEY, '1');
+        }} />
+      )}
 
       {/* YTD Stat Strip */}
       <div className="grid grid-cols-3 gap-3">
