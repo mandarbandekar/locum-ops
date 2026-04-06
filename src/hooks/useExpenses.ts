@@ -98,7 +98,7 @@ export function useExpenses() {
     };
 
     if (isDemo) {
-      const fake: Expense = { ...row, id: crypto.randomUUID(), created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+      const fake: Expense = { ...row, id: crypto.randomUUID(), is_auto_mileage: false, mileage_status: 'confirmed', route_description: '', created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
       setExpenses(prev => [fake, ...prev]);
       toast.success('Expense logged');
       return fake;
