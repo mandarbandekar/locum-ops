@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { ArrowRight, DollarSign, Loader2, AlertTriangle } from 'lucide-react';
+import { GooglePlacesAutocomplete } from '@/components/GooglePlacesAutocomplete';
 import type { ManualFacilityInput } from '@/hooks/useManualSetup';
 import type { BillingCadence } from '@/lib/invoiceBillingDefaults';
 
@@ -59,9 +60,9 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
 
         <div>
           <Label>Address</Label>
-          <Input
+          <GooglePlacesAutocomplete
             value={address}
-            onChange={e => setAddress(e.target.value)}
+            onChange={setAddress}
             placeholder="123 Main St, City, ST"
           />
         </div>

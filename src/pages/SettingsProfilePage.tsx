@@ -4,9 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useUserProfile, type Profession } from '@/contexts/UserProfileContext';
+import { GooglePlacesAutocomplete } from '@/components/GooglePlacesAutocomplete';
 import { toast } from 'sonner';
 import { Save } from 'lucide-react';
 
@@ -111,23 +111,21 @@ export default function SettingsProfilePage() {
             </div>
             <div>
               <Label>Company address</Label>
-              <Textarea
+              <GooglePlacesAutocomplete
                 value={companyAddress}
-                onChange={e => setCompanyAddress(e.target.value)}
-                placeholder="100 Main St, Suite 200&#10;Portland, OR 97201"
-                rows={3}
+                onChange={setCompanyAddress}
+                placeholder="100 Main St, Suite 200, Portland, OR 97201"
+                helperText="Used in: Invoices, outreach profile."
               />
-              <p className="text-xs text-muted-foreground mt-1">Used in: Invoices, outreach profile.</p>
             </div>
             <div>
               <Label>Home address (for mileage)</Label>
-              <Textarea
+              <GooglePlacesAutocomplete
                 value={homeAddress}
-                onChange={e => setHomeAddress(e.target.value)}
-                placeholder="742 Evergreen Terrace&#10;Portland, OR 97201"
-                rows={3}
+                onChange={setHomeAddress}
+                placeholder="742 Evergreen Terrace, Portland, OR 97201"
+                helperText="Used to calculate driving distance to clinics. Not shared."
               />
-              <p className="text-xs text-muted-foreground mt-1">Used to calculate driving distance to clinics. Not shared.</p>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>

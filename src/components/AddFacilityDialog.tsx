@@ -13,6 +13,7 @@ import { generateId } from '@/lib/businessLogic';
 import type { FacilityStatus } from '@/types';
 import { toast } from 'sonner';
 import { ArrowLeft, ArrowRight, SkipForward, AlertTriangle } from 'lucide-react';
+import { GooglePlacesAutocomplete } from '@/components/GooglePlacesAutocomplete';
 import { RatesEditor, RateEntry, ratesToTermsFields } from '@/components/facilities/RatesEditor';
 import type { BillingCadence } from '@/lib/invoiceBillingDefaults';
 
@@ -216,7 +217,7 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
               </div>
               <div className="space-y-2">
                 <Label>Address</Label>
-                <Input value={address} onChange={e => setAddress(e.target.value)} placeholder="Full address" />
+                <GooglePlacesAutocomplete value={address} onChange={setAddress} placeholder="Full address" />
               </div>
               <div className="space-y-2">
                 <Label>Notes</Label>
