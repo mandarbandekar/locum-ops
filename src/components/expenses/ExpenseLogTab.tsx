@@ -11,7 +11,10 @@ import { EXPENSE_CATEGORIES, findSubcategory } from '@/lib/expenseCategories';
 import AddExpenseDialog from './AddExpenseDialog';
 import { ExpenseOnboarding } from './ExpenseOnboarding';
 import { MileageReviewBanner } from './MileageReviewBanner';
+import { MileageOnboarding } from './MileageOnboarding';
 import type { Expense } from '@/hooks/useExpenses';
+
+const MILEAGE_ONBOARDING_KEY = 'locumops_mileage_onboarding_dismissed';
 
 const QUICK_ADD_CHIPS = [
   { label: 'Mileage', subcategory: 'mileage', icon: Car },
