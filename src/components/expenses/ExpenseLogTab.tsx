@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Plus, Trash2, Search, Receipt, Car, DollarSign, TrendingUp, CalendarDays, MapPin, CheckCircle2, AlertCircle, Info, Hash, X } from 'lucide-react';
+import { Plus, Trash2, Search, Receipt, Car, DollarSign, TrendingUp, CalendarDays, MapPin, CheckCircle2, AlertCircle, Info, Hash, X, Repeat } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
@@ -260,6 +260,18 @@ export default function ExpenseLogTab({
                           <Badge variant="outline" className="text-[10px] gap-1 text-green-700 border-green-300 bg-green-50 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800 shrink-0">
                             <Receipt className="h-3 w-3" />
                             Receipt
+                          </Badge>
+                        )}
+                        {(exp.recurrence_type === 'monthly' || exp.recurrence_type === 'yearly') && (
+                          <Badge variant="outline" className="text-[10px] gap-1 text-blue-700 border-blue-300 bg-blue-50 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800 shrink-0">
+                            <Repeat className="h-3 w-3" />
+                            {exp.recurrence_type === 'monthly' ? 'Monthly' : 'Yearly'}
+                          </Badge>
+                        )}
+                        {exp.recurrence_parent_id && (
+                          <Badge variant="outline" className="text-[10px] gap-1 text-blue-600 border-blue-200 bg-blue-50/50 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-800 shrink-0">
+                            <Repeat className="h-3 w-3" />
+                            Auto
                           </Badge>
                         )}
                       </div>
