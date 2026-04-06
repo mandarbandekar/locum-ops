@@ -43,7 +43,7 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
   const { signOut } = useAuth();
-  const { draftInvoices, unconfirmedShifts } = useBadgeCounts();
+  const { draftInvoices } = useBadgeCounts();
 
   const groups: NavGroup[] = [
     {
@@ -56,7 +56,7 @@ export function AppSidebar() {
       label: 'Practice',
       items: [
         { title: 'Clinics & Facilities', url: '/facilities', icon: Building2 },
-        { title: 'Schedule', url: '/schedule', icon: CalendarDays, badge: unconfirmedShifts },
+        { title: 'Schedule', url: '/schedule', icon: CalendarDays },
         { title: 'Invoices & Payments', url: '/invoices', icon: FileText, badge: draftInvoices },
       ],
     },
