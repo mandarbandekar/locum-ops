@@ -231,8 +231,29 @@ export default function TrackerTab({ isScorp = false }: TrackerTabProps) {
   const totalSetAside = setAsideData.reduce((s, q) => s + q.amount, 0);
 
   // Real tax estimate using IRS brackets
-  const filingStatus: FilingStatus = 'single'; // Default, could be made configurable
-  const taxEstimate = useMemo(() => estimateTotalTax(totalIncome, filingStatus, 0), [totalIncome]);
+  const filingStatus: FilingStatus = 'single';
+  const [reasonableSalary, setReasonableSalary] = useState(() => getDefaultReasonableSalary(totalIncome));
+
+  // Update default salary when income changes significantly
+  useEffect(() => {
+    if (isScorp && totalIncome > 0) {
+      setReasonableSalary(prev => {
+        const suggested = getDefaultReasonableSalary(totalIncome);
+        // Only auto-update if user hasn't manually adjusted (within 10% of default)
+        if (prev === 0) return suggested;
+        return prev;
+      });
+    }
+  }, [totalIncome, isScorp]);
+
+  const taxEstimate = useMemo(() => {
+    if (isScorp) {
+      return estimateTotalTaxSCorp(totalIncome, filingStatus, 0, reasonableSalary);
+    }
+    return estimateTotalTax(totalIncome, filingStatus, 0);
+  }, [totalIncome, isScorp, reasonableSalary]);
+
+  const scorpEstimate = isScorp ? (taxEstimate as SCorpTaxEstimate) : null;
 
   // Annualized income installment method for quarterly payments
   const quarterlyInstallments = useMemo(
@@ -242,8 +263,13 @@ export default function TrackerTab({ isScorp = false }: TrackerTabProps) {
 
   const monthsElapsed = Math.max(1, now.getMonth() + 1);
   const annualizedIncome = (totalIncome / monthsElapsed) * 12;
-  const annualizedEstimate = useMemo(() => estimateTotalTax(annualizedIncome, filingStatus, 0), [annualizedIncome]);
-  const showScorpNudge = annualizedIncome >= 80000 && totalIncome > 0;
+  const annualizedEstimate = useMemo(() => {
+    if (isScorp) {
+      return estimateTotalTaxSCorp(annualizedIncome, filingStatus, 0, getDefaultReasonableSalary(annualizedIncome));
+    }
+    return estimateTotalTax(annualizedIncome, filingStatus, 0);
+  }, [annualizedIncome, isScorp]);
+  const showScorpNudge = !isScorp && annualizedIncome >= 80000 && totalIncome > 0;
 
   const activeChecklist = checklist.filter(c => !c.ignored);
   const completedCount = activeChecklist.filter(c => c.completed).length;
