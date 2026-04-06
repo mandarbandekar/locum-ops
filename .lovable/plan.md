@@ -1,92 +1,47 @@
 
 
-# Add "Financial Health" Tab to Relief Business Insights
+# Clinic Scorecard — New Sub-Tab in Relief Business Hub
 
-## Current State
+## Overview
 
-The "Revenue & Work" tab (`ReportsPage`) already covers most revenue and invoice metrics. The Tax Estimate tab has the tax reserve tracker. Expense data exists in `useExpenses` but is not surfaced on the Business Insights page at all.
+Add a third tab called **Clinic Scorecard** to the Relief Business Hub. It renders a card for each facility showing key metrics computed from existing shift, invoice, and facility data. No new database tables needed — everything derives from data already in `useData()`.
 
-### What Already Exists vs What's New
+## What Each Card Shows
 
-| Requested | Status | Notes |
-|---|---|---|
-| Monthly revenue | Exists | ReportsPage monthly revenue chart |
-| Revenue by clinic | Exists | Revenue by Facility chart |
-| Revenue trend over time | Exists | Monthly Revenue stacked bar |
-| Revenue by shift type | New | Need to group by weekday/weekend/holiday rate tiers |
-| Total invoiced/paid/outstanding | Exists | KPI cards |
-| Overdue invoices | Partially | Outstanding lumps sent+overdue together |
-| Average days to payment | Partially | Per-facility exists, global average missing |
-| Tax reserve estimate | Exists in TrackerTab | Need a compact summary card here |
-| Expenses by category | New for this page | Data available via `useExpenses` |
-| Monthly expense trend | New | Compute from expenses by month |
-| Top expense categories | New | Derived from ytdByCategory |
-| Missing expense reminders | New | Count uncategorized + missing receipts |
+For every facility (sorted by total shifts descending):
 
-## Plan
-
-**Replace** the "Revenue & Work" tab with a new **"Financial Health"** tab that reorganizes existing content into 4 clear sections and adds the missing pieces.
-
-### File Changes
-
-| File | Change |
+| Metric | Source |
 |---|---|
-| `src/pages/BusinessPage.tsx` | Rename tab from "Revenue & Work" to "Financial Health", update icon to `Heart`/`Activity` |
-| `src/components/business/FinancialHealthTab.tsx` | **New** — orchestrator component with 4 collapsible sections |
-| `src/pages/ReportsPage.tsx` | Keep as-is (still used internally by FinancialHealthTab for revenue charts) — OR refactor into sub-components. To minimize risk, the new tab will import and reuse ReportsPage directly for Section 1, and add new sections below it. |
+| Total Shifts | Count of shifts in selected range |
+| Revenue Generated | Sum of `rate_applied` from shifts |
+| Avg Pay per Shift | Revenue / shifts |
+| Payment Speed | Avg days from `sent_at` to `paid_at` on paid invoices |
+| Overdue Invoice History | Count of invoices that reached overdue status |
+| Repeat Booking Frequency | Avg days between consecutive shifts |
+| Notes / Tags | Facility `notes` field + status badge |
 
-Actually, to keep things clean and avoid breaking ReportsPage, I'll build FinancialHealthTab as a wrapper that:
+## Technical Plan
 
-1. **Section 1 — Revenue Overview**: Embeds existing `ReportsPage` content (month selector, AI summary, KPI cards, all charts)
-2. **Section 2 — Invoice & Cash Flow**: New section with overdue breakdown, global avg days to payment, and a compact AR summary
-3. **Section 3 — Tax Reserve Estimate**: Compact card showing estimated quarterly obligation, set-aside status, and on-track/behind/at-risk badge
-4. **Section 4 — Expense Visibility**: New section with expense category breakdown, monthly expense trend chart, top categories, and missing receipt warnings
+### 1. Create `src/components/business/ClinicScorecardTab.tsx`
 
-### Detailed Changes
+- Import `useData()` for `shifts`, `invoices`, `facilities`
+- Month range selector (3/6/12 months) like the Performance tab
+- For each facility, compute all metrics via `useMemo`
+- Render as a responsive grid of Cards (1 col mobile, 2 col desktop)
+- Each card: facility name header, metric rows with labels and values, color-coded badges for payment speed (fast/average/slow) and overdue count (0 = green, 1-2 = amber, 3+ = red)
+- Empty state if no facilities exist
 
-**`src/components/business/FinancialHealthTab.tsx`** (New)
-- Imports `ReportsPage` for Section 1
-- Computes invoice/cash flow metrics from `useData()` for Section 2:
-  - Separate overdue from sent/partial
-  - Global average days to payment
-  - Total draft / sent / overdue / paid with amounts
-- Pulls tax reserve data from `tax_settings` + `tax_quarter_statuses` for Section 3:
-  - Estimated annual tax (from `estimateTotalTax`)
-  - Amount already paid this year
-  - Status badge: "On Track" / "Behind" / "At Risk"
-- Uses `useExpenses()` for Section 4:
-  - Expense category bar chart (horizontal bars by category)
-  - Monthly expense trend line chart
-  - Top 5 categories list
-  - Warnings: X uncategorized, Y missing receipts (>$75)
+### 2. Update `src/pages/BusinessPage.tsx`
 
-**`src/pages/BusinessPage.tsx`**
-- Change tab label from "Revenue & Work" to "Financial Health"
-- Change icon to `Activity` (pulse/heartbeat)
-- Render `FinancialHealthTab` instead of `ReportsPage`
+- Add a third tab button: "Clinic Scorecard" with `Building2` icon
+- Render `ClinicScorecardTab` when `tab=scorecard`
 
-### No Database Changes
+### Design Details
 
-All data comes from existing tables via `useData()`, `useExpenses()`, and existing tax settings queries.
-
-### Section Layout
-
-```text
-Financial Health Tab
-├── Section 1: Revenue Overview (collapsible, default open)
-│   └── [Existing ReportsPage content — unchanged]
-├── Section 2: Invoice & Cash Flow (collapsible, default open)
-│   ├── Summary cards: Draft | Sent | Overdue | Paid (count + $)
-│   ├── Avg Days to Payment (global number)
-│   └── Overdue invoices list (name, amount, days overdue)
-├── Section 3: Tax Reserve Status (collapsible, default open)
-│   ├── Estimated Annual Tax | Paid YTD | Remaining
-│   ├── Status badge (On Track / Behind / At Risk)
-│   └── Link to Tax Estimate tab for details
-└── Section 4: Expense Visibility (collapsible, default open)
-    ├── Summary: Total expenses | Total deductible | Categories tracked
-    ├── Monthly Expense Trend (line chart)
-    ├── Top 5 Categories (horizontal bar chart)
-    └── Warnings: missing receipts, uncategorized items
-```
+- Card layout: compact metric rows using flex with label left, value right
+- Payment speed shows "X days avg" with color badge
+- Repeat booking: "Every X days" or "One-time" if only 1 shift
+- Overdue history: "None" in green or "X invoices" in amber/red
+- Facility notes truncated to 2 lines with expand on click
+- Clicking facility name navigates to `/facilities/:id`
 
