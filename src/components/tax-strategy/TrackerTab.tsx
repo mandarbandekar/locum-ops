@@ -89,7 +89,11 @@ function fmtDetailed(n: number) {
 
 const QUARTER_LABELS = ['Jan – Mar', 'Apr – Jun', 'Jul – Sep', 'Oct – Dec'];
 
-export default function TrackerTab() {
+interface TrackerTabProps {
+  isScorp?: boolean;
+}
+
+export default function TrackerTab({ isScorp = false }: TrackerTabProps) {
   const { invoices } = useData();
   const { user, isDemo } = useAuth();
   const now = new Date();
