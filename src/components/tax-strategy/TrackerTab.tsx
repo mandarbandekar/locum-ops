@@ -249,7 +249,7 @@ export default function TrackerTab() {
             <p className="text-sm font-medium">Your income may be in the range where an S-Corp structure is commonly reviewed.</p>
             <p className="text-xs text-muted-foreground">Want to explore if it's worth discussing with your CPA?</p>
           </div>
-          <a href="/business?tab=tax-advisor&advisortab=scorp" className="shrink-0">
+          <a href="/business?tab=tax-estimate" className="shrink-0">
             <Button variant="outline" size="sm" className="text-xs">Explore S-Corp →</Button>
           </a>
         </div>

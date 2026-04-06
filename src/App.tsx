@@ -82,7 +82,7 @@ function AuthenticatedApp() {
           <Route path="/confirmations/public/:token" element={<PublicConfirmationPage />} />
           <Route path="/business" element={<BusinessPage />} />
           <Route path="/expenses" element={<ExpensesPage />} />
-          <Route path="/tax-planning" element={<TaxPlanningAdvisorPage />} />
+          <Route path="/tax-planning" element={<Navigate to="/business?tab=tax-estimate" replace />} />
           <Route path="/credentials" element={<CredentialsPage />} />
           <Route path="/reports" element={<Navigate to="/business?tab=reports" replace />} />
           <Route path="/taxes" element={<Navigate to="/business?tab=taxes" replace />} />
