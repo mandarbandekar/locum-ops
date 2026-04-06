@@ -16,6 +16,9 @@ export function QuickActions() {
       <Button variant="outline" size="sm" className="h-8 text-[12px] gap-1.5 px-3 font-medium border-border/60 flex-1 sm:flex-none" onClick={() => navigate('/credentials?tab=ce')}>
         <Plus className="h-3 w-3" /> CE Entry
       </Button>
+      <Button variant="outline" size="sm" className="h-8 text-[12px] gap-1.5 px-3 font-medium border-border/60 flex-1 sm:flex-none" onClick={() => navigate('/business?tab=expenses')}>
+        <Plus className="h-3 w-3" /> Expense
+      </Button>
     </div>
   );
 }
