@@ -1,74 +1,89 @@
 
 
-# Backfill Mileage for Past Shifts
+# Redesign Expenses Page: Merge Expenses + Mileage, Category Tab View
 
-## Problem
+## What Changes
 
-The auto-mileage tracker only processes shifts that ended in the last 60 minutes. Users with existing historical shifts have no way to generate mileage entries for them, leaving potential deductions unclaimed.
+The Expenses page currently has 3 top-level tabs (Expenses, Mileage Tracker, Write-Off Summary). This redesign:
 
-## Solution
+1. **Merges Expenses and Mileage Tracker** into a single unified tab called "Expense Tracker"
+2. **Keeps Write-Off Summary** as its own separate tab
+3. **Replaces the category dropdown** with a visual category grid (like the uploaded screenshot) as the primary entry point for logging expenses
+4. **Keeps "Log Expense" button** as a secondary manual option
 
-Add a "Backfill Past Shifts" feature to the Mileage Tracker tab. A new edge function handles the heavy lifting (distance lookups), and the UI provides a guided flow: preview eligible shifts, select which ones to process, then generate mileage entries in draft status for review.
+## New Layout
 
-## How It Works
+```text
+┌─────────────────────────────────────────────────────┐
+│  [ Expense Tracker ]    [ Write-Off Summary ]       │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│  YTD Stats Strip (spent, write-offs, mileage)       │
+│                                                     │
+│  ┌─ Mileage Setup Status + Backfill Card ─────────┐ │
+│  │  (collapsed inline, from MileageTrackerTab)     │ │
+│  └─────────────────────────────────────────────────┘ │
+│                                                     │
+│  ┌─ Pending Mileage Review Banner ─────────────────┐ │
+│  │  (draft mileage entries to confirm/dismiss)     │ │
+│  └─────────────────────────────────────────────────┘ │
+│                                                     │
+│  ── Log an Expense ──────────────────────────────── │
+│  Category Grid (3-col cards like screenshot)        │
+│  Each card: category name, description, badge       │
+│  Clicking a card → opens AddExpenseDialog with      │
+│  that category pre-selected                         │
+│                                                     │
+│  [ + Log Expense Manually ] (secondary button)      │
+│                                                     │
+│  ── Receipt Reminder Banner ─────────────────────── │
+│  "The IRS requires receipts for expenses over $75.  │
+│   Upload receipts to protect your deductions."      │
+│                                                     │
+│  ── Expense Log ─────────────────────────────────── │
+│  Search + filter + expense list (existing)          │
+│                                                     │
+└─────────────────────────────────────────────────────┘
+```
 
-### 1. New Edge Function: `backfill-mileage`
+## Category Grid Cards
 
-Accepts a POST with the user's JWT and an optional date range filter. Logic mirrors `auto-mileage-tracker` but operates on all past shifts:
+Based on the uploaded screenshot, render a 3-column grid of category cards. Each card shows:
+- **Title** (bold, white/foreground): e.g. "Mileage & travel"
+- **Description** (muted): e.g. "Per-mile logging, tolls, parking, flights to distant clinics"
+- **Deductibility badge**: colored badge like "IRS §62(a)", "Deductible", "50% rule", "Above-the-line", "Schedule 1", "Custom"
 
-- Fetches all shifts for the authenticated user that do NOT already have a mileage expense (`is_auto_mileage = true`)
-- Looks up home address from `user_profiles` and facility addresses from `facilities`
-- Uses `mileage_override_miles` first, then Google Maps Distance Matrix API as fallback
-- Returns a preview list (shift date, facility name, estimated miles, estimated deduction) without inserting anything
-- A second mode (`action: "confirm"`) accepts selected shift IDs and inserts the mileage expenses as `mileage_status: 'draft'`
+Clicking a card opens `AddExpenseDialog` with the category pre-filled. The "Other / uncategorized" card specifically allows users to add a custom description.
 
-This two-step approach lets users preview before committing.
-
-### 2. UI: Backfill Card in MileageTrackerTab
-
-Show a card between the setup status and pending review sections:
-
-- **When no backfill has been run**: Card says "Have past shifts? Import mileage for previous work" with a "Scan Past Shifts" button
-- **After scanning**: Shows a list of eligible shifts with checkboxes (date, facility, estimated miles, estimated deduction). Select all / deselect all. "Generate Mileage Entries" button
-- **Processing state**: Progress indicator while the edge function inserts
-- **Done state**: Success message with count, entries appear in the draft review banner
-
-The card is dismissible and remembers dismissal in localStorage.
-
-### 3. Hook: `useBackfillMileage`
-
-New hook that manages:
-- `scan()` — calls the edge function in preview mode, returns eligible shifts
-- `confirm(shiftIds)` — calls the edge function in confirm mode
-- Loading/error states
-- Eligible shift list state
+The 12 category cards map to the existing `EXPENSE_CATEGORIES` groups, consolidated to match the screenshot layout:
+1. Mileage & travel → `travel_vehicle`
+2. Professional licenses → `professional_compliance`
+3. Continuing education → `education_development`
+4. Malpractice insurance → `insurance` (malpractice)
+5. Health insurance → `insurance` (health)
+6. Professional software → `technology_software`
+7. S-Corp / business admin → `business_operations`
+8. Home office → `home_office`
+9. Equipment & scrubs → `equipment_supplies`
+10. Retirement contributions → `retirement`
+11. Meals & entertainment → `meals_entertainment`
+12. Other / uncategorized → `uncategorized`
 
 ## Files to Change
 
 | File | Change |
 |------|--------|
-| `supabase/functions/backfill-mileage/index.ts` | **Create** — Edge function with preview + confirm modes |
-| `src/hooks/useBackfillMileage.ts` | **Create** — Hook wrapping the edge function calls |
-| `src/components/expenses/MileageBackfillCard.tsx` | **Create** — UI card with scan, select, confirm flow |
-| `src/components/expenses/MileageTrackerTab.tsx` | Import and render `MileageBackfillCard` between setup status and review banner |
-| `src/hooks/useExpenses.ts` | Add `reload` to the returned interface (already exists) so backfill can trigger a refresh |
+| `src/pages/ExpensesPage.tsx` | Reduce to 2 tabs: "Expense Tracker" and "Write-Off Summary". Pass all mileage + expense props to new unified tab |
+| `src/components/expenses/ExpenseLogTab.tsx` | **Rewrite** as the unified "Expense Tracker" tab. Add category grid at top, integrate mileage setup/review/backfill sections, add IRS receipt reminder banner, keep existing expense list below |
+| `src/components/expenses/MileageTrackerTab.tsx` | No longer a standalone tab — its sections (setup status, backfill card, review banner, confirmed log) are absorbed into ExpenseLogTab |
 
-## Edge Function API
+## Key Details
 
-```
-POST /backfill-mileage
-Authorization: Bearer <jwt>
-Body: { action: "preview" } | { action: "confirm", shiftIds: string[] }
-
-Preview response: { shifts: [{ id, facility_name, shift_date, estimated_miles, estimated_deduction_cents }] }
-Confirm response: { inserted: number }
-```
-
-## Technical Notes
-
-- Reuses the same distance calculation logic as `auto-mileage-tracker` (override → Google Maps → skip)
-- All generated entries are `is_auto_mileage: true`, `mileage_status: 'draft'` so they appear in the review banner
-- The edge function authenticates via JWT (extracts user_id from token) rather than service-role-only
-- Shifts already linked to a mileage expense (via `shift_id` in expenses table) are excluded from the preview
-- In demo mode, the hook generates mock preview data from the local shifts/facilities context
+- Category grid cards use dark `Card` with `bg-card` styling to match the screenshot aesthetic
+- Each card's badge color reflects deductibility type (green for "Deductible", purple for "Schedule 1", yellow for "50% rule", blue for "Above-the-line", gray for "Custom")
+- The `AddExpenseDialog` already accepts `initialSubcategory` — for category cards we set the first subcategory of that group as default, and show the subcategory dropdown for picking the specific one
+- The IRS receipt reminder is a subtle `Alert` component encouraging uploads for expenses over $75
+- Mileage section appears at the top since it has actionable items (pending drafts), followed by the category grid
+- The existing `ExpenseOnboarding` component is kept for the zero-state (no expenses yet)
+- Confirmed mileage entries appear in the main expense log (they're already in `expenses`), so no separate confirmed log section is needed
 
