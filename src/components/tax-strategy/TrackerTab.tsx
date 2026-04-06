@@ -309,9 +309,14 @@ export default function TrackerTab({ isScorp = false }: TrackerTabProps) {
               <h2 className="text-lg font-semibold flex items-center gap-2">
                 <Calculator className="h-5 w-5 text-primary" />
                 {selectedYear} Tax Snapshot
+                {isScorp && (
+                  <Badge variant="secondary" className="text-[10px] px-2 py-0.5 bg-primary/10 text-primary border-primary/20">
+                    S-Corp
+                  </Badge>
+                )}
               </h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Based on ${fmt(totalIncome)} in paid income · Filing as single
+                Based on ${fmt(totalIncome)} in paid income · Filing as single{isScorp ? ' · S-Corp' : ''}
               </p>
             </div>
             <Select value={String(selectedYear)} onValueChange={v => setSelectedYear(Number(v))}>
@@ -339,10 +344,15 @@ export default function TrackerTab({ isScorp = false }: TrackerTabProps) {
               </p>
             </div>
             <div className="rounded-xl bg-background/80 backdrop-blur-sm border p-3.5">
-              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">SE Tax</p>
+              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                {isScorp ? 'Payroll Tax (on salary)' : 'SE Tax'}
+              </p>
               <p className="text-2xl font-bold mt-1">${fmt(taxEstimate.selfEmploymentTax)}</p>
               <p className="text-[11px] text-muted-foreground mt-0.5">
-                15.3% on net earnings
+                {isScorp
+                  ? `15.3% on $${fmt(scorpEstimate?.reasonableSalary || 0)} salary`
+                  : '15.3% on net earnings'
+                }
               </p>
             </div>
             <div className="rounded-xl bg-background/80 backdrop-blur-sm border p-3.5">
@@ -353,6 +363,41 @@ export default function TrackerTab({ isScorp = false }: TrackerTabProps) {
               </p>
             </div>
           </div>
+
+          {/* S-Corp Savings Callout */}
+          {isScorp && scorpEstimate && scorpEstimate.sCorpSavings > 0 && (
+            <div className="rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 p-3 flex items-center gap-3 mb-4">
+              <TrendingDown className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-green-800 dark:text-green-300">
+                  Saving ~${fmt(scorpEstimate.sCorpSavings)} vs Sole Prop
+                </p>
+                <p className="text-xs text-green-700/70 dark:text-green-400/70">
+                  ${fmt(scorpEstimate.distribution)} in distributions not subject to payroll tax
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* S-Corp Reasonable Salary Input */}
+          {isScorp && (
+            <div className="rounded-lg bg-background/60 border p-3 flex items-center gap-3 mb-4">
+              <Building2 className="h-4 w-4 text-primary shrink-0" />
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <span className="text-sm text-muted-foreground whitespace-nowrap">Reasonable salary:</span>
+                <div className="w-32">
+                  <Input
+                    type="number"
+                    min={0}
+                    value={reasonableSalary}
+                    onChange={e => setReasonableSalary(Number(e.target.value))}
+                    className="h-7 text-sm"
+                  />
+                </div>
+                <span className="text-[11px] text-muted-foreground">Confirm with your CPA</span>
+              </div>
+            </div>
+          )}
 
           {/* Projection callout */}
           {totalIncome > 0 && (
