@@ -24,13 +24,16 @@ import { CalendarSyncPanel } from '@/components/schedule/CalendarSyncPanel';
 const STORAGE_KEY = 'schedule-view-pref';
 
 export default function SchedulePage() {
-  const { shifts, facilities, terms, addShift, updateShift, deleteShift, updateFacility } = useData();
+  const { shifts, facilities, terms, addShift, updateShift, deleteShift, updateFacility, timeBlocks, addTimeBlock, updateTimeBlock, deleteTimeBlock } = useData();
   const { getEventsForDay } = useCalendarEvents();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<'month' | 'week' | 'list' | 'confirmations' | 'sync'>('month');
   const [showAdd, setShowAdd] = useState(false);
+  const [showBlockTime, setShowBlockTime] = useState(false);
+  const [editBlock, setEditBlock] = useState<string | null>(null);
   const [addShiftDefaults, setAddShiftDefaults] = useState<{ date?: Date; startTime?: string }>({});
   const [editShift, setEditShift] = useState<string | null>(null);
+  const [blockTimeDefaultDate, setBlockTimeDefaultDate] = useState<Date | undefined>(undefined);
   const [dragOverDay, setDragOverDay] = useState<string | null>(null);
   const [calendarFilters, setCalendarFilters] = useState<CalendarLayerFilters>({
     shifts: true,
