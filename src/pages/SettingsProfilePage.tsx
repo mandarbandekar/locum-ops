@@ -9,9 +9,6 @@ import { useUserProfile, type Profession } from '@/contexts/UserProfileContext';
 import { GooglePlacesAutocomplete } from '@/components/GooglePlacesAutocomplete';
 import { toast } from 'sonner';
 import { Save } from 'lucide-react';
-import { useUserProfile, type Profession } from '@/contexts/UserProfileContext';
-import { toast } from 'sonner';
-import { Save } from 'lucide-react';
 
 const PROFESSIONS: { value: Profession; label: string }[] = [
   { value: 'vet', label: 'Veterinarian' },

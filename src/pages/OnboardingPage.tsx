@@ -15,6 +15,7 @@ import { WorkspaceReady } from '@/components/onboarding/WorkspaceReady';
 import { AddFacilityDialog } from '@/components/AddFacilityDialog';
 import { ShiftFormDialog } from '@/components/schedule/ShiftFormDialog';
 import { CalendarSyncStep } from '@/components/onboarding/CalendarSyncStep';
+import { GooglePlacesAutocomplete } from '@/components/GooglePlacesAutocomplete';
 
 const WORK_STYLES = [
   'Independent contractor (1099)',
