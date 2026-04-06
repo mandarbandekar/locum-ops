@@ -106,6 +106,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
       .on('postgres_changes', { event: '*', schema: 'public', table: 'invoice_activity' }, () => refetchTable('invoice_activity'))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'email_logs' }, () => refetchTable('email_logs'))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'contract_checklist_items' }, () => refetchTable('contract_checklist_items'))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'time_blocks' }, () => refetchTable('time_blocks'))
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
@@ -125,12 +126,13 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
       case 'invoice_activity': setActivities((data || []).map(stripDbFieldsKeepTimestamp)); break;
       case 'email_logs': setEmailLogs(rows); break;
       case 'contract_checklist_items': setChecklistItems(rows); break;
+      case 'time_blocks': setTimeBlocks(rows); break;
     }
   }
 
   async function fetchAll() {
     try {
-      const [fRes, cRes, tRes, sRes, iRes, liRes, eRes, pRes, aRes, clRes] = await Promise.all([
+      const [fRes, cRes, tRes, sRes, iRes, liRes, eRes, pRes, aRes, clRes, tbRes] = await Promise.all([
         db('facilities').select('*').order('created_at'),
         db('facility_contacts').select('*').order('created_at'),
         db('terms_snapshots').select('*').order('created_at'),
@@ -141,6 +143,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
         db('invoice_payments').select('*').order('created_at'),
         db('invoice_activity').select('*').order('created_at'),
         db('contract_checklist_items').select('*').order('created_at'),
+        db('time_blocks').select('*').order('start_datetime'),
       ]);
       setFacilities((fRes.data || []).map(stripDbFields));
       setContacts((cRes.data || []).map(stripDbFields));
@@ -152,6 +155,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
       setPayments((pRes.data || []).map(stripDbFields));
       setActivities((aRes.data || []).map(stripDbFieldsKeepTimestamp));
       setChecklistItems((clRes.data || []).map(stripDbFields));
+      setTimeBlocks((tbRes.data || []).map(stripDbFields));
     } catch (err: any) {
       console.error('Failed to load data:', err);
       toast.error('Failed to load data');
