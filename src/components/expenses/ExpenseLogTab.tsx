@@ -48,6 +48,9 @@ export default function ExpenseLogTab({ expenses, loading, config, addExpense, e
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [initialSubcategory, setInitialSubcategory] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<Expense | null>(null);
+  const [showMileageOnboarding, setShowMileageOnboarding] = useState(
+    () => !localStorage.getItem(MILEAGE_ONBOARDING_KEY)
+  );
 
   const filtered = useMemo(() => {
     let list = expenses;
