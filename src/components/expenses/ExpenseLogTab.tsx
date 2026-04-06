@@ -15,6 +15,7 @@ import { EXPENSE_CATEGORIES, findSubcategory } from '@/lib/expenseCategories';
 import AddExpenseDialog from './AddExpenseDialog';
 import { ExpenseOnboarding } from './ExpenseOnboarding';
 import ExpenseCategoryGrid from './ExpenseCategoryGrid';
+import { useState as useLocalState } from 'react';
 import { MileageReviewBanner } from './MileageReviewBanner';
 import MileageBackfillCard from './MileageBackfillCard';
 import type { Expense } from '@/hooks/useExpenses';
