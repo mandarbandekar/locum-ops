@@ -2891,6 +2891,48 @@ export type Database = {
           },
         ]
       }
+      time_blocks: {
+        Row: {
+          all_day: boolean
+          block_type: string
+          color: string
+          created_at: string
+          end_datetime: string
+          id: string
+          notes: string
+          start_datetime: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          all_day?: boolean
+          block_type?: string
+          color?: string
+          created_at?: string
+          end_datetime: string
+          id?: string
+          notes?: string
+          start_datetime: string
+          title: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          all_day?: boolean
+          block_type?: string
+          color?: string
+          created_at?: string
+          end_datetime?: string
+          id?: string
+          notes?: string
+          start_datetime?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_profiles: {
         Row: {
           company_address: string
