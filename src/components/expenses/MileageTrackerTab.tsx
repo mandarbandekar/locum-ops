@@ -9,6 +9,7 @@ import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useData } from '@/contexts/DataContext';
 import { MileageOnboarding } from './MileageOnboarding';
 import { MileageReviewBanner } from './MileageReviewBanner';
+import MileageBackfillCard from './MileageBackfillCard';
 import type { Expense } from '@/hooks/useExpenses';
 
 const MILEAGE_ONBOARDING_KEY = 'locumops_mileage_tab_onboarding_dismissed';
@@ -24,12 +25,13 @@ interface Props {
   dismissMileage: (id: string) => Promise<void>;
   confirmAllMileage: () => Promise<void>;
   editExpense: (id: string, data: Partial<Expense>) => Promise<any>;
+  reload: () => void;
 }
 
 export default function MileageTrackerTab({
   config, draftMileageExpenses, confirmedMileageExpenses,
   ytdMileageMiles, ytdMileageDeductionCents,
-  confirmMileage, dismissMileage, confirmAllMileage,
+  confirmMileage, dismissMileage, confirmAllMileage, reload,
 }: Props) {
   const navigate = useNavigate();
   const { profile: userProfile } = useUserProfile();
@@ -138,6 +140,9 @@ export default function MileageTrackerTab({
           )}
         </CardContent>
       </Card>
+
+      {/* Backfill Past Shifts */}
+      <MileageBackfillCard onComplete={reload} />
 
       {/* Pending Review */}
       <MileageReviewBanner
