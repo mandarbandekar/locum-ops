@@ -94,10 +94,10 @@ export default function BusinessPage() {
         <Card>
           <CardContent className="pt-4 pb-3 px-4">
             <div className="flex items-center justify-between mb-1">
-              <p className="text-xs text-muted-foreground">YTD Revenue</p>
+            <p className="text-xs text-muted-foreground">YTD Anticipated</p>
               <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
             </div>
-            <p className="text-xl font-bold">{fmtK(kpis.ytdPaid)}</p>
+            <p className="text-xl font-bold">{fmtK(kpis.ytdAnticipated)}</p>
           </CardContent>
         </Card>
         <Card className={kpis.overdueCount > 0 ? 'border-destructive/30' : ''}>
