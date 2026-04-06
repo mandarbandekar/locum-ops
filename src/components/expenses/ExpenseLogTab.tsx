@@ -98,14 +98,7 @@ export default function ExpenseLogTab({
 
   if (loading) return <p className="text-muted-foreground py-8 text-center">Loading…</p>;
 
-  if (expenses.length === 0) {
-    return (
-      <>
-        <ExpenseOnboarding onAddExpense={openNew} />
-        <AddExpenseDialog open={dialogOpen} onOpenChange={setDialogOpen} onSubmit={addExpense} uploadReceipt={uploadReceipt} config={config} />
-      </>
-    );
-  }
+  const hasExpenses = expenses.length > 0;
 
   const fmt = (cents: number) => '$' + (cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
