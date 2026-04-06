@@ -8,6 +8,7 @@ import { Plus, Trash2, Receipt, Search, Image } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
 import { EXPENSE_CATEGORIES, findSubcategory, getDeductibilityLabel } from '@/lib/expenseCategories';
 import AddExpenseDialog from './AddExpenseDialog';
+import { ExpenseOnboarding } from './ExpenseOnboarding';
 import type { Expense } from '@/hooks/useExpenses';
 
 interface Props {
