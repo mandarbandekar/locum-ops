@@ -522,3 +522,64 @@ function InvoicesTab({ invoices, onNavigate }: { invoices: any[]; onNavigate: (i
 }
 
 // ─── Invoice Settings Card removed — replaced by InvoicingPreferencesCard component ───
+
+// ─── Mileage Override Card ─────────────────────────────────
+
+function MileageOverrideCard({ facility, onUpdate }: { facility: any; onUpdate: any }) {
+  const [editing, setEditing] = useState(false);
+  const [miles, setMiles] = useState(facility.mileage_override_miles?.toString() || '');
+
+  const handleSave = () => {
+    const val = miles.trim() ? parseFloat(miles) : null;
+    onUpdate({ ...facility, mileage_override_miles: val });
+    setEditing(false);
+    toast.success('Mileage distance saved');
+  };
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Car className="h-4 w-4 text-primary" />
+          <CardTitle className="text-base">Mileage from Home</CardTitle>
+        </div>
+        {editing ? (
+          <div className="flex gap-2">
+            <Button size="sm" onClick={handleSave}><Save className="mr-1 h-3 w-3" /> Save</Button>
+            <Button size="sm" variant="ghost" onClick={() => { setMiles(facility.mileage_override_miles?.toString() || ''); setEditing(false); }}>Cancel</Button>
+          </div>
+        ) : (
+          <Button size="sm" variant="ghost" onClick={() => setEditing(true)}><Edit2 className="mr-1 h-3 w-3" /> Edit</Button>
+        )}
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {editing ? (
+          <div>
+            <Label className="text-xs text-muted-foreground">One-way distance (miles)</Label>
+            <Input
+              type="number"
+              min="0"
+              step="0.1"
+              value={miles}
+              onChange={e => setMiles(e.target.value)}
+              placeholder="e.g. 22"
+              className="w-32 mt-1"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Set a fixed distance to skip automatic calculation.
+            </p>
+          </div>
+        ) : (
+          <div>
+            {facility.mileage_override_miles ? (
+              <p className="text-sm font-medium">{facility.mileage_override_miles} miles (one-way)</p>
+            ) : (
+              <p className="text-sm text-muted-foreground italic">No fixed distance set — will be calculated automatically.</p>
+            )}
+            <p className="text-xs text-muted-foreground mt-1">Used for automatic mileage expense tracking after shifts.</p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
