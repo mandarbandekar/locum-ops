@@ -38,6 +38,7 @@ export interface UserProfile {
   company_address: string;
   invoice_email: string | null;
   invoice_phone: string | null;
+  home_address: string;
 }
 
 const DEFAULT_TERMS_FIELDS: TermsFieldsEnabled = {
@@ -68,6 +69,7 @@ export const DEFAULT_PROFILE: Omit<UserProfile, 'id' | 'user_id'> = {
   company_address: '',
   invoice_email: null,
   invoice_phone: null,
+  home_address: '',
 };
 
 interface UserProfileContextType {
