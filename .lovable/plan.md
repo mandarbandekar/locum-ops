@@ -1,74 +1,58 @@
 
 
-# Redesign Business Module as a Revenue-to-Tax Workflow
+# S-Corp Aware Tax Estimates
 
-## Current Problem
+## Problem
 
-The Business page has 4 tabs (Insights, Expenses, Tax Tracker, Tax Advisor), but Expenses and Tax Planning already have their own sidebar entries at `/expenses` and `/tax-planning`. This creates duplication and a fragmented experience. Users can't see how their revenue connects to their tax obligations or CPA prep.
+Currently, the tax estimate always calculates as a sole proprietor — applying 15.3% SE tax on all net income. If a user has selected S-Corp as their entity type (in the Tax Advisor profile's `entity_type` field) or selected "Already an S-Corp" in the S-Corp Explorer assessment, the estimates should reflect S-Corp tax treatment where only a "reasonable salary" portion is subject to payroll taxes.
 
-## New Structure: Three Focused Tabs
+## What Changes
 
-Rename the page to **Relief Business Insights** and restructure into three tabs that tell a story: **Earn → Owe → Prepare**.
+### 1. New S-Corp tax estimation function in `taxCalculations.ts`
 
-```text
-┌─────────────────────────────────────────────────┐
-│ Relief Business Insights                        │
-│ Your revenue, tax obligations, and CPA prep     │
-├─────────────────────────────────────────────────┤
-│ [Revenue & Work]  [Tax Estimate]  [CPA Prep]    │
-└─────────────────────────────────────────────────┘
-```
+Add `estimateTotalTaxSCorp()` that:
+- Takes gross income, filing status, business deductions, and a reasonable salary amount
+- Applies payroll tax (7.65% employer-side FICA) only on the salary portion instead of 15.3% SE tax on all income
+- Calculates federal income tax on net income (after deducting employer FICA share)
+- Returns the same `TaxEstimate` shape plus an `sCorpSavings` field showing the difference vs sole prop
 
-### Tab 1: Revenue & Work (existing Insights/Reports)
-The current ReportsPage content stays here -- AI summary, KPI cards, charts. No changes to this tab's internals.
+Add a helper `getDefaultReasonableSalary(grossIncome)` that picks a sensible default salary (~60% of income, capped) for display purposes, with a note to confirm with CPA.
 
-### Tab 2: Tax Estimate (merge Tax Tracker + Tax Advisor's Ask/S-Corp)
-Combines the Estimated Tax Tracker (reserve calculations, quarterly status) with the Ask Advisor chat and S-Corp Explorer into one tab. The flow is: see what you owe, then ask questions about it.
+### 2. Pass entity type into TrackerTab
 
-Layout:
-- Top: KPI strip from TrackerTab (YTD income, estimated tax, reserve status, next due date)
-- Middle: Quarterly cards with status/checklist (from TrackerTab)
-- Bottom: Collapsible "Ask the Tax Advisor" section (the existing AskAdvisorTab) and "S-Corp Explorer" section (existing SCorpAssessmentTab)
+- `TaxEstimateTab` reads `profile.entity_type` and `scorpResult?.answers?.currentEntity` to determine if the user is S-Corp
+- Passes `isScorp` boolean and a `reasonableSalary` value down to `TrackerTab` as new props
 
-### Tab 3: CPA Prep (merge Relief Deduction Guide + CPA Prep Summary)
-Everything a user needs before meeting their CPA. Combines:
-- The Relief Deduction Guide (opportunity review cards)
-- The CPA Prep Summary (questions list + copy-able summary)
-- The Intake Profile sidebar card
+### 3. Update TrackerTab to show S-Corp adjusted numbers
 
-Layout:
-- Left (main): Relief Deduction Guide at top, then CPA Questions + Summary below
-- Right (sidebar): IntakeCard (existing)
+- When `isScorp` is true, use `estimateTotalTaxSCorp()` instead of `estimateTotalTax()`
+- Show a badge/indicator "S-Corp" next to the Tax Snapshot header
+- Replace "SE Tax" card with "Payroll Tax (on salary)" showing the reduced amount
+- Add a "Savings vs Sole Prop" callout showing the estimated tax difference
+- Add a small editable "Reasonable Salary" input so users can adjust the salary assumption
+- Update the quarterly installments to use S-Corp figures
+- Update the "Filing as single" subtitle to also say "· S-Corp" when applicable
 
-### What gets removed from sidebar
-- **Tax Planning** (`/tax-planning`) sidebar entry is removed -- its content is absorbed into the Business module's Tab 2 and Tab 3
-- The `/tax-planning` route becomes a redirect to `/business?tab=tax-estimate`
+### 4. Detection logic
 
-### What stays separate
-- **Expenses & Mileage** stays as its own sidebar entry at `/expenses` -- it's a daily-use tool, not a periodic reporting view
-- Remove the Expenses tab from BusinessPage since it already has its own route
-
-## Cross-linking
-
-- Add a "View in Tax Estimate" link on the Revenue tab's income KPI card, so users can jump from seeing revenue to seeing what they owe
-- Add a contextual banner on the Tax Estimate tab showing YTD revenue pulled from the same data, creating continuity
+Priority order for determining S-Corp status:
+1. `profile.entity_type === 'scorp'` (set in IntakeCard/settings)
+2. `scorpResult?.answers?.currentEntity === 'scorp'` (set in S-Corp Explorer)
 
 ## Files to Change
 
 | File | Change |
 |------|--------|
-| `src/pages/BusinessPage.tsx` | Remove Expenses and Tax Advisor tabs; restructure to 3 tabs: Revenue & Work, Tax Estimate, CPA Prep |
-| `src/pages/TaxStrategyPage.tsx` | Keep as-is (used inside BusinessPage Tab 2) |
-| `src/pages/TaxPlanningAdvisorPage.tsx` | Keep as-is but no longer used as standalone route |
-| `src/components/AppSidebar.tsx` | Remove "Tax Planning" nav item |
-| `src/App.tsx` | Change `/tax-planning` to redirect to `/business?tab=tax-estimate`; remove standalone TaxPlanningAdvisorPage import for that route |
-| `src/components/business/TaxEstimateTab.tsx` | **Create** -- wraps TrackerTab + AskAdvisorTab + SCorpAssessmentTab with collapsible sections |
-| `src/components/business/CPAPrepTab.tsx` | **Create** -- wraps OpportunityReviewTab + CPAPrepSummaryTab + IntakeCard in a 2-column layout |
+| `src/lib/taxCalculations.ts` | Add `estimateTotalTaxSCorp()` and `getDefaultReasonableSalary()` |
+| `src/components/business/TaxEstimateTab.tsx` | Detect S-Corp status, pass `isScorp` and `reasonableSalary` to TrackerTab |
+| `src/components/tax-strategy/TrackerTab.tsx` | Accept S-Corp props, conditionally use S-Corp estimator, show adjusted UI |
 
-## Technical Notes
+## Technical Details
 
-- TaxEstimateTab imports and renders TrackerTab directly, then adds collapsible sections for AskAdvisorTab and SCorpAssessmentTab below it, sharing the same `useTaxAdvisor()` hook
-- CPAPrepTab uses `useTaxAdvisor()` to get profile, questions, reviewItems and passes them to the existing sub-components
-- The disclaimer banners (AdvisorDisclaimerBanner, TaxDisclaimerBanner) are consolidated into a single banner shown once at the page level
-- Tab state uses `searchParams.get('tab')` as BusinessPage already does
+S-Corp tax calculation logic:
+- **Payroll taxes**: Salary × 7.65% (employer FICA) + Salary × 7.65% (employee FICA) = Salary × 15.3%
+- **Key difference from sole prop**: Only the salary portion is subject to payroll tax, not all net income
+- **Distribution**: (Net income - salary) flows as distribution, subject only to income tax
+- **Federal income tax**: Computed on full net income minus employer FICA deduction (similar to SE deductible half)
+- The reasonable salary defaults to ~60% of net income, clamped between $40K–$120K
 
