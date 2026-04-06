@@ -362,6 +362,8 @@ export default function SchedulePage() {
                 onCellClick={openAddShiftAt}
                 calendarFilters={{ credentials: calendarFilters.credentials, subscriptions: calendarFilters.subscriptions }}
                 getEventsForDay={getEventsForDay}
+                timeBlocks={timeBlocks}
+                onEditBlock={setEditBlock}
               />
               {totalShiftsInRange === 0 && (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
