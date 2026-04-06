@@ -46,13 +46,9 @@ const DEFAULT_CONFIG: Omit<ExpenseConfig, 'id' | 'user_id'> = {
 
 export function useExpenses() {
   const { user, isDemo } = useAuth();
-  const [expenses, setExpenses] = useState<Expense[]>(() => {
-    if (isDemo) {
-      const { seedExpenses } = require('@/data/seed');
-      return seedExpenses as Expense[];
-    }
-    return [];
-  });
+  const [expenses, setExpenses] = useState<Expense[]>(isDemo ? (seedExpenses as unknown as Expense[]) : []);
+  const [config, setConfig] = useState<ExpenseConfig | null>(null);
+  const [loading, setLoading] = useState(!isDemo);
   const [config, setConfig] = useState<ExpenseConfig | null>(null);
   const [loading, setLoading] = useState(!isDemo);
 
