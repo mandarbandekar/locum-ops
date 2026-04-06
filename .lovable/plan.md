@@ -1,154 +1,92 @@
 
 
-# Enhance CPA Prep Tab — Quarterly Tax Prep Dashboard
+# Add "Financial Health" Tab to Relief Business Insights
 
-## What Already Exists (Will NOT Rebuild)
+## Current State
 
-| Requested Feature | Already Exists In | Status |
+The "Revenue & Work" tab (`ReportsPage`) already covers most revenue and invoice metrics. The Tax Estimate tab has the tax reserve tracker. Expense data exists in `useExpenses` but is not surfaced on the Business Insights page at all.
+
+### What Already Exists vs What's New
+
+| Requested | Status | Notes |
 |---|---|---|
-| YTD income / quarterly income | `TrackerTab` + `ReportsPage` | Done |
-| Tax estimate (SE tax, federal) | `TrackerTab` via `taxCalculations.ts` | Done |
-| Quarterly payment tracker (Q1-Q4) | `TrackerTab` (status, due dates, notes) | Done |
-| S-Corp explorer / entity assessment | `SCorpAssessmentTab` | Done |
-| Relief Deduction Guide (8 categories) | `OpportunityReviewTab` | Done |
-| CPA Questions list + summary export | `CPAPrepSummaryTab` | Done |
-| Intake Profile sidebar | `IntakeCard` | Done |
-| Tax readiness checklist (12 items) | `TrackerTab` (checklist section) | Done |
-| Revenue charts + AI summary | `ReportsPage` | Done |
-| Ask Tax Advisor (AI chat) | `AskAdvisorTab` | Done |
-| Expense tracking + categories | `useExpenses` + expense pages | Done |
-| Mileage tracking | Mileage Tracker tab + auto-mileage | Done |
+| Monthly revenue | Exists | ReportsPage monthly revenue chart |
+| Revenue by clinic | Exists | Revenue by Facility chart |
+| Revenue trend over time | Exists | Monthly Revenue stacked bar |
+| Revenue by shift type | New | Need to group by weekday/weekend/holiday rate tiers |
+| Total invoiced/paid/outstanding | Exists | KPI cards |
+| Overdue invoices | Partially | Outstanding lumps sent+overdue together |
+| Average days to payment | Partially | Per-facility exists, global average missing |
+| Tax reserve estimate | Exists in TrackerTab | Need a compact summary card here |
+| Expenses by category | New for this page | Data available via `useExpenses` |
+| Monthly expense trend | New | Compute from expenses by month |
+| Top expense categories | New | Derived from ytdByCategory |
+| Missing expense reminders | New | Count uncategorized + missing receipts |
 
-## What's New — The Gap
+## Plan
 
-The current CPA Prep tab only has the Deduction Guide + CPA Questions. It lacks **financial data consolidation** — the actual numbers a CPA needs. The user wants one unified dashboard that pulls together existing data into a quarterly snapshot.
-
-## Plan: Redesign CPAPrepTab as a Multi-Section Dashboard
-
-Replace the current CPA Prep tab content with a dashboard that has **collapsible sections**, each pulling from existing data (no new DB tables needed).
-
-### New Sections in CPA Prep Tab
-
-**1. Quarterly Tax Snapshot (NEW — top of page)**
-- Summary cards pulling from existing data:
-  - YTD Gross Income (from paid invoices via `aggregateQuarterlyIncome`)
-  - YTD Deductible Expenses (from `expenses` table, sum of `deductible_amount_cents`)
-  - Estimated Net Income (income minus expenses)
-  - Quarterly Taxes Paid (from `tax_quarter_statuses` where status = 'paid')
-  - Projected Annual Income (annualized from YTD)
-  - Next Payment Due (from quarter statuses)
-  - Outstanding Invoices (sent/overdue invoices balance)
-  - Entity Type (from `tax_advisor_profiles` or user profile)
-- Tone: "You've logged $84,200 in income this year."
-
-**2. Profit & Loss Summary (NEW)**
-- Collapsible card showing:
-  - Income total
-  - Expenses grouped by category (from `expenses` table subcategories mapped to tax buckets)
-  - Net income
-  - Monthly breakdown table (12 rows)
-  - Quarterly breakdown (4 rows)
-- All computed client-side from existing `invoices` + `expenses` data
-
-**3. Income by Clinic (NEW)**
-- Table showing per-facility:
-  - Clinic name, state
-  - Shifts worked count
-  - Revenue billed (invoice totals)
-  - Paid vs unpaid amounts
-- Pulls from existing `invoices`, `shifts`, `facilities` in DataContext
-
-**4. Accounts Receivable / Unpaid Invoices (NEW)**
-- Summary cards: Draft / Sent / Overdue / Paid counts + amounts
-- Aging buckets: 0-30 days, 31-60, 61-90, 90+ (computed from `due_date`)
-- Pulls from existing `invoices` in DataContext
-
-**5. Expense Review by Tax Category (NEW)**
-- Groups expenses into IRS-relevant buckets (mileage, CE, licenses, equipment, etc.)
-- Shows per-category: total, receipt count, missing receipts flag
-- Flags: uncategorized expenses, expenses over $75 without receipts, large one-time purchases
-- Pulls from existing `expenses` data via `useExpenses`
-
-**6. Mileage & Travel Summary (NEW)**
-- Total business miles YTD
-- Deduction amount at IRS rate
-- Top clinic destinations by miles
-- Pulls from `expenses` where `category = 'mileage_travel'`
-
-**7. CPA Readiness Checklist (NEW — data-driven)**
-- Auto-generated flags based on actual data gaps:
-  - X uncategorized expenses
-  - X expenses missing receipts (over $75)
-  - X unpaid invoices not reviewed
-  - No estimated tax payments logged
-  - Entity type not set
-  - Missing mileage for shifts with known clinic addresses
-- Each item links to the relevant part of the app
-
-**8. CPA Discussion Agenda (NEW — auto-generated)**
-- Smart suggestions based on data:
-  - If income > $80k: "Review S-Corp election timing"
-  - If multi-state facilities: "Discuss multi-state filing obligations"
-  - If no retirement expenses: "Review retirement contribution options"
-  - If quarterly payment overdue: "Confirm next quarterly payment"
-  - If large purchase: "Review depreciation for purchases over $2,500"
-
-**9. Existing Sections (KEPT)**
-- Relief Deduction Guide (moved to collapsible section)
-- CPA Questions & Summary (moved to collapsible section)
-- Intake Profile sidebar (kept)
-
-**10. Export CPA Packet (NEW)**
-- "Export for CPA" button generates a comprehensive text/CSV summary combining all sections
-- Uses the existing `buildSummaryText` pattern but adds financial data
+**Replace** the "Revenue & Work" tab with a new **"Financial Health"** tab that reorganizes existing content into 4 clear sections and adds the missing pieces.
 
 ### File Changes
 
 | File | Change |
 |---|---|
-| `src/components/business/CPAPrepTab.tsx` | Major rewrite — becomes the dashboard orchestrator with collapsible sections |
-| `src/components/cpa-prep/QuarterlySnapshot.tsx` | **New** — summary cards component |
-| `src/components/cpa-prep/ProfitLossSummary.tsx` | **New** — P&L with monthly/quarterly breakdown |
-| `src/components/cpa-prep/IncomeByClinic.tsx` | **New** — per-facility income table |
-| `src/components/cpa-prep/AccountsReceivable.tsx` | **New** — invoice aging/status summary |
-| `src/components/cpa-prep/ExpenseReview.tsx` | **New** — expenses grouped by tax category |
-| `src/components/cpa-prep/MileageSummary.tsx` | **New** — mileage/travel rollup |
-| `src/components/cpa-prep/ReadinessChecklist.tsx` | **New** — data-driven gap analysis |
-| `src/components/cpa-prep/DiscussionAgenda.tsx` | **New** — smart CPA topic suggestions |
-| `src/components/cpa-prep/ExportCPAPacket.tsx` | **New** — export button + text builder |
-| `src/hooks/useCPAPrepData.ts` | **New** — single hook that aggregates invoices, expenses, shifts, facilities, tax settings into CPA-ready computed values |
-| `src/pages/BusinessPage.tsx` | Minor — pass additional data props to CPAPrepTab |
+| `src/pages/BusinessPage.tsx` | Rename tab from "Revenue & Work" to "Financial Health", update icon to `Heart`/`Activity` |
+| `src/components/business/FinancialHealthTab.tsx` | **New** — orchestrator component with 4 collapsible sections |
+| `src/pages/ReportsPage.tsx` | Keep as-is (still used internally by FinancialHealthTab for revenue charts) — OR refactor into sub-components. To minimize risk, the new tab will import and reuse ReportsPage directly for Section 1, and add new sections below it. |
 
-### No New Database Tables
+Actually, to keep things clean and avoid breaking ReportsPage, I'll build FinancialHealthTab as a wrapper that:
 
-All data comes from existing tables: `invoices`, `expenses`, `facilities`, `shifts`, `tax_quarter_statuses`, `tax_settings`, `tax_advisor_profiles`, `invoice_payments`. The new `useCPAPrepData` hook queries these and computes derived values client-side.
+1. **Section 1 — Revenue Overview**: Embeds existing `ReportsPage` content (month selector, AI summary, KPI cards, all charts)
+2. **Section 2 — Invoice & Cash Flow**: New section with overdue breakdown, global avg days to payment, and a compact AR summary
+3. **Section 3 — Tax Reserve Estimate**: Compact card showing estimated quarterly obligation, set-aside status, and on-track/behind/at-risk badge
+4. **Section 4 — Expense Visibility**: New section with expense category breakdown, monthly expense trend chart, top categories, and missing receipt warnings
 
-### Data Flow
+### Detailed Changes
+
+**`src/components/business/FinancialHealthTab.tsx`** (New)
+- Imports `ReportsPage` for Section 1
+- Computes invoice/cash flow metrics from `useData()` for Section 2:
+  - Separate overdue from sent/partial
+  - Global average days to payment
+  - Total draft / sent / overdue / paid with amounts
+- Pulls tax reserve data from `tax_settings` + `tax_quarter_statuses` for Section 3:
+  - Estimated annual tax (from `estimateTotalTax`)
+  - Amount already paid this year
+  - Status badge: "On Track" / "Behind" / "At Risk"
+- Uses `useExpenses()` for Section 4:
+  - Expense category bar chart (horizontal bars by category)
+  - Monthly expense trend line chart
+  - Top 5 categories list
+  - Warnings: X uncategorized, Y missing receipts (>$75)
+
+**`src/pages/BusinessPage.tsx`**
+- Change tab label from "Revenue & Work" to "Financial Health"
+- Change icon to `Activity` (pulse/heartbeat)
+- Render `FinancialHealthTab` instead of `ReportsPage`
+
+### No Database Changes
+
+All data comes from existing tables via `useData()`, `useExpenses()`, and existing tax settings queries.
+
+### Section Layout
 
 ```text
-useCPAPrepData hook
-  ├── DataContext (invoices, shifts, facilities, lineItems, payments)
-  ├── useExpenses (expenses, ytd totals, mileage)
-  ├── tax_quarter_statuses (quarterly payment tracking)
-  ├── tax_settings (filing preferences)
-  └── tax_advisor_profiles (entity type, intake)
-
-  Returns:
-  ├── snapshot: { ytdIncome, ytdExpenses, netIncome, taxesPaid, ... }
-  ├── pnl: { monthly[], quarterly[], byCategory[] }
-  ├── clinicIncome: { facilityId, name, shifts, billed, paid, unpaid }[]
-  ├── receivables: { draft, sent, overdue, paid, aging[] }
-  ├── expenseReview: { category, total, receiptCount, missingReceipts }[]
-  ├── mileage: { totalMiles, deductionCents, byClinic[] }
-  ├── readiness: { items: { label, status, link }[] }
-  └── agenda: { topics: string[] }
+Financial Health Tab
+├── Section 1: Revenue Overview (collapsible, default open)
+│   └── [Existing ReportsPage content — unchanged]
+├── Section 2: Invoice & Cash Flow (collapsible, default open)
+│   ├── Summary cards: Draft | Sent | Overdue | Paid (count + $)
+│   ├── Avg Days to Payment (global number)
+│   └── Overdue invoices list (name, amount, days overdue)
+├── Section 3: Tax Reserve Status (collapsible, default open)
+│   ├── Estimated Annual Tax | Paid YTD | Remaining
+│   ├── Status badge (On Track / Behind / At Risk)
+│   └── Link to Tax Estimate tab for details
+└── Section 4: Expense Visibility (collapsible, default open)
+    ├── Summary: Total expenses | Total deductible | Categories tracked
+    ├── Monthly Expense Trend (line chart)
+    ├── Top 5 Categories (horizontal bar chart)
+    └── Warnings: missing receipts, uncategorized items
 ```
-
-### Design Direction
-
-- Calm, trustworthy cards with clear numbers
-- Collapsible sections so the page doesn't overwhelm
-- Plain-language labels ("You've earned...", "X items need attention")
-- Empty states that guide users ("Start tracking expenses to see your deduction summary")
-- Disclaimer banner kept at top
 
