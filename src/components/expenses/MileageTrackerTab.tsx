@@ -25,12 +25,13 @@ interface Props {
   dismissMileage: (id: string) => Promise<void>;
   confirmAllMileage: () => Promise<void>;
   editExpense: (id: string, data: Partial<Expense>) => Promise<any>;
+  reload: () => void;
 }
 
 export default function MileageTrackerTab({
   config, draftMileageExpenses, confirmedMileageExpenses,
   ytdMileageMiles, ytdMileageDeductionCents,
-  confirmMileage, dismissMileage, confirmAllMileage,
+  confirmMileage, dismissMileage, confirmAllMileage, reload,
 }: Props) {
   const navigate = useNavigate();
   const { profile: userProfile } = useUserProfile();
