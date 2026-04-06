@@ -10,8 +10,8 @@ export default function ExpensesPage() {
   return (
     <Tabs defaultValue="log" className="space-y-4">
       <TabsList>
-        <TabsTrigger value="log">Log</TabsTrigger>
-        <TabsTrigger value="summary">Summary</TabsTrigger>
+        <TabsTrigger value="log">Expenses</TabsTrigger>
+        <TabsTrigger value="summary">Write-Off Summary</TabsTrigger>
       </TabsList>
       <TabsContent value="log">
         <ExpenseLogTab {...expenseData} />
