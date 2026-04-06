@@ -326,6 +326,80 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
+// ── S-Corp Tax Estimation ───────────────────────────────────────
+
+export interface SCorpTaxEstimate extends TaxEstimate {
+  reasonableSalary: number;
+  payrollTax: number;
+  employerFica: number;
+  employeeFica: number;
+  distribution: number;
+  sCorpSavings: number;
+}
+
+/**
+ * Default reasonable salary: ~60% of net income, clamped $40K–$120K.
+ */
+export function getDefaultReasonableSalary(grossIncome: number, businessDeductions: number = 0): number {
+  const net = Math.max(0, grossIncome - businessDeductions);
+  if (net <= 0) return 0;
+  const salary = net * 0.6;
+  return Math.round(Math.max(40000, Math.min(120000, salary)));
+}
+
+const FICA_RATE = 0.0765; // 7.65% each side
+
+/**
+ * S-Corp tax estimate. Only the reasonable salary is subject to payroll tax (FICA).
+ * The remainder is a distribution subject only to income tax.
+ */
+export function estimateTotalTaxSCorp(
+  grossIncome: number,
+  filingStatus: FilingStatus,
+  businessDeductions: number = 0,
+  reasonableSalary: number,
+): SCorpTaxEstimate {
+  const netIncome = Math.max(0, grossIncome - businessDeductions);
+  const salary = Math.min(reasonableSalary, netIncome);
+
+  // Payroll taxes: employer + employee FICA on salary only
+  const employerFica = round2(salary * FICA_RATE);
+  const employeeFica = round2(salary * FICA_RATE);
+  const payrollTax = round2(employerFica + employeeFica);
+
+  // Distribution (not subject to payroll tax)
+  const distribution = Math.max(0, netIncome - salary);
+
+  // Federal income tax: on full net income minus employer FICA deduction
+  const federalIncomeTax = estimateFederalIncomeTax(netIncome, filingStatus, undefined, employerFica);
+
+  const totalEstimatedTax = round2(payrollTax + federalIncomeTax);
+  const effectiveRate = grossIncome > 0 ? round2((totalEstimatedTax / grossIncome) * 100) : 0;
+  const quarterlyPayment = round2(totalEstimatedTax / 4);
+
+  // Compare vs sole prop to show savings
+  const soleProp = estimateTotalTax(grossIncome, filingStatus, businessDeductions);
+  const sCorpSavings = round2(soleProp.totalEstimatedTax - totalEstimatedTax);
+
+  return {
+    grossIncome,
+    businessDeductions,
+    netIncome,
+    selfEmploymentTax: payrollTax, // mapped for interface compat
+    seTaxDeductibleHalf: employerFica,
+    federalIncomeTax,
+    totalEstimatedTax,
+    effectiveRate,
+    quarterlyPayment,
+    reasonableSalary: salary,
+    payrollTax,
+    employerFica,
+    employeeFica,
+    distribution,
+    sCorpSavings,
+  };
+}
+
 /**
  * Generate CSV content for accountant export.
  */
