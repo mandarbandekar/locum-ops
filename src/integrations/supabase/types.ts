@@ -1479,6 +1479,9 @@ export type Database = {
           mileage_status: string
           prorate_percent: number | null
           receipt_url: string | null
+          recurrence_end_date: string | null
+          recurrence_parent_id: string | null
+          recurrence_type: string
           route_description: string
           shift_id: string | null
           subcategory: string
@@ -1501,6 +1504,9 @@ export type Database = {
           mileage_status?: string
           prorate_percent?: number | null
           receipt_url?: string | null
+          recurrence_end_date?: string | null
+          recurrence_parent_id?: string | null
+          recurrence_type?: string
           route_description?: string
           shift_id?: string | null
           subcategory?: string
@@ -1523,6 +1529,9 @@ export type Database = {
           mileage_status?: string
           prorate_percent?: number | null
           receipt_url?: string | null
+          recurrence_end_date?: string | null
+          recurrence_parent_id?: string | null
+          recurrence_type?: string
           route_description?: string
           shift_id?: string | null
           subcategory?: string
@@ -1535,6 +1544,13 @@ export type Database = {
             columns: ["facility_id"]
             isOneToOne: false
             referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_recurrence_parent_id_fkey"
+            columns: ["recurrence_parent_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
             referencedColumns: ["id"]
           },
           {

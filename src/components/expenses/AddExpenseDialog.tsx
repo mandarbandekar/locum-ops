@@ -5,10 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Camera, HelpCircle } from 'lucide-react';
+import { Camera, HelpCircle, Repeat } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
 import {
   EXPENSE_CATEGORIES,
@@ -46,6 +47,8 @@ export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit,
   const [sqftStr, setSqftStr] = useState('');
   const [proratePercent, setProratePercent] = useState(50);
   const [saving, setSaving] = useState(false);
+  const [recurrenceType, setRecurrenceType] = useState<string>('none');
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
 
   const sub = useMemo(() => findSubcategory(subcategoryKey), [subcategoryKey]);
   const parentGroup = useMemo(() =>
@@ -83,6 +86,8 @@ export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit,
       setSqftStr(editingExpense.home_office_sqft?.toString() || '');
       setProratePercent(editingExpense.prorate_percent ?? 50);
       setReceiptFile(null);
+      setRecurrenceType(editingExpense.recurrence_type || 'none');
+      setRecurrenceEndDate(editingExpense.recurrence_end_date || '');
     } else {
       setDate(today);
       setSubcategoryKey(initialSubcategory || '');
@@ -93,6 +98,8 @@ export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit,
       setMilesStr('');
       setSqftStr('');
       setProratePercent(50);
+      setRecurrenceType('none');
+      setRecurrenceEndDate('');
     }
   }, [open, editingExpense, initialSubcategory]);
 
@@ -115,6 +122,8 @@ export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit,
         mileage_miles: isMileage ? parseFloat(milesStr) || null : null,
         home_office_sqft: isHomeOffice ? parseFloat(sqftStr) || null : null,
         prorate_percent: isProrate ? proratePercent : null,
+        recurrence_type: recurrenceType,
+        recurrence_end_date: recurrenceEndDate || null,
       };
 
       if (isEditing && onEdit) {
@@ -255,6 +264,39 @@ export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit,
             </div>
           </div>
         </div>
+
+        {/* Recurrence - full width below the grid */}
+        {!isMileage && (
+          <div className="border rounded-lg p-3 space-y-3">
+            <div className="flex items-center gap-2">
+              <Repeat className="h-4 w-4 text-muted-foreground" />
+              <Label className="text-sm font-medium">Recurring Expense</Label>
+            </div>
+            <RadioGroup value={recurrenceType} onValueChange={setRecurrenceType} className="flex gap-4">
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="none" id="rec-none" />
+                <Label htmlFor="rec-none" className="text-sm font-normal cursor-pointer">One-time</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="monthly" id="rec-monthly" />
+                <Label htmlFor="rec-monthly" className="text-sm font-normal cursor-pointer">Monthly</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="yearly" id="rec-yearly" />
+                <Label htmlFor="rec-yearly" className="text-sm font-normal cursor-pointer">Yearly</Label>
+              </div>
+            </RadioGroup>
+            {recurrenceType !== 'none' && (
+              <div>
+                <Label className="text-xs text-muted-foreground">End date (optional)</Label>
+                <Input type="date" value={recurrenceEndDate} onChange={e => setRecurrenceEndDate(e.target.value)} className="mt-1" />
+                <p className="text-xs text-muted-foreground mt-1">
+                  This expense will automatically repeat {recurrenceType === 'monthly' ? 'every month' : 'every year'} on the same day. Leave end date blank for indefinite.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Submit - full width below the grid */}
         <Button className="w-full mt-2" onClick={handleSubmit} disabled={saving || !subcategoryKey || !amountStr}>
