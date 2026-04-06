@@ -159,7 +159,7 @@ export default function ExpenseLogTab({
             </Card>
           ))}
         </div>
-      )}
+      ) : null}
 
       {/* Category Grid — primary entry point */}
       <ExpenseCategoryGrid onSelectCategory={openCategoryAdd} />
