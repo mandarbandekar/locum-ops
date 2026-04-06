@@ -113,6 +113,14 @@ export default function ExpenseLogTab({ expenses, loading, config, addExpense, e
         onEdit={openEdit}
       />
 
+      {/* Mileage Tracker Onboarding */}
+      {showMileageOnboarding && (
+        <MileageOnboarding onDismiss={() => {
+          setShowMileageOnboarding(false);
+          localStorage.setItem(MILEAGE_ONBOARDING_KEY, '1');
+        }} />
+      )}
+
       {/* YTD Stat Strip */}
       <div className="grid grid-cols-3 gap-3">
         {[
