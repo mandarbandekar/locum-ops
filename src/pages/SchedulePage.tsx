@@ -468,6 +468,24 @@ export default function SchedulePage() {
           onDelete={(id) => { deleteShift(id); setEditShift(null); toast.success('Shift deleted'); }}
         />
       )}
+
+      <BlockTimeDialog
+        open={showBlockTime}
+        onOpenChange={setShowBlockTime}
+        onSave={async (b) => { await addTimeBlock(b as Omit<TimeBlock, 'id'>); toast.success('Time blocked'); }}
+        defaultDate={blockTimeDefaultDate}
+      />
+
+      {editBlock && (
+        <BlockTimeDialog
+          key={editBlock}
+          open={!!editBlock}
+          onOpenChange={() => setEditBlock(null)}
+          existing={timeBlocks.find(b => b.id === editBlock)}
+          onSave={async (b) => { await updateTimeBlock(b as TimeBlock); toast.success('Time block updated'); }}
+          onDelete={async (id) => { await deleteTimeBlock(id); setEditBlock(null); toast.success('Time block deleted'); }}
+        />
+      )}
     </div>
   );
 }
