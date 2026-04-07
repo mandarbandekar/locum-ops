@@ -20,12 +20,43 @@ import { CalendarFilters, CalendarLayerFilters } from '@/components/schedule/Cal
 import { useCalendarEvents } from '@/hooks/useCalendarEvents';
 import { CalendarEventStack } from '@/components/schedule/CalendarEventChip';
 import { CalendarSyncPanel } from '@/components/schedule/CalendarSyncPanel';
+import { useTaxIntelligence } from '@/hooks/useTaxIntelligence';
+import { computeEffectiveSetAsideRate } from '@/lib/taxNudge';
+import { ShiftTaxNudge, ShiftTaxSummaryFooter } from '@/components/schedule/ShiftTaxNudge';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 const STORAGE_KEY = 'schedule-view-pref';
 
 export default function SchedulePage() {
-  const { shifts, facilities, terms, addShift, updateShift, deleteShift, updateFacility, timeBlocks, addTimeBlock, updateTimeBlock, deleteTimeBlock } = useData();
+  const { shifts, facilities, terms, addShift, updateShift, deleteShift, updateFacility, timeBlocks, addTimeBlock, updateTimeBlock, deleteTimeBlock, invoices, lineItems } = useData();
   const { getEventsForDay } = useCalendarEvents();
+  const { profile: taxProfile, hasProfile: hasTaxProfile } = useTaxIntelligence();
+
+  // Build set of paid shift IDs and compute effective rate
+  const paidShiftIds = useMemo(() => {
+    const paidInvoiceIds = new Set(invoices.filter(inv => inv.status === 'paid').map(inv => inv.id));
+    const ids = new Set<string>();
+    lineItems.forEach(li => {
+      if (li.shift_id && paidInvoiceIds.has(li.invoice_id)) ids.add(li.shift_id);
+    });
+    return ids;
+  }, [invoices, lineItems]);
+
+  const ytdPaidIncome = useMemo(() => {
+    const yr = new Date().getFullYear();
+    return shifts
+      .filter(s => paidShiftIds.has(s.id) && new Date(s.start_datetime).getFullYear() === yr)
+      .reduce((sum, s) => sum + (s.rate_applied || 0), 0);
+  }, [shifts, paidShiftIds]);
+
+  const effectiveRate = useMemo(() => {
+    if (!hasTaxProfile || !taxProfile) return 0.25;
+    const totalIncome = invoices
+      .filter(inv => inv.status === 'paid' && inv.paid_at && new Date(inv.paid_at).getFullYear() === new Date().getFullYear())
+      .reduce((sum, inv) => sum + inv.total_amount, 0)
+      + shifts.filter(s => new Date(s.start_datetime) >= new Date()).reduce((sum, s) => sum + (s.rate_applied || 0), 0);
+    return computeEffectiveSetAsideRate(taxProfile, totalIncome || 1);
+  }, [taxProfile, hasTaxProfile, invoices, shifts]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<'month' | 'week' | 'list' | 'confirmations' | 'sync'>('month');
   const [showAdd, setShowAdd] = useState(false);
