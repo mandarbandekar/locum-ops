@@ -37,7 +37,8 @@ function getMarginalRate(taxableIncome: number, fs: FilingStatus): number {
 }
 
 export default function TaxReductionGuide({ profile }: Props) {
-  const { invoices, expenses: loggedExpenses } = useData();
+  const { invoices } = useData();
+  const { expenses: loggedExpenses } = useExpenses();
   const navigate = useNavigate();
   const isScorp = profile.entity_type === 'scorp';
   const fs = (profile.filing_status || 'single') as FilingStatus;
