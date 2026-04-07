@@ -209,9 +209,23 @@ export function InvoiceSentPanel({ invoice, items, invoicePayments, facility, bi
             </Button>
           )}
           {isPaid && (
-            <div className="flex items-center justify-center gap-2 p-2.5 rounded-md bg-primary/10 text-primary text-sm font-medium">
-              <CheckCircle className="h-4 w-4" /> Paid in full
-            </div>
+            <>
+              <div className="flex items-center justify-center gap-2 p-2.5 rounded-md bg-primary/10 text-primary text-sm font-medium">
+                <CheckCircle className="h-4 w-4" /> Paid in full
+              </div>
+              {showPayNudge && effectiveRate > 0 && (
+                <div className="flex items-center gap-2 p-2.5 rounded-md bg-[hsl(var(--warning))]/10 text-sm animate-in fade-in slide-in-from-top-2 duration-300">
+                  <PiggyBank className="h-4 w-4 text-[hsl(var(--warning))] shrink-0" />
+                  <span>
+                    <span className="font-medium">Invoice marked paid ✓</span>
+                    <span className="text-muted-foreground mx-1">·</span>
+                    <span className="text-[hsl(var(--warning))]">
+                      Set aside ${getShiftTaxNudge(invoice.total_amount || 0, effectiveRate).setAsideAmount.toLocaleString()} for taxes
+                    </span>
+                  </span>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
