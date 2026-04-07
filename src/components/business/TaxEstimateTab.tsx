@@ -1,11 +1,13 @@
-import { useMemo } from 'react';
+import { useState } from 'react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, MessageSquare, Building2 } from 'lucide-react';
-import { TaxDisclaimerBanner } from '@/components/tax-strategy/TaxDisclaimer';
-import TrackerTab from '@/components/tax-strategy/TrackerTab';
+import { Button } from '@/components/ui/button';
+import { ChevronDown, MessageSquare, Building2, BookOpen, Sparkles } from 'lucide-react';
 import AskAdvisorTab from '@/components/tax-advisor/AskAdvisorTab';
 import SCorpAssessmentTab from '@/components/tax-advisor/SCorpAssessmentTab';
-import { getDefaultReasonableSalary } from '@/lib/taxCalculations';
+import TaxProfileSetup from '@/components/tax-intelligence/TaxProfileSetup';
+import TaxDashboard from '@/components/tax-intelligence/TaxDashboard';
+import TaxReductionGuide from '@/components/tax-intelligence/TaxReductionGuide';
+import { useTaxIntelligence } from '@/hooks/useTaxIntelligence';
 import type { TaxAdvisorProfile, TaxAdvisorSession, SavedTaxQuestion } from '@/hooks/useTaxAdvisor';
 
 interface Props {
@@ -18,20 +20,64 @@ interface Props {
 }
 
 export default function TaxEstimateTab({
-  profile, sessions, scorpResult,
+  profile: advisorProfile, sessions, scorpResult,
   onSaveSession, onSaveQuestion, onSaveScorpResult,
 }: Props) {
-  // Detect S-Corp status from profile or S-Corp Explorer result
-  const isScorp = useMemo(() => {
-    if ((profile as any)?.entity_type === 'scorp') return true;
-    if (scorpResult?.answers?.currentEntity === 'scorp') return true;
-    return false;
-  }, [profile, scorpResult]);
+  const { profile: taxProfile, loading, saveProfile, hasProfile } = useTaxIntelligence();
+  const [setupOpen, setSetupOpen] = useState(false);
+
+  if (loading) {
+    return <p className="text-muted-foreground py-8 text-center">Loading…</p>;
+  }
 
   return (
     <div className="space-y-6">
-      <TaxDisclaimerBanner />
-      <TrackerTab isScorp={isScorp} />
+      {/* Setup wizard modal */}
+      <TaxProfileSetup
+        open={setupOpen}
+        onOpenChange={setSetupOpen}
+        existingProfile={taxProfile}
+        onSave={saveProfile}
+      />
+
+      {/* If no profile yet, show setup prompt */}
+      {!hasProfile ? (
+        <div className="text-center py-12 space-y-4">
+          <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+            <Sparkles className="h-8 w-8 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold">Set Up Your Tax Profile</h2>
+            <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">
+              Answer 8 quick questions about your tax situation so we can calculate your quarterly estimates, personalize your tax guidance, and track what you owe.
+            </p>
+          </div>
+          <Button onClick={() => setSetupOpen(true)} size="lg" className="gap-2">
+            <Sparkles className="h-4 w-4" />
+            Get Started
+          </Button>
+        </div>
+      ) : (
+        <>
+          {/* Live Tax Dashboard */}
+          <TaxDashboard
+            profile={taxProfile!}
+            onEditProfile={() => setSetupOpen(true)}
+          />
+
+          {/* Tax Reduction Guide */}
+          <Collapsible>
+            <CollapsibleTrigger className="flex items-center gap-2 w-full text-left py-3 px-1 group">
+              <BookOpen className="h-5 w-5 text-primary" />
+              <span className="text-base font-semibold flex-1">Tax Reduction Guide</span>
+              <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <TaxReductionGuide profile={taxProfile!} />
+            </CollapsibleContent>
+          </Collapsible>
+        </>
+      )}
 
       {/* Ask the Tax Advisor */}
       <Collapsible>
@@ -42,7 +88,7 @@ export default function TaxEstimateTab({
         </CollapsibleTrigger>
         <CollapsibleContent>
           <AskAdvisorTab
-            profile={profile}
+            profile={advisorProfile}
             sessions={sessions}
             onSaveSession={onSaveSession}
             onSaveQuestion={onSaveQuestion}
