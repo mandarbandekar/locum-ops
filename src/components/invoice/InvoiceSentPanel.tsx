@@ -1,13 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { DollarSign, CheckCircle, Download, Link2, Copy, RefreshCw, Loader2, Undo2, Send } from 'lucide-react';
+import { DollarSign, CheckCircle, Download, Link2, Copy, RefreshCw, Loader2, Undo2, Send, PiggyBank } from 'lucide-react';
 import { format } from 'date-fns';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
 import { toast } from 'sonner';
 import { RecordPaymentDialog } from '@/components/invoice/RecordPaymentDialog';
 import { supabase } from '@/integrations/supabase/client';
+import { useTaxIntelligence } from '@/hooks/useTaxIntelligence';
+import { computeEffectiveSetAsideRate, getShiftTaxNudge } from '@/lib/taxNudge';
+import { useData } from '@/contexts/DataContext';
 
 async function downloadInvoicePdf(invoiceId: string, invoiceNumber: string) {
   const { data: { session } } = await supabase.auth.getSession();
