@@ -19,7 +19,7 @@ const PROFESSIONS: { value: Profession; label: string }[] = [
   { value: 'other', label: 'Other' },
 ];
 
-const WORK_STYLES = ['Independent contractor (1099)', 'S-Corp', 'W-2 per diem', 'Mix'];
+
 
 export default function SettingsProfilePage() {
   const { profile, updateProfile } = useUserProfile();
@@ -34,7 +34,7 @@ export default function SettingsProfilePage() {
   const [timezone, setTimezone] = useState(profile?.timezone || '');
   const [currency, setCurrency] = useState(profile?.currency || 'USD');
   const [profession, setProfession] = useState<Profession>(profile?.profession || 'other');
-  const [workStyle, setWorkStyle] = useState(profile?.work_style_label || '');
+  
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
@@ -50,7 +50,7 @@ export default function SettingsProfilePage() {
       timezone,
       currency,
       profession,
-      work_style_label: workStyle,
+      
     });
     setSaving(false);
     toast.success('Profile saved');
@@ -83,21 +83,12 @@ export default function SettingsProfilePage() {
                 <Input value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Smith" />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Profession</Label>
-                <Select value={profession} onValueChange={v => setProfession(v as Profession)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{PROFESSIONS.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Work style</Label>
-                <Select value={workStyle} onValueChange={setWorkStyle}>
-                  <SelectTrigger><SelectValue placeholder="Select…" /></SelectTrigger>
-                  <SelectContent>{WORK_STYLES.map(w => <SelectItem key={w} value={w}>{w}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
+            <div>
+              <Label>Profession</Label>
+              <Select value={profession} onValueChange={v => setProfession(v as Profession)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{PROFESSIONS.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>
