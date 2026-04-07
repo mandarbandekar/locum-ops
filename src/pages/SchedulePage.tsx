@@ -407,6 +407,7 @@ export default function SchedulePage() {
               )}
             </>
           ) : (
+            <TooltipProvider>
             <div className="rounded-lg border bg-card overflow-x-auto -mx-3 sm:mx-0">
               <table className="w-full text-sm min-w-[500px] sm:min-w-0">
                 <thead><tr className="border-b bg-muted/50">
@@ -421,33 +422,49 @@ export default function SchedulePage() {
                 <tbody>
                   {rangeShifts.map(s => {
                     const hrs = Math.max(0, differenceInHours(new Date(s.end_datetime), new Date(s.start_datetime)));
+                    const isPaid = paidShiftIds.has(s.id);
                     return (
-                      <tr key={s.id} className="border-b last:border-0 hover:bg-muted/30 cursor-pointer" onClick={() => setEditShift(s.id)}>
-                        <td className="p-3">{format(new Date(s.start_datetime), 'EEE, MMM d')}</td>
-                        <td className="p-3 font-medium">{getFacilityName(s.facility_id)}</td>
-                        <td className="p-3 text-muted-foreground hidden md:table-cell">{format(new Date(s.start_datetime), 'h:mm a')} – {format(new Date(s.end_datetime), 'h:mm a')}</td>
-                        <td className="p-3 text-muted-foreground hidden md:table-cell">{hrs}h</td>
-                        <td className="p-3 font-medium">${s.rate_applied}</td>
-                        <td className="p-3" onClick={e => e.stopPropagation()}>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive">
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete this shift?</AlertDialogTitle>
-                                <AlertDialogDescription>{getFacilityName(s.facility_id)} — {format(new Date(s.start_datetime), 'MMM d, yyyy')}</AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => { deleteShift(s.id); toast.success('Shift deleted'); }}>Delete</AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </td>
-                      </tr>
+                      <React.Fragment key={s.id}>
+                        <tr className="border-b last:border-0 hover:bg-muted/30 cursor-pointer" onClick={() => setEditShift(s.id)}>
+                          <td className="p-3">{format(new Date(s.start_datetime), 'EEE, MMM d')}</td>
+                          <td className="p-3 font-medium">{getFacilityName(s.facility_id)}</td>
+                          <td className="p-3 text-muted-foreground hidden md:table-cell">{format(new Date(s.start_datetime), 'h:mm a')} – {format(new Date(s.end_datetime), 'h:mm a')}</td>
+                          <td className="p-3 text-muted-foreground hidden md:table-cell">{hrs}h</td>
+                          <td className="p-3 font-medium">${s.rate_applied}</td>
+                          <td className="p-3" onClick={e => e.stopPropagation()}>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive">
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete this shift?</AlertDialogTitle>
+                                  <AlertDialogDescription>{getFacilityName(s.facility_id)} — {format(new Date(s.start_datetime), 'MMM d, yyyy')}</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => { deleteShift(s.id); toast.success('Shift deleted'); }}>Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </td>
+                        </tr>
+                        {isPaid && (s.rate_applied || 0) > 0 && (
+                          <tr className="border-b last:border-0">
+                            <td colSpan={7} className="px-3 pb-2 pt-0">
+                              <ShiftTaxNudge
+                                shiftIncome={s.rate_applied || 0}
+                                taxProfile={taxProfile}
+                                hasProfile={hasTaxProfile}
+                                isPaid={isPaid}
+                                effectiveRate={effectiveRate}
+                              />
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
                     );
                   })}
                   {rangeShifts.length === 0 && (
@@ -471,10 +488,18 @@ export default function SchedulePage() {
                       <td className="p-3" />
                       <td />
                     </tr>
+                    {ytdPaidIncome > 0 && (
+                      <tr className="border-t">
+                        <td colSpan={7}>
+                          <ShiftTaxSummaryFooter ytdPaid={ytdPaidIncome} effectiveRate={effectiveRate} hasProfile={hasTaxProfile} />
+                        </td>
+                      </tr>
+                    )}
                   </tfoot>
                 )}
               </table>
             </div>
+            </TooltipProvider>
           )}
         </>
       )}
