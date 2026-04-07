@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, DragEvent } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, DragEvent } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -20,12 +20,43 @@ import { CalendarFilters, CalendarLayerFilters } from '@/components/schedule/Cal
 import { useCalendarEvents } from '@/hooks/useCalendarEvents';
 import { CalendarEventStack } from '@/components/schedule/CalendarEventChip';
 import { CalendarSyncPanel } from '@/components/schedule/CalendarSyncPanel';
+import { useTaxIntelligence } from '@/hooks/useTaxIntelligence';
+import { computeEffectiveSetAsideRate } from '@/lib/taxNudge';
+import { ShiftTaxNudge, ShiftTaxSummaryFooter } from '@/components/schedule/ShiftTaxNudge';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 const STORAGE_KEY = 'schedule-view-pref';
 
 export default function SchedulePage() {
-  const { shifts, facilities, terms, addShift, updateShift, deleteShift, updateFacility, timeBlocks, addTimeBlock, updateTimeBlock, deleteTimeBlock } = useData();
+  const { shifts, facilities, terms, addShift, updateShift, deleteShift, updateFacility, timeBlocks, addTimeBlock, updateTimeBlock, deleteTimeBlock, invoices, lineItems } = useData();
   const { getEventsForDay } = useCalendarEvents();
+  const { profile: taxProfile, hasProfile: hasTaxProfile } = useTaxIntelligence();
+
+  // Build set of paid shift IDs and compute effective rate
+  const paidShiftIds = useMemo(() => {
+    const paidInvoiceIds = new Set(invoices.filter(inv => inv.status === 'paid').map(inv => inv.id));
+    const ids = new Set<string>();
+    lineItems.forEach(li => {
+      if (li.shift_id && paidInvoiceIds.has(li.invoice_id)) ids.add(li.shift_id);
+    });
+    return ids;
+  }, [invoices, lineItems]);
+
+  const ytdPaidIncome = useMemo(() => {
+    const yr = new Date().getFullYear();
+    return shifts
+      .filter(s => paidShiftIds.has(s.id) && new Date(s.start_datetime).getFullYear() === yr)
+      .reduce((sum, s) => sum + (s.rate_applied || 0), 0);
+  }, [shifts, paidShiftIds]);
+
+  const effectiveRate = useMemo(() => {
+    if (!hasTaxProfile || !taxProfile) return 0.25;
+    const totalIncome = invoices
+      .filter(inv => inv.status === 'paid' && inv.paid_at && new Date(inv.paid_at).getFullYear() === new Date().getFullYear())
+      .reduce((sum, inv) => sum + inv.total_amount, 0)
+      + shifts.filter(s => new Date(s.start_datetime) >= new Date()).reduce((sum, s) => sum + (s.rate_applied || 0), 0);
+    return computeEffectiveSetAsideRate(taxProfile, totalIncome || 1);
+  }, [taxProfile, hasTaxProfile, invoices, shifts]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<'month' | 'week' | 'list' | 'confirmations' | 'sync'>('month');
   const [showAdd, setShowAdd] = useState(false);
@@ -376,6 +407,7 @@ export default function SchedulePage() {
               )}
             </>
           ) : (
+            <TooltipProvider>
             <div className="rounded-lg border bg-card overflow-x-auto -mx-3 sm:mx-0">
               <table className="w-full text-sm min-w-[500px] sm:min-w-0">
                 <thead><tr className="border-b bg-muted/50">
@@ -390,33 +422,49 @@ export default function SchedulePage() {
                 <tbody>
                   {rangeShifts.map(s => {
                     const hrs = Math.max(0, differenceInHours(new Date(s.end_datetime), new Date(s.start_datetime)));
+                    const isPaid = paidShiftIds.has(s.id);
                     return (
-                      <tr key={s.id} className="border-b last:border-0 hover:bg-muted/30 cursor-pointer" onClick={() => setEditShift(s.id)}>
-                        <td className="p-3">{format(new Date(s.start_datetime), 'EEE, MMM d')}</td>
-                        <td className="p-3 font-medium">{getFacilityName(s.facility_id)}</td>
-                        <td className="p-3 text-muted-foreground hidden md:table-cell">{format(new Date(s.start_datetime), 'h:mm a')} – {format(new Date(s.end_datetime), 'h:mm a')}</td>
-                        <td className="p-3 text-muted-foreground hidden md:table-cell">{hrs}h</td>
-                        <td className="p-3 font-medium">${s.rate_applied}</td>
-                        <td className="p-3" onClick={e => e.stopPropagation()}>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive">
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete this shift?</AlertDialogTitle>
-                                <AlertDialogDescription>{getFacilityName(s.facility_id)} — {format(new Date(s.start_datetime), 'MMM d, yyyy')}</AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => { deleteShift(s.id); toast.success('Shift deleted'); }}>Delete</AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </td>
-                      </tr>
+                      <React.Fragment key={s.id}>
+                        <tr className="border-b last:border-0 hover:bg-muted/30 cursor-pointer" onClick={() => setEditShift(s.id)}>
+                          <td className="p-3">{format(new Date(s.start_datetime), 'EEE, MMM d')}</td>
+                          <td className="p-3 font-medium">{getFacilityName(s.facility_id)}</td>
+                          <td className="p-3 text-muted-foreground hidden md:table-cell">{format(new Date(s.start_datetime), 'h:mm a')} – {format(new Date(s.end_datetime), 'h:mm a')}</td>
+                          <td className="p-3 text-muted-foreground hidden md:table-cell">{hrs}h</td>
+                          <td className="p-3 font-medium">${s.rate_applied}</td>
+                          <td className="p-3" onClick={e => e.stopPropagation()}>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive">
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete this shift?</AlertDialogTitle>
+                                  <AlertDialogDescription>{getFacilityName(s.facility_id)} — {format(new Date(s.start_datetime), 'MMM d, yyyy')}</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => { deleteShift(s.id); toast.success('Shift deleted'); }}>Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </td>
+                        </tr>
+                        {isPaid && (s.rate_applied || 0) > 0 && (
+                          <tr className="border-b last:border-0">
+                            <td colSpan={7} className="px-3 pb-2 pt-0">
+                              <ShiftTaxNudge
+                                shiftIncome={s.rate_applied || 0}
+                                taxProfile={taxProfile}
+                                hasProfile={hasTaxProfile}
+                                isPaid={isPaid}
+                                effectiveRate={effectiveRate}
+                              />
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
                     );
                   })}
                   {rangeShifts.length === 0 && (
@@ -440,10 +488,18 @@ export default function SchedulePage() {
                       <td className="p-3" />
                       <td />
                     </tr>
+                    {ytdPaidIncome > 0 && (
+                      <tr className="border-t">
+                        <td colSpan={7}>
+                          <ShiftTaxSummaryFooter ytdPaid={ytdPaidIncome} effectiveRate={effectiveRate} hasProfile={hasTaxProfile} />
+                        </td>
+                      </tr>
+                    )}
                   </tfoot>
                 )}
               </table>
             </div>
+            </TooltipProvider>
           )}
         </>
       )}

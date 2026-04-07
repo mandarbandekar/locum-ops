@@ -59,7 +59,7 @@ function computeFederalTax(taxableIncome: number, filingStatus: FilingStatus): n
   return round2(tax);
 }
 
-function calculateTax(
+export function calculateTax(
   grossIncome: number,
   profile: TaxIntelligenceProfile,
 ): FullTaxResult {

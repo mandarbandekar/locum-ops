@@ -1,13 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { DollarSign, CheckCircle, Download, Link2, Copy, RefreshCw, Loader2, Undo2, Send } from 'lucide-react';
+import { DollarSign, CheckCircle, Download, Link2, Copy, RefreshCw, Loader2, Undo2, Send, PiggyBank } from 'lucide-react';
 import { format } from 'date-fns';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
 import { toast } from 'sonner';
 import { RecordPaymentDialog } from '@/components/invoice/RecordPaymentDialog';
 import { supabase } from '@/integrations/supabase/client';
+import { useTaxIntelligence } from '@/hooks/useTaxIntelligence';
+import { computeEffectiveSetAsideRate, getShiftTaxNudge } from '@/lib/taxNudge';
+import { useData } from '@/contexts/DataContext';
 
 async function downloadInvoicePdf(invoiceId: string, invoiceNumber: string) {
   const { data: { session } } = await supabase.auth.getSession();
@@ -42,10 +45,32 @@ export function InvoiceSentPanel({ invoice, items, invoicePayments, facility, bi
   const [showPayment, setShowPayment] = useState(false);
   const [shareLoading, setShareLoading] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
+  const [showPayNudge, setShowPayNudge] = useState(false);
+  const { profile: taxProfile, hasProfile: hasTaxProfile } = useTaxIntelligence();
+  const { invoices: allInvoices, shifts } = useData();
   const computedStatus = computeInvoiceStatus(invoice);
   const isPaid = invoice.status === 'paid';
   const hasShareLink = !!invoice.share_token && !invoice.share_token_revoked_at;
   const shareUrl = hasShareLink ? `${window.location.origin}/invoice/public/${invoice.share_token}` : '';
+
+  // Compute effective rate for nudge
+  const effectiveRate = (() => {
+    if (!hasTaxProfile || !taxProfile) return 0;
+    const yr = new Date().getFullYear();
+    const earned = allInvoices
+      .filter(inv => inv.status === 'paid' && inv.paid_at && new Date(inv.paid_at).getFullYear() === yr)
+      .reduce((sum, inv) => sum + inv.total_amount, 0);
+    const projected = shifts.filter(s => new Date(s.start_datetime) >= new Date()).reduce((sum, s) => sum + (s.rate_applied || 0), 0);
+    return computeEffectiveSetAsideRate(taxProfile, (earned + projected) || 1);
+  })();
+
+  // Auto-dismiss pay nudge after 4 seconds
+  useEffect(() => {
+    if (showPayNudge) {
+      const t = setTimeout(() => setShowPayNudge(false), 4000);
+      return () => clearTimeout(t);
+    }
+  }, [showPayNudge]);
 
   const handleDownloadPdf = async () => {
     setPdfLoading(true);
@@ -104,6 +129,9 @@ export function InvoiceSentPanel({ invoice, items, invoicePayments, facility, bi
       description: isPaidNow ? `Paid in full — $${payment.amount}` : `Payment recorded — $${payment.amount} via ${payment.method}`,
     });
     toast.success(isPaidNow ? 'Invoice paid in full!' : 'Payment recorded');
+    if (isPaidNow && hasTaxProfile) {
+      setShowPayNudge(true);
+    }
   };
 
   const handleRevertToDraft = async () => {
@@ -181,9 +209,23 @@ export function InvoiceSentPanel({ invoice, items, invoicePayments, facility, bi
             </Button>
           )}
           {isPaid && (
-            <div className="flex items-center justify-center gap-2 p-2.5 rounded-md bg-primary/10 text-primary text-sm font-medium">
-              <CheckCircle className="h-4 w-4" /> Paid in full
-            </div>
+            <>
+              <div className="flex items-center justify-center gap-2 p-2.5 rounded-md bg-primary/10 text-primary text-sm font-medium">
+                <CheckCircle className="h-4 w-4" /> Paid in full
+              </div>
+              {showPayNudge && effectiveRate > 0 && (
+                <div className="flex items-center gap-2 p-2.5 rounded-md bg-[hsl(var(--warning))]/10 text-sm animate-in fade-in slide-in-from-top-2 duration-300">
+                  <PiggyBank className="h-4 w-4 text-[hsl(var(--warning))] shrink-0" />
+                  <span>
+                    <span className="font-medium">Invoice marked paid ✓</span>
+                    <span className="text-muted-foreground mx-1">·</span>
+                    <span className="text-[hsl(var(--warning))]">
+                      Set aside ${getShiftTaxNudge(invoice.total_amount || 0, effectiveRate).setAsideAmount.toLocaleString()} for taxes
+                    </span>
+                  </span>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
