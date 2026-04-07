@@ -278,7 +278,7 @@ export default function SchedulePage() {
             >
               <div className="font-semibold truncate leading-tight">{getFacilityName(s.facility_id)}</div>
               <div className="truncate opacity-80">{format(start, 'h:mma').toLowerCase()}–{format(end, 'h:mma').toLowerCase()}</div>
-              <div className="truncate opacity-70">${s.rate_applied}/hr · {hrs}h</div>
+              <div className="truncate opacity-70">${s.rate_applied} · {hrs}h</div>
             </div>
           );
         })}
