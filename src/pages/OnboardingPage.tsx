@@ -17,12 +17,6 @@ import { ShiftFormDialog } from '@/components/schedule/ShiftFormDialog';
 import { CalendarSyncStep } from '@/components/onboarding/CalendarSyncStep';
 import { GooglePlacesAutocomplete } from '@/components/GooglePlacesAutocomplete';
 
-const WORK_STYLES = [
-  'Independent contractor (1099)',
-  'S-Corp',
-  'W-2 per diem',
-  'Mix',
-];
 
 const TOOL_OPTIONS: { value: CurrentTool; label: string }[] = [
   { value: 'sheets_excel', label: 'Google Sheets / Excel' },
@@ -96,7 +90,7 @@ export default function OnboardingPage() {
   const [companyAddress, setCompanyAddress] = useState(profile?.company_address || '');
   const [invoiceEmail, setInvoiceEmail] = useState(profile?.invoice_email || '');
   const [invoicePhone, setInvoicePhone] = useState(profile?.invoice_phone || '');
-  const [workStyle, setWorkStyle] = useState(profile?.work_style_label || '');
+  
   const [timezone, setTimezone] = useState(profile?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone);
   const [currency, setCurrency] = useState(profile?.currency || 'USD');
 
@@ -156,7 +150,7 @@ export default function OnboardingPage() {
       company_address: companyAddress.trim(),
       invoice_email: invoiceEmail.trim() || null,
       invoice_phone: invoicePhone.trim() || null,
-      work_style_label: workStyle,
+      
       timezone,
       currency,
     });
@@ -223,15 +217,6 @@ export default function OnboardingPage() {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>Work style</Label>
-                  <Select value={workStyle} onValueChange={setWorkStyle}>
-                    <SelectTrigger><SelectValue placeholder="Select…" /></SelectTrigger>
-                    <SelectContent>
-                      {WORK_STYLES.map(w => <SelectItem key={w} value={w}>{w}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
                 <div>
                   <Label>Timezone</Label>
                   <Select value={timezone} onValueChange={setTimezone}>
