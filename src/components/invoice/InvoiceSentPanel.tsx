@@ -129,6 +129,9 @@ export function InvoiceSentPanel({ invoice, items, invoicePayments, facility, bi
       description: isPaidNow ? `Paid in full — $${payment.amount}` : `Payment recorded — $${payment.amount} via ${payment.method}`,
     });
     toast.success(isPaidNow ? 'Invoice paid in full!' : 'Payment recorded');
+    if (isPaidNow && hasTaxProfile) {
+      setShowPayNudge(true);
+    }
   };
 
   const handleRevertToDraft = async () => {
