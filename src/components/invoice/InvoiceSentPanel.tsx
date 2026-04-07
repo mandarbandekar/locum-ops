@@ -45,10 +45,32 @@ export function InvoiceSentPanel({ invoice, items, invoicePayments, facility, bi
   const [showPayment, setShowPayment] = useState(false);
   const [shareLoading, setShareLoading] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
+  const [showPayNudge, setShowPayNudge] = useState(false);
+  const { profile: taxProfile, hasProfile: hasTaxProfile } = useTaxIntelligence();
+  const { invoices: allInvoices, shifts } = useData();
   const computedStatus = computeInvoiceStatus(invoice);
   const isPaid = invoice.status === 'paid';
   const hasShareLink = !!invoice.share_token && !invoice.share_token_revoked_at;
   const shareUrl = hasShareLink ? `${window.location.origin}/invoice/public/${invoice.share_token}` : '';
+
+  // Compute effective rate for nudge
+  const effectiveRate = (() => {
+    if (!hasTaxProfile || !taxProfile) return 0;
+    const yr = new Date().getFullYear();
+    const earned = allInvoices
+      .filter(inv => inv.status === 'paid' && inv.paid_at && new Date(inv.paid_at).getFullYear() === yr)
+      .reduce((sum, inv) => sum + inv.total_amount, 0);
+    const projected = shifts.filter(s => new Date(s.start_datetime) >= new Date()).reduce((sum, s) => sum + (s.rate_applied || 0), 0);
+    return computeEffectiveSetAsideRate(taxProfile, (earned + projected) || 1);
+  })();
+
+  // Auto-dismiss pay nudge after 4 seconds
+  useEffect(() => {
+    if (showPayNudge) {
+      const t = setTimeout(() => setShowPayNudge(false), 4000);
+      return () => clearTimeout(t);
+    }
+  }, [showPayNudge]);
 
   const handleDownloadPdf = async () => {
     setPdfLoading(true);
