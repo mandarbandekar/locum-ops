@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useData } from '@/contexts/DataContext';
+import { useExpenses } from '@/hooks/useExpenses';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';

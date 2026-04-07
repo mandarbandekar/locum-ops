@@ -132,8 +132,8 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
     cutoff.setDate(cutoff.getDate() + 90);
     return shifts
       .filter(s => {
-        const d = new Date(s.date);
-        return d >= now && d <= cutoff && s.status !== 'cancelled';
+        const d = new Date(s.start_datetime);
+        return d >= now && d <= cutoff;
       })
       .reduce((sum, s) => sum + (s.rate_applied || 0), 0);
   }, [shifts, now]);
