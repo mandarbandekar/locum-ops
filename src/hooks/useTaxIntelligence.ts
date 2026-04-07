@@ -1,0 +1,125 @@
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+
+export interface TaxIntelligenceProfile {
+  id: string;
+  user_id: string;
+  entity_type: string;
+  filing_status: string;
+  state_code: string;
+  other_w2_income: number;
+  retirement_type: string;
+  retirement_contribution: number;
+  expense_tracking_level: string;
+  ytd_expenses_estimate: number;
+  scorp_salary: number;
+  safe_harbor_method: string;
+  prior_year_tax_paid: number;
+  setup_completed_at: string | null;
+}
+
+const db = (table: string) => supabase.from(table as any);
+
+const DEMO_PROFILE: TaxIntelligenceProfile = {
+  id: 'demo-tip',
+  user_id: 'demo',
+  entity_type: 'sole_prop',
+  filing_status: 'single',
+  state_code: 'OR',
+  other_w2_income: 0,
+  retirement_type: 'sep_ira',
+  retirement_contribution: 6000,
+  expense_tracking_level: 'careful',
+  ytd_expenses_estimate: 9500,
+  scorp_salary: 0,
+  safe_harbor_method: '90_percent',
+  prior_year_tax_paid: 0,
+  setup_completed_at: '2026-01-15T00:00:00Z',
+};
+
+export function useTaxIntelligence() {
+  const { user, isDemo } = useAuth();
+  const [profile, setProfile] = useState<TaxIntelligenceProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    if (isDemo) {
+      setProfile(DEMO_PROFILE);
+      setLoading(false);
+      return;
+    }
+    if (!user) { setLoading(false); return; }
+    try {
+      const { data } = await db('tax_intelligence_profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (data) {
+        const d = data as any;
+        setProfile({
+          id: d.id,
+          user_id: d.user_id,
+          entity_type: d.entity_type,
+          filing_status: d.filing_status,
+          state_code: d.state_code,
+          other_w2_income: Number(d.other_w2_income),
+          retirement_type: d.retirement_type,
+          retirement_contribution: Number(d.retirement_contribution),
+          expense_tracking_level: d.expense_tracking_level,
+          ytd_expenses_estimate: Number(d.ytd_expenses_estimate),
+          scorp_salary: Number(d.scorp_salary),
+          safe_harbor_method: d.safe_harbor_method,
+          prior_year_tax_paid: Number(d.prior_year_tax_paid),
+          setup_completed_at: d.setup_completed_at,
+        });
+      }
+    } catch (e) {
+      console.error('Failed to load tax intelligence profile', e);
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.id, isDemo]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const saveProfile = useCallback(async (data: Partial<TaxIntelligenceProfile>) => {
+    if (isDemo) {
+      setProfile(prev => prev ? { ...prev, ...data } : { ...DEMO_PROFILE, ...data });
+      return;
+    }
+    if (!user) return;
+    if (profile?.id) {
+      const { data: updated } = await db('tax_intelligence_profiles')
+        .update(data as any)
+        .eq('id', profile.id)
+        .select()
+        .single();
+      if (updated) {
+        const d = updated as any;
+        setProfile(prev => prev ? { ...prev, ...d } : null);
+      }
+    } else {
+      const { data: created } = await db('tax_intelligence_profiles')
+        .insert({ user_id: user.id, ...data, setup_completed_at: new Date().toISOString() } as any)
+        .select()
+        .single();
+      if (created) {
+        const d = created as any;
+        setProfile({
+          id: d.id, user_id: d.user_id,
+          entity_type: d.entity_type, filing_status: d.filing_status,
+          state_code: d.state_code, other_w2_income: Number(d.other_w2_income),
+          retirement_type: d.retirement_type, retirement_contribution: Number(d.retirement_contribution),
+          expense_tracking_level: d.expense_tracking_level, ytd_expenses_estimate: Number(d.ytd_expenses_estimate),
+          scorp_salary: Number(d.scorp_salary), safe_harbor_method: d.safe_harbor_method,
+          prior_year_tax_paid: Number(d.prior_year_tax_paid), setup_completed_at: d.setup_completed_at,
+        });
+      }
+    }
+  }, [user?.id, profile?.id, isDemo]);
+
+  const hasProfile = !!(profile?.setup_completed_at);
+
+  return { profile, loading, saveProfile, hasProfile, reload: load };
+}

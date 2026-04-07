@@ -2688,6 +2688,63 @@ export type Database = {
         }
         Relationships: []
       }
+      tax_intelligence_profiles: {
+        Row: {
+          created_at: string
+          entity_type: string
+          expense_tracking_level: string
+          filing_status: string
+          id: string
+          other_w2_income: number
+          prior_year_tax_paid: number
+          retirement_contribution: number
+          retirement_type: string
+          safe_harbor_method: string
+          scorp_salary: number
+          setup_completed_at: string | null
+          state_code: string
+          updated_at: string
+          user_id: string
+          ytd_expenses_estimate: number
+        }
+        Insert: {
+          created_at?: string
+          entity_type?: string
+          expense_tracking_level?: string
+          filing_status?: string
+          id?: string
+          other_w2_income?: number
+          prior_year_tax_paid?: number
+          retirement_contribution?: number
+          retirement_type?: string
+          safe_harbor_method?: string
+          scorp_salary?: number
+          setup_completed_at?: string | null
+          state_code?: string
+          updated_at?: string
+          user_id?: string
+          ytd_expenses_estimate?: number
+        }
+        Update: {
+          created_at?: string
+          entity_type?: string
+          expense_tracking_level?: string
+          filing_status?: string
+          id?: string
+          other_w2_income?: number
+          prior_year_tax_paid?: number
+          retirement_contribution?: number
+          retirement_type?: string
+          safe_harbor_method?: string
+          scorp_salary?: number
+          setup_completed_at?: string | null
+          state_code?: string
+          updated_at?: string
+          user_id?: string
+          ytd_expenses_estimate?: number
+        }
+        Relationships: []
+      }
       tax_opportunity_review_items: {
         Row: {
           category: string
