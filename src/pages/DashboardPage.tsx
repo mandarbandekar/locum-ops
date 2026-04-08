@@ -495,7 +495,7 @@ export default function DashboardPage() {
       {/* 3-Column Layout */}
       <div className="grid gap-4 sm:gap-5 grid-cols-1 lg:grid-cols-12 lg:items-start">
         {/* Left: Upcoming Shifts */}
-        <div className="lg:col-span-4">
+        <div className="order-2 lg:order-none lg:col-span-4">
           <UpcomingShiftsCard
             shifts={shifts}
             getFacilityName={getFacilityName}
@@ -506,7 +506,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Center: Money to Collect */}
-        <div className="lg:col-span-4">
+        <div className="order-3 lg:order-none lg:col-span-4">
            <MoneyToCollectCard
             outstandingTotal={summary.outstandingTotal}
             paidThisMonth={summary.paidThisMonth}
@@ -515,11 +515,13 @@ export default function DashboardPage() {
             thisWeekEarnings={thisWeekEarnings}
             monthlyPace={monthlyPace}
             oldestUnpaid={oldestUnpaid}
+            weeklySparkline={weeklySparkline}
+            taxSnapshot={taxSnapshot}
           />
         </div>
 
         {/* Right: Needs Attention */}
-        <div className="lg:col-span-4">
+        <div className="order-first lg:order-none lg:col-span-4">
           <NeedsAttentionCard items={attentionItems} readinessItems={readinessItems} />
         </div>
       </div>
