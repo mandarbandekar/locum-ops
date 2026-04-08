@@ -107,55 +107,55 @@ const FILING_STATUS_LABELS: Record<FilingStatus, string> = {
 
 export { FILING_STATUS_LABELS };
 
-// 2026 standard deductions (projected / approximate)
+// 2026 standard deductions (official IRS Rev. Proc. 2025-32)
 const STANDARD_DEDUCTIONS: Record<FilingStatus, number> = {
-  single: 15700,
-  married_joint: 31400,
-  married_separate: 15700,
-  head_of_household: 23500,
+  single: 16100,
+  married_joint: 32200,
+  married_separate: 16100,
+  head_of_household: 24150,
 };
 
-// 2026 federal marginal brackets (projected)
+// 2026 federal marginal brackets (official IRS Rev. Proc. 2025-32)
 const BRACKETS: Record<FilingStatus, { limit: number; rate: number }[]> = {
   single: [
-    { limit: 11925, rate: 0.10 },
-    { limit: 48475, rate: 0.12 },
-    { limit: 103350, rate: 0.22 },
-    { limit: 197300, rate: 0.24 },
-    { limit: 250525, rate: 0.32 },
-    { limit: 626350, rate: 0.35 },
+    { limit: 12400, rate: 0.10 },
+    { limit: 50400, rate: 0.12 },
+    { limit: 105700, rate: 0.22 },
+    { limit: 201775, rate: 0.24 },
+    { limit: 256225, rate: 0.32 },
+    { limit: 640600, rate: 0.35 },
     { limit: Infinity, rate: 0.37 },
   ],
   married_joint: [
-    { limit: 23850, rate: 0.10 },
-    { limit: 96950, rate: 0.12 },
-    { limit: 206700, rate: 0.22 },
-    { limit: 394600, rate: 0.24 },
-    { limit: 501050, rate: 0.32 },
-    { limit: 751600, rate: 0.35 },
+    { limit: 24800, rate: 0.10 },
+    { limit: 100800, rate: 0.12 },
+    { limit: 211400, rate: 0.22 },
+    { limit: 403550, rate: 0.24 },
+    { limit: 512450, rate: 0.32 },
+    { limit: 768700, rate: 0.35 },
     { limit: Infinity, rate: 0.37 },
   ],
   married_separate: [
-    { limit: 11925, rate: 0.10 },
-    { limit: 48475, rate: 0.12 },
-    { limit: 103350, rate: 0.22 },
-    { limit: 197300, rate: 0.24 },
-    { limit: 250525, rate: 0.32 },
-    { limit: 375800, rate: 0.35 },
+    { limit: 12400, rate: 0.10 },
+    { limit: 50400, rate: 0.12 },
+    { limit: 105700, rate: 0.22 },
+    { limit: 201775, rate: 0.24 },
+    { limit: 256225, rate: 0.32 },
+    { limit: 384350, rate: 0.35 },
     { limit: Infinity, rate: 0.37 },
   ],
   head_of_household: [
-    { limit: 17000, rate: 0.10 },
-    { limit: 64850, rate: 0.12 },
-    { limit: 103350, rate: 0.22 },
-    { limit: 197300, rate: 0.24 },
-    { limit: 250500, rate: 0.32 },
-    { limit: 626350, rate: 0.35 },
+    { limit: 17700, rate: 0.10 },
+    { limit: 67450, rate: 0.12 },
+    { limit: 105700, rate: 0.22 },
+    { limit: 201775, rate: 0.24 },
+    { limit: 256200, rate: 0.32 },
+    { limit: 640600, rate: 0.35 },
     { limit: Infinity, rate: 0.37 },
   ],
 };
 
-const SS_WAGE_CAP_2026 = 174900; // projected 2026 SS wage base
+const SS_WAGE_CAP_2026 = 184500; // official 2026 SS wage base
 const SE_TAX_RATE = 0.153; // 12.4% SS + 2.9% Medicare
 const SE_TAXABLE_FACTOR = 0.9235; // 92.35% of net earnings subject to SE tax
 
