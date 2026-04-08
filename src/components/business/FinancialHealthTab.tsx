@@ -264,6 +264,15 @@ export default function FinancialHealthTab() {
   const revenueByFacilityConfig = { revenue: { label: 'Revenue', color: 'hsl(142, 71%, 45%)' } };
   const expenseTrendConfig = { totalCents: { label: 'Expenses', color: 'hsl(var(--primary))' } };
   const expenseCatConfig = { totalCents: { label: 'Amount', color: 'hsl(var(--primary))' } };
+  const cumulativeEarningsConfig = { total: { label: 'Cumulative Earnings', color: 'hsl(var(--primary))' } };
+
+  const cumulativeData = useMemo(() => {
+    let running = 0;
+    return revenueData.map(d => {
+      running += d.collected + d.outstanding + d.anticipated;
+      return { month: d.month, total: Math.round(running * 100) / 100 };
+    });
+  }, [revenueData]);
 
   return (
     <div className="space-y-6">
