@@ -11,17 +11,19 @@ import { InvoiceEmptyState } from '@/components/invoice/InvoiceEmptyState';
 import { InvoiceStatusGroup } from '@/components/invoice/InvoiceStatusGroup';
 import { InvoiceSummaryStrip } from '@/components/invoice/InvoiceSummaryStrip';
 import { InvoiceWorkflowHint } from '@/components/invoice/InvoiceWorkflowHint';
+import { AutoInvoiceDeleteDialog } from '@/components/invoice/AutoInvoiceDeleteDialog';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
 export default function InvoicesPage() {
-  const { invoices, facilities, shifts, addInvoice, deleteInvoice, dataLoading } = useData();
+  const { invoices, facilities, shifts, addInvoice, deleteInvoice, suppressInvoicePeriod, dataLoading } = useData();
   const navigate = useNavigate();
   const [showCreate, setShowCreate] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [autoDeleteTarget, setAutoDeleteTarget] = useState<{ id: string; invoiceNumber: string; facilityName: string; periodStart: string; periodEnd: string; facilityId: string } | null>(null);
 
   // Refs for scroll-to
   const overdueRef = useRef<HTMLDivElement>(null);
