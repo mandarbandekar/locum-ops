@@ -5,16 +5,18 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import {
   CalendarDays, FileText, DollarSign, AlertTriangle, ArrowRight,
-  Send, ShieldAlert, CheckSquare, Zap, Clock,
+  Send, ShieldAlert, CheckSquare, Zap, Clock, Calculator,
 } from 'lucide-react';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
-import { format, differenceInDays, differenceInHours, addMonths, subMonths, startOfMonth, endOfMonth, endOfDay, startOfWeek, endOfWeek, eachMonthOfInterval, isWithinInterval, isToday, isAfter, parseISO } from 'date-fns';
+import { format, differenceInDays, differenceInHours, addMonths, subMonths, startOfMonth, endOfMonth, endOfDay, startOfWeek, endOfWeek, subWeeks, eachMonthOfInterval, isWithinInterval, isToday, isAfter, parseISO } from 'date-fns';
 import { getChecklistBadge } from '@/types/contracts';
 import { useClinicConfirmations } from '@/hooks/useClinicConfirmations';
 import { useCredentials } from '@/hooks/useCredentials';
 import { generateCredentialReminders, generateUninvoicedShiftReminders } from '@/lib/reminderEngine';
 import { computeStatus as computeSubStatus } from '@/hooks/useSubscriptions';
 import { useReminderPreferences } from '@/hooks/useReminderPreferences';
+import { useTaxIntelligence } from '@/hooks/useTaxIntelligence';
+import { calculateTax } from '@/components/tax-intelligence/TaxDashboard';
 
 import { UpcomingShiftsCard } from '@/components/dashboard/UpcomingShiftsCard';
 import { MoneyToCollectCard } from '@/components/dashboard/MoneyToCollectCard';
@@ -59,6 +61,7 @@ export default function DashboardPage() {
   const { shifts, invoices, facilities, payments, checklistItems, lineItems } = useData();
   const { user, isDemo } = useAuth();
   const { profile } = useUserProfile();
+  const { profile: taxProfile, hasProfile: hasTaxProfile } = useTaxIntelligence();
   const { categories: reminderCategories } = useReminderPreferences();
   const navigate = useNavigate();
   const now = new Date();
