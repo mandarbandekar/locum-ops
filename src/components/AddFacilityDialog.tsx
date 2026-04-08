@@ -7,25 +7,31 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
 import { useData } from '@/contexts/DataContext';
 import { useClinicConfirmations } from '@/hooks/useClinicConfirmations';
 import { generateId } from '@/lib/businessLogic';
 import type { FacilityStatus } from '@/types';
 import { toast } from 'sonner';
-import { ArrowLeft, ArrowRight, SkipForward, AlertTriangle, Search } from 'lucide-react';
+import {
+  ArrowLeft, ArrowRight, SkipForward, AlertTriangle,
+  Building2, DollarSign, Monitor, DoorOpen, UserCheck, CalendarClock, FileText,
+  Sparkles, Check, Info, CircleDot
+} from 'lucide-react';
 import { GooglePlacesAutocomplete } from '@/components/GooglePlacesAutocomplete';
 import type { PlaceSelection } from '@/components/GooglePlacesAutocomplete';
 import { RatesEditor, RateEntry, ratesToTermsFields } from '@/components/facilities/RatesEditor';
 import type { BillingCadence } from '@/lib/invoiceBillingDefaults';
 
-const STEPS = [
-  { label: 'General', description: 'Name & basic info' },
-  { label: 'Shift Rates', description: 'Rate configuration' },
-  { label: 'Tech Access', description: 'Logins & credentials' },
-  { label: 'Clinic Access', description: 'Door codes & parking' },
-  { label: 'Scheduling Contact', description: 'Confirmation contact info' },
-  { label: 'Invoicing Preferences', description: 'Billing cadence & automation' },
-  { label: 'Invoice Settings', description: 'Prefix, contacts & terms' },
+const STEP_META = [
+  { label: 'Welcome', icon: Sparkles, required: false, hint: '' },
+  { label: 'General', icon: Building2, required: true, hint: 'This is how the clinic appears across your schedule, invoices, and reports.' },
+  { label: 'Shift Rates', icon: DollarSign, required: false, hint: 'Setting rates now means your invoices calculate automatically — no manual math.' },
+  { label: 'Tech Access', icon: Monitor, required: false, hint: 'Store login info here so you\'re never scrambling on your first morning at a clinic.' },
+  { label: 'Clinic Access', icon: DoorOpen, required: false, hint: 'Door codes and parking details in one place — handy before each shift.' },
+  { label: 'Scheduling Contact', icon: UserCheck, required: true, hint: 'This person receives shift confirmation emails so clinics know when you\'re coming.' },
+  { label: 'Invoicing Preferences', icon: CalendarClock, required: false, hint: 'Controls how often draft invoices are created from your completed shifts.' },
+  { label: 'Invoice Settings', icon: FileText, required: true, hint: 'The billing contact who receives your invoices. Required for auto-sending.' },
 ];
 
 export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boolean; onOpenChange: (o: boolean) => void; onCreated?: (facilityId: string) => void }) {
@@ -56,7 +62,7 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
   const [schedulingContactEmail, setSchedulingContactEmail] = useState('');
   const [billingCadence, setBillingCadence] = useState<BillingCadence>('monthly');
   const [autoGenerateInvoices, setAutoGenerateInvoices] = useState(true);
-  const totalSteps = STEPS.length;
+  const totalSteps = STEP_META.length;
   const progress = ((step + 1) / totalSteps) * 100;
 
   function getInitials(text: string): string {
@@ -83,8 +89,7 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
   };
 
   const handleSubmit = async () => {
-    // Validate all mandatory steps
-    for (const s of [0, 4, 6]) {
+    for (const s of [1, 5, 7]) {
       const err = validateStep(s);
       if (err) { toast.error(err); setStep(s); return; }
     }
@@ -127,7 +132,6 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
         });
       }
 
-      // Save scheduling contact (mandatory)
       await saveConfirmationSettings({
         id: '',
         facility_id: facility.id,
@@ -155,13 +159,13 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
   const isEmailValid = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const validateStep = (s: number): string | null => {
-    if (s === 0 && !name.trim()) return 'Please enter a facility name';
-    if (s === 4) {
+    if (s === 1 && !name.trim()) return 'Please enter a facility name';
+    if (s === 5) {
       if (!schedulingContactName.trim()) return 'Scheduling contact name is required';
       if (!schedulingContactEmail.trim()) return 'Scheduling contact email is required';
       if (!isEmailValid(schedulingContactEmail.trim())) return 'Please enter a valid scheduling contact email';
     }
-    if (s === 6) {
+    if (s === 7) {
       if (!invoiceNameTo.trim()) return 'Billing contact name (To) is required';
       if (!invoiceEmailTo.trim()) return 'Billing contact email (To) is required';
       if (!isEmailValid(invoiceEmailTo.trim())) return 'Please enter a valid billing email';
@@ -169,15 +173,8 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
     return null;
   };
 
-  const handleSkipAndAdd = () => {
-    const err = validateStep(step);
-    if (err) { toast.error(err); return; }
-    if (step < totalSteps - 1) {
-      setStep(step + 1);
-    } else {
-      handleSubmit();
-    }
-  };
+  const currentMeta = STEP_META[step];
+  const isOptionalStep = !currentMeta.required && step > 0;
 
   const handleNext = () => {
     const err = validateStep(step);
@@ -189,39 +186,134 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
     }
   };
 
+  const handleSkip = () => {
+    if (step < totalSteps - 1) {
+      setStep(step + 1);
+    }
+  };
+
   const handleBack = () => {
     if (step > 0) setStep(step - 1);
   };
 
+  const hasRates = rates.length > 0 && rates.some(r => r.amount > 0);
+  const hasTechAccess = !!(techComputer || techWifi || techPims);
+  const hasClinicAccess = !!clinicAccess;
+
+  const summaryItems = [
+    { label: 'Clinic', value: name || '—', filled: !!name },
+    { label: 'Address', value: address || 'Skipped', filled: !!address },
+    { label: 'Shift Rates', value: hasRates ? `${rates.filter(r => r.amount > 0).length} configured` : 'Skipped', filled: hasRates },
+    { label: 'Tech Access', value: hasTechAccess ? 'Filled' : 'Skipped', filled: hasTechAccess },
+    { label: 'Clinic Access', value: hasClinicAccess ? 'Filled' : 'Skipped', filled: hasClinicAccess },
+    { label: 'Scheduling Contact', value: schedulingContactName || '—', filled: !!schedulingContactName },
+    { label: 'Billing Cadence', value: billingCadence.charAt(0).toUpperCase() + billingCadence.slice(1), filled: true },
+    { label: 'Billing Contact', value: invoiceNameTo || '—', filled: !!invoiceNameTo },
+  ];
+
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) resetForm(); onOpenChange(o); }}>
-      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-[680px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add Practice Facility</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            {step > 0 && (
+              <>
+                <currentMeta.icon className="h-5 w-5 text-primary" />
+                {currentMeta.label}
+                {currentMeta.required && (
+                  <Badge variant="default" className="text-[10px] px-1.5 py-0">Required</Badge>
+                )}
+                {isOptionalStep && (
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Optional</Badge>
+                )}
+              </>
+            )}
+            {step === 0 && 'Add Practice Facility'}
+          </DialogTitle>
         </DialogHeader>
 
-        {/* Progress section */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>Step {step + 1} of {totalSteps} — {STEPS[step].label}</span>
-           {step > 0 && step !== 4 && step !== 5 && step !== 6 && (
-              <button
-                type="button"
-                onClick={handleSkipAndAdd}
-                className="flex items-center gap-1 text-xs text-primary hover:underline transition-colors"
-              >
-                <SkipForward className="h-3 w-3" />
-                Skip & add later
-              </button>
-            )}
+        {/* Visual Stepper (hidden on welcome) */}
+        {step > 0 && (
+          <div className="flex items-center justify-between px-1">
+            {STEP_META.slice(1).map((meta, i) => {
+              const stepIndex = i + 1;
+              const isCompleted = stepIndex < step;
+              const isCurrent = stepIndex === step;
+              const Icon = meta.icon;
+              return (
+                <div key={meta.label} className="flex items-center flex-1 last:flex-none">
+                  <div className="flex flex-col items-center gap-1">
+                    <div className={`relative flex items-center justify-center h-8 w-8 rounded-full border-2 transition-colors ${
+                      isCompleted ? 'bg-primary border-primary text-primary-foreground' :
+                      isCurrent ? 'border-primary bg-primary/10 text-primary' :
+                      'border-muted-foreground/30 text-muted-foreground/50'
+                    }`}>
+                      {isCompleted ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
+                      {meta.required && !isCompleted && (
+                        <CircleDot className="absolute -top-0.5 -right-0.5 h-3 w-3 text-primary" />
+                      )}
+                    </div>
+                    <span className={`text-[10px] leading-tight text-center max-w-[60px] ${
+                      isCurrent ? 'text-primary font-medium' : 'text-muted-foreground/60'
+                    }`}>{meta.label}</span>
+                  </div>
+                  {i < STEP_META.length - 2 && (
+                    <div className={`flex-1 h-0.5 mx-1 mt-[-16px] ${isCompleted ? 'bg-primary' : 'bg-muted-foreground/20'}`} />
+                  )}
+                </div>
+              );
+            })}
           </div>
-          <Progress value={progress} className="h-2" />
-          <p className="text-xs text-muted-foreground">{STEPS[step].description}</p>
-        </div>
+        )}
+
+        {/* Progress bar */}
+        {step > 0 && <Progress value={progress} className="h-1.5" />}
+
+        {/* Contextual hint */}
+        {step > 0 && currentMeta.hint && (
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-primary/5 border border-primary/10">
+            <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+            <p className="text-xs text-muted-foreground">{currentMeta.hint}</p>
+          </div>
+        )}
 
         {/* Step content */}
         <div className="space-y-3 min-h-[200px]">
+          {/* Step 0: Welcome */}
           {step === 0 && (
+            <div className="flex flex-col items-center text-center py-4 space-y-5">
+              <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <Building2 className="h-7 w-7 text-primary" />
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-xl font-semibold">Let's set up your practice</h2>
+                <p className="text-sm text-muted-foreground max-w-sm">
+                  We'll walk you through a few quick steps to get this clinic configured in LocumOps.
+                </p>
+              </div>
+              <div className="text-left space-y-3 w-full max-w-sm">
+                {[
+                  { icon: Building2, text: 'Clinic name and address' },
+                  { icon: DollarSign, text: 'Shift rates for automatic invoicing' },
+                  { icon: UserCheck, text: 'Scheduling and billing contacts' },
+                  { icon: CalendarClock, text: 'Invoicing cadence and preferences' },
+                ].map(({ icon: Ic, text }) => (
+                  <div key={text} className="flex items-center gap-3 text-sm text-muted-foreground">
+                    <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                      <Ic className="h-4 w-4" />
+                    </div>
+                    {text}
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground max-w-sm">
+                Only the <span className="font-medium text-foreground">clinic name</span>, <span className="font-medium text-foreground">scheduling contact</span>, and <span className="font-medium text-foreground">billing contact</span> are required. Everything else can be added later.
+              </p>
+            </div>
+          )}
+
+          {/* Step 1: General */}
+          {step === 1 && (
             <>
               {!manualEntry && !clinicSelected && (
                 <div className="space-y-2">
@@ -272,16 +364,14 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
             </>
           )}
 
-          {step === 1 && (
-            <>
-              <p className="text-sm text-muted-foreground">Set shift rates for this facility. You can also configure these later.</p>
-              <RatesEditor rates={rates} onChange={setRates} showCard={false} compact />
-            </>
+          {/* Step 2: Shift Rates */}
+          {step === 2 && (
+            <RatesEditor rates={rates} onChange={setRates} showCard={false} compact />
           )}
 
-          {step === 2 && (
+          {/* Step 3: Tech Access */}
+          {step === 3 && (
             <>
-              <p className="text-sm text-muted-foreground">Store login credentials and tech access info for this facility.</p>
               <div className="space-y-2">
                 <Label>Computer / Login Info</Label>
                 <Textarea value={techComputer} onChange={e => setTechComputer(e.target.value)} placeholder="Computer login, desktop credentials..." rows={2} />
@@ -297,20 +387,18 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
             </>
           )}
 
-          {step === 3 && (
-            <>
-              <p className="text-sm text-muted-foreground">General clinic access details — door codes, parking, key info, etc.</p>
-              <div className="space-y-2">
-                <Label>Clinic Access Information</Label>
-                <Textarea value={clinicAccess} onChange={e => setClinicAccess(e.target.value)} placeholder="Door codes, parking instructions, key pickup, building access..." rows={5} />
-              </div>
-            </>
+          {/* Step 4: Clinic Access */}
+          {step === 4 && (
+            <div className="space-y-2">
+              <Label>Clinic Access Information</Label>
+              <Textarea value={clinicAccess} onChange={e => setClinicAccess(e.target.value)} placeholder="Door codes, parking instructions, key pickup, building access..." rows={5} />
+            </div>
           )}
 
-          {step === 4 && (
+          {/* Step 5: Scheduling Contact */}
+          {step === 5 && (
             <>
-              <p className="text-sm text-muted-foreground">Add the scheduling contact for shift confirmations. This person will receive monthly and pre-shift confirmation emails.</p>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label>Contact Name <span className="text-destructive">*</span></Label>
                   <Input value={schedulingContactName} onChange={e => setSchedulingContactName(e.target.value)} placeholder="Practice Manager" />
@@ -320,13 +408,13 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
                   <Input type="email" value={schedulingContactEmail} onChange={e => setSchedulingContactEmail(e.target.value)} placeholder="manager@clinic.com" />
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground">This contact will be used for shift confirmations in the Schedule module. You can configure auto-send settings later.</p>
+              <p className="text-xs text-muted-foreground">This contact will be used for shift confirmations. You can configure auto-send settings later.</p>
             </>
           )}
 
-          {step === 5 && (
+          {/* Step 6: Invoicing Preferences */}
+          {step === 6 && (
             <>
-              <p className="text-sm text-muted-foreground">Choose how often invoices should be generated for this facility.</p>
               <div className="space-y-2">
                 <Label>Billing cadence</Label>
                 <Select value={billingCadence} onValueChange={(v: BillingCadence) => setBillingCadence(v)}>
@@ -338,7 +426,7 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
                   </SelectContent>
                 </Select>
                 {billingCadence === 'weekly' && (
-                  <p className="text-xs text-muted-foreground">Billing week runs Monday through Sunday. Draft generates on the morning of your last scheduled shift that week.</p>
+                  <p className="text-xs text-muted-foreground">Billing week runs Monday through Sunday.</p>
                 )}
                 {billingCadence === 'monthly' && (
                   <p className="text-xs text-muted-foreground">Draft generates on the morning of your last scheduled shift of the month.</p>
@@ -351,7 +439,7 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
               <div className="flex items-center justify-between py-2">
                 <div>
                   <Label>Auto-generate invoices</Label>
-                  <p className="text-xs text-muted-foreground">Draft invoices are generated automatically during the early morning system run.</p>
+                  <p className="text-xs text-muted-foreground">Drafts are generated automatically during the early morning system run.</p>
                 </div>
                 <Switch checked={autoGenerateInvoices} onCheckedChange={setAutoGenerateInvoices} />
               </div>
@@ -365,9 +453,9 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
             </>
           )}
 
-          {step === 6 && (
+          {/* Step 7: Invoice Settings */}
+          {step === 7 && (
             <>
-              <p className="text-sm text-muted-foreground">Invoice settings, email recipients, and payment terms for this facility.</p>
               <p className="text-xs font-medium text-muted-foreground">To</p>
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
@@ -379,7 +467,6 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
                   <Input type="email" value={invoiceEmailTo} onChange={e => setInvoiceEmailTo(e.target.value)} placeholder="billing@clinic.com" />
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground">This email will be used as the billing contact when invoices are created.</p>
               <p className="text-xs font-medium text-muted-foreground pt-1">CC</p>
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
@@ -402,34 +489,70 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
                   <Input type="email" value={invoiceEmailBcc} onChange={e => setInvoiceEmailBcc(e.target.value)} placeholder="records@clinic.com" />
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label>Invoice Prefix</Label>
-                <Input value={invoicePrefix} onChange={e => setInvoicePrefix(e.target.value.toUpperCase())} placeholder={name ? getInitials(name) : 'INV'} />
-                <p className="text-xs text-muted-foreground">
-                  Defaults to facility initials. e.g. {invoicePrefix || (name ? getInitials(name) : 'INV')}-2026-001
-                </p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Invoice Prefix</Label>
+                  <Input value={invoicePrefix} onChange={e => setInvoicePrefix(e.target.value.toUpperCase())} placeholder={name ? getInitials(name) : 'INV'} />
+                  <p className="text-xs text-muted-foreground">
+                    e.g. {invoicePrefix || (name ? getInitials(name) : 'INV')}-2026-001
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label>Invoice Due (days)</Label>
+                  <Input type="number" value={invoiceDueDays} onChange={e => setInvoiceDueDays(Number(e.target.value))} min={1} placeholder="15" />
+                  <p className="text-xs text-muted-foreground">Net {invoiceDueDays}</p>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label>Invoice Due (days)</Label>
-                <Input type="number" value={invoiceDueDays} onChange={e => setInvoiceDueDays(Number(e.target.value))} min={1} placeholder="15" />
-                <p className="text-xs text-muted-foreground">
-                  Number of days after invoice date that payment is due. Default: Net 15.
-                </p>
+
+              {/* Completion Summary */}
+              <div className="mt-4 p-3 rounded-lg bg-muted/50 border border-border space-y-2">
+                <p className="text-xs font-medium">Setup Summary</p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                  {summaryItems.map(item => (
+                    <div key={item.label} className="flex items-center gap-1.5 text-xs">
+                      {item.filled ? (
+                        <Check className="h-3 w-3 text-primary shrink-0" />
+                      ) : (
+                        <SkipForward className="h-3 w-3 text-muted-foreground/50 shrink-0" />
+                      )}
+                      <span className="text-muted-foreground">{item.label}:</span>
+                      <span className={`truncate ${item.filled ? 'text-foreground' : 'text-muted-foreground/50'}`}>{item.value}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </>
           )}
         </div>
 
-        {/* Navigation buttons */}
+        {/* Navigation */}
         <div className="flex items-center justify-between pt-2">
-          <Button type="button" variant="ghost" size="sm" onClick={handleBack} disabled={step === 0}>
-            <ArrowLeft className="mr-1 h-4 w-4" /> Back
-          </Button>
-          <Button type="button" size="sm" onClick={handleNext}>
-            {step === totalSteps - 1 ? 'Add Facility' : (
-              <>Next <ArrowRight className="ml-1 h-4 w-4" /></>
-            )}
-          </Button>
+          {step === 0 ? (
+            <>
+              <div />
+              <Button type="button" onClick={handleNext}>
+                Get Started <ArrowRight className="ml-1 h-4 w-4" />
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button type="button" variant="ghost" size="sm" onClick={handleBack}>
+                <ArrowLeft className="mr-1 h-4 w-4" /> Back
+              </Button>
+              <div className="flex items-center gap-2">
+                {isOptionalStep && step < totalSteps - 1 && (
+                  <Button type="button" variant="outline" size="sm" onClick={handleSkip}>
+                    <SkipForward className="mr-1 h-3.5 w-3.5" /> Skip
+                  </Button>
+                )}
+                <Button type="button" size="sm" onClick={handleNext}>
+                  {step === totalSteps - 1 ? 'Add Facility' : (
+                    <>Next <ArrowRight className="ml-1 h-4 w-4" /></>
+                  )}
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       </DialogContent>
     </Dialog>
