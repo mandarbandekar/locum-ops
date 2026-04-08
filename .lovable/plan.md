@@ -1,35 +1,44 @@
 
 
-# Three UI Tweaks: Expenses Header, Tax Intelligence Rename, Amber Tax Amounts
+# Update to Official 2026 IRS Tax Brackets and Limits
 
-## Changes
+## What's Changing
 
-### 1. Add page header to Expenses & Mileage (`src/pages/ExpensesPage.tsx`)
-Add a header block above the Tabs matching the style of other pages (icon + title + subtitle):
-- Icon: `Receipt` (already used in sidebar)
-- Title: "Expense and Mileage Tracking"
-- Subtitle: "Track business expenses, mileage, and tax write-offs"
+The current constants use projected/estimated 2026 figures. The IRS released the official 2026 numbers (Revenue Procedure 2025-32, updated for the One Big Beautiful Bill Act). Here are the corrections:
 
-### 2. Rename "Tax Center" → "Tax Intelligence"
-Two files:
-- **`src/components/AppSidebar.tsx`** line 68: change sidebar label from `'Tax Center'` to `'Tax Intelligence'`
-- **`src/pages/TaxCenterPage.tsx`** line 27: change `<h1>` from `"Tax Center"` to `"Tax Intelligence"`
+### Federal Brackets (all three filing statuses need updates)
 
-### 3. Replace `text-destructive` with amber/warning color on tax amounts (`src/components/tax-intelligence/TaxDashboard.tsx`)
-Replace all `text-destructive` on monetary tax amounts with `text-amber-500` (from the theme). This covers:
-- Quarterly payment hero numbers (lines 272, 291, 298)
-- Annual breakdown cards (lines 336, 342, 346)
-- "Every additional $1,000" callout (line 181)
-- Breakdown rows with `negative` flag (line 523)
+| Status | Current limits | Official 2026 limits |
+|---|---|---|
+| Single | 11,925 / 48,475 / 103,350 / 197,300 / 250,525 / 626,350 | **12,400 / 50,400 / 105,700 / 201,775 / 256,225 / 640,600** |
+| MFJ | 23,850 / 96,950 / 206,700 / 394,600 / 501,050 / 751,600 | **24,800 / 100,800 / 211,400 / 403,550 / 512,450 / 768,700** |
+| HoH | 17,000 / 64,850 / 103,350 / 197,300 / 250,500 / 626,350 | **17,700 / 67,450 / 105,700 / 201,775 / 256,200 / 640,600** |
 
-Keep `variant="destructive"` on the "X days" urgency badges — those should stay red as they signal deadlines.
+### Standard Deductions
 
-## Files
+| Status | Current | Official 2026 |
+|---|---|---|
+| Single | $15,700 | **$16,100** |
+| MFJ | $31,400 | **$32,200** |
+| HoH | $23,500 | **$24,150** |
 
-| File | Change |
-|---|---|
-| `src/pages/ExpensesPage.tsx` | Add page header with Receipt icon |
-| `src/components/AppSidebar.tsx` | Rename sidebar item |
-| `src/pages/TaxCenterPage.tsx` | Rename page title |
-| `src/components/tax-intelligence/TaxDashboard.tsx` | Swap `text-destructive` → `text-amber-500` on tax amounts |
+### Other Constants
+
+| Item | Current | Official 2026 |
+|---|---|---|
+| SS Wage Cap | $174,900 | **$184,500** |
+| Standard Mileage Rate | $0.70/mi | **$0.725/mi** |
+| SEP IRA max | $69,000 | **$72,000** |
+| Solo 401(k) employee max | $23,000 | **$23,500** |
+| Solo 401(k) total max | $69,000 | **$72,000** |
+| SIMPLE IRA employee max | $16,000 | **$16,500** |
+
+### TAX_YEAR_CONFIG updates
+- `ssWageBase`: 174900 → **184500**
+- `standardMileageRate`: 0.70 → **0.725**
+- `lastUpdated`: update to reflect current date
+
+## Implementation
+
+Single file change: **`src/lib/taxConstants2026.ts`** — update all numeric constants listed above. No logic changes, no new files, no database changes. All downstream calculations (TaxDashboard, taxNudge, TaxReductionGuide, etc.) automatically pick up the new values since they import from this file.
 
