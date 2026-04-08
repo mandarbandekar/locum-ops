@@ -130,7 +130,7 @@ describe('estimateSelfEmploymentTax', () => {
 
   it('caps Social Security at wage base', () => {
     const result = estimateSelfEmploymentTax(300000);
-    const expectedSS = Math.round(174900 * 0.124 * 100) / 100;
+    const expectedSS = Math.round(184500 * 0.124 * 100) / 100;
     expect(result.socialSecurity).toBe(expectedSS);
   });
 });
@@ -142,7 +142,7 @@ describe('estimateFederalIncomeTax', () => {
 
   it('computes tax for single filer with moderate income', () => {
     const tax = estimateFederalIncomeTax(80000, 'single', undefined, 0);
-    expect(tax).toBe(9060);
+    expect(tax).toBe(8770);
   });
 });
 
