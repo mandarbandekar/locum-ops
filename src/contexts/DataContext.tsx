@@ -390,13 +390,18 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
             toast.info(`Draft invoice updated for ${facility.name}`);
           } else if (facility.auto_generate_invoices && eligible.length > 0) {
             // Check suppression before creating new draft
-            const periodStartISO = period.start.toISOString();
-            const periodEndISO = period.end.toISOString();
-            const isSuppressed = suppressedPeriods.some(sp =>
-              sp.facility_id === facility.id &&
-              new Date(sp.period_start).toISOString().slice(0, 10) === periodStartISO.slice(0, 10) &&
-              new Date(sp.period_end).toISOString().slice(0, 10) === periodEndISO.slice(0, 10)
-            );
+            const periodStartDate = period.start.toISOString().slice(0, 10);
+            const periodEndDate = period.end.toISOString().slice(0, 10);
+            const isSuppressed = suppressedPeriods.some(sp => {
+              if (sp.facility_id !== facility.id) return false;
+              const spStart = new Date(sp.period_start).toISOString().slice(0, 10);
+              const spEnd = new Date(sp.period_end).toISOString().slice(0, 10);
+              if (spStart !== periodStartDate) return false;
+              // Allow 1-day tolerance on end date for timezone mismatch
+              if (spEnd === periodEndDate) return true;
+              const diff = Math.abs(new Date(spEnd).getTime() - new Date(periodEndDate).getTime());
+              return diff <= 86400000;
+            });
             if (isSuppressed) {
               // Period suppressed — skip auto-generation silently
             } else {
