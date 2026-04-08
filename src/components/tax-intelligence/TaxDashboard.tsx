@@ -1,5 +1,8 @@
 import { useMemo, useState, useCallback } from 'react';
 import { useData } from '@/contexts/DataContext';
+import { useTaxPaymentLogs } from '@/hooks/useTaxPaymentLogs';
+import TaxPaymentHub from './TaxPaymentHub';
+import TaxPaymentHistory from './TaxPaymentHistory';
 import { useExpenses } from '@/hooks/useExpenses';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
