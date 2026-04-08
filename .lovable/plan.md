@@ -1,82 +1,15 @@
 
-# Tax Intelligence Module — Addendum Implementation
+
+# Tax Intelligence Module — Addendum Implementation Plan
 
 ## Overview
 
-Five surgical changes to the existing tax engine: fix S-Corp quarterly estimate math, replace flat state rates with progressive brackets, add PTE tax handling, expand household income for accurate federal brackets, and restructure tax constants. This is a large change touching the calculation engine, profile setup UI, dashboard display, and per-shift nudge.
+Five surgical changes to the existing tax engine. This is a large change touching the calculation engine, profile setup UI, dashboard display, and per-shift nudge across ~10 files.
 
-## Change 1 — Fix S-Corp Quarterly Estimate
+## Implementation Order
 
-**Problem**: S-Corp quarterly 1040-ES currently includes payroll tax (FICA), double-counting it since it's paid through payroll.
-
-**Files changed**:
-- `src/components/tax-intelligence/TaxDashboard.tsx` — Update `calculateTax()` S-Corp path: remove payroll tax from `totalAnnualTax` and `quarterlyPayment`. Payroll tax stays as a read-only info line in the breakdown. Quarterly = `(federalTax + stateTax) / 4` only.
-- `src/components/schedule/ShiftTaxNudge.tsx` — S-Corp nudge copy changes to "Set aside $X for income tax" with tooltip explaining payroll is separate.
-- `src/lib/taxNudge.ts` — S-Corp nudge excludes SE/payroll from set-aside rate.
-
-**Breakdown table update**: Move payroll tax row out of the quarterly estimate section; show it as "Employer payroll taxes (auto-calculated · 7.65% of salary)" with a tooltip.
-
-## Change 2 — Progressive State Tax Brackets
-
-**Problem**: Flat state rates are materially inaccurate for CA, NY, OR, NJ, etc.
-
-**New file**: `src/lib/stateTaxData.ts`
-- All 50 states + DC with type (`none`, `flat`, `progressive`), brackets by filing status, standard deductions, PTE availability and rates.
-- `applyStateBrackets()` function handles all three state types.
-- Replace `STATE_TAX_RATES` usage everywhere with the new bracket engine.
-
-**Profile setup update** (`TaxProfileSetup.tsx`):
-- State dropdown stays the same (full 50 states alphabetical).
-- After selection, show a dynamic read-only callout: "California · Progressive brackets · Up to 13.3%" or "Texas · No state income tax".
-
-## Change 3 — PTE Tax Handling for S-Corp Users
-
-**New profile fields** (DB migration):
-- `pte_elected` (boolean, default false)
-- `spouse_w2_income` (numeric, default 0)
-- `spouse_has_se_income` (boolean, default false)
-- `spouse_se_net_income` (numeric, default 0)
-
-**Profile setup** (`TaxProfileSetup.tsx`):
-- Add conditional PTE step after state selection for S-Corp users whose state has `hasPTE: true`.
-- Shows explainer with "Yes / No / I don't know" options.
-- "I don't know" expands inline savings estimate panel.
-
-**Dashboard** (`TaxDashboard.tsx`):
-- When PTE elected: split quarterly display into two side-by-side cards (1040-ES federal + S-Corp PTE state payment).
-- Add footer note explaining the split.
-- When PTE elected: `personalStateTax = 0`, `scorpPTEPayment = distribution × pteRate`.
-
-## Change 4 — Federal Tax on Gross Household Income
-
-**Profile setup** (`TaxProfileSetup.tsx`):
-- Expand the "Other Income" step into a structured household income section: spouse W-2 gross, spouse SE income flag + amount.
-- Show calculated total household income as read-only live field.
-
-**Dashboard** (`TaxDashboard.tsx`):
-- Add `buildFederalAGI()` that includes spouse income.
-- Add bracket visualization below hero card: horizontal segmented bar showing where household income lands, marginal rate callout, and "every additional $1,000 adds $X" line.
-- Add `getMarginalRate()` to the exported calculation engine.
-
-**Per-shift nudge** (`src/lib/taxNudge.ts`, `ShiftTaxNudge.tsx`):
-- Use marginal federal rate (not effective) for set-aside calculation.
-- Tooltip shows breakdown: federal marginal + state effective + SE rate (1099 only).
-- Cap total at 45%.
-
-## Change 5 — Tax Constants Architecture
-
-**Restructure constants**:
-- `src/lib/taxConstants2026.ts` → rename to `src/lib/taxConstants.ts` (or keep, but update to be the single source of truth for federal brackets, SE rates, SS wage cap, standard deductions)
-- `src/lib/stateTaxData.ts` → new file for all 50-state data
-- Add `TAX_YEAR_CONFIG` object with `activeYear`, `lastUpdated`, `nextUpdateDue`, `ssWageBase`, `seNetRate`, `seTaxRate`, `standardMileageRate`
-
-**UI footer**: Every estimate screen shows "Estimates based on [year] federal brackets and [state] [year] rates · Last updated: [date]"
-
-**Disclaimer update**: Replace all estimate screen disclaimers with the expanded version from the prompt.
-
-## Database Migration
-
-Add columns to `tax_intelligence_profiles`:
+### Step 1 — Database Migration
+Add 4 columns to `tax_intelligence_profiles`:
 ```sql
 ALTER TABLE tax_intelligence_profiles
   ADD COLUMN IF NOT EXISTS pte_elected boolean DEFAULT false,
@@ -85,36 +18,121 @@ ALTER TABLE tax_intelligence_profiles
   ADD COLUMN IF NOT EXISTS spouse_se_net_income numeric DEFAULT 0;
 ```
 
-## Updated `TaxIntelligenceProfile` Interface
+### Step 2 — New File: `src/lib/stateTaxData.ts`
+All 50 states + DC with:
+- Type: `none`, `flat`, or `progressive`
+- Brackets by filing status (single, mfj, hoh)
+- State standard deductions
+- PTE availability and rates
+- `applyStateBrackets(taxableIncome, filingStatus, stateKey, pteElected)` function
+- `getStateInfo(stateKey)` helper for UI callouts
 
-Add four new fields: `pte_elected`, `spouse_w2_income`, `spouse_has_se_income`, `spouse_se_net_income`.
+States with progressive brackets (full bracket data): AL, CA, CT, DE, GA (transitioning to flat 2025), HI, IA, ID, KS, KY, LA, ME, MD, MN, MO, MT, NE, NJ, NM, NY, NC, ND, OH, OK, OR, RI, SC, VA, VT, WI, WV, DC. Flat-rate states: AZ, CO, GA, IL, IN, MA, MI, MS, NC, NH, PA, UT. No-tax states: AK, FL, NV, NH (interest/dividends only), SD, TN, TX, WA, WY.
+
+### Step 3 — Update `src/lib/taxConstants2026.ts`
+- Add `TAX_YEAR_CONFIG` object with `activeYear`, `lastUpdated`, `nextUpdateDue`, `ssWageBase`, `seNetRate`, `seTaxRate`, `standardMileageRate`, `additionalMedicareRate`, `additionalMedicareThreshold`
+- Add exported `getMarginalRate(taxableIncome, filingStatus)` function
+- Add exported `applyFederalBrackets(taxableIncome, filingStatus)` (extract from TaxDashboard)
+- Add `buildFederalAGI()` function
+- Remove `STATE_TAX_RATES` flat map (replaced by stateTaxData.ts)
+- Keep `US_STATES` array (still needed for dropdowns)
+
+### Step 4 — Update `src/hooks/useTaxIntelligence.ts`
+- Add 4 new fields to `TaxIntelligenceProfile` interface: `pte_elected`, `spouse_w2_income`, `spouse_has_se_income`, `spouse_se_net_income`
+- Update `DEMO_PROFILE` with defaults
+- Update load/save mapping
+
+### Step 5 — Major Update: `src/components/tax-intelligence/TaxDashboard.tsx`
+
+**S-Corp calculation fix (Change 1):**
+- Remove payroll tax from `totalAnnualTax` and `quarterlyPayment` for S-Corp
+- S-Corp quarterly = `(federalTax + personalStateTax) / 4` only
+- Payroll tax shown as read-only business expense line in breakdown
+
+**Progressive state taxes (Change 2):**
+- Replace `stateRate * income` with `applyStateBrackets()` from new stateTaxData.ts
+
+**PTE handling (Change 3):**
+- When `pte_elected`: `personalStateTax = 0`, add `scorpPTEPayment = distribution × pteRate`
+- Split quarterly display into two side-by-side cards (1040-ES + PTE)
+- Footer note explaining the split
+
+**Household AGI (Change 4):**
+- Include `spouse_w2_income` and `spouse_se_net_income` in AGI calculation
+- Add bracket visualization: horizontal segmented bar showing where income lands
+- Show marginal rate and "every additional $1,000 adds $X" line
+
+**Updated FullTaxResult interface:** Add `marginalRate`, `scorpPTEPayment`, `personalStateTax` fields.
+
+**Disclaimer update (Change 5):** New expanded disclaimer text referencing tax year and state.
+
+**Tax data version footer:** Show "Estimates based on [year] federal brackets and [state] [year] rates · Last updated: [date]"
+
+### Step 6 — Update `src/components/tax-intelligence/TaxProfileSetup.tsx`
+
+**State callout:** After state selection, show dynamic read-only badge:
+- "California · Progressive brackets · Up to 13.3% · PTE available"
+- "Texas · No state income tax"
+
+**PTE step (S-Corp only, states with hasPTE):** New conditional step after state:
+- Yes / No / I don't know options
+- "I don't know" expands inline savings estimate
+- Savings calculated as `distribution × pteRate × marginalFederalRate`
+
+**Household income step:** Replace simple "other W-2 income" with structured section:
+- Spouse/partner W-2 gross income field
+- Spouse has SE income? Yes/No toggle → conditional SE net income field
+- Calculated total household income (read-only)
+
+**Step count:** Adjusts dynamically (S-Corp + PTE state = +1 step)
+
+### Step 7 — Update `src/lib/taxNudge.ts`
+
+**Marginal rate calculation:**
+- `getShiftSetAside(shiftIncome, taxProfile, calcResult)` uses marginal federal rate + state effective rate + SE rate (1099 only: 0.1413)
+- Cap at 45%
+- Return breakdown object: `{ federal, state, se, total }`
+
+**S-Corp nudge:** Exclude SE rate from calculation.
+
+**`computeEffectiveSetAsideRate`:** Update to use marginal rate instead of effective rate.
+
+### Step 8 — Update `src/components/schedule/ShiftTaxNudge.tsx`
+
+**S-Corp copy:** "Set aside $X for income tax" instead of "for taxes"
+- Tooltip: "Payroll taxes on your salary are handled through your payroll provider. This covers your estimated federal and state income tax only."
+
+**Breakdown tooltip (all users):**
+```
+Federal income tax (24% marginal): $336
+California state tax (9.3%):       $130
+SE tax (14.1%):                    $198  ← 1099 only
+Total set aside (28% effective):   $392
+```
+
+### Step 9 — Update `src/components/tax-intelligence/TaxReductionGuide.tsx`
+- Use `applyStateBrackets()` instead of flat rate
+- Use `getMarginalRate()` from constants
+- Import from new stateTaxData.ts
+
+### Step 10 — Update `src/components/tax-strategy/TaxDisclaimer.tsx`
+New disclaimer text:
+"Estimates use [year] federal brackets, [state] [year] progressive rates, and inputs from your tax profile. This does not account for the QBI deduction (20% pass-through), AMT, itemized deductions, tax credits, or state-specific nuances beyond income tax. PTE calculations are directional — consult your S-Corp's CPA or tax advisor before electing or modifying PTE status. Use this to plan and save — not to file."
 
 ## Files Summary
 
 | File | Action |
 |---|---|
-| `src/lib/stateTaxData.ts` | **New** — 50-state progressive bracket data + `applyStateBrackets()` |
-| `src/lib/taxConstants2026.ts` | Update — add `TAX_YEAR_CONFIG`, `getMarginalRate()`, additional Medicare threshold; remove `STATE_TAX_RATES` |
-| `src/hooks/useTaxIntelligence.ts` | Update — add 4 new profile fields to interface + DEMO_PROFILE + load/save |
-| `src/components/tax-intelligence/TaxDashboard.tsx` | Major update — fix S-Corp calc, use progressive state brackets, household AGI, bracket visualization, PTE split cards, updated disclaimer |
-| `src/components/tax-intelligence/TaxProfileSetup.tsx` | Update — PTE step, expanded household income step, state callout |
-| `src/components/tax-intelligence/TaxReductionGuide.tsx` | Update — use new state bracket engine, updated disclaimer |
-| `src/lib/taxNudge.ts` | Update — marginal rate calculation, S-Corp-aware nudge, breakdown |
-| `src/components/schedule/ShiftTaxNudge.tsx` | Update — S-Corp copy change, breakdown tooltip |
+| DB migration | Add 4 columns |
+| `src/lib/stateTaxData.ts` | **New** — ~600 lines, all 50 states + DC |
+| `src/lib/taxConstants2026.ts` | Update — add TAX_YEAR_CONFIG, getMarginalRate, remove STATE_TAX_RATES |
+| `src/hooks/useTaxIntelligence.ts` | Update — 4 new profile fields |
+| `src/components/tax-intelligence/TaxDashboard.tsx` | Major rewrite — S-Corp fix, progressive state, PTE cards, bracket viz, household AGI |
+| `src/components/tax-intelligence/TaxProfileSetup.tsx` | Update — PTE step, household income, state callout |
+| `src/lib/taxNudge.ts` | Update — marginal rate, S-Corp aware, breakdown |
+| `src/components/schedule/ShiftTaxNudge.tsx` | Update — S-Corp copy, breakdown tooltip |
+| `src/components/tax-intelligence/TaxReductionGuide.tsx` | Update — use new bracket engine |
 | `src/components/tax-strategy/TaxDisclaimer.tsx` | Update — new disclaimer text |
-| DB migration | Add 4 columns to `tax_intelligence_profiles` |
-
-## Implementation Order
-
-1. DB migration (new profile columns)
-2. `src/lib/stateTaxData.ts` (new state bracket data — largest new file)
-3. `src/lib/taxConstants2026.ts` (TAX_YEAR_CONFIG, remove flat STATE_TAX_RATES, add getMarginalRate)
-4. `src/hooks/useTaxIntelligence.ts` (new fields)
-5. `src/components/tax-intelligence/TaxDashboard.tsx` (core engine rewrite)
-6. `src/components/tax-intelligence/TaxProfileSetup.tsx` (PTE + household steps)
-7. `src/lib/taxNudge.ts` + `ShiftTaxNudge.tsx` (marginal rate nudge)
-8. `src/components/tax-intelligence/TaxReductionGuide.tsx` (use new engine)
-9. Disclaimer updates across all screens
 
 ## Calculation Order (Unified Sequence)
 
@@ -142,15 +160,15 @@ Add four new fields: `pte_elected`, `spouse_w2_income`, `spouse_has_se_income`, 
 6. STATE TAX = applyStateBrackets(...) or 0 if PTE
 7. QUARTERLY 1040-ES
    1099:       (federal + state + seTax) / 4
-   S-Corp:    (federal + state) / 4   ← no payroll
-   S-Corp PTE: federal / 4 + scorpPTE / 4 (separate card)
+   S-Corp:    (federal + state) / 4
+   S-Corp PTE: federal / 4 shown separately from scorpPTE / 4
 8. PER-SHIFT NUDGE = marginalFed + stateEffective + (1099 ? 0.1413 : 0)
 ```
 
-## Not Changed
-
+## What Does NOT Change
 - Tax profile setup flow structure and step order (only adding PTE step + expanding household step)
 - Three-surface nudge placement (shift card, mark-paid, log footer)
-- Educational guide structure (Section 3)
+- Educational guide structure (content stays, just uses new engine)
 - Safe harbor preference and prior year tax input
-- Core disclaimer presence on all screens (just updated text)
+- Disclaimer presence on all screens (just updated text)
+
