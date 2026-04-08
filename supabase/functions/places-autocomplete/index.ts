@@ -17,7 +17,36 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { input } = await req.json();
+    const body = await req.json();
+
+    // Mode 1: Place Details lookup by place_id
+    if (body.place_id && typeof body.place_id === 'string') {
+      const detailsUrl = new URL('https://maps.googleapis.com/maps/api/place/details/json');
+      detailsUrl.searchParams.set('place_id', body.place_id);
+      detailsUrl.searchParams.set('fields', 'name,formatted_address');
+      detailsUrl.searchParams.set('key', GOOGLE_MAPS_API_KEY);
+
+      const res = await fetch(detailsUrl.toString());
+      const data = await res.json();
+
+      if (data.result) {
+        return new Response(
+          JSON.stringify({
+            name: data.result.name || '',
+            formatted_address: data.result.formatted_address || '',
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ name: '', formatted_address: '' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Mode 2: Autocomplete predictions
+    const { input, searchType } = body;
     if (!input || typeof input !== 'string' || input.trim().length < 3) {
       return new Response(
         JSON.stringify({ predictions: [] }),
@@ -25,9 +54,11 @@ Deno.serve(async (req) => {
       );
     }
 
+    const typesParam = searchType === 'establishment' ? 'establishment' : 'address';
+
     const url = new URL('https://maps.googleapis.com/maps/api/place/autocomplete/json');
     url.searchParams.set('input', input.trim());
-    url.searchParams.set('types', 'address');
+    url.searchParams.set('types', typesParam);
     url.searchParams.set('key', GOOGLE_MAPS_API_KEY);
 
     const res = await fetch(url.toString());
