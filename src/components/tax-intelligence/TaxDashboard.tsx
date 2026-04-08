@@ -114,6 +114,7 @@ export function calculateTax(
 
 export default function TaxDashboard({ profile, onEditProfile }: Props) {
   const { shifts, invoices } = useData();
+  const { ytdDeductibleCents } = useExpenses();
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentQuarter = Math.ceil((now.getMonth() + 1) / 3);
