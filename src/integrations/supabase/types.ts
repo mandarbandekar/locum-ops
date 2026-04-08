@@ -2577,6 +2577,33 @@ export type Database = {
         }
         Relationships: []
       }
+      suppressed_invoice_periods: {
+        Row: {
+          created_at: string
+          facility_id: string
+          id: string
+          period_end: string
+          period_start: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          facility_id: string
+          id?: string
+          period_end: string
+          period_start: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          facility_id?: string
+          id?: string
+          period_end?: string
+          period_start?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       tax_advisor_profiles: {
         Row: {
           buys_supplies_equipment: boolean | null
