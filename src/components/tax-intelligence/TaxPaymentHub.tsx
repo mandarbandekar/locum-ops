@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
-  CreditCard, ExternalLink, ChevronDown, CheckCircle2,
+  ExternalLink, ChevronDown, CheckCircle2,
   Wallet, Building2, AlertTriangle, HelpCircle,
 } from 'lucide-react';
 import {
