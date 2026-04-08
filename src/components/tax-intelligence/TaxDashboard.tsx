@@ -178,7 +178,7 @@ function BracketVisualization({ taxableIncome, fs, marginalRate }: { taxableInco
       </div>
       <div className="flex items-center justify-between text-sm">
         <span className="text-muted-foreground">You are in the <strong className="text-foreground">{marginalPct}% bracket</strong></span>
-        <span className="text-muted-foreground font-medium">Every additional $1,000 adds <strong className="text-destructive">${addlTaxPer1k}</strong> in federal tax</span>
+        <span className="text-muted-foreground font-medium">Every additional $1,000 adds <strong className="text-amber-500">${addlTaxPer1k}</strong> in federal tax</span>
       </div>
     </div>
   );
@@ -269,7 +269,7 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">
                 Next Quarterly Payment · {nextDue.label}
               </p>
-              <p className="text-4xl font-bold text-destructive">${fmt(taxResult.quarterlyPayment)}</p>
+              <p className="text-4xl font-bold text-amber-500">${fmt(taxResult.quarterlyPayment)}</p>
               <div className="flex items-center justify-center gap-2 mt-2">
                 <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">Due {nextDue.due}</span>
@@ -288,14 +288,14 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
                 <div className="rounded-xl bg-background/80 backdrop-blur-sm border p-4 text-center">
                   <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Your 1040-ES Payment</p>
                   <p className="text-[10px] text-muted-foreground">(federal income tax)</p>
-                  <p className="text-2xl font-bold text-destructive mt-1">${fmt(taxResult.quarterlyPayment)}</p>
+                  <p className="text-2xl font-bold text-amber-500 mt-1">${fmt(taxResult.quarterlyPayment)}</p>
                   <p className="text-[10px] text-muted-foreground mt-1">per quarter</p>
                   <p className="text-[10px] text-muted-foreground">Pay via IRS Direct Pay or EFTPS</p>
                 </div>
                 <div className="rounded-xl bg-background/80 backdrop-blur-sm border p-4 text-center">
                   <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">S-Corp PTE Payment</p>
                   <p className="text-[10px] text-muted-foreground">(state, entity-level)</p>
-                  <p className="text-2xl font-bold text-destructive mt-1">${fmt(taxResult.scorpPTEQuarterly || 0)}</p>
+                  <p className="text-2xl font-bold text-amber-500 mt-1">${fmt(taxResult.scorpPTEQuarterly || 0)}</p>
                   <p className="text-[10px] text-muted-foreground mt-1">per quarter</p>
                   <p className="text-[10px] text-muted-foreground">Paid by your S-Corp through state e-file</p>
                 </div>
@@ -333,17 +333,17 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
               <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
                 {isScorp ? 'Federal Tax' : 'SE Tax'}
               </p>
-              <p className="text-xl font-bold text-destructive mt-1">${fmt(isScorp ? taxResult.federalTax : taxResult.seTax)}</p>
+              <p className="text-xl font-bold text-amber-500 mt-1">${fmt(isScorp ? taxResult.federalTax : taxResult.seTax)}</p>
             </div>
             <div className="rounded-xl bg-background/80 backdrop-blur-sm border p-3">
               <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
                 {isScorp ? 'State Tax' : 'Federal Tax'}
               </p>
-              <p className="text-xl font-bold text-destructive mt-1">${fmt(isScorp ? taxResult.personalStateTax : taxResult.federalTax)}</p>
+              <p className="text-xl font-bold text-amber-500 mt-1">${fmt(isScorp ? taxResult.personalStateTax : taxResult.federalTax)}</p>
             </div>
             <div className="rounded-xl bg-background/80 backdrop-blur-sm border p-3">
               <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Total Annual</p>
-              <p className="text-xl font-bold text-destructive mt-1">${fmt(taxResult.totalAnnualTax)}</p>
+              <p className="text-xl font-bold text-amber-500 mt-1">${fmt(taxResult.totalAnnualTax)}</p>
               <p className="text-[10px] text-muted-foreground">{taxResult.effectiveRate}% effective</p>
             </div>
           </div>
@@ -520,7 +520,7 @@ function Row({ label, value, valueStr, bold, negative }: { label: string; value?
   return (
     <div className={`flex justify-between text-sm ${bold ? 'font-semibold' : ''}`}>
       <span className="text-muted-foreground">{label}</span>
-      <span className={negative && (value ?? 0) > 0 ? 'text-destructive' : ''}>{display}</span>
+      <span className={negative && (value ?? 0) > 0 ? 'text-amber-500' : ''}>{display}</span>
     </div>
   );
 }
