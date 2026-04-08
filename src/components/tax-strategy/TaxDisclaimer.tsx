@@ -1,24 +1,21 @@
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertTriangle } from 'lucide-react';
-import { TAX_YEAR_CONFIG } from '@/lib/taxConstants2026';
+import { Info } from 'lucide-react';
 
-export function getDisclaimer(stateCode?: string): string {
-  const year = TAX_YEAR_CONFIG.activeYear;
-  const stateLabel = stateCode ? ` and ${stateCode} ${year} progressive rates` : '';
-  return `Estimates use ${year} federal brackets${stateLabel}, and inputs from your tax profile. This does not account for the QBI deduction (20% pass-through), AMT, itemized deductions, tax credits, or state-specific nuances beyond income tax. PTE calculations are directional — consult your S-Corp's CPA or tax advisor before electing or modifying PTE status. Use this to plan and save — not to file.`;
+export function getDisclaimer(): string {
+  return 'LocumOps gives you a clear picture of your estimated taxes based on your income, expenses, and tax profile — so you can plan ahead with confidence. These estimates are designed for planning and budgeting, not for filing. Every tax situation has nuances, so we always recommend reviewing your numbers with a CPA or tax professional before making final decisions.';
 }
 
 export const PERSISTENT_DISCLAIMER = getDisclaimer();
 
 export const ENTITY_DISCLAIMER =
-  'Entity examples and scenario estimates are for educational planning only. They do not recommend a business structure or guarantee savings.';
+  "These scenarios help you explore how different business structures could affect your taxes. They're a starting point for conversations with your CPA — not a recommendation to change your entity type.";
 
-export function TaxDisclaimerBanner({ stateCode }: { stateCode?: string }) {
+export function TaxDisclaimerBanner() {
   return (
-    <Alert className="border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700">
-      <AlertTriangle className="h-4 w-4 text-amber-600" />
-      <AlertDescription className="text-amber-800 dark:text-amber-300 text-sm">
-        {getDisclaimer(stateCode)}
+    <Alert className="border-blue-200 bg-blue-50/50 dark:bg-blue-950/20 dark:border-blue-800/50">
+      <Info className="h-4 w-4 text-blue-500" />
+      <AlertDescription className="text-muted-foreground text-sm">
+        {getDisclaimer()}
       </AlertDescription>
     </Alert>
   );

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Receipt, PiggyBank, Building2, CalendarDays, BookOpen,
-  ArrowRight, AlertTriangle, Info, ExternalLink,
+  ArrowRight, Info, ExternalLink,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { TaxIntelligenceProfile } from '@/hooks/useTaxIntelligence';
@@ -248,8 +248,8 @@ export default function TaxReductionGuide({ profile }: Props) {
 
       {/* Disclaimer */}
       <p className="text-[11px] text-muted-foreground text-center">
-        <AlertTriangle className="h-3 w-3 inline mr-1" />
-        Estimates use {TAX_YEAR_CONFIG.activeYear} federal brackets{profile.state_code ? `, ${profile.state_code} progressive rates` : ''}, and your tax profile inputs. Does not account for QBI deduction, AMT, itemized deductions, or tax credits. Use this to plan and save — not to file.
+        <Info className="h-3 w-3 inline mr-1" />
+        These estimates are designed for planning and budgeting, not for filing. We recommend reviewing your numbers with a CPA or tax professional before making final decisions.
       </p>
     </div>
   );

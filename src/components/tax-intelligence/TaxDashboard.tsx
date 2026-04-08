@@ -13,7 +13,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   CalendarDays, ChevronDown, DollarSign, Calculator, Settings2,
-  AlertTriangle, Clock, CheckCircle2, TrendingUp, Info, CreditCard, Lightbulb,
+  Clock, CheckCircle2, TrendingUp, Info, CreditCard, Lightbulb,
 } from 'lucide-react';
 import IncomeSplitBar from './IncomeSplitBar';
 import WhatIfSlider from './WhatIfSlider';
@@ -614,8 +614,8 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
           {' · '}Last updated: {TAX_YEAR_CONFIG.lastUpdated} · Rates updated annually each January
         </p>
         <p className="text-[11px] text-muted-foreground text-center">
-          <AlertTriangle className="h-3 w-3 inline mr-1" />
-          Estimates use {TAX_YEAR_CONFIG.activeYear} federal brackets{profile.state_code ? `, ${profile.state_code} progressive rates` : ''}, and inputs from your tax profile. Does not account for QBI deduction, AMT, itemized deductions, or tax credits. Use this to plan and save — not to file.
+          <Info className="h-3 w-3 inline mr-1" />
+          These estimates are designed for planning and budgeting, not for filing. We recommend reviewing your numbers with a CPA or tax professional before making final decisions.
         </p>
       </div>
     </div>
