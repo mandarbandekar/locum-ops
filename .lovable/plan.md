@@ -1,37 +1,61 @@
 
 
-# Friendlier Tax Disclaimers
+# Fix: Deleted Invoices Keep Regenerating
 
-## Problem
+## Root Cause
 
-Current disclaimers are technically dense and read like legal warnings ("does not account for QBI deduction (20% pass-through), AMT, itemized deductions..."). This can undermine confidence in the tool. The goal is a warmer tone that positions LocumOps as a powerful planning companion while gently encouraging CPA consultation for filing decisions.
+When a user deletes an auto-generated draft invoice, the shifts that were on it become "uninvoiced" again. The next time:
+- A new shift is added (triggers `addShift` auto-generation in DataContext)
+- The `generate-auto-invoices` edge function runs on its cron schedule
 
-## New Copy
+...those shifts pass the eligibility check (`getSentInvoiceShiftIds` only protects shifts on *sent* invoices, not deleted ones) and a brand new draft is created for the same billing period. This cycle repeats every time.
 
-**Primary disclaimer** (TaxDashboard, TaxReductionGuide, TaxStrategyPage):
-> "LocumOps gives you a clear picture of your estimated taxes based on your income, expenses, and tax profile — so you can plan ahead with confidence. These estimates are designed for planning and budgeting, not for filing. Every tax situation has nuances, so we always recommend reviewing your numbers with a CPA or tax professional before making final decisions."
+## Solution
 
-**Advisor disclaimer** (Tax Planning Advisor, CPA Prep):
-> "Think of this as your smart starting point. LocumOps helps you organize your tax picture and spot opportunities — but your CPA or tax advisor knows the full story. Use what you find here to have a better, faster conversation with them."
+Add a **suppression table** that records facility + billing period combinations the user has chosen to stop auto-generating. When deleting an auto-generated invoice, show a confirmation dialog asking whether to suppress future auto-generation for that period.
 
-**Entity disclaimer** (S-Corp assessment):
-> "These scenarios help you explore how different business structures could affect your taxes. They're a starting point for conversations with your CPA — not a recommendation to change your entity type."
+### Step 1 — Database Migration
+Create `suppressed_invoice_periods` table:
+- `id`, `user_id`, `facility_id`, `period_start`, `period_end`, `created_at`
+- RLS policy: users can CRUD own rows
+- Unique constraint on `(user_id, facility_id, period_start, period_end)`
 
-## Tone Principles
-- Lead with what the tool *does* for you (positive framing)
-- Position CPA as a partner, not a correction ("review with" not "consult before")
-- No jargon dump (remove QBI, AMT, PTE references from user-facing text — keep those in the detailed "How we calculate" card)
-- Keep it short — 2 sentences max for inline disclaimers
+### Step 2 — Enhanced Delete Confirmation Dialog
+In `InvoicesPage.tsx` and `InvoiceDetailPage.tsx`, when deleting an auto-generated (`generation_type === 'automatic'`) invoice:
+- Show a dialog: "This invoice was auto-generated. Do you also want to prevent it from being recreated for this billing period?"
+- Two options: "Delete Only" (just deletes) and "Delete & Suppress" (deletes + inserts suppression record)
+- Non-automatic invoices get the standard delete flow unchanged
 
-## Changes
+### Step 3 — Update `deleteInvoice` in DataContext
+Add a new function `suppressInvoicePeriod(facilityId, periodStart, periodEnd)` that inserts into the suppression table. Load suppressed periods on init alongside other data.
 
-| File | What |
+### Step 4 — Guard Auto-Generation (Client-Side)
+In `DataContext.addShift` auto-generation block (~line 282-408):
+- Before creating a new draft, check if `(facility_id, period_start, period_end)` exists in the suppressed periods list
+- If suppressed, skip generation silently
+
+### Step 5 — Guard Auto-Generation (Edge Function)
+In `supabase/functions/generate-auto-invoices/index.ts`:
+- Query `suppressed_invoice_periods` for the facility's user
+- Before creating a new invoice for a period, check if that period is suppressed
+- Skip with `action: "period_suppressed"` in results
+
+### Step 6 — Guard `InvoiceStatusGroup` Delete (Bulk)
+The bulk delete in `InvoicesPage` iterates `selected` IDs. For auto-generated invoices in the selection, show the same suppression choice before proceeding.
+
+## Files
+
+| File | Change |
 |---|---|
-| `src/components/tax-strategy/TaxDisclaimer.tsx` | Rewrite `getDisclaimer()`, `PERSISTENT_DISCLAIMER`, `ENTITY_DISCLAIMER`, and banner styling (swap AlertTriangle for Info icon, use softer blue/muted tones instead of amber warning) |
-| `src/components/tax-advisor/AdvisorDisclaimer.tsx` | Rewrite `ADVISOR_DISCLAIMER` with friendlier copy, swap to Info icon |
-| `src/components/tax-intelligence/TaxDashboard.tsx` | Update inline footer disclaimer text (~line 617) |
-| `src/components/tax-intelligence/TaxReductionGuide.tsx` | Update inline footer disclaimer text (~line 251) |
-| `src/test/taxPlanningAdvisor.test.ts` | Update assertion strings to match new copy |
+| DB migration | New `suppressed_invoice_periods` table |
+| `src/contexts/DataContext.tsx` | Load suppressed periods, add `suppressInvoicePeriod()`, guard `addShift` auto-gen |
+| `src/pages/InvoicesPage.tsx` | Enhanced delete dialog for auto-generated invoices |
+| `src/pages/InvoiceDetailPage.tsx` | Enhanced delete dialog for auto-generated invoices |
+| `supabase/functions/generate-auto-invoices/index.ts` | Check suppression table before creating drafts |
 
-No logic, database, or structural changes.
+## What Does NOT Change
+- Manual invoice creation unaffected
+- Existing draft update logic (when draft exists) unaffected — suppression only blocks *new* draft creation
+- Sent/paid invoice handling unchanged
+- Billing cadence and period calculation logic unchanged
 
