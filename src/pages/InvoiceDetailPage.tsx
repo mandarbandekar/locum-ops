@@ -151,27 +151,52 @@ export default function InvoiceDetailPage() {
           <span className="text-sm text-muted-foreground truncate">{facility?.name}</span>
         </div>
 
-        <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-          <AlertDialogTrigger asChild>
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive shrink-0">
+        {invoice.generation_type === 'automatic' && invoice.status === 'draft' ? (
+          <>
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive shrink-0" onClick={() => setAutoDeleteOpen(true)}>
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete Invoice {invoice.invoice_number}?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This will permanently delete this invoice and all its line items. This action cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+            <AutoInvoiceDeleteDialog
+              open={autoDeleteOpen}
+              onOpenChange={setAutoDeleteOpen}
+              invoiceNumber={invoice.invoice_number}
+              facilityName={facility?.name || 'Unknown'}
+              onDeleteOnly={async () => {
+                await deleteInvoice(invoice.id);
+                toast.success('Invoice deleted');
+                navigate('/invoices');
+              }}
+              onDeleteAndSuppress={async () => {
+                await deleteInvoice(invoice.id);
+                await suppressInvoicePeriod(invoice.facility_id, invoice.period_start, invoice.period_end);
+                toast.success('Invoice deleted — this period won\'t be auto-generated again');
+                navigate('/invoices');
+              }}
+            />
+          </>
+        ) : (
+          <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+            <AlertDialogTrigger asChild>
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive shrink-0">
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Invoice {invoice.invoice_number}?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete this invoice and all its line items. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
       </div>
 
       {/* Stepper */}
