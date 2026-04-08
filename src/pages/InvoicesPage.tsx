@@ -241,9 +241,14 @@ export default function InvoicesPage() {
             defaultOpen={true}
             groupByFacility={true}
             headerRight={readyToReview.length > 0 ? (
-              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => navigate(`/invoices/${readyToReview[0].id}`)}>
-                Review & Send
-              </Button>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-amber-700 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md">
+                  ${sumTotal(readyToReview).toLocaleString()}
+                </span>
+                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => navigate(`/invoices/${readyToReview[0].id}`)}>
+                  Review & Send
+                </Button>
+              </div>
             ) : undefined}
           />
         </div>
@@ -259,6 +264,11 @@ export default function InvoicesPage() {
             getFacilityName={getFacilityName}
             emptyMessage="No upcoming invoices."
             defaultOpen={false}
+            headerRight={upcoming.length > 0 ? (
+              <span className="text-sm font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-md">
+                ${sumTotal(upcoming).toLocaleString()} upcoming
+              </span>
+            ) : undefined}
             alertBanner={upcoming.length > 0 ? (
               <div className="flex items-center gap-2 px-5 py-2.5 text-xs text-muted-foreground bg-muted/30 border-t">
                 <Clock className="h-3.5 w-3.5 shrink-0" />
