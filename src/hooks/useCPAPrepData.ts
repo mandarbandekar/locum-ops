@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { useExpenses, Expense } from '@/hooks/useExpenses';
 import { useTaxAdvisor, TaxAdvisorProfile } from '@/hooks/useTaxAdvisor';
+import { useTaxPaymentLogs, TaxPaymentLog } from '@/hooks/useTaxPaymentLogs';
 import { EXPENSE_CATEGORIES, ALL_SUBCATEGORIES } from '@/lib/expenseCategories';
 import { aggregateQuarterlyIncome } from '@/lib/taxCalculations';
 import { Invoice } from '@/types';
