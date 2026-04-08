@@ -259,7 +259,6 @@ export default function InvoicesPage() {
             getFacilityName={getFacilityName}
             emptyMessage="No upcoming invoices."
             defaultOpen={false}
-            groupByFacility={true}
             alertBanner={upcoming.length > 0 ? (
               <div className="flex items-center gap-2 px-5 py-2.5 text-xs text-muted-foreground bg-muted/30 border-t">
                 <Clock className="h-3.5 w-3.5 shrink-0" />
