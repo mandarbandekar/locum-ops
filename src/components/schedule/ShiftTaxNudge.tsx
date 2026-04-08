@@ -10,15 +10,13 @@ interface Props {
   hasProfile: boolean;
   isPaid: boolean;
   effectiveRate: number;
+  breakdown?: { federal: number; state: number; se: number };
 }
 
-export function ShiftTaxNudge({ shiftIncome, taxProfile, hasProfile, isPaid, effectiveRate }: Props) {
-  // Only show on paid shifts
+export function ShiftTaxNudge({ shiftIncome, taxProfile, hasProfile, isPaid, effectiveRate, breakdown }: Props) {
   if (!isPaid) return null;
-  // Don't show on $0 shifts
   if (shiftIncome <= 0) return null;
 
-  // No profile — show setup CTA
   if (!hasProfile || !taxProfile) {
     return (
       <div className="flex items-center gap-2 text-[13px] text-muted-foreground py-1">
@@ -33,7 +31,16 @@ export function ShiftTaxNudge({ shiftIncome, taxProfile, hasProfile, isPaid, eff
     );
   }
 
-  const nudge = getShiftTaxNudge(shiftIncome, effectiveRate);
+  const isScorp = taxProfile.entity_type === 'scorp';
+  const nudge = getShiftTaxNudge(shiftIncome, effectiveRate, breakdown);
+  const bd = nudge.breakdown;
+
+  const tooltipLines: string[] = [];
+  if (bd.federal > 0) tooltipLines.push(`Federal income tax (${Math.round(bd.federal * 100)}% marginal): $${Math.round(shiftIncome * bd.federal).toLocaleString()}`);
+  if (bd.state > 0) tooltipLines.push(`State tax (${(bd.state * 100).toFixed(1)}%): $${Math.round(shiftIncome * bd.state).toLocaleString()}`);
+  if (bd.se > 0) tooltipLines.push(`SE tax (${(bd.se * 100).toFixed(1)}%): $${Math.round(shiftIncome * bd.se).toLocaleString()}`);
+  tooltipLines.push(`Total set aside (${nudge.effectiveRatePct}% effective): $${nudge.setAsideAmount.toLocaleString()}`);
+  if (isScorp) tooltipLines.push('Payroll taxes on your salary are handled through your payroll provider.');
 
   return (
     <div className="flex items-center gap-2 text-[13px] py-1">
@@ -41,13 +48,15 @@ export function ShiftTaxNudge({ shiftIncome, taxProfile, hasProfile, isPaid, eff
       <Tooltip>
         <TooltipTrigger asChild>
           <span>
-            <span className="text-[hsl(var(--warning))]">Set aside ${nudge.setAsideAmount.toLocaleString()} for taxes</span>
+            <span className="text-[hsl(var(--warning))]">
+              Set aside ${nudge.setAsideAmount.toLocaleString()} for {isScorp ? 'income tax' : 'taxes'}
+            </span>
             <span className="text-muted-foreground mx-1">·</span>
             <span className="text-foreground">Keep ${nudge.netAfterSetAside.toLocaleString()} — that's yours</span>
           </span>
         </TooltipTrigger>
-        <TooltipContent side="top" className="text-xs">
-          Based on your estimated {nudge.effectiveRatePct}% effective tax rate
+        <TooltipContent side="top" className="text-xs max-w-xs whitespace-pre-line">
+          {tooltipLines.join('\n')}
         </TooltipContent>
       </Tooltip>
     </div>
