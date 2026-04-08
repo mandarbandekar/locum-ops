@@ -11,7 +11,6 @@ import { Plus, Search, Trash2, MapPin, Loader2, AlertTriangle, LayoutGrid, List,
 import { AddFacilityDialog } from '@/components/AddFacilityDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { useAddressSearch } from '@/hooks/useAddressSearch';
 import type { Facility } from '@/types';
 
 export default function FacilitiesPage() {
@@ -20,51 +19,7 @@ export default function FacilitiesPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showAdd, setShowAdd] = useState(false);
-  const [showSuggestions, setShowSuggestions] = useState(false);
   const [viewMode, setViewMode] = useState<'cards' | 'list'>('cards');
-  const searchRef = useRef<HTMLDivElement>(null);
-  const { results: addressResults, isLoading: isSearching } = useAddressSearch(search, showSuggestions);
-
-  const handleSelectAddress = (displayName: string) => {
-    setSearch(displayName);
-    setShowSuggestions(false);
-  };
-
-  const handleAddFromSearch = async (displayName: string) => {
-    const parts = displayName.split(',');
-    const name = parts[0]?.trim() || displayName;
-    try {
-      const initials = name.split(/\s+/).map(w => w[0]).filter(Boolean).join('').toUpperCase().slice(0, 4) || 'INV';
-      const facility = await addFacility({
-        name,
-        address: displayName,
-        status: 'active',
-        timezone: 'America/Los_Angeles',
-        notes: '',
-        outreach_last_sent_at: null,
-        tech_computer_info: '',
-        tech_wifi_info: '',
-        tech_pims_info: '',
-        clinic_access_info: '',
-        invoice_prefix: initials,
-        invoice_due_days: 15,
-        invoice_name_to: '',
-        invoice_email_to: '',
-        invoice_name_cc: '',
-        invoice_email_cc: '',
-        invoice_name_bcc: '',
-        invoice_email_bcc: '',
-        billing_cadence: 'monthly',
-        billing_cycle_anchor_date: null,
-        billing_week_end_day: 'saturday',
-        auto_generate_invoices: true,
-      });
-      toast.success(`"${name}" added as a new practice facility`);
-      setSearch('');
-      setShowSuggestions(false);
-      navigate(`/facilities/${facility.id}`);
-    } catch { /* error toast handled in DataContext */ }
-  };
 
   const filtered = facilities.filter(c => {
     const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) || c.address.toLowerCase().includes(search.toLowerCase());
@@ -89,41 +44,14 @@ export default function FacilitiesPage() {
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
-        <div className="relative flex-1 sm:max-w-sm" ref={searchRef}>
+        <div className="relative flex-1 sm:max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search practice facilities or find address..."
+            placeholder="Search practice facilities..."
             value={search}
-            onChange={e => { setSearch(e.target.value); setShowSuggestions(true); }}
-            onFocus={() => setShowSuggestions(true)}
-            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-            className="pl-9 pr-9"
+            onChange={e => setSearch(e.target.value)}
+            className="pl-9"
           />
-          {isSearching && (
-            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground animate-spin" />
-          )}
-          {showSuggestions && addressResults.length > 0 && (
-            <div className="absolute z-50 top-full mt-1 w-full rounded-md border bg-popover shadow-lg overflow-hidden">
-              <div className="px-3 py-1.5 text-xs font-medium text-muted-foreground border-b bg-muted/50">
-                Address results (OpenStreetMap)
-              </div>
-              {addressResults.map((r) => (
-                <button
-                  key={r.place_id}
-                  className="w-full flex items-start gap-2 px-3 py-2 text-left text-sm hover:bg-accent transition-colors"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => handleAddFromSearch(r.display_name)}
-                >
-                  <MapPin className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
-                  <div className="min-w-0">
-                    <p className="truncate font-medium">{r.display_name.split(',')[0]}</p>
-                    <p className="truncate text-xs text-muted-foreground">{r.display_name}</p>
-                  </div>
-                  <span className="ml-auto shrink-0 text-xs text-primary whitespace-nowrap">+ Add</span>
-                </button>
-              ))}
-            </div>
-          )}
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-36">
