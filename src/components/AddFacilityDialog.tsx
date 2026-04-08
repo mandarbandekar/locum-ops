@@ -12,8 +12,9 @@ import { useClinicConfirmations } from '@/hooks/useClinicConfirmations';
 import { generateId } from '@/lib/businessLogic';
 import type { FacilityStatus } from '@/types';
 import { toast } from 'sonner';
-import { ArrowLeft, ArrowRight, SkipForward, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, SkipForward, AlertTriangle, Search } from 'lucide-react';
 import { GooglePlacesAutocomplete } from '@/components/GooglePlacesAutocomplete';
+import type { PlaceSelection } from '@/components/GooglePlacesAutocomplete';
 import { RatesEditor, RateEntry, ratesToTermsFields } from '@/components/facilities/RatesEditor';
 import type { BillingCadence } from '@/lib/invoiceBillingDefaults';
 
@@ -35,6 +36,9 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
   const [status] = useState<FacilityStatus>('active');
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
+  const [clinicSearchValue, setClinicSearchValue] = useState('');
+  const [manualEntry, setManualEntry] = useState(false);
+  const [clinicSelected, setClinicSelected] = useState(false);
   const [rates, setRates] = useState<RateEntry[]>([]);
   const [techComputer, setTechComputer] = useState('');
   const [techWifi, setTechWifi] = useState('');
@@ -61,13 +65,21 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
 
   const resetForm = () => {
     setStep(0);
-    setRates([]);
+    setName(''); setAddress(''); setNotes('');
+    setClinicSearchValue(''); setManualEntry(false); setClinicSelected(false);
     setRates([]);
     setTechComputer(''); setTechWifi(''); setTechPims('');
     setClinicAccess(''); setInvoicePrefix(''); setInvoiceDueDays(15);
     setInvoiceNameTo(''); setInvoiceEmailTo(''); setInvoiceNameCc(''); setInvoiceEmailCc(''); setInvoiceNameBcc(''); setInvoiceEmailBcc('');
     setSchedulingContactName(''); setSchedulingContactEmail('');
     setBillingCadence('monthly'); setAutoGenerateInvoices(true);
+  };
+
+  const handleClinicPlaceSelect = (selection: PlaceSelection) => {
+    setName(selection.name);
+    setAddress(selection.formatted_address || selection.description);
+    setClinicSelected(true);
+    setClinicSearchValue(selection.name);
   };
 
   const handleSubmit = async () => {
@@ -211,18 +223,52 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
         <div className="space-y-3 min-h-[200px]">
           {step === 0 && (
             <>
-              <div className="space-y-2">
-                <Label>Name <span className="text-destructive">*</span></Label>
-                <Input value={name} onChange={e => setName(e.target.value)} placeholder="Practice facility name" autoFocus />
-              </div>
-              <div className="space-y-2">
-                <Label>Address</Label>
-                <GooglePlacesAutocomplete value={address} onChange={setAddress} placeholder="Full address" />
-              </div>
-              <div className="space-y-2">
-                <Label>Notes</Label>
-                <Textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Any notes..." rows={3} />
-              </div>
+              {!manualEntry && !clinicSelected && (
+                <div className="space-y-2">
+                  <Label>Search for your clinic</Label>
+                  <GooglePlacesAutocomplete
+                    value={clinicSearchValue}
+                    onChange={setClinicSearchValue}
+                    placeholder="e.g. Valley Animal Hospital"
+                    searchType="establishment"
+                    onPlaceSelect={handleClinicPlaceSelect}
+                    icon="search"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setManualEntry(true)}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    Can't find it? Enter manually
+                  </button>
+                </div>
+              )}
+
+              {(manualEntry || clinicSelected) && (
+                <>
+                  {clinicSelected && (
+                    <button
+                      type="button"
+                      onClick={() => { setClinicSelected(false); setName(''); setAddress(''); setClinicSearchValue(''); }}
+                      className="text-xs text-primary hover:underline mb-1"
+                    >
+                      ← Search again
+                    </button>
+                  )}
+                  <div className="space-y-2">
+                    <Label>Name <span className="text-destructive">*</span></Label>
+                    <Input value={name} onChange={e => setName(e.target.value)} placeholder="Practice facility name" autoFocus={manualEntry} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Address</Label>
+                    <GooglePlacesAutocomplete value={address} onChange={setAddress} placeholder="Full address" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Notes</Label>
+                    <Textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Any notes..." rows={3} />
+                  </div>
+                </>
+              )}
             </>
           )}
 

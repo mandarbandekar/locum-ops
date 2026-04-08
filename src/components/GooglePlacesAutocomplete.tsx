@@ -1,13 +1,20 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { MapPin, Loader2 } from 'lucide-react';
+import { MapPin, Search, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Prediction {
   place_id: string;
   description: string;
+}
+
+export interface PlaceSelection {
+  place_id: string;
+  name: string;
+  description: string;
+  formatted_address?: string;
 }
 
 interface Props {
@@ -18,6 +25,9 @@ interface Props {
   rows?: number;
   className?: string;
   helperText?: string;
+  searchType?: 'address' | 'establishment';
+  onPlaceSelect?: (selection: PlaceSelection) => void;
+  icon?: 'pin' | 'search';
 }
 
 export function GooglePlacesAutocomplete({
@@ -28,6 +38,9 @@ export function GooglePlacesAutocomplete({
   rows = 3,
   className,
   helperText,
+  searchType = 'address',
+  onPlaceSelect,
+  icon = 'pin',
 }: Props) {
   const [query, setQuery] = useState(value);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
@@ -49,7 +62,7 @@ export function GooglePlacesAutocomplete({
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('places-autocomplete', {
-        body: { input },
+        body: { input, searchType },
       });
       if (!error && data?.predictions) {
         setPredictions(data.predictions.slice(0, 5));
@@ -59,6 +72,18 @@ export function GooglePlacesAutocomplete({
     } finally {
       setLoading(false);
     }
+  }, [searchType]);
+
+  const fetchPlaceDetails = useCallback(async (placeId: string): Promise<{ name: string; formatted_address: string } | null> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('places-autocomplete', {
+        body: { place_id: placeId },
+      });
+      if (!error && data) {
+        return { name: data.name || '', formatted_address: data.formatted_address || '' };
+      }
+    } catch { /* ignore */ }
+    return null;
   }, []);
 
   const handleInputChange = (val: string) => {
@@ -78,11 +103,21 @@ export function GooglePlacesAutocomplete({
     }, 350);
   };
 
-  const handleSelect = (prediction: Prediction) => {
+  const handleSelect = async (prediction: Prediction) => {
     setQuery(prediction.description);
     onChange(prediction.description);
     setPredictions([]);
     setIsOpen(false);
+
+    if (onPlaceSelect) {
+      const details = await fetchPlaceDetails(prediction.place_id);
+      onPlaceSelect({
+        place_id: prediction.place_id,
+        name: details?.name || prediction.description.split(',')[0],
+        description: prediction.description,
+        formatted_address: details?.formatted_address || prediction.description,
+      });
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -117,11 +152,12 @@ export function GooglePlacesAutocomplete({
 
   const InputComponent = multiline ? Textarea : Input;
   const inputProps = multiline ? { rows } : {};
+  const IconComponent = icon === 'search' ? Search : MapPin;
 
   return (
     <div ref={containerRef} className="relative">
       <div className="relative">
-        <MapPin className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none z-10" />
+        <IconComponent className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none z-10" />
         <InputComponent
           value={query}
           onChange={e => handleInputChange(e.target.value)}
