@@ -389,6 +389,17 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
 
             toast.info(`Draft invoice updated for ${facility.name}`);
           } else if (facility.auto_generate_invoices && eligible.length > 0) {
+            // Check suppression before creating new draft
+            const periodStartISO = period.start.toISOString();
+            const periodEndISO = period.end.toISOString();
+            const isSuppressed = suppressedPeriods.some(sp =>
+              sp.facility_id === facility.id &&
+              new Date(sp.period_start).toISOString().slice(0, 10) === periodStartISO.slice(0, 10) &&
+              new Date(sp.period_end).toISOString().slice(0, 10) === periodEndISO.slice(0, 10)
+            );
+            if (isSuppressed) {
+              // Period suppressed — skip auto-generation silently
+            } else {
             // Create new draft
             const invoiceNumber = generateInvoiceNumber(invoices, facility.invoice_prefix);
             const { invoice: invData, lineItems: newItems } = buildAutoInvoiceDraft(
@@ -411,6 +422,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
               }
               toast.info(`Draft invoice auto-generated for ${facility.name}`);
             }
+            }
           }
         }
       }
@@ -419,7 +431,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     }
 
     return shift;
-  }, [isDemo, user, facilities, shifts, invoices, lineItems]);
+  }, [isDemo, user, facilities, shifts, invoices, lineItems, suppressedPeriods]);
 
   const handleInvoiceCleanupAfterShiftRemoval = useCallback(async (shiftId: string) => {
     // Find line items linked to this shift
@@ -539,6 +551,27 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     setLineItems(prev => prev.filter(x => x.invoice_id !== id));
   }, [isDemo]);
 
+  const suppressInvoicePeriod = useCallback(async (facilityId: string, periodStart: string, periodEnd: string) => {
+    if (isDemo) {
+      setSuppressedPeriods(prev => [...prev, { id: generateId(), facility_id: facilityId, period_start: periodStart, period_end: periodEnd }]);
+      return;
+    }
+    const { data, error } = await db('suppressed_invoice_periods')
+      .insert({ user_id: user!.id, facility_id: facilityId, period_start: periodStart, period_end: periodEnd })
+      .select().single();
+    if (error) {
+      // Ignore unique constraint violations (already suppressed)
+      if (error.code !== '23505') {
+        console.error(error);
+        toast.error(friendlyDbError(error));
+      }
+      return;
+    }
+    if (data) {
+      setSuppressedPeriods(prev => [...prev, stripDbFields(data) as SuppressedPeriod]);
+    }
+  }, [isDemo, user]);
+
   // ─── Line Items ──────────────────────────────────────────
 
   const addLineItem = useCallback(async (item: Omit<InvoiceLineItem, 'id'>) => {
@@ -638,6 +671,8 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
       addEmailLog,
       addTimeBlock, updateTimeBlock, deleteTimeBlock,
       getComputedInvoiceStatus,
+      suppressInvoicePeriod,
+      suppressedPeriods,
     }}>
       {children}
     </DataContext.Provider>
