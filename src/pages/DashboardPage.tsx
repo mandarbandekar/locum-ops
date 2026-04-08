@@ -110,6 +110,20 @@ export default function DashboardPage() {
       .reduce((sum, s) => sum + (s.rate_applied || 0), 0);
   }, [shifts, now]);
 
+  // ── 4-week sparkline data ──
+  const weeklySparkline = useMemo(() => {
+    return [3, 2, 1, 0].map(weeksAgo => {
+      const wStart = startOfWeek(subWeeks(now, weeksAgo), { weekStartsOn: 1 });
+      const wEnd = endOfWeek(subWeeks(now, weeksAgo), { weekStartsOn: 1 });
+      return shifts
+        .filter(s => {
+          const d = parseISO(s.start_datetime);
+          return isWithinInterval(d, { start: wStart, end: wEnd }) && new Date(s.end_datetime) < now;
+        })
+        .reduce((sum, s) => sum + (s.rate_applied || 0), 0);
+    });
+  }, [shifts, now]);
+
   // ── Monthly pace ──
   const monthlyPace = useMemo(() => {
     const monthStart = startOfMonth(now);
