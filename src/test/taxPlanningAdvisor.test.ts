@@ -25,9 +25,9 @@ describe('Tax Planning Advisor', () => {
 
   describe('Disclaimer', () => {
     it('should contain required safety language', () => {
-      expect(ADVISOR_DISCLAIMER).toContain('education and planning support only');
-      expect(ADVISOR_DISCLAIMER).toContain('does not provide tax, legal, or financial advice');
-      expect(ADVISOR_DISCLAIMER).toContain('qualified CPA');
+      expect(ADVISOR_DISCLAIMER).toContain('smart starting point');
+      expect(ADVISOR_DISCLAIMER).toContain('CPA or tax advisor');
+      expect(ADVISOR_DISCLAIMER).toContain('better, faster conversation');
     });
 
     it('should not use prescriptive language', () => {
