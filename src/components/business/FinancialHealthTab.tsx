@@ -351,6 +351,39 @@ export default function FinancialHealthTab() {
             </CardContent>
           </Card>
 
+          {/* Total Earnings (Cumulative) */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Total Earnings</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {cumulativeData.length === 0 || cumulativeData[cumulativeData.length - 1].total === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">No earnings data yet</p>
+              ) : (
+                <>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Cumulative total: <span className="font-medium text-foreground">{fmtAmount(cumulativeData[cumulativeData.length - 1].total)}</span>
+                  </p>
+                  <ChartContainer config={cumulativeEarningsConfig} className="h-[220px] w-full">
+                    <AreaChart data={cumulativeData} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
+                      <defs>
+                        <linearGradient id="totalEarningsGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.02} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                      <XAxis dataKey="month" className="text-muted-foreground" fontSize={11} />
+                      <YAxis className="text-muted-foreground" fontSize={11} tickFormatter={v => `$${v.toLocaleString()}`} />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Area type="monotone" dataKey="total" stroke="hsl(var(--primary))" strokeWidth={2} fill="url(#totalEarningsGrad)" />
+                    </AreaChart>
+                  </ChartContainer>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Revenue by Facility */}
           <Card>
             <CardHeader className="pb-2">
