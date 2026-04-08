@@ -30,6 +30,12 @@ interface OldestUnpaid {
   daysOutstanding: number;
 }
 
+interface TaxSnapshotData {
+  quarterlyAmount: number;
+  nextDueDate: string | null;
+  nextQuarter: number | null;
+}
+
 interface MoneyToCollectCardProps {
   outstandingTotal: number;
   paidThisMonth: number;
@@ -38,6 +44,8 @@ interface MoneyToCollectCardProps {
   thisWeekEarnings?: number;
   monthlyPace?: number;
   oldestUnpaid?: OldestUnpaid;
+  weeklySparkline?: number[];
+  taxSnapshot?: TaxSnapshotData;
 }
 
 export function MoneyToCollectCard({
