@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,8 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { CheckCircle2, Info, ArrowLeft, ArrowRight, Sparkles } from 'lucide-react';
-import { US_STATES } from '@/lib/taxConstants2026';
+import { US_STATES, getMarginalRate, STANDARD_DEDUCTIONS, type FilingStatus } from '@/lib/taxConstants2026';
+import { getStateInfo, STATE_TAX_DATA } from '@/lib/stateTaxData';
 import type { TaxIntelligenceProfile } from '@/hooks/useTaxIntelligence';
 import { toast } from 'sonner';
 
@@ -29,8 +32,11 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
   const [showEntityHelper, setShowEntityHelper] = useState(false);
   const [filingStatus, setFilingStatus] = useState(existingProfile?.filing_status || 'single');
   const [stateCode, setStateCode] = useState(existingProfile?.state_code || '');
-  const [hasOtherIncome, setHasOtherIncome] = useState((existingProfile?.other_w2_income ?? 0) > 0);
-  const [otherW2Income, setOtherW2Income] = useState(existingProfile?.other_w2_income ?? 0);
+  const [pteElected, setPteElected] = useState(existingProfile?.pte_elected ?? false);
+  const [pteChoice, setPteChoice] = useState<'yes' | 'no' | 'idk'>(existingProfile?.pte_elected ? 'yes' : 'no');
+  const [spouseW2Income, setSpouseW2Income] = useState(existingProfile?.spouse_w2_income ?? 0);
+  const [spouseHasSE, setSpouseHasSE] = useState(existingProfile?.spouse_has_se_income ?? false);
+  const [spouseSENet, setSpouseSENet] = useState(existingProfile?.spouse_se_net_income ?? 0);
   const [retirementType, setRetirementType] = useState(existingProfile?.retirement_type || 'none');
   const [retirementContribution, setRetirementContribution] = useState(existingProfile?.retirement_contribution ?? 0);
   const [expenseLevel, setExpenseLevel] = useState(existingProfile?.expense_tracking_level || 'none');
@@ -40,26 +46,43 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
   const [priorYearTax, setPriorYearTax] = useState(existingProfile?.prior_year_tax_paid ?? 0);
 
   const isScorp = entityType === 'scorp';
-  const totalSteps = isScorp ? 8 : 8;
+  const stateData = stateCode ? STATE_TAX_DATA[stateCode] : null;
+  const showPTEStep = isScorp && stateData?.hasPTE === true;
 
-  // Determine which steps to show based on entity type
-  const getStepContent = () => {
-    switch (step) {
-      case 1: return renderEntityStep();
-      case 2: return renderFilingStep();
-      case 3: return renderStateStep();
-      case 4: return renderOtherIncomeStep();
-      case 5: return renderRetirementStep();
-      case 6: return isScorp ? renderScorpSalaryStep() : renderExpensesStep();
-      case 7: return isScorp ? renderExpensesStep() : renderSafeHarborStep();
-      case 8: return isScorp ? renderSafeHarborStep() : renderCompletionStep();
-      case 9: return renderCompletionStep();
+  // Dynamic steps: 1=entity, 2=filing, 3=state, 3.5=PTE(conditional), 4=household, 5=retirement, 6=scorpSalary(scorp), 7=expenses, 8=safeHarbor, 9=complete
+  const steps = useMemo(() => {
+    const s: string[] = ['entity', 'filing', 'state'];
+    if (showPTEStep) s.push('pte');
+    s.push('household', 'retirement');
+    if (isScorp) s.push('scorpSalary');
+    s.push('expenses', 'safeHarbor', 'complete');
+    return s;
+  }, [isScorp, showPTEStep]);
+
+  const totalSteps = steps.length;
+  const currentStepName = steps[step - 1] || 'entity';
+  const progressPct = Math.round((step / totalSteps) * 100);
+
+  const stateInfo = stateCode ? getStateInfo(stateCode) : null;
+
+  // Compute household total for display
+  const householdTotal = spouseW2Income + (spouseHasSE ? spouseSENet : 0);
+
+  function renderStep() {
+    switch (currentStepName) {
+      case 'entity': return renderEntityStep();
+      case 'filing': return renderFilingStep();
+      case 'state': return renderStateStep();
+      case 'pte': return renderPTEStep();
+      case 'household': return renderHouseholdStep();
+      case 'retirement': return renderRetirementStep();
+      case 'scorpSalary': return renderScorpSalaryStep();
+      case 'expenses': return renderExpensesStep();
+      case 'safeHarbor': return renderSafeHarborStep();
+      case 'complete': return renderCompletionStep();
       default: return null;
     }
-  };
-
-  const maxStep = isScorp ? 9 : 8;
-  const progressPct = Math.round((step / maxStep) * 100);
+  }
 
   function renderEntityStep() {
     return (
@@ -136,31 +159,121 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
             {US_STATES.map(s => <SelectItem key={s.code} value={s.code}>{s.name}</SelectItem>)}
           </SelectContent>
         </Select>
+        {stateInfo && (
+          <div className="space-y-1.5">
+            <Badge variant="outline" className="text-xs font-normal py-1 px-2">
+              {stateInfo.label}
+            </Badge>
+            {stateInfo.pteLabel && (
+              <Badge variant="outline" className="text-xs font-normal py-1 px-2 ml-1">
+                {stateInfo.pteLabel}
+              </Badge>
+            )}
+          </div>
+        )}
       </div>
     );
   }
 
-  function renderOtherIncomeStep() {
+  function renderPTEStep() {
+    const pteRate = stateData?.pteRate ?? 0;
+    const stateName = stateData?.name || stateCode;
+
     return (
       <div className="space-y-4">
-        <Label className="text-base font-medium">Does your household have other W-2 income this year?</Label>
-        <p className="text-sm text-muted-foreground">e.g., a spouse's salary</p>
-        <RadioGroup value={hasOtherIncome ? 'yes' : 'no'} onValueChange={v => { setHasOtherIncome(v === 'yes'); if (v === 'no') setOtherW2Income(0); }}>
+        <Label className="text-base font-medium">Pass-Through Entity (PTE) Tax Election</Label>
+        <p className="text-sm text-muted-foreground">
+          {stateName} offers a PTE tax election for S-Corporations that can significantly reduce your federal tax bill.
+        </p>
+        <Alert className="border-[hsl(var(--info))] bg-[hsl(var(--chip-info-bg))]">
+          <Info className="h-4 w-4 text-[hsl(var(--chip-info-text))]" />
+          <AlertDescription className="text-sm text-[hsl(var(--chip-info-text))]">
+            <strong>How it works:</strong> Your S-Corp pays state income tax at the entity level. That payment is fully deductible federally — bypassing the $10,000 SALT cap that applies to individuals.
+          </AlertDescription>
+        </Alert>
+        <Label className="text-sm font-medium">Has your S-Corp elected PTE tax in {stateName}?</Label>
+        <RadioGroup value={pteChoice} onValueChange={(v: string) => {
+          const choice = v as 'yes' | 'no' | 'idk';
+          setPteChoice(choice);
+          setPteElected(choice === 'yes');
+        }}>
           <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent/50 cursor-pointer">
-            <RadioGroupItem value="yes" id="oi-yes" />
-            <Label htmlFor="oi-yes" className="cursor-pointer">Yes</Label>
+            <RadioGroupItem value="yes" id="pte-yes" />
+            <Label htmlFor="pte-yes" className="cursor-pointer flex-1">Yes — our S-Corp files and pays PTE tax</Label>
           </div>
           <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent/50 cursor-pointer">
-            <RadioGroupItem value="no" id="oi-no" />
-            <Label htmlFor="oi-no" className="cursor-pointer">No</Label>
+            <RadioGroupItem value="no" id="pte-no" />
+            <Label htmlFor="pte-no" className="cursor-pointer flex-1">No — we haven't elected PTE</Label>
+          </div>
+          <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent/50 cursor-pointer">
+            <RadioGroupItem value="idk" id="pte-idk" />
+            <Label htmlFor="pte-idk" className="cursor-pointer flex-1">I don't know — show me more</Label>
           </div>
         </RadioGroup>
-        {hasOtherIncome && (
-          <div className="space-y-1">
-            <Label className="text-sm">Approximate amount</Label>
-            <Input type="number" value={otherW2Income || ''} onChange={e => setOtherW2Income(Number(e.target.value))} placeholder="e.g., 65000" />
+        {pteChoice === 'idk' && (
+          <div className="rounded-lg border p-4 space-y-3 bg-muted/30">
+            <p className="text-sm text-muted-foreground">
+              At your projected income, electing PTE could save you an estimated amount in federal taxes annually by making your state tax bill federally deductible.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              The PTE rate in {stateName} is <strong>{(pteRate * 100).toFixed(1)}%</strong>. This election is made on your S-Corp state tax return. Ask your CPA or tax advisor whether this makes sense for your situation.
+            </p>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => { setPteChoice('no'); setPteElected(false); }}>
+                I'll ask my CPA — set to No for now
+              </Button>
+              <Button variant="default" size="sm" onClick={() => { setPteChoice('yes'); setPteElected(true); }}>
+                Yes, we've elected PTE
+              </Button>
+            </div>
           </div>
         )}
+      </div>
+    );
+  }
+
+  function renderHouseholdStep() {
+    return (
+      <div className="space-y-4">
+        <Label className="text-base font-medium">Household Income</Label>
+        <p className="text-sm text-muted-foreground">This determines your federal tax bracket. Leave fields blank if not applicable.</p>
+
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <Label className="text-sm">Spouse / partner W-2 gross income</Label>
+            <Input
+              type="number"
+              value={spouseW2Income || ''}
+              onChange={e => setSpouseW2Income(Number(e.target.value))}
+              placeholder="e.g., 65000"
+            />
+          </div>
+
+          <div className="flex items-center justify-between p-3 rounded-lg border">
+            <Label className="text-sm cursor-pointer">Spouse has self-employment income?</Label>
+            <Switch checked={spouseHasSE} onCheckedChange={v => { setSpouseHasSE(v); if (!v) setSpouseSENet(0); }} />
+          </div>
+
+          {spouseHasSE && (
+            <div className="space-y-1">
+              <Label className="text-sm">Spouse estimated net SE income</Label>
+              <p className="text-xs text-muted-foreground">(net after their business expenses)</p>
+              <Input
+                type="number"
+                value={spouseSENet || ''}
+                onChange={e => setSpouseSENet(Number(e.target.value))}
+                placeholder="e.g., 40000"
+              />
+            </div>
+          )}
+
+          {householdTotal > 0 && (
+            <div className="rounded-lg bg-muted/50 p-3">
+              <p className="text-xs text-muted-foreground">Total additional household income (calculated)</p>
+              <p className="text-lg font-semibold">${householdTotal.toLocaleString()}</p>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
@@ -307,7 +420,7 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
     );
   }
 
-  const isLastStep = (isScorp && step === 9) || (!isScorp && step === 8);
+  const isLastStep = currentStepName === 'complete';
 
   async function handleComplete() {
     setSaving(true);
@@ -315,7 +428,7 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
       entity_type: entityType === 'unsure' ? 'sole_prop' : entityType,
       filing_status: filingStatus,
       state_code: stateCode,
-      other_w2_income: otherW2Income,
+      other_w2_income: 0, // Replaced by spouse fields
       retirement_type: retirementType,
       retirement_contribution: retirementType !== 'none' ? retirementContribution : 0,
       expense_tracking_level: expenseLevel,
@@ -323,6 +436,10 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
       scorp_salary: isScorp ? scorpSalary : 0,
       safe_harbor_method: safeHarbor,
       prior_year_tax_paid: safeHarbor === 'safe_harbor' ? priorYearTax : 0,
+      pte_elected: showPTEStep ? pteElected : false,
+      spouse_w2_income: spouseW2Income,
+      spouse_has_se_income: spouseHasSE,
+      spouse_se_net_income: spouseHasSE ? spouseSENet : 0,
       setup_completed_at: new Date().toISOString(),
     });
     setSaving(false);
@@ -332,8 +449,9 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
   }
 
   const canProceed = () => {
-    if (step === 1) return entityType !== 'unsure';
-    if (step === 3) return stateCode !== '';
+    if (currentStepName === 'entity') return entityType !== 'unsure';
+    if (currentStepName === 'state') return stateCode !== '';
+    if (currentStepName === 'pte') return pteChoice !== 'idk';
     return true;
   };
 
@@ -349,14 +467,14 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
 
         <div className="mb-4">
           <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-            <span>Step {step} of {maxStep}</span>
+            <span>Step {step} of {totalSteps}</span>
             <span>{progressPct}%</span>
           </div>
           <Progress value={progressPct} className="h-1.5" />
         </div>
 
         <div className="min-h-[200px]">
-          {getStepContent()}
+          {renderStep()}
         </div>
 
         <div className="flex justify-between pt-4 border-t">

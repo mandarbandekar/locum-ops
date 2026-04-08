@@ -17,6 +17,10 @@ export interface TaxIntelligenceProfile {
   safe_harbor_method: string;
   prior_year_tax_paid: number;
   setup_completed_at: string | null;
+  pte_elected: boolean;
+  spouse_w2_income: number;
+  spouse_has_se_income: boolean;
+  spouse_se_net_income: number;
 }
 
 const db = (table: string) => supabase.from(table as any);
@@ -36,12 +40,37 @@ const DEMO_PROFILE: TaxIntelligenceProfile = {
   safe_harbor_method: '90_percent',
   prior_year_tax_paid: 0,
   setup_completed_at: '2026-01-15T00:00:00Z',
+  pte_elected: false,
+  spouse_w2_income: 0,
+  spouse_has_se_income: false,
+  spouse_se_net_income: 0,
 };
 
 export function useTaxIntelligence() {
   const { user, isDemo } = useAuth();
   const [profile, setProfile] = useState<TaxIntelligenceProfile | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const mapRow = (d: any): TaxIntelligenceProfile => ({
+    id: d.id,
+    user_id: d.user_id,
+    entity_type: d.entity_type,
+    filing_status: d.filing_status,
+    state_code: d.state_code,
+    other_w2_income: Number(d.other_w2_income),
+    retirement_type: d.retirement_type,
+    retirement_contribution: Number(d.retirement_contribution),
+    expense_tracking_level: d.expense_tracking_level,
+    ytd_expenses_estimate: Number(d.ytd_expenses_estimate),
+    scorp_salary: Number(d.scorp_salary),
+    safe_harbor_method: d.safe_harbor_method,
+    prior_year_tax_paid: Number(d.prior_year_tax_paid),
+    setup_completed_at: d.setup_completed_at,
+    pte_elected: Boolean(d.pte_elected),
+    spouse_w2_income: Number(d.spouse_w2_income ?? 0),
+    spouse_has_se_income: Boolean(d.spouse_has_se_income),
+    spouse_se_net_income: Number(d.spouse_se_net_income ?? 0),
+  });
 
   const load = useCallback(async () => {
     if (isDemo) {
@@ -55,25 +84,7 @@ export function useTaxIntelligence() {
         .select('*')
         .eq('user_id', user.id)
         .maybeSingle();
-      if (data) {
-        const d = data as any;
-        setProfile({
-          id: d.id,
-          user_id: d.user_id,
-          entity_type: d.entity_type,
-          filing_status: d.filing_status,
-          state_code: d.state_code,
-          other_w2_income: Number(d.other_w2_income),
-          retirement_type: d.retirement_type,
-          retirement_contribution: Number(d.retirement_contribution),
-          expense_tracking_level: d.expense_tracking_level,
-          ytd_expenses_estimate: Number(d.ytd_expenses_estimate),
-          scorp_salary: Number(d.scorp_salary),
-          safe_harbor_method: d.safe_harbor_method,
-          prior_year_tax_paid: Number(d.prior_year_tax_paid),
-          setup_completed_at: d.setup_completed_at,
-        });
-      }
+      if (data) setProfile(mapRow(data));
     } catch (e) {
       console.error('Failed to load tax intelligence profile', e);
     } finally {
@@ -95,27 +106,13 @@ export function useTaxIntelligence() {
         .eq('id', profile.id)
         .select()
         .single();
-      if (updated) {
-        const d = updated as any;
-        setProfile(prev => prev ? { ...prev, ...d } : null);
-      }
+      if (updated) setProfile(prev => prev ? { ...prev, ...mapRow(updated) } : null);
     } else {
       const { data: created } = await db('tax_intelligence_profiles')
         .insert({ user_id: user.id, ...data, setup_completed_at: new Date().toISOString() } as any)
         .select()
         .single();
-      if (created) {
-        const d = created as any;
-        setProfile({
-          id: d.id, user_id: d.user_id,
-          entity_type: d.entity_type, filing_status: d.filing_status,
-          state_code: d.state_code, other_w2_income: Number(d.other_w2_income),
-          retirement_type: d.retirement_type, retirement_contribution: Number(d.retirement_contribution),
-          expense_tracking_level: d.expense_tracking_level, ytd_expenses_estimate: Number(d.ytd_expenses_estimate),
-          scorp_salary: Number(d.scorp_salary), safe_harbor_method: d.safe_harbor_method,
-          prior_year_tax_paid: Number(d.prior_year_tax_paid), setup_completed_at: d.setup_completed_at,
-        });
-      }
+      if (created) setProfile(mapRow(created));
     }
   }, [user?.id, profile?.id, isDemo]);
 

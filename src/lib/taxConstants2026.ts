@@ -5,6 +5,18 @@
 
 export const TAX_YEAR = 2026;
 
+export const TAX_YEAR_CONFIG = {
+  activeYear: 2026,
+  lastUpdated: '2026-01-15',
+  nextUpdateDue: '2027-01-15',
+  ssWageBase: 174900,
+  seNetRate: 0.9235,
+  seTaxRate: 0.153,
+  additionalMedicareRate: 0.009,
+  additionalMedicareThreshold: { single: 200000, married_joint: 250000, head_of_household: 200000 } as Record<string, number>,
+  standardMileageRate: 0.70,
+};
+
 // ── Self-Employment ─────────────────────────────
 export const SE_TAXABLE_FACTOR = 0.9235;
 export const SS_RATE = 0.124;
@@ -58,6 +70,26 @@ export const BRACKETS: Record<FilingStatus, { limit: number; rate: number }[]> =
   ],
 };
 
+// ── Federal Bracket Functions ───────────────────
+export function applyFederalBrackets(taxableIncome: number, filingStatus: FilingStatus): number {
+  const brackets = BRACKETS[filingStatus] || BRACKETS.single;
+  let tax = 0, prev = 0;
+  for (const { limit, rate } of brackets) {
+    if (taxableIncome <= prev) break;
+    tax += (Math.min(taxableIncome, limit) - prev) * rate;
+    prev = limit;
+  }
+  return Math.round(tax * 100) / 100;
+}
+
+export function getMarginalRate(taxableIncome: number, filingStatus: FilingStatus): number {
+  const brackets = BRACKETS[filingStatus] || BRACKETS.single;
+  for (const { limit, rate } of brackets) {
+    if (taxableIncome <= limit) return rate;
+  }
+  return 0.37;
+}
+
 // ── Quarterly Due Dates ─────────────────────────
 export function getQuarterlyDueDates(year: number) {
   return {
@@ -68,21 +100,7 @@ export function getQuarterlyDueDates(year: number) {
   } as Record<number, { label: string; due: string; months: string }>;
 }
 
-// ── State Tax Rates (approximate marginal) ──────
-export const STATE_TAX_RATES: Record<string, number> = {
-  AL: 0.05, AK: 0, AZ: 0.025, AR: 0.044, CA: 0.093,
-  CO: 0.044, CT: 0.065, DE: 0.066, FL: 0, GA: 0.055,
-  HI: 0.079, ID: 0.058, IL: 0.0495, IN: 0.0305, IA: 0.057,
-  KS: 0.057, KY: 0.04, LA: 0.0425, ME: 0.0715, MD: 0.0575,
-  MA: 0.05, MI: 0.0425, MN: 0.0785, MS: 0.05, MO: 0.048,
-  MT: 0.059, NE: 0.0584, NV: 0, NH: 0, NJ: 0.0637,
-  NM: 0.049, NY: 0.0685, NC: 0.0475, ND: 0.0195, OH: 0.035,
-  OK: 0.0475, OR: 0.09, PA: 0.0307, RI: 0.0599, SC: 0.065,
-  SD: 0, TN: 0, TX: 0, UT: 0.0465, VT: 0.066,
-  VA: 0.0575, WA: 0, WV: 0.052, WI: 0.0627, WY: 0,
-  DC: 0.085,
-};
-
+// ── US States (for dropdowns) ───────────────────
 export const US_STATES: { code: string; name: string }[] = [
   { code: 'AL', name: 'Alabama' }, { code: 'AK', name: 'Alaska' }, { code: 'AZ', name: 'Arizona' },
   { code: 'AR', name: 'Arkansas' }, { code: 'CA', name: 'California' }, { code: 'CO', name: 'Colorado' },
