@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { ArrowRight, DollarSign, Loader2, AlertTriangle } from 'lucide-react';
 import { GooglePlacesAutocomplete } from '@/components/GooglePlacesAutocomplete';
+import type { PlaceSelection } from '@/components/GooglePlacesAutocomplete';
 import type { ManualFacilityInput } from '@/hooks/useManualSetup';
 import type { BillingCadence } from '@/lib/invoiceBillingDefaults';
 
@@ -22,6 +23,16 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
   const [weekdayRate, setWeekdayRate] = useState('');
   const [billingCadence, setBillingCadence] = useState<BillingCadence>('monthly');
   const [autoGenerateInvoices, setAutoGenerateInvoices] = useState(true);
+  const [clinicSearchValue, setClinicSearchValue] = useState('');
+  const [manualEntry, setManualEntry] = useState(false);
+  const [clinicSelected, setClinicSelected] = useState(false);
+
+  const handleClinicPlaceSelect = (selection: PlaceSelection) => {
+    setName(selection.name);
+    setAddress(selection.formatted_address || selection.description);
+    setClinicSelected(true);
+    setClinicSearchValue(selection.name);
+  };
 
   const handleSubmit = async () => {
     if (!name.trim()) return;
@@ -48,24 +59,57 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
       </div>
 
       <div className="space-y-4">
-        <div>
-          <Label>Practice / facility name <span className="text-destructive">*</span></Label>
-          <Input
-            value={name}
-            onChange={e => setName(e.target.value)}
-            placeholder="e.g. Valley Animal Hospital"
-            autoFocus
-          />
-        </div>
+        {!manualEntry && !clinicSelected && (
+          <div>
+            <Label>Search for your clinic</Label>
+            <GooglePlacesAutocomplete
+              value={clinicSearchValue}
+              onChange={setClinicSearchValue}
+              placeholder="e.g. Valley Animal Hospital"
+              searchType="establishment"
+              onPlaceSelect={handleClinicPlaceSelect}
+              icon="search"
+            />
+            <button
+              type="button"
+              onClick={() => setManualEntry(true)}
+              className="text-xs text-primary hover:underline mt-1"
+            >
+              Can't find it? Enter manually
+            </button>
+          </div>
+        )}
 
-        <div>
-          <Label>Address</Label>
-          <GooglePlacesAutocomplete
-            value={address}
-            onChange={setAddress}
-            placeholder="123 Main St, City, ST"
-          />
-        </div>
+        {(manualEntry || clinicSelected) && (
+          <>
+            {clinicSelected && (
+              <button
+                type="button"
+                onClick={() => { setClinicSelected(false); setName(''); setAddress(''); setClinicSearchValue(''); }}
+                className="text-xs text-primary hover:underline"
+              >
+                ← Search again
+              </button>
+            )}
+            <div>
+              <Label>Practice / facility name <span className="text-destructive">*</span></Label>
+              <Input
+                value={name}
+                onChange={e => setName(e.target.value)}
+                placeholder="e.g. Valley Animal Hospital"
+                autoFocus={manualEntry}
+              />
+            </div>
+            <div>
+              <Label>Address</Label>
+              <GooglePlacesAutocomplete
+                value={address}
+                onChange={setAddress}
+                placeholder="123 Main St, City, ST"
+              />
+            </div>
+          </>
+        )}
 
         <div className="grid grid-cols-2 gap-3">
           <div>
