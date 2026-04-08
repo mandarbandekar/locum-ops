@@ -231,10 +231,22 @@ Deno.serve(async (req) => {
         const periodEndStr = formatDate(period.end);
 
         // Check if this period has been suppressed by the user
-        const isSuppressed = suppressedPeriods.some(sp =>
-          formatDate(new Date(sp.period_start)) === periodStartStr &&
-          formatDate(new Date(sp.period_end)) === periodEndStr
-        );
+        // Use overlap check to handle timezone differences in stored timestamps
+        const isSuppressed = suppressedPeriods.some(sp => {
+          const spStart = new Date(sp.period_start);
+          const spEnd = new Date(sp.period_end);
+          // Periods overlap if they share any time range — but for billing periods
+          // we check if the date portions match within a 1-day tolerance
+          const spStartStr = formatDate(spStart);
+          const spEndStr = formatDate(spEnd);
+          // Direct match
+          if (spStartStr === periodStartStr && spEndStr === periodEndStr) return true;
+          // Off-by-one from timezone: suppressed end may be +1 day due to UTC conversion
+          const periodEndDate = new Date(periodEndStr + "T00:00:00Z");
+          const spEndDate = new Date(spEndStr + "T00:00:00Z");
+          const diffMs = Math.abs(spEndDate.getTime() - periodEndDate.getTime());
+          return spStartStr === periodStartStr && diffMs <= 86400000;
+        });
         if (isSuppressed) {
           results.push({ facility: facility.name, action: "period_suppressed", period: `${periodStartStr} to ${periodEndStr}` });
           continue;
