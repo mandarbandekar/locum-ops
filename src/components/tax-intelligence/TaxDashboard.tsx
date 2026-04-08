@@ -293,7 +293,7 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
           <Card className="mt-2">
             <CardContent className="pt-4 space-y-2">
               <Row label="Gross Income" value={taxResult.grossIncome} />
-              <Row label="Business Expenses" value={-taxResult.expenses} />
+              <Row label={`Business Expenses${actualExpenses > (profile.ytd_expenses_estimate || 0) ? ' (actual)' : ' (estimated)'}`} value={-taxResult.expenses} />
               <Row label="Net Income" value={taxResult.netIncome} bold />
               <div className="border-t my-2" />
               {isScorp ? (
