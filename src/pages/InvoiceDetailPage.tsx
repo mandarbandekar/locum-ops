@@ -26,6 +26,7 @@ import {
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
+import { AutoInvoiceDeleteDialog } from '@/components/invoice/AutoInvoiceDeleteDialog';
 
 const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
   draft: { label: 'Draft', variant: 'secondary' },
@@ -45,10 +46,11 @@ function getStepOrder(status: string): number {
 export default function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { invoices, lineItems, facilities, contacts, payments, activities, updateInvoice, deleteInvoice, addLineItem, updateLineItem, deleteLineItem, addPayment, addActivity, updateFacility } = useData();
+  const { invoices, lineItems, facilities, contacts, payments, activities, updateInvoice, deleteInvoice, suppressInvoicePeriod, addLineItem, updateLineItem, deleteLineItem, addPayment, addActivity, updateFacility } = useData();
   const { profile } = useUserProfile();
   const { user } = useAuth();
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [autoDeleteOpen, setAutoDeleteOpen] = useState(false);
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [moveTarget, setMoveTarget] = useState<string | null>(null);
   const [billingDialogOpen, setBillingDialogOpen] = useState(false);
