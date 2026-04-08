@@ -1,69 +1,156 @@
 
+# Tax Intelligence Module — Addendum Implementation
 
-# Dashboard UX Improvements
+## Overview
 
-## Current State
+Five surgical changes to the existing tax engine: fix S-Corp quarterly estimate math, replace flat state rates with progressive brackets, add PTE tax handling, expand household income for accurate federal brackets, and restructure tax constants. This is a large change touching the calculation engine, profile setup UI, dashboard display, and per-shift nudge.
 
-The dashboard has three equal-width columns: Upcoming Shifts, Money to Collect, and Needs Attention. A briefing strip sits above them. Recent features (Tax Intelligence, per-shift tax nudges, expense tracking, total earnings) created new data surfaces that the dashboard does not yet reflect.
+## Change 1 — Fix S-Corp Quarterly Estimate
 
-## Proposed Improvements
+**Problem**: S-Corp quarterly 1040-ES currently includes payroll tax (FICA), double-counting it since it's paid through payroll.
 
-### 1. Add a Tax Snapshot to the Dashboard
+**Files changed**:
+- `src/components/tax-intelligence/TaxDashboard.tsx` — Update `calculateTax()` S-Corp path: remove payroll tax from `totalAnnualTax` and `quarterlyPayment`. Payroll tax stays as a read-only info line in the breakdown. Quarterly = `(federalTax + stateTax) / 4` only.
+- `src/components/schedule/ShiftTaxNudge.tsx` — S-Corp nudge copy changes to "Set aside $X for income tax" with tooltip explaining payroll is separate.
+- `src/lib/taxNudge.ts` — S-Corp nudge excludes SE/payroll from set-aside rate.
 
-**Problem**: Users who set up a tax profile get nudges on individual shifts but never see their overall tax position on the dashboard — the one place they check daily.
+**Breakdown table update**: Move payroll tax row out of the quarterly estimate section; show it as "Employer payroll taxes (auto-calculated · 7.65% of salary)" with a tooltip.
 
-**Change**: Add a compact "Tax Snapshot" section to the bottom of the Money to Collect card (or as a new slim row below the 3-column grid). Shows:
-- Estimated quarterly payment amount and next due date
-- YTD set-aside recommendation vs. actual (if trackable)
-- Links to Tax Center
+## Change 2 — Progressive State Tax Brackets
 
-**File**: `src/components/dashboard/MoneyToCollectCard.tsx` — add a tax snapshot section after the invoice list. Pass tax profile data from `DashboardPage.tsx`.
+**Problem**: Flat state rates are materially inaccurate for CA, NY, OR, NJ, etc.
 
-### 2. Surface Tax Deadline in the Daily Briefing Strip
+**New file**: `src/lib/stateTaxData.ts`
+- All 50 states + DC with type (`none`, `flat`, `progressive`), brackets by filing status, standard deductions, PTE availability and rates.
+- `applyStateBrackets()` function handles all three state types.
+- Replace `STATE_TAX_RATES` usage everywhere with the new bracket engine.
 
-**Problem**: The briefing strip shows shifts, earnings, and credentials but ignores upcoming tax deadlines — a high-stakes item users could miss.
+**Profile setup update** (`TaxProfileSetup.tsx`):
+- State dropdown stays the same (full 50 states alphabetical).
+- After selection, show a dynamic read-only callout: "California · Progressive brackets · Up to 13.3%" or "Texas · No state income tax".
 
-**Change**: Add a tax deadline segment to the briefing when a quarterly payment is due within 30 days: "Q2 taxes due in 12d".
+## Change 3 — PTE Tax Handling for S-Corp Users
 
-**File**: `src/pages/DashboardPage.tsx` — add to the `briefing` useMemo (around line 387) using the existing `taxQuarters` state.
+**New profile fields** (DB migration):
+- `pte_elected` (boolean, default false)
+- `spouse_w2_income` (numeric, default 0)
+- `spouse_has_se_income` (boolean, default false)
+- `spouse_se_net_income` (numeric, default 0)
 
-### 3. Replace Static "This Week" Earnings with a Mini Trend Sparkline
+**Profile setup** (`TaxProfileSetup.tsx`):
+- Add conditional PTE step after state selection for S-Corp users whose state has `hasPTE: true`.
+- Shows explainer with "Yes / No / I don't know" options.
+- "I don't know" expands inline savings estimate panel.
 
-**Problem**: The "This Week: $X" box in Money to Collect is useful but flat. Users can't tell if this week is better or worse than recent weeks.
+**Dashboard** (`TaxDashboard.tsx`):
+- When PTE elected: split quarterly display into two side-by-side cards (1040-ES federal + S-Corp PTE state payment).
+- Add footer note explaining the split.
+- When PTE elected: `personalStateTax = 0`, `scorpPTEPayment = distribution × pteRate`.
 
-**Change**: Add a tiny 4-week sparkline (just dots/line, no axis) next to the weekly earnings number showing the last 4 weeks' totals. Uses the existing `shifts` data.
+## Change 4 — Federal Tax on Gross Household Income
 
-**File**: `src/components/dashboard/MoneyToCollectCard.tsx` — add a small inline SVG sparkline beside the weekly earnings value.
+**Profile setup** (`TaxProfileSetup.tsx`):
+- Expand the "Other Income" step into a structured household income section: spouse W-2 gross, spouse SE income flag + amount.
+- Show calculated total household income as read-only live field.
 
-### 4. Add "Tax Set-Aside" to Needs Attention When Profile Missing
+**Dashboard** (`TaxDashboard.tsx`):
+- Add `buildFederalAGI()` that includes spouse income.
+- Add bracket visualization below hero card: horizontal segmented bar showing where household income lands, marginal rate callout, and "every additional $1,000 adds $X" line.
+- Add `getMarginalRate()` to the exported calculation engine.
 
-**Problem**: Users without a tax profile don't know they're missing out on the tax nudge system. The dashboard should gently surface this.
+**Per-shift nudge** (`src/lib/taxNudge.ts`, `ShiftTaxNudge.tsx`):
+- Use marginal federal rate (not effective) for set-aside calculation.
+- Tooltip shows breakdown: federal marginal + state effective + SE rate (1099 only).
+- Cap total at 45%.
 
-**Change**: When `useTaxIntelligence().hasProfile` is false and the user has at least one paid invoice, add a low-urgency attention item: "Set up your tax profile — See how much to set aside from each shift" linking to `/tax-center`.
+## Change 5 — Tax Constants Architecture
 
-**File**: `src/pages/DashboardPage.tsx` — add to the `attentionItems` useMemo, import `useTaxIntelligence`.
+**Restructure constants**:
+- `src/lib/taxConstants2026.ts` → rename to `src/lib/taxConstants.ts` (or keep, but update to be the single source of truth for federal brackets, SE rates, SS wage cap, standard deductions)
+- `src/lib/stateTaxData.ts` → new file for all 50-state data
+- Add `TAX_YEAR_CONFIG` object with `activeYear`, `lastUpdated`, `nextUpdateDue`, `ssWageBase`, `seNetRate`, `seTaxRate`, `standardMileageRate`
 
-### 5. Improve Mobile Layout — Stack Cards with Priority Order
+**UI footer**: Every estimate screen shows "Estimates based on [year] federal brackets and [state] [year] rates · Last updated: [date]"
 
-**Problem**: On mobile (current viewport ~982px is near the `lg` breakpoint), all three cards stack vertically. The "Needs Attention" card — arguably the most actionable — is buried last.
+**Disclaimer update**: Replace all estimate screen disclaimers with the expanded version from the prompt.
 
-**Change**: On mobile, reorder to: Needs Attention first, then Upcoming Shifts, then Money to Collect. Use CSS `order` utilities on the grid children at the mobile breakpoint.
+## Database Migration
 
-**File**: `src/pages/DashboardPage.tsx` — add `order-first lg:order-none` to the Needs Attention column div.
+Add columns to `tax_intelligence_profiles`:
+```sql
+ALTER TABLE tax_intelligence_profiles
+  ADD COLUMN IF NOT EXISTS pte_elected boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS spouse_w2_income numeric DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS spouse_has_se_income boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS spouse_se_net_income numeric DEFAULT 0;
+```
 
----
+## Updated `TaxIntelligenceProfile` Interface
+
+Add four new fields: `pte_elected`, `spouse_w2_income`, `spouse_has_se_income`, `spouse_se_net_income`.
 
 ## Files Summary
 
-| File | Changes |
+| File | Action |
 |---|---|
-| `src/pages/DashboardPage.tsx` | Add tax deadline to briefing, tax profile nudge to attention items, mobile reorder, pass tax data to MoneyToCollectCard |
-| `src/components/dashboard/MoneyToCollectCard.tsx` | Add tax snapshot section and weekly sparkline |
+| `src/lib/stateTaxData.ts` | **New** — 50-state progressive bracket data + `applyStateBrackets()` |
+| `src/lib/taxConstants2026.ts` | Update — add `TAX_YEAR_CONFIG`, `getMarginalRate()`, additional Medicare threshold; remove `STATE_TAX_RATES` |
+| `src/hooks/useTaxIntelligence.ts` | Update — add 4 new profile fields to interface + DEMO_PROFILE + load/save |
+| `src/components/tax-intelligence/TaxDashboard.tsx` | Major update — fix S-Corp calc, use progressive state brackets, household AGI, bracket visualization, PTE split cards, updated disclaimer |
+| `src/components/tax-intelligence/TaxProfileSetup.tsx` | Update — PTE step, expanded household income step, state callout |
+| `src/components/tax-intelligence/TaxReductionGuide.tsx` | Update — use new state bracket engine, updated disclaimer |
+| `src/lib/taxNudge.ts` | Update — marginal rate calculation, S-Corp-aware nudge, breakdown |
+| `src/components/schedule/ShiftTaxNudge.tsx` | Update — S-Corp copy change, breakdown tooltip |
+| `src/components/tax-strategy/TaxDisclaimer.tsx` | Update — new disclaimer text |
+| DB migration | Add 4 columns to `tax_intelligence_profiles` |
 
-## What This Does NOT Change
+## Implementation Order
 
-- No new pages or routes
-- No database changes
-- No changes to the 3-column structure on desktop
-- Needs Attention card internals stay the same (just receives one more item type)
+1. DB migration (new profile columns)
+2. `src/lib/stateTaxData.ts` (new state bracket data — largest new file)
+3. `src/lib/taxConstants2026.ts` (TAX_YEAR_CONFIG, remove flat STATE_TAX_RATES, add getMarginalRate)
+4. `src/hooks/useTaxIntelligence.ts` (new fields)
+5. `src/components/tax-intelligence/TaxDashboard.tsx` (core engine rewrite)
+6. `src/components/tax-intelligence/TaxProfileSetup.tsx` (PTE + household steps)
+7. `src/lib/taxNudge.ts` + `ShiftTaxNudge.tsx` (marginal rate nudge)
+8. `src/components/tax-intelligence/TaxReductionGuide.tsx` (use new engine)
+9. Disclaimer updates across all screens
 
+## Calculation Order (Unified Sequence)
+
+```text
+1. BUSINESS INCOME
+   1099:   netIncome = gross - expenses
+   S-Corp: employerPayroll = salary × 0.0765
+           distribution = gross - expenses - salary - employerPayroll
+           pteTax = pteElected ? distribution × pteRate : 0
+           distribution -= pteTax
+
+2. SE TAX (1099 only)
+   seBase = netIncome × 0.9235
+   ssTax = min(seBase, ssWageCap) × 0.124
+   medicare = seBase × 0.029
+   additionalMedicare = max(0, seBase - threshold) × 0.009
+   seDeduction = seTax / 2
+
+3. FEDERAL AGI
+   1099:   agi = netIncome - seDeduction - retirement + spouseW2 + spouseSE
+   S-Corp: agi = salary + distribution - retirement + spouseW2 + spouseSE
+
+4. FEDERAL TAXABLE INCOME = max(0, agi - standardDeduction)
+5. FEDERAL TAX = applyBrackets(taxableIncome, filingStatus)
+6. STATE TAX = applyStateBrackets(...) or 0 if PTE
+7. QUARTERLY 1040-ES
+   1099:       (federal + state + seTax) / 4
+   S-Corp:    (federal + state) / 4   ← no payroll
+   S-Corp PTE: federal / 4 + scorpPTE / 4 (separate card)
+8. PER-SHIFT NUDGE = marginalFed + stateEffective + (1099 ? 0.1413 : 0)
+```
+
+## Not Changed
+
+- Tax profile setup flow structure and step order (only adding PTE step + expanding household step)
+- Three-surface nudge placement (shift card, mark-paid, log footer)
+- Educational guide structure (Section 3)
+- Safe harbor preference and prior year tax input
+- Core disclaimer presence on all screens (just updated text)
