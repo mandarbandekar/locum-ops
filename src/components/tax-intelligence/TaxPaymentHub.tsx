@@ -94,14 +94,7 @@ export default function TaxPaymentHub({ profile, taxResult, nextDue, paymentLogs
   if (!nextDue) return null;
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm flex items-center gap-2">
-          <CreditCard className="h-4 w-4 text-primary" />
-          Make Your Payment
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <div className="space-y-4">
         {/* ── Inline Confirmation Prompt ── */}
         {confirmingPayment && (
           <Alert className="border-primary/30 bg-primary/5">
@@ -310,7 +303,6 @@ export default function TaxPaymentHub({ profile, taxResult, nextDue, paymentLogs
             </div>
           </CollapsibleContent>
         </Collapsible>
-      </CardContent>
-    </Card>
+      </div>
   );
 }
