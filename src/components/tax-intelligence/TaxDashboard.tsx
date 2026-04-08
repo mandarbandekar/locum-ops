@@ -1,5 +1,6 @@
 import { useMemo, useState, useCallback } from 'react';
 import { useData } from '@/contexts/DataContext';
+import { useExpenses } from '@/hooks/useExpenses';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -62,9 +63,10 @@ function computeFederalTax(taxableIncome: number, filingStatus: FilingStatus): n
 export function calculateTax(
   grossIncome: number,
   profile: TaxIntelligenceProfile,
+  expenseOverride?: number,
 ): FullTaxResult {
   const fs = (profile.filing_status || 'single') as FilingStatus;
-  const expenses = profile.ytd_expenses_estimate || 0;
+  const expenses = expenseOverride ?? (profile.ytd_expenses_estimate || 0);
   const stateRate = STATE_TAX_RATES[profile.state_code] || 0;
   const otherIncome = profile.other_w2_income || 0;
   const retirementContrib = profile.retirement_contribution || 0;
@@ -114,6 +116,7 @@ export function calculateTax(
 
 export default function TaxDashboard({ profile, onEditProfile }: Props) {
   const { shifts, invoices } = useData();
+  const { ytdDeductibleCents } = useExpenses();
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentQuarter = Math.ceil((now.getMonth() + 1) / 3);
@@ -140,13 +143,18 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
 
   const totalIncome = earnedIncome + projectedIncome;
 
-  const taxResult = useMemo(() => calculateTax(totalIncome, profile), [totalIncome, profile]);
+  // Blend expenses: use the greater of actual logged expenses vs. profile estimate
+  // This way the profile estimate is a baseline, and real data takes over as it accumulates
+  const actualExpenses = ytdDeductibleCents / 100;
+  const blendedExpenses = Math.max(actualExpenses, profile.ytd_expenses_estimate || 0);
+
+  const taxResult = useMemo(() => calculateTax(totalIncome, profile, blendedExpenses), [totalIncome, profile, blendedExpenses]);
 
   // What-if calculator
   const whatIfCalculator = useCallback((additionalIncome: number) => {
-    const result = calculateTax(totalIncome + additionalIncome, profile);
+    const result = calculateTax(totalIncome + additionalIncome, profile, blendedExpenses);
     return result.quarterlyPayment;
-  }, [totalIncome, profile]);
+  }, [totalIncome, profile, blendedExpenses]);
 
   // Next due date
   const nextDue = useMemo(() => {
@@ -285,7 +293,7 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
           <Card className="mt-2">
             <CardContent className="pt-4 space-y-2">
               <Row label="Gross Income" value={taxResult.grossIncome} />
-              <Row label="Business Expenses" value={-taxResult.expenses} />
+              <Row label={`Business Expenses${actualExpenses > (profile.ytd_expenses_estimate || 0) ? ' (actual)' : ' (estimated)'}`} value={-taxResult.expenses} />
               <Row label="Net Income" value={taxResult.netIncome} bold />
               <div className="border-t my-2" />
               {isScorp ? (
