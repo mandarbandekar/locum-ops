@@ -112,7 +112,7 @@ function InvoiceTable({ invoices, selected, onToggleSelect, onDelete, getFacilit
             </td>
             <td className="p-3 font-semibold">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-amber-700 dark:text-amber-400">{inv.invoice_number}</span>
+                <span>{inv.invoice_number}</span>
                 {inv.invoice_type === 'bulk' && (
                   <Badge variant="outline" className="text-[10px] px-1 py-0">Bulk</Badge>
                 )}
@@ -125,7 +125,7 @@ function InvoiceTable({ invoices, selected, onToggleSelect, onDelete, getFacilit
             </td>
             {showFacility && (
               <td className="p-3">
-                <div className="font-medium text-amber-700 dark:text-amber-400">{getFacilityName(inv.facility_id)}</div>
+                <div>{getFacilityName(inv.facility_id)}</div>
                 {inv.billing_cadence && (
                   <span className="text-[11px] text-muted-foreground">{inv.billing_cadence.charAt(0).toUpperCase() + inv.billing_cadence.slice(1)}</span>
                 )}
