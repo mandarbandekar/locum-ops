@@ -189,10 +189,10 @@ function BracketVisualization({ taxableIncome, fs, marginalRate }: { taxableInco
 
 export default function TaxDashboard({ profile, onEditProfile }: Props) {
   const { shifts, invoices } = useData();
-  const paymentLogs = useTaxPaymentLogs(currentYear);
   const { ytdDeductibleCents } = useExpenses();
   const now = new Date();
   const currentYear = now.getFullYear();
+  const paymentLogs = useTaxPaymentLogs(currentYear);
   const currentQuarter = Math.ceil((now.getMonth() + 1) / 3);
   const dueDates = getQuarterlyDueDates(currentYear);
   const fs = (profile.filing_status || 'single') as FilingStatus;
