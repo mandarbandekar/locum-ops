@@ -1,66 +1,53 @@
 
-# Tax Payment Hub — Implementation Plan
 
-## Overview
+# Tax Intelligence UX Improvements
 
-Add a "Make Your Payment" card to the Tax Intelligence dashboard with direct IRS/state payment links, personal-vs-business account guidance, post-payment confirmation logging, payment history table, and tax deadline reminders.
+## Current State
 
-## Steps
+The Tax Intelligence dashboard is dense — hero card, full payment hub card, bracket visualization, income split, quarterly timeline, tax breakdown, what-if slider, save nudge, payment history, and disclaimer all stacked vertically. There are no plain-language summaries explaining how numbers were derived.
 
-### 1. Database Migration
-New `tax_payment_logs` table to store confirmed quarterly payments (quarter, type, amount, date, account source). RLS policy scoped to `auth.uid()`.
+## Proposed Changes
 
-### 2. Static Data File — `src/lib/taxPaymentLinks.ts`
-- `IRS_PAYMENT` object (Direct Pay + EFTPS with URLs, labels, account types)
-- `STATE_PAYMENT_LINKS` map — all 50 states + DC with portal URLs, PTE URLs where applicable
-- `getPaymentAccountGuidance(entityType, paymentDestination)` — returns account recommendation, reason, warning text, and portal label
+### 1. Add "How we calculate this" summary card below the hero
 
-### 3. Payment Log Hook — `src/hooks/useTaxPaymentLogs.ts`
-CRUD hook: load payments for current year, `logPayment()`, `getQuarterPayments()`. Demo mode with in-memory state.
+A new card directly after the hero that gives a plain-language, personalized summary of the calculation. Dynamically generated based on entity type and profile inputs. Examples:
 
-### 4. Tax Payment Hub Component — `src/components/tax-intelligence/TaxPaymentHub.tsx`
-Card positioned after the quarterly estimate hero in TaxDashboard. Three sections:
+**1099 user**: "Based on $142,000 in income minus $18,500 in expenses, your net income is $123,500. We calculate $17,458 in self-employment tax (15.3%), deduct half for AGI, add your standard deduction of $16,100, and apply 2026 federal brackets. Your California state tax uses progressive rates on your net income. Combined: $38,200/year or $9,550/quarter."
 
-- **Federal row**: Amount, teal "Personal account" badge, "Pay federal via IRS Direct Pay" button (opens new tab). S-Corp contextual note.
-- **State row**: Conditional on state income tax. Shows portal link + account badge. No-tax states get a green checkmark. S-Corp PTE users get a second row with blue "S-Corp account" badge and PTE portal link.
-- **Collapsible explainer**: "Why personal vs business account?" — plain-language guidance adapted to entity type.
-- **Post-click confirmation**: Inline prompt after link click — "Did you complete your payment?" Confirm logs payment; dismiss is silent.
+**S-Corp user**: "Your S-Corp pays you a $70,000 salary. After expenses, your remaining $52,000 flows as distributions. We calculate federal income tax on salary + distributions using 2026 brackets. Payroll taxes on your salary are handled by your payroll provider and excluded from your quarterly estimate."
 
-### 5. Payment History Table — `src/components/tax-intelligence/TaxPaymentHistory.tsx`
-Simple table at the bottom of Tax Estimate tab showing all logged payments: quarter, type, amount, date, account badge. Becomes part of CPA export record.
+This replaces the need to expand the "Tax Breakdown Detail" accordion to understand the logic.
 
-### 6. Integration into TaxDashboard
-- `src/components/tax-intelligence/TaxDashboard.tsx` — Insert `<TaxPaymentHub>` after hero card, `<TaxPaymentHistory>` before disclaimer footer.
+### 2. Move Payment Hub into a dialog triggered by a CTA button
 
-### 7. Tax Deadline Reminders
-- `src/lib/reminderEngine.ts` — Add `generateTaxDeadlineReminders()` producing reminders at 14 days, 3 days, and day-of for upcoming quarterly deadlines. Skips fully-paid quarters. Deep-links to `/tax-center?tab=tax-estimate`.
+I agree with your suggestion. The payment hub is a transactional moment, not something users need to see on every dashboard visit. The change:
 
-### 8. CPA Export Integration
-- `src/hooks/useCPAPrepData.ts` — Include payment log data in agenda/readiness so it appears in CPA prep exports.
+- Remove the inline `<TaxPaymentHub>` card from the dashboard
+- Add a "Make Your Payment" CTA button directly under the hero card (inside the hero gradient area, after the quarterly amount)
+- Button opens a Dialog containing the full payment hub content (federal/state/PTE rows, account badges, confirmation prompts, explainer)
+- Dialog title: "Make Your Payment — {quarterLabel}"
+- Payment History table stays on the main dashboard (it's a reference, not an action)
 
-## Design Rules
-- Personal account: teal/success badge
-- Business account: blue/info badge
-- Wrong-account warnings: amber/warning
-- Payment buttons are specific: "Pay federal via IRS Direct Pay →" (not generic "Pay now")
-- All payment links open in new tab
-- Dollar amounts never in red — use amber for tax amounts, primary for neutral amounts
+### 3. Add KPI card tooltips with explanations
+
+Each of the 4 KPI cards (Total Income, SE Tax/Federal Tax, State Tax/Federal Tax, Total Annual) gets an info icon tooltip explaining what that number represents:
+
+- **Total Income**: "Sum of paid invoices this year ($X earned) plus projected income from upcoming shifts ($Y in next 90 days)"
+- **SE Tax**: "Self-employment tax at 15.3% on 92.35% of your net income. Covers Social Security + Medicare since you don't have an employer paying half."
+- **Federal Tax**: "Applied 2026 marginal brackets to your taxable income of $X after standard deduction of $Y"
+- **State Tax**: "Applied [State] progressive income tax rates to your net business income of $X"
+- **Total Annual**: "Sum of all tax obligations. Your effective rate of X% means X cents of every dollar goes to taxes."
+
+### 4. Quarterly timeline — add "paid" status from payment logs
+
+Each quarter card in the timeline currently shows the estimated amount. Enhance to show paid status if a payment was logged for that quarter, with a green checkmark and paid amount.
 
 ## Files
 
-| File | Action |
+| File | Change |
 |---|---|
-| DB migration | New `tax_payment_logs` table |
-| `src/lib/taxPaymentLinks.ts` | New — IRS/state links + account guidance |
-| `src/hooks/useTaxPaymentLogs.ts` | New — payment log hook |
-| `src/components/tax-intelligence/TaxPaymentHub.tsx` | New — payment hub card |
-| `src/components/tax-intelligence/TaxPaymentHistory.tsx` | New — payment history table |
-| `src/components/tax-intelligence/TaxDashboard.tsx` | Insert hub + history |
-| `src/lib/reminderEngine.ts` | Add tax deadline reminders |
-| `src/hooks/useCPAPrepData.ts` | Include payment logs in CPA data |
+| `src/components/tax-intelligence/TaxDashboard.tsx` | Add summary card, move payment hub to dialog, add KPI tooltips, enhance quarterly cards with paid status |
+| `src/components/tax-intelligence/TaxPaymentHub.tsx` | Minor: remove outer Card wrapper (dialog provides the container) |
 
-## What This Does NOT Change
-- No payment processing — always redirects to external portals
-- No bank linking or Plaid
-- Existing tax calculation engine untouched
-- Existing reminder channel preferences work as-is
+No new files, no database changes, no calculation logic changes.
+
