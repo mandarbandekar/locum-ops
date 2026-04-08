@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, ComposedChart } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, ComposedChart, AreaChart, Area } from 'recharts';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDown, FileText, Receipt, Shield, AlertTriangle, ArrowRight, Sparkles, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -264,6 +264,15 @@ export default function FinancialHealthTab() {
   const revenueByFacilityConfig = { revenue: { label: 'Revenue', color: 'hsl(142, 71%, 45%)' } };
   const expenseTrendConfig = { totalCents: { label: 'Expenses', color: 'hsl(var(--primary))' } };
   const expenseCatConfig = { totalCents: { label: 'Amount', color: 'hsl(var(--primary))' } };
+  const cumulativeEarningsConfig = { total: { label: 'Cumulative Earnings', color: 'hsl(var(--primary))' } };
+
+  const cumulativeData = useMemo(() => {
+    let running = 0;
+    return revenueData.map(d => {
+      running += d.collected + d.outstanding + d.anticipated;
+      return { month: d.month, total: Math.round(running * 100) / 100 };
+    });
+  }, [revenueData]);
 
   return (
     <div className="space-y-6">
@@ -339,6 +348,39 @@ export default function FinancialHealthTab() {
                   ? `You've collected ${collectionRate}% of invoiced revenue.${totalOutstanding > 0 ? ` $${totalOutstanding.toLocaleString()} awaiting payment across ${outstandingInvoiceCount} invoice${outstandingInvoiceCount !== 1 ? 's' : ''}.` : ''}`
                   : null
               } />
+            </CardContent>
+          </Card>
+
+          {/* Total Earnings (Cumulative) */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Total Earnings</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {cumulativeData.length === 0 || cumulativeData[cumulativeData.length - 1].total === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">No earnings data yet</p>
+              ) : (
+                <>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Cumulative total: <span className="font-medium text-foreground">{fmtAmount(cumulativeData[cumulativeData.length - 1].total)}</span>
+                  </p>
+                  <ChartContainer config={cumulativeEarningsConfig} className="h-[220px] w-full">
+                    <AreaChart data={cumulativeData} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
+                      <defs>
+                        <linearGradient id="totalEarningsGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.02} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                      <XAxis dataKey="month" className="text-muted-foreground" fontSize={11} />
+                      <YAxis className="text-muted-foreground" fontSize={11} tickFormatter={v => `$${v.toLocaleString()}`} />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Area type="monotone" dataKey="total" stroke="hsl(var(--primary))" strokeWidth={2} fill="url(#totalEarningsGrad)" />
+                    </AreaChart>
+                  </ChartContainer>
+                </>
+              )}
             </CardContent>
           </Card>
 
