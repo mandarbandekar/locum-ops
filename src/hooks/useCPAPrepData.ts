@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { useExpenses, Expense } from '@/hooks/useExpenses';
 import { useTaxAdvisor, TaxAdvisorProfile } from '@/hooks/useTaxAdvisor';
+import { useTaxPaymentLogs, TaxPaymentLog } from '@/hooks/useTaxPaymentLogs';
 import { EXPENSE_CATEGORIES, ALL_SUBCATEGORIES } from '@/lib/expenseCategories';
 import { aggregateQuarterlyIncome } from '@/lib/taxCalculations';
 import { Invoice } from '@/types';
@@ -68,6 +69,7 @@ export function useCPAPrepData() {
   const { invoices, shifts, facilities, lineItems, payments } = useData();
   const { expenses, ytdDeductibleCents, ytdTotalCents, ytdExpenses, confirmedMileageExpenses, ytdMileageMiles, ytdMileageDeductionCents, config } = useExpenses();
   const { profile } = useTaxAdvisor();
+  const { payments: taxPaymentLogs } = useTaxPaymentLogs();
 
   // ── Snapshot ──
   const snapshot = useMemo<CPASnapshot>(() => {
@@ -303,5 +305,6 @@ export function useCPAPrepData() {
     readiness,
     agenda,
     profile,
+    taxPaymentLogs,
   };
 }

@@ -5,6 +5,7 @@
 
 import { computeInvoiceStatus } from '@/lib/businessLogic';
 import { differenceInDays } from 'date-fns';
+import { getQuarterlyDueDates } from '@/lib/taxConstants2026';
 import type { Invoice, Facility } from '@/types';
 
 export interface GeneratedReminder {
@@ -278,7 +279,73 @@ export function filterByPreferences(
 ): GeneratedReminder[] {
   return reminders.filter(r => {
     const setting = categorySettings.find(c => c.category === r.module);
-    if (!setting) return true; // no setting = show by default
+    if (!setting) return true;
     return setting.enabled && setting.in_app_enabled;
   });
+}
+
+/**
+ * Generate tax deadline reminders at 14 days, 3 days, and day-of
+ * for upcoming quarterly estimated tax due dates.
+ */
+export function generateTaxDeadlineReminders(
+  now: Date,
+  quarterlyPayment: number,
+  statePayment: number,
+  stateCode: string,
+  paymentLogs: Array<{ quarter: string; payment_type: string; amount: number }>,
+): GeneratedReminder[] {
+  const items: GeneratedReminder[] = [];
+  const year = now.getFullYear();
+  const dueDates = getQuarterlyDueDates(year);
+
+  for (let q = 1; q <= 4; q++) {
+    const dd = dueDates[q];
+    const dueDate = new Date(dd.due);
+    const daysUntil = differenceInDays(dueDate, now);
+
+    // Skip past deadlines
+    if (daysUntil < 0) continue;
+
+    // Skip fully-paid quarters
+    const qLabel = dd.label;
+    const federalPaid = paymentLogs
+      .filter(p => p.quarter === qLabel && p.payment_type === 'federal_1040es')
+      .reduce((sum, p) => sum + p.amount, 0);
+    if (federalPaid >= quarterlyPayment && quarterlyPayment > 0) continue;
+
+    const federalStr = `$${quarterlyPayment.toLocaleString('en-US', { maximumFractionDigits: 0 })} federal`;
+    const stateStr = statePayment > 0 ? ` · $${statePayment.toLocaleString('en-US', { maximumFractionDigits: 0 })} ${stateCode}` : '';
+
+    if (daysUntil === 0) {
+      items.push({
+        module: 'taxes',
+        reminder_type: 'tax_deadline_today',
+        title: `Today is the ${qLabel} tax deadline`,
+        body: `${federalStr} via IRS Direct Pay${stateStr}`,
+        link: '/tax-center?tab=tax-estimate',
+        urgency: 1,
+      });
+    } else if (daysUntil <= 3) {
+      items.push({
+        module: 'taxes',
+        reminder_type: 'tax_deadline_soon',
+        title: `${qLabel} payment due in ${daysUntil} day${daysUntil > 1 ? 's' : ''} — ${dd.due}`,
+        body: `Don't forget: pay federal and state separately`,
+        link: '/tax-center?tab=tax-estimate',
+        urgency: 1,
+      });
+    } else if (daysUntil <= 14) {
+      items.push({
+        module: 'taxes',
+        reminder_type: 'tax_deadline_upcoming',
+        title: `${qLabel} estimated taxes due ${dd.due}`,
+        body: `Your estimate: ${federalStr}${stateStr}`,
+        link: '/tax-center?tab=tax-estimate',
+        urgency: 3,
+      });
+    }
+  }
+
+  return items;
 }

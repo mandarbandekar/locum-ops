@@ -1,5 +1,8 @@
 import { useMemo, useState, useCallback } from 'react';
 import { useData } from '@/contexts/DataContext';
+import { useTaxPaymentLogs } from '@/hooks/useTaxPaymentLogs';
+import TaxPaymentHub from './TaxPaymentHub';
+import TaxPaymentHistory from './TaxPaymentHistory';
 import { useExpenses } from '@/hooks/useExpenses';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -189,6 +192,7 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
   const { ytdDeductibleCents } = useExpenses();
   const now = new Date();
   const currentYear = now.getFullYear();
+  const paymentLogs = useTaxPaymentLogs(currentYear);
   const currentQuarter = Math.ceil((now.getMonth() + 1) / 3);
   const dueDates = getQuarterlyDueDates(currentYear);
   const fs = (profile.filing_status || 'single') as FilingStatus;
@@ -350,6 +354,14 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
         </div>
       </Card>
 
+      {/* ═══ TAX PAYMENT HUB ═══ */}
+      <TaxPaymentHub
+        profile={profile}
+        taxResult={taxResult}
+        nextDue={nextDue}
+        paymentLogs={paymentLogs}
+      />
+
       {/* ═══ BRACKET VISUALIZATION ═══ */}
       <Card>
         <CardHeader className="pb-2">
@@ -499,6 +511,9 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
           <strong>Set aside {recommendedPct}%</strong> of each payment to cover taxes. That's <strong>${fmt(perThousand)} per $1,000 earned</strong>.
         </AlertDescription>
       </Alert>
+
+      {/* ═══ PAYMENT HISTORY ═══ */}
+      <TaxPaymentHistory payments={paymentLogs.payments} />
 
       {/* Tax data version footer + Disclaimer */}
       <div className="space-y-1">
