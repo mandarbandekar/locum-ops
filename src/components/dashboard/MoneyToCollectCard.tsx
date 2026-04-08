@@ -56,6 +56,8 @@ export function MoneyToCollectCard({
   thisWeekEarnings = 0,
   monthlyPace = 0,
   oldestUnpaid,
+  weeklySparkline = [],
+  taxSnapshot,
 }: MoneyToCollectCardProps) {
   const navigate = useNavigate();
   const totalCollectable = outstandingTotal;
