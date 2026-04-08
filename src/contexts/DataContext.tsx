@@ -33,6 +33,13 @@ function stripDbFieldsKeepTimestamp(row: any): any {
   return rest;
 }
 
+interface SuppressedPeriod {
+  id: string;
+  facility_id: string;
+  period_start: string;
+  period_end: string;
+}
+
 interface DataContextType {
   facilities: Facility[];
   contacts: FacilityContact[];
@@ -69,6 +76,8 @@ interface DataContextType {
   updateTimeBlock: (block: TimeBlock) => Promise<void>;
   deleteTimeBlock: (id: string) => Promise<void>;
   getComputedInvoiceStatus: (invoice: Invoice) => Invoice['status'];
+  suppressInvoicePeriod: (facilityId: string, periodStart: string, periodEnd: string) => Promise<void>;
+  suppressedPeriods: SuppressedPeriod[];
 }
 
 const DataContext = createContext<DataContextType | null>(null);
@@ -88,6 +97,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
   const [activities, setActivities] = useState<InvoiceActivity[]>([]);
   const [checklistItems, setChecklistItems] = useState<ContractChecklistItem[]>(isDemo ? seedChecklistItems : []);
   const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>([]);
+  const [suppressedPeriods, setSuppressedPeriods] = useState<SuppressedPeriod[]>([]);
 
   useEffect(() => {
     if (isDemo || !user) return;
@@ -132,7 +142,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
 
   async function fetchAll() {
     try {
-      const [fRes, cRes, tRes, sRes, iRes, liRes, eRes, pRes, aRes, clRes, tbRes] = await Promise.all([
+      const [fRes, cRes, tRes, sRes, iRes, liRes, eRes, pRes, aRes, clRes, tbRes, spRes] = await Promise.all([
         db('facilities').select('*').order('created_at'),
         db('facility_contacts').select('*').order('created_at'),
         db('terms_snapshots').select('*').order('created_at'),
@@ -144,6 +154,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
         db('invoice_activity').select('*').order('created_at'),
         db('contract_checklist_items').select('*').order('created_at'),
         db('time_blocks').select('*').order('start_datetime'),
+        db('suppressed_invoice_periods').select('*').order('created_at'),
       ]);
       setFacilities((fRes.data || []).map(stripDbFields));
       setContacts((cRes.data || []).map(stripDbFields));
@@ -156,6 +167,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
       setActivities((aRes.data || []).map(stripDbFieldsKeepTimestamp));
       setChecklistItems((clRes.data || []).map(stripDbFields));
       setTimeBlocks((tbRes.data || []).map(stripDbFields));
+      setSuppressedPeriods((spRes.data || []).map(stripDbFields) as SuppressedPeriod[]);
     } catch (err: any) {
       console.error('Failed to load data:', err);
       toast.error('Failed to load data');
