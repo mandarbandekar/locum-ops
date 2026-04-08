@@ -191,7 +191,7 @@ export default function InvoicesPage() {
             invoices={overdue}
             selected={selected}
             onToggleSelect={toggleSelect}
-            onDelete={deleteInvoice}
+            onDelete={handleSingleDelete}
             getFacilityName={getFacilityName}
             emptyMessage="No overdue invoices — you're all caught up!"
             defaultOpen={true}
@@ -216,7 +216,7 @@ export default function InvoicesPage() {
             invoices={[...sent, ...partial]}
             selected={selected}
             onToggleSelect={toggleSelect}
-            onDelete={deleteInvoice}
+            onDelete={handleSingleDelete}
             getFacilityName={getFacilityName}
             emptyMessage="No invoices awaiting payment right now."
             defaultOpen={true}
@@ -235,7 +235,7 @@ export default function InvoicesPage() {
             invoices={readyToReview}
             selected={selected}
             onToggleSelect={toggleSelect}
-            onDelete={deleteInvoice}
+            onDelete={handleSingleDelete}
             getFacilityName={getFacilityName}
             emptyMessage="Invoices are auto-generated from your shifts — no need to create them manually. They'll appear here once shifts are completed."
             defaultOpen={true}
@@ -255,7 +255,7 @@ export default function InvoicesPage() {
             invoices={upcoming}
             selected={selected}
             onToggleSelect={toggleSelect}
-            onDelete={deleteInvoice}
+            onDelete={handleSingleDelete}
             getFacilityName={getFacilityName}
             emptyMessage="No upcoming invoices."
             defaultOpen={false}
@@ -276,7 +276,7 @@ export default function InvoicesPage() {
             invoices={paid}
             selected={selected}
             onToggleSelect={toggleSelect}
-            onDelete={deleteInvoice}
+            onDelete={handleSingleDelete}
             getFacilityName={getFacilityName}
             emptyMessage="No paid invoices yet."
             defaultOpen={false}
