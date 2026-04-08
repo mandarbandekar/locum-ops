@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Search, Trash2, MapPin, Loader2, AlertTriangle, LayoutGrid, List, Mail, Phone, CalendarClock, User } from 'lucide-react';
+import { Plus, Search, Trash2, MapPin, AlertTriangle, LayoutGrid, List, Mail, CalendarClock, User } from 'lucide-react';
 import { AddFacilityDialog } from '@/components/AddFacilityDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
