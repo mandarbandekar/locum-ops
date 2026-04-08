@@ -307,6 +307,26 @@ export default function InvoicesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {autoDeleteTarget && (
+        <AutoInvoiceDeleteDialog
+          open={!!autoDeleteTarget}
+          onOpenChange={(open) => { if (!open) setAutoDeleteTarget(null); }}
+          invoiceNumber={autoDeleteTarget.invoiceNumber}
+          facilityName={autoDeleteTarget.facilityName}
+          onDeleteOnly={async () => {
+            await deleteInvoice(autoDeleteTarget.id);
+            toast.success('Invoice deleted');
+            setAutoDeleteTarget(null);
+          }}
+          onDeleteAndSuppress={async () => {
+            await deleteInvoice(autoDeleteTarget.id);
+            await suppressInvoicePeriod(autoDeleteTarget.facilityId, autoDeleteTarget.periodStart, autoDeleteTarget.periodEnd);
+            toast.success('Invoice deleted — this period won\'t be auto-generated again');
+            setAutoDeleteTarget(null);
+          }}
+        />
+      )}
     </div>
   );
 }
