@@ -1,85 +1,50 @@
+
 # Tax Payment Hub — Implementation Plan
 
 ## Overview
 
-Add a "Make Your Payment" card to the Tax Intelligence dashboard, positioned after the quarterly estimate hero. It provides direct IRS and state portal links, account guidance (personal vs business), post-payment confirmation logging, payment history table, and tax deadline reminders.
+Add a "Make Your Payment" card to the Tax Intelligence dashboard with direct IRS/state payment links, personal-vs-business account guidance, post-payment confirmation logging, payment history table, and tax deadline reminders.
 
-## Implementation Steps
+## Steps
 
-### Step 1 — Database Migration
-New table `tax_payment_logs`:
-```sql
-CREATE TABLE tax_payment_logs (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL DEFAULT auth.uid(),
-  tax_year integer NOT NULL,
-  quarter text NOT NULL,
-  payment_type text NOT NULL, -- federal_1040es, state_personal, state_pte, payroll_fica
-  state_key text,
-  amount numeric NOT NULL DEFAULT 0,
-  date_paid date NOT NULL DEFAULT CURRENT_DATE,
-  paid_from text NOT NULL DEFAULT 'personal', -- personal | business
-  confirmed_by_user boolean NOT NULL DEFAULT true,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
-);
-ALTER TABLE tax_payment_logs ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can CRUD own tax payment logs"
-  ON tax_payment_logs FOR ALL TO authenticated
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
-```
+### 1. Database Migration
+New `tax_payment_logs` table to store confirmed quarterly payments (quarter, type, amount, date, account source). RLS policy scoped to `auth.uid()`.
 
-### Step 2 — Static Data Files
+### 2. Static Data File — `src/lib/taxPaymentLinks.ts`
+- `IRS_PAYMENT` object (Direct Pay + EFTPS with URLs, labels, account types)
+- `STATE_PAYMENT_LINKS` map — all 50 states + DC with portal URLs, PTE URLs where applicable
+- `getPaymentAccountGuidance(entityType, paymentDestination)` — returns account recommendation, reason, warning text, and portal label
 
-**`src/lib/taxPaymentLinks.ts`** — Contains:
-- `IRS_PAYMENT` object (Direct Pay + EFTPS with URLs, labels, descriptions, account types)
-- `STATE_PAYMENT_LINKS` map (all 50 states + DC with portal URLs, labels, PTE URLs where applicable)
-- `getPaymentAccountGuidance(entityType, paymentDestination)` utility function returning account recommendation, reason, warning, and portal label
-- `QUARTERLY_DUE_DATES` helper using existing `getQuarterlyDueDates()` from taxConstants2026
+### 3. Payment Log Hook — `src/hooks/useTaxPaymentLogs.ts`
+CRUD hook: load payments for current year, `logPayment()`, `getQuarterPayments()`. Demo mode with in-memory state.
 
-### Step 3 — Payment Log Hook
+### 4. Tax Payment Hub Component — `src/components/tax-intelligence/TaxPaymentHub.tsx`
+Card positioned after the quarterly estimate hero in TaxDashboard. Three sections:
 
-**`src/hooks/useTaxPaymentLogs.ts`** — Hook providing:
-- `payments` state loaded from `tax_payment_logs` for current year
-- `logPayment(data)` — inserts a confirmed payment record
-- `getQuarterPayments(quarter)` — filters payments for a specific quarter
-- Demo mode support with in-memory state
+- **Federal row**: Amount, teal "Personal account" badge, "Pay federal via IRS Direct Pay" button (opens new tab). S-Corp contextual note.
+- **State row**: Conditional on state income tax. Shows portal link + account badge. No-tax states get a green checkmark. S-Corp PTE users get a second row with blue "S-Corp account" badge and PTE portal link.
+- **Collapsible explainer**: "Why personal vs business account?" — plain-language guidance adapted to entity type.
+- **Post-click confirmation**: Inline prompt after link click — "Did you complete your payment?" Confirm logs payment; dismiss is silent.
 
-### Step 4 — Tax Payment Hub Component
+### 5. Payment History Table — `src/components/tax-intelligence/TaxPaymentHistory.tsx`
+Simple table at the bottom of Tax Estimate tab showing all logged payments: quarter, type, amount, date, account badge. Becomes part of CPA export record.
 
-**`src/components/tax-intelligence/TaxPaymentHub.tsx`** — New component receiving `profile`, `taxResult`, and payment log hook. Contains:
+### 6. Integration into TaxDashboard
+- `src/components/tax-intelligence/TaxDashboard.tsx` — Insert `<TaxPaymentHub>` after hero card, `<TaxPaymentHistory>` before disclaimer footer.
 
-**Row 1 — Federal Payment**: Shows quarterly amount, "Pay from personal account" badge (teal), IRS Direct Pay link button. S-Corp note when applicable.
+### 7. Tax Deadline Reminders
+- `src/lib/reminderEngine.ts` — Add `generateTaxDeadlineReminders()` producing reminders at 14 days, 3 days, and day-of for upcoming quarterly deadlines. Skips fully-paid quarters. Deep-links to `/tax-center?tab=tax-estimate`.
 
-**Row 2 — State Payment**: Conditional on state having income tax. Shows amount, account badge, state portal link. For no-income-tax states: green checkmark with "Nothing to pay here." For S-Corp PTE: additional row with "Pay from S-Corp business account" badge (blue) and PTE portal link.
+### 8. CPA Export Integration
+- `src/hooks/useCPAPrepData.ts` — Include payment log data in agenda/readiness so it appears in CPA prep exports.
 
-**Row 3 — Collapsible Explainer**: "Why personal vs business account?" — collapsed by default. Plain-language explanation adapted to entity type.
-
-**Post-click confirmation**: Inline prompt after payment link clicked — "Did you complete your payment?" with confirm/dismiss. On confirm, calls `logPayment()` and updates card to show green "Paid" state.
-
-**Color coding**:
+## Design Rules
 - Personal account: teal/success badge
-- Business account: blue/info badge  
+- Business account: blue/info badge
 - Wrong-account warnings: amber/warning
-
-### Step 5 — Payment History Table
-
-**`src/components/tax-intelligence/TaxPaymentHistory.tsx`** — Simple table at the bottom of the Tax Estimate tab showing all logged payments: quarter, type, amount, date paid, account badge. This becomes the CPA export record.
-
-### Step 6 — Integrate into TaxDashboard
-
-**`src/components/tax-intelligence/TaxDashboard.tsx`** — Insert `<TaxPaymentHub>` after the quarterly payment hero card (after line 351). Insert `<TaxPaymentHistory>` before the disclaimer footer.
-
-**`src/components/business/TaxEstimateTab.tsx`** — No changes needed; TaxPaymentHub lives inside TaxDashboard.
-
-### Step 7 — Tax Deadline Reminders
-
-**`src/lib/reminderEngine.ts`** — Add `generateTaxDeadlineReminders(profile, taxResult, paymentLogs, now)` generating reminders at 14 days, 3 days, and day-of for each upcoming quarterly deadline. Includes amounts and deep-link to `/tax-center?tab=tax-estimate`. Skip quarters already fully paid per payment logs.
-
-### Step 8 — CPA Export Integration
-
-Update `src/hooks/useCPAPrepData.ts` to include payment history in the agenda/readiness data so it appears in CPA prep exports.
+- Payment buttons are specific: "Pay federal via IRS Direct Pay →" (not generic "Pay now")
+- All payment links open in new tab
+- Dollar amounts never in red — use amber for tax amounts, primary for neutral amounts
 
 ## Files
 
@@ -87,15 +52,15 @@ Update `src/hooks/useCPAPrepData.ts` to include payment history in the agenda/re
 |---|---|
 | DB migration | New `tax_payment_logs` table |
 | `src/lib/taxPaymentLinks.ts` | New — IRS/state links + account guidance |
-| `src/hooks/useTaxPaymentLogs.ts` | New — CRUD hook for payment logs |
-| `src/components/tax-intelligence/TaxPaymentHub.tsx` | New — payment hub card UI |
+| `src/hooks/useTaxPaymentLogs.ts` | New — payment log hook |
+| `src/components/tax-intelligence/TaxPaymentHub.tsx` | New — payment hub card |
 | `src/components/tax-intelligence/TaxPaymentHistory.tsx` | New — payment history table |
-| `src/components/tax-intelligence/TaxDashboard.tsx` | Insert PaymentHub + PaymentHistory |
-| `src/lib/reminderEngine.ts` | Add tax deadline reminder generator |
+| `src/components/tax-intelligence/TaxDashboard.tsx` | Insert hub + history |
+| `src/lib/reminderEngine.ts` | Add tax deadline reminders |
 | `src/hooks/useCPAPrepData.ts` | Include payment logs in CPA data |
 
 ## What This Does NOT Change
-- No actual payment processing — all links open external portals in new tabs
-- No bank account linking or Plaid
+- No payment processing — always redirects to external portals
+- No bank linking or Plaid
 - Existing tax calculation engine untouched
-- Existing reminder preferences and channels work as-is
+- Existing reminder channel preferences work as-is
