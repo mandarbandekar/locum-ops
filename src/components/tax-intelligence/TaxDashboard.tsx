@@ -10,9 +10,10 @@ import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   CalendarDays, ChevronDown, DollarSign, Calculator, Settings2,
-  AlertTriangle, Clock, CheckCircle2, TrendingUp, Info,
+  AlertTriangle, Clock, CheckCircle2, TrendingUp, Info, CreditCard, Lightbulb,
 } from 'lucide-react';
 import IncomeSplitBar from './IncomeSplitBar';
 import WhatIfSlider from './WhatIfSlider';
@@ -237,9 +238,32 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
   const perThousand = round2((recommendedPct / 100) * 1000);
 
   const [breakdownOpen, setBreakdownOpen] = useState(false);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const isScorp = profile.entity_type === 'scorp';
   const hasPTE = !!(taxResult.scorpPTEPayment !== undefined && taxResult.scorpPTEPayment > 0);
   const stateInfo = getStateInfo(profile.state_code);
+
+  // KPI tooltip texts
+  const kpiTooltips = useMemo(() => ({
+    totalIncome: `Sum of paid invoices this year ($${fmt(earnedIncome)} earned) plus projected income from upcoming shifts ($${fmt(projectedIncome)} in next 90 days).`,
+    tax1: isScorp
+      ? `Federal income tax applied using 2026 marginal brackets on your taxable income of $${fmt(taxResult.federalTaxableIncome)} after standard deduction of $${fmt(STANDARD_DEDUCTIONS[fs])}.`
+      : `Self-employment tax at 15.3% on 92.35% of your net income ($${fmt(taxResult.netIncome)}). Covers Social Security + Medicare since you don't have an employer paying half.`,
+    tax2: isScorp
+      ? `Applied ${profile.state_code || 'state'} progressive income tax rates to your salary + distributions of $${fmt((taxResult.salary || 0) + (taxResult.distribution || 0))}.`
+      : `Applied 2026 marginal brackets to your taxable income of $${fmt(taxResult.federalTaxableIncome)} after standard deduction of $${fmt(STANDARD_DEDUCTIONS[fs])}.`,
+    totalAnnual: `Sum of all tax obligations. Your effective rate of ${taxResult.effectiveRate}% means ${taxResult.effectiveRate} cents of every dollar goes to taxes.`,
+  }), [earnedIncome, projectedIncome, isScorp, taxResult, fs, profile.state_code]);
+
+  // Plain-language calculation summary
+  const calculationSummary = useMemo(() => {
+    if (isScorp) {
+      const salary = taxResult.salary || 0;
+      const dist = taxResult.distribution || 0;
+      return `Your S-Corp pays you a $${fmt(salary)} salary. After $${fmt(taxResult.expenses)} in expenses, your remaining $${fmt(dist)} flows as distributions. We calculate federal income tax on salary + distributions using 2026 brackets (taxable income: $${fmt(taxResult.federalTaxableIncome)} after the $${fmt(STANDARD_DEDUCTIONS[fs])} standard deduction). ${stateInfo?.label ? `${stateInfo.label} state tax uses progressive rates on your combined salary and distributions.` : ''} ${hasPTE ? `Your elected PTE tax of $${fmt(taxResult.scorpPTEPayment || 0)}/year is paid at the entity level and deducted before distributions.` : ''} Payroll taxes on your salary are handled by your payroll provider and excluded from your quarterly estimate. Combined personal tax: $${fmt(taxResult.totalAnnualTax)}/year or $${fmt(taxResult.quarterlyPayment)}/quarter.`;
+    }
+    return `Based on $${fmt(totalIncome)} in income minus $${fmt(taxResult.expenses)} in expenses, your net income is $${fmt(taxResult.netIncome)}. We calculate $${fmt(taxResult.seTax)} in self-employment tax (15.3% on 92.35%), deduct half ($${fmt(taxResult.seDeduction)}) for AGI${profile.retirement_contribution > 0 ? `, subtract your $${fmt(profile.retirement_contribution)} retirement contribution` : ''}${(profile.spouse_w2_income || 0) > 0 ? `, add spouse W-2 income of $${fmt(profile.spouse_w2_income)}` : ''}, apply the $${fmt(STANDARD_DEDUCTIONS[fs])} standard deduction, and run 2026 federal brackets on $${fmt(taxResult.federalTaxableIncome)} taxable income. ${stateInfo?.label ? `Your ${stateInfo.label} state tax uses progressive rates on your net income.` : ''} Combined: $${fmt(taxResult.totalAnnualTax)}/year or $${fmt(taxResult.quarterlyPayment)}/quarter.`;
+  }, [isScorp, taxResult, totalIncome, fs, profile, stateInfo, hasPTE]);
 
   return (
     <div className="space-y-5">
@@ -282,6 +306,9 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
                   {nextDue.daysUntil} days
                 </Badge>
               </div>
+              <Button size="sm" variant="outline" className="mt-3 gap-1.5" onClick={() => setPaymentDialogOpen(true)}>
+                <CreditCard className="h-3.5 w-3.5" /> Make Your Payment
+              </Button>
             </div>
           )}
 
@@ -316,6 +343,9 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
                     {nextDue.daysUntil} days
                   </Badge>
                 </div>
+                <Button size="sm" variant="outline" className="mt-3 gap-1.5" onClick={() => setPaymentDialogOpen(true)}>
+                  <CreditCard className="h-3.5 w-3.5" /> Make Your Payment
+                </Button>
               </div>
               <Alert className="border-muted bg-muted/30 mb-4">
                 <Info className="h-3.5 w-3.5 text-muted-foreground" />
@@ -328,39 +358,86 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
 
           {/* KPI Grid */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <div className="rounded-xl bg-background/80 backdrop-blur-sm border p-3">
-              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Total Income</p>
-              <p className="text-xl font-bold mt-1">${fmt(totalIncome)}</p>
-              <p className="text-[10px] text-muted-foreground">earned + projected</p>
-            </div>
-            <div className="rounded-xl bg-background/80 backdrop-blur-sm border p-3">
-              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                {isScorp ? 'Federal Tax' : 'SE Tax'}
-              </p>
-              <p className="text-xl font-bold text-amber-500 mt-1">${fmt(isScorp ? taxResult.federalTax : taxResult.seTax)}</p>
-            </div>
-            <div className="rounded-xl bg-background/80 backdrop-blur-sm border p-3">
-              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                {isScorp ? 'State Tax' : 'Federal Tax'}
-              </p>
-              <p className="text-xl font-bold text-amber-500 mt-1">${fmt(isScorp ? taxResult.personalStateTax : taxResult.federalTax)}</p>
-            </div>
-            <div className="rounded-xl bg-background/80 backdrop-blur-sm border p-3">
-              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Total Annual</p>
-              <p className="text-xl font-bold text-amber-500 mt-1">${fmt(taxResult.totalAnnualTax)}</p>
-              <p className="text-[10px] text-muted-foreground">{taxResult.effectiveRate}% effective</p>
-            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="rounded-xl bg-background/80 backdrop-blur-sm border p-3 cursor-help">
+                  <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                    Total Income <Info className="h-3 w-3" />
+                  </p>
+                  <p className="text-xl font-bold mt-1">${fmt(totalIncome)}</p>
+                  <p className="text-[10px] text-muted-foreground">earned + projected</p>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent className="text-xs max-w-xs">{kpiTooltips.totalIncome}</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="rounded-xl bg-background/80 backdrop-blur-sm border p-3 cursor-help">
+                  <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                    {isScorp ? 'Federal Tax' : 'SE Tax'} <Info className="h-3 w-3" />
+                  </p>
+                  <p className="text-xl font-bold text-amber-500 mt-1">${fmt(isScorp ? taxResult.federalTax : taxResult.seTax)}</p>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent className="text-xs max-w-xs">{kpiTooltips.tax1}</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="rounded-xl bg-background/80 backdrop-blur-sm border p-3 cursor-help">
+                  <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                    {isScorp ? 'State Tax' : 'Federal Tax'} <Info className="h-3 w-3" />
+                  </p>
+                  <p className="text-xl font-bold text-amber-500 mt-1">${fmt(isScorp ? taxResult.personalStateTax : taxResult.federalTax)}</p>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent className="text-xs max-w-xs">{kpiTooltips.tax2}</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="rounded-xl bg-background/80 backdrop-blur-sm border p-3 cursor-help">
+                  <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                    Total Annual <Info className="h-3 w-3" />
+                  </p>
+                  <p className="text-xl font-bold text-amber-500 mt-1">${fmt(taxResult.totalAnnualTax)}</p>
+                  <p className="text-[10px] text-muted-foreground">{taxResult.effectiveRate}% effective</p>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent className="text-xs max-w-xs">{kpiTooltips.totalAnnual}</TooltipContent>
+            </Tooltip>
           </div>
         </div>
       </Card>
 
-      {/* ═══ TAX PAYMENT HUB ═══ */}
-      <TaxPaymentHub
-        profile={profile}
-        taxResult={taxResult}
-        nextDue={nextDue}
-        paymentLogs={paymentLogs}
-      />
+      {/* ═══ TAX PAYMENT HUB DIALOG ═══ */}
+      <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
+        <DialogContent className="max-w-[680px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-primary" />
+              Make Your Payment — {nextDue?.label || 'Q1'}
+            </DialogTitle>
+          </DialogHeader>
+          <TaxPaymentHub
+            profile={profile}
+            taxResult={taxResult}
+            nextDue={nextDue}
+            paymentLogs={paymentLogs}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* ═══ HOW WE CALCULATE THIS ═══ */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Lightbulb className="h-4 w-4 text-primary" />
+            How We Calculate This
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground leading-relaxed">{calculationSummary}</p>
+        </CardContent>
+      </Card>
 
       {/* ═══ BRACKET VISUALIZATION ═══ */}
       <Card>
@@ -411,6 +488,12 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
             const dd = dueDates[q];
             const isPast = new Date(dd.due) < now;
             const isCurrent = q === currentQuarter;
+            const fedPaid = paymentLogs.getQuarterTotal(dd.label, 'federal_1040es');
+            const statePaidQ = paymentLogs.getQuarterTotal(dd.label, 'state_personal');
+            const ptePaidQ = paymentLogs.getQuarterTotal(dd.label, 'state_pte');
+            const totalPaid = fedPaid + statePaidQ + ptePaidQ;
+            const totalDue = taxResult.quarterlyPayment + (taxResult.scorpPTEQuarterly || 0) + Math.round((taxResult.personalStateTax || 0) / 4);
+            const isFullyPaid = totalPaid >= totalDue && totalDue > 0;
             return (
               <Card key={q} className={`${isCurrent ? 'border-primary ring-1 ring-primary/20' : ''}`}>
                 <CardContent className="p-3 text-center">
@@ -421,12 +504,21 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
                     <p className="text-[10px] text-muted-foreground">+ ${fmt(taxResult.scorpPTEQuarterly || 0)} PTE</p>
                   )}
                   <p className="text-[11px] text-muted-foreground">Due {dd.due}</p>
-                  {isCurrent && <Badge className="mt-1 text-[10px]">Current</Badge>}
-                  {isPast && !isCurrent && (
+                  {isFullyPaid ? (
+                    <Badge variant="success" className="mt-1 text-[10px] gap-0.5">
+                      <CheckCircle2 className="h-3 w-3" /> Paid ${fmt(totalPaid)}
+                    </Badge>
+                  ) : totalPaid > 0 ? (
+                    <Badge variant="secondary" className="mt-1 text-[10px]">
+                      ${fmt(totalPaid)} paid
+                    </Badge>
+                  ) : isCurrent ? (
+                    <Badge className="mt-1 text-[10px]">Current</Badge>
+                  ) : isPast ? (
                     <Badge variant="secondary" className="mt-1 text-[10px]">
                       <CheckCircle2 className="h-3 w-3 mr-0.5" /> Past
                     </Badge>
-                  )}
+                  ) : null}
                 </CardContent>
               </Card>
             );
