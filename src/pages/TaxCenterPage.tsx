@@ -24,7 +24,7 @@ export default function TaxCenterPage() {
             <Landmark className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="page-title">Tax Center</h1>
+            <h1 className="page-title">Tax Intelligence</h1>
             <p className="page-subtitle">Tax estimation, quarterly planning, and CPA prep</p>
           </div>
         </div>
