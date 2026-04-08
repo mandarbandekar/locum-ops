@@ -512,6 +512,9 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
         </AlertDescription>
       </Alert>
 
+      {/* ═══ PAYMENT HISTORY ═══ */}
+      <TaxPaymentHistory payments={paymentLogs.payments} />
+
       {/* Tax data version footer + Disclaimer */}
       <div className="space-y-1">
         <p className="text-[11px] text-muted-foreground text-center">
