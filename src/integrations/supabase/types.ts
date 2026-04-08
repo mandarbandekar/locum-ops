@@ -2697,11 +2697,15 @@ export type Database = {
           id: string
           other_w2_income: number
           prior_year_tax_paid: number
+          pte_elected: boolean | null
           retirement_contribution: number
           retirement_type: string
           safe_harbor_method: string
           scorp_salary: number
           setup_completed_at: string | null
+          spouse_has_se_income: boolean | null
+          spouse_se_net_income: number | null
+          spouse_w2_income: number | null
           state_code: string
           updated_at: string
           user_id: string
@@ -2715,11 +2719,15 @@ export type Database = {
           id?: string
           other_w2_income?: number
           prior_year_tax_paid?: number
+          pte_elected?: boolean | null
           retirement_contribution?: number
           retirement_type?: string
           safe_harbor_method?: string
           scorp_salary?: number
           setup_completed_at?: string | null
+          spouse_has_se_income?: boolean | null
+          spouse_se_net_income?: number | null
+          spouse_w2_income?: number | null
           state_code?: string
           updated_at?: string
           user_id?: string
@@ -2733,11 +2741,15 @@ export type Database = {
           id?: string
           other_w2_income?: number
           prior_year_tax_paid?: number
+          pte_elected?: boolean | null
           retirement_contribution?: number
           retirement_type?: string
           safe_harbor_method?: string
           scorp_salary?: number
           setup_completed_at?: string | null
+          spouse_has_se_income?: boolean | null
+          spouse_se_net_income?: number | null
+          spouse_w2_income?: number | null
           state_code?: string
           updated_at?: string
           user_id?: string
