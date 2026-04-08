@@ -143,13 +143,18 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
 
   const totalIncome = earnedIncome + projectedIncome;
 
-  const taxResult = useMemo(() => calculateTax(totalIncome, profile), [totalIncome, profile]);
+  // Blend expenses: use the greater of actual logged expenses vs. profile estimate
+  // This way the profile estimate is a baseline, and real data takes over as it accumulates
+  const actualExpenses = ytdDeductibleCents / 100;
+  const blendedExpenses = Math.max(actualExpenses, profile.ytd_expenses_estimate || 0);
+
+  const taxResult = useMemo(() => calculateTax(totalIncome, profile, blendedExpenses), [totalIncome, profile, blendedExpenses]);
 
   // What-if calculator
   const whatIfCalculator = useCallback((additionalIncome: number) => {
-    const result = calculateTax(totalIncome + additionalIncome, profile);
+    const result = calculateTax(totalIncome + additionalIncome, profile, blendedExpenses);
     return result.quarterlyPayment;
-  }, [totalIncome, profile]);
+  }, [totalIncome, profile, blendedExpenses]);
 
   // Next due date
   const nextDue = useMemo(() => {
