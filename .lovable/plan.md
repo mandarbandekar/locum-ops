@@ -1,61 +1,46 @@
 
 
-# Fix: Deleted Invoices Keep Regenerating
+# Auto-Populate Address from Clinic Name Search
 
-## Root Cause
+## Problem
 
-When a user deletes an auto-generated draft invoice, the shifts that were on it become "uninvoiced" again. The next time:
-- A new shift is added (triggers `addShift` auto-generation in DataContext)
-- The `generate-auto-invoices` edge function runs on its cron schedule
+When adding a facility, users must type the clinic name and address separately. The Google Places Edge Function currently uses `types: 'address'`, so it only matches street addresses — not business names. Users want to type "Valley Animal Hospital" and have the address fill in automatically.
 
-...those shifts pass the eligibility check (`getSentInvoiceShiftIds` only protects shifts on *sent* invoices, not deleted ones) and a brand new draft is created for the same billing period. This cycle repeats every time.
+## Plan
 
-## Solution
+### 1. Update Edge Function (`supabase/functions/places-autocomplete/index.ts`)
 
-Add a **suppression table** that records facility + billing period combinations the user has chosen to stop auto-generating. When deleting an auto-generated invoice, show a confirmation dialog asking whether to suppress future auto-generation for that period.
+- Accept an optional `searchType` parameter (`'address' | 'establishment'`, default `'address'`)
+- When `searchType === 'establishment'`, use `types: 'establishment'` instead of `types: 'address'`
+- Add a new endpoint mode: when a `place_id` is passed (instead of `input`), call the Google Place Details API and return structured name + formatted address
+- Return shape for details: `{ name, formatted_address }`
 
-### Step 1 — Database Migration
-Create `suppressed_invoice_periods` table:
-- `id`, `user_id`, `facility_id`, `period_start`, `period_end`, `created_at`
-- RLS policy: users can CRUD own rows
-- Unique constraint on `(user_id, facility_id, period_start, period_end)`
+### 2. Update `GooglePlacesAutocomplete` Component
 
-### Step 2 — Enhanced Delete Confirmation Dialog
-In `InvoicesPage.tsx` and `InvoiceDetailPage.tsx`, when deleting an auto-generated (`generation_type === 'automatic'`) invoice:
-- Show a dialog: "This invoice was auto-generated. Do you also want to prevent it from being recreated for this billing period?"
-- Two options: "Delete Only" (just deletes) and "Delete & Suppress" (deletes + inserts suppression record)
-- Non-automatic invoices get the standard delete flow unchanged
+- Add an optional `searchType` prop (default `'address'`)
+- Pass `searchType` to the Edge Function
+- Add an optional `onPlaceSelect` callback that returns `{ name, description, place_id }` so parent components can react to the full selection (not just the text)
 
-### Step 3 — Update `deleteInvoice` in DataContext
-Add a new function `suppressInvoicePeriod(facilityId, periodStart, periodEnd)` that inserts into the suppression table. Load suppressed periods on init alongside other data.
+### 3. Revamp AddFacilityDialog Step 0
 
-### Step 4 — Guard Auto-Generation (Client-Side)
-In `DataContext.addShift` auto-generation block (~line 282-408):
-- Before creating a new draft, check if `(facility_id, period_start, period_end)` exists in the suppressed periods list
-- If suppressed, skip generation silently
+- Replace the separate Name + Address fields with a single "Search for your clinic" autocomplete field using `searchType='establishment'`
+- When a user selects a result, auto-populate both the `name` field (from the business name) and the `address` field (from Place Details formatted address)
+- Show the populated name and address as editable fields below the search, so users can correct them
+- Keep a manual fallback: if the clinic isn't found, show a "Can't find it? Enter manually" link that reveals the current name + address fields
 
-### Step 5 — Guard Auto-Generation (Edge Function)
-In `supabase/functions/generate-auto-invoices/index.ts`:
-- Query `suppressed_invoice_periods` for the facility's user
-- Before creating a new invoice for a period, check if that period is suppressed
-- Skip with `action: "period_suppressed"` in results
+### 4. Update ManualFacilityForm (Onboarding)
 
-### Step 6 — Guard `InvoiceStatusGroup` Delete (Bulk)
-The bulk delete in `InvoicesPage` iterates `selected` IDs. For auto-generated invoices in the selection, show the same suppression choice before proceeding.
+- Same pattern: add a clinic name search field at the top that auto-fills name + address
+- Keep manual entry as fallback
 
 ## Files
 
 | File | Change |
 |---|---|
-| DB migration | New `suppressed_invoice_periods` table |
-| `src/contexts/DataContext.tsx` | Load suppressed periods, add `suppressInvoicePeriod()`, guard `addShift` auto-gen |
-| `src/pages/InvoicesPage.tsx` | Enhanced delete dialog for auto-generated invoices |
-| `src/pages/InvoiceDetailPage.tsx` | Enhanced delete dialog for auto-generated invoices |
-| `supabase/functions/generate-auto-invoices/index.ts` | Check suppression table before creating drafts |
+| `supabase/functions/places-autocomplete/index.ts` | Add `searchType` param + Place Details lookup |
+| `src/components/GooglePlacesAutocomplete.tsx` | Add `searchType` prop, `onPlaceSelect` callback |
+| `src/components/AddFacilityDialog.tsx` | Clinic name search with auto-fill on step 0 |
+| `src/components/onboarding/ManualFacilityForm.tsx` | Same clinic search pattern |
 
-## What Does NOT Change
-- Manual invoice creation unaffected
-- Existing draft update logic (when draft exists) unaffected — suppression only blocks *new* draft creation
-- Sent/paid invoice handling unchanged
-- Billing cadence and period calculation logic unchanged
+No database changes needed.
 
