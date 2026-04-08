@@ -7,14 +7,14 @@ export const TAX_YEAR = 2026;
 
 export const TAX_YEAR_CONFIG = {
   activeYear: 2026,
-  lastUpdated: '2026-01-15',
+  lastUpdated: '2026-04-08',
   nextUpdateDue: '2027-01-15',
-  ssWageBase: 174900,
+  ssWageBase: 184500,
   seNetRate: 0.9235,
   seTaxRate: 0.153,
   additionalMedicareRate: 0.009,
   additionalMedicareThreshold: { single: 200000, married_joint: 250000, head_of_household: 200000 } as Record<string, number>,
-  standardMileageRate: 0.70,
+  standardMileageRate: 0.725,
 };
 
 // ── Self-Employment ─────────────────────────────
@@ -22,7 +22,7 @@ export const SE_TAXABLE_FACTOR = 0.9235;
 export const SS_RATE = 0.124;
 export const MEDICARE_RATE = 0.029;
 export const SE_TAX_RATE = SS_RATE + MEDICARE_RATE; // 15.3%
-export const SS_WAGE_CAP = 174900;
+export const SS_WAGE_CAP = 184500;
 export const FICA_RATE = 0.0765; // employee or employer side
 
 // ── Filing Status ───────────────────────────────
@@ -35,37 +35,37 @@ export const FILING_STATUS_LABELS: Record<FilingStatus, string> = {
 };
 
 export const STANDARD_DEDUCTIONS: Record<FilingStatus, number> = {
-  single: 15700,
-  married_joint: 31400,
-  head_of_household: 23500,
+  single: 16100,
+  married_joint: 32200,
+  head_of_household: 24150,
 };
 
 export const BRACKETS: Record<FilingStatus, { limit: number; rate: number }[]> = {
   single: [
-    { limit: 11925, rate: 0.10 },
-    { limit: 48475, rate: 0.12 },
-    { limit: 103350, rate: 0.22 },
-    { limit: 197300, rate: 0.24 },
-    { limit: 250525, rate: 0.32 },
-    { limit: 626350, rate: 0.35 },
+    { limit: 12400, rate: 0.10 },
+    { limit: 50400, rate: 0.12 },
+    { limit: 105700, rate: 0.22 },
+    { limit: 201775, rate: 0.24 },
+    { limit: 256225, rate: 0.32 },
+    { limit: 640600, rate: 0.35 },
     { limit: Infinity, rate: 0.37 },
   ],
   married_joint: [
-    { limit: 23850, rate: 0.10 },
-    { limit: 96950, rate: 0.12 },
-    { limit: 206700, rate: 0.22 },
-    { limit: 394600, rate: 0.24 },
-    { limit: 501050, rate: 0.32 },
-    { limit: 751600, rate: 0.35 },
+    { limit: 24800, rate: 0.10 },
+    { limit: 100800, rate: 0.12 },
+    { limit: 211400, rate: 0.22 },
+    { limit: 403550, rate: 0.24 },
+    { limit: 512450, rate: 0.32 },
+    { limit: 768700, rate: 0.35 },
     { limit: Infinity, rate: 0.37 },
   ],
   head_of_household: [
-    { limit: 17000, rate: 0.10 },
-    { limit: 64850, rate: 0.12 },
-    { limit: 103350, rate: 0.22 },
-    { limit: 197300, rate: 0.24 },
-    { limit: 250500, rate: 0.32 },
-    { limit: 626350, rate: 0.35 },
+    { limit: 17700, rate: 0.10 },
+    { limit: 67450, rate: 0.12 },
+    { limit: 105700, rate: 0.22 },
+    { limit: 201775, rate: 0.24 },
+    { limit: 256200, rate: 0.32 },
+    { limit: 640600, rate: 0.35 },
     { limit: Infinity, rate: 0.37 },
   ],
 };
@@ -123,7 +123,7 @@ export const US_STATES: { code: string; name: string }[] = [
 
 // ── Retirement Limits ───────────────────────────
 export const RETIREMENT_LIMITS = {
-  sep_ira: { maxContribution: 69000, percentOfNet: 0.25 },
-  solo_401k: { employeeMax: 23000, totalMax: 69000, employerPercent: 0.25 },
-  simple_ira: { employeeMax: 16000, employerMatch: 0.03 },
+  sep_ira: { maxContribution: 72000, percentOfNet: 0.25 },
+  solo_401k: { employeeMax: 23500, totalMax: 72000, employerPercent: 0.25 },
+  simple_ira: { employeeMax: 16500, employerMatch: 0.03 },
 };
