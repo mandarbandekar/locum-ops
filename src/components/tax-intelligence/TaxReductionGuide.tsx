@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Receipt, PiggyBank, Building2, CalendarDays, BookOpen,
-  ArrowRight, AlertTriangle, Info, ExternalLink,
+  ArrowRight, Info, ExternalLink,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { TaxIntelligenceProfile } from '@/hooks/useTaxIntelligence';
