@@ -354,6 +354,14 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
         </div>
       </Card>
 
+      {/* ═══ TAX PAYMENT HUB ═══ */}
+      <TaxPaymentHub
+        profile={profile}
+        taxResult={taxResult}
+        nextDue={nextDue}
+        paymentLogs={paymentLogs}
+      />
+
       {/* ═══ BRACKET VISUALIZATION ═══ */}
       <Card>
         <CardHeader className="pb-2">
