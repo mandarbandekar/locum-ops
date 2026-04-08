@@ -346,6 +346,19 @@ export default function DashboardPage() {
       });
     }
 
+    // Tax profile setup nudge
+    if (!hasTaxProfile) {
+      const hasPaidInvoice = invoices.some(i => i.paid_at);
+      if (hasPaidInvoice) {
+        items.push({
+          title: 'Set up your tax profile',
+          context: 'See how much to set aside from each shift',
+          link: '/tax-center', icon: Calculator, urgency: 10,
+          module: 'taxes',
+        });
+      }
+    }
+
     const sorted = items.sort((a, b) => a.urgency - b.urgency);
 
     // Filter by user's reminder category preferences (in-app channel)
@@ -437,8 +450,34 @@ export default function DashboardPage() {
       }
     }
 
+    // Tax deadline within 30 days
+    const nextQ = taxQuarters.find(q => new Date(q.due_date) >= now && q.status !== 'paid');
+    if (nextQ) {
+      const dUntil = differenceInDays(new Date(nextQ.due_date), now);
+      if (dUntil <= 30) {
+        parts.push(`Q${nextQ.quarter} taxes due in ${dUntil}d`);
+      }
+    }
+
     return parts.join(' · ');
-  }, [shifts, summary, invoices, thisWeekEarnings, credentialsList, now]);
+  }, [shifts, summary, invoices, thisWeekEarnings, credentialsList, taxQuarters, now]);
+
+  // ── Tax snapshot for MoneyToCollectCard ──
+  const taxSnapshot = useMemo(() => {
+    if (!hasTaxProfile || !taxProfile) return undefined;
+    const paidIncome = invoices.filter(i => i.paid_at).reduce((s, i) => s + i.total_amount, 0);
+    if (paidIncome <= 0) return undefined;
+    const monthsElapsed = Math.max(1, now.getMonth() + 1);
+    const annualized = (paidIncome / monthsElapsed) * 12;
+    const result = calculateTax(annualized, taxProfile);
+    const quarterlyAmount = Math.round(result.totalAnnualTax / 4);
+    const nextQ = taxQuarters.find(q => new Date(q.due_date) >= now && q.status !== 'paid');
+    return {
+      quarterlyAmount,
+      nextDueDate: nextQ?.due_date || null,
+      nextQuarter: nextQ?.quarter || null,
+    };
+  }, [hasTaxProfile, taxProfile, invoices, taxQuarters, now]);
 
   return (
     <div className="space-y-4 h-full">
