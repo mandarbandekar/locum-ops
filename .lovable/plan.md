@@ -1,53 +1,37 @@
 
 
-# Tax Intelligence UX Improvements
+# Friendlier Tax Disclaimers
 
-## Current State
+## Problem
 
-The Tax Intelligence dashboard is dense — hero card, full payment hub card, bracket visualization, income split, quarterly timeline, tax breakdown, what-if slider, save nudge, payment history, and disclaimer all stacked vertically. There are no plain-language summaries explaining how numbers were derived.
+Current disclaimers are technically dense and read like legal warnings ("does not account for QBI deduction (20% pass-through), AMT, itemized deductions..."). This can undermine confidence in the tool. The goal is a warmer tone that positions LocumOps as a powerful planning companion while gently encouraging CPA consultation for filing decisions.
 
-## Proposed Changes
+## New Copy
 
-### 1. Add "How we calculate this" summary card below the hero
+**Primary disclaimer** (TaxDashboard, TaxReductionGuide, TaxStrategyPage):
+> "LocumOps gives you a clear picture of your estimated taxes based on your income, expenses, and tax profile — so you can plan ahead with confidence. These estimates are designed for planning and budgeting, not for filing. Every tax situation has nuances, so we always recommend reviewing your numbers with a CPA or tax professional before making final decisions."
 
-A new card directly after the hero that gives a plain-language, personalized summary of the calculation. Dynamically generated based on entity type and profile inputs. Examples:
+**Advisor disclaimer** (Tax Planning Advisor, CPA Prep):
+> "Think of this as your smart starting point. LocumOps helps you organize your tax picture and spot opportunities — but your CPA or tax advisor knows the full story. Use what you find here to have a better, faster conversation with them."
 
-**1099 user**: "Based on $142,000 in income minus $18,500 in expenses, your net income is $123,500. We calculate $17,458 in self-employment tax (15.3%), deduct half for AGI, add your standard deduction of $16,100, and apply 2026 federal brackets. Your California state tax uses progressive rates on your net income. Combined: $38,200/year or $9,550/quarter."
+**Entity disclaimer** (S-Corp assessment):
+> "These scenarios help you explore how different business structures could affect your taxes. They're a starting point for conversations with your CPA — not a recommendation to change your entity type."
 
-**S-Corp user**: "Your S-Corp pays you a $70,000 salary. After expenses, your remaining $52,000 flows as distributions. We calculate federal income tax on salary + distributions using 2026 brackets. Payroll taxes on your salary are handled by your payroll provider and excluded from your quarterly estimate."
+## Tone Principles
+- Lead with what the tool *does* for you (positive framing)
+- Position CPA as a partner, not a correction ("review with" not "consult before")
+- No jargon dump (remove QBI, AMT, PTE references from user-facing text — keep those in the detailed "How we calculate" card)
+- Keep it short — 2 sentences max for inline disclaimers
 
-This replaces the need to expand the "Tax Breakdown Detail" accordion to understand the logic.
+## Changes
 
-### 2. Move Payment Hub into a dialog triggered by a CTA button
-
-I agree with your suggestion. The payment hub is a transactional moment, not something users need to see on every dashboard visit. The change:
-
-- Remove the inline `<TaxPaymentHub>` card from the dashboard
-- Add a "Make Your Payment" CTA button directly under the hero card (inside the hero gradient area, after the quarterly amount)
-- Button opens a Dialog containing the full payment hub content (federal/state/PTE rows, account badges, confirmation prompts, explainer)
-- Dialog title: "Make Your Payment — {quarterLabel}"
-- Payment History table stays on the main dashboard (it's a reference, not an action)
-
-### 3. Add KPI card tooltips with explanations
-
-Each of the 4 KPI cards (Total Income, SE Tax/Federal Tax, State Tax/Federal Tax, Total Annual) gets an info icon tooltip explaining what that number represents:
-
-- **Total Income**: "Sum of paid invoices this year ($X earned) plus projected income from upcoming shifts ($Y in next 90 days)"
-- **SE Tax**: "Self-employment tax at 15.3% on 92.35% of your net income. Covers Social Security + Medicare since you don't have an employer paying half."
-- **Federal Tax**: "Applied 2026 marginal brackets to your taxable income of $X after standard deduction of $Y"
-- **State Tax**: "Applied [State] progressive income tax rates to your net business income of $X"
-- **Total Annual**: "Sum of all tax obligations. Your effective rate of X% means X cents of every dollar goes to taxes."
-
-### 4. Quarterly timeline — add "paid" status from payment logs
-
-Each quarter card in the timeline currently shows the estimated amount. Enhance to show paid status if a payment was logged for that quarter, with a green checkmark and paid amount.
-
-## Files
-
-| File | Change |
+| File | What |
 |---|---|
-| `src/components/tax-intelligence/TaxDashboard.tsx` | Add summary card, move payment hub to dialog, add KPI tooltips, enhance quarterly cards with paid status |
-| `src/components/tax-intelligence/TaxPaymentHub.tsx` | Minor: remove outer Card wrapper (dialog provides the container) |
+| `src/components/tax-strategy/TaxDisclaimer.tsx` | Rewrite `getDisclaimer()`, `PERSISTENT_DISCLAIMER`, `ENTITY_DISCLAIMER`, and banner styling (swap AlertTriangle for Info icon, use softer blue/muted tones instead of amber warning) |
+| `src/components/tax-advisor/AdvisorDisclaimer.tsx` | Rewrite `ADVISOR_DISCLAIMER` with friendlier copy, swap to Info icon |
+| `src/components/tax-intelligence/TaxDashboard.tsx` | Update inline footer disclaimer text (~line 617) |
+| `src/components/tax-intelligence/TaxReductionGuide.tsx` | Update inline footer disclaimer text (~line 251) |
+| `src/test/taxPlanningAdvisor.test.ts` | Update assertion strings to match new copy |
 
-No new files, no database changes, no calculation logic changes.
+No logic, database, or structural changes.
 
