@@ -11,10 +11,11 @@ import {
 import { useNavigate } from 'react-router-dom';
 import type { TaxIntelligenceProfile } from '@/hooks/useTaxIntelligence';
 import {
-  STANDARD_DEDUCTIONS, BRACKETS, SS_WAGE_CAP, SE_TAXABLE_FACTOR,
-  STATE_TAX_RATES, RETIREMENT_LIMITS, FICA_RATE,
-  type FilingStatus,
+  STANDARD_DEDUCTIONS, SS_WAGE_CAP, SE_TAXABLE_FACTOR,
+  RETIREMENT_LIMITS, FICA_RATE, TAX_YEAR_CONFIG,
+  getMarginalRate, type FilingStatus,
 } from '@/lib/taxConstants2026';
+import { applyStateBrackets } from '@/lib/stateTaxData';
 
 interface Props {
   profile: TaxIntelligenceProfile;
@@ -26,16 +27,6 @@ function fmt(n: number) {
 
 function round2(n: number) { return Math.round(n * 100) / 100; }
 
-function getMarginalRate(taxableIncome: number, fs: FilingStatus): number {
-  const brackets = BRACKETS[fs] || BRACKETS.single;
-  let prev = 0;
-  for (const { limit, rate } of brackets) {
-    if (taxableIncome <= limit) return rate;
-    prev = limit;
-  }
-  return 0.37;
-}
-
 export default function TaxReductionGuide({ profile }: Props) {
   const { invoices } = useData();
   const { expenses: loggedExpenses } = useExpenses();
@@ -43,7 +34,6 @@ export default function TaxReductionGuide({ profile }: Props) {
   const isScorp = profile.entity_type === 'scorp';
   const fs = (profile.filing_status || 'single') as FilingStatus;
 
-  // Approximate current net income for personalization
   const ytdPaidIncome = useMemo(() => {
     const year = new Date().getFullYear();
     return invoices
@@ -59,13 +49,21 @@ export default function TaxReductionGuide({ profile }: Props) {
   }, [loggedExpenses]);
 
   const projectedExpenses = loggedExpenseTotal > 0 ? Math.round(loggedExpenseTotal * (12 / Math.max(1, new Date().getMonth() + 1))) : 0;
-  const marginalRate = getMarginalRate(Math.max(0, ytdPaidIncome - (profile.ytd_expenses_estimate || 0)), fs);
+
+  // Compute net income for bracket lookup
+  const netForCalc = Math.max(0, ytdPaidIncome - (profile.ytd_expenses_estimate || 0));
+  const seBase = netForCalc * SE_TAXABLE_FACTOR;
+  const seDeduction = round2((Math.min(seBase, SS_WAGE_CAP) * 0.124 + seBase * 0.029) / 2);
+  const spouseW2 = profile.spouse_w2_income || 0;
+  const spouseSE = profile.spouse_has_se_income ? (profile.spouse_se_net_income || 0) : 0;
+  const agi = Math.max(0, netForCalc - seDeduction - (profile.retirement_contribution || 0) + spouseW2 + spouseSE);
+  const standardDed = STANDARD_DEDUCTIONS[fs] || STANDARD_DEDUCTIONS.single;
+  const taxableIncome = Math.max(0, agi - standardDed);
+  const marginalRate = getMarginalRate(taxableIncome, fs);
 
   // S-Corp savings estimate
-  const netForScorp = Math.max(0, ytdPaidIncome - (profile.ytd_expenses_estimate || 0));
-  const annualizedNet = netForScorp > 0 ? (netForScorp / Math.max(1, new Date().getMonth() + 1)) * 12 : 0;
-  const seBase = annualizedNet * SE_TAXABLE_FACTOR;
-  const seTax = round2(Math.min(seBase, SS_WAGE_CAP) * 0.124 + seBase * 0.029);
+  const annualizedNet = netForCalc > 0 ? (netForCalc / Math.max(1, new Date().getMonth() + 1)) * 12 : 0;
+  const seTax = round2(Math.min(annualizedNet * SE_TAXABLE_FACTOR, SS_WAGE_CAP) * 0.124 + annualizedNet * SE_TAXABLE_FACTOR * 0.029);
   const salary60 = Math.round(annualizedNet * 0.6);
   const scorpPayroll = round2(Math.min(salary60, annualizedNet) * FICA_RATE * 2);
   const scorpSavings = round2(seTax - scorpPayroll);
@@ -103,7 +101,7 @@ export default function TaxReductionGuide({ profile }: Props) {
           <div className="space-y-1">
             <p className="text-sm font-medium">Commonly missed deductions for relief vets:</p>
             <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-              <li>Mileage between clinics (70¢/mile for 2026)</li>
+              <li>Mileage between clinics ({TAX_YEAR_CONFIG.standardMileageRate * 100}¢/mile for {TAX_YEAR_CONFIG.activeYear})</li>
               <li>DEA registration & state license fees</li>
               <li>USDA accreditation</li>
               <li>CE / conference travel</li>
@@ -132,7 +130,6 @@ export default function TaxReductionGuide({ profile }: Props) {
             SEP-IRA and Solo 401(k) contributions reduce your AGI dollar-for-dollar. This is often the single biggest tax reduction available.
           </p>
 
-          {/* Savings table */}
           <div className="rounded border overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-muted/50">
@@ -162,7 +159,7 @@ export default function TaxReductionGuide({ profile }: Props) {
           )}
 
           <p className="text-xs text-muted-foreground">
-            2026 limits: SEP-IRA up to 25% of net or $69,000 · Solo 401(k) $23,000 employee + 25% employer, total $69,000
+            {TAX_YEAR_CONFIG.activeYear} limits: SEP-IRA up to 25% of net or ${RETIREMENT_LIMITS.sep_ira.maxContribution.toLocaleString()} · Solo 401(k) ${RETIREMENT_LIMITS.solo_401k.employeeMax.toLocaleString()} employee + 25% employer, total ${RETIREMENT_LIMITS.solo_401k.totalMax.toLocaleString()}
           </p>
         </CardContent>
       </Card>
@@ -252,7 +249,7 @@ export default function TaxReductionGuide({ profile }: Props) {
       {/* Disclaimer */}
       <p className="text-[11px] text-muted-foreground text-center">
         <AlertTriangle className="h-3 w-3 inline mr-1" />
-        For education and planning support only. LocumOps does not provide tax, legal, or financial advice.
+        Estimates use {TAX_YEAR_CONFIG.activeYear} federal brackets{profile.state_code ? `, ${profile.state_code} progressive rates` : ''}, and your tax profile inputs. Does not account for QBI deduction, AMT, itemized deductions, or tax credits. Use this to plan and save — not to file.
       </p>
     </div>
   );
