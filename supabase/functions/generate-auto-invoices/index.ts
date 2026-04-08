@@ -148,6 +148,14 @@ Deno.serve(async (req) => {
     for (const facility of facilities as Facility[]) {
       const cadence = facility.billing_cadence;
 
+      // Load suppressed periods for this facility's user
+      const { data: suppressedRows } = await supabase
+        .from("suppressed_invoice_periods")
+        .select("period_start, period_end")
+        .eq("user_id", facility.user_id)
+        .eq("facility_id", facility.id);
+      const suppressedPeriods = (suppressedRows || []) as { period_start: string; period_end: string }[];
+
       // Get ALL booked/completed shifts for this facility (not just current period)
       const { data: allShifts } = await supabase
         .from("shifts")
@@ -221,6 +229,16 @@ Deno.serve(async (req) => {
       for (const [periodKey, { period, shifts: periodShifts }] of periodMap) {
         const periodStartStr = formatDate(period.start);
         const periodEndStr = formatDate(period.end);
+
+        // Check if this period has been suppressed by the user
+        const isSuppressed = suppressedPeriods.some(sp =>
+          formatDate(new Date(sp.period_start)) === periodStartStr &&
+          formatDate(new Date(sp.period_end)) === periodEndStr
+        );
+        if (isSuppressed) {
+          results.push({ facility: facility.name, action: "period_suppressed", period: `${periodStartStr} to ${periodEndStr}` });
+          continue;
+        }
 
         // Also include any shifts already on a draft for this period (to rebuild correctly)
         const existingDraft = allInvoices.find(
