@@ -63,9 +63,10 @@ function computeFederalTax(taxableIncome: number, filingStatus: FilingStatus): n
 export function calculateTax(
   grossIncome: number,
   profile: TaxIntelligenceProfile,
+  expenseOverride?: number,
 ): FullTaxResult {
   const fs = (profile.filing_status || 'single') as FilingStatus;
-  const expenses = profile.ytd_expenses_estimate || 0;
+  const expenses = expenseOverride ?? (profile.ytd_expenses_estimate || 0);
   const stateRate = STATE_TAX_RATES[profile.state_code] || 0;
   const otherIncome = profile.other_w2_income || 0;
   const retirementContrib = profile.retirement_contribution || 0;
