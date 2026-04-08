@@ -5,16 +5,18 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import {
   CalendarDays, FileText, DollarSign, AlertTriangle, ArrowRight,
-  Send, ShieldAlert, CheckSquare, Zap, Clock,
+  Send, ShieldAlert, CheckSquare, Zap, Clock, Calculator,
 } from 'lucide-react';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
-import { format, differenceInDays, differenceInHours, addMonths, subMonths, startOfMonth, endOfMonth, endOfDay, startOfWeek, endOfWeek, eachMonthOfInterval, isWithinInterval, isToday, isAfter, parseISO } from 'date-fns';
+import { format, differenceInDays, differenceInHours, addMonths, subMonths, startOfMonth, endOfMonth, endOfDay, startOfWeek, endOfWeek, subWeeks, eachMonthOfInterval, isWithinInterval, isToday, isAfter, parseISO } from 'date-fns';
 import { getChecklistBadge } from '@/types/contracts';
 import { useClinicConfirmations } from '@/hooks/useClinicConfirmations';
 import { useCredentials } from '@/hooks/useCredentials';
 import { generateCredentialReminders, generateUninvoicedShiftReminders } from '@/lib/reminderEngine';
 import { computeStatus as computeSubStatus } from '@/hooks/useSubscriptions';
 import { useReminderPreferences } from '@/hooks/useReminderPreferences';
+import { useTaxIntelligence } from '@/hooks/useTaxIntelligence';
+import { calculateTax } from '@/components/tax-intelligence/TaxDashboard';
 
 import { UpcomingShiftsCard } from '@/components/dashboard/UpcomingShiftsCard';
 import { MoneyToCollectCard } from '@/components/dashboard/MoneyToCollectCard';
@@ -59,6 +61,7 @@ export default function DashboardPage() {
   const { shifts, invoices, facilities, payments, checklistItems, lineItems } = useData();
   const { user, isDemo } = useAuth();
   const { profile } = useUserProfile();
+  const { profile: taxProfile, hasProfile: hasTaxProfile } = useTaxIntelligence();
   const { categories: reminderCategories } = useReminderPreferences();
   const navigate = useNavigate();
   const now = new Date();
@@ -105,6 +108,20 @@ export default function DashboardPage() {
         return isWithinInterval(d, { start: weekStart, end: weekEnd }) && new Date(s.end_datetime) < now;
       })
       .reduce((sum, s) => sum + (s.rate_applied || 0), 0);
+  }, [shifts, now]);
+
+  // ── 4-week sparkline data ──
+  const weeklySparkline = useMemo(() => {
+    return [3, 2, 1, 0].map(weeksAgo => {
+      const wStart = startOfWeek(subWeeks(now, weeksAgo), { weekStartsOn: 1 });
+      const wEnd = endOfWeek(subWeeks(now, weeksAgo), { weekStartsOn: 1 });
+      return shifts
+        .filter(s => {
+          const d = parseISO(s.start_datetime);
+          return isWithinInterval(d, { start: wStart, end: wEnd }) && new Date(s.end_datetime) < now;
+        })
+        .reduce((sum, s) => sum + (s.rate_applied || 0), 0);
+    });
   }, [shifts, now]);
 
   // ── Monthly pace ──
@@ -329,6 +346,19 @@ export default function DashboardPage() {
       });
     }
 
+    // Tax profile setup nudge
+    if (!hasTaxProfile) {
+      const hasPaidInvoice = invoices.some(i => i.paid_at);
+      if (hasPaidInvoice) {
+        items.push({
+          title: 'Set up your tax profile',
+          context: 'See how much to set aside from each shift',
+          link: '/tax-center', icon: Calculator, urgency: 10,
+          module: 'taxes',
+        });
+      }
+    }
+
     const sorted = items.sort((a, b) => a.urgency - b.urgency);
 
     // Filter by user's reminder category preferences (in-app channel)
@@ -420,8 +450,34 @@ export default function DashboardPage() {
       }
     }
 
+    // Tax deadline within 30 days
+    const nextQ = taxQuarters.find(q => new Date(q.due_date) >= now && q.status !== 'paid');
+    if (nextQ) {
+      const dUntil = differenceInDays(new Date(nextQ.due_date), now);
+      if (dUntil <= 30) {
+        parts.push(`Q${nextQ.quarter} taxes due in ${dUntil}d`);
+      }
+    }
+
     return parts.join(' · ');
-  }, [shifts, summary, invoices, thisWeekEarnings, credentialsList, now]);
+  }, [shifts, summary, invoices, thisWeekEarnings, credentialsList, taxQuarters, now]);
+
+  // ── Tax snapshot for MoneyToCollectCard ──
+  const taxSnapshot = useMemo(() => {
+    if (!hasTaxProfile || !taxProfile) return undefined;
+    const paidIncome = invoices.filter(i => i.paid_at).reduce((s, i) => s + i.total_amount, 0);
+    if (paidIncome <= 0) return undefined;
+    const monthsElapsed = Math.max(1, now.getMonth() + 1);
+    const annualized = (paidIncome / monthsElapsed) * 12;
+    const result = calculateTax(annualized, taxProfile);
+    const quarterlyAmount = Math.round(result.totalAnnualTax / 4);
+    const nextQ = taxQuarters.find(q => new Date(q.due_date) >= now && q.status !== 'paid');
+    return {
+      quarterlyAmount,
+      nextDueDate: nextQ?.due_date || null,
+      nextQuarter: nextQ?.quarter || null,
+    };
+  }, [hasTaxProfile, taxProfile, invoices, taxQuarters, now]);
 
   return (
     <div className="space-y-4 h-full">
@@ -439,7 +495,7 @@ export default function DashboardPage() {
       {/* 3-Column Layout */}
       <div className="grid gap-4 sm:gap-5 grid-cols-1 lg:grid-cols-12 lg:items-start">
         {/* Left: Upcoming Shifts */}
-        <div className="lg:col-span-4">
+        <div className="order-2 lg:order-none lg:col-span-4">
           <UpcomingShiftsCard
             shifts={shifts}
             getFacilityName={getFacilityName}
@@ -450,7 +506,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Center: Money to Collect */}
-        <div className="lg:col-span-4">
+        <div className="order-3 lg:order-none lg:col-span-4">
            <MoneyToCollectCard
             outstandingTotal={summary.outstandingTotal}
             paidThisMonth={summary.paidThisMonth}
@@ -459,11 +515,13 @@ export default function DashboardPage() {
             thisWeekEarnings={thisWeekEarnings}
             monthlyPace={monthlyPace}
             oldestUnpaid={oldestUnpaid}
+            weeklySparkline={weeklySparkline}
+            taxSnapshot={taxSnapshot}
           />
         </div>
 
         {/* Right: Needs Attention */}
-        <div className="lg:col-span-4">
+        <div className="order-first lg:order-none lg:col-span-4">
           <NeedsAttentionCard items={attentionItems} readinessItems={readinessItems} />
         </div>
       </div>
