@@ -70,7 +70,6 @@ export function useCPAPrepData() {
   const { expenses, ytdDeductibleCents, ytdTotalCents, ytdExpenses, confirmedMileageExpenses, ytdMileageMiles, ytdMileageDeductionCents, config } = useExpenses();
   const { profile } = useTaxAdvisor();
   const { payments: taxPaymentLogs } = useTaxPaymentLogs();
-  const { profile } = useTaxAdvisor();
 
   // ── Snapshot ──
   const snapshot = useMemo<CPASnapshot>(() => {
