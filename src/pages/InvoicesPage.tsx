@@ -11,17 +11,19 @@ import { InvoiceEmptyState } from '@/components/invoice/InvoiceEmptyState';
 import { InvoiceStatusGroup } from '@/components/invoice/InvoiceStatusGroup';
 import { InvoiceSummaryStrip } from '@/components/invoice/InvoiceSummaryStrip';
 import { InvoiceWorkflowHint } from '@/components/invoice/InvoiceWorkflowHint';
+import { AutoInvoiceDeleteDialog } from '@/components/invoice/AutoInvoiceDeleteDialog';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
 export default function InvoicesPage() {
-  const { invoices, facilities, shifts, addInvoice, deleteInvoice, dataLoading } = useData();
+  const { invoices, facilities, shifts, addInvoice, deleteInvoice, suppressInvoicePeriod, dataLoading } = useData();
   const navigate = useNavigate();
   const [showCreate, setShowCreate] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [autoDeleteTarget, setAutoDeleteTarget] = useState<{ id: string; invoiceNumber: string; facilityName: string; periodStart: string; periodEnd: string; facilityId: string } | null>(null);
 
   // Refs for scroll-to
   const overdueRef = useRef<HTMLDivElement>(null);
@@ -54,9 +56,38 @@ export default function InvoicesPage() {
     });
   };
 
+  // Wrapper for single-invoice delete that checks auto-generation
+  const handleSingleDelete = async (id: string) => {
+    const inv = safeInvoices.find(i => i.id === id);
+    if (inv && inv.generation_type === 'automatic' && inv.status === 'draft') {
+      setAutoDeleteTarget({
+        id: inv.id,
+        invoiceNumber: inv.invoice_number,
+        facilityName: getFacilityName(inv.facility_id),
+        periodStart: inv.period_start,
+        periodEnd: inv.period_end,
+        facilityId: inv.facility_id,
+      });
+      return;
+    }
+    await deleteInvoice(id);
+    toast.success('Invoice deleted');
+  };
+
   const handleBulkDelete = async () => {
+    // Check if any selected are auto-generated drafts
+    const autoInvs = [...selected]
+      .map(id => safeInvoices.find(i => i.id === id))
+      .filter(inv => inv && inv.generation_type === 'automatic' && inv.status === 'draft');
+
     for (const id of selected) {
       await deleteInvoice(id);
+    }
+    // Suppress all auto-generated draft periods in the selection
+    for (const inv of autoInvs) {
+      if (inv) {
+        await suppressInvoicePeriod(inv.facility_id, inv.period_start, inv.period_end);
+      }
     }
     toast.success(`${selected.size} invoice(s) deleted`);
     setSelected(new Set());
@@ -160,7 +191,7 @@ export default function InvoicesPage() {
             invoices={overdue}
             selected={selected}
             onToggleSelect={toggleSelect}
-            onDelete={deleteInvoice}
+            onDelete={handleSingleDelete}
             getFacilityName={getFacilityName}
             emptyMessage="No overdue invoices — you're all caught up!"
             defaultOpen={true}
@@ -185,7 +216,7 @@ export default function InvoicesPage() {
             invoices={[...sent, ...partial]}
             selected={selected}
             onToggleSelect={toggleSelect}
-            onDelete={deleteInvoice}
+            onDelete={handleSingleDelete}
             getFacilityName={getFacilityName}
             emptyMessage="No invoices awaiting payment right now."
             defaultOpen={true}
@@ -204,7 +235,7 @@ export default function InvoicesPage() {
             invoices={readyToReview}
             selected={selected}
             onToggleSelect={toggleSelect}
-            onDelete={deleteInvoice}
+            onDelete={handleSingleDelete}
             getFacilityName={getFacilityName}
             emptyMessage="Invoices are auto-generated from your shifts — no need to create them manually. They'll appear here once shifts are completed."
             defaultOpen={true}
@@ -224,7 +255,7 @@ export default function InvoicesPage() {
             invoices={upcoming}
             selected={selected}
             onToggleSelect={toggleSelect}
-            onDelete={deleteInvoice}
+            onDelete={handleSingleDelete}
             getFacilityName={getFacilityName}
             emptyMessage="No upcoming invoices."
             defaultOpen={false}
@@ -245,7 +276,7 @@ export default function InvoicesPage() {
             invoices={paid}
             selected={selected}
             onToggleSelect={toggleSelect}
-            onDelete={deleteInvoice}
+            onDelete={handleSingleDelete}
             getFacilityName={getFacilityName}
             emptyMessage="No paid invoices yet."
             defaultOpen={false}
@@ -276,6 +307,26 @@ export default function InvoicesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {autoDeleteTarget && (
+        <AutoInvoiceDeleteDialog
+          open={!!autoDeleteTarget}
+          onOpenChange={(open) => { if (!open) setAutoDeleteTarget(null); }}
+          invoiceNumber={autoDeleteTarget.invoiceNumber}
+          facilityName={autoDeleteTarget.facilityName}
+          onDeleteOnly={async () => {
+            await deleteInvoice(autoDeleteTarget.id);
+            toast.success('Invoice deleted');
+            setAutoDeleteTarget(null);
+          }}
+          onDeleteAndSuppress={async () => {
+            await deleteInvoice(autoDeleteTarget.id);
+            await suppressInvoicePeriod(autoDeleteTarget.facilityId, autoDeleteTarget.periodStart, autoDeleteTarget.periodEnd);
+            toast.success('Invoice deleted — this period won\'t be auto-generated again');
+            setAutoDeleteTarget(null);
+          }}
+        />
+      )}
     </div>
   );
 }

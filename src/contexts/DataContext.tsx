@@ -33,6 +33,13 @@ function stripDbFieldsKeepTimestamp(row: any): any {
   return rest;
 }
 
+interface SuppressedPeriod {
+  id: string;
+  facility_id: string;
+  period_start: string;
+  period_end: string;
+}
+
 interface DataContextType {
   facilities: Facility[];
   contacts: FacilityContact[];
@@ -69,6 +76,8 @@ interface DataContextType {
   updateTimeBlock: (block: TimeBlock) => Promise<void>;
   deleteTimeBlock: (id: string) => Promise<void>;
   getComputedInvoiceStatus: (invoice: Invoice) => Invoice['status'];
+  suppressInvoicePeriod: (facilityId: string, periodStart: string, periodEnd: string) => Promise<void>;
+  suppressedPeriods: SuppressedPeriod[];
 }
 
 const DataContext = createContext<DataContextType | null>(null);
@@ -88,6 +97,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
   const [activities, setActivities] = useState<InvoiceActivity[]>([]);
   const [checklistItems, setChecklistItems] = useState<ContractChecklistItem[]>(isDemo ? seedChecklistItems : []);
   const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>([]);
+  const [suppressedPeriods, setSuppressedPeriods] = useState<SuppressedPeriod[]>([]);
 
   useEffect(() => {
     if (isDemo || !user) return;
@@ -132,7 +142,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
 
   async function fetchAll() {
     try {
-      const [fRes, cRes, tRes, sRes, iRes, liRes, eRes, pRes, aRes, clRes, tbRes] = await Promise.all([
+      const [fRes, cRes, tRes, sRes, iRes, liRes, eRes, pRes, aRes, clRes, tbRes, spRes] = await Promise.all([
         db('facilities').select('*').order('created_at'),
         db('facility_contacts').select('*').order('created_at'),
         db('terms_snapshots').select('*').order('created_at'),
@@ -144,6 +154,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
         db('invoice_activity').select('*').order('created_at'),
         db('contract_checklist_items').select('*').order('created_at'),
         db('time_blocks').select('*').order('start_datetime'),
+        db('suppressed_invoice_periods').select('*').order('created_at'),
       ]);
       setFacilities((fRes.data || []).map(stripDbFields));
       setContacts((cRes.data || []).map(stripDbFields));
@@ -156,6 +167,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
       setActivities((aRes.data || []).map(stripDbFieldsKeepTimestamp));
       setChecklistItems((clRes.data || []).map(stripDbFields));
       setTimeBlocks((tbRes.data || []).map(stripDbFields));
+      setSuppressedPeriods((spRes.data || []).map(stripDbFields) as SuppressedPeriod[]);
     } catch (err: any) {
       console.error('Failed to load data:', err);
       toast.error('Failed to load data');
@@ -377,6 +389,17 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
 
             toast.info(`Draft invoice updated for ${facility.name}`);
           } else if (facility.auto_generate_invoices && eligible.length > 0) {
+            // Check suppression before creating new draft
+            const periodStartISO = period.start.toISOString();
+            const periodEndISO = period.end.toISOString();
+            const isSuppressed = suppressedPeriods.some(sp =>
+              sp.facility_id === facility.id &&
+              new Date(sp.period_start).toISOString().slice(0, 10) === periodStartISO.slice(0, 10) &&
+              new Date(sp.period_end).toISOString().slice(0, 10) === periodEndISO.slice(0, 10)
+            );
+            if (isSuppressed) {
+              // Period suppressed — skip auto-generation silently
+            } else {
             // Create new draft
             const invoiceNumber = generateInvoiceNumber(invoices, facility.invoice_prefix);
             const { invoice: invData, lineItems: newItems } = buildAutoInvoiceDraft(
@@ -399,6 +422,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
               }
               toast.info(`Draft invoice auto-generated for ${facility.name}`);
             }
+            }
           }
         }
       }
@@ -407,7 +431,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     }
 
     return shift;
-  }, [isDemo, user, facilities, shifts, invoices, lineItems]);
+  }, [isDemo, user, facilities, shifts, invoices, lineItems, suppressedPeriods]);
 
   const handleInvoiceCleanupAfterShiftRemoval = useCallback(async (shiftId: string) => {
     // Find line items linked to this shift
@@ -527,6 +551,27 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     setLineItems(prev => prev.filter(x => x.invoice_id !== id));
   }, [isDemo]);
 
+  const suppressInvoicePeriod = useCallback(async (facilityId: string, periodStart: string, periodEnd: string) => {
+    if (isDemo) {
+      setSuppressedPeriods(prev => [...prev, { id: generateId(), facility_id: facilityId, period_start: periodStart, period_end: periodEnd }]);
+      return;
+    }
+    const { data, error } = await db('suppressed_invoice_periods')
+      .insert({ user_id: user!.id, facility_id: facilityId, period_start: periodStart, period_end: periodEnd })
+      .select().single();
+    if (error) {
+      // Ignore unique constraint violations (already suppressed)
+      if (error.code !== '23505') {
+        console.error(error);
+        toast.error(friendlyDbError(error));
+      }
+      return;
+    }
+    if (data) {
+      setSuppressedPeriods(prev => [...prev, stripDbFields(data) as SuppressedPeriod]);
+    }
+  }, [isDemo, user]);
+
   // ─── Line Items ──────────────────────────────────────────
 
   const addLineItem = useCallback(async (item: Omit<InvoiceLineItem, 'id'>) => {
@@ -626,6 +671,8 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
       addEmailLog,
       addTimeBlock, updateTimeBlock, deleteTimeBlock,
       getComputedInvoiceStatus,
+      suppressInvoicePeriod,
+      suppressedPeriods,
     }}>
       {children}
     </DataContext.Provider>
