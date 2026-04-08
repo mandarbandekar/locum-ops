@@ -83,7 +83,14 @@ export function useTaxPaymentLogs(taxYear = currentYear) {
       .single();
     if (error) { console.error('Failed to log payment', error); return null; }
     if (created) {
-      const mapped = { ...created, amount: Number((created as any).amount) } as TaxPaymentLog;
+      const row = created as any;
+      const mapped: TaxPaymentLog = {
+        id: row.id, user_id: row.user_id, tax_year: row.tax_year,
+        quarter: row.quarter, payment_type: row.payment_type,
+        state_key: row.state_key, amount: Number(row.amount),
+        date_paid: row.date_paid, paid_from: row.paid_from,
+        confirmed_by_user: row.confirmed_by_user, created_at: row.created_at,
+      };
       setPayments(prev => [mapped, ...prev]);
       return mapped;
     }
