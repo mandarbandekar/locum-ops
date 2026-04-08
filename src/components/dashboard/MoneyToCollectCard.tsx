@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { DollarSign, FileText, ArrowRight, TrendingUp, Send, Clock, Wallet, Target, AlertCircle } from 'lucide-react';
+import { DollarSign, FileText, ArrowRight, TrendingUp, Send, Clock, Wallet, Target, AlertCircle, Calculator } from 'lucide-react';
+import { differenceInDays, parseISO } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -110,6 +111,21 @@ export function MoneyToCollectCard({
           <div className="flex items-center gap-2">
             <Wallet className="h-3.5 w-3.5 text-primary" />
             <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">This Week</span>
+            {/* Mini sparkline */}
+            {weeklySparkline.length >= 4 && (() => {
+              const max = Math.max(...weeklySparkline, 1);
+              const h = 16;
+              const w = 40;
+              const points = weeklySparkline.map((v, i) => `${(i / 3) * w},${h - (v / max) * h}`).join(' ');
+              return (
+                <svg width={w} height={h} className="ml-1 shrink-0">
+                  <polyline points={points} fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  {weeklySparkline.map((v, i) => (
+                    <circle key={i} cx={(i / 3) * w} cy={h - (v / max) * h} r="1.5" fill="hsl(var(--primary))" />
+                  ))}
+                </svg>
+              );
+            })()}
             <span className="ml-auto text-[15px] font-extrabold text-foreground">${thisWeekEarnings.toLocaleString()}</span>
           </div>
           <p className="text-[10px] text-muted-foreground mt-0.5 pl-5">Earned from completed shifts</p>
@@ -170,6 +186,29 @@ export function MoneyToCollectCard({
             </div>
           </ScrollArea>
         </div>
+
+        {/* Tax Snapshot */}
+        {taxSnapshot && (
+          <div
+            className="mx-5 mt-1 mb-1 px-3 py-2.5 rounded-lg bg-accent/30 border border-accent/20 cursor-pointer hover:bg-accent/50 transition-colors"
+            onClick={() => navigate('/tax-center')}
+          >
+            <div className="flex items-center gap-2">
+              <Calculator className="h-3.5 w-3.5 text-accent-foreground shrink-0" />
+              <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Tax Set-Aside</span>
+              <span className="ml-auto text-[13px] font-extrabold text-foreground">
+                ~${taxSnapshot.quarterlyAmount.toLocaleString()}/qtr
+              </span>
+            </div>
+            {taxSnapshot.nextDueDate && taxSnapshot.nextQuarter && (
+              <p className="text-[10px] text-muted-foreground mt-0.5 pl-5">
+                Q{taxSnapshot.nextQuarter} due {differenceInDays(parseISO(taxSnapshot.nextDueDate), new Date()) <= 0
+                  ? 'now'
+                  : `in ${differenceInDays(parseISO(taxSnapshot.nextDueDate), new Date())}d`}
+              </p>
+            )}
+          </div>
+        )}
 
         {/* CTA */}
         <div className="px-4 pt-3 pb-5">
