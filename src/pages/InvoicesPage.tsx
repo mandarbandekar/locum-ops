@@ -56,9 +56,38 @@ export default function InvoicesPage() {
     });
   };
 
+  // Wrapper for single-invoice delete that checks auto-generation
+  const handleSingleDelete = async (id: string) => {
+    const inv = safeInvoices.find(i => i.id === id);
+    if (inv && inv.generation_type === 'automatic' && inv.status === 'draft') {
+      setAutoDeleteTarget({
+        id: inv.id,
+        invoiceNumber: inv.invoice_number,
+        facilityName: getFacilityName(inv.facility_id),
+        periodStart: inv.period_start,
+        periodEnd: inv.period_end,
+        facilityId: inv.facility_id,
+      });
+      return;
+    }
+    await deleteInvoice(id);
+    toast.success('Invoice deleted');
+  };
+
   const handleBulkDelete = async () => {
+    // Check if any selected are auto-generated drafts
+    const autoInvs = [...selected]
+      .map(id => safeInvoices.find(i => i.id === id))
+      .filter(inv => inv && inv.generation_type === 'automatic' && inv.status === 'draft');
+
     for (const id of selected) {
       await deleteInvoice(id);
+    }
+    // Suppress all auto-generated draft periods in the selection
+    for (const inv of autoInvs) {
+      if (inv) {
+        await suppressInvoicePeriod(inv.facility_id, inv.period_start, inv.period_end);
+      }
     }
     toast.success(`${selected.size} invoice(s) deleted`);
     setSelected(new Set());
