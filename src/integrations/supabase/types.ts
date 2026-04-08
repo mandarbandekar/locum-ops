@@ -2790,6 +2790,51 @@ export type Database = {
         }
         Relationships: []
       }
+      tax_payment_logs: {
+        Row: {
+          amount: number
+          confirmed_by_user: boolean
+          created_at: string
+          date_paid: string
+          id: string
+          paid_from: string
+          payment_type: string
+          quarter: string
+          state_key: string | null
+          tax_year: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          confirmed_by_user?: boolean
+          created_at?: string
+          date_paid?: string
+          id?: string
+          paid_from?: string
+          payment_type: string
+          quarter: string
+          state_key?: string | null
+          tax_year: number
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          amount?: number
+          confirmed_by_user?: boolean
+          created_at?: string
+          date_paid?: string
+          id?: string
+          paid_from?: string
+          payment_type?: string
+          quarter?: string
+          state_key?: string | null
+          tax_year?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       tax_profiles: {
         Row: {
           admin_complexity_ok: boolean | null
