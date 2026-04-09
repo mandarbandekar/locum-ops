@@ -89,9 +89,11 @@ export function useTaxStrategies(): UseTaxStrategiesReturn {
   const stateRate = taxProfile?.state_code ? getTopMarginalStateRate(taxProfile.state_code) : 0.05;
   const entityType = taxProfile?.entity_type || 'sole_prop';
 
+  const scorpSalary = taxProfile?.scorp_salary || 0;
+
   const strategies = useMemo(() => {
-    return buildStrategies(annualizedIncome, inputs, filingStatus, stateRate, facilityCount);
-  }, [annualizedIncome, inputs, filingStatus, stateRate, facilityCount]);
+    return buildStrategies(annualizedIncome, inputs, filingStatus, stateRate, facilityCount, entityType, scorpSalary);
+  }, [annualizedIncome, inputs, filingStatus, stateRate, facilityCount, entityType, scorpSalary]);
 
   // If user is already S-Corp, filter out the scorp strategy
   const filteredStrategies = useMemo(() => {
