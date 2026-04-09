@@ -381,7 +381,7 @@ export default function SchedulePage() {
         <ClinicConfirmationsTab />
       ) : (
         <>
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4" data-tour="schedule-calendar">
             <Button variant="ghost" size="icon" onClick={navigateBack}>
               <ChevronLeft className="h-4 w-4" />
             </Button>

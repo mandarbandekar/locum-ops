@@ -61,6 +61,7 @@ const INVOICE_TOUR_STEPS: TourStep[] = [
 export default function InvoicesPage() {
   const { invoices, facilities, shifts, addInvoice, deleteInvoice, suppressInvoicePeriod, dataLoading } = useData();
   const navigate = useNavigate();
+  const invoiceTour = useSpotlightTour('locumops_tour_invoices');
   const [showCreate, setShowCreate] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
