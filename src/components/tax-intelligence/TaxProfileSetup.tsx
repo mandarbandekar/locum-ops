@@ -378,6 +378,52 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
     );
   }
 
+  function renderProjectionStep() {
+    return (
+      <div className="space-y-4">
+        <Label className="text-base font-medium">How should we project your full-year income?</Label>
+        <p className="text-sm text-muted-foreground">This determines how we calculate your quarterly tax estimate.</p>
+        <RadioGroup value={projectionMethod} onValueChange={setProjectionMethod}>
+          <div className="flex items-start space-x-2 p-3 rounded-lg border hover:bg-accent/50 cursor-pointer">
+            <RadioGroupItem value="annualized_actual" id="proj-actual" className="mt-0.5" />
+            <div>
+              <Label htmlFor="proj-actual" className="cursor-pointer font-medium">Annualize my current pace</Label>
+              <p className="text-xs text-muted-foreground mt-0.5">Extrapolates your year-to-date income to a full year. Gets more accurate over time.</p>
+            </div>
+          </div>
+          <div className="flex items-start space-x-2 p-3 rounded-lg border hover:bg-accent/50 cursor-pointer">
+            <RadioGroupItem value="annual_projection" id="proj-goal" className="mt-0.5" />
+            <div>
+              <Label htmlFor="proj-goal" className="cursor-pointer font-medium">Use my income goal</Label>
+              <p className="text-xs text-muted-foreground mt-0.5">Set a target annual income — useful if you know what you plan to earn.</p>
+            </div>
+          </div>
+          <div className="flex items-start space-x-2 p-3 rounded-lg border hover:bg-accent/50 cursor-pointer">
+            <RadioGroupItem value="safe_harbor" id="proj-harbor" className="mt-0.5" />
+            <div>
+              <Label htmlFor="proj-harbor" className="cursor-pointer font-medium">Safe harbor (penalty-proof)</Label>
+              <p className="text-xs text-muted-foreground mt-0.5">Base quarterly payments on last year's tax. Guarantees no underpayment penalty.</p>
+            </div>
+          </div>
+        </RadioGroup>
+
+        {projectionMethod === 'annual_projection' && (
+          <div className="space-y-1">
+            <Label className="text-sm">Annual income goal ($)</Label>
+            <Input type="number" value={annualIncomeGoal || ''} onChange={e => setAnnualIncomeGoal(Number(e.target.value))} placeholder="e.g., 180000" />
+          </div>
+        )}
+
+        {(projectionMethod === 'annualized_actual' || projectionMethod === 'annual_projection') && (
+          <div className="space-y-1">
+            <Label className="text-sm">Last year's total income (optional — helps early-year estimates)</Label>
+            <Input type="number" value={priorYearIncome || ''} onChange={e => setPriorYearIncome(Number(e.target.value))} placeholder="e.g., 165000" />
+          </div>
+        )}
+      </div>
+    );
+  }
+
   function renderSafeHarborStep() {
     return (
       <div className="space-y-4">
@@ -397,8 +443,15 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
               <p className="text-xs text-muted-foreground mt-0.5">Steadier, avoids underpayment penalties</p>
             </div>
           </div>
+          <div className="flex items-start space-x-2 p-3 rounded-lg border hover:bg-accent/50 cursor-pointer">
+            <RadioGroupItem value="110_percent" id="sh-110" className="mt-0.5" />
+            <div>
+              <Label htmlFor="sh-110" className="cursor-pointer font-medium">110% of last year (high earners)</Label>
+              <p className="text-xs text-muted-foreground mt-0.5">Required if your AGI was over $150k last year</p>
+            </div>
+          </div>
         </RadioGroup>
-        {safeHarbor === 'safe_harbor' && (
+        {(safeHarbor === 'safe_harbor' || safeHarbor === '110_percent') && (
           <div className="space-y-1">
             <Label className="text-sm">Last year's total federal tax paid ($)</Label>
             <Input type="number" value={priorYearTax || ''} onChange={e => setPriorYearTax(Number(e.target.value))} placeholder="e.g., 18000" />
