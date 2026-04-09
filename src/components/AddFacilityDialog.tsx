@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Textarea } from '@/components/ui/textarea';
 import { useData } from '@/contexts/DataContext';
 import { useClinicConfirmations } from '@/hooks/useClinicConfirmations';
 import { generateId } from '@/lib/businessLogic';
@@ -15,21 +17,26 @@ import { toast } from 'sonner';
 import {
   ArrowLeft, ArrowRight, SkipForward,
   Building2, DollarSign, UserCheck, CalendarClock,
-  Sparkles, Check, Info, CircleDot
+  Sparkles, Check, Info, CircleDot, Settings2,
+  Car, Monitor, DoorOpen
 } from 'lucide-react';
 import { GooglePlacesAutocomplete } from '@/components/GooglePlacesAutocomplete';
 import type { PlaceSelection } from '@/components/GooglePlacesAutocomplete';
 import type { BillingCadence } from '@/lib/invoiceBillingDefaults';
+import { RatesEditor, type RateEntry } from '@/components/facilities/RatesEditor';
+import { ratesToTermsFields } from '@/components/facilities/RatesEditor';
+import { supabase } from '@/integrations/supabase/client';
 
 const STEP_META = [
   { label: 'Welcome', icon: Sparkles, required: false, hint: '' },
   { label: 'Clinic Details', icon: Building2, required: true, hint: 'This is how the clinic appears across your schedule, invoices, and reports.' },
   { label: 'Contacts', icon: UserCheck, required: true, hint: 'These contacts receive shift confirmations and invoices on your behalf.' },
   { label: 'Billing Setup', icon: CalendarClock, required: false, hint: 'Controls how often draft invoices are created from your completed shifts.' },
+  { label: 'Optional Details', icon: Settings2, required: false, hint: 'These details help you stay prepared and track expenses automatically. You can always add them later.' },
 ];
 
 export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boolean; onOpenChange: (o: boolean) => void; onCreated?: (facilityId: string) => void }) {
-  const { addFacility, updateTerms } = useData();
+  const { addFacility, updateTerms, facilities } = useData();
   const { saveSettings: saveConfirmationSettings } = useClinicConfirmations();
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
@@ -47,8 +54,18 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
   const [billingCadence, setBillingCadence] = useState<BillingCadence>('monthly');
   const [invoiceDueDays, setInvoiceDueDays] = useState(15);
 
+  // Step 4 enrichment state
+  const [enrichRates, setEnrichRates] = useState<RateEntry[]>([]);
+  const [mileageMiles, setMileageMiles] = useState('');
+  const [techComputer, setTechComputer] = useState('');
+  const [techWifi, setTechWifi] = useState('');
+  const [techPims, setTechPims] = useState('');
+  const [clinicAccess, setClinicAccess] = useState('');
+  const createdFacilityIdRef = useRef<string | null>(null);
+
   const totalSteps = STEP_META.length;
-  const progress = ((step + 1) / totalSteps) * 100;
+  const coreSteps = 4; // steps 0-3 are core
+  const progress = step < coreSteps ? ((step + 1) / coreSteps) * 100 : 100;
 
   function getInitials(text: string): string {
     return text.split(/\s+/).map(w => w[0]).filter(Boolean).join('').toUpperCase().slice(0, 4) || 'INV';
@@ -63,6 +80,9 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
     setInvoiceNameTo(''); setInvoiceEmailTo('');
     setSameAsScheduling(false);
     setBillingCadence('monthly'); setInvoiceDueDays(15);
+    setEnrichRates([]); setMileageMiles('');
+    setTechComputer(''); setTechWifi(''); setTechPims(''); setClinicAccess('');
+    createdFacilityIdRef.current = null;
   };
 
   const handleClinicPlaceSelect = (selection: PlaceSelection) => {
@@ -75,10 +95,10 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
   const effectiveBillingName = sameAsScheduling ? schedulingContactName : invoiceNameTo;
   const effectiveBillingEmail = sameAsScheduling ? schedulingContactEmail : invoiceEmailTo;
 
-  const handleSubmit = async () => {
+  const handleCreateFacility = async (): Promise<boolean> => {
     for (const s of [1, 2]) {
       const err = validateStep(s);
-      if (err) { toast.error(err); setStep(s); return; }
+      if (err) { toast.error(err); setStep(s); return false; }
     }
 
     const prefix = getInitials(name);
@@ -106,6 +126,8 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
         auto_generate_invoices: true,
       });
 
+      createdFacilityIdRef.current = facility.id;
+
       if (parsedRate > 0) {
         await updateTerms({
           id: generateId(),
@@ -121,6 +143,8 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
           late_payment_policy_text: '',
           special_notes: '',
         });
+        // Pre-populate enrichment rates with the day rate
+        setEnrichRates([{ type: 'weekday', label: 'Weekday Rate', amount: parsedRate }]);
       }
 
       await saveConfirmationSettings({
@@ -138,13 +162,62 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
         auto_send_preshift: false,
       });
 
-      toast.success('Practice facility added');
-      onCreated?.(facility.id);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const handleSaveEnrichment = async () => {
+    const facilityId = createdFacilityIdRef.current;
+    if (!facilityId) return;
+
+    try {
+      // Save rates if any were added beyond the initial day rate
+      if (enrichRates.length > 0) {
+        const rateFields = ratesToTermsFields(enrichRates);
+        await updateTerms({
+          id: generateId(),
+          facility_id: facilityId,
+          ...rateFields,
+          cancellation_policy_text: '',
+          overtime_policy_text: '',
+          late_payment_policy_text: '',
+          special_notes: '',
+        });
+      }
+
+      // Save facility-level enrichment fields
+      const updates: Record<string, unknown> = {};
+      if (techComputer.trim()) updates.tech_computer_info = techComputer.trim();
+      if (techWifi.trim()) updates.tech_wifi_info = techWifi.trim();
+      if (techPims.trim()) updates.tech_pims_info = techPims.trim();
+      if (clinicAccess.trim()) updates.clinic_access_info = clinicAccess.trim();
+      if (mileageMiles.trim() && parseFloat(mileageMiles) > 0) {
+        updates.mileage_override_miles = parseFloat(mileageMiles);
+      }
+
+      if (Object.keys(updates).length > 0) {
+        await supabase.from('facilities').update(updates).eq('id', facilityId);
+      }
+
+      toast.success('Clinic details saved — you\'re all set!');
+      onCreated?.(facilityId);
       resetForm();
       onOpenChange(false);
     } catch {
-      // error toast handled in DataContext
+      toast.error('Failed to save optional details');
     }
+  };
+
+  const handleSkipEnrichment = () => {
+    const facilityId = createdFacilityIdRef.current;
+    toast.success('Clinic added! You can add more details anytime from the clinic page.', {
+      duration: 4000,
+    });
+    onCreated?.(facilityId!);
+    resetForm();
+    onOpenChange(false);
   };
 
   const isEmailValid = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -165,24 +238,31 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
   };
 
   const currentMeta = STEP_META[step];
-  const isOptionalStep = !currentMeta.required && step > 0;
+  const isOptionalStep = !currentMeta.required && step > 0 && step < coreSteps;
 
-  const handleNext = () => {
+  const handleNext = async () => {
     const err = validateStep(step);
     if (err) { toast.error(err); return; }
+
+    // At step 3 (Billing Setup), create the facility then advance to enrichment
+    if (step === coreSteps - 1) {
+      const success = await handleCreateFacility();
+      if (success) setStep(coreSteps);
+      return;
+    }
+
     if (step < totalSteps - 1) {
       setStep(step + 1);
-    } else {
-      handleSubmit();
     }
   };
 
   const handleSkip = () => {
-    if (step < totalSteps - 1) setStep(step + 1);
+    if (step < coreSteps - 1) setStep(step + 1);
   };
 
   const handleBack = () => {
-    if (step > 0) setStep(step - 1);
+    // Don't allow going back from enrichment step (facility already created)
+    if (step > 0 && step < coreSteps) setStep(step - 1);
   };
 
   const hasDayRate = !!dayRate && parseFloat(dayRate) > 0;
@@ -197,12 +277,14 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
     { label: 'Payment Terms', value: `Net ${invoiceDueDays}`, filled: true },
   ];
 
+  const hasAnyEnrichment = enrichRates.length > 0 || mileageMiles.trim() || techComputer.trim() || techWifi.trim() || techPims.trim() || clinicAccess.trim();
+
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) resetForm(); onOpenChange(o); }}>
       <DialogContent className="max-w-[680px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            {step > 0 && (
+            {step > 0 && step < coreSteps && (
               <>
                 <currentMeta.icon className="h-5 w-5 text-primary" />
                 {currentMeta.label}
@@ -215,13 +297,19 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
               </>
             )}
             {step === 0 && 'Add Practice Facility'}
+            {step === coreSteps && (
+              <>
+                <Check className="h-5 w-5 text-primary" />
+                Clinic Added — Optional Details
+              </>
+            )}
           </DialogTitle>
         </DialogHeader>
 
-        {/* Visual Stepper */}
-        {step > 0 && (
+        {/* Visual Stepper (steps 1-3 only) */}
+        {step > 0 && step < coreSteps && (
           <div className="flex items-center justify-between px-1">
-            {STEP_META.slice(1).map((meta, i) => {
+            {STEP_META.slice(1, coreSteps).map((meta, i) => {
               const stepIndex = i + 1;
               const isCompleted = stepIndex < step;
               const isCurrent = stepIndex === step;
@@ -243,7 +331,7 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
                       isCurrent ? 'text-primary font-medium' : 'text-muted-foreground/60'
                     }`}>{meta.label}</span>
                   </div>
-                  {i < STEP_META.length - 2 && (
+                  {i < coreSteps - 2 && (
                     <div className={`flex-1 h-0.5 mx-1 mt-[-16px] ${isCompleted ? 'bg-primary' : 'bg-muted-foreground/20'}`} />
                   )}
                 </div>
@@ -252,9 +340,9 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
           </div>
         )}
 
-        {step > 0 && <Progress value={progress} className="h-1.5" />}
+        {step > 0 && step < coreSteps && <Progress value={progress} className="h-1.5" />}
 
-        {step > 0 && currentMeta.hint && (
+        {step > 0 && step < coreSteps && currentMeta.hint && (
           <div className="flex items-start gap-2 p-3 rounded-lg bg-primary/5 border border-primary/10">
             <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
             <p className="text-xs text-muted-foreground">{currentMeta.hint}</p>
@@ -471,6 +559,166 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
               </div>
             </>
           )}
+
+          {/* Step 4: Post-creation enrichment */}
+          {step === coreSteps && (
+            <div className="space-y-4">
+              {/* Success banner */}
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/10">
+                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <Check className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">{name} has been added!</p>
+                  <p className="text-xs text-muted-foreground">
+                    Want to add a few more details? These help you stay organized and track expenses automatically.
+                  </p>
+                </div>
+              </div>
+
+              <Accordion type="multiple" className="space-y-2">
+                {/* Shift Rates */}
+                <AccordionItem value="rates" className="border rounded-lg px-3">
+                  <AccordionTrigger className="hover:no-underline py-3">
+                    <div className="flex items-center gap-2 text-left">
+                      <DollarSign className="h-4 w-4 text-primary shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium">Detailed Shift Rates</p>
+                        <p className="text-xs text-muted-foreground font-normal">
+                          Weekend, holiday, partial day, and custom rates for accurate invoices
+                        </p>
+                      </div>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-3">
+                    <div className="space-y-2">
+                      <div className="flex items-start gap-2 p-2 rounded-md bg-muted/50">
+                        <Info className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+                        <p className="text-xs text-muted-foreground">
+                          Different clinics pay different rates for weekends, holidays, and partial days. Setting these now means your invoices are accurate from day one.
+                        </p>
+                      </div>
+                      <RatesEditor
+                        rates={enrichRates}
+                        onChange={setEnrichRates}
+                        showCard={false}
+                        compact
+                      />
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {/* Mileage */}
+                <AccordionItem value="mileage" className="border rounded-lg px-3">
+                  <AccordionTrigger className="hover:no-underline py-3">
+                    <div className="flex items-center gap-2 text-left">
+                      <Car className="h-4 w-4 text-primary shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium">Mileage from Home</p>
+                        <p className="text-xs text-muted-foreground font-normal">
+                          Auto-track mileage deductions after every shift
+                        </p>
+                      </div>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-3">
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-2 p-2 rounded-md bg-muted/50">
+                        <Info className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+                        <p className="text-xs text-muted-foreground">
+                          Enter your one-way drive distance so LocumOps can automatically log mileage deductions after every shift at this clinic. At the current IRS rate, each mile saves you ~$0.70 in deductions.
+                        </p>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">One-way distance (miles)</Label>
+                        <Input
+                          type="number"
+                          value={mileageMiles}
+                          onChange={e => setMileageMiles(e.target.value)}
+                          placeholder="e.g. 25"
+                          min={0}
+                          step={1}
+                        />
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {/* Tech Access */}
+                <AccordionItem value="tech" className="border rounded-lg px-3">
+                  <AccordionTrigger className="hover:no-underline py-3">
+                    <div className="flex items-center gap-2 text-left">
+                      <Monitor className="h-4 w-4 text-primary shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium">Tech Access</p>
+                        <p className="text-xs text-muted-foreground font-normal">
+                          Computer logins, wifi, and PIMS details
+                        </p>
+                      </div>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-3">
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-2 p-2 rounded-md bg-muted/50">
+                        <Info className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+                        <p className="text-xs text-muted-foreground">
+                          Save these so you're not scrambling on your first day at a new clinic. They'll show up on your shift detail view.
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">Computer / Login</Label>
+                          <Input value={techComputer} onChange={e => setTechComputer(e.target.value)} placeholder="e.g. Username: drsmith / Password: clinic123" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">WiFi</Label>
+                          <Input value={techWifi} onChange={e => setTechWifi(e.target.value)} placeholder="e.g. Network: ClinicWifi / Password: vetlife2026" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">PIMS Software</Label>
+                          <Input value={techPims} onChange={e => setTechPims(e.target.value)} placeholder="e.g. eVetPractice — login with clinic credentials" />
+                        </div>
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {/* Clinic Access */}
+                <AccordionItem value="access" className="border rounded-lg px-3">
+                  <AccordionTrigger className="hover:no-underline py-3">
+                    <div className="flex items-center gap-2 text-left">
+                      <DoorOpen className="h-4 w-4 text-primary shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium">Clinic Access</p>
+                        <p className="text-xs text-muted-foreground font-normal">
+                          Door codes, parking, and entry instructions
+                        </p>
+                      </div>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-3">
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-2 p-2 rounded-md bg-muted/50">
+                        <Info className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+                        <p className="text-xs text-muted-foreground">
+                          Door codes, parking instructions, after-hours entry — everything you need to walk in confidently on shift day.
+                        </p>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Access Notes</Label>
+                        <Textarea
+                          value={clinicAccess}
+                          onChange={e => setClinicAccess(e.target.value)}
+                          placeholder="e.g. Side door code: 4523. Park in staff lot behind building. Key lockbox by rear entrance."
+                          rows={3}
+                        />
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </div>
+          )}
         </div>
 
         {/* Navigation */}
@@ -482,19 +730,33 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
                 Get Started <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
             </>
+          ) : step === coreSteps ? (
+            // Enrichment step navigation
+            <div className="flex items-center justify-between w-full">
+              <button
+                type="button"
+                onClick={handleSkipEnrichment}
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Skip — I'll add these later
+              </button>
+              <Button type="button" size="sm" onClick={handleSaveEnrichment} disabled={!hasAnyEnrichment}>
+                <Check className="mr-1 h-3.5 w-3.5" /> Save & Close
+              </Button>
+            </div>
           ) : (
             <>
               <Button type="button" variant="ghost" size="sm" onClick={handleBack}>
                 <ArrowLeft className="mr-1 h-4 w-4" /> Back
               </Button>
               <div className="flex items-center gap-2">
-                {isOptionalStep && step < totalSteps - 1 && (
+                {isOptionalStep && step < coreSteps - 1 && (
                   <Button type="button" variant="outline" size="sm" onClick={handleSkip}>
                     <SkipForward className="mr-1 h-3.5 w-3.5" /> Skip
                   </Button>
                 )}
                 <Button type="button" size="sm" onClick={handleNext}>
-                  {step === totalSteps - 1 ? 'Add Facility' : (
+                  {step === coreSteps - 1 ? 'Add Facility' : (
                     <>Next <ArrowRight className="ml-1 h-4 w-4" /></>
                   )}
                 </Button>
