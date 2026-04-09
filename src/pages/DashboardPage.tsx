@@ -136,6 +136,7 @@ export default function DashboardPage() {
   const { profile } = useUserProfile();
   const { profile: taxProfile, hasProfile: hasTaxProfile } = useTaxIntelligence();
   const { categories: reminderCategories } = useReminderPreferences();
+  const { expenses: dashExpenses } = useExpenses();
   const navigate = useNavigate();
   const now = new Date();
   const { isOpen: tourOpen, isTourCompleted, startTour, closeTour } = useSpotlightTour();
