@@ -169,7 +169,7 @@ export function WorkspaceReady({ facilities, shifts, invoices, taxEnabled, shift
             </Button>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
