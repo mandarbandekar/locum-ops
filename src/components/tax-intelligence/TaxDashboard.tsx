@@ -110,7 +110,8 @@ export function calculateTax(
       salary + distribution, profile.filing_status, profile.state_code, !!pteElected,
     );
 
-    const totalAnnualTax = round2(federalTax + personalStateTax);
+    const employeeFICA = round2(salary * FICA_RATE);
+    const totalAnnualTax = round2(federalTax + personalStateTax + employerPayrollTax + employeeFICA);
     const quarterlyPayment = round2(totalAnnualTax / 4);
 
     return {

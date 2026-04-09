@@ -9,11 +9,11 @@ import { useTaxIntelligence } from '@/hooks/useTaxIntelligence';
 export default function TaxStrategiesTab() {
   const {
     strategies, totalSavings, annualizedIncome, inputs,
-    updateInputs, dismissStrategy, restoreStrategy, loading, paidShiftCount,
+    updateInputs, dismissStrategy, restoreStrategy, loading, paidShiftCount, entityType,
   } = useTaxStrategies();
   const { profile, hasProfile } = useTaxIntelligence();
 
-  const combinedRate = getCombinedMarginalRate(annualizedIncome);
+  const combinedRate = getCombinedMarginalRate(annualizedIncome, undefined, undefined, entityType);
 
   if (loading) {
     return <p className="text-muted-foreground py-8 text-center">Loading…</p>;
@@ -79,6 +79,7 @@ export default function TaxStrategiesTab() {
               inputs={inputs}
               annualizedIncome={annualizedIncome}
               combinedRate={combinedRate}
+              entityType={entityType}
               onUpdateInputs={updateInputs}
               onDismiss={dismissStrategy}
               onRestore={restoreStrategy}
@@ -98,6 +99,7 @@ export default function TaxStrategiesTab() {
               inputs={inputs}
               annualizedIncome={annualizedIncome}
               combinedRate={combinedRate}
+              entityType={entityType}
               onUpdateInputs={updateInputs}
               onDismiss={dismissStrategy}
               onRestore={restoreStrategy}
@@ -117,6 +119,7 @@ export default function TaxStrategiesTab() {
               inputs={inputs}
               annualizedIncome={annualizedIncome}
               combinedRate={combinedRate}
+              entityType={entityType}
               onUpdateInputs={updateInputs}
               onDismiss={dismissStrategy}
               onRestore={restoreStrategy}

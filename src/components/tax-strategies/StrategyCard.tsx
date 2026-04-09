@@ -14,13 +14,14 @@ interface Props {
   inputs: StrategyInputs;
   annualizedIncome: number;
   combinedRate: number;
+  entityType?: string;
   onUpdateInputs: (patch: Partial<StrategyInputs>) => void;
   onDismiss: (id: string) => void;
   onRestore: (id: string) => void;
 }
 
 export default function StrategyCard({
-  strategy, inputs, annualizedIncome, combinedRate,
+  strategy, inputs, annualizedIncome, combinedRate, entityType = 'sole_prop',
   onUpdateInputs, onDismiss, onRestore,
 }: Props) {
   const [expanded, setExpanded] = useState(false);
@@ -83,7 +84,7 @@ export default function StrategyCard({
           </div>
 
           {/* Interactive Calculator */}
-          {renderCalculator(strategy.id, inputs, annualizedIncome, combinedRate, onUpdateInputs)}
+          {renderCalculator(strategy.id, inputs, annualizedIncome, combinedRate, onUpdateInputs, entityType)}
 
           {/* Estimated Savings */}
           {strategy.estimatedSavings > 0 && (
@@ -135,6 +136,7 @@ function renderCalculator(
   annualizedIncome: number,
   combinedRate: number,
   onUpdate: (patch: Partial<StrategyInputs>) => void,
+  entityType: string = 'sole_prop',
 ) {
   switch (strategyId) {
     case 'vet_deductions':
@@ -255,9 +257,64 @@ function renderCalculator(
 
     case 'scorp': {
       const salary = inputs.scorp_salary_slider;
+      const cappedSalary = Math.min(salary, annualizedIncome);
+
+      if (entityType === 'scorp') {
+        // S-Corp user: salary optimization view
+        const distribution = Math.max(0, annualizedIncome - cappedSalary);
+        const employerFICA = Math.round(cappedSalary * 0.0765);
+        const employeeFICA = Math.round(cappedSalary * 0.0765);
+        const totalPayrollTax = employerFICA + employeeFICA;
+
+        return (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">Your W-2 salary</p>
+              <p className="text-sm font-medium">${Math.round(cappedSalary).toLocaleString()}</p>
+            </div>
+            <Slider
+              value={[salary]}
+              min={80000}
+              max={Math.min(200000, annualizedIncome || 200000)}
+              step={5000}
+              onValueChange={([v]) => onUpdate({ scorp_salary_slider: v })}
+            />
+            <div className="rounded-lg border border-border overflow-hidden">
+              <div className="grid grid-cols-2 text-xs font-semibold text-muted-foreground bg-muted/30 px-3 py-2">
+                <span>Component</span>
+                <span className="text-right">Amount</span>
+              </div>
+              <div className="grid grid-cols-2 text-sm px-3 py-2 border-t border-border">
+                <span className="text-muted-foreground">W-2 Salary</span>
+                <span className="text-right">${Math.round(cappedSalary).toLocaleString()}</span>
+              </div>
+              <div className="grid grid-cols-2 text-sm px-3 py-2 border-t border-border">
+                <span className="text-muted-foreground">Distribution (no FICA)</span>
+                <span className="text-right">${Math.round(distribution).toLocaleString()}</span>
+              </div>
+              <div className="grid grid-cols-2 text-sm px-3 py-2 border-t border-border">
+                <span className="text-muted-foreground">Employer FICA (7.65%)</span>
+                <span className="text-right">${employerFICA.toLocaleString()}</span>
+              </div>
+              <div className="grid grid-cols-2 text-sm px-3 py-2 border-t border-border">
+                <span className="text-muted-foreground">Employee FICA (7.65%)</span>
+                <span className="text-right">${employeeFICA.toLocaleString()}</span>
+              </div>
+              <div className="grid grid-cols-2 text-sm px-3 py-2 border-t border-border font-bold">
+                <span>Total Payroll Tax</span>
+                <span className="text-right">${totalPayrollTax.toLocaleString()}/yr</span>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Lower salary = less payroll tax, but must be "reasonable" for your role. Consult your CPA.
+            </p>
+          </div>
+        );
+      }
+
+      // 1099 user: S-Corp election analysis
       const netSE = annualizedIncome * SE_TAXABLE_FACTOR;
       const currentSETax = Math.round(Math.min(netSE, 184500) * 0.124 + netSE * 0.029);
-      const cappedSalary = Math.min(salary, annualizedIncome);
       const sCorpPayroll = Math.round((Math.min(cappedSalary, 184500) * 0.124 + cappedSalary * 0.029) * 2);
       const overhead = 2500;
       const netSavings = Math.max(0, currentSETax - sCorpPayroll - overhead);
@@ -271,7 +328,7 @@ function renderCalculator(
           <Slider
             value={[salary]}
             min={80000}
-            max={Math.min(200000, annualizedIncome)}
+            max={Math.min(200000, annualizedIncome || 200000)}
             step={5000}
             onValueChange={([v]) => onUpdate({ scorp_salary_slider: v })}
           />

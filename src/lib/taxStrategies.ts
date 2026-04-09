@@ -93,9 +93,12 @@ export function getCombinedMarginalRate(
   annualizedIncome: number,
   filingStatus: FilingStatus = 'single',
   stateRate: number = 0.05,
+  entityType: string = 'sole_prop',
 ): number {
   const federalRate = getMarginalRate(annualizedIncome, filingStatus);
-  return federalRate + SE_TAX_RATE + stateRate;
+  // S-Corp: no SE tax on distributions — FICA is paid on salary separately
+  const selfEmploymentComponent = entityType === 'scorp' ? 0 : SE_TAX_RATE;
+  return federalRate + selfEmploymentComponent + stateRate;
 }
 
 // ── Strategy Calculations ────────────────────────────────────────
@@ -158,8 +161,10 @@ export function buildStrategies(
   filingStatus: FilingStatus = 'single',
   stateRate: number = 0.05,
   facilityCount: number = 0,
+  entityType: string = 'sole_prop',
 ): StrategyResult[] {
-  const combinedRate = getCombinedMarginalRate(annualizedIncome, filingStatus, stateRate);
+  const combinedRate = getCombinedMarginalRate(annualizedIncome, filingStatus, stateRate, entityType);
+  const isScorp = entityType === 'scorp';
   const dismissed = new Set(inputs.dismissed_strategies);
 
   const strategies: StrategyResult[] = [];
@@ -255,18 +260,23 @@ export function buildStrategies(
   const sepSavings = sepEligible ? calcSepIraSavings(annualizedIncome, inputs.retirement_contribution_slider, combinedRate) : 0;
   const netSE = annualizedIncome * SE_TAXABLE_FACTOR;
   const sepMax = Math.min(netSE * RETIREMENT_LIMITS.sep_ira.percentOfNet, RETIREMENT_LIMITS.sep_ira.maxContribution);
+  const retirementIncomeBase = isScorp ? (inputs.scorp_salary_slider || 110000) : annualizedIncome;
   strategies.push({
     id: 'sep_ira',
     title: 'SEP-IRA Contribution',
-    description: 'Shelter up to 25% of net self-employment income in a tax-deferred retirement account',
+    description: isScorp
+      ? 'Shelter up to 25% of your W-2 salary in a tax-deferred retirement account'
+      : 'Shelter up to 25% of net self-employment income in a tax-deferred retirement account',
     estimatedSavings: sepSavings || 0,
     eligible: sepEligible,
     unlockLabel: sepEligible ? null : 'Unlocks at $60K+',
     dismissed: dismissed.has('sep_ira'),
     status: dismissed.has('sep_ira') ? 'dismissed' : sepEligible ? 'action_available' : 'not_eligible',
-    whyItMatters: `At your estimated income of $${Math.round(annualizedIncome).toLocaleString()}, you could contribute up to $${Math.round(sepMax).toLocaleString()} to a SEP-IRA. This reduces your taxable income immediately and grows tax-deferred for retirement.`,
+    whyItMatters: isScorp
+      ? `As an S-Corp, your SEP-IRA contributions are based on your W-2 salary of $${Math.round(retirementIncomeBase).toLocaleString()}. You could contribute up to $${Math.round(Math.min(retirementIncomeBase * 0.25, RETIREMENT_LIMITS.sep_ira.maxContribution)).toLocaleString()}.`
+      : `At your estimated income of $${Math.round(annualizedIncome).toLocaleString()}, you could contribute up to $${Math.round(sepMax).toLocaleString()} to a SEP-IRA. This reduces your taxable income immediately and grows tax-deferred for retirement.`,
     howItWorks: [
-      'Contribute up to 25% of net self-employment income (after SE tax deduction)',
+      isScorp ? 'Contribute up to 25% of your W-2 salary' : 'Contribute up to 25% of net self-employment income (after SE tax deduction)',
       `2026 maximum contribution: $${RETIREMENT_LIMITS.sep_ira.maxContribution.toLocaleString()}`,
       'Contributions are tax-deductible — they reduce your taxable income dollar-for-dollar',
       'Investments grow tax-deferred until withdrawal in retirement',
@@ -287,17 +297,21 @@ export function buildStrategies(
   strategies.push({
     id: 'solo_401k',
     title: 'Solo 401(k) vs SEP-IRA Comparison',
-    description: 'Compare retirement plan options — Solo 401(k) may allow higher contributions',
+    description: isScorp
+      ? 'Compare retirement options — Solo 401(k) employee deferral is based on your W-2 salary'
+      : 'Compare retirement plan options — Solo 401(k) may allow higher contributions',
     estimatedSavings: solo401kSavings,
     eligible: solo401kEligible,
     unlockLabel: solo401kEligible ? null : 'Unlocks at $100K+',
     dismissed: dismissed.has('solo_401k'),
     status: dismissed.has('solo_401k') ? 'dismissed' : solo401kEligible ? 'action_available' : 'not_eligible',
-    whyItMatters: `At higher incomes, the Solo 401(k) allows an additional $${RETIREMENT_LIMITS.solo_401k.employeeMax.toLocaleString()} employee deferral on top of employer contributions. This can mean $${solo401kDelta.toLocaleString()} more in tax-sheltered savings compared to a SEP-IRA.`,
+    whyItMatters: isScorp
+      ? `As an S-Corp, your Solo 401(k) employee deferral ($${RETIREMENT_LIMITS.solo_401k.employeeMax.toLocaleString()}) comes from your W-2 salary. Employer contributions are based on 25% of salary.`
+      : `At higher incomes, the Solo 401(k) allows an additional $${RETIREMENT_LIMITS.solo_401k.employeeMax.toLocaleString()} employee deferral on top of employer contributions. This can mean $${solo401kDelta.toLocaleString()} more in tax-sheltered savings compared to a SEP-IRA.`,
     howItWorks: [
-      `SEP-IRA max: 25% of net SE income, capped at $${RETIREMENT_LIMITS.sep_ira.maxContribution.toLocaleString()}`,
+      `SEP-IRA max: 25% of ${isScorp ? 'W-2 salary' : 'net SE income'}, capped at $${RETIREMENT_LIMITS.sep_ira.maxContribution.toLocaleString()}`,
       `Solo 401(k): $${RETIREMENT_LIMITS.solo_401k.employeeMax.toLocaleString()} employee + 25% employer, capped at $${RETIREMENT_LIMITS.solo_401k.totalMax.toLocaleString()}`,
-      'At moderate incomes, both plans have similar limits',
+      isScorp ? 'As an S-Corp, both employee and employer contributions are based on your W-2 salary' : 'At moderate incomes, both plans have similar limits',
       'At higher incomes, the Solo 401(k) employee deferral creates a meaningful gap',
       'Solo 401(k) also allows Roth contributions (post-tax, tax-free growth)',
     ],
@@ -309,33 +323,65 @@ export function buildStrategies(
     ],
   });
 
-  // 6. S-Corp
+  // 6. S-Corp — show different card based on entity type
   const sCorpEligible = annualizedIncome > 80000;
   const sCorpSavings = sCorpEligible ? calcSCorpSavings(annualizedIncome, inputs.scorp_salary_slider) : 0;
-  strategies.push({
-    id: 'scorp',
-    title: 'S-Corp Election Analysis',
-    description: 'Estimate potential self-employment tax savings from electing S-Corp status',
-    estimatedSavings: sCorpSavings,
-    eligible: sCorpEligible,
-    unlockLabel: sCorpEligible ? null : 'Unlocks at $80K+',
-    dismissed: dismissed.has('scorp'),
-    status: dismissed.has('scorp') ? 'dismissed' : sCorpEligible ? 'action_available' : 'not_eligible',
-    whyItMatters: `At your current income of $${Math.round(annualizedIncome).toLocaleString()}, switching to an S-Corp structure could save you approximately $${sCorpSavings.toLocaleString()} in self-employment tax. Distributions above your reasonable salary are exempt from SE tax.`,
-    howItWorks: [
-      'As a sole proprietor, you pay 15.3% SE tax on all net earnings',
-      'As an S-Corp, you pay yourself a "reasonable salary" subject to payroll tax',
-      'Remaining profits are distributed and NOT subject to SE tax',
-      'S-Corp has additional overhead: payroll service, separate tax return (~$2,500/yr)',
-      'The "reasonable salary" should reflect what an employed DVM in a similar role would earn',
-    ],
-    actionSteps: [
-      'Use the salary slider below to model different scenarios',
-      'File Form 2553 with the IRS to elect S-Corp status',
-      'Set up payroll through a service like Gusto or ADP',
-      'Discuss timing with your CPA — election must be filed by March 15',
-    ],
-  });
+
+  if (isScorp) {
+    // Already S-Corp: show salary optimization tool
+    const salary = inputs.scorp_salary_slider || 110000;
+    const distribution = Math.max(0, annualizedIncome - salary);
+    strategies.push({
+      id: 'scorp',
+      title: 'Reasonable Salary Optimization',
+      description: 'Optimize your salary vs. distribution split to minimize payroll taxes',
+      estimatedSavings: 0, // Savings shown in the interactive calculator
+      eligible: true,
+      unlockLabel: null,
+      dismissed: dismissed.has('scorp'),
+      status: dismissed.has('scorp') ? 'dismissed' : 'action_available',
+      whyItMatters: `As an S-Corp, your salary of $${Math.round(salary).toLocaleString()} is subject to payroll taxes (employer + employee FICA), while your distributions of $${Math.round(distribution).toLocaleString()} are not. Finding the right balance between a "reasonable" salary and distributions is key to maximizing your S-Corp tax advantage.`,
+      howItWorks: [
+        'Your salary must be "reasonable" — what an employed DVM in a similar role would earn',
+        'Payroll taxes (FICA) apply to salary at ~15.3% combined (employer + employee)',
+        'Distributions above salary are exempt from payroll taxes',
+        'Setting salary too low risks IRS audit; too high negates S-Corp benefits',
+        'Payroll taxes are separate from quarterly estimated income tax payments',
+      ],
+      actionSteps: [
+        'Use the salary slider below to model different salary levels',
+        'Research comparable employed DVM salaries in your area',
+        'Review with your CPA to ensure your salary is defensible',
+        'Adjust your payroll service (Gusto, ADP) accordingly',
+      ],
+    });
+  } else {
+    // 1099 / Sole Prop: show S-Corp election analysis
+    strategies.push({
+      id: 'scorp',
+      title: 'S-Corp Election Analysis',
+      description: 'Estimate potential self-employment tax savings from electing S-Corp status',
+      estimatedSavings: sCorpSavings,
+      eligible: sCorpEligible,
+      unlockLabel: sCorpEligible ? null : 'Unlocks at $80K+',
+      dismissed: dismissed.has('scorp'),
+      status: dismissed.has('scorp') ? 'dismissed' : sCorpEligible ? 'action_available' : 'not_eligible',
+      whyItMatters: `At your current income of $${Math.round(annualizedIncome).toLocaleString()}, switching to an S-Corp structure could save you approximately $${sCorpSavings.toLocaleString()} in self-employment tax. Distributions above your reasonable salary are exempt from SE tax.`,
+      howItWorks: [
+        'As a sole proprietor, you pay 15.3% SE tax on all net earnings',
+        'As an S-Corp, you pay yourself a "reasonable salary" subject to payroll tax',
+        'Remaining profits are distributed and NOT subject to SE tax',
+        'S-Corp has additional overhead: payroll service, separate tax return (~$2,500/yr)',
+        'The "reasonable salary" should reflect what an employed DVM in a similar role would earn',
+      ],
+      actionSteps: [
+        'Use the salary slider below to model different scenarios',
+        'File Form 2553 with the IRS to elect S-Corp status',
+        'Set up payroll through a service like Gusto or ADP',
+        'Discuss timing with your CPA — election must be filed by March 15',
+      ],
+    });
+  }
 
   // 7. Quarterly Deadlines — always eligible
   const nextDeadline = getNextQuarterlyDeadline();
