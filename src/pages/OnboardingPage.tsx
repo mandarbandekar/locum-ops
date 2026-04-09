@@ -250,10 +250,21 @@ export default function OnboardingPage() {
         return (
           <div className="space-y-5">
             <div>
-              <h2 className="text-2xl font-bold text-foreground font-[Manrope]">Add a clinic you work with</h2>
-              <p className="text-muted-foreground mt-1">
-                Start with the one from your most recent shift. You can always add more later.
-              </p>
+              {skippedProfileViaOAuth ? (
+                <>
+                  <h2 className="text-2xl font-bold text-foreground font-[Manrope]">Welcome, {firstName}! 👋</h2>
+                  <p className="text-muted-foreground mt-1">
+                    Let's set up your workspace — start by adding a clinic you work with.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-2xl font-bold text-foreground font-[Manrope]">Add a clinic you work with</h2>
+                  <p className="text-muted-foreground mt-1">
+                    Start with the one from your most recent shift. You can always add more later.
+                  </p>
+                </>
+              )}
             </div>
 
             {/* Show saved clinic cards */}
