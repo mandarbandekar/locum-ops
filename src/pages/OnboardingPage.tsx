@@ -59,34 +59,37 @@ export default function OnboardingPage() {
   const { user } = useAuth();
   const { facilities, shifts, terms, addShift } = useData();
   const navigate = useNavigate();
-  const [phase, setPhase] = useState<Phase>('profile');
+  // Determine if OAuth user can skip profile step
+  const isOAuth = user?.app_metadata?.provider === 'google';
+  const oauthFirstName = user?.user_metadata?.first_name || '';
+  const oauthLastName = user?.user_metadata?.last_name || '';
+  const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const canSkipProfile = isOAuth && oauthFirstName && oauthLastName && (user?.email || '');
+
+  const [phase, setPhase] = useState<Phase>(canSkipProfile ? 'manual_facility' : 'profile');
+  const [skippedProfileViaOAuth] = useState(canSkipProfile);
 
   // Dialog open states
   const [facilityDialogOpen, setFacilityDialogOpen] = useState(false);
   const [shiftDialogOpen, setShiftDialogOpen] = useState(false);
 
   // Profile state
-  const [firstName, setFirstName] = useState(profile?.first_name || '');
-  const [lastName, setLastName] = useState(profile?.last_name || '');
-  const [timezone, setTimezone] = useState(profile?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone);
+  const [firstName, setFirstName] = useState(profile?.first_name || oauthFirstName);
+  const [lastName, setLastName] = useState(profile?.last_name || oauthLastName);
+  const [timezone, setTimezone] = useState(profile?.timezone || detectedTimezone);
 
   // Tax opt-in
   const [showTaxSetup, setShowTaxSetup] = useState(false);
   const [taxDisclaimer, setTaxDisclaimer] = useState(false);
-
-  // Auto-advance for profile
-  const autoAdvanceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [showWelcome, setShowWelcome] = useState(false);
-  const [userEdited, setUserEdited] = useState(false);
 
   // Track facility count at time of entering manual_facility to detect new adds
   const [facilitySavedInStep, setFacilitySavedInStep] = useState(false);
 
   const userEmail = user?.email || '';
 
-  // Pre-fill from auth metadata
+  // Pre-fill from auth metadata (non-OAuth users)
   useEffect(() => {
-    if (user?.user_metadata) {
+    if (!isOAuth && user?.user_metadata) {
       const meta = user.user_metadata;
       if (!firstName && meta.first_name) setFirstName(meta.first_name);
       if (!lastName && meta.last_name) setLastName(meta.last_name);
@@ -98,32 +101,19 @@ export default function OnboardingPage() {
     console.log('onboarding_step_view', { phase });
   }, [phase]);
 
-  // Auto-advance for profile step when all fields pre-filled from OAuth
+  // Silently save profile for OAuth users who skipped Step 1
+  const profileSavedRef = useRef(false);
   useEffect(() => {
-    const isOAuth = user?.app_metadata?.provider === 'google';
-    if (phase === 'profile' && !userEdited && isOAuth) {
-      const allFilled = firstName.trim() && lastName.trim() && userEmail && timezone;
-      if (allFilled) {
-        setShowWelcome(true);
-        autoAdvanceRef.current = setTimeout(() => {
-          saveProfile();
-        }, 1500);
-      }
+    if (skippedProfileViaOAuth && !profileSavedRef.current) {
+      profileSavedRef.current = true;
+      updateProfile({
+        first_name: oauthFirstName,
+        last_name: oauthLastName,
+        timezone: detectedTimezone,
+      });
     }
-    return () => {
-      if (autoAdvanceRef.current) clearTimeout(autoAdvanceRef.current);
-    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, firstName, lastName, userEmail, timezone, userEdited, user]);
-
-  const cancelAutoAdvance = () => {
-    setUserEdited(true);
-    setShowWelcome(false);
-    if (autoAdvanceRef.current) {
-      clearTimeout(autoAdvanceRef.current);
-      autoAdvanceRef.current = null;
-    }
-  };
+  }, []);
 
   // When entering first_shift phase, open the dialog automatically
   useEffect(() => {
@@ -203,17 +193,8 @@ export default function OnboardingPage() {
         return (
           <div className="space-y-5">
             <div>
-              {showWelcome && !userEdited ? (
-                <>
-                  <h2 className="text-2xl font-bold text-foreground font-[Manrope]">Welcome, {firstName}! 👋</h2>
-                  <p className="text-muted-foreground mt-1">We pulled your info from sign-up. Confirm and let's go.</p>
-                </>
-              ) : (
-                <>
-                  <h2 className="text-2xl font-bold text-foreground font-[Manrope]">Welcome to LocumOps!</h2>
-                  <p className="text-muted-foreground mt-1">Quick confirmation — this info helps personalize your workspace.</p>
-                </>
-              )}
+              <h2 className="text-2xl font-bold text-foreground font-[Manrope]">Welcome to LocumOps!</h2>
+              <p className="text-muted-foreground mt-1">Quick confirmation — this info helps personalize your workspace.</p>
             </div>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
@@ -221,7 +202,7 @@ export default function OnboardingPage() {
                   <Label>First name <span className="text-destructive">*</span></Label>
                   <Input
                     value={firstName}
-                    onChange={e => { setFirstName(e.target.value); cancelAutoAdvance(); }}
+                    onChange={e => setFirstName(e.target.value)}
                     placeholder="Jane"
                   />
                 </div>
@@ -229,7 +210,7 @@ export default function OnboardingPage() {
                   <Label>Last name <span className="text-destructive">*</span></Label>
                   <Input
                     value={lastName}
-                    onChange={e => { setLastName(e.target.value); cancelAutoAdvance(); }}
+                    onChange={e => setLastName(e.target.value)}
                     placeholder="Smith"
                   />
                 </div>
@@ -240,7 +221,7 @@ export default function OnboardingPage() {
               </div>
               <div>
                 <Label>Timezone</Label>
-                <Select value={timezone} onValueChange={v => { setTimezone(v); cancelAutoAdvance(); }}>
+                <Select value={timezone} onValueChange={v => setTimezone(v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="America/New_York">Eastern</SelectItem>
@@ -269,10 +250,21 @@ export default function OnboardingPage() {
         return (
           <div className="space-y-5">
             <div>
-              <h2 className="text-2xl font-bold text-foreground font-[Manrope]">Add a clinic you work with</h2>
-              <p className="text-muted-foreground mt-1">
-                Start with the one from your most recent shift. You can always add more later.
-              </p>
+              {skippedProfileViaOAuth ? (
+                <>
+                  <h2 className="text-2xl font-bold text-foreground font-[Manrope]">Welcome, {firstName}! 👋</h2>
+                  <p className="text-muted-foreground mt-1">
+                    Let's set up your workspace — start by adding a clinic you work with.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-2xl font-bold text-foreground font-[Manrope]">Add a clinic you work with</h2>
+                  <p className="text-muted-foreground mt-1">
+                    Start with the one from your most recent shift. You can always add more later.
+                  </p>
+                </>
+              )}
             </div>
 
             {/* Show saved clinic cards */}
