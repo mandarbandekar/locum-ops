@@ -63,7 +63,6 @@ export default function TaxEstimateTab({
           <TaxDashboard
             profile={taxProfile!}
             onEditProfile={() => setSetupOpen(true)}
-            onSaveProfile={saveProfile}
           />
 
           {/* Tax Reduction Guide */}

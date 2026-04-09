@@ -16,7 +16,6 @@ import {
   getMarginalRate, type FilingStatus,
 } from '@/lib/taxConstants2026';
 import { applyStateBrackets } from '@/lib/stateTaxData';
-import { calculateTax } from './TaxDashboard';
 
 interface Props {
   profile: TaxIntelligenceProfile;
@@ -51,12 +50,18 @@ export default function TaxReductionGuide({ profile }: Props) {
 
   const projectedExpenses = loggedExpenseTotal > 0 ? Math.round(loggedExpenseTotal * (12 / Math.max(1, new Date().getMonth() + 1))) : 0;
 
-  // Use blended expenses (higher of actual logged vs profile estimate) and shared calculateTax()
-  const blendedExpenses = Math.max(loggedExpenseTotal, profile.ytd_expenses_estimate || 0);
-  const taxResult = useMemo(() => calculateTax(ytdPaidIncome, profile, blendedExpenses), [ytdPaidIncome, profile, blendedExpenses]);
-  const marginalRate = taxResult.marginalRate;
+  // Compute net income for bracket lookup
+  const netForCalc = Math.max(0, ytdPaidIncome - (profile.ytd_expenses_estimate || 0));
+  const seBase = netForCalc * SE_TAXABLE_FACTOR;
+  const seDeduction = round2((Math.min(seBase, SS_WAGE_CAP) * 0.124 + seBase * 0.029) / 2);
+  const spouseW2 = profile.spouse_w2_income || 0;
+  const spouseSE = profile.spouse_has_se_income ? (profile.spouse_se_net_income || 0) : 0;
+  const agi = Math.max(0, netForCalc - seDeduction - (profile.retirement_contribution || 0) + spouseW2 + spouseSE);
+  const standardDed = STANDARD_DEDUCTIONS[fs] || STANDARD_DEDUCTIONS.single;
+  const taxableIncome = Math.max(0, agi - standardDed);
+  const marginalRate = getMarginalRate(taxableIncome, fs);
 
-  const netForCalc = Math.max(0, ytdPaidIncome - blendedExpenses);
+  // S-Corp savings estimate
   const annualizedNet = netForCalc > 0 ? (netForCalc / Math.max(1, new Date().getMonth() + 1)) * 12 : 0;
   const seTax = round2(Math.min(annualizedNet * SE_TAXABLE_FACTOR, SS_WAGE_CAP) * 0.124 + annualizedNet * SE_TAXABLE_FACTOR * 0.029);
   const salary60 = Math.round(annualizedNet * 0.6);

@@ -44,9 +44,6 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
   const [scorpSalary, setScorpSalary] = useState(existingProfile?.scorp_salary ?? 0);
   const [safeHarbor, setSafeHarbor] = useState(existingProfile?.safe_harbor_method || '90_percent');
   const [priorYearTax, setPriorYearTax] = useState(existingProfile?.prior_year_tax_paid ?? 0);
-  const [projectionMethod, setProjectionMethod] = useState(existingProfile?.projection_method || 'annualized_actual');
-  const [annualIncomeGoal, setAnnualIncomeGoal] = useState(existingProfile?.annual_income_goal ?? 0);
-  const [priorYearIncome, setPriorYearIncome] = useState(existingProfile?.prior_year_total_income ?? 0);
 
   const isScorp = entityType === 'scorp';
   const stateData = stateCode ? STATE_TAX_DATA[stateCode] : null;
@@ -58,7 +55,7 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
     if (showPTEStep) s.push('pte');
     s.push('household', 'retirement');
     if (isScorp) s.push('scorpSalary');
-    s.push('expenses', 'projection', 'safeHarbor', 'complete');
+    s.push('expenses', 'safeHarbor', 'complete');
     return s;
   }, [isScorp, showPTEStep]);
 
@@ -81,7 +78,6 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
       case 'retirement': return renderRetirementStep();
       case 'scorpSalary': return renderScorpSalaryStep();
       case 'expenses': return renderExpensesStep();
-      case 'projection': return renderProjectionStep();
       case 'safeHarbor': return renderSafeHarborStep();
       case 'complete': return renderCompletionStep();
       default: return null;
@@ -378,55 +374,6 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
     );
   }
 
-  function renderProjectionStep() {
-    return (
-      <div className="space-y-4">
-        <Label className="text-base font-medium">How should we project your full-year income?</Label>
-        <p className="text-sm text-muted-foreground">This determines how we calculate your quarterly tax estimate.</p>
-        <RadioGroup value={projectionMethod} onValueChange={setProjectionMethod}>
-          <div className="flex items-start space-x-2 p-3 rounded-lg border hover:bg-accent/50 cursor-pointer">
-            <RadioGroupItem value="safe_harbor" id="proj-harbor" className="mt-0.5" />
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <Label htmlFor="proj-harbor" className="cursor-pointer font-medium">Safe harbor (penalty-proof)</Label>
-                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Most Preferred</Badge>
-              </div>
-              <p className="text-xs text-muted-foreground mt-0.5">Base quarterly payments on last year's tax. Guarantees no underpayment penalty.</p>
-            </div>
-          </div>
-          <div className="flex items-start space-x-2 p-3 rounded-lg border hover:bg-accent/50 cursor-pointer">
-            <RadioGroupItem value="annual_projection" id="proj-goal" className="mt-0.5" />
-            <div>
-              <Label htmlFor="proj-goal" className="cursor-pointer font-medium">Use my income goal</Label>
-              <p className="text-xs text-muted-foreground mt-0.5">Set a target annual income — useful if you know what you plan to earn.</p>
-            </div>
-          </div>
-          <div className="flex items-start space-x-2 p-3 rounded-lg border hover:bg-accent/50 cursor-pointer">
-            <RadioGroupItem value="annualized_actual" id="proj-actual" className="mt-0.5" />
-            <div>
-              <Label htmlFor="proj-actual" className="cursor-pointer font-medium">Annualize my current pace of work</Label>
-              <p className="text-xs text-muted-foreground mt-0.5">Extrapolates your year-to-date income to a full year. Gets more accurate over time.</p>
-            </div>
-          </div>
-        </RadioGroup>
-
-        {projectionMethod === 'annual_projection' && (
-          <div className="space-y-1">
-            <Label className="text-sm">Annual income goal ($)</Label>
-            <Input type="number" value={annualIncomeGoal || ''} onChange={e => setAnnualIncomeGoal(Number(e.target.value))} placeholder="e.g., 180000" />
-          </div>
-        )}
-
-        {(projectionMethod === 'annualized_actual' || projectionMethod === 'annual_projection') && (
-          <div className="space-y-1">
-            <Label className="text-sm">Last year's total income (optional — helps early-year estimates)</Label>
-            <Input type="number" value={priorYearIncome || ''} onChange={e => setPriorYearIncome(Number(e.target.value))} placeholder="e.g., 165000" />
-          </div>
-        )}
-      </div>
-    );
-  }
-
   function renderSafeHarborStep() {
     return (
       <div className="space-y-4">
@@ -446,15 +393,8 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
               <p className="text-xs text-muted-foreground mt-0.5">Steadier, avoids underpayment penalties</p>
             </div>
           </div>
-          <div className="flex items-start space-x-2 p-3 rounded-lg border hover:bg-accent/50 cursor-pointer">
-            <RadioGroupItem value="110_percent" id="sh-110" className="mt-0.5" />
-            <div>
-              <Label htmlFor="sh-110" className="cursor-pointer font-medium">110% of last year (high earners)</Label>
-              <p className="text-xs text-muted-foreground mt-0.5">Required if your AGI was over $150k last year</p>
-            </div>
-          </div>
         </RadioGroup>
-        {(safeHarbor === 'safe_harbor' || safeHarbor === '110_percent') && (
+        {safeHarbor === 'safe_harbor' && (
           <div className="space-y-1">
             <Label className="text-sm">Last year's total federal tax paid ($)</Label>
             <Input type="number" value={priorYearTax || ''} onChange={e => setPriorYearTax(Number(e.target.value))} placeholder="e.g., 18000" />
@@ -488,21 +428,18 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
       entity_type: entityType === 'unsure' ? 'sole_prop' : entityType,
       filing_status: filingStatus,
       state_code: stateCode,
-      other_w2_income: 0,
+      other_w2_income: 0, // Replaced by spouse fields
       retirement_type: retirementType,
       retirement_contribution: retirementType !== 'none' ? retirementContribution : 0,
       expense_tracking_level: expenseLevel,
       ytd_expenses_estimate: expenseLevel !== 'none' ? ytdExpenses : 0,
       scorp_salary: isScorp ? scorpSalary : 0,
       safe_harbor_method: safeHarbor,
-      prior_year_tax_paid: (safeHarbor === 'safe_harbor' || safeHarbor === '110_percent') ? priorYearTax : 0,
+      prior_year_tax_paid: safeHarbor === 'safe_harbor' ? priorYearTax : 0,
       pte_elected: showPTEStep ? pteElected : false,
       spouse_w2_income: spouseW2Income,
       spouse_has_se_income: spouseHasSE,
       spouse_se_net_income: spouseHasSE ? spouseSENet : 0,
-      projection_method: projectionMethod,
-      annual_income_goal: projectionMethod === 'annual_projection' ? annualIncomeGoal : 0,
-      prior_year_total_income: priorYearIncome,
       setup_completed_at: new Date().toISOString(),
     });
     setSaving(false);

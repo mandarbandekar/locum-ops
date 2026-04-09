@@ -2,8 +2,6 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
-import { useTaxIntelligence } from '@/hooks/useTaxIntelligence';
-import { useExpenses } from '@/hooks/useExpenses';
 import {
   buildStrategies,
   getAnnualizedIncome,
@@ -12,7 +10,6 @@ import {
   type StrategyResult,
 } from '@/lib/taxStrategies';
 import type { FilingStatus } from '@/lib/taxConstants2026';
-import { STATE_TAX_DATA } from '@/lib/stateTaxData';
 import { toast } from 'sonner';
 
 const db = (table: string) => supabase.from(table as any);
@@ -27,14 +24,11 @@ interface UseTaxStrategiesReturn {
   restoreStrategy: (strategyId: string) => Promise<void>;
   loading: boolean;
   paidShiftCount: number;
-  entityType: string;
 }
 
 export function useTaxStrategies(): UseTaxStrategiesReturn {
   const { user, isDemo } = useAuth();
   const { shifts, invoices, facilities } = useData();
-  const { profile } = useTaxIntelligence();
-  const { expenses } = useExpenses();
   const [inputs, setInputs] = useState<StrategyInputs>(DEFAULT_INPUTS);
   const [loading, setLoading] = useState(true);
 
@@ -74,35 +68,12 @@ export function useTaxStrategies(): UseTaxStrategiesReturn {
     return shifts.filter(s => new Date(s.end_datetime) < new Date()).length;
   }, [shifts]);
 
-  const entityType = profile?.entity_type || 'sole_prop';
-  const filingStatus = (profile?.filing_status || 'single') as FilingStatus;
-  const stateRate = (() => {
-    if (!profile?.state_code) return 0.05;
-    const entry = STATE_TAX_DATA[profile.state_code];
-    if (!entry) return 0.05;
-    if (entry.rate) return entry.rate;
-    // For bracket states, use the top bracket rate
-    const brackets = entry.brackets?.single;
-    if (brackets && brackets.length > 0) return brackets[brackets.length - 1].rate;
-    return 0.05;
-  })();
-
-  // Compute annualized business expenses for strategy calculations
-  const annualizedExpenses = useMemo(() => {
-    const year = new Date().getFullYear();
-    const ytdExpenses = expenses
-      .filter(e => new Date(e.expense_date).getFullYear() === year)
-      .reduce((s, e) => s + e.deductible_amount_cents / 100, 0);
-    const profileEstimate = profile?.ytd_expenses_estimate || 0;
-    const blended = Math.max(ytdExpenses, profileEstimate);
-    // Annualize: project current YTD to full year
-    const monthsElapsed = Math.max(1, new Date().getMonth() + 1);
-    return ytdExpenses > 0 ? Math.round((blended / monthsElapsed) * 12) : profileEstimate;
-  }, [expenses, profile?.ytd_expenses_estimate]);
-
   const strategies = useMemo(() => {
-    return buildStrategies(annualizedIncome, inputs, filingStatus, stateRate, facilityCount, entityType, annualizedExpenses);
-  }, [annualizedIncome, inputs, facilityCount, filingStatus, stateRate, entityType, annualizedExpenses]);
+    // TODO: pull from user tax profile if available
+    const filingStatus: FilingStatus = 'single';
+    const stateRate = 0.05;
+    return buildStrategies(annualizedIncome, inputs, filingStatus, stateRate, facilityCount);
+  }, [annualizedIncome, inputs, facilityCount]);
 
   const totalSavings = useMemo(() => {
     return strategies
@@ -166,6 +137,5 @@ export function useTaxStrategies(): UseTaxStrategiesReturn {
     restoreStrategy,
     loading,
     paidShiftCount,
-    entityType,
   };
 }

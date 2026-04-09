@@ -11,14 +11,9 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import {
   CalendarDays, ChevronDown, DollarSign, Calculator, Settings2,
   Clock, CheckCircle2, TrendingUp, Info, CreditCard, Lightbulb, BarChart3,
-  AlertTriangle, Target, Shield,
 } from 'lucide-react';
 import IncomeSplitBar from './IncomeSplitBar';
 import WhatIfSlider from './WhatIfSlider';
@@ -31,17 +26,10 @@ import {
   type FilingStatus,
 } from '@/lib/taxConstants2026';
 import { applyStateBrackets, getStateInfo, STATE_TAX_DATA } from '@/lib/stateTaxData';
-import {
-  getFullQuarterlyEstimate,
-  PROJECTION_METHOD_LABELS,
-  type FullQuarterlyEstimate,
-} from '@/lib/taxProjectionEngine';
-import { Link } from 'react-router-dom';
 
 interface Props {
   profile: TaxIntelligenceProfile;
   onEditProfile: () => void;
-  onSaveProfile?: (data: Partial<TaxIntelligenceProfile>) => Promise<void>;
 }
 
 function fmt(n: number) {
@@ -106,12 +94,13 @@ export function calculateTax(
     const federalTax = applyFederalBrackets(taxableIncome, fs);
     const marginalRate = getMarginalRate(taxableIncome, fs);
 
+    // State tax: 0 if PTE elected (handled at entity level)
     const personalStateTax = applyStateBrackets(
       salary + distribution, profile.filing_status, profile.state_code, !!pteElected,
     );
 
-    const employeeFICA = round2(salary * FICA_RATE);
-    const totalAnnualTax = round2(federalTax + personalStateTax + employerPayrollTax + employeeFICA);
+    // Quarterly: federal + state only, NO payroll tax
+    const totalAnnualTax = round2(federalTax + personalStateTax);
     const quarterlyPayment = round2(totalAnnualTax / 4);
 
     return {
@@ -169,6 +158,8 @@ function BracketVisualization({ taxableIncome, fs, marginalRate }: { taxableInco
 
   const marginalPct = Math.round(marginalRate * 100);
   const addlTaxPer1k = Math.round(marginalRate * 1000);
+
+  // Find which bracket the user is in
   const currentBracketIdx = bracketRates.findIndex(r => r === marginalRate);
 
   return (
@@ -197,94 +188,7 @@ function BracketVisualization({ taxableIncome, fs, marginalRate }: { taxableInco
   );
 }
 
-// ── Projection Method Selector (inline popover) ─────────────
-function ProjectionMethodPopover({
-  profile,
-  onSaveProfile,
-}: {
-  profile: TaxIntelligenceProfile;
-  onSaveProfile?: (data: Partial<TaxIntelligenceProfile>) => Promise<void>;
-}) {
-  const [localMethod, setLocalMethod] = useState(profile.projection_method || 'annualized_actual');
-  const [localGoal, setLocalGoal] = useState(profile.annual_income_goal || 0);
-  const [localPriorIncome, setLocalPriorIncome] = useState(profile.prior_year_total_income || 0);
-  const [saving, setSaving] = useState(false);
-
-  const handleSave = async () => {
-    if (!onSaveProfile) return;
-    setSaving(true);
-    await onSaveProfile({
-      projection_method: localMethod,
-      annual_income_goal: localMethod === 'annual_projection' ? localGoal : profile.annual_income_goal,
-      prior_year_total_income: localPriorIncome,
-    });
-    setSaving(false);
-  };
-
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <button className="text-xs text-primary hover:underline font-medium">change method</button>
-      </PopoverTrigger>
-      <PopoverContent className="w-80" side="bottom">
-        <div className="space-y-3">
-          <p className="text-sm font-medium">Projection Method</p>
-          <RadioGroup value={localMethod} onValueChange={setLocalMethod}>
-            <div className="flex items-start space-x-2 p-2 rounded border hover:bg-accent/50 cursor-pointer">
-              <RadioGroupItem value="annualized_actual" id="pm-actual" className="mt-0.5" />
-              <div>
-                <Label htmlFor="pm-actual" className="cursor-pointer text-sm font-medium">Current pace</Label>
-                <p className="text-xs text-muted-foreground">Annualizes your YTD income</p>
-              </div>
-            </div>
-            <div className="flex items-start space-x-2 p-2 rounded border hover:bg-accent/50 cursor-pointer">
-              <RadioGroupItem value="annual_projection" id="pm-goal" className="mt-0.5" />
-              <div>
-                <Label htmlFor="pm-goal" className="cursor-pointer text-sm font-medium">Annual goal</Label>
-                <p className="text-xs text-muted-foreground">Use your income target</p>
-              </div>
-            </div>
-            <div className="flex items-start space-x-2 p-2 rounded border hover:bg-accent/50 cursor-pointer">
-              <RadioGroupItem value="safe_harbor" id="pm-harbor" className="mt-0.5" />
-              <div>
-                <Label htmlFor="pm-harbor" className="cursor-pointer text-sm font-medium">Safe harbor</Label>
-                <p className="text-xs text-muted-foreground">Based on last year's tax · penalty-proof</p>
-              </div>
-            </div>
-          </RadioGroup>
-
-          {localMethod === 'annual_projection' && (
-            <div className="space-y-1">
-              <Label className="text-xs">Annual income goal ($)</Label>
-              <Input
-                type="number"
-                value={localGoal || ''}
-                onChange={e => setLocalGoal(Number(e.target.value))}
-                placeholder="e.g., 180000"
-                className="h-8 text-sm"
-              />
-            </div>
-          )}
-
-          {localMethod === 'safe_harbor' && (profile.prior_year_tax_paid || 0) <= 0 && (
-            <Alert className="border-[hsl(var(--warning))] bg-[hsl(var(--chip-warning-bg))]">
-              <AlertTriangle className="h-3.5 w-3.5 text-[hsl(var(--chip-warning-text))]" />
-              <AlertDescription className="text-xs text-[hsl(var(--chip-warning-text))]">
-                Enter last year's tax bill in your tax profile to use safe harbor.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          <Button size="sm" className="w-full" onClick={handleSave} disabled={saving}>
-            {saving ? 'Saving…' : 'Update Method'}
-          </Button>
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
-}
-
-export default function TaxDashboard({ profile, onEditProfile, onSaveProfile }: Props) {
+export default function TaxDashboard({ profile, onEditProfile }: Props) {
   const { shifts, invoices } = useData();
   const { ytdDeductibleCents } = useExpenses();
   const now = new Date();
@@ -294,7 +198,6 @@ export default function TaxDashboard({ profile, onEditProfile, onSaveProfile }: 
   const dueDates = getQuarterlyDueDates(currentYear);
   const fs = (profile.filing_status || 'single') as FilingStatus;
 
-  // ── Compute income figures ──
   const earnedIncome = useMemo(() => {
     return invoices
       .filter(inv => inv.status === 'paid' && inv.paid_at && new Date(inv.paid_at).getFullYear() === currentYear)
@@ -312,22 +215,15 @@ export default function TaxDashboard({ profile, onEditProfile, onSaveProfile }: 
       .reduce((sum, s) => sum + (s.rate_applied || 0), 0);
   }, [shifts, now]);
 
+  const totalIncome = earnedIncome + projectedIncome;
+  const hasAnyIncome = earnedIncome > 0 || projectedIncome > 0;
   const actualExpenses = ytdDeductibleCents / 100;
   const blendedExpenses = Math.max(actualExpenses, profile.ytd_expenses_estimate || 0);
 
-  // ── Run projection engine ──
-  const estimate = useMemo<FullQuarterlyEstimate>(() =>
-    getFullQuarterlyEstimate(profile, earnedIncome, projectedIncome, blendedExpenses),
-    [profile, earnedIncome, projectedIncome, blendedExpenses]);
-
-  const activeEstimate = estimate.activeEstimate;
-  const taxResult = activeEstimate?.taxResult ?? calculateTax(0, profile, blendedExpenses);
-  const totalIncome = activeEstimate?.annualIncome ?? (earnedIncome + projectedIncome);
-  const hasAnyIncome = earnedIncome > 0 || projectedIncome > 0;
-  const isSafeHarbor = estimate.activeMethod === 'safe_harbor' && activeEstimate?.penaltyProof;
+  const taxResult = useMemo(() => calculateTax(totalIncome, profile, blendedExpenses), [totalIncome, profile, blendedExpenses]);
 
   const whatIfCalculator = useCallback((additionalIncome: number) => {
-    const result = calculateTax((totalIncome) + additionalIncome, profile, blendedExpenses);
+    const result = calculateTax(totalIncome + additionalIncome, profile, blendedExpenses);
     return result.quarterlyPayment;
   }, [totalIncome, profile, blendedExpenses]);
 
@@ -350,7 +246,7 @@ export default function TaxDashboard({ profile, onEditProfile, onSaveProfile }: 
 
   // KPI tooltip texts
   const kpiTooltips = useMemo(() => ({
-    totalIncome: `${isSafeHarbor ? 'Safe harbor method — quarterly payment based on prior year tax.' : `Projected annual income: $${fmt(totalIncome)}. Earned: $${fmt(earnedIncome)}, upcoming shifts: $${fmt(projectedIncome)}.`}`,
+    totalIncome: `Sum of paid invoices this year ($${fmt(earnedIncome)} earned) plus projected income from upcoming shifts ($${fmt(projectedIncome)} in next 90 days).`,
     tax1: isScorp
       ? `Federal income tax applied using 2026 marginal brackets on your taxable income of $${fmt(taxResult.federalTaxableIncome)} after standard deduction of $${fmt(STANDARD_DEDUCTIONS[fs])}.`
       : `Self-employment tax at 15.3% on 92.35% of your net income ($${fmt(taxResult.netIncome)}). Covers Social Security + Medicare since you don't have an employer paying half.`,
@@ -358,30 +254,20 @@ export default function TaxDashboard({ profile, onEditProfile, onSaveProfile }: 
       ? `Applied ${profile.state_code || 'state'} progressive income tax rates to your salary + distributions of $${fmt((taxResult.salary || 0) + (taxResult.distribution || 0))}.`
       : `Applied 2026 marginal brackets to your taxable income of $${fmt(taxResult.federalTaxableIncome)} after standard deduction of $${fmt(STANDARD_DEDUCTIONS[fs])}.`,
     totalAnnual: `Sum of all tax obligations. Your effective rate of ${taxResult.effectiveRate}% means ${taxResult.effectiveRate} cents of every dollar goes to taxes.`,
-  }), [earnedIncome, projectedIncome, isScorp, taxResult, fs, profile.state_code, totalIncome, isSafeHarbor]);
+  }), [earnedIncome, projectedIncome, isScorp, taxResult, fs, profile.state_code]);
 
   // Plain-language calculation summary
   const calculationSummary = useMemo(() => {
-    const methodLabel = PROJECTION_METHOD_LABELS[estimate.activeMethod] || 'Current pace';
-    const methodNote = isSafeHarbor
-      ? `Using the safe harbor method based on your prior year tax of $${fmt(profile.prior_year_tax_paid)}. This approach is penalty-proof.`
-      : `Using the "${methodLabel}" projection method with $${fmt(totalIncome)} projected annual income.`;
-
     if (isScorp) {
       const salary = taxResult.salary || 0;
       const dist = taxResult.distribution || 0;
-      return `${methodNote} Your S-Corp pays you a $${fmt(salary)} salary. After $${fmt(taxResult.expenses)} in expenses, your remaining $${fmt(dist)} flows as distributions. We calculate federal income tax on salary + distributions using 2026 brackets (taxable income: $${fmt(taxResult.federalTaxableIncome)} after the $${fmt(STANDARD_DEDUCTIONS[fs])} standard deduction). ${stateInfo?.label ? `${stateInfo.label} state tax uses progressive rates on your combined salary and distributions.` : ''} ${hasPTE ? `Your elected PTE tax of $${fmt(taxResult.scorpPTEPayment || 0)}/year is paid at the entity level and deducted before distributions.` : ''} Payroll taxes on your salary are handled by your payroll provider and excluded from your quarterly estimate. Combined personal tax: $${fmt(taxResult.totalAnnualTax)}/year or $${fmt(taxResult.quarterlyPayment)}/quarter.`;
+      return `Your S-Corp pays you a $${fmt(salary)} salary. After $${fmt(taxResult.expenses)} in expenses, your remaining $${fmt(dist)} flows as distributions. We calculate federal income tax on salary + distributions using 2026 brackets (taxable income: $${fmt(taxResult.federalTaxableIncome)} after the $${fmt(STANDARD_DEDUCTIONS[fs])} standard deduction). ${stateInfo?.label ? `${stateInfo.label} state tax uses progressive rates on your combined salary and distributions.` : ''} ${hasPTE ? `Your elected PTE tax of $${fmt(taxResult.scorpPTEPayment || 0)}/year is paid at the entity level and deducted before distributions.` : ''} Payroll taxes on your salary are handled by your payroll provider and excluded from your quarterly estimate. Combined personal tax: $${fmt(taxResult.totalAnnualTax)}/year or $${fmt(taxResult.quarterlyPayment)}/quarter.`;
     }
-    return `${methodNote} Based on $${fmt(totalIncome)} in income minus $${fmt(taxResult.expenses)} in expenses, your net income is $${fmt(taxResult.netIncome)}. We calculate $${fmt(taxResult.seTax)} in self-employment tax (15.3% on 92.35%), deduct half ($${fmt(taxResult.seDeduction)}) for AGI${profile.retirement_contribution > 0 ? `, subtract your $${fmt(profile.retirement_contribution)} retirement contribution` : ''}${(profile.spouse_w2_income || 0) > 0 ? `, add spouse W-2 income of $${fmt(profile.spouse_w2_income)}` : ''}, apply the $${fmt(STANDARD_DEDUCTIONS[fs])} standard deduction, and run 2026 federal brackets on $${fmt(taxResult.federalTaxableIncome)} taxable income. ${stateInfo?.label ? `Your ${stateInfo.label} state tax uses progressive rates on your net income.` : ''} Combined: $${fmt(taxResult.totalAnnualTax)}/year or $${fmt(taxResult.quarterlyPayment)}/quarter.`;
-  }, [isScorp, taxResult, totalIncome, fs, profile, stateInfo, hasPTE, estimate.activeMethod, isSafeHarbor]);
+    return `Based on $${fmt(totalIncome)} in income minus $${fmt(taxResult.expenses)} in expenses, your net income is $${fmt(taxResult.netIncome)}. We calculate $${fmt(taxResult.seTax)} in self-employment tax (15.3% on 92.35%), deduct half ($${fmt(taxResult.seDeduction)}) for AGI${profile.retirement_contribution > 0 ? `, subtract your $${fmt(profile.retirement_contribution)} retirement contribution` : ''}${(profile.spouse_w2_income || 0) > 0 ? `, add spouse W-2 income of $${fmt(profile.spouse_w2_income)}` : ''}, apply the $${fmt(STANDARD_DEDUCTIONS[fs])} standard deduction, and run 2026 federal brackets on $${fmt(taxResult.federalTaxableIncome)} taxable income. ${stateInfo?.label ? `Your ${stateInfo.label} state tax uses progressive rates on your net income.` : ''} Combined: $${fmt(taxResult.totalAnnualTax)}/year or $${fmt(taxResult.quarterlyPayment)}/quarter.`;
+  }, [isScorp, taxResult, totalIncome, fs, profile, stateInfo, hasPTE]);
 
-  // ── Gate: require some income or a configured method before showing tax estimates ──
-  const hasNoData = !hasAnyIncome && estimate.activeMethod === 'annualized_actual' && (profile.annual_income_goal || 0) <= 0 && (profile.prior_year_tax_paid || 0) <= 0;
-
-  if (hasNoData) {
-    const meta = estimate.projectionMeta;
-    const isEarlyYear = meta.earlyYearFallback;
-
+  // ── Gate: require some income before showing tax estimates ──
+  if (!hasAnyIncome) {
     return (
       <Card className="overflow-hidden border-primary/20">
         <div className="bg-gradient-to-br from-primary/5 via-primary/3 to-transparent p-6">
@@ -400,67 +286,38 @@ export default function TaxDashboard({ profile, onEditProfile, onSaveProfile }: 
               <Settings2 className="h-3.5 w-3.5" /> Edit Profile
             </Button>
           </div>
-
-          {/* Early year banner */}
-          {isEarlyYear ? (
-            <div className="text-center py-6 space-y-4">
-              <div className="mx-auto w-14 h-14 rounded-full bg-amber-500/10 flex items-center justify-center">
-                <CalendarDays className="h-7 w-7 text-amber-500" />
-              </div>
-              <div>
-                <h3 className="text-base font-semibold">It's Early in the Tax Year</h3>
-                <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">
-                  We don't have enough shift data yet to project your full-year income accurately. Two ways to get a better estimate now:
-                </p>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-2 justify-center">
-                <Button variant="outline" size="sm" className="gap-1.5" onClick={onEditProfile}>
-                  <Shield className="h-3.5 w-3.5" /> Enter last year's tax bill
-                </Button>
-                <Button variant="outline" size="sm" className="gap-1.5" onClick={onEditProfile}>
-                  <Target className="h-3.5 w-3.5" /> Set an income goal
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                We'll keep improving the estimate automatically as you log shifts.
+          <div className="text-center py-8 space-y-4">
+            <div className="mx-auto w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+              <BarChart3 className="h-7 w-7 text-primary" />
+            </div>
+            <div>
+              <h3 className="text-base font-semibold">No Income Data Yet</h3>
+              <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">
+                Your quarterly tax estimates will appear here once you have earned or anticipated income. Log shifts, create invoices, or mark invoices as paid to see personalized tax calculations.
               </p>
             </div>
-          ) : (
-            <div className="text-center py-8 space-y-4">
-              <div className="mx-auto w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
-                <BarChart3 className="h-7 w-7 text-primary" />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-lg mx-auto text-left">
+              <div className="rounded-lg bg-background/80 border p-3">
+                <p className="text-xs font-medium text-muted-foreground">Step 1</p>
+                <p className="text-sm font-medium mt-0.5">Log your shifts</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Add shifts with rates to your schedule</p>
               </div>
-              <div>
-                <h3 className="text-base font-semibold">No Income Data Yet</h3>
-                <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">
-                  Your quarterly tax estimates will appear here once you have earned or anticipated income. Log shifts, create invoices, or mark invoices as paid to see personalized tax calculations.
-                </p>
+              <div className="rounded-lg bg-background/80 border p-3">
+                <p className="text-xs font-medium text-muted-foreground">Step 2</p>
+                <p className="text-sm font-medium mt-0.5">Generate invoices</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Create invoices from completed shifts</p>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-lg mx-auto text-left">
-                <div className="rounded-lg bg-background/80 border p-3">
-                  <p className="text-xs font-medium text-muted-foreground">Step 1</p>
-                  <p className="text-sm font-medium mt-0.5">Log your shifts</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Add shifts with rates to your schedule</p>
-                </div>
-                <div className="rounded-lg bg-background/80 border p-3">
-                  <p className="text-xs font-medium text-muted-foreground">Step 2</p>
-                  <p className="text-sm font-medium mt-0.5">Generate invoices</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Create invoices from completed shifts</p>
-                </div>
-                <div className="rounded-lg bg-background/80 border p-3">
-                  <p className="text-xs font-medium text-muted-foreground">Step 3</p>
-                  <p className="text-sm font-medium mt-0.5">Track payments</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Mark invoices as paid to see estimates</p>
-                </div>
+              <div className="rounded-lg bg-background/80 border p-3">
+                <p className="text-xs font-medium text-muted-foreground">Step 3</p>
+                <p className="text-sm font-medium mt-0.5">Track payments</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Mark invoices as paid to see estimates</p>
               </div>
             </div>
-          )}
+          </div>
         </div>
       </Card>
     );
   }
-
-  const quarterlyAmount = activeEstimate?.quarterlyPayment ?? taxResult.quarterlyPayment;
 
   return (
     <div className="space-y-5">
@@ -494,22 +351,7 @@ export default function TaxDashboard({ profile, onEditProfile, onSaveProfile }: 
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">
                 Next Quarterly Payment · {nextDue.label}
               </p>
-              <p className="text-4xl font-bold text-amber-500">${fmt(quarterlyAmount)}</p>
-
-              {/* Method badge */}
-              <div className="flex items-center justify-center gap-1.5 mt-1.5">
-                <span className="text-xs text-muted-foreground">
-                  Based on {PROJECTION_METHOD_LABELS[estimate.activeMethod] || 'current pace'}
-                </span>
-                {isSafeHarbor && (
-                  <Badge variant="outline" className="text-[10px] py-0 px-1.5 gap-0.5 border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
-                    <Shield className="h-2.5 w-2.5" /> Penalty-proof
-                  </Badge>
-                )}
-                <span className="text-muted-foreground">·</span>
-                <ProjectionMethodPopover profile={profile} onSaveProfile={onSaveProfile} />
-              </div>
-
+              <p className="text-4xl font-bold text-amber-500">${fmt(taxResult.quarterlyPayment)}</p>
               <div className="flex items-center justify-center gap-2 mt-2">
                 <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">Due {nextDue.due}</span>
@@ -531,7 +373,7 @@ export default function TaxDashboard({ profile, onEditProfile, onSaveProfile }: 
                 <div className="rounded-xl bg-background/80 backdrop-blur-sm border p-4 text-center">
                   <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Your 1040-ES Payment</p>
                   <p className="text-[10px] text-muted-foreground">(federal income tax)</p>
-                  <p className="text-2xl font-bold text-amber-500 mt-1">${fmt(quarterlyAmount)}</p>
+                  <p className="text-2xl font-bold text-amber-500 mt-1">${fmt(taxResult.quarterlyPayment)}</p>
                   <p className="text-[10px] text-muted-foreground mt-1">per quarter</p>
                   <p className="text-[10px] text-muted-foreground">Pay via IRS Direct Pay or EFTPS</p>
                 </div>
@@ -545,16 +387,8 @@ export default function TaxDashboard({ profile, onEditProfile, onSaveProfile }: 
               </div>
               <div className="text-center mb-4">
                 <p className="text-sm text-muted-foreground">
-                  Combined quarterly obligation: <strong className="text-foreground">${fmt(quarterlyAmount + (taxResult.scorpPTEQuarterly || 0))}</strong>
+                  Combined quarterly obligation: <strong className="text-foreground">${fmt(taxResult.quarterlyPayment + (taxResult.scorpPTEQuarterly || 0))}</strong>
                 </p>
-                {/* Method badge for PTE */}
-                <div className="flex items-center justify-center gap-1.5 mt-1">
-                  <span className="text-xs text-muted-foreground">
-                    Based on {PROJECTION_METHOD_LABELS[estimate.activeMethod] || 'current pace'}
-                  </span>
-                  <span className="text-muted-foreground">·</span>
-                  <ProjectionMethodPopover profile={profile} onSaveProfile={onSaveProfile} />
-                </div>
                 <div className="flex items-center justify-center gap-2 mt-1">
                   <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
                   <span className="text-sm text-muted-foreground">Due {nextDue.due}</span>
@@ -576,26 +410,16 @@ export default function TaxDashboard({ profile, onEditProfile, onSaveProfile }: 
             </>
           )}
 
-          {/* Early year fallback note */}
-          {estimate.projectionMeta.earlyYearFallback && (
-            <Alert className="border-amber-500/20 bg-amber-500/5 mb-3">
-              <CalendarDays className="h-3.5 w-3.5 text-amber-500" />
-              <AlertDescription className="text-xs text-amber-700 dark:text-amber-400">
-                {estimate.projectionMeta.note || 'Early year estimate — will improve as you log more shifts.'}
-              </AlertDescription>
-            </Alert>
-          )}
-
           {/* KPI Grid */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="rounded-xl bg-background/80 backdrop-blur-sm border p-3 cursor-help">
                   <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-                    {isSafeHarbor ? 'Prior Year Tax' : 'Projected Income'} <Info className="h-3 w-3" />
+                    Total Income <Info className="h-3 w-3" />
                   </p>
-                  <p className="text-xl font-bold mt-1">${fmt(isSafeHarbor ? (profile.prior_year_tax_paid || 0) : totalIncome)}</p>
-                  <p className="text-[10px] text-muted-foreground">{isSafeHarbor ? 'penalty-proof basis' : 'full year projected'}</p>
+                  <p className="text-xl font-bold mt-1">${fmt(totalIncome)}</p>
+                  <p className="text-[10px] text-muted-foreground">earned + projected</p>
                 </div>
               </TooltipTrigger>
               <TooltipContent className="text-xs max-w-xs">{kpiTooltips.totalIncome}</TooltipContent>
@@ -656,7 +480,7 @@ export default function TaxDashboard({ profile, onEditProfile, onSaveProfile }: 
         </DialogContent>
       </Dialog>
 
-      {/* ═══ HOW WE CALCULATE THIS + PROJECTION COMPARISON ═══ */}
+      {/* ═══ HOW WE CALCULATE THIS ═══ */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center gap-2">
@@ -664,76 +488,38 @@ export default function TaxDashboard({ profile, onEditProfile, onSaveProfile }: 
             How We Calculate This
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent>
           <p className="text-sm text-muted-foreground leading-relaxed">{calculationSummary}</p>
-
-          {/* Projection comparison row */}
-          {(estimate.methods.annualGoal || estimate.methods.annualizedActual) && !isSafeHarbor && (
-            <div className="rounded-lg bg-muted/30 border p-3 space-y-1.5">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Income Projection</p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm">
-                {estimate.methods.annualizedActual && (
-                  <div>
-                    <p className="text-xs text-muted-foreground">Current pace</p>
-                    <p className="font-medium">${fmt(estimate.methods.annualizedActual.annualIncome)}</p>
-                  </div>
-                )}
-                {estimate.methods.annualGoal && (
-                  <div>
-                    <p className="text-xs text-muted-foreground">Annual goal</p>
-                    <p className="font-medium">${fmt(estimate.methods.annualGoal.annualIncome)}</p>
-                  </div>
-                )}
-                <div>
-                  <p className="text-xs text-muted-foreground">Active method</p>
-                  <p className="font-medium">{PROJECTION_METHOD_LABELS[estimate.activeMethod] || 'Current pace'}</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Spread disclosure */}
-          {(estimate.spreadSeverity === 'medium' || estimate.spreadSeverity === 'high') && (
-            <Alert className="border-amber-500/20 bg-amber-500/5">
-              <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
-              <AlertDescription className="text-xs text-amber-700 dark:text-amber-400">
-                Your estimate methods range by ${fmt(estimate.spread)} per quarter ({estimate.spreadPercent}% spread).
-                Consider reviewing with your CPA this quarter.
-              </AlertDescription>
-            </Alert>
-          )}
         </CardContent>
       </Card>
 
       {/* ═══ BRACKET VISUALIZATION ═══ */}
-      {!isSafeHarbor && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Federal Tax Bracket</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="grid grid-cols-3 gap-x-4 text-sm">
-              <div>
-                <p className="text-xs text-muted-foreground">Household AGI</p>
-                <p className="font-medium">${fmt(taxResult.agi)}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Standard Deduction</p>
-                <p className="font-medium">−${fmt(STANDARD_DEDUCTIONS[fs])}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Federal Taxable</p>
-                <p className="font-medium">${fmt(taxResult.federalTaxableIncome)}</p>
-              </div>
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">Federal Tax Bracket</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <div className="grid grid-cols-3 gap-x-4 text-sm">
+            <div>
+              <p className="text-xs text-muted-foreground">Household AGI</p>
+              <p className="font-medium">${fmt(taxResult.agi)}</p>
             </div>
-            <BracketVisualization
-              taxableIncome={taxResult.federalTaxableIncome}
-              fs={fs}
-              marginalRate={taxResult.marginalRate}
-            />
-          </CardContent>
-        </Card>
-      )}
+            <div>
+              <p className="text-xs text-muted-foreground">Standard Deduction</p>
+              <p className="font-medium">−${fmt(STANDARD_DEDUCTIONS[fs])}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Federal Taxable</p>
+              <p className="font-medium">${fmt(taxResult.federalTaxableIncome)}</p>
+            </div>
+          </div>
+          <BracketVisualization
+            taxableIncome={taxResult.federalTaxableIncome}
+            fs={fs}
+            marginalRate={taxResult.marginalRate}
+          />
+        </CardContent>
+      </Card>
 
       {/* ═══ INCOME SPLIT BAR ═══ */}
       <Card>
@@ -760,14 +546,14 @@ export default function TaxDashboard({ profile, onEditProfile, onSaveProfile }: 
             const statePaidQ = paymentLogs.getQuarterTotal(dd.label, 'state_personal');
             const ptePaidQ = paymentLogs.getQuarterTotal(dd.label, 'state_pte');
             const totalPaid = fedPaid + statePaidQ + ptePaidQ;
-            const totalDue = quarterlyAmount + (taxResult.scorpPTEQuarterly || 0) + Math.round((taxResult.personalStateTax || 0) / 4);
+            const totalDue = taxResult.quarterlyPayment + (taxResult.scorpPTEQuarterly || 0) + Math.round((taxResult.personalStateTax || 0) / 4);
             const isFullyPaid = totalPaid >= totalDue && totalDue > 0;
             return (
               <Card key={q} className={`${isCurrent ? 'border-primary ring-1 ring-primary/20' : ''}`}>
                 <CardContent className="p-3 text-center">
                   <p className="text-xs font-medium text-muted-foreground">{dd.label}</p>
                   <p className="text-xs text-muted-foreground">{dd.months}</p>
-                  <p className="text-lg font-bold mt-1">${fmt(quarterlyAmount)}</p>
+                  <p className="text-lg font-bold mt-1">${fmt(taxResult.quarterlyPayment)}</p>
                   {hasPTE && (
                     <p className="text-[10px] text-muted-foreground">+ ${fmt(taxResult.scorpPTEQuarterly || 0)} PTE</p>
                   )}
@@ -849,7 +635,7 @@ export default function TaxDashboard({ profile, onEditProfile, onSaveProfile }: 
               <Row label="Total Annual Tax (personal)" value={taxResult.totalAnnualTax} bold negative />
               <Row label="Effective Rate" valueStr={`${taxResult.effectiveRate}%`} />
               <Row label="Marginal Rate" valueStr={`${Math.round(taxResult.marginalRate * 100)}%`} />
-              <Row label="Quarterly 1040-ES Payment" value={quarterlyAmount} bold negative />
+              <Row label="Quarterly 1040-ES Payment" value={taxResult.quarterlyPayment} bold negative />
               {hasPTE && (
                 <Row label="Quarterly PTE Payment (S-Corp)" value={taxResult.scorpPTEQuarterly || 0} bold negative />
               )}
@@ -859,12 +645,10 @@ export default function TaxDashboard({ profile, onEditProfile, onSaveProfile }: 
       </Collapsible>
 
       {/* ═══ WHAT-IF SLIDER ═══ */}
-      {!isSafeHarbor && (
-        <WhatIfSlider
-          currentQuarterlyPayment={quarterlyAmount}
-          onIncomeChange={whatIfCalculator}
-        />
-      )}
+      <WhatIfSlider
+        currentQuarterlyPayment={taxResult.quarterlyPayment}
+        onIncomeChange={whatIfCalculator}
+      />
 
       {/* ═══ SAVE-AS-YOU-GO NUDGE ═══ */}
       <Alert className="border-[hsl(var(--info))] bg-[hsl(var(--chip-info-bg))]">

@@ -2717,7 +2717,6 @@ export type Database = {
       }
       tax_intelligence_profiles: {
         Row: {
-          annual_income_goal: number
           created_at: string
           entity_type: string
           expense_tracking_level: string
@@ -2725,8 +2724,6 @@ export type Database = {
           id: string
           other_w2_income: number
           prior_year_tax_paid: number
-          prior_year_total_income: number
-          projection_method: string
           pte_elected: boolean | null
           retirement_contribution: number
           retirement_type: string
@@ -2742,7 +2739,6 @@ export type Database = {
           ytd_expenses_estimate: number
         }
         Insert: {
-          annual_income_goal?: number
           created_at?: string
           entity_type?: string
           expense_tracking_level?: string
@@ -2750,8 +2746,6 @@ export type Database = {
           id?: string
           other_w2_income?: number
           prior_year_tax_paid?: number
-          prior_year_total_income?: number
-          projection_method?: string
           pte_elected?: boolean | null
           retirement_contribution?: number
           retirement_type?: string
@@ -2767,7 +2761,6 @@ export type Database = {
           ytd_expenses_estimate?: number
         }
         Update: {
-          annual_income_goal?: number
           created_at?: string
           entity_type?: string
           expense_tracking_level?: string
@@ -2775,8 +2768,6 @@ export type Database = {
           id?: string
           other_w2_income?: number
           prior_year_tax_paid?: number
-          prior_year_total_income?: number
-          projection_method?: string
           pte_elected?: boolean | null
           retirement_contribution?: number
           retirement_type?: string
