@@ -56,7 +56,7 @@ export default function TaxReductionGuide({ profile }: Props) {
   const taxResult = useMemo(() => calculateTax(ytdPaidIncome, profile, blendedExpenses), [ytdPaidIncome, profile, blendedExpenses]);
   const marginalRate = taxResult.marginalRate;
 
-  // S-Corp savings estimate
+  const netForCalc = Math.max(0, ytdPaidIncome - blendedExpenses);
   const annualizedNet = netForCalc > 0 ? (netForCalc / Math.max(1, new Date().getMonth() + 1)) * 12 : 0;
   const seTax = round2(Math.min(annualizedNet * SE_TAXABLE_FACTOR, SS_WAGE_CAP) * 0.124 + annualizedNet * SE_TAXABLE_FACTOR * 0.029);
   const salary60 = Math.round(annualizedNet * 0.6);
