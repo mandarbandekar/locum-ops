@@ -205,19 +205,41 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
       .reduce((sum, inv) => sum + inv.total_amount, 0);
   }, [invoices, currentYear]);
 
-  const projectedIncome = useMemo(() => {
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() + 90);
-    return shifts
-      .filter(s => {
-        const d = new Date(s.start_datetime);
-        return d >= now && d <= cutoff;
-      })
-      .reduce((sum, s) => sum + (s.rate_applied || 0), 0);
-  }, [shifts, now]);
+  // (2) Upcoming Scheduled — ALL future shifts this year (not just 90 days)
+  const futureShiftsThisYear = useMemo(() => {
+    return shifts.filter(s => {
+      const d = new Date(s.start_datetime);
+      return d > now && d.getFullYear() === currentYear;
+    });
+  }, [shifts, now, currentYear]);
 
-  const totalIncome = earnedIncome + projectedIncome;
-  const hasAnyIncome = earnedIncome > 0 || projectedIncome > 0;
+  const scheduledIncome = useMemo(() => {
+    return futureShiftsThisYear.reduce((sum, s) => sum + (s.rate_applied || 0), 0);
+  }, [futureShiftsThisYear]);
+
+  // (3) Projected Remainder — fill unscheduled months
+  const { projectedRemainder, projectionSource } = useMemo(() => {
+    const monthsElapsed = now.getMonth(); // 0-indexed = months completed
+    const scheduledMonths = new Set(futureShiftsThisYear.map(s => new Date(s.start_datetime).getMonth()));
+    const remainingUnscheduledMonths = Array.from({ length: 12 }, (_, i) => i)
+      .filter(m => m > now.getMonth() && !scheduledMonths.has(m)).length;
+
+    let remainder = 0;
+    let source: 'prior_year' | 'pace' | 'none' = 'none';
+
+    if (profile.prior_year_total_income > 0) {
+      remainder = (profile.prior_year_total_income / 12) * remainingUnscheduledMonths;
+      source = 'prior_year';
+    } else if (monthsElapsed > 0 && earnedIncome > 0) {
+      remainder = (earnedIncome / monthsElapsed) * remainingUnscheduledMonths;
+      source = 'pace';
+    }
+
+    return { projectedRemainder: Math.round(remainder), projectionSource: source };
+  }, [futureShiftsThisYear, now, earnedIncome, profile.prior_year_total_income]);
+
+  const totalIncome = earnedIncome + scheduledIncome + projectedRemainder;
+  const hasAnyIncome = earnedIncome > 0 || scheduledIncome > 0 || projectedRemainder > 0 || (profile.prior_year_total_income > 0);
   const actualExpenses = ytdDeductibleCents / 100;
   const hasLoggedExpenses = actualExpenses > 0;
   const effectiveExpenses = hasLoggedExpenses ? actualExpenses : (profile.ytd_expenses_estimate || 0);

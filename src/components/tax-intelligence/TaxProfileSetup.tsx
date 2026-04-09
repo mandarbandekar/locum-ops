@@ -469,6 +469,9 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
       spouse_w2_income: spouseW2Income,
       spouse_has_se_income: spouseHasSE,
       spouse_se_net_income: spouseHasSE ? spouseSENet : 0,
+      prior_year_total_income: priorYearIncome,
+      setup_completed_at: new Date().toISOString(),
+      spouse_se_net_income: spouseHasSE ? spouseSENet : 0,
       setup_completed_at: new Date().toISOString(),
     });
     setSaving(false);
