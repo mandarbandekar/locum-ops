@@ -1,51 +1,69 @@
 
 
-# Always Auto-Generate Invoices + Clear Suppression
+# Unified Invoice Detail Page — Improved Lifecycle UX
 
-## Problem
-1. The `auto_generate_invoices` toggle in the Add Facility dialog and other places lets users accidentally disable invoice generation, causing confusion
-2. Oak Grove has a suppressed period blocking current invoice generation
-3. The `auto_generate_invoices` check in DataContext blocks invoice creation when the flag is false
+## Current Issues
 
-## Changes
+1. **Two completely separate panels** — Draft uses `InvoiceEditPanel` + `InvoiceActionBar`, while Sent uses `InvoiceSentPanel`. Switching status feels like loading a different page.
+2. **Sticky bottom action bar only in draft** — After marking sent, all actions move into the left panel cards, losing the prominent CTA pattern.
+3. **Too many cards in sent mode** — Send & Share, Balance, Line Items (read-only), Payment History, and Revert are all separate cards stacked vertically.
+4. **Stepper click → confirmation dialog** is clunky for a simple status transition.
+5. **Mobile**: Preview shows above edit panel (via `order` classes) but no way to toggle between them; both render simultaneously.
 
-### 1. Clear Oak Grove suppression (database)
-Delete the suppression record for Oak Grove so invoices generate for the current period.
+## Design
 
-### 2. Remove auto-generate toggle from Add Facility dialog
-In `src/components/AddFacilityDialog.tsx`:
-- Remove the `autoGenerateInvoices` state variable and `Switch` UI (lines 64, 439-453)
-- Always pass `auto_generate_invoices: true` in the submit handler (line 119)
+### Single unified page with a persistent action strip
 
-### 3. Remove auto-generate toggle from Manual Facility Form (onboarding)
-In `src/components/onboarding/ManualFacilityForm.tsx`:
-- Remove the `autoGenerateInvoices` state and `Switch` UI
-- Always pass `auto_generate_invoices: true`
+Instead of swapping between two entirely different panel components, keep one consistent layout across all statuses:
 
-### 4. Remove auto-generate gate in DataContext
-In `src/contexts/DataContext.tsx` line 296:
-- Remove the `facility.auto_generate_invoices` condition so every new shift triggers draft generation regardless of the flag
+```text
+┌─────────────────────────────────────────────┐
+│ ← Back  INV-2026-001  [Draft]  Facility     │
+│ ●─────────●─────────○  Draft → Sent → Paid  │
+├──────────────────┬──────────────────────────┤
+│  Edit/Info Panel │  Live Preview (sticky)    │
+│  (always present │                           │
+│   but read-only  │                           │
+│   when not draft)│                           │
+├──────────────────┴──────────────────────────┤
+│  [Contextual Action Bar — always visible]    │
+│  Draft: Save Draft | PDF | → Mark as Sent    │
+│  Sent:  PDF | Share | Record Payment         │
+│  Paid:  PDF | Share | ✓ Paid in Full         │
+└─────────────────────────────────────────────┘
+```
 
-### 5. Remove auto-generate toggle from InvoicingPreferencesCard
-In `src/components/facilities/InvoicingPreferencesCard.tsx`:
-- Remove the auto-generate `Switch` from the facility detail edit form
-- Always save `auto_generate_invoices: true`
+### Key Changes
 
-### 6. Remove auto-generate toggle from Invoice Onboarding Stepper
-In `src/components/invoice/InvoiceOnboardingStepper.tsx`:
-- Remove the per-facility auto-generate `Switch`
-- Always save `auto_generate_invoices: true`
+**1. Unified left panel** — Replace the `InvoiceEditPanel` / `InvoiceSentPanel` swap with a single component:
+- **Draft**: Editable fields (invoice #, dates, notes, line items) — same as today
+- **Sent/Overdue/Partial**: Same layout but fields become read-only text with an inline "Edit" button that reverts to draft
+- **Paid**: Read-only with paid confirmation banner
+
+**2. Persistent contextual action bar** — The sticky bottom bar stays visible in ALL statuses, not just draft:
+- **Draft**: `Save Draft` | `PDF` | `→ Mark as Sent`
+- **Sent**: `PDF` | `Share Link` | `Record Payment`
+- **Overdue**: `Send Reminder` | `PDF` | `Record Payment`
+- **Partial**: `PDF` | `Record Payment ($X remaining)`
+- **Paid**: `PDF` | `Share` | `✓ Paid` (muted)
+
+**3. Inline payment recording** — Instead of a dialog, expand a payment form inline in the left panel when "Record Payment" is clicked, keeping the user on the same page.
+
+**4. Stepper improvements** — Direct status transitions on click without the intermediate confirmation dialog (keep only for backward moves like Sent → Draft).
+
+**5. Mobile toggle** — On small screens, add a tab toggle (`Edit` / `Preview`) instead of stacking both panels. Only one shows at a time.
+
+**6. Payment history + timeline** — Collapse these into an expandable section at the bottom of the left panel instead of separate cards.
 
 ## Files
 
 | File | Change |
 |---|---|
-| Database | Delete suppression record for Oak Grove |
-| `src/components/AddFacilityDialog.tsx` | Remove toggle, always true |
-| `src/components/onboarding/ManualFacilityForm.tsx` | Remove toggle, always true |
-| `src/contexts/DataContext.tsx` | Remove `auto_generate_invoices` gate |
-| `src/components/facilities/InvoicingPreferencesCard.tsx` | Remove toggle, always true |
-| `src/components/invoice/InvoiceOnboardingStepper.tsx` | Remove toggle, always true |
+| `src/pages/InvoiceDetailPage.tsx` | Unify layout: remove panel swap, add mobile tab toggle, always render action bar, remove stepper confirmation for forward moves |
+| `src/components/invoice/InvoiceActionBar.tsx` | Make status-aware: render contextual buttons for all statuses (draft/sent/overdue/partial/paid) |
+| `src/components/invoice/InvoiceEditPanel.tsx` | Add `readOnly` prop: when true, render fields as text instead of inputs, with an "Edit (revert to draft)" link |
+| `src/components/invoice/InvoiceSentPanel.tsx` | Remove — functionality absorbed into unified EditPanel + ActionBar |
+| `src/components/invoice/InvoiceStepper.tsx` | Remove confirmation dialog for forward transitions; keep only for backward moves |
 
-The `auto_generate_invoices` column stays in the database (always `true`) to avoid a migration. The UI simply no longer exposes it.
+No database changes needed.
 
