@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, X, Lightbulb } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useSidebar } from '@/components/ui/sidebar';
 
 export interface TourStep {
   targetSelector: string;
@@ -56,12 +57,28 @@ function getPlacement(targetRect: Rect, placement: string, tooltipW: number, too
   return { top, left };
 }
 
+const SIDEBAR_TOUR_IDS = ['facilities', 'schedule', 'invoices', 'business', 'tax'];
+
+function isSidebarStep(selector: string) {
+  return SIDEBAR_TOUR_IDS.some(id => selector.includes(`data-tour="${id}"`));
+}
+
 export function SpotlightTour({ steps, isOpen, onClose }: SpotlightTourProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [targetRect, setTargetRect] = useState<Rect | null>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const [visible, setVisible] = useState(false);
+  const { state: sidebarState, setOpen: setSidebarOpen } = useSidebar();
+  const sidebarWasCollapsedRef = useRef(false);
+
+  const handleClose = useCallback(() => {
+    if (sidebarWasCollapsedRef.current) {
+      setSidebarOpen(false);
+      sidebarWasCollapsedRef.current = false;
+    }
+    onClose();
+  }, [onClose, setSidebarOpen]);
 
   const step = steps[currentStep];
 
@@ -82,9 +99,18 @@ export function SpotlightTour({ steps, isOpen, onClose }: SpotlightTourProps) {
     });
   }, [step]);
 
-  // Expand sidebar collapsible groups when targeting sidebar items
+  // Expand sidebar when targeting sidebar items
   useEffect(() => {
     if (!isOpen || !step) return;
+
+    // If this is a sidebar step and sidebar is collapsed, expand it
+    if (isSidebarStep(step.targetSelector) && sidebarState === 'collapsed') {
+      sidebarWasCollapsedRef.current = true;
+      setSidebarOpen(true);
+      setTimeout(updateRect, 350);
+      return;
+    }
+
     const el = document.querySelector(step.targetSelector);
     if (!el) {
       // Try expanding collapsed sidebar groups
@@ -93,10 +119,9 @@ export function SpotlightTour({ steps, isOpen, onClose }: SpotlightTourProps) {
         const trigger = c.querySelector('[data-radix-collapsible-trigger]') as HTMLElement;
         if (trigger) trigger.click();
       });
-      // Retry after expansion animation
       setTimeout(updateRect, 350);
     }
-  }, [isOpen, step, updateRect]);
+  }, [isOpen, step, updateRect, sidebarState, setSidebarOpen]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -146,13 +171,13 @@ export function SpotlightTour({ steps, isOpen, onClose }: SpotlightTourProps) {
   useEffect(() => {
     if (!isOpen) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') handleClose();
       if (e.key === 'ArrowRight' && currentStep < steps.length - 1) setCurrentStep(s => s + 1);
       if (e.key === 'ArrowLeft' && currentStep > 0) setCurrentStep(s => s - 1);
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [isOpen, currentStep, steps.length, onClose]);
+  }, [isOpen, currentStep, steps.length, handleClose]);
 
   if (!isOpen || !step) return null;
 
@@ -201,7 +226,7 @@ export function SpotlightTour({ steps, isOpen, onClose }: SpotlightTourProps) {
                 Step {currentStep + 1} of {steps.length}
               </span>
               <button
-                onClick={onClose}
+                onClick={handleClose}
                 className="p-1 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
               >
                 <X className="h-3.5 w-3.5" />
@@ -234,7 +259,7 @@ export function SpotlightTour({ steps, isOpen, onClose }: SpotlightTourProps) {
           <Button
             variant="ghost"
             size="sm"
-            onClick={onClose}
+            onClick={handleClose}
             className="text-xs text-muted-foreground hover:text-foreground"
           >
             Skip Tour
@@ -254,7 +279,7 @@ export function SpotlightTour({ steps, isOpen, onClose }: SpotlightTourProps) {
             <Button
               size="sm"
               onClick={() => {
-                if (isLast) onClose();
+                if (isLast) handleClose();
                 else setCurrentStep(s => s + 1);
               }}
               className="h-8 px-4 text-xs"
