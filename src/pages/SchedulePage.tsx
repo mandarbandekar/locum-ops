@@ -72,6 +72,7 @@ export default function SchedulePage() {
   const { shifts, facilities, terms, addShift, updateShift, deleteShift, updateFacility, timeBlocks, addTimeBlock, updateTimeBlock, deleteTimeBlock, invoices, lineItems } = useData();
   const { getEventsForDay } = useCalendarEvents();
   const { profile: taxProfile, hasProfile: hasTaxProfile } = useTaxIntelligence();
+  const scheduleTour = useSpotlightTour('locumops_tour_schedule');
 
   // Build set of paid shift IDs and compute effective rate
   const paidShiftIds = useMemo(() => {
@@ -336,7 +337,7 @@ export default function SchedulePage() {
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           <h1 className="page-title">Schedule</h1>
           {isCalendarView && (
-            <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2" data-tour="schedule-add-shift">
               <Button size="sm" onClick={() => setShowAdd(true)} className="h-8 text-[11px] sm:text-[13px] px-2.5 sm:px-4">
                 <Plus className="mr-1 h-3.5 w-3.5" /> <span className="hidden xs:inline">Add </span>Shift
               </Button>
@@ -345,8 +346,17 @@ export default function SchedulePage() {
               </Button>
             </div>
           )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={scheduleTour.startTour}
+            className="ml-auto gap-1.5 text-xs text-primary hover:bg-primary/10"
+          >
+            <Compass className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Tour</span>
+          </Button>
         </div>
-        <div className="flex gap-1 sm:gap-2 flex-wrap overflow-x-auto">
+        <div className="flex gap-1 sm:gap-2 flex-wrap overflow-x-auto" data-tour="schedule-view-switcher">
           <Button size="sm" variant={view === 'month' ? 'default' : 'outline'} onClick={() => setView('month')} className="h-8 text-[12px] sm:text-[13px] px-2.5 sm:px-4">
             <CalendarDays className="mr-1 sm:mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" /> Month
           </Button>
@@ -356,10 +366,10 @@ export default function SchedulePage() {
           <Button size="sm" variant={view === 'list' ? 'default' : 'outline'} onClick={() => setView('list')} className="h-8 text-[12px] sm:text-[13px] px-2.5 sm:px-4">
             <List className="mr-1 sm:mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" /> List
           </Button>
-          <Button size="sm" variant={view === 'confirmations' ? 'default' : 'outline'} onClick={() => setView('confirmations')} className="h-8 text-[12px] sm:text-[13px] px-2.5 sm:px-4">
+          <Button data-tour="schedule-confirmations" size="sm" variant={view === 'confirmations' ? 'default' : 'outline'} onClick={() => setView('confirmations')} className="h-8 text-[12px] sm:text-[13px] px-2.5 sm:px-4">
             <CheckSquare className="mr-1 sm:mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" /> <span className="hidden sm:inline">Clinic </span>Confirm
           </Button>
-          <Button size="sm" variant={view === 'sync' ? 'default' : 'outline'} onClick={() => setView('sync')} className="h-8 text-[12px] sm:text-[13px] px-2.5 sm:px-4">
+          <Button data-tour="schedule-sync" size="sm" variant={view === 'sync' ? 'default' : 'outline'} onClick={() => setView('sync')} className="h-8 text-[12px] sm:text-[13px] px-2.5 sm:px-4">
             <RefreshCw className="mr-1 sm:mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" /> Sync
           </Button>
         </div>
@@ -586,6 +596,8 @@ export default function SchedulePage() {
           onDelete={async (id) => { await deleteTimeBlock(id); setEditBlock(null); toast.success('Time block deleted'); }}
         />
       )}
+
+      <SpotlightTour steps={SCHEDULE_TOUR_STEPS} isOpen={scheduleTour.isOpen} onClose={scheduleTour.closeTour} />
     </div>
   );
 }
