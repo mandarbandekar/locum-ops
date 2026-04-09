@@ -65,10 +65,10 @@ export function WorkspaceReady({ facilities, shifts, invoices, taxEnabled, shift
   ];
 
   const nextSteps = [
-    'Add your credentials (DEA, state license, USDA)',
-    'Set up email reminders for invoices',
-    'Customize your invoice template',
-    'Log more shifts to improve tax accuracy',
+    'Add your credentials — get renewal reminders before they expire',
+    'Set up email reminders — auto-nudge clinics when payment is due',
+    'Customize your invoice template — add your logo, payment instructions, and terms',
+    'Log more shifts — quarterly tax estimates get smarter over time',
   ];
 
   const handleNavigate = async (path: string) => {
@@ -100,6 +100,7 @@ export function WorkspaceReady({ facilities, shifts, invoices, taxEnabled, shift
           </div>
           <h2 className="text-2xl font-bold text-foreground font-[Manrope]">You're all set</h2>
           <p className="text-muted-foreground">Your relief business has a home now. Here's what's ready:</p>
+          <p className="text-xs text-muted-foreground max-w-sm mx-auto">Each of these tools works together. Log shifts to auto-generate invoices. Invoices feed your earnings reports and tax estimates. Everything stays in sync.</p>
         </div>
 
         {/* Result Cards */}

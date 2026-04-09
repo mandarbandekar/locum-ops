@@ -221,6 +221,18 @@ export default function OnboardingPage() {
             >
               {profileAllFilled ? "Looks good, let's go" : 'Continue'} <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
+
+            {/* What is LocumOps? */}
+            <Card className="bg-muted/30 border-dashed">
+              <CardContent className="p-4 space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">What LocumOps does for you</p>
+                <ul className="space-y-1.5 text-sm text-muted-foreground">
+                  <li className="flex items-start gap-2"><Check className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" /> Centralize your clinics, shifts, and invoices in one place</li>
+                  <li className="flex items-start gap-2"><Check className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" /> Auto-generate invoices when you log shifts</li>
+                  <li className="flex items-start gap-2"><Check className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" /> Track taxes and credentials so nothing slips through the cracks</li>
+                </ul>
+              </CardContent>
+            </Card>
           </div>
         );
 
@@ -318,6 +330,16 @@ export default function OnboardingPage() {
               <Lightbulb className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
               <span>The day rate you set here becomes the default when you log shifts — saves you from re-entering it every time.</span>
             </div>
+
+            {/* Why add clinics? */}
+            <Card className="bg-muted/30 border-dashed">
+              <CardContent className="p-4">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Why add clinics?</p>
+                <p className="text-sm text-muted-foreground">
+                  Each clinic you add becomes a billing entity. When you log shifts at this clinic, LocumOps auto-generates invoices, tracks payments, and builds your earnings reports — no spreadsheets needed.
+                </p>
+              </CardContent>
+            </Card>
 
             <AddFacilityDialog open={facilityDialogOpen} onOpenChange={handleFacilityDialogChange} />
           </div>

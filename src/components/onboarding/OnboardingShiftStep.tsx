@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { ArrowRight, Building2, MapPin, Zap, FileText, TrendingUp, Plus } from 'lucide-react';
+import { ArrowRight, Building2, MapPin, Zap, FileText, TrendingUp, Plus, ClipboardList, ChevronRight } from 'lucide-react';
 import { format, subDays } from 'date-fns';
 import type { Facility, Shift, TermsSnapshot, Invoice, InvoiceLineItem } from '@/types';
 import { AddFacilityDialog } from '@/components/AddFacilityDialog';
@@ -97,6 +97,32 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
         </p>
       </div>
 
+      {/* How it works strip */}
+      {!submitted && (
+        <div className="flex items-center justify-between gap-2 bg-muted/50 rounded-xl p-3">
+          <div className="flex flex-col items-center gap-1 flex-1 text-center">
+            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <ClipboardList className="h-4 w-4 text-primary" />
+            </div>
+            <span className="text-[11px] text-muted-foreground font-medium leading-tight">Log a shift</span>
+          </div>
+          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
+          <div className="flex flex-col items-center gap-1 flex-1 text-center">
+            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <FileText className="h-4 w-4 text-primary" />
+            </div>
+            <span className="text-[11px] text-muted-foreground font-medium leading-tight">Invoice auto-created</span>
+          </div>
+          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
+          <div className="flex flex-col items-center gap-1 flex-1 text-center">
+            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <TrendingUp className="h-4 w-4 text-primary" />
+            </div>
+            <span className="text-[11px] text-muted-foreground font-medium leading-tight">Track earnings</span>
+          </div>
+        </div>
+      )}
+
       {/* Shift Form */}
       <div ref={formRef} className={`space-y-4 transition-opacity duration-300 ${submitted ? 'opacity-50' : ''}`}>
         {/* Facility reference */}
@@ -182,7 +208,7 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
             </div>
             <div>
               <p className="font-semibold text-foreground">Invoice auto-generated</p>
-              <p className="text-sm text-muted-foreground">Ready to review and send from your portal</p>
+              <p className="text-sm text-muted-foreground">Every shift you log automatically creates a draft invoice. Review, edit, and send it from your Invoices page — or set up auto-reminders.</p>
             </div>
           </div>
 
@@ -221,6 +247,10 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
                 <span className="text-sm font-semibold">Total due</span>
                 <span className="text-lg font-bold text-foreground">${shiftRate.toLocaleString()}</span>
               </div>
+
+              <p className="text-xs text-muted-foreground pt-2 border-t">
+                This is a real draft saved to your account. Head to Invoices anytime to review, customize, or send it to the clinic.
+              </p>
             </CardContent>
           </Card>
 
@@ -235,7 +265,7 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
                 ${shiftRate.toLocaleString()}
               </p>
               <Progress value={35} className="h-2" />
-              <p className="text-xs text-muted-foreground">Based on 1 shift · Keep logging to see trends</p>
+              <p className="text-xs text-muted-foreground">Based on 1 shift · Your Business Hub tracks weekly, monthly, and annual earnings across all clinics. The more shifts you log, the more accurate your financial picture becomes.</p>
             </CardContent>
           </Card>
 
