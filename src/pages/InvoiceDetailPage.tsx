@@ -262,9 +262,9 @@ export default function InvoiceDetailPage() {
       </div>
 
       {/* Main layout: Edit Panel + Live Preview */}
-      <div className="grid gap-6 lg:grid-cols-5">
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-5">
         {/* LEFT: Edit / Sent Panel */}
-        <div className="lg:col-span-2 space-y-3 print:hidden">
+        <div className="lg:col-span-2 space-y-3 print:hidden order-2 lg:order-1">
           {isDraft ? (
             <InvoiceEditPanel
               invoice={invoice}
@@ -306,7 +306,7 @@ export default function InvoiceDetailPage() {
         </div>
 
         {/* RIGHT: Live Preview — sticky & prominent */}
-        <div className="lg:col-span-3 lg:sticky lg:top-4 self-start" id="invoice-print-area">
+        <div className="lg:col-span-3 lg:sticky lg:top-4 self-start order-1 lg:order-2" id="invoice-print-area">
           <div className="mb-2 flex items-center justify-between print:hidden">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Live Preview</p>
             {isDraft && <span className="text-[10px] text-muted-foreground">Changes update in real-time</span>}

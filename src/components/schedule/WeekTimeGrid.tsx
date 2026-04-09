@@ -74,9 +74,9 @@ export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, o
   }, [weekDays, shifts]);
 
   return (
-    <div className="rounded-lg border bg-card overflow-hidden">
+    <div className="rounded-lg border bg-card overflow-x-auto -mx-3 sm:mx-0">
       {/* Day headers */}
-      <div className="grid bg-muted/50" style={{ gridTemplateColumns: `${GUTTER_WIDTH}px repeat(7, 1fr)` }}>
+      <div className="grid bg-muted/50 min-w-[700px]" style={{ gridTemplateColumns: `${GUTTER_WIDTH}px repeat(7, 1fr)` }}>
         <div className="p-2 border-r" />
         {weekDays.map((d, di) => {
           const isToday = isSameDay(d, new Date());
@@ -104,7 +104,7 @@ export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, o
 
       {/* All-day calendar events row */}
       {calendarFilters && getEventsForDay && (calendarFilters.credentials || calendarFilters.subscriptions) && (
-        <div className="grid border-t" style={{ gridTemplateColumns: `${GUTTER_WIDTH}px repeat(7, 1fr)` }}>
+        <div className="grid border-t min-w-[700px]" style={{ gridTemplateColumns: `${GUTTER_WIDTH}px repeat(7, 1fr)` }}>
           <div className="p-1 border-r text-[9px] text-muted-foreground text-right pr-2">All day</div>
           {weekDays.map(d => {
             const events = getEventsForDay(d, calendarFilters);
@@ -119,7 +119,7 @@ export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, o
 
       {/* Time grid body */}
       <ScrollArea className="h-[600px]">
-        <div ref={gridRef} className="relative" style={{ height: `${HOURS.length * HOUR_HEIGHT}px` }}>
+        <div ref={gridRef} className="relative min-w-[700px]" style={{ height: `${HOURS.length * HOUR_HEIGHT}px` }}>
           {/* Hour rows – grid lines + labels + drop zones */}
           {HOURS.map((hour, rowIdx) => (
             <div

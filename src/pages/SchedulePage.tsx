@@ -291,21 +291,21 @@ export default function SchedulePage() {
 
   return (
     <div>
-      <div className="page-header flex-col sm:flex-row gap-3">
-        <div className="flex items-center gap-3">
+      <div className="page-header flex-col gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           <h1 className="page-title">Schedule</h1>
           {isCalendarView && (
-            <div className="flex items-center gap-2">
-              <Button size="sm" onClick={() => setShowAdd(true)} className="h-8 text-[12px] sm:text-[13px] px-3 sm:px-4">
-                <Plus className="mr-1 sm:mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" /> Add Shift
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <Button size="sm" onClick={() => setShowAdd(true)} className="h-8 text-[11px] sm:text-[13px] px-2.5 sm:px-4">
+                <Plus className="mr-1 h-3.5 w-3.5" /> <span className="hidden xs:inline">Add </span>Shift
               </Button>
-              <Button size="sm" variant="outline" onClick={() => { setBlockTimeDefaultDate(undefined); setShowBlockTime(true); }} className="h-8 text-[12px] sm:text-[13px] px-3 sm:px-4">
-                <Ban className="mr-1 sm:mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" /> Block Time
+              <Button size="sm" variant="outline" onClick={() => { setBlockTimeDefaultDate(undefined); setShowBlockTime(true); }} className="h-8 text-[11px] sm:text-[13px] px-2.5 sm:px-4">
+                <Ban className="mr-1 h-3.5 w-3.5" /> Block
               </Button>
             </div>
           )}
         </div>
-        <div className="flex gap-1.5 sm:gap-2 flex-wrap">
+        <div className="flex gap-1 sm:gap-2 flex-wrap overflow-x-auto">
           <Button size="sm" variant={view === 'month' ? 'default' : 'outline'} onClick={() => setView('month')} className="h-8 text-[12px] sm:text-[13px] px-2.5 sm:px-4">
             <CalendarDays className="mr-1 sm:mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" /> Month
           </Button>
@@ -346,7 +346,7 @@ export default function SchedulePage() {
           </div>
 
           {totalShiftsInRange > 0 && (
-            <div className="flex items-center gap-4 mb-4 px-1 text-sm text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-4 px-1 text-xs sm:text-sm text-muted-foreground">
               <span className="flex items-center gap-1.5"><CalendarDays className="h-3.5 w-3.5" /> <span className="font-medium text-foreground">{totalShiftsInRange}</span> shifts</span>
               <span className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /> <span className="font-medium text-foreground">{totalHoursInRange}</span> hours</span>
               <span className="flex items-center gap-1.5"><DollarSign className="h-3.5 w-3.5" /> <span className="font-medium text-foreground">${totalRevenueInRange.toLocaleString()}</span> expected</span>
@@ -359,8 +359,8 @@ export default function SchedulePage() {
 
           {view === 'month' ? (
             <>
-              <div className="rounded-lg border bg-card overflow-x-auto">
-                <div className="min-w-[500px]">
+              <div className="rounded-lg border bg-card overflow-x-auto -mx-3 sm:mx-0">
+                <div className="min-w-[420px]">
                   <div className="grid grid-cols-7 bg-muted/50">
                     {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
                       <div key={d} className="p-1.5 sm:p-2 text-center text-[10px] sm:text-xs font-medium text-muted-foreground">{d}</div>

@@ -73,7 +73,7 @@ export default function SettingsProfilePage() {
         <Card>
           <CardHeader><CardTitle className="text-base">Identity</CardTitle></CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label>First name</Label>
                 <Input value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Jane" />
@@ -118,7 +118,7 @@ export default function SettingsProfilePage() {
                 helperText="Used to calculate driving distance to clinics. Not shared."
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label>Email</Label>
                 <Input type="email" value={invoiceEmail} onChange={e => setInvoiceEmail(e.target.value)} placeholder="jane@example.com" />
@@ -129,7 +129,7 @@ export default function SettingsProfilePage() {
                 <Input value={invoicePhone} onChange={e => setInvoicePhone(e.target.value)} placeholder="503-555-1234" />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label>Timezone</Label>
                 <Input value={timezone} onChange={e => setTimezone(e.target.value)} />
