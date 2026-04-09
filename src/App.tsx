@@ -91,6 +91,7 @@ function AuthenticatedApp() {
           <Route path="/reports" element={<Navigate to="/business" replace />} />
           <Route path="/taxes" element={<Navigate to="/tax-center" replace />} />
           <Route path="/tax-strategy" element={<Navigate to="/tax-center" replace />} />
+          <Route path="/tax-strategies" element={<Navigate to="/tax-center?tab=tax-strategies" replace />} />
           {/* Settings */}
           <Route path="/settings/profile" element={<SettingsProfilePage />} />
           <Route path="/settings/scheduling" element={<SettingsSchedulingPage />} />
