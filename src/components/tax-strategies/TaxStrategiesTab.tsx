@@ -22,7 +22,7 @@ export default function TaxStrategiesTab() {
         <div className="p-4 rounded-full bg-primary/10 mb-4">
           <Lightbulb className="h-8 w-8 text-primary" />
         </div>
-        <h3 className="text-lg font-semibold text-foreground mb-2">Tax Strategies Unlock After 4 Shifts</h3>
+        <h3 className="text-lg font-semibold text-foreground mb-2">Personalized Tax Strategy Unlocks After 4 Shifts</h3>
         <p className="text-sm text-muted-foreground max-w-md">
           Log at least 4 completed shifts so we can estimate your annualized income and generate
           personalized tax-saving strategies. You've completed {paidShiftCount} so far — {4 - paidShiftCount} more to go!
@@ -67,7 +67,7 @@ export default function TaxStrategiesTab() {
       {/* Eligible Strategies */}
       {eligibleStrategies.length > 0 && (
         <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-foreground">Available Strategies</h3>
+          <h3 className="text-sm font-semibold text-foreground">Available Tax Strategies</h3>
           {eligibleStrategies.map(s => (
             <StrategyCard
               key={s.id}
