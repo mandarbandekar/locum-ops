@@ -9,7 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Trash2, AlertTriangle, Layers, Undo2, ArrowRight, Mail, FileText, Eye } from 'lucide-react';
+import { ArrowLeft, Trash2, AlertTriangle, Layers, Undo2, ArrowRight, Mail, FileText, Eye, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
 import { toast } from 'sonner';
@@ -78,6 +78,7 @@ export default function InvoiceDetailPage() {
   const invoiceActivities = activities.filter(a => a.invoice_id === id).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   const computedStatus = computeInvoiceStatus(invoice);
   const isDraft = invoice.status === 'draft';
+  const isPaid = invoice.status === 'paid';
   const statusConfig = STATUS_CONFIG[computedStatus] || STATUS_CONFIG.draft;
 
   const handleDelete = async () => {
