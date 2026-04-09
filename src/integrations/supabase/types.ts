@@ -2997,6 +2997,51 @@ export type Database = {
         }
         Relationships: []
       }
+      tax_strategy_inputs: {
+        Row: {
+          created_at: string
+          deduction_checklist: Json
+          dismissed_strategies: string[]
+          home_office_sqft: number
+          id: string
+          prior_year_tax: number
+          retirement_contribution_slider: number
+          retirement_vehicle: string
+          scorp_salary_slider: number
+          updated_at: string
+          user_id: string
+          weekly_business_miles: number
+        }
+        Insert: {
+          created_at?: string
+          deduction_checklist?: Json
+          dismissed_strategies?: string[]
+          home_office_sqft?: number
+          id?: string
+          prior_year_tax?: number
+          retirement_contribution_slider?: number
+          retirement_vehicle?: string
+          scorp_salary_slider?: number
+          updated_at?: string
+          user_id?: string
+          weekly_business_miles?: number
+        }
+        Update: {
+          created_at?: string
+          deduction_checklist?: Json
+          dismissed_strategies?: string[]
+          home_office_sqft?: number
+          id?: string
+          prior_year_tax?: number
+          retirement_contribution_slider?: number
+          retirement_vehicle?: string
+          scorp_salary_slider?: number
+          updated_at?: string
+          user_id?: string
+          weekly_business_miles?: number
+        }
+        Relationships: []
+      }
       terms_snapshots: {
         Row: {
           cancellation_policy_text: string
