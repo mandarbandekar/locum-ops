@@ -95,6 +95,14 @@ export function OnboardingTaxStep({ shiftRate, hasShiftData, timezone, onContinu
               <p className="text-xs text-muted-foreground">
                 Based on ~60 shift-days/quarter at ${rate}/day · 30% effective rate · Refines as you log more shifts
               </p>
+
+              {/* How we calculate this */}
+              <div className="bg-muted/50 rounded-lg p-3 space-y-1">
+                <p className="text-xs font-semibold text-muted-foreground">How we calculate this</p>
+                <p className="text-xs text-muted-foreground">
+                  We project your quarterly income based on your day rate and an average of 60 shift-days per quarter. Your effective tax rate (30%) includes federal income tax, self-employment tax, and an estimated state rate. These numbers refine automatically as you log more shifts throughout the year.
+                </p>
+              </div>
             </CardContent>
           </Card>
 
@@ -107,7 +115,7 @@ export function OnboardingTaxStep({ shiftRate, hasShiftData, timezone, onContinu
                   At your current rate, an S-Corp election could save you ~${scorpSavings.toLocaleString(undefined, { maximumFractionDigits: 0 })}/quarter.
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  We'll show you when it makes sense based on your actual income data.
+                  LocumOps monitors your income trajectory and will alert you when switching to an S-Corp structure could meaningfully reduce your self-employment tax burden.
                 </p>
               </div>
             </CardContent>
@@ -118,7 +126,7 @@ export function OnboardingTaxStep({ shiftRate, hasShiftData, timezone, onContinu
         <Card className="bg-muted/20 border-dashed">
           <CardContent className="p-6 text-center space-y-3">
             <p className="text-muted-foreground text-sm">
-              Log your first shift to see your personalized tax estimate.
+              Tax Intelligence automatically calculates your estimated quarterly taxes, tracks payment deadlines, and alerts you before due dates. It uses your actual shift income — no manual data entry needed.
             </p>
             <div className="rounded-xl bg-muted/50 p-6 opacity-50">
               <div className="grid grid-cols-2 gap-4">
@@ -138,6 +146,7 @@ export function OnboardingTaxStep({ shiftRate, hasShiftData, timezone, onContinu
 
       {/* Tax toggle + disclaimer */}
       <div className="space-y-3">
+        <div className="space-y-1.5">
         <div className="flex items-center justify-between p-3 rounded-lg border border-border">
           <Label htmlFor="tax-toggle" className="cursor-pointer text-sm font-medium">
             Keep tracking my taxes automatically
@@ -147,6 +156,8 @@ export function OnboardingTaxStep({ shiftRate, hasShiftData, timezone, onContinu
             checked={taxEnabled}
             onCheckedChange={setTaxEnabled}
           />
+        </div>
+        <p className="text-xs text-muted-foreground px-1">You can always enable or disable this later in Settings → Business & Taxes.</p>
         </div>
 
         {taxEnabled && (
