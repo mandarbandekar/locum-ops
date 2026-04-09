@@ -100,7 +100,8 @@ export default function OnboardingPage() {
 
   // Auto-advance for profile step when all fields pre-filled from OAuth
   useEffect(() => {
-    if (phase === 'profile' && !userEdited) {
+    const isOAuth = user?.app_metadata?.provider === 'google';
+    if (phase === 'profile' && !userEdited && isOAuth) {
       const allFilled = firstName.trim() && lastName.trim() && userEmail && timezone;
       if (allFilled) {
         setShowWelcome(true);
@@ -113,7 +114,7 @@ export default function OnboardingPage() {
       if (autoAdvanceRef.current) clearTimeout(autoAdvanceRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, firstName, lastName, userEmail, timezone, userEdited]);
+  }, [phase, firstName, lastName, userEmail, timezone, userEdited, user]);
 
   const cancelAutoAdvance = () => {
     setUserEdited(true);
