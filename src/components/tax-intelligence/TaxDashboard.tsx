@@ -13,7 +13,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   CalendarDays, ChevronDown, DollarSign, Calculator, Settings2,
-  Clock, CheckCircle2, TrendingUp, Info, CreditCard, Lightbulb,
+  Clock, CheckCircle2, TrendingUp, Info, CreditCard, Lightbulb, BarChart3,
 } from 'lucide-react';
 import IncomeSplitBar from './IncomeSplitBar';
 import WhatIfSlider from './WhatIfSlider';
@@ -216,6 +216,7 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
   }, [shifts, now]);
 
   const totalIncome = earnedIncome + projectedIncome;
+  const hasAnyIncome = earnedIncome > 0 || projectedIncome > 0;
   const actualExpenses = ytdDeductibleCents / 100;
   const blendedExpenses = Math.max(actualExpenses, profile.ytd_expenses_estimate || 0);
 
@@ -264,6 +265,59 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
     }
     return `Based on $${fmt(totalIncome)} in income minus $${fmt(taxResult.expenses)} in expenses, your net income is $${fmt(taxResult.netIncome)}. We calculate $${fmt(taxResult.seTax)} in self-employment tax (15.3% on 92.35%), deduct half ($${fmt(taxResult.seDeduction)}) for AGI${profile.retirement_contribution > 0 ? `, subtract your $${fmt(profile.retirement_contribution)} retirement contribution` : ''}${(profile.spouse_w2_income || 0) > 0 ? `, add spouse W-2 income of $${fmt(profile.spouse_w2_income)}` : ''}, apply the $${fmt(STANDARD_DEDUCTIONS[fs])} standard deduction, and run 2026 federal brackets on $${fmt(taxResult.federalTaxableIncome)} taxable income. ${stateInfo?.label ? `Your ${stateInfo.label} state tax uses progressive rates on your net income.` : ''} Combined: $${fmt(taxResult.totalAnnualTax)}/year or $${fmt(taxResult.quarterlyPayment)}/quarter.`;
   }, [isScorp, taxResult, totalIncome, fs, profile, stateInfo, hasPTE]);
+
+  // ── Gate: require some income before showing tax estimates ──
+  if (!hasAnyIncome) {
+    return (
+      <Card className="overflow-hidden border-primary/20">
+        <div className="bg-gradient-to-br from-primary/5 via-primary/3 to-transparent p-6">
+          <div className="flex items-start justify-between mb-6">
+            <div>
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Calculator className="h-5 w-5 text-primary" />
+                {currentYear} Tax Intelligence
+              </h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Filing as {FILING_STATUS_LABELS[fs] || 'Single'}
+                {profile.state_code ? ` · ${profile.state_code}` : ''}
+              </p>
+            </div>
+            <Button variant="ghost" size="sm" onClick={onEditProfile} className="text-xs gap-1">
+              <Settings2 className="h-3.5 w-3.5" /> Edit Profile
+            </Button>
+          </div>
+          <div className="text-center py-8 space-y-4">
+            <div className="mx-auto w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+              <BarChart3 className="h-7 w-7 text-primary" />
+            </div>
+            <div>
+              <h3 className="text-base font-semibold">No Income Data Yet</h3>
+              <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">
+                Your quarterly tax estimates will appear here once you have earned or anticipated income. Log shifts, create invoices, or mark invoices as paid to see personalized tax calculations.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-lg mx-auto text-left">
+              <div className="rounded-lg bg-background/80 border p-3">
+                <p className="text-xs font-medium text-muted-foreground">Step 1</p>
+                <p className="text-sm font-medium mt-0.5">Log your shifts</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Add shifts with rates to your schedule</p>
+              </div>
+              <div className="rounded-lg bg-background/80 border p-3">
+                <p className="text-xs font-medium text-muted-foreground">Step 2</p>
+                <p className="text-sm font-medium mt-0.5">Generate invoices</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Create invoices from completed shifts</p>
+              </div>
+              <div className="rounded-lg bg-background/80 border p-3">
+                <p className="text-xs font-medium text-muted-foreground">Step 3</p>
+                <p className="text-sm font-medium mt-0.5">Track payments</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Mark invoices as paid to see estimates</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-5">
