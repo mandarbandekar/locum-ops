@@ -34,6 +34,7 @@ export function useTaxStrategies(): UseTaxStrategiesReturn {
   const { user, isDemo } = useAuth();
   const { shifts, invoices, facilities } = useData();
   const { profile } = useTaxIntelligence();
+  const { expenses } = useExpenses();
   const [inputs, setInputs] = useState<StrategyInputs>(DEFAULT_INPUTS);
   const [loading, setLoading] = useState(true);
 
@@ -86,9 +87,22 @@ export function useTaxStrategies(): UseTaxStrategiesReturn {
     return 0.05;
   })();
 
+  // Compute annualized business expenses for strategy calculations
+  const annualizedExpenses = useMemo(() => {
+    const year = new Date().getFullYear();
+    const ytdExpenses = expenses
+      .filter(e => new Date(e.expense_date).getFullYear() === year)
+      .reduce((s, e) => s + e.deductible_amount_cents / 100, 0);
+    const profileEstimate = profile?.ytd_expenses_estimate || 0;
+    const blended = Math.max(ytdExpenses, profileEstimate);
+    // Annualize: project current YTD to full year
+    const monthsElapsed = Math.max(1, new Date().getMonth() + 1);
+    return ytdExpenses > 0 ? Math.round((blended / monthsElapsed) * 12) : profileEstimate;
+  }, [expenses, profile?.ytd_expenses_estimate]);
+
   const strategies = useMemo(() => {
-    return buildStrategies(annualizedIncome, inputs, filingStatus, stateRate, facilityCount, entityType);
-  }, [annualizedIncome, inputs, facilityCount, filingStatus, stateRate, entityType]);
+    return buildStrategies(annualizedIncome, inputs, filingStatus, stateRate, facilityCount, entityType, annualizedExpenses);
+  }, [annualizedIncome, inputs, facilityCount, filingStatus, stateRate, entityType, annualizedExpenses]);
 
   const totalSavings = useMemo(() => {
     return strategies
