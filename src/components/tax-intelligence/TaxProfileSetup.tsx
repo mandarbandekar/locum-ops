@@ -58,7 +58,7 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
     if (showPTEStep) s.push('pte');
     s.push('household', 'retirement');
     if (isScorp) s.push('scorpSalary');
-    s.push('expenses', 'safeHarbor', 'complete');
+    s.push('expenses', 'projection', 'safeHarbor', 'complete');
     return s;
   }, [isScorp, showPTEStep]);
 
@@ -81,6 +81,7 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
       case 'retirement': return renderRetirementStep();
       case 'scorpSalary': return renderScorpSalaryStep();
       case 'expenses': return renderExpensesStep();
+      case 'projection': return renderProjectionStep();
       case 'safeHarbor': return renderSafeHarborStep();
       case 'complete': return renderCompletionStep();
       default: return null;
