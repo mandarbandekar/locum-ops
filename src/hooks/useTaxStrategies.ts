@@ -32,6 +32,7 @@ interface UseTaxStrategiesReturn {
 export function useTaxStrategies(): UseTaxStrategiesReturn {
   const { user, isDemo } = useAuth();
   const { shifts, invoices, facilities } = useData();
+  const { profile } = useTaxIntelligence();
   const [inputs, setInputs] = useState<StrategyInputs>(DEFAULT_INPUTS);
   const [loading, setLoading] = useState(true);
 
@@ -71,12 +72,13 @@ export function useTaxStrategies(): UseTaxStrategiesReturn {
     return shifts.filter(s => new Date(s.end_datetime) < new Date()).length;
   }, [shifts]);
 
+  const entityType = profile?.entity_type || 'sole_prop';
+  const filingStatus = (profile?.filing_status || 'single') as FilingStatus;
+  const stateRate = profile?.state_code ? (STATE_TAX_DATA[profile.state_code]?.topRate || 0.05) : 0.05;
+
   const strategies = useMemo(() => {
-    // TODO: pull from user tax profile if available
-    const filingStatus: FilingStatus = 'single';
-    const stateRate = 0.05;
-    return buildStrategies(annualizedIncome, inputs, filingStatus, stateRate, facilityCount);
-  }, [annualizedIncome, inputs, facilityCount]);
+    return buildStrategies(annualizedIncome, inputs, filingStatus, stateRate, facilityCount, entityType);
+  }, [annualizedIncome, inputs, facilityCount, filingStatus, stateRate, entityType]);
 
   const totalSavings = useMemo(() => {
     return strategies
