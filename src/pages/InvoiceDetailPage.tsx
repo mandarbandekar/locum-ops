@@ -8,7 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Trash2, AlertTriangle, Layers, Undo2, ArrowRight, Send, Mail } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ArrowLeft, Trash2, AlertTriangle, Layers, Undo2, ArrowRight, Mail, FileText, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
 import { toast } from 'sonner';
@@ -17,8 +18,10 @@ import { ReadyToSendChecklist, buildChecklistItems } from '@/components/invoice/
 import { InvoicePreview } from '@/components/invoice/InvoicePreview';
 import { InvoiceTimeline } from '@/components/invoice/InvoiceTimeline';
 import { InvoiceEditPanel } from '@/components/invoice/InvoiceEditPanel';
-import { InvoiceSentPanel } from '@/components/invoice/InvoiceSentPanel';
 import { InvoiceActionBar } from '@/components/invoice/InvoiceActionBar';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { ChevronDown } from 'lucide-react';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -46,6 +49,7 @@ function getStepOrder(status: string): number {
 export default function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const { invoices, lineItems, facilities, contacts, payments, activities, updateInvoice, deleteInvoice, suppressInvoicePeriod, addLineItem, updateLineItem, deleteLineItem, addPayment, addActivity, updateFacility } = useData();
   const { profile } = useUserProfile();
   const { user } = useAuth();
@@ -55,6 +59,8 @@ export default function InvoiceDetailPage() {
   const [moveTarget, setMoveTarget] = useState<string | null>(null);
   const [billingDialogOpen, setBillingDialogOpen] = useState(false);
   const [sendingReminder, setSendingReminder] = useState(false);
+  const [mobileTab, setMobileTab] = useState<string>('details');
+  const [timelineOpen, setTimelineOpen] = useState(false);
 
   // Live preview fields from edit panel
   const [liveFields, setLiveFields] = useState<{ invoiceNumber: string; invoiceDate: string; dueDate: string; notes: string; total: number } | null>(null);
@@ -102,25 +108,35 @@ export default function InvoiceDetailPage() {
   };
 
   const handleStepClick = (stepKey: string) => {
+    const targetOrder = getStepOrder(stepKey);
+    const currentOrder = getStepOrder(computedStatus);
+
     if (stepKey === 'paid' && invoice.status !== 'paid') {
       toast.info('Record a payment to mark this invoice as paid');
       return;
     }
-    setMoveTarget(stepKey);
-    setMoveDialogOpen(true);
+
+    // Forward moves: just do it (no confirmation for forward)
+    // Backward moves: confirm
+    if (targetOrder < currentOrder) {
+      setMoveTarget(stepKey);
+      setMoveDialogOpen(true);
+    }
   };
 
   const getMoveDescription = (target: string): string => {
     const currentLabel = STATUS_CONFIG[computedStatus]?.label || computedStatus;
     const targetLabel = STATUS_CONFIG[target]?.label || target;
-    const isBackward = getStepOrder(target) < getStepOrder(computedStatus);
-    if (isBackward) {
-      return `This will move the invoice from "${currentLabel}" back to "${targetLabel}". ${
-        target === 'draft' ? 'The sent date will be cleared and you can edit the invoice again.' :
-        'The payment status will be reset.'
-      }`;
-    }
-    return `This will move the invoice from "${currentLabel}" to "${targetLabel}".`;
+    return `This will move the invoice from "${currentLabel}" back to "${targetLabel}". ${
+      target === 'draft' ? 'The sent date will be cleared and you can edit the invoice again.' :
+      'The payment status will be reset.'
+    }`;
+  };
+
+  const handleRevertToDraft = async () => {
+    await updateInvoice({ ...invoice, status: 'draft', sent_at: null, paid_at: null });
+    await addActivity({ invoice_id: invoice.id, action: 'reverted_to_draft', description: 'Invoice reverted to draft for editing' });
+    toast.success('Invoice moved to Draft — you can now edit it');
   };
 
   // Use live fields for preview when in draft mode
@@ -130,15 +146,63 @@ export default function InvoiceDetailPage() {
   const previewNotes = isDraft && liveFields ? liveFields.notes : invoice.notes;
   const previewTotal = isDraft && liveFields ? liveFields.total : invoice.total_amount;
 
+  // Shared edit panel props
+  const editPanelProps = {
+    invoice,
+    items,
+    facility,
+    profile,
+    billingNameTo,
+    billingEmailTo,
+    readOnly: !isDraft,
+    invoicePayments,
+    onUpdateInvoice: updateInvoice,
+    onAddLineItem: addLineItem,
+    onUpdateLineItem: updateLineItem,
+    onDeleteLineItem: deleteLineItem,
+    onAddPayment: addPayment,
+    onAddActivity: addActivity,
+    onOpenBillingDialog: () => setBillingDialogOpen(true),
+    onSaveRef: saveRef,
+    onInvoiceFieldChange: setLiveFields,
+    onRevertToDraft: handleRevertToDraft,
+  };
+
+  const previewComponent = (
+    <InvoicePreview
+      sender={{
+        firstName: profile?.first_name || '',
+        lastName: profile?.last_name || '',
+        company: profile?.company_name || '',
+        address: profile?.company_address || '',
+        email: profile?.invoice_email,
+        phone: profile?.invoice_phone,
+      }}
+      billTo={{
+        facilityName: facility?.name || 'Unknown',
+        contactName: billingNameTo || undefined,
+        email: billingEmailTo,
+        address: facility?.address,
+      }}
+      invoiceNumber={previewInvoiceNumber}
+      invoiceDate={previewInvoiceDate}
+      dueDate={previewDueDate}
+      lineItems={items}
+      total={previewTotal}
+      balanceDue={isDraft ? previewTotal : invoice.balance_due}
+      notes={previewNotes}
+    />
+  );
+
   return (
-    <div className={isDraft ? 'pb-20' : ''}>
+    <div className="pb-20">
       {/* Header */}
       <div className="flex items-center gap-3 mb-3 print:hidden">
         <Button variant="ghost" size="icon" onClick={() => navigate('/invoices')}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <div className="flex items-center gap-2.5 flex-1 min-w-0">
-          <h1 className="page-title truncate">{invoice.invoice_number}</h1>
+        <div className="flex items-center gap-2 flex-1 min-w-0 flex-wrap">
+          <h1 className="text-lg font-bold truncate">{invoice.invoice_number}</h1>
           <Badge variant={statusConfig.variant} className="text-xs shrink-0">
             {statusConfig.label}
           </Badge>
@@ -261,106 +325,110 @@ export default function InvoiceDetailPage() {
         )}
       </div>
 
-      {/* Main layout: Edit Panel + Live Preview */}
-      <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-5">
-        {/* LEFT: Edit / Sent Panel */}
-        <div className="lg:col-span-2 space-y-3 print:hidden order-2 lg:order-1">
-          {isDraft ? (
-            <InvoiceEditPanel
-              invoice={invoice}
-              items={items}
-              facility={facility}
-              profile={profile}
-              billingNameTo={billingNameTo}
-              billingEmailTo={billingEmailTo}
-              onUpdateInvoice={updateInvoice}
-              onAddLineItem={addLineItem}
-              onUpdateLineItem={updateLineItem}
-              onDeleteLineItem={deleteLineItem}
-              onAddActivity={addActivity}
-              onOpenBillingDialog={() => setBillingDialogOpen(true)}
-              onSaveRef={saveRef}
-              onInvoiceFieldChange={setLiveFields}
-            />
-          ) : (
-            <InvoiceSentPanel
-              invoice={invoice}
-              items={items}
-              invoicePayments={invoicePayments}
-              facility={facility}
-              billingNameTo={billingNameTo}
-              onUpdateInvoice={updateInvoice}
-              onAddPayment={addPayment}
-              onAddActivity={addActivity}
-            />
-          )}
-
-          {/* Timeline */}
-          {invoiceActivities.length > 0 && (
-            <Card>
-              <CardContent className="pt-3 pb-3">
-                <InvoiceTimeline events={invoiceActivities} />
-              </CardContent>
-            </Card>
-          )}
+      {/* Main layout */}
+      {isMobile ? (
+        /* Mobile: Tab toggle between Details and Preview */
+        <div className="print:hidden">
+          <Tabs value={mobileTab} onValueChange={setMobileTab} className="w-full">
+            <TabsList className="w-full grid grid-cols-2 mb-4">
+              <TabsTrigger value="details" className="gap-1.5">
+                <FileText className="h-3.5 w-3.5" />
+                {isDraft ? 'Edit' : 'Details'}
+              </TabsTrigger>
+              <TabsTrigger value="preview" className="gap-1.5">
+                <Eye className="h-3.5 w-3.5" />
+                Preview
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="details" className="space-y-3">
+              <InvoiceEditPanel {...editPanelProps} />
+              {/* Timeline — collapsible */}
+              {invoiceActivities.length > 0 && (
+                <Collapsible open={timelineOpen} onOpenChange={setTimelineOpen}>
+                  <Card>
+                    <CollapsibleTrigger asChild>
+                      <div className="flex items-center justify-between px-3 pt-3 pb-1.5 cursor-pointer hover:bg-muted/50 rounded-t-lg">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Activity ({invoiceActivities.length})</p>
+                        <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${timelineOpen ? 'rotate-180' : ''}`} />
+                      </div>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <CardContent className="pt-0 pb-3">
+                        <InvoiceTimeline events={invoiceActivities} />
+                      </CardContent>
+                    </CollapsibleContent>
+                  </Card>
+                </Collapsible>
+              )}
+            </TabsContent>
+            <TabsContent value="preview">
+              {previewComponent}
+            </TabsContent>
+          </Tabs>
         </div>
+      ) : (
+        /* Desktop: Side-by-side */
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-5">
+          {/* LEFT: Unified Panel */}
+          <div className="lg:col-span-2 space-y-3 print:hidden">
+            <InvoiceEditPanel {...editPanelProps} />
 
-        {/* RIGHT: Live Preview — sticky & prominent */}
-        <div className="lg:col-span-3 lg:sticky lg:top-4 self-start order-1 lg:order-2" id="invoice-print-area">
-          <div className="mb-2 flex items-center justify-between print:hidden">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Live Preview</p>
-            {isDraft && <span className="text-[10px] text-muted-foreground">Changes update in real-time</span>}
+            {/* Timeline — collapsible */}
+            {invoiceActivities.length > 0 && (
+              <Collapsible open={timelineOpen} onOpenChange={setTimelineOpen}>
+                <Card>
+                  <CollapsibleTrigger asChild>
+                    <div className="flex items-center justify-between px-3 pt-3 pb-1.5 cursor-pointer hover:bg-muted/50 rounded-t-lg">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Activity ({invoiceActivities.length})</p>
+                      <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${timelineOpen ? 'rotate-180' : ''}`} />
+                    </div>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <CardContent className="pt-0 pb-3">
+                      <InvoiceTimeline events={invoiceActivities} />
+                    </CardContent>
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
+            )}
           </div>
-          <InvoicePreview
-            sender={{
-              firstName: profile?.first_name || '',
-              lastName: profile?.last_name || '',
-              company: profile?.company_name || '',
-              address: profile?.company_address || '',
-              email: profile?.invoice_email,
-              phone: profile?.invoice_phone,
-            }}
-            billTo={{
-              facilityName: facility?.name || 'Unknown',
-              contactName: billingNameTo || undefined,
-              email: billingEmailTo,
-              address: facility?.address,
-            }}
-            invoiceNumber={previewInvoiceNumber}
-            invoiceDate={previewInvoiceDate}
-            dueDate={previewDueDate}
-            lineItems={items}
-            total={previewTotal}
-            balanceDue={isDraft ? previewTotal : invoice.balance_due}
-            notes={previewNotes}
-          />
-        </div>
-      </div>
 
-      {/* Sticky bottom action bar for drafts */}
-      {isDraft && (
-        <InvoiceActionBar
-          invoice={invoice}
-          items={items}
-          facility={facility}
-          profile={profile}
-          dueDate={liveFields?.dueDate || invoice.due_date?.split('T')[0] || ''}
-          onSave={async () => { if (saveRef.current) await saveRef.current(); }}
-          onUpdateInvoice={updateInvoice}
-          onAddActivity={addActivity}
-        />
+          {/* RIGHT: Live Preview — sticky */}
+          <div className="lg:col-span-3 lg:sticky lg:top-4 self-start" id="invoice-print-area">
+            <div className="mb-2 flex items-center justify-between print:hidden">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Live Preview</p>
+              {isDraft && <span className="text-[10px] text-muted-foreground">Changes update in real-time</span>}
+            </div>
+            {previewComponent}
+          </div>
+        </div>
       )}
 
-      {/* Move Status Dialog */}
+      {/* Persistent contextual action bar — always visible */}
+      <InvoiceActionBar
+        invoice={invoice}
+        items={items}
+        facility={facility}
+        profile={profile}
+        dueDate={liveFields?.dueDate || invoice.due_date?.split('T')[0] || ''}
+        onSave={async () => { if (saveRef.current) await saveRef.current(); }}
+        onUpdateInvoice={updateInvoice}
+        onAddActivity={addActivity}
+        onRecordPayment={() => {
+          // Trigger the payment dialog inside the edit panel
+          // We'll use a simple approach: scroll to top and show a toast
+          const payBtn = document.querySelector('[data-record-payment]');
+          if (payBtn) (payBtn as HTMLElement).click();
+          else toast.info('Use "Record Payment" in the details panel');
+        }}
+      />
+
+      {/* Move Status Dialog — only for backward moves */}
       <Dialog open={moveDialogOpen} onOpenChange={setMoveDialogOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              {moveTarget && getStepOrder(moveTarget) < getStepOrder(computedStatus) ? (
-                <Undo2 className="h-4 w-4 text-muted-foreground" />
-              ) : (
-                <ArrowRight className="h-4 w-4 text-muted-foreground" />
-              )}
+              <Undo2 className="h-4 w-4 text-muted-foreground" />
               Move to {STATUS_CONFIG[moveTarget || '']?.label || moveTarget}?
             </DialogTitle>
             <DialogDescription>
