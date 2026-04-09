@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
+import { useTaxIntelligence } from '@/hooks/useTaxIntelligence';
 import {
   buildStrategies,
   getAnnualizedIncome,
@@ -10,6 +11,7 @@ import {
   type StrategyResult,
 } from '@/lib/taxStrategies';
 import type { FilingStatus } from '@/lib/taxConstants2026';
+import { STATE_TAX_DATA } from '@/lib/stateTaxData';
 import { toast } from 'sonner';
 
 const db = (table: string) => supabase.from(table as any);
@@ -24,6 +26,7 @@ interface UseTaxStrategiesReturn {
   restoreStrategy: (strategyId: string) => Promise<void>;
   loading: boolean;
   paidShiftCount: number;
+  entityType: string;
 }
 
 export function useTaxStrategies(): UseTaxStrategiesReturn {
