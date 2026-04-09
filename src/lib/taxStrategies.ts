@@ -1,6 +1,7 @@
 /**
  * Tax Strategy Guidance Engine — Pure calculation functions.
  * 7 strategies with eligibility checks and savings calculations.
+ * Entity-aware: adjusts math and copy for S-Corp vs 1099/sole prop.
  */
 
 import { TAX_YEAR_CONFIG, RETIREMENT_LIMITS, getMarginalRate, SE_TAX_RATE, SE_TAXABLE_FACTOR, SS_WAGE_CAP } from './taxConstants2026';
@@ -89,12 +90,29 @@ export function getAnnualizedIncome(shifts: Shift[], invoices: Invoice[]): numbe
 
 // ── Combined Marginal Rate ──────────────────────────────────────
 
+/**
+ * Returns the combined marginal tax rate.
+ * For sole props: federal + 15.3% SE + state
+ * For S-Corps: federal + effective FICA on salary portion + state
+ */
 export function getCombinedMarginalRate(
   annualizedIncome: number,
   filingStatus: FilingStatus = 'single',
   stateRate: number = 0.05,
+  entityType: string = 'sole_prop',
+  scorpSalary: number = 0,
 ): number {
   const federalRate = getMarginalRate(annualizedIncome, filingStatus);
+
+  if (entityType === 'scorp' && annualizedIncome > 0) {
+    // S-Corp: FICA only applies to salary portion, not distributions
+    const salary = Math.min(scorpSalary, annualizedIncome);
+    const effectiveFICARate = annualizedIncome > 0
+      ? (salary / annualizedIncome) * SE_TAX_RATE
+      : 0;
+    return federalRate + effectiveFICARate + stateRate;
+  }
+
   return federalRate + SE_TAX_RATE + stateRate;
 }
 
@@ -116,20 +134,62 @@ function calcMileageSavings(weeklyMiles: number, combinedRate: number): number {
   return Math.round(deduction * combinedRate);
 }
 
-function calcSepIraSavings(annualizedIncome: number, contributionOverride: number, combinedRate: number): number {
-  const netSE = annualizedIncome * SE_TAXABLE_FACTOR;
-  const maxContribution = Math.min(netSE * RETIREMENT_LIMITS.sep_ira.percentOfNet, RETIREMENT_LIMITS.sep_ira.maxContribution);
+/**
+ * SEP-IRA savings calculation.
+ * Sole prop: based on net SE income (income * 0.9235)
+ * S-Corp: based on W-2 salary (employer contribution only, up to 25% of salary)
+ */
+function calcSepIraSavings(
+  annualizedIncome: number,
+  contributionOverride: number,
+  combinedRate: number,
+  entityType: string = 'sole_prop',
+  scorpSalary: number = 0,
+): number {
+  let maxContribution: number;
+
+  if (entityType === 'scorp') {
+    // S-Corp: employer contribution up to 25% of W-2 salary
+    const salary = Math.min(scorpSalary, annualizedIncome);
+    maxContribution = Math.min(salary * RETIREMENT_LIMITS.sep_ira.percentOfNet, RETIREMENT_LIMITS.sep_ira.maxContribution);
+  } else {
+    const netSE = annualizedIncome * SE_TAXABLE_FACTOR;
+    maxContribution = Math.min(netSE * RETIREMENT_LIMITS.sep_ira.percentOfNet, RETIREMENT_LIMITS.sep_ira.maxContribution);
+  }
+
   const contribution = contributionOverride > 0 ? Math.min(contributionOverride, maxContribution) : maxContribution;
   return Math.round(contribution * combinedRate);
 }
 
-function calcSolo401kDelta(annualizedIncome: number): number {
-  const netSE = annualizedIncome * SE_TAXABLE_FACTOR;
-  const sepMax = Math.min(netSE * RETIREMENT_LIMITS.sep_ira.percentOfNet, RETIREMENT_LIMITS.sep_ira.maxContribution);
-  const solo401kMax = Math.min(
-    RETIREMENT_LIMITS.solo_401k.employeeMax + netSE * RETIREMENT_LIMITS.solo_401k.employerPercent,
-    RETIREMENT_LIMITS.solo_401k.totalMax,
-  );
+/**
+ * Solo 401(k) delta over SEP-IRA.
+ * Sole prop: employee deferral + employer % of net SE
+ * S-Corp: employee deferral + employer % of W-2 salary
+ */
+function calcSolo401kDelta(
+  annualizedIncome: number,
+  entityType: string = 'sole_prop',
+  scorpSalary: number = 0,
+): number {
+  let sepMax: number;
+  let solo401kMax: number;
+
+  if (entityType === 'scorp') {
+    const salary = Math.min(scorpSalary, annualizedIncome);
+    sepMax = Math.min(salary * RETIREMENT_LIMITS.sep_ira.percentOfNet, RETIREMENT_LIMITS.sep_ira.maxContribution);
+    solo401kMax = Math.min(
+      RETIREMENT_LIMITS.solo_401k.employeeMax + salary * RETIREMENT_LIMITS.solo_401k.employerPercent,
+      RETIREMENT_LIMITS.solo_401k.totalMax,
+    );
+  } else {
+    const netSE = annualizedIncome * SE_TAXABLE_FACTOR;
+    sepMax = Math.min(netSE * RETIREMENT_LIMITS.sep_ira.percentOfNet, RETIREMENT_LIMITS.sep_ira.maxContribution);
+    solo401kMax = Math.min(
+      RETIREMENT_LIMITS.solo_401k.employeeMax + netSE * RETIREMENT_LIMITS.solo_401k.employerPercent,
+      RETIREMENT_LIMITS.solo_401k.totalMax,
+    );
+  }
+
   return Math.max(0, solo401kMax - sepMax);
 }
 
@@ -158,9 +218,15 @@ export function buildStrategies(
   filingStatus: FilingStatus = 'single',
   stateRate: number = 0.05,
   facilityCount: number = 0,
+  entityType: string = 'sole_prop',
+  scorpSalary: number = 0,
 ): StrategyResult[] {
-  const combinedRate = getCombinedMarginalRate(annualizedIncome, filingStatus, stateRate);
+  const combinedRate = getCombinedMarginalRate(annualizedIncome, filingStatus, stateRate, entityType, scorpSalary);
   const dismissed = new Set(inputs.dismissed_strategies);
+  const isScorp = entityType === 'scorp';
+
+  // Tax form references
+  const scheduleRef = isScorp ? 'Form 1120-S' : 'Schedule C';
 
   const strategies: StrategyResult[] = [];
 
@@ -183,7 +249,7 @@ export function buildStrategies(
       'Each expense reduces your taxable income dollar-for-dollar',
       'Your combined tax rate determines the actual cash savings',
       'Keep receipts and documentation for every deduction',
-      'These deductions are reported on Schedule C of your tax return',
+      `These deductions are reported on ${scheduleRef} of your tax return`,
     ],
     actionSteps: [
       'Review the checklist below and enter your actual costs for each item',
@@ -211,13 +277,15 @@ export function buildStrategies(
       'Maximum deduction is $1,500/year',
       'The space must be used regularly and exclusively for business',
       'No need to track actual home expenses with the simplified method',
-      'Reported on Schedule C, Line 30',
+      `Reported on ${isScorp ? 'Form 8829 (reimbursed by S-Corp via accountable plan)' : 'Schedule C, Line 30'}`,
     ],
     actionSteps: [
       'Measure your dedicated home office space',
       'Enter the square footage using the slider below',
       'Ensure the space is used exclusively for your relief vet business',
-      'Take a photo of your office setup for documentation',
+      isScorp
+        ? 'Set up an accountable plan with your S-Corp to reimburse home office expenses'
+        : 'Take a photo of your office setup for documentation',
     ],
   });
 
@@ -240,50 +308,78 @@ export function buildStrategies(
       'Business miles include driving between clinics and to temporary work locations',
       'Your regular commute from home to your first clinic is not deductible',
       'Driving from one clinic to another during the day is fully deductible',
-      'Keep a mileage log with date, destination, purpose, and miles driven',
+      isScorp
+        ? 'As an S-Corp, mileage can be reimbursed tax-free through an accountable plan'
+        : 'Keep a mileage log with date, destination, purpose, and miles driven',
     ],
     actionSteps: [
       'Enter your typical weekly business miles below',
       'Consider using a mileage tracking app for automatic logging',
       'Review your shift schedule to estimate inter-clinic driving',
-      'Save your mileage log for tax filing',
+      isScorp
+        ? 'Set up an accountable plan to reimburse mileage from your S-Corp'
+        : 'Save your mileage log for tax filing',
     ],
   });
 
   // 4. SEP-IRA
   const sepEligible = annualizedIncome > 60000;
-  const sepSavings = sepEligible ? calcSepIraSavings(annualizedIncome, inputs.retirement_contribution_slider, combinedRate) : 0;
-  const netSE = annualizedIncome * SE_TAXABLE_FACTOR;
-  const sepMax = Math.min(netSE * RETIREMENT_LIMITS.sep_ira.percentOfNet, RETIREMENT_LIMITS.sep_ira.maxContribution);
+  const sepSavings = sepEligible ? calcSepIraSavings(annualizedIncome, inputs.retirement_contribution_slider, combinedRate, entityType, scorpSalary) : 0;
+
+  // Calculate max contribution for display
+  let sepMax: number;
+  if (isScorp) {
+    const salary = Math.min(scorpSalary, annualizedIncome);
+    sepMax = Math.min(salary * RETIREMENT_LIMITS.sep_ira.percentOfNet, RETIREMENT_LIMITS.sep_ira.maxContribution);
+  } else {
+    const netSE = annualizedIncome * SE_TAXABLE_FACTOR;
+    sepMax = Math.min(netSE * RETIREMENT_LIMITS.sep_ira.percentOfNet, RETIREMENT_LIMITS.sep_ira.maxContribution);
+  }
+
+  const sepBasisLabel = isScorp ? 'W-2 salary' : 'net self-employment income';
   strategies.push({
     id: 'sep_ira',
     title: 'SEP-IRA Contribution',
-    description: 'Shelter up to 25% of net self-employment income in a tax-deferred retirement account',
+    description: `Shelter up to 25% of ${sepBasisLabel} in a tax-deferred retirement account`,
     estimatedSavings: sepSavings || 0,
     eligible: sepEligible,
     unlockLabel: sepEligible ? null : 'Unlocks at $60K+',
     dismissed: dismissed.has('sep_ira'),
     status: dismissed.has('sep_ira') ? 'dismissed' : sepEligible ? 'action_available' : 'not_eligible',
-    whyItMatters: `At your estimated income of $${Math.round(annualizedIncome).toLocaleString()}, you could contribute up to $${Math.round(sepMax).toLocaleString()} to a SEP-IRA. This reduces your taxable income immediately and grows tax-deferred for retirement.`,
-    howItWorks: [
-      'Contribute up to 25% of net self-employment income (after SE tax deduction)',
-      `2026 maximum contribution: $${RETIREMENT_LIMITS.sep_ira.maxContribution.toLocaleString()}`,
-      'Contributions are tax-deductible — they reduce your taxable income dollar-for-dollar',
-      'Investments grow tax-deferred until withdrawal in retirement',
-      'Can be opened and funded up until your tax filing deadline (including extensions)',
-    ],
+    whyItMatters: isScorp
+      ? `As an S-Corp, your SEP-IRA contribution is based on your W-2 salary of $${Math.round(scorpSalary).toLocaleString()}. You could contribute up to $${Math.round(sepMax).toLocaleString()} as an employer contribution, reducing your corporate taxable income.`
+      : `At your estimated income of $${Math.round(annualizedIncome).toLocaleString()}, you could contribute up to $${Math.round(sepMax).toLocaleString()} to a SEP-IRA. This reduces your taxable income immediately and grows tax-deferred for retirement.`,
+    howItWorks: isScorp
+      ? [
+          'As an S-Corp, SEP-IRA contributions are employer contributions based on W-2 salary',
+          'Contribute up to 25% of your W-2 compensation',
+          `2026 maximum contribution: $${RETIREMENT_LIMITS.sep_ira.maxContribution.toLocaleString()}`,
+          'The S-Corp deducts the contribution as a business expense on Form 1120-S',
+          'Can be opened and funded up until your tax filing deadline (including extensions)',
+        ]
+      : [
+          'Contribute up to 25% of net self-employment income (after SE tax deduction)',
+          `2026 maximum contribution: $${RETIREMENT_LIMITS.sep_ira.maxContribution.toLocaleString()}`,
+          'Contributions are tax-deductible — they reduce your taxable income dollar-for-dollar',
+          'Investments grow tax-deferred until withdrawal in retirement',
+          'Can be opened and funded up until your tax filing deadline (including extensions)',
+        ],
     actionSteps: [
       'Open a SEP-IRA at a brokerage (Fidelity, Schwab, Vanguard)',
       'Use the slider below to set your planned contribution',
       'Make contributions before your tax filing deadline',
-      'Report the deduction on Form 1040, Schedule 1',
+      isScorp
+        ? 'The S-Corp makes the contribution and deducts it on Form 1120-S'
+        : 'Report the deduction on Form 1040, Schedule 1',
     ],
   });
 
   // 5. Solo 401(k) vs SEP
   const solo401kEligible = annualizedIncome > 100000;
-  const solo401kDelta = solo401kEligible ? calcSolo401kDelta(annualizedIncome) : 0;
+  const solo401kDelta = solo401kEligible ? calcSolo401kDelta(annualizedIncome, entityType, scorpSalary) : 0;
   const solo401kSavings = Math.round(solo401kDelta * combinedRate);
+
+  const solo401kBasisLabel = isScorp ? 'W-2 salary' : 'net SE income';
   strategies.push({
     id: 'solo_401k',
     title: 'Solo 401(k) vs SEP-IRA Comparison',
@@ -294,13 +390,21 @@ export function buildStrategies(
     dismissed: dismissed.has('solo_401k'),
     status: dismissed.has('solo_401k') ? 'dismissed' : solo401kEligible ? 'action_available' : 'not_eligible',
     whyItMatters: `At higher incomes, the Solo 401(k) allows an additional $${RETIREMENT_LIMITS.solo_401k.employeeMax.toLocaleString()} employee deferral on top of employer contributions. This can mean $${solo401kDelta.toLocaleString()} more in tax-sheltered savings compared to a SEP-IRA.`,
-    howItWorks: [
-      `SEP-IRA max: 25% of net SE income, capped at $${RETIREMENT_LIMITS.sep_ira.maxContribution.toLocaleString()}`,
-      `Solo 401(k): $${RETIREMENT_LIMITS.solo_401k.employeeMax.toLocaleString()} employee + 25% employer, capped at $${RETIREMENT_LIMITS.solo_401k.totalMax.toLocaleString()}`,
-      'At moderate incomes, both plans have similar limits',
-      'At higher incomes, the Solo 401(k) employee deferral creates a meaningful gap',
-      'Solo 401(k) also allows Roth contributions (post-tax, tax-free growth)',
-    ],
+    howItWorks: isScorp
+      ? [
+          `SEP-IRA max: 25% of W-2 salary, capped at $${RETIREMENT_LIMITS.sep_ira.maxContribution.toLocaleString()}`,
+          `Solo 401(k): $${RETIREMENT_LIMITS.solo_401k.employeeMax.toLocaleString()} employee deferral + 25% of W-2 salary as employer match, capped at $${RETIREMENT_LIMITS.solo_401k.totalMax.toLocaleString()}`,
+          'As an S-Corp owner, both employee and employer contributions are based on your W-2 salary',
+          'At higher salaries, the Solo 401(k) employee deferral creates a meaningful gap',
+          'Solo 401(k) also allows Roth contributions (post-tax, tax-free growth)',
+        ]
+      : [
+          `SEP-IRA max: 25% of net SE income, capped at $${RETIREMENT_LIMITS.sep_ira.maxContribution.toLocaleString()}`,
+          `Solo 401(k): $${RETIREMENT_LIMITS.solo_401k.employeeMax.toLocaleString()} employee + 25% employer, capped at $${RETIREMENT_LIMITS.solo_401k.totalMax.toLocaleString()}`,
+          'At moderate incomes, both plans have similar limits',
+          'At higher incomes, the Solo 401(k) employee deferral creates a meaningful gap',
+          'Solo 401(k) also allows Roth contributions (post-tax, tax-free growth)',
+        ],
     actionSteps: [
       'Review the comparison table below with your actual numbers',
       'If the Solo 401(k) offers more room, consider opening one before year-end',
@@ -309,7 +413,7 @@ export function buildStrategies(
     ],
   });
 
-  // 6. S-Corp
+  // 6. S-Corp — only shown to sole props (filtered out for existing S-Corps in hook)
   const sCorpEligible = annualizedIncome > 80000;
   const sCorpSavings = sCorpEligible ? calcSCorpSavings(annualizedIncome, inputs.scorp_salary_slider) : 0;
   strategies.push({
@@ -339,6 +443,23 @@ export function buildStrategies(
 
   // 7. Quarterly Deadlines — always eligible
   const nextDeadline = getNextQuarterlyDeadline();
+
+  // Estimate quarterly payment based on entity type
+  let estimatedQuarterlyPayment = 0;
+  if (annualizedIncome > 0) {
+    if (isScorp) {
+      // S-Corp: federal + state income tax on net (after salary deduction) + FICA on salary
+      const salary = Math.min(scorpSalary, annualizedIncome);
+      const netAfterSalary = Math.max(0, annualizedIncome - salary);
+      const federalRate = getMarginalRate(netAfterSalary, filingStatus);
+      const estimatedAnnualTax = (netAfterSalary * (federalRate + stateRate));
+      // FICA is handled via payroll, so quarterly estimates cover income tax only
+      estimatedQuarterlyPayment = Math.round(estimatedAnnualTax / 4);
+    } else {
+      estimatedQuarterlyPayment = Math.round((annualizedIncome * 0.3) / 4);
+    }
+  }
+
   strategies.push({
     id: 'quarterly_deadlines',
     title: 'Quarterly Estimated Tax Deadlines',
@@ -348,14 +469,24 @@ export function buildStrategies(
     unlockLabel: null,
     dismissed: dismissed.has('quarterly_deadlines'),
     status: dismissed.has('quarterly_deadlines') ? 'dismissed' : 'action_available',
-    whyItMatters: `Missing quarterly estimated tax payments can result in IRS underpayment penalties. Your next payment of approximately $${Math.round(annualizedIncome > 0 ? (annualizedIncome * 0.3) / 4 : 0).toLocaleString()} is due ${nextDeadline.label}.`,
-    howItWorks: [
-      'Self-employed individuals must pay estimated taxes quarterly',
-      'Deadlines: April 15, June 16, September 15, January 15',
-      'Underpayment penalties apply if you owe >$1,000 at filing',
-      'Safe harbor: pay 100% of prior year tax (110% if income >$150K) to avoid penalties',
-      'Payments made via IRS Direct Pay or EFTPS',
-    ],
+    whyItMatters: isScorp
+      ? `As an S-Corp, your W-2 salary has taxes withheld via payroll, but you still need to make estimated payments on your distribution income. Your next estimated payment of approximately $${estimatedQuarterlyPayment.toLocaleString()} is due ${nextDeadline.label}.`
+      : `Missing quarterly estimated tax payments can result in IRS underpayment penalties. Your next payment of approximately $${estimatedQuarterlyPayment.toLocaleString()} is due ${nextDeadline.label}.`,
+    howItWorks: isScorp
+      ? [
+          'S-Corp owners with distribution income must still pay estimated taxes quarterly',
+          'Your W-2 salary has federal/state tax withheld through payroll',
+          'Estimated payments cover tax on distributions and any underwithholding',
+          'Deadlines: April 15, June 16, September 15, January 15',
+          'Safe harbor: pay 100% of prior year tax (110% if income >$150K) to avoid penalties',
+        ]
+      : [
+          'Self-employed individuals must pay estimated taxes quarterly',
+          'Deadlines: April 15, June 16, September 15, January 15',
+          'Underpayment penalties apply if you owe >$1,000 at filing',
+          'Safe harbor: pay 100% of prior year tax (110% if income >$150K) to avoid penalties',
+          'Payments made via IRS Direct Pay or EFTPS',
+        ],
     actionSteps: [
       'Calculate your recommended quarterly payment below',
       'Set a calendar reminder 2 weeks before each deadline',
@@ -409,8 +540,9 @@ export function getTotalStrategySavings(
   stateRate: number = 0.05,
   facilityCount: number = 0,
   entityType: string = 'sole_prop',
+  scorpSalary: number = 0,
 ): number {
-  let strategies = buildStrategies(annualizedIncome, inputs, filingStatus, stateRate, facilityCount);
+  let strategies = buildStrategies(annualizedIncome, inputs, filingStatus, stateRate, facilityCount, entityType, scorpSalary);
   if (entityType === 'scorp') {
     strategies = strategies.filter(s => s.id !== 'scorp');
   }

@@ -3,6 +3,7 @@ import { getCombinedMarginalRate } from '@/lib/taxStrategies';
 import { AlertTriangle, TrendingUp, Lightbulb, DollarSign } from 'lucide-react';
 import StrategyCard from './StrategyCard';
 import { useTaxIntelligence } from '@/hooks/useTaxIntelligence';
+import { STATE_TAX_DATA } from '@/lib/stateTaxData';
 import type { FilingStatus } from '@/lib/taxConstants2026';
 
 export default function TaxStrategiesTab() {
@@ -13,7 +14,13 @@ export default function TaxStrategiesTab() {
   const { profile: taxProfile } = useTaxIntelligence();
 
   const filingStatus: FilingStatus = (taxProfile?.filing_status as FilingStatus) || 'single';
-  const combinedRate = getCombinedMarginalRate(annualizedIncome, filingStatus);
+  const stateRate = taxProfile?.state_code
+    ? (STATE_TAX_DATA[taxProfile.state_code]?.type === 'flat'
+        ? (STATE_TAX_DATA[taxProfile.state_code] as any).rate ?? 0.05
+        : 0.05)
+    : 0.05;
+  const scorpSalary = taxProfile?.scorp_salary || 0;
+  const combinedRate = getCombinedMarginalRate(annualizedIncome, filingStatus, stateRate, entityType, scorpSalary);
 
   if (loading) {
     return <p className="text-muted-foreground py-8 text-center">Loading…</p>;
