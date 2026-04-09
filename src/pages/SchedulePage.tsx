@@ -24,8 +24,49 @@ import { useTaxIntelligence } from '@/hooks/useTaxIntelligence';
 import { computeEffectiveSetAsideRate } from '@/lib/taxNudge';
 import { ShiftTaxNudge, ShiftTaxSummaryFooter } from '@/components/schedule/ShiftTaxNudge';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { SpotlightTour, TourStep } from '@/components/SpotlightTour';
+import { useSpotlightTour } from '@/hooks/useSpotlightTour';
+import { Compass } from 'lucide-react';
 
 const STORAGE_KEY = 'schedule-view-pref';
+
+const SCHEDULE_TOUR_STEPS: TourStep[] = [
+  {
+    targetSelector: '[data-tour="schedule-add-shift"]',
+    title: 'Add Shifts',
+    description: 'Book relief shifts at any clinic. Each shift automatically feeds into invoicing so you never forget to bill.',
+    placement: 'bottom',
+    icon: Plus,
+  },
+  {
+    targetSelector: '[data-tour="schedule-view-switcher"]',
+    title: 'View Options',
+    description: 'Switch between month overview, detailed weekly time grid, or a sortable list. Drag shifts between days to reschedule.',
+    placement: 'bottom',
+    icon: CalendarDays,
+  },
+  {
+    targetSelector: '[data-tour="schedule-confirmations"]',
+    title: 'Clinic Confirmations',
+    description: 'Send monthly schedule confirmations to each clinic before you start. No more back-and-forth emails — one click sends your schedule.',
+    placement: 'bottom',
+    icon: CheckSquare,
+  },
+  {
+    targetSelector: '[data-tour="schedule-sync"]',
+    title: 'Calendar Sync',
+    description: 'Sync shifts to Google Calendar or export an ICS feed. Your personal calendar stays up to date automatically.',
+    placement: 'bottom',
+    icon: RefreshCw,
+  },
+  {
+    targetSelector: '[data-tour="schedule-calendar"]',
+    title: 'Your Calendar',
+    description: 'Click any day to add a shift. Color-coded by clinic so you can see your week at a glance. Block personal time to prevent overbooking.',
+    placement: 'top',
+    icon: CalendarIcon,
+  },
+];
 
 export default function SchedulePage() {
   const { shifts, facilities, terms, addShift, updateShift, deleteShift, updateFacility, timeBlocks, addTimeBlock, updateTimeBlock, deleteTimeBlock, invoices, lineItems } = useData();

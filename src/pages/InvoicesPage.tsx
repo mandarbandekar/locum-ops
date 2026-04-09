@@ -16,6 +16,47 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { SpotlightTour, TourStep } from '@/components/SpotlightTour';
+import { useSpotlightTour } from '@/hooks/useSpotlightTour';
+import { Compass, DollarSign } from 'lucide-react';
+
+const INVOICE_TOUR_STEPS: TourStep[] = [
+  {
+    targetSelector: '[data-tour="invoice-summary"]',
+    title: 'Financial Snapshot',
+    description: 'At-a-glance financial snapshot: overdue balances, invoices awaiting payment, drafts to review, and this month\'s collections.',
+    placement: 'bottom',
+    icon: DollarSign,
+  },
+  {
+    targetSelector: '[data-tour="invoice-create"]',
+    title: 'Create Manual Invoice',
+    description: 'Most invoices auto-generate from your shifts. Use this for one-off or custom invoices outside your normal schedule.',
+    placement: 'bottom',
+    icon: Plus,
+  },
+  {
+    targetSelector: '[data-tour="invoice-ready"]',
+    title: 'Ready to Review',
+    description: 'Drafts appear here automatically after your billing period closes. Review the line items, then send with one click.',
+    placement: 'bottom',
+    icon: FileEdit,
+  },
+  {
+    targetSelector: '[data-tour="invoice-overdue"]',
+    title: 'Overdue Invoices',
+    description: 'Invoices past their due date surface here with aging info. Set up automatic email reminders to nudge clinics.',
+    placement: 'bottom',
+    icon: AlertTriangle,
+  },
+  {
+    targetSelector: '[data-tour="invoice-paid"]',
+    title: 'Paid & Collected',
+    description: 'Track completed payments and see your monthly collection totals. Record partial payments to track remaining balances.',
+    placement: 'top',
+    icon: CheckCircle,
+  },
+];
 
 export default function InvoicesPage() {
   const { invoices, facilities, shifts, addInvoice, deleteInvoice, suppressInvoicePeriod, dataLoading } = useData();
