@@ -398,3 +398,23 @@ export function getNextQuarterlyDeadline(): QuarterlyDeadline {
   const deadlines = getQuarterlyDeadlines();
   return deadlines.find(d => !d.isPast) || deadlines[deadlines.length - 1];
 }
+
+/**
+ * Compute total eligible (non-dismissed) strategy savings for a given profile.
+ */
+export function getTotalStrategySavings(
+  annualizedIncome: number,
+  inputs: StrategyInputs,
+  filingStatus: FilingStatus = 'single',
+  stateRate: number = 0.05,
+  facilityCount: number = 0,
+  entityType: string = 'sole_prop',
+): number {
+  let strategies = buildStrategies(annualizedIncome, inputs, filingStatus, stateRate, facilityCount);
+  if (entityType === 'scorp') {
+    strategies = strategies.filter(s => s.id !== 'scorp');
+  }
+  return strategies
+    .filter(s => s.eligible && !s.dismissed)
+    .reduce((sum, s) => sum + s.estimatedSavings, 0);
+}
