@@ -21,6 +21,9 @@ export interface TaxIntelligenceProfile {
   spouse_w2_income: number;
   spouse_has_se_income: boolean;
   spouse_se_net_income: number;
+  projection_method: string;
+  annual_income_goal: number;
+  prior_year_total_income: number;
 }
 
 const db = (table: string) => supabase.from(table as any);
@@ -44,6 +47,9 @@ const DEMO_PROFILE: TaxIntelligenceProfile = {
   spouse_w2_income: 0,
   spouse_has_se_income: false,
   spouse_se_net_income: 0,
+  projection_method: 'annualized_actual',
+  annual_income_goal: 0,
+  prior_year_total_income: 0,
 };
 
 export function useTaxIntelligence() {
@@ -70,6 +76,9 @@ export function useTaxIntelligence() {
     spouse_w2_income: Number(d.spouse_w2_income ?? 0),
     spouse_has_se_income: Boolean(d.spouse_has_se_income),
     spouse_se_net_income: Number(d.spouse_se_net_income ?? 0),
+    projection_method: d.projection_method || 'annualized_actual',
+    annual_income_goal: Number(d.annual_income_goal ?? 0),
+    prior_year_total_income: Number(d.prior_year_total_income ?? 0),
   });
 
   const load = useCallback(async () => {
