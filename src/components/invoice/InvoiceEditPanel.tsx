@@ -5,18 +5,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Pencil, Check, X, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Check, X, Trash2, CheckCircle, PiggyBank, ChevronDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { computeInvoiceStatus } from '@/lib/businessLogic';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { RecordPaymentDialog } from '@/components/invoice/RecordPaymentDialog';
+import { useTaxIntelligence } from '@/hooks/useTaxIntelligence';
+import { computeEffectiveSetAsideRate, getShiftTaxNudge } from '@/lib/taxNudge';
+import { useData } from '@/contexts/DataContext';
 
-/** Convert any date value to a timezone-safe YYYY-MM-DD string for storage.
- *  Avoids the UTC-midnight shift that `new Date('YYYY-MM-DD').toISOString()` causes. */
+/** Convert any date value to a timezone-safe YYYY-MM-DD string for storage. */
 function toDateOnlyISO(v: string | Date | null | undefined): string {
   if (!v) return '';
   if (typeof v === 'string') {
-    // Already a date-only string
     if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
-    // ISO string or other – extract local date parts
     const d = new Date(v);
     if (isNaN(d.getTime())) return v;
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -93,6 +96,21 @@ function EditableLineItemRow({ item, onUpdate, onDelete }: { item: any; onUpdate
   );
 }
 
+function ReadOnlyLineItemRow({ item }: { item: any }) {
+  return (
+    <tr className="border-b last:border-0">
+      <td className="py-1.5">
+        {item.description}
+        {item.shift_id && <span className="text-xs text-primary ml-1">↗ shift</span>}
+      </td>
+      <td className="py-1.5 text-muted-foreground text-xs">{item.service_date ? format(new Date(item.service_date + 'T00:00:00'), 'MMM d') : '—'}</td>
+      <td className="py-1.5 text-right">{item.qty}</td>
+      <td className="py-1.5 text-right">${item.unit_rate}</td>
+      <td className="py-1.5 text-right font-medium">${item.line_total}</td>
+    </tr>
+  );
+}
+
 interface InvoiceEditPanelProps {
   invoice: any;
   items: any[];
@@ -100,21 +118,29 @@ interface InvoiceEditPanelProps {
   profile: any;
   billingNameTo: string;
   billingEmailTo: string;
+  readOnly?: boolean;
+  invoicePayments?: any[];
+  paymentDialogOpen?: boolean;
+  onPaymentDialogChange?: (open: boolean) => void;
   onUpdateInvoice: (invoice: any) => Promise<void>;
-  onAddLineItem: (item: any) => Promise<void>;
-  onUpdateLineItem: (item: any) => Promise<void>;
-  onDeleteLineItem: (id: string) => Promise<void>;
+  onAddLineItem?: (item: any) => Promise<void>;
+  onUpdateLineItem?: (item: any) => Promise<void>;
+  onDeleteLineItem?: (id: string) => Promise<void>;
+  onAddPayment?: (payment: any) => Promise<void>;
   onAddActivity: (activity: any) => Promise<void>;
   onOpenBillingDialog: () => void;
-  // Expose save and state for the action bar
   onSaveRef?: React.MutableRefObject<(() => Promise<void>) | null>;
   onInvoiceFieldChange?: (fields: { invoiceNumber: string; invoiceDate: string; dueDate: string; notes: string; total: number }) => void;
+  onRevertToDraft?: () => void;
 }
 
 export function InvoiceEditPanel({
   invoice, items, facility, profile, billingNameTo, billingEmailTo,
-  onUpdateInvoice, onAddLineItem, onUpdateLineItem, onDeleteLineItem, onAddActivity,
-  onOpenBillingDialog, onSaveRef, onInvoiceFieldChange,
+  readOnly = false, invoicePayments = [],
+  paymentDialogOpen: externalPaymentOpen, onPaymentDialogChange,
+  onUpdateInvoice, onAddLineItem, onUpdateLineItem, onDeleteLineItem,
+  onAddPayment, onAddActivity, onOpenBillingDialog,
+  onSaveRef, onInvoiceFieldChange, onRevertToDraft,
 }: InvoiceEditPanelProps) {
   const navigate = useNavigate();
   const [invoiceNumber, setInvoiceNumber] = useState(invoice.invoice_number);
@@ -126,17 +152,56 @@ export function InvoiceEditPanel({
   const [newDate, setNewDate] = useState('');
   const [newQty, setNewQty] = useState(1);
   const [newRate, setNewRate] = useState(0);
+  const showPayment = externalPaymentOpen ?? false;
+  const setShowPayment = onPaymentDialogChange ?? (() => {});
+  const [showPayNudge, setShowPayNudge] = useState(false);
+  const [paymentHistoryOpen, setPaymentHistoryOpen] = useState(false);
+
+  const { profile: taxProfile, hasProfile: hasTaxProfile } = useTaxIntelligence();
+  const { invoices: allInvoices, shifts } = useData();
 
   const total = items.reduce((s: number, li: any) => s + li.line_total, 0);
+  const computedStatus = computeInvoiceStatus(invoice);
+  const isPaid = invoice.status === 'paid';
 
-  // Expose fields for live preview (in useEffect to avoid infinite render loop)
+  // Compute effective rate for tax nudge
+  const effectiveRate = (() => {
+    if (!hasTaxProfile || !taxProfile) return 0;
+    const yr = new Date().getFullYear();
+    const earned = allInvoices
+      .filter(inv => inv.status === 'paid' && inv.paid_at && new Date(inv.paid_at).getFullYear() === yr)
+      .reduce((sum, inv) => sum + inv.total_amount, 0);
+    const projected = shifts.filter(s => new Date(s.start_datetime) >= new Date()).reduce((sum, s) => sum + (s.rate_applied || 0), 0);
+    return computeEffectiveSetAsideRate(taxProfile, (earned + projected) || 1);
+  })();
+
+  // Auto-dismiss pay nudge
   useEffect(() => {
-    onInvoiceFieldChange?.({ invoiceNumber, invoiceDate, dueDate, notes, total });
-  }, [invoiceNumber, invoiceDate, dueDate, notes, total]);
+    if (showPayNudge) {
+      const t = setTimeout(() => setShowPayNudge(false), 4000);
+      return () => clearTimeout(t);
+    }
+  }, [showPayNudge]);
 
-  // Auto-save draft on field changes (debounced)
+  // Sync state when invoice changes externally (e.g. after status transition)
+  useEffect(() => {
+    setInvoiceNumber(invoice.invoice_number);
+    setInvoiceDate(invoice.invoice_date?.split('T')[0] || format(new Date(), 'yyyy-MM-dd'));
+    setDueDate(invoice.due_date?.split('T')[0] || '');
+    setNotes(invoice.notes || '');
+  }, [invoice.id, invoice.status]);
+
+  // Expose fields for live preview
+  useEffect(() => {
+    if (!readOnly) {
+      onInvoiceFieldChange?.({ invoiceNumber, invoiceDate, dueDate, notes, total });
+    }
+  }, [invoiceNumber, invoiceDate, dueDate, notes, total, readOnly]);
+
+  // Auto-save draft on field changes (debounced) — only in edit mode
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
+    if (readOnly) return;
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     autoSaveTimer.current = setTimeout(async () => {
       await onUpdateInvoice({
@@ -150,7 +215,7 @@ export function InvoiceEditPanel({
       });
     }, 800);
     return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
-  }, [invoiceNumber, invoiceDate, dueDate, notes, total]);
+  }, [invoiceNumber, invoiceDate, dueDate, notes, total, readOnly]);
 
   // Expose save function for action bar
   const handleSave = async () => {
@@ -167,12 +232,12 @@ export function InvoiceEditPanel({
     toast.success('Invoice saved');
   };
 
-  if (onSaveRef) {
+  if (onSaveRef && !readOnly) {
     onSaveRef.current = handleSave;
   }
 
   const handleAddLineItem = async () => {
-    if (!newDesc.trim()) return;
+    if (!newDesc.trim() || !onAddLineItem) return;
     const lineTotal = newQty * newRate;
     await onAddLineItem({
       invoice_id: invoice.id,
@@ -188,8 +253,79 @@ export function InvoiceEditPanel({
     await onUpdateInvoice({ ...invoice, total_amount: newTotal, balance_due: newTotal });
   };
 
+  const handleRecordPayment = async (payment: any) => {
+    if (!onAddPayment) return;
+    await onAddPayment({ invoice_id: invoice.id, ...payment });
+    const newBalance = Math.max(0, invoice.balance_due - payment.amount);
+    const isPaidNow = newBalance <= 0;
+    await onUpdateInvoice({
+      ...invoice,
+      balance_due: newBalance,
+      status: isPaidNow ? 'paid' : 'partial',
+      paid_at: isPaidNow ? new Date().toISOString() : invoice.paid_at,
+    });
+    await onAddActivity({
+      invoice_id: invoice.id,
+      action: isPaidNow ? 'paid_in_full' : 'payment_recorded',
+      description: isPaidNow ? `Paid in full — $${payment.amount}` : `Payment recorded — $${payment.amount} via ${payment.method}`,
+    });
+    toast.success(isPaidNow ? 'Invoice paid in full!' : 'Payment recorded');
+    if (isPaidNow && hasTaxProfile) {
+      setShowPayNudge(true);
+    }
+  };
+
   return (
     <div className="space-y-3">
+      {/* Paid banner */}
+      {isPaid && (
+        <div className="flex items-center justify-center gap-2 p-3 rounded-lg bg-primary/10 text-primary font-medium">
+          <CheckCircle className="h-5 w-5" /> Paid in full
+        </div>
+      )}
+
+      {/* Tax nudge after payment */}
+      {showPayNudge && effectiveRate > 0 && (
+        <div className="flex items-center gap-2 p-2.5 rounded-md bg-[hsl(var(--warning))]/10 text-sm animate-in fade-in slide-in-from-top-2 duration-300">
+          <PiggyBank className="h-4 w-4 text-[hsl(var(--warning))] shrink-0" />
+          <span>
+            <span className="font-medium">Invoice marked paid ✓</span>
+            <span className="text-muted-foreground mx-1">·</span>
+            <span className="text-[hsl(var(--warning))]">
+              Set aside ${getShiftTaxNudge(invoice.total_amount || 0, effectiveRate).setAsideAmount.toLocaleString()} for taxes
+            </span>
+          </span>
+        </div>
+      )}
+
+      {/* Balance Due card — shown when not draft */}
+      {readOnly && (
+        <Card className={isPaid ? 'border-primary/30 bg-primary/5' : computedStatus === 'overdue' ? 'border-destructive/30 bg-destructive/5' : ''}>
+          <CardContent className="pt-4 pb-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Balance Due</span>
+              <span className={`font-bold text-2xl ${computedStatus === 'overdue' ? 'text-destructive' : computedStatus === 'paid' ? 'text-primary' : 'text-foreground'}`}>
+                ${(invoice.balance_due ?? 0).toLocaleString()}
+              </span>
+            </div>
+            <div className="grid grid-cols-3 gap-3 pt-2 border-t text-xs">
+              <div>
+                <p className="text-muted-foreground mb-0.5">Invoice Date</p>
+                <p className="font-medium">{format(new Date(invoice.invoice_date), 'MMM d, yyyy')}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground mb-0.5">Due Date</p>
+                <p className="font-medium">{invoice.due_date ? format(new Date(invoice.due_date), 'MMM d, yyyy') : '—'}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground mb-0.5">Sent</p>
+                <p className="font-medium">{invoice.sent_at ? format(new Date(invoice.sent_at), 'MMM d, yyyy') : '—'}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* From + Bill To compact */}
       <div className="grid grid-cols-2 gap-3">
         <Card>
@@ -221,60 +357,88 @@ export function InvoiceEditPanel({
       {/* Invoice Details */}
       <Card>
         <CardContent className="pt-3 pb-3 space-y-2">
-          <div className="grid grid-cols-3 gap-2">
-            <div>
-              <Label className="text-xs text-muted-foreground">Invoice #</Label>
-              <Input value={invoiceNumber} onChange={e => setInvoiceNumber(e.target.value)} className="h-8 text-sm" />
+          {readOnly ? (
+            <div className="grid grid-cols-3 gap-2 text-sm">
+              <div>
+                <Label className="text-xs text-muted-foreground">Invoice #</Label>
+                <p className="font-medium">{invoice.invoice_number}</p>
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Invoice Date</Label>
+                <p className="font-medium">{format(new Date(invoice.invoice_date), 'MMM d, yyyy')}</p>
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Due Date</Label>
+                <p className="font-medium">{invoice.due_date ? format(new Date(invoice.due_date), 'MMM d, yyyy') : '—'}</p>
+              </div>
             </div>
-            <div>
-              <Label className="text-xs text-muted-foreground">Invoice Date</Label>
-              <Input type="date" value={invoiceDate} onChange={e => setInvoiceDate(e.target.value)} className="h-8 text-sm" />
+          ) : (
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <Label className="text-xs text-muted-foreground">Invoice #</Label>
+                <Input value={invoiceNumber} onChange={e => setInvoiceNumber(e.target.value)} className="h-8 text-sm" />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Invoice Date</Label>
+                <Input type="date" value={invoiceDate} onChange={e => setInvoiceDate(e.target.value)} className="h-8 text-sm" />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Due Date</Label>
+                <Input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="h-8 text-sm" />
+              </div>
             </div>
-            <div>
-              <Label className="text-xs text-muted-foreground">Due Date</Label>
-              <Input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="h-8 text-sm" />
-            </div>
-          </div>
+          )}
         </CardContent>
       </Card>
 
       {/* Line Items */}
       <Card>
         <CardHeader className="pb-1.5 pt-3 px-3 flex flex-row items-center justify-between">
-          <CardTitle className="text-xs text-muted-foreground uppercase tracking-wider">Line Items</CardTitle>
-          <Button variant="ghost" size="sm" onClick={() => setShowAddLine(true)} className="h-6 text-xs"><Plus className="h-3 w-3 mr-1" /> Add</Button>
+          <CardTitle className="text-xs text-muted-foreground uppercase tracking-wider">Line Items ({items.length})</CardTitle>
+          {!readOnly && (
+            <Button variant="ghost" size="sm" onClick={() => setShowAddLine(true)} className="h-6 text-xs"><Plus className="h-3 w-3 mr-1" /> Add</Button>
+          )}
         </CardHeader>
         <CardContent className="px-3 pb-3">
-          <table className="w-full text-sm">
-            <thead><tr className="border-b text-left">
-              <th className="pb-1.5 font-medium text-muted-foreground text-xs">Description</th>
-              <th className="pb-1.5 font-medium text-muted-foreground text-xs w-24">Date</th>
-              <th className="pb-1.5 font-medium text-muted-foreground text-xs w-16 text-right">Qty</th>
-              <th className="pb-1.5 font-medium text-muted-foreground text-xs w-20 text-right">Rate</th>
-              <th className="pb-1.5 font-medium text-muted-foreground text-xs w-20 text-right">Total</th>
-              <th className="w-8" />
-            </tr></thead>
-            <tbody>
-              {items.map((li: any) => (
-                <EditableLineItemRow
-                  key={li.id}
-                  item={li}
-                  onUpdate={async (updated: any) => {
-                    await onUpdateLineItem(updated);
-                    const newTotal = items.reduce((s: number, x: any) => s + (x.id === updated.id ? updated.line_total : x.line_total), 0);
-                    await onUpdateInvoice({ ...invoice, total_amount: newTotal, balance_due: newTotal });
-                  }}
-                  onDelete={async () => {
-                    await onDeleteLineItem(li.id);
-                    const newTotal = total - li.line_total;
-                    await onUpdateInvoice({ ...invoice, total_amount: newTotal, balance_due: newTotal });
-                  }}
-                />
-              ))}
-              {items.length === 0 && <tr><td colSpan={6} className="py-3 text-center text-muted-foreground text-xs">No line items yet — click Add to start</td></tr>}
-            </tbody>
-          </table>
-          {showAddLine && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              {!readOnly && (
+                <thead><tr className="border-b text-left">
+                  <th className="pb-1.5 font-medium text-muted-foreground text-xs">Description</th>
+                  <th className="pb-1.5 font-medium text-muted-foreground text-xs w-24">Date</th>
+                  <th className="pb-1.5 font-medium text-muted-foreground text-xs w-16 text-right">Qty</th>
+                  <th className="pb-1.5 font-medium text-muted-foreground text-xs w-20 text-right">Rate</th>
+                  <th className="pb-1.5 font-medium text-muted-foreground text-xs w-20 text-right">Total</th>
+                  <th className="w-8" />
+                </tr></thead>
+              )}
+              <tbody>
+                {readOnly
+                  ? items.map((li: any) => <ReadOnlyLineItemRow key={li.id} item={li} />)
+                  : items.map((li: any) => (
+                    <EditableLineItemRow
+                      key={li.id}
+                      item={li}
+                      onUpdate={async (updated: any) => {
+                        if (!onUpdateLineItem) return;
+                        await onUpdateLineItem(updated);
+                        const newTotal = items.reduce((s: number, x: any) => s + (x.id === updated.id ? updated.line_total : x.line_total), 0);
+                        await onUpdateInvoice({ ...invoice, total_amount: newTotal, balance_due: newTotal });
+                      }}
+                      onDelete={async () => {
+                        if (!onDeleteLineItem) return;
+                        await onDeleteLineItem(li.id);
+                        const newTotal = total - li.line_total;
+                        await onUpdateInvoice({ ...invoice, total_amount: newTotal, balance_due: newTotal });
+                      }}
+                    />
+                  ))
+                }
+                {items.length === 0 && <tr><td colSpan={6} className="py-3 text-center text-muted-foreground text-xs">No line items</td></tr>}
+              </tbody>
+            </table>
+          </div>
+          {!readOnly && showAddLine && (
             <div className="border-t pt-3 mt-2 space-y-2">
               <Input placeholder="Description" value={newDesc} onChange={e => setNewDesc(e.target.value)} className="h-8 text-sm" />
               <div className="grid grid-cols-3 gap-2">
@@ -298,9 +462,59 @@ export function InvoiceEditPanel({
       <Card>
         <CardContent className="pt-3 pb-3">
           <Label className="text-xs text-muted-foreground uppercase tracking-wider">Notes / Memo</Label>
-          <Textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Payment terms, thank you note, etc." rows={2} className="text-sm mt-1.5" />
+          {readOnly ? (
+            <p className="text-sm mt-1.5">{invoice.notes || <span className="text-muted-foreground italic">No notes</span>}</p>
+          ) : (
+            <Textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Payment terms, thank you note, etc." rows={2} className="text-sm mt-1.5" />
+          )}
         </CardContent>
       </Card>
+
+      {/* Payment History — collapsible, shown in read-only mode */}
+      {readOnly && invoicePayments.length > 0 && (
+        <Collapsible open={paymentHistoryOpen} onOpenChange={setPaymentHistoryOpen}>
+          <Card>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="pb-1.5 pt-3 px-3 cursor-pointer hover:bg-muted/50 rounded-t-lg flex flex-row items-center justify-between">
+                <CardTitle className="text-xs text-muted-foreground uppercase tracking-wider">Payment History ({invoicePayments.length})</CardTitle>
+                <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${paymentHistoryOpen ? 'rotate-180' : ''}`} />
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="px-3 pb-3">
+                <div className="space-y-2">
+                  {invoicePayments.map((p: any) => (
+                    <div key={p.id} className="flex justify-between text-sm p-2 rounded bg-muted/50">
+                      <div>
+                        <p className="font-medium">${p.amount.toLocaleString()} via {p.method}</p>
+                        <p className="text-xs text-muted-foreground">{p.account}{p.memo ? ` — ${p.memo}` : ''}</p>
+                      </div>
+                      <span className="text-xs text-muted-foreground">{format(new Date(p.payment_date), 'MMM d, yyyy')}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
+      )}
+
+      {/* Revert to draft — shown in read-only mode */}
+      {readOnly && !isPaid && onRevertToDraft && (
+        <div className="pt-1">
+          <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground" onClick={onRevertToDraft}>
+            Need to edit? Revert to Draft
+          </Button>
+        </div>
+      )}
+
+      {/* Record Payment Dialog */}
+      <RecordPaymentDialog
+        open={showPayment}
+        onOpenChange={setShowPayment}
+        balanceDue={invoice.balance_due}
+        onRecord={handleRecordPayment}
+      />
     </div>
   );
 }
