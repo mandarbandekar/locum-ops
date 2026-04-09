@@ -44,18 +44,19 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
   const [scorpSalary, setScorpSalary] = useState(existingProfile?.scorp_salary ?? 0);
   const [safeHarbor, setSafeHarbor] = useState(existingProfile?.safe_harbor_method || '90_percent');
   const [priorYearTax, setPriorYearTax] = useState(existingProfile?.prior_year_tax_paid ?? 0);
+  const [priorYearIncome, setPriorYearIncome] = useState(existingProfile?.prior_year_total_income ?? 0);
 
   const isScorp = entityType === 'scorp';
   const stateData = stateCode ? STATE_TAX_DATA[stateCode] : null;
   const showPTEStep = isScorp && stateData?.hasPTE === true;
 
-  // Dynamic steps: 1=entity, 2=filing, 3=state, 3.5=PTE(conditional), 4=household, 5=retirement, 6=scorpSalary(scorp), 7=expenses, 8=safeHarbor, 9=complete
+  // Dynamic steps
   const steps = useMemo(() => {
     const s: string[] = ['entity', 'filing', 'state'];
     if (showPTEStep) s.push('pte');
     s.push('household', 'retirement');
     if (isScorp) s.push('scorpSalary');
-    s.push('expenses', 'safeHarbor', 'complete');
+    s.push('expenses', 'priorYearIncome', 'safeHarbor', 'complete');
     return s;
   }, [isScorp, showPTEStep]);
 
@@ -78,6 +79,7 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
       case 'retirement': return renderRetirementStep();
       case 'scorpSalary': return renderScorpSalaryStep();
       case 'expenses': return renderExpensesStep();
+      case 'priorYearIncome': return renderPriorYearIncomeStep();
       case 'safeHarbor': return renderSafeHarborStep();
       case 'complete': return renderCompletionStep();
       default: return null;
