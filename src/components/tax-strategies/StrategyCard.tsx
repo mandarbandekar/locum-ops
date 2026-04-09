@@ -136,6 +136,7 @@ function renderCalculator(
   annualizedIncome: number,
   combinedRate: number,
   onUpdate: (patch: Partial<StrategyInputs>) => void,
+  entityType: string = 'sole_prop',
 ) {
   switch (strategyId) {
     case 'vet_deductions':
