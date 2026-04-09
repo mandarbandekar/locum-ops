@@ -323,33 +323,65 @@ export function buildStrategies(
     ],
   });
 
-  // 6. S-Corp
+  // 6. S-Corp — show different card based on entity type
   const sCorpEligible = annualizedIncome > 80000;
   const sCorpSavings = sCorpEligible ? calcSCorpSavings(annualizedIncome, inputs.scorp_salary_slider) : 0;
-  strategies.push({
-    id: 'scorp',
-    title: 'S-Corp Election Analysis',
-    description: 'Estimate potential self-employment tax savings from electing S-Corp status',
-    estimatedSavings: sCorpSavings,
-    eligible: sCorpEligible,
-    unlockLabel: sCorpEligible ? null : 'Unlocks at $80K+',
-    dismissed: dismissed.has('scorp'),
-    status: dismissed.has('scorp') ? 'dismissed' : sCorpEligible ? 'action_available' : 'not_eligible',
-    whyItMatters: `At your current income of $${Math.round(annualizedIncome).toLocaleString()}, switching to an S-Corp structure could save you approximately $${sCorpSavings.toLocaleString()} in self-employment tax. Distributions above your reasonable salary are exempt from SE tax.`,
-    howItWorks: [
-      'As a sole proprietor, you pay 15.3% SE tax on all net earnings',
-      'As an S-Corp, you pay yourself a "reasonable salary" subject to payroll tax',
-      'Remaining profits are distributed and NOT subject to SE tax',
-      'S-Corp has additional overhead: payroll service, separate tax return (~$2,500/yr)',
-      'The "reasonable salary" should reflect what an employed DVM in a similar role would earn',
-    ],
-    actionSteps: [
-      'Use the salary slider below to model different scenarios',
-      'File Form 2553 with the IRS to elect S-Corp status',
-      'Set up payroll through a service like Gusto or ADP',
-      'Discuss timing with your CPA — election must be filed by March 15',
-    ],
-  });
+
+  if (isScorp) {
+    // Already S-Corp: show salary optimization tool
+    const salary = inputs.scorp_salary_slider || 110000;
+    const distribution = Math.max(0, annualizedIncome - salary);
+    strategies.push({
+      id: 'scorp',
+      title: 'Reasonable Salary Optimization',
+      description: 'Optimize your salary vs. distribution split to minimize payroll taxes',
+      estimatedSavings: 0, // Savings shown in the interactive calculator
+      eligible: true,
+      unlockLabel: null,
+      dismissed: dismissed.has('scorp'),
+      status: dismissed.has('scorp') ? 'dismissed' : 'action_available',
+      whyItMatters: `As an S-Corp, your salary of $${Math.round(salary).toLocaleString()} is subject to payroll taxes (employer + employee FICA), while your distributions of $${Math.round(distribution).toLocaleString()} are not. Finding the right balance between a "reasonable" salary and distributions is key to maximizing your S-Corp tax advantage.`,
+      howItWorks: [
+        'Your salary must be "reasonable" — what an employed DVM in a similar role would earn',
+        'Payroll taxes (FICA) apply to salary at ~15.3% combined (employer + employee)',
+        'Distributions above salary are exempt from payroll taxes',
+        'Setting salary too low risks IRS audit; too high negates S-Corp benefits',
+        'Payroll taxes are separate from quarterly estimated income tax payments',
+      ],
+      actionSteps: [
+        'Use the salary slider below to model different salary levels',
+        'Research comparable employed DVM salaries in your area',
+        'Review with your CPA to ensure your salary is defensible',
+        'Adjust your payroll service (Gusto, ADP) accordingly',
+      ],
+    });
+  } else {
+    // 1099 / Sole Prop: show S-Corp election analysis
+    strategies.push({
+      id: 'scorp',
+      title: 'S-Corp Election Analysis',
+      description: 'Estimate potential self-employment tax savings from electing S-Corp status',
+      estimatedSavings: sCorpSavings,
+      eligible: sCorpEligible,
+      unlockLabel: sCorpEligible ? null : 'Unlocks at $80K+',
+      dismissed: dismissed.has('scorp'),
+      status: dismissed.has('scorp') ? 'dismissed' : sCorpEligible ? 'action_available' : 'not_eligible',
+      whyItMatters: `At your current income of $${Math.round(annualizedIncome).toLocaleString()}, switching to an S-Corp structure could save you approximately $${sCorpSavings.toLocaleString()} in self-employment tax. Distributions above your reasonable salary are exempt from SE tax.`,
+      howItWorks: [
+        'As a sole proprietor, you pay 15.3% SE tax on all net earnings',
+        'As an S-Corp, you pay yourself a "reasonable salary" subject to payroll tax',
+        'Remaining profits are distributed and NOT subject to SE tax',
+        'S-Corp has additional overhead: payroll service, separate tax return (~$2,500/yr)',
+        'The "reasonable salary" should reflect what an employed DVM in a similar role would earn',
+      ],
+      actionSteps: [
+        'Use the salary slider below to model different scenarios',
+        'File Form 2553 with the IRS to elect S-Corp status',
+        'Set up payroll through a service like Gusto or ADP',
+        'Discuss timing with your CPA — election must be filed by March 15',
+      ],
+    });
+  }
 
   // 7. Quarterly Deadlines — always eligible
   const nextDeadline = getNextQuarterlyDeadline();
