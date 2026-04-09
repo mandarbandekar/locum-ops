@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, X, Lightbulb } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useSidebar } from '@/components/ui/sidebar';
 
 export interface TourStep {
   targetSelector: string;
@@ -56,12 +57,20 @@ function getPlacement(targetRect: Rect, placement: string, tooltipW: number, too
   return { top, left };
 }
 
+const SIDEBAR_TOUR_IDS = ['facilities', 'schedule', 'invoices', 'business', 'tax'];
+
+function isSidebarStep(selector: string) {
+  return SIDEBAR_TOUR_IDS.some(id => selector.includes(`data-tour="${id}"`));
+}
+
 export function SpotlightTour({ steps, isOpen, onClose }: SpotlightTourProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [targetRect, setTargetRect] = useState<Rect | null>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const [visible, setVisible] = useState(false);
+  const { state: sidebarState, setOpen: setSidebarOpen } = useSidebar();
+  const sidebarWasCollapsedRef = useRef(false);
 
   const step = steps[currentStep];
 
@@ -82,9 +91,18 @@ export function SpotlightTour({ steps, isOpen, onClose }: SpotlightTourProps) {
     });
   }, [step]);
 
-  // Expand sidebar collapsible groups when targeting sidebar items
+  // Expand sidebar when targeting sidebar items
   useEffect(() => {
     if (!isOpen || !step) return;
+
+    // If this is a sidebar step and sidebar is collapsed, expand it
+    if (isSidebarStep(step.targetSelector) && sidebarState === 'collapsed') {
+      sidebarWasCollapsedRef.current = true;
+      setSidebarOpen(true);
+      setTimeout(updateRect, 350);
+      return;
+    }
+
     const el = document.querySelector(step.targetSelector);
     if (!el) {
       // Try expanding collapsed sidebar groups
@@ -93,10 +111,9 @@ export function SpotlightTour({ steps, isOpen, onClose }: SpotlightTourProps) {
         const trigger = c.querySelector('[data-radix-collapsible-trigger]') as HTMLElement;
         if (trigger) trigger.click();
       });
-      // Retry after expansion animation
       setTimeout(updateRect, 350);
     }
-  }, [isOpen, step, updateRect]);
+  }, [isOpen, step, updateRect, sidebarState, setSidebarOpen]);
 
   useEffect(() => {
     if (!isOpen) {
