@@ -1,77 +1,57 @@
 
 
-# S-Corp & 1099 Entity-Aware Tax Calculations
+# Tax Intelligence Module — Data Integration Audit & Fix
 
-## Problem
+## Issues Found
 
-Three issues with how entity type flows through the system:
+### Issue 1: Expense data inconsistency across components
 
-1. **S-Corp `calculateTax()` excludes payroll tax from `totalAnnualTax`** — line 113 only sums `federalTax + personalStateTax`, omitting employer+employee FICA on salary. The payroll tax is computed (line 92) but never added. Users see an artificially low quarterly estimate.
+**`calculateTax()` (line 83)** uses `expenseOverride ?? profile.ytd_expenses_estimate` — a manually entered estimate from the profile. The dashboard (line 316) correctly computes `blendedExpenses = Math.max(actualExpenses, profile.ytd_expenses_estimate)` and passes it as `expenseOverride`. This is working correctly for the dashboard.
 
-2. **Tax Strategy engine ignores entity type** — `buildStrategies()` and `getCombinedMarginalRate()` always add 15.3% SE tax rate, even for S-Corp users who pay FICA only on salary. The S-Corp strategy card shows "switch to S-Corp" savings even when the user is already S-Corp.
+**`TaxReductionGuide` (line 54)** computes its own `netForCalc` using `profile.ytd_expenses_estimate` directly, **ignoring actual logged expenses** even though it fetches them on line 44-49. The `loggedExpenseTotal` is computed but only used for the "projected expenses" display — not for the actual tax bracket calculation.
 
-3. **`useTaxStrategies` hardcodes filing status** — line 73 uses `'single'` and `0.05` state rate instead of reading from the user's tax intelligence profile.
+**Tax Strategy `buildStrategies()`** does not receive or use any expense data at all. The `annualizedIncome` from `getAnnualizedIncome()` is gross income — no expenses are subtracted. Strategy savings calculations use gross income as the base, which overstates savings.
+
+### Issue 2: Dashboard `taxSnapshot` ignores expenses entirely
+
+`DashboardPage.tsx` line 554-567 calculates `taxSnapshot` by calling `calculateTax(annualized, taxProfile)` **without any expense override**. This means it falls back to `profile.ytd_expenses_estimate`, which may be stale or zero. It should use actual logged expenses.
+
+### Issue 3: `TaxReductionGuide` duplicates tax math instead of using `calculateTax()`
+
+Lines 54-62 manually recompute SE tax, AGI, and taxable income instead of calling the shared `calculateTax()` function. This creates drift risk and currently produces different results.
+
+### Issue 4: Strategy `getAnnualizedIncome()` only uses paid invoices
+
+`getAnnualizedIncome()` in `taxStrategies.ts` uses only paid invoice totals. This is consistent with the rest of the system (good), but the strategy savings calculations don't factor in expenses at all — overstating potential deduction savings.
 
 ## Changes
 
-### 1. Fix `calculateTax()` S-Corp path (TaxDashboard.tsx, ~line 113)
+### 1. Fix `TaxReductionGuide` to use actual expenses and `calculateTax()`
 
-Include payroll taxes in total:
-```
-totalAnnualTax = federalTax + personalStateTax + employerFICA + employeeFICA
-```
-Both employer and employee FICA (each 7.65% of salary) are real tax obligations the user must plan for. The salary itself is not a "deduction" in the traditional sense — it's W-2 income taxed at the individual level. The payroll taxes on it are what matter for quarterly planning.
+Replace the manual tax math (lines 54-62) with a call to `calculateTax(ytdPaidIncome, profile, blendedExpenses)` where `blendedExpenses = Math.max(loggedExpenseTotal, profile.ytd_expenses_estimate)`. This ensures the reduction guide uses the same calculation engine and real expense data.
 
-### 2. Update `getCombinedMarginalRate()` (taxStrategies.ts)
+### 2. Fix Dashboard `taxSnapshot` to include expenses
 
-Accept an optional `entityType` parameter. For S-Corp, use FICA rate on salary portion instead of full SE tax rate:
-```typescript
-export function getCombinedMarginalRate(
-  annualizedIncome: number,
-  filingStatus: FilingStatus = 'single',
-  stateRate: number = 0.05,
-  entityType: string = 'sole_prop',
-): number {
-  const federalRate = getMarginalRate(annualizedIncome, filingStatus);
-  // S-Corp: no SE tax on distributions, only FICA on salary
-  const selfEmploymentComponent = entityType === 'scorp' ? 0 : SE_TAX_RATE;
-  return federalRate + selfEmploymentComponent + stateRate;
-}
-```
+Import `useExpenses()` in `DashboardPage` (it may already be available) and pass `blendedExpenses` to `calculateTax()` when computing the tax snapshot.
 
-### 3. Make `buildStrategies()` entity-aware (taxStrategies.ts)
+### 3. Pass expenses into Tax Strategy engine
 
-- Accept `entityType` parameter
-- **S-Corp users**: Hide the "S-Corp Election Analysis" strategy (they're already S-Corp). Instead, show a "Salary Optimization" variant that helps tune reasonable salary.
-- **1099 users**: Show S-Corp strategy as-is (potential switch)
-- **S-Corp users**: Retirement strategy calculations use salary as the base for Solo 401(k) employee deferral (since contributions come from W-2 income in S-Corp context)
+- Add an `expenses` parameter to `buildStrategies()` and `getCombinedMarginalRate()`
+- In `useTaxStrategies`, import `useExpenses()`, compute `blendedExpenses`, and pass net income (annualized income minus annualized expenses) where appropriate
+- Strategy savings calculations should use net income for deduction impact calculations
 
-### 4. Wire tax profile into `useTaxStrategies` hook
+### 4. Ensure mileage deductions are included
 
-Replace hardcoded `'single'` / `0.05` with actual profile values:
-```typescript
-const { profile } = useTaxIntelligence();
-const filingStatus = (profile?.filing_status || 'single') as FilingStatus;
-const stateRate = profile?.state_code ? (STATE_TAX_DATA[profile.state_code]?.topRate || 0.05) : 0.05;
-const entityType = profile?.entity_type || 'sole_prop';
-```
-Pass `entityType` through to `buildStrategies()`.
-
-### 5. Update strategy descriptions for S-Corp context
-
-For S-Corp users:
-- SEP-IRA/Solo 401(k): Clarify that contributions are based on W-2 salary, not total business income
-- Replace S-Corp card with "Reasonable Salary Optimization" — slider to tune salary vs distribution split
-- Quarterly deadlines: Note that payroll taxes are separate from quarterly estimated payments
+Mileage expenses are already stored in the `expenses` table with `deductible_amount_cents`. The `useExpenses()` hook's `ytdDeductibleCents` already includes confirmed mileage. No additional work needed — fixing the expense passthrough in issues 1-3 automatically includes mileage.
 
 ## File Changes
 
 | File | Change |
 |---|---|
-| `src/components/tax-intelligence/TaxDashboard.tsx` | Fix S-Corp `calculateTax()` to include payroll tax in `totalAnnualTax` |
-| `src/lib/taxStrategies.ts` | Add `entityType` param to `getCombinedMarginalRate()` and `buildStrategies()`. Swap S-Corp strategy for salary optimization when user is S-Corp. Adjust retirement calc descriptions. |
-| `src/hooks/useTaxStrategies.ts` | Import `useTaxIntelligence`, read profile for filing status, state rate, and entity type. Pass to `buildStrategies()`. |
-| `src/components/tax-strategies/StrategyCard.tsx` | Update S-Corp calculator section to show salary optimization UI when entity is already S-Corp |
+| `src/components/tax-intelligence/TaxReductionGuide.tsx` | Replace manual tax math with `calculateTax()` call using blended expenses |
+| `src/pages/DashboardPage.tsx` | Pass actual expenses to `calculateTax()` in `taxSnapshot` computation |
+| `src/lib/taxStrategies.ts` | Add `businessExpenses` param to `buildStrategies()`, use net income for savings calcs |
+| `src/hooks/useTaxStrategies.ts` | Import `useExpenses()`, compute blended expenses, pass to `buildStrategies()` |
 
-No database changes needed — entity type is already stored in `tax_intelligence_profiles`.
+No database changes needed. All expense and mileage data is already in the `expenses` table and accessible via `useExpenses()`.
 
