@@ -1,39 +1,62 @@
 
 
-# Fix: Spotlight Tour Not Highlighting Sidebar Items Properly
+# Add Optional Enrichment Steps After Facility Creation
 
-## Problem
+## Summary
 
-When the sidebar is in collapsed/icon mode (3rem wide), the tour targets sidebar items that appear as tiny icons in the corner instead of full navigation labels. The current code only expands collapsed *groups* within the sidebar — it doesn't expand the sidebar itself.
+After the current 4-step flow (Welcome → Clinic Details → Contacts → Billing Setup) creates the facility, show a **post-creation enrichment screen** instead of immediately closing the dialog. This screen lets users optionally fill in detailed rates, mileage, and tech/clinic access — or skip with a clear message that these are accessible from each clinic's detail tabs.
 
-## Root Cause
+## New Flow
 
-The sidebar uses `collapsible="icon"` which shrinks to icons only. The `SpotlightTour` component doesn't check or control the sidebar's open/collapsed state — it only looks for Radix collapsible groups.
+```text
+Steps 0–3 (unchanged)          Step 4 (NEW — post-creation)
+───────────────────            ──────────────────────────────
+0. Welcome                     4. "Clinic Added!" enrichment screen
+1. Clinic Details                 - Detailed shift rates (RatesEditor)
+2. Contacts                       - Mileage from home (miles input)
+3. Billing Setup → SUBMIT         - Tech access (computer, wifi, PIMS)
+                                  - Clinic access (door codes, parking)
+                                  [Save & Close] or [Skip — I'll do this later]
+```
 
-## Fix
+## Key UX Decisions
 
-### `src/components/SpotlightTour.tsx`
+- The facility is **already created** after step 3 — step 4 is purely updating it
+- Step 4 uses collapsible accordion sections so it doesn't feel overwhelming
+- Each section has a one-line explanation of why it matters for relief vets
+- Skip button shows: "You can always add these under the clinic's Overview tab"
+- If user fills any section and saves, toast confirms the update
+- If user skips entirely, a softer toast: "Clinic added — you can enrich details anytime from the clinic page"
 
-1. Import `useSidebar` from the sidebar component
-2. Before highlighting a sidebar step (steps 5–9, targeting `[data-tour="facilities"]` through `[data-tour="tax"]`), check if the sidebar is collapsed
-3. If collapsed, call `setOpen(true)` to expand it, then wait for the animation before measuring the target rect
-4. Store the original sidebar state so we can restore it when the tour ends or moves back to dashboard steps
+## Changes to `src/components/AddFacilityDialog.tsx`
 
-### Detection logic
+1. **Add step 4 to `STEP_META`**: `{ label: 'Optional Details', icon: Settings2, required: false, hint: '...' }`
+2. **Track `createdFacilityId`** state — set after successful submit at step 3
+3. **Move `handleSubmit` to trigger at step 3 → step 4 transition** (not at last step)
+4. **Add new state** for tech/clinic access fields (`techComputer`, `techWifi`, `techPims`, `clinicAccess`, `mileageMiles`) and import `RatesEditor` + `RateEntry` types
+5. **Step 4 UI**: Render 4 accordion sections:
+   - **Shift Rates** — embed `RatesEditor` (compact, no card wrapper), pre-populate with day rate from step 1 if set
+   - **Mileage from Home** — single numeric input with helper text about automatic expense tracking
+   - **Tech Access** — 3 text inputs (computer/login, wifi, PIMS) with helper: "Save these so you're not scrambling on your first day at a new clinic"
+   - **Clinic Access** — textarea for door codes, parking, entry instructions
+6. **Step 4 navigation**: "Save & Close" button (saves all filled fields via `updateFacility` + `updateTerms`, then closes) and a "Skip — I'll add these later" link that closes with a guidance toast
+7. **Update `totalSteps`** to 5, adjust progress bar
+8. **Update stepper**: Show steps 1–3 normally, step 4 as a separate "bonus" indicator (dotted border or different styling to signal optional enrichment)
 
-- Sidebar items can be identified by checking if the target selector starts with `[data-tour="facilities"]`, `[data-tour="schedule"]`, `[data-tour="invoices"]`, `[data-tour="business"]`, or `[data-tour="tax"]` — or more simply, check if the target element lives inside the `[data-sidebar="sidebar"]` container
-- When the step's target element is inside the sidebar and `state === 'collapsed'`, expand the sidebar before measuring
+## Accordion Section Details
 
-### Restore behavior
+Each section in step 4:
+- **Header**: Icon + title + "Why this matters" one-liner
+- **Rates**: "Different clinics pay different rates for weekends, holidays, and partial days. Setting these now means your invoices are accurate from day one."
+- **Mileage**: "Enter your one-way drive distance to auto-track mileage deductions after every shift at this clinic."  
+- **Tech Access**: "Computer logins, wifi passwords, and PIMS details — save them here so you're prepared before each shift."
+- **Clinic Access**: "Door codes, parking instructions, after-hours entry — everything you need to walk in confidently."
 
-- When the tour closes (finish/skip), restore the sidebar to its previous state if it was changed
-- Use a ref to track whether the tour expanded the sidebar
-
-### File changes
+## File Changes
 
 | File | Change |
 |---|---|
-| `src/components/SpotlightTour.tsx` | Import `useSidebar`, add sidebar expansion logic before rect measurement, restore on close |
+| `src/components/AddFacilityDialog.tsx` | Add step 4 with accordion enrichment, split submit logic, new state fields |
 
-Single file, ~15 lines added.
+Single file change. No database or routing changes — all fields already exist on the facility model.
 
