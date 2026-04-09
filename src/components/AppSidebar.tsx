@@ -41,7 +41,7 @@ function useBadgeCounts() {
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
-  const { signOut } = useAuth();
+  
   const { draftInvoices } = useBadgeCounts();
 
   const groups: NavGroup[] = [
