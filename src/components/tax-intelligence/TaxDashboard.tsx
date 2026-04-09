@@ -445,7 +445,7 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
                     Total Income <Info className="h-3 w-3" />
                   </p>
                   <p className="text-xl font-bold mt-1">${fmt(totalIncome)}</p>
-                  <p className="text-[10px] text-muted-foreground">earned + projected</p>
+                  <p className="text-[10px] text-muted-foreground">earned + scheduled + projected</p>
                 </div>
               </TooltipTrigger>
               <TooltipContent className="text-xs max-w-xs">{kpiTooltips.totalIncome}</TooltipContent>
