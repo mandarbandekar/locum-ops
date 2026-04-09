@@ -1,122 +1,61 @@
 
 
-# Onboarding Steps 3–5: Implementation Plan
+# Improve Onboarding UX — Add Contextual Guidance Across All Steps
 
-## Overview
+## Summary
 
-Replace the current `first_shift`, `tax_enablement`, `calendar_sync`, and `workspace_ready` phases with rich, data-driven experiences. The file `src/pages/OnboardingPage.tsx` is the primary target. Two new helper components will be extracted to keep it manageable.
+Add contextual explanations, "how it works" hints, and product education to each onboarding step so first-time users understand what LocumOps does as they set things up. No structural changes — just enriching existing screens with helpful copy, explainer cards, and visual cues.
 
-## New Components
+## Changes by File
 
-### 1. `src/components/onboarding/OnboardingShiftStep.tsx`
-Step 3 — inline shift form + results phase on same screen.
+### 1. `src/pages/OnboardingPage.tsx`
 
-**Phase 1 (input):**
-- If user added 1 facility: show non-editable reference card (name, address, "Just added" badge) — no dropdown
-- If multiple facilities: show a dropdown selector
-- Fields: date (default yesterday), start time (08:00), end time (18:00), rate (pre-filled from facility's terms `day_rate`, fallback `$650` placeholder)
-- CTA: "Log shift →"
+**Step 1 (Profile):**
+- Add a small "What is LocumOps?" explainer card below the form with 3 bullet points:
+  - "Centralize your clinics, shifts, and invoices in one place"
+  - "Auto-generate invoices when you log shifts"
+  - "Track taxes and credentials so nothing slips through the cracks"
+- Style: muted background card with a subtle icon
 
-**Phase 2 (results — appears after submit, same screen):**
-- Form collapses (dims with reduced opacity)
-- Call `addShift(...)` which already auto-generates the draft invoice in DataContext
-- After shift saved, read back the newly created invoice + line items from DataContext state
-- Render 3 result blocks with staggered slide-up animation (200ms each):
-  1. **Invoice Generated Banner** — gradient bg, ⚡ icon, "Invoice auto-generated", subtitle
-  2. **Invoice Preview Card** — styled like a real invoice document: "INVOICE" header, invoice number, date, "Net 30", bill-to clinic name, line item "Relief veterinary services — Xh", total, "Draft" badge
-  3. **Earnings Snapshot Card** — "📊 Business Hub — Earnings this week", large green dollar amount, 35% progress bar, footnote
-- Below blocks: Primary "See my tax estimate →", secondary text links "Add another shift" | "Add another practice"
-- "Add another shift" scrolls up and resets form
-- "Add another practice" opens `AddFacilityDialog`
+**Step 2 (Add Clinic):**
+- Add a "Why add clinics?" context card below the tip, explaining: "Each clinic you add becomes a billing entity. When you log shifts at this clinic, LocumOps auto-generates invoices, tracks payments, and builds your earnings reports — no spreadsheets needed."
 
-**Props:** `facilities`, `shifts`, `terms`, `invoices`, `lineItems`, `addShift`, `onContinue`, `onAddPractice`
+### 2. `src/components/onboarding/OnboardingShiftStep.tsx`
 
-### 2. `src/components/onboarding/OnboardingTaxStep.tsx`
-Step 4 — data-driven tax opt-in.
+**Phase 1 (before submit):**
+- Add a "How it works" explainer strip above the form with 3 mini steps (icon + short text, horizontal row):
+  1. "Log a shift" (clipboard icon)
+  2. "Invoice auto-created" (file-text icon)
+  3. "Track earnings" (trending-up icon)
+- Connected with a dashed line or arrow between them
+- Style: compact, muted background, small text
 
-**If shift data exists (rate available):**
-- Tax Snapshot Card with gradient border:
-  - Quarterly income = rate × 60, quarterly tax = quarterly_income × 0.30
-  - Two large side-by-side metrics with scale-up animation
-  - Breakdown rows: federal (×0.22), SE tax (×0.153), state (×0.05)
-  - Footer with assumptions
-- S-Corp Savings Nudge card: savings = quarterly_income × 0.05
-- Opt-in toggle (ON by default) + disclaimer checkbox (same text as current)
-- CTA: "Almost done →"
+**Phase 2 (after submit):**
+- **Block 1 (Invoice Banner):** Add expanded subtitle: "Every shift you log at a clinic automatically generates a draft invoice. You can review, edit, and send it from your Invoices page — or set up auto-reminders."
+- **Block 2 (Invoice Preview):** Add a small footer note below the total: "This is a real draft saved to your account. Head to Invoices anytime to review, customize, or send it to the clinic."
+- **Block 3 (Earnings Snapshot):** Add a context line: "Your Business Hub tracks weekly, monthly, and annual earnings across all clinics. The more shifts you log, the more accurate your financial picture becomes."
 
-**If no shift data:**
-- Simplified message + toggle (OFF by default) + disclaimer
-- Grayed-out preview mockup of tax dashboard
-- CTA: "Almost done →"
+### 3. `src/components/onboarding/OnboardingTaxStep.tsx`
 
-**Props:** `shiftRate`, `hasShiftData`, `timezone`, `onContinue`, `onEnableTax`
+**With shift data:**
+- Add a "How we calculate this" collapsible or always-visible info card below the breakdown rows, explaining in plain language: "We project your quarterly income based on your day rate and an average of 60 shift-days per quarter. Your effective tax rate (30%) includes federal income tax, self-employment tax, and an estimated state rate. These numbers refine automatically as you log more shifts throughout the year."
+- Add context to the S-Corp nudge: "LocumOps monitors your income trajectory and will alert you when switching to an S-Corp structure could meaningfully reduce your self-employment tax burden."
 
-### 3. `src/components/onboarding/WorkspaceReady.tsx` — Rewrite
-Step 5 — merge calendar sync + completion summary into one screen.
+**Without shift data:**
+- Improve the placeholder text: "Tax Intelligence automatically calculates your estimated quarterly taxes, tracks payment deadlines, and alerts you before due dates. It uses your actual shift income — no manual data entry needed."
 
-**Section 1: Calendar Sync**
-- Reuse existing `CalendarSyncStep` UI but without its own "Continue" button
-- Frame: "Sync your shifts to your calendar" + "Optional — you can set this up later in Settings."
+**Toggle area:**
+- Add a small note below the toggle: "You can always enable or disable this later in Settings > Business & Taxes."
 
-**Section 2: Completion Summary**
-- "You're all set" headline
-- 4 result cards with staggered animation (100ms):
-  - 🏥 Clinic CRM — "[name] added" or "No clinics yet" (dimmed + "Set up →")
-  - 📋 Shift Log — "X shift(s) tracked" or "No shifts yet"
-  - 📄 Invoice — "$X draft ready to send" or "No invoices yet"
-  - 🧮 Tax Estimate — "$X quarterly projection" or "Disabled"
-- Completed = green check + full opacity; skipped = dimmed + deep-link
-- Optional Next Steps checklist (4 unchecked items)
-- Primary: "Go to Dashboard"; Secondary row: "Schedule" | "Clinics" | "Invoices"
-- Any navigation CTA calls `completeOnboarding()` then navigates
+### 4. `src/components/onboarding/WorkspaceReady.tsx`
 
-**Props:** `facilities`, `shifts`, `invoices`, `taxEnabled`, `shiftRate`, `onNavigate`, `onCompleteOnboarding`
+**Completion Summary:**
+- Add a brief "What you can do next" intro paragraph below "Here's what's ready:" — "Each of these tools works together. Log shifts to auto-generate invoices. Invoices feed your earnings reports and tax estimates. Everything stays in sync."
+- Enhance the "Optional next steps" section with brief descriptions:
+  - "Add your credentials (DEA, state license, USDA)" → add "(get renewal reminders before they expire)"
+  - "Set up email reminders for invoices" → add "(auto-nudge clinics when payment is due)"
+  - "Customize your invoice template" → add "(add your logo, payment instructions, and terms)"
+  - "Log more shifts to improve tax accuracy" → add "(quarterly estimates get smarter over time)"
 
-## Changes to `src/pages/OnboardingPage.tsx`
-
-1. Remove `workspace_ready` as separate phase — merge into `calendar_sync` phase
-2. Update `PHASE_STEP`: keep as-is (calendar_sync = 5)
-3. Replace `first_shift` case with `<OnboardingShiftStep>`
-4. Replace `tax_enablement` case with `<OnboardingTaxStep>`
-5. Replace `calendar_sync` + `workspace_ready` cases with new `<WorkspaceReady>` (combined)
-6. Pass `invoices` and `lineItems` from `useData()` to child components
-7. Track `taxEnabled` state, `lastShiftRate` state (set after shift save)
-8. Remove `ShiftFormDialog` usage (replaced by inline form)
-9. Remove `shiftDialogOpen` state
-
-## Animations
-
-Add to `tailwind.config.ts`:
-- `slide-up`: translateY(20px) → 0 with fade, 400ms
-- `scale-up`: scale(0.8) → 1, 400ms ease-out
-
-Use inline `style={{ animationDelay: '200ms' }}` for staggering.
-
-## Skip Logic (unchanged from current)
-- Step 2 skip → Step 5
-- Step 3 skip → Step 4
-- Step 4 skip → Step 5
-
-## Mobile Considerations
-- Invoice preview card: full-width
-- Tax metrics: stack vertically below 480px (`flex-col` at `max-sm:`)
-- All already inside `OnboardingLayout` which collapses to single column
-
-## What's NOT Changing
-- Auth flow, routing, `onboarding_completed_at` logic
-- Database schema
-- `OnboardingLayout` component
-- Steps 1 and 2 (already implemented)
-- `DataContext.addShift` auto-invoice generation (we rely on it)
-- `CalendarSyncStep` internals (reused as-is inside new Step 5)
-
-## File Summary
-
-| File | Action |
-|---|---|
-| `src/components/onboarding/OnboardingShiftStep.tsx` | Create — inline shift form + results |
-| `src/components/onboarding/OnboardingTaxStep.tsx` | Create — data-driven tax opt-in |
-| `src/components/onboarding/WorkspaceReady.tsx` | Rewrite — calendar sync + completion |
-| `src/pages/OnboardingPage.tsx` | Update — wire new components, remove dialog approach |
-| `tailwind.config.ts` | Add slide-up + scale-up keyframes |
+## No structural, routing, or database changes. All additions are copy/UI-only within existing components.
 
