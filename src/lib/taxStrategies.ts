@@ -93,9 +93,12 @@ export function getCombinedMarginalRate(
   annualizedIncome: number,
   filingStatus: FilingStatus = 'single',
   stateRate: number = 0.05,
+  entityType: string = 'sole_prop',
 ): number {
   const federalRate = getMarginalRate(annualizedIncome, filingStatus);
-  return federalRate + SE_TAX_RATE + stateRate;
+  // S-Corp: no SE tax on distributions — FICA is paid on salary separately
+  const selfEmploymentComponent = entityType === 'scorp' ? 0 : SE_TAX_RATE;
+  return federalRate + selfEmploymentComponent + stateRate;
 }
 
 // ── Strategy Calculations ────────────────────────────────────────
