@@ -192,8 +192,17 @@ export default function InvoicesPage() {
               <Trash2 className="mr-1 h-4 w-4" /> Delete ({selected.size})
             </Button>
           )}
-          <Button size="sm" variant="outline" onClick={() => setShowCreate(true)} className="flex-1 sm:flex-none">
+          <Button data-tour="invoice-create" size="sm" variant="outline" onClick={() => setShowCreate(true)} className="flex-1 sm:flex-none">
             <Plus className="mr-1 h-4 w-4" /> Create Manual Invoice
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={invoiceTour.startTour}
+            className="gap-1.5 text-xs text-primary hover:bg-primary/10"
+          >
+            <Compass className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Tour</span>
           </Button>
         </div>
       </div>
