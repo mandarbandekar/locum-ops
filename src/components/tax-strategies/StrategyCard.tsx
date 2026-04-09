@@ -14,13 +14,14 @@ interface Props {
   inputs: StrategyInputs;
   annualizedIncome: number;
   combinedRate: number;
+  entityType?: string;
   onUpdateInputs: (patch: Partial<StrategyInputs>) => void;
   onDismiss: (id: string) => void;
   onRestore: (id: string) => void;
 }
 
 export default function StrategyCard({
-  strategy, inputs, annualizedIncome, combinedRate,
+  strategy, inputs, annualizedIncome, combinedRate, entityType = 'sole_prop',
   onUpdateInputs, onDismiss, onRestore,
 }: Props) {
   const [expanded, setExpanded] = useState(false);
@@ -83,7 +84,7 @@ export default function StrategyCard({
           </div>
 
           {/* Interactive Calculator */}
-          {renderCalculator(strategy.id, inputs, annualizedIncome, combinedRate, onUpdateInputs)}
+          {renderCalculator(strategy.id, inputs, annualizedIncome, combinedRate, onUpdateInputs, entityType)}
 
           {/* Estimated Savings */}
           {strategy.estimatedSavings > 0 && (
