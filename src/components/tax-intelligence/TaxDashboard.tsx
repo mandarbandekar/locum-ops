@@ -571,7 +571,7 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
         </CardContent>
       </Card>
 
-      {/* ═══ INCOME SPLIT BAR ═══ */}
+      {/* ═══ INCOME BREAKDOWN ═══ */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center gap-2">
@@ -579,8 +579,31 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
             Income Breakdown
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
           <IncomeSplitBar earned={earnedIncome} projected={scheduledIncome + projectedRemainder} />
+          <div className="grid grid-cols-3 gap-3 pt-2">
+            <div className="rounded-lg bg-muted/50 p-2.5">
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">YTD Earned</p>
+              <p className="text-sm font-semibold mt-0.5">${fmt(earnedIncome)}</p>
+              <p className="text-[10px] text-muted-foreground">Paid invoices</p>
+            </div>
+            <div className="rounded-lg bg-muted/50 p-2.5">
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Scheduled</p>
+              <p className="text-sm font-semibold mt-0.5">${fmt(scheduledIncome)}</p>
+              <p className="text-[10px] text-muted-foreground">Future shifts this year</p>
+            </div>
+            <div className="rounded-lg bg-muted/50 p-2.5">
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Projected</p>
+              <p className="text-sm font-semibold mt-0.5">${fmt(projectedRemainder)}</p>
+              <p className="text-[10px] text-muted-foreground">
+                {projectionSource === 'prior_year'
+                  ? `Based on ${currentYear - 1} income`
+                  : projectionSource === 'pace'
+                    ? 'Based on current pace'
+                    : 'No projection yet'}
+              </p>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
