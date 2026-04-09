@@ -44,7 +44,7 @@ export default function TaxCenterPage() {
           className={`primary-tab-btn ${activeTab === 'tax-strategies' ? 'primary-tab-btn--active' : 'primary-tab-btn--inactive'}`}
         >
           <Lightbulb className="h-4 w-4 sm:h-5 sm:w-5" />
-          <span className="text-xs sm:text-sm">Tax Strategies</span>
+          <span className="text-xs sm:text-sm">Personalized Tax Strategy</span>
         </button>
         <button
           onClick={() => setSearchParams({ tab: 'cpa-prep' }, { replace: true })}
