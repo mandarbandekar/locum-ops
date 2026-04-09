@@ -1,6 +1,12 @@
 /**
  * Tax Constants for 2026 (projected).
  * Centralized for easy annual updates.
+ * 
+ * Data source: Revenue Procedure 2025-32 (projected 2026 figures).
+ * SS wage base: $184,500 (2026 projected — confirm when IRS publishes, typically Oct 2025).
+ * Standard deductions: 2026 projected — update to IRS-confirmed figures when published.
+ * Federal brackets: 2026 projected.
+ * Next review due: October 2025 (when IRS publishes Rev. Proc. for 2026).
  */
 
 export const TAX_YEAR = 2026;
