@@ -98,8 +98,15 @@ export function AppSidebar() {
               <CollapsibleContent>
                 <SidebarGroupContent>
                   <SidebarMenu className="space-y-0.5 px-2">
-                    {group.items.map((item) => (
-                      <SidebarMenuItem key={item.title}>
+                    {group.items.map((item) => {
+                      const tourId = item.url === '/facilities' ? 'facilities'
+                        : item.url === '/schedule' ? 'schedule'
+                        : item.url === '/invoices' ? 'invoices'
+                        : item.url === '/business' ? 'business'
+                        : item.url === '/tax-center' ? 'tax'
+                        : undefined;
+                      return (
+                      <SidebarMenuItem key={item.title} data-tour={tourId}>
                         <SidebarMenuButton asChild size="lg">
                           <NavLink
                             to={item.url}

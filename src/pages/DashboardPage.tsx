@@ -137,6 +137,15 @@ export default function DashboardPage() {
   const { categories: reminderCategories } = useReminderPreferences();
   const navigate = useNavigate();
   const now = new Date();
+  const { isOpen: tourOpen, isTourCompleted, startTour, closeTour } = useSpotlightTour();
+
+  // Auto-start tour for new users
+  useEffect(() => {
+    if (!isTourCompleted && !isDemo && user) {
+      const t = setTimeout(() => startTour(), 1500);
+      return () => clearTimeout(t);
+    }
+  }, [isTourCompleted, isDemo, user]);
 
   // Getting started checklist dismiss
   const [checklistDismissed, setChecklistDismissed] = useState(() => {
