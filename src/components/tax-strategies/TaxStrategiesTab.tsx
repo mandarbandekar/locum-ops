@@ -3,6 +3,7 @@ import { getCombinedMarginalRate } from '@/lib/taxStrategies';
 import { AlertTriangle, TrendingUp, Lightbulb, DollarSign } from 'lucide-react';
 import StrategyCard from './StrategyCard';
 import { useTaxIntelligence } from '@/hooks/useTaxIntelligence';
+import { STATE_TAX_DATA } from '@/lib/stateTaxData';
 import type { FilingStatus } from '@/lib/taxConstants2026';
 
 export default function TaxStrategiesTab() {
