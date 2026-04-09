@@ -385,10 +385,13 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
         <p className="text-sm text-muted-foreground">This determines how we calculate your quarterly tax estimate.</p>
         <RadioGroup value={projectionMethod} onValueChange={setProjectionMethod}>
           <div className="flex items-start space-x-2 p-3 rounded-lg border hover:bg-accent/50 cursor-pointer">
-            <RadioGroupItem value="annualized_actual" id="proj-actual" className="mt-0.5" />
-            <div>
-              <Label htmlFor="proj-actual" className="cursor-pointer font-medium">Annualize my current pace</Label>
-              <p className="text-xs text-muted-foreground mt-0.5">Extrapolates your year-to-date income to a full year. Gets more accurate over time.</p>
+            <RadioGroupItem value="safe_harbor" id="proj-harbor" className="mt-0.5" />
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="proj-harbor" className="cursor-pointer font-medium">Safe harbor (penalty-proof)</Label>
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Most Preferred</Badge>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">Base quarterly payments on last year's tax. Guarantees no underpayment penalty.</p>
             </div>
           </div>
           <div className="flex items-start space-x-2 p-3 rounded-lg border hover:bg-accent/50 cursor-pointer">
@@ -399,10 +402,10 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
             </div>
           </div>
           <div className="flex items-start space-x-2 p-3 rounded-lg border hover:bg-accent/50 cursor-pointer">
-            <RadioGroupItem value="safe_harbor" id="proj-harbor" className="mt-0.5" />
+            <RadioGroupItem value="annualized_actual" id="proj-actual" className="mt-0.5" />
             <div>
-              <Label htmlFor="proj-harbor" className="cursor-pointer font-medium">Safe harbor (penalty-proof)</Label>
-              <p className="text-xs text-muted-foreground mt-0.5">Base quarterly payments on last year's tax. Guarantees no underpayment penalty.</p>
+              <Label htmlFor="proj-actual" className="cursor-pointer font-medium">Annualize my current pace of work</Label>
+              <p className="text-xs text-muted-foreground mt-0.5">Extrapolates your year-to-date income to a full year. Gets more accurate over time.</p>
             </div>
           </div>
         </RadioGroup>
