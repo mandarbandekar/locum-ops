@@ -72,6 +72,14 @@ export function SpotlightTour({ steps, isOpen, onClose }: SpotlightTourProps) {
   const { state: sidebarState, setOpen: setSidebarOpen } = useSidebar();
   const sidebarWasCollapsedRef = useRef(false);
 
+  const handleClose = useCallback(() => {
+    if (sidebarWasCollapsedRef.current) {
+      setSidebarOpen(false);
+      sidebarWasCollapsedRef.current = false;
+    }
+    onClose();
+  }, [onClose, setSidebarOpen]);
+
   const step = steps[currentStep];
 
   // Find target element and track its position
