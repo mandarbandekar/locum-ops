@@ -272,7 +272,7 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
 
   // KPI tooltip texts
   const kpiTooltips = useMemo(() => ({
-    totalIncome: `Sum of paid invoices this year ($${fmt(earnedIncome)} earned) plus projected income from upcoming shifts ($${fmt(projectedIncome)} in next 90 days).`,
+    totalIncome: `YTD Earned: $${fmt(earnedIncome)} (paid invoices) + Scheduled: $${fmt(scheduledIncome)} (future shifts) + Projected: $${fmt(projectedRemainder)} (${projectionSource === 'prior_year' ? `based on ${currentYear - 1} income` : projectionSource === 'pace' ? 'based on current pace' : 'no projection'}).`,
     tax1: isScorp
       ? `Federal income tax applied using 2026 marginal brackets on your taxable income of $${fmt(taxResult.federalTaxableIncome)} after standard deduction of $${fmt(STANDARD_DEDUCTIONS[fs])}.`
       : `Self-employment tax at 15.3% on 92.35% of your net income ($${fmt(taxResult.netIncome)}). Covers Social Security + Medicare since you don't have an employer paying half.`,
@@ -280,7 +280,7 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
       ? `Applied ${profile.state_code || 'state'} progressive income tax rates to your salary + distributions of $${fmt((taxResult.salary || 0) + (taxResult.distribution || 0))}.`
       : `Applied 2026 marginal brackets to your taxable income of $${fmt(taxResult.federalTaxableIncome)} after standard deduction of $${fmt(STANDARD_DEDUCTIONS[fs])}.`,
     totalAnnual: `Sum of all tax obligations. Your effective rate of ${taxResult.effectiveRate}% means ${taxResult.effectiveRate} cents of every dollar goes to taxes.`,
-  }), [earnedIncome, projectedIncome, isScorp, taxResult, fs, profile.state_code]);
+  }), [earnedIncome, scheduledIncome, projectedRemainder, projectionSource, isScorp, taxResult, fs, profile.state_code, currentYear]);
 
   // Plain-language calculation summary
   const calculationSummary = useMemo(() => {
@@ -580,7 +580,7 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <IncomeSplitBar earned={earnedIncome} projected={projectedIncome} />
+          <IncomeSplitBar earned={earnedIncome} projected={scheduledIncome + projectedRemainder} />
         </CardContent>
       </Card>
 

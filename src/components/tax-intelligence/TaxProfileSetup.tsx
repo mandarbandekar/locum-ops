@@ -471,8 +471,6 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
       spouse_se_net_income: spouseHasSE ? spouseSENet : 0,
       prior_year_total_income: priorYearIncome,
       setup_completed_at: new Date().toISOString(),
-      spouse_se_net_income: spouseHasSE ? spouseSENet : 0,
-      setup_completed_at: new Date().toISOString(),
     });
     setSaving(false);
     toast.success(existingProfile ? 'Tax profile updated' : 'Tax profile created');
