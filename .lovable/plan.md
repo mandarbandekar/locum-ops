@@ -1,68 +1,89 @@
 
 
-# Streamline Add Facility Dialog: 8 Steps → 4 Steps
+# Guided Walkthrough — Spotlight Tour for Dashboard & App
 
-## Problem
+## Summary
 
-The current 8-step wizard asks for too much upfront. Steps like Tech Access, Clinic Access, CC/BCC contacts, and Invoice Prefix are details users rarely have at hand and can fill in later from the facility detail page.
+Build a step-by-step spotlight tour system that highlights key UI sections with a focused overlay, tooltip-style cards, and navigation controls. Accessible from the header (all users) and auto-triggered on first dashboard visit for new users. Each step spotlights a real element on the page with rich context tailored to relief vets.
 
-## Proposed New Flow (4 steps)
+## Architecture
+
+Create a reusable `SpotlightTour` component that:
+- Renders a full-screen overlay with a "cutout" around the target element (using `getBoundingClientRect` + CSS clip-path or box-shadow trick)
+- Positions a tooltip card adjacent to the highlighted element
+- Supports step navigation (Next / Back / Skip / Finish)
+- Persists completion state in localStorage
 
 ```text
-Current (8 steps)                    New (4 steps)
-──────────────                       ─────────────
-0. Welcome                           0. Welcome (trimmed)
-1. General (name/address)            1. Clinic Details (name + address + day rate)
-2. Shift Rates                       2. Contacts (scheduling + billing "To" only)
-3. Tech Access          → REMOVE     3. Billing Preferences (cadence + due days) + Summary
-4. Clinic Access        → REMOVE
-5. Scheduling Contact
-6. Invoicing Preferences
-7. Invoice Settings     → TRIM
+┌─────────────────────────────────────┐
+│  Dark overlay (z-50)                │
+│  ┌─────────┐                        │
+│  │ Cutout   │← highlighted element  │
+│  └─────────┘                        │
+│     ┌──────────────────┐            │
+│     │ Step 2 of 9      │            │
+│     │ Title            │            │
+│     │ Description...   │            │
+│     │ [Back] [Next]    │            │
+│     └──────────────────┘            │
+└─────────────────────────────────────┘
 ```
 
-## What Gets Removed / Deferred
+## Tour Steps (9 steps across dashboard + sidebar)
 
-| Field | Where it moves |
-|---|---|
-| Tech Access (computer, wifi, PIMS) | Facility Detail page (already editable there) |
-| Clinic Access (door codes, parking) | Facility Detail page (already editable there) |
-| CC/BCC contacts | Facility Detail page → Invoice Settings card |
-| Invoice Prefix | Auto-generated from clinic initials (editable later) |
-| Notes | Facility Detail page |
+| # | Target Element | Title | Description |
+|---|---|---|---|
+| 1 | Daily briefing strip | Your Daily Briefing | A personalized summary of what needs your attention today — upcoming shifts, overdue invoices, expiring credentials, and tax deadlines. This updates every time you open LocumOps. |
+| 2 | Upcoming Shifts card | Upcoming Shifts | Your next 7 days at a glance. See which clinics you're covering, track your shift streak, and jump straight to your schedule. Relief vets juggling multiple clinics can spot gaps or double-bookings instantly. |
+| 3 | Money to Collect card | Money to Collect | Track outstanding invoices, monthly revenue pace, and your oldest unpaid balance. LocumOps auto-generates invoices from your shifts — this card shows you who owes you money and how your cash flow is trending. |
+| 4 | Needs Attention card | Needs Attention | Your prioritized action list: overdue invoices to follow up on, credentials about to expire, unconfirmed shifts, and upcoming tax deadlines. Items are sorted by urgency so you always know what to handle first. |
+| 5 | Sidebar: Clinics & Facilities | Clinics & Facilities | Your clinic CRM. Store contact info, billing preferences, day rates, and contract checklists for every practice you work with. When you log shifts, invoices auto-generate based on each clinic's billing cadence. |
+| 6 | Sidebar: Schedule | Schedule | A visual weekly calendar built for locum work. Book shifts, block personal time, detect conflicts, and send clinic confirmations. Shifts you log here flow directly into invoicing and tax tracking. |
+| 7 | Sidebar: Invoices & Payments | Invoices & Payments | Invoices are auto-created from your shifts — no spreadsheets needed. Review drafts, send to clinics via secure links, track payment status, and set up auto-reminders for overdue balances. |
+| 8 | Sidebar: Relief Business Hub | Relief Business Hub | Your financial command center. Revenue reports, facility-level analytics, and performance insights help you understand which clinics are most profitable and where your income is trending. |
+| 9 | Sidebar: Tax Intelligence | Tax Intelligence | Estimated quarterly tax calculations based on your actual shift income. Track IRS payment deadlines, see your effective tax rate, and get S-Corp assessment nudges — all using 2026 tax brackets. |
 
-## New Step Details
+## New Files
 
-**Step 0 — Welcome** (simplified)
-- Keep icon + headline, trim the bullet list to 3 items: Clinic info, Contacts, Billing setup
-- "Only clinic name is required. Everything else can be added later."
+### `src/components/SpotlightTour.tsx`
+- Props: `steps: TourStep[]`, `isOpen: boolean`, `onClose: () => void`
+- Each `TourStep`: `{ targetSelector: string, title: string, description: string, placement: 'top'|'bottom'|'left'|'right' }`
+- Uses `useEffect` + `ResizeObserver` to track target element position
+- Renders overlay with box-shadow cutout: `box-shadow: 0 0 0 9999px rgba(0,0,0,0.6)`
+- Tooltip card with step counter, title, rich description, Back/Next/Skip buttons
+- Scrolls target into view on each step
+- On finish/skip: sets `localStorage.setItem('locumops_tour_completed', 'true')`
 
-**Step 1 — Clinic Details** (merge old Steps 1 + 2)
-- Google Places search → name + address (same as now)
-- Below: inline day rate field (single input, not the full RatesEditor)
-- This is the only required step (clinic name)
+### `src/hooks/useSpotlightTour.ts`
+- Manages tour open state
+- Checks `localStorage` for completion
+- Exposes `startTour()`, `isTourCompleted`, `resetTour()`
+- Auto-starts tour on first dashboard visit if `onboarding_completed_at` is set but tour not completed
 
-**Step 2 — Contacts** (merge old Steps 5 + 7 "To" only)
-- Two sections on one screen: Scheduling Contact (name + email) and Billing Contact (name + email, "To" only)
-- Both marked required but with smart default: if scheduling contact is filled, offer "Same as scheduling contact" checkbox for billing
-- Remove CC/BCC entirely from creation flow
+## Modified Files
 
-**Step 3 — Billing + Summary** (merge old Steps 6 + 7 partial)
-- Billing cadence selector (daily/weekly/monthly)
-- Due days selector (Net 7/14/30/45/60)
-- Completion summary grid below
-- CTA: "Add Facility"
+### `src/pages/DashboardPage.tsx`
+- Import `SpotlightTour` and `useSpotlightTour`
+- Add `data-tour="briefing"`, `data-tour="shifts"`, `data-tour="money"`, `data-tour="attention"` attributes to the 4 dashboard sections
+- Render `<SpotlightTour>` at bottom of page with all 9 steps
+- Auto-trigger on mount if tour not completed (with 1s delay for layout)
 
-## Changes to `src/components/AddFacilityDialog.tsx`
+### `src/components/AppSidebar.tsx`
+- Add `data-tour="facilities"`, `data-tour="schedule"`, `data-tour="invoices"`, `data-tour="business"`, `data-tour="tax"` to the relevant sidebar menu items
 
-1. Reduce `STEP_META` from 8 entries to 4
-2. Remove state for: `techComputer`, `techWifi`, `techPims`, `clinicAccess`, `notes`, `invoiceNameCc`, `invoiceEmailCc`, `invoiceNameBcc`, `invoiceEmailBcc`, `invoicePrefix`
-3. Auto-compute `invoicePrefix` from `getInitials(name)` at submit time
-4. Add `dayRate` state (single number input) instead of full `RatesEditor`
-5. Add `sameAsScheduling` checkbox state for billing contact
-6. Merge contact fields into one step, billing fields into another
-7. Update `validateStep`, `handleSubmit`, `summaryItems` accordingly
-8. On submit, if `dayRate > 0`, create a terms record with `weekday_rate: dayRate`
+### `src/components/Layout.tsx`
+- Replace `DemoGuideDialog` with a "Take a Tour" button (visible for all users, not just demo)
+- Button calls `startTour()` from the tour hook
+- Keep existing `DemoGuideDialog` for demo mode as well
 
-Single file change only. No database or routing changes.
+## UX Details
+
+- Overlay uses `z-50` with smooth transitions
+- Cutout element gets a subtle pulsing ring animation
+- Tooltip card: rounded-xl, bg-card, max-w-sm, with step indicator dots
+- Keyboard support: Escape to skip, arrow keys for nav
+- Tour pauses if user navigates away; resumes on return to dashboard
+- Sidebar auto-expands collapsed groups when spotlighting sidebar items
+
+## No database changes. No routing changes. localStorage only for persistence.
 
