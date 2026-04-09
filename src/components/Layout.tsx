@@ -4,11 +4,26 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { DemoGuideDialog } from '@/components/DemoGuideDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
+import { Button } from '@/components/ui/button';
+import { Compass } from 'lucide-react';
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { isDemo } = useAuth();
   const { profile } = useUserProfile();
   const company = isDemo ? 'Demo Practice' : (profile?.company_name || '');
+
+  const handleStartTour = () => {
+    // Navigate to dashboard first if not there, then trigger tour
+    if (window.location.pathname !== '/') {
+      window.location.href = '/';
+      // Tour auto-triggers on dashboard for non-completed users
+      try { localStorage.removeItem('locumops_tour_completed'); } catch {}
+    } else {
+      // Reset and trigger by dispatching a custom event
+      try { localStorage.removeItem('locumops_tour_completed'); } catch {}
+      window.dispatchEvent(new CustomEvent('locumops:start-tour'));
+    }
+  };
 
   return (
     <SidebarProvider>
@@ -24,6 +39,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </span>
             )}
             <div className="ml-auto flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleStartTour}
+                className="gap-1.5 text-xs border-primary/30 text-primary hover:bg-primary/10"
+              >
+                <Compass className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Take a Tour</span>
+              </Button>
               {isDemo && <DemoGuideDialog />}
               <ThemeToggle />
             </div>

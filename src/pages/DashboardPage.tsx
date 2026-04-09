@@ -24,6 +24,78 @@ import { NeedsAttentionCard, AttentionItem, type ReminderModule } from '@/compon
 import { GettingStartedChecklist } from '@/components/dashboard/GettingStartedChecklist';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { ReadinessItem } from '@/components/dashboard/WorkReadinessStrip';
+import { SpotlightTour, TourStep } from '@/components/SpotlightTour';
+import { useSpotlightTour } from '@/hooks/useSpotlightTour';
+import {
+  LayoutDashboard, Building2, CalendarDays as CalendarDaysIcon2, FileText as FileText2,
+  Activity, Landmark,
+} from 'lucide-react';
+
+const TOUR_STEPS: TourStep[] = [
+  {
+    targetSelector: '[data-tour="briefing"]',
+    title: 'Your Daily Briefing',
+    description: "A personalized summary of what needs your attention today — upcoming shifts, overdue invoices, expiring credentials, and tax deadlines. This updates every time you open LocumOps so you always know where things stand.",
+    icon: Zap,
+    placement: 'bottom',
+  },
+  {
+    targetSelector: '[data-tour="shifts"]',
+    title: 'Upcoming Shifts',
+    description: "Your next 7 days at a glance. See which clinics you're covering, track your shift streak, and jump straight to your schedule. Relief vets juggling multiple clinics can spot gaps or double-bookings instantly.",
+    icon: CalendarDaysIcon2,
+    placement: 'bottom',
+  },
+  {
+    targetSelector: '[data-tour="money"]',
+    title: 'Money to Collect',
+    description: "Track outstanding invoices, monthly revenue pace, and your oldest unpaid balance. LocumOps auto-generates invoices from your shifts — this card shows you who owes you money and how your cash flow is trending.",
+    icon: DollarSign,
+    placement: 'bottom',
+  },
+  {
+    targetSelector: '[data-tour="attention"]',
+    title: 'Needs Attention',
+    description: "Your prioritized action list: overdue invoices to follow up on, credentials about to expire, unconfirmed shifts, and upcoming tax deadlines. Items are sorted by urgency so you always know what to handle first.",
+    icon: AlertTriangle,
+    placement: 'bottom',
+  },
+  {
+    targetSelector: '[data-tour="facilities"]',
+    title: 'Clinics & Facilities',
+    description: "Your clinic CRM. Store contact info, billing preferences, day rates, and contract checklists for every practice you work with. When you log shifts, invoices auto-generate based on each clinic's billing cadence.",
+    icon: Building2,
+    placement: 'right',
+  },
+  {
+    targetSelector: '[data-tour="schedule"]',
+    title: 'Schedule',
+    description: "A visual weekly calendar built for locum work. Book shifts, block personal time, detect conflicts, and send clinic confirmations. Shifts you log here flow directly into invoicing and tax tracking.",
+    icon: CalendarDaysIcon2,
+    placement: 'right',
+  },
+  {
+    targetSelector: '[data-tour="invoices"]',
+    title: 'Invoices & Payments',
+    description: "Invoices are auto-created from your shifts — no spreadsheets needed. Review drafts, send to clinics via secure links, track payment status, and set up auto-reminders for overdue balances.",
+    icon: FileText2,
+    placement: 'right',
+  },
+  {
+    targetSelector: '[data-tour="business"]',
+    title: 'Relief Business Hub',
+    description: "Your financial command center. Revenue reports, facility-level analytics, and performance insights help you understand which clinics are most profitable and where your income is trending.",
+    icon: Activity,
+    placement: 'right',
+  },
+  {
+    targetSelector: '[data-tour="tax"]',
+    title: 'Tax Intelligence',
+    description: "Estimated quarterly tax calculations based on your actual shift income. Track IRS payment deadlines, see your effective tax rate, and get S-Corp assessment nudges — all using 2026 tax brackets.",
+    icon: Landmark,
+    placement: 'right',
+  },
+];
 
 const dashDb = (table: string) => supabase.from(table as any);
 
@@ -65,6 +137,22 @@ export default function DashboardPage() {
   const { categories: reminderCategories } = useReminderPreferences();
   const navigate = useNavigate();
   const now = new Date();
+  const { isOpen: tourOpen, isTourCompleted, startTour, closeTour } = useSpotlightTour();
+
+  // Auto-start tour for new users
+  useEffect(() => {
+    if (!isTourCompleted && !isDemo && user) {
+      const t = setTimeout(() => startTour(), 1500);
+      return () => clearTimeout(t);
+    }
+  }, [isTourCompleted, isDemo, user]);
+
+  // Listen for manual tour trigger from header button
+  useEffect(() => {
+    const handler = () => startTour();
+    window.addEventListener('locumops:start-tour', handler);
+    return () => window.removeEventListener('locumops:start-tour', handler);
+  }, [startTour]);
 
   // Getting started checklist dismiss
   const [checklistDismissed, setChecklistDismissed] = useState(() => {
@@ -482,7 +570,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-4 h-full">
       {/* Daily Briefing Strip */}
-      <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-primary/5 border border-primary/10">
+      <div data-tour="briefing" className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-primary/5 border border-primary/10">
         <Zap className="h-3.5 w-3.5 text-primary shrink-0" />
         <p className="text-[12px] sm:text-[13px] font-medium text-foreground">{briefing}</p>
       </div>
@@ -495,7 +583,7 @@ export default function DashboardPage() {
       {/* 3-Column Layout */}
       <div className="grid gap-4 sm:gap-5 grid-cols-1 lg:grid-cols-12 lg:items-start">
         {/* Left: Upcoming Shifts */}
-        <div className="order-2 lg:order-none lg:col-span-4">
+        <div data-tour="shifts" className="order-2 lg:order-none lg:col-span-4">
           <UpcomingShiftsCard
             shifts={shifts}
             getFacilityName={getFacilityName}
@@ -506,7 +594,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Center: Money to Collect */}
-        <div className="order-3 lg:order-none lg:col-span-4">
+        <div data-tour="money" className="order-3 lg:order-none lg:col-span-4">
            <MoneyToCollectCard
             outstandingTotal={summary.outstandingTotal}
             paidThisMonth={summary.paidThisMonth}
@@ -521,10 +609,13 @@ export default function DashboardPage() {
         </div>
 
         {/* Right: Needs Attention */}
-        <div className="order-first lg:order-none lg:col-span-4">
+        <div data-tour="attention" className="order-first lg:order-none lg:col-span-4">
           <NeedsAttentionCard items={attentionItems} readinessItems={readinessItems} />
         </div>
       </div>
+
+      {/* Spotlight Tour */}
+      <SpotlightTour steps={TOUR_STEPS} isOpen={tourOpen} onClose={closeTour} />
     </div>
   );
 }
