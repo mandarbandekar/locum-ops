@@ -331,7 +331,7 @@ export default function InvoicesPage() {
           />
         </div>
 
-        <div ref={paidRef}>
+        <div ref={paidRef} data-tour="invoice-paid">
           <InvoiceStatusGroup
             title="Paid"
             icon={<CheckCircle className="h-4 w-4 text-primary" />}
@@ -389,6 +389,8 @@ export default function InvoicesPage() {
           }}
         />
       )}
+
+      <SpotlightTour steps={INVOICE_TOUR_STEPS} isOpen={invoiceTour.isOpen} onClose={invoiceTour.closeTour} />
     </div>
   );
 }
