@@ -417,13 +417,7 @@ export default function InvoiceDetailPage() {
         onSave={async () => { if (saveRef.current) await saveRef.current(); }}
         onUpdateInvoice={updateInvoice}
         onAddActivity={addActivity}
-        onRecordPayment={() => {
-          // Trigger the payment dialog inside the edit panel
-          // We'll use a simple approach: scroll to top and show a toast
-          const payBtn = document.querySelector('[data-record-payment]');
-          if (payBtn) (payBtn as HTMLElement).click();
-          else toast.info('Use "Record Payment" in the details panel');
-        }}
+        onRecordPayment={() => setPaymentDialogOpen(true)}
       />
 
       {/* Move Status Dialog — only for backward moves */}
