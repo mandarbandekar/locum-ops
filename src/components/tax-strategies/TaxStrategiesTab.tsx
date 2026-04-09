@@ -14,7 +14,11 @@ export default function TaxStrategiesTab() {
   const { profile: taxProfile } = useTaxIntelligence();
 
   const filingStatus: FilingStatus = (taxProfile?.filing_status as FilingStatus) || 'single';
-  const stateRate = taxProfile?.state_rate || 0.05;
+  const stateRate = taxProfile?.state_code
+    ? (STATE_TAX_DATA[taxProfile.state_code]?.type === 'flat'
+        ? (STATE_TAX_DATA[taxProfile.state_code] as any).rate ?? 0.05
+        : 0.05)
+    : 0.05;
   const scorpSalary = taxProfile?.scorp_salary || 0;
   const combinedRate = getCombinedMarginalRate(annualizedIncome, filingStatus, stateRate, entityType, scorpSalary);
 
