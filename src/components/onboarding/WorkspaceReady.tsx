@@ -91,7 +91,8 @@ export function WorkspaceReady({ facilities, shifts, invoices, taxEnabled, shift
         </div>
       )}
 
-      {/* Section 2: Completion Summary — always visible */}
+      {/* Section 2: Completion Summary — shown after calendar sync is done/skipped */}
+      {calendarDone && (
       <div className="space-y-5">
         <div className="text-center space-y-2">
           <div className="mx-auto h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center mb-3">
