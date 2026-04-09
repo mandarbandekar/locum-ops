@@ -78,7 +78,7 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
     setClinicAccess(''); setInvoicePrefix(''); setInvoiceDueDays(15);
     setInvoiceNameTo(''); setInvoiceEmailTo(''); setInvoiceNameCc(''); setInvoiceEmailCc(''); setInvoiceNameBcc(''); setInvoiceEmailBcc('');
     setSchedulingContactName(''); setSchedulingContactEmail('');
-    setBillingCadence('monthly'); setAutoGenerateInvoices(true);
+    setBillingCadence('monthly');
   };
 
   const handleClinicPlaceSelect = (selection: PlaceSelection) => {
