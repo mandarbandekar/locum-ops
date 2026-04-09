@@ -16,10 +16,52 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { SpotlightTour, TourStep } from '@/components/SpotlightTour';
+import { useSpotlightTour } from '@/hooks/useSpotlightTour';
+import { Compass, DollarSign } from 'lucide-react';
+
+const INVOICE_TOUR_STEPS: TourStep[] = [
+  {
+    targetSelector: '[data-tour="invoice-summary"]',
+    title: 'Financial Snapshot',
+    description: 'At-a-glance financial snapshot: overdue balances, invoices awaiting payment, drafts to review, and this month\'s collections.',
+    placement: 'bottom',
+    icon: DollarSign,
+  },
+  {
+    targetSelector: '[data-tour="invoice-create"]',
+    title: 'Create Manual Invoice',
+    description: 'Most invoices auto-generate from your shifts. Use this for one-off or custom invoices outside your normal schedule.',
+    placement: 'bottom',
+    icon: Plus,
+  },
+  {
+    targetSelector: '[data-tour="invoice-ready"]',
+    title: 'Ready to Review',
+    description: 'Drafts appear here automatically after your billing period closes. Review the line items, then send with one click.',
+    placement: 'bottom',
+    icon: FileEdit,
+  },
+  {
+    targetSelector: '[data-tour="invoice-overdue"]',
+    title: 'Overdue Invoices',
+    description: 'Invoices past their due date surface here with aging info. Set up automatic email reminders to nudge clinics.',
+    placement: 'bottom',
+    icon: AlertTriangle,
+  },
+  {
+    targetSelector: '[data-tour="invoice-paid"]',
+    title: 'Paid & Collected',
+    description: 'Track completed payments and see your monthly collection totals. Record partial payments to track remaining balances.',
+    placement: 'top',
+    icon: CheckCircle,
+  },
+];
 
 export default function InvoicesPage() {
   const { invoices, facilities, shifts, addInvoice, deleteInvoice, suppressInvoicePeriod, dataLoading } = useData();
   const navigate = useNavigate();
+  const invoiceTour = useSpotlightTour('locumops_tour_invoices');
   const [showCreate, setShowCreate] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -150,21 +192,32 @@ export default function InvoicesPage() {
               <Trash2 className="mr-1 h-4 w-4" /> Delete ({selected.size})
             </Button>
           )}
-          <Button size="sm" variant="outline" onClick={() => setShowCreate(true)} className="flex-1 sm:flex-none">
+          <Button data-tour="invoice-create" size="sm" variant="outline" onClick={() => setShowCreate(true)} className="flex-1 sm:flex-none">
             <Plus className="mr-1 h-4 w-4" /> Create Manual Invoice
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={invoiceTour.startTour}
+            className="gap-1.5 text-xs text-primary hover:bg-primary/10"
+          >
+            <Compass className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Tour</span>
           </Button>
         </div>
       </div>
 
       {/* Summary Stats */}
-      <InvoiceSummaryStrip
-        overdue={{ count: overdue.length, total: sumBalance(overdue) }}
-        awaiting={{ count: [...sent, ...partial].length, total: sumBalance([...sent, ...partial]) }}
-        readyToReview={{ count: readyToReview.length, total: sumTotal(readyToReview) }}
-        upcomingCount={upcoming.length}
-        paidThisMonth={{ count: paidThisMonth.length, total: sumTotal(paidThisMonth) }}
-        onScrollTo={scrollTo}
-      />
+      <div data-tour="invoice-summary">
+        <InvoiceSummaryStrip
+          overdue={{ count: overdue.length, total: sumBalance(overdue) }}
+          awaiting={{ count: [...sent, ...partial].length, total: sumBalance([...sent, ...partial]) }}
+          readyToReview={{ count: readyToReview.length, total: sumTotal(readyToReview) }}
+          upcomingCount={upcoming.length}
+          paidThisMonth={{ count: paidThisMonth.length, total: sumTotal(paidThisMonth) }}
+          onScrollTo={scrollTo}
+        />
+      </div>
 
       {/* Workflow Hint */}
       <div className="my-3">
@@ -184,7 +237,7 @@ export default function InvoicesPage() {
       )}
 
       <div className="space-y-4">
-        <div ref={overdueRef}>
+        <div ref={overdueRef} data-tour="invoice-overdue">
           <InvoiceStatusGroup
             title="Overdue"
             icon={<AlertTriangle className="h-4 w-4 text-destructive" />}
@@ -228,7 +281,7 @@ export default function InvoicesPage() {
           />
         </div>
 
-        <div ref={draftsRef}>
+        <div ref={draftsRef} data-tour="invoice-ready">
           <InvoiceStatusGroup
             title="Ready to Review"
             icon={<FileEdit className="h-4 w-4 text-amber-500" />}
@@ -278,7 +331,7 @@ export default function InvoicesPage() {
           />
         </div>
 
-        <div ref={paidRef}>
+        <div ref={paidRef} data-tour="invoice-paid">
           <InvoiceStatusGroup
             title="Paid"
             icon={<CheckCircle className="h-4 w-4 text-primary" />}
@@ -336,6 +389,8 @@ export default function InvoicesPage() {
           }}
         />
       )}
+
+      <SpotlightTour steps={INVOICE_TOUR_STEPS} isOpen={invoiceTour.isOpen} onClose={invoiceTour.closeTour} />
     </div>
   );
 }

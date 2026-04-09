@@ -1,5 +1,7 @@
 import { useState, useCallback } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Compass, ShieldCheck, FileText, Award, RotateCcw, BookOpen, FolderOpen } from 'lucide-react';
 
 import { ComplianceOverview } from '@/components/compliance/ComplianceOverview';
 import CredentialsList from '@/components/credentials/CredentialsList';
@@ -13,7 +15,8 @@ import { ComplianceOnboardingFlow } from '@/components/compliance/onboarding/Com
 import { useComplianceOnboarding } from '@/hooks/useComplianceOnboarding';
 import { useCredentials } from '@/hooks/useCredentials';
 import { useAuth } from '@/contexts/AuthContext';
-import { ShieldCheck } from 'lucide-react';
+import { SpotlightTour, TourStep } from '@/components/SpotlightTour';
+import { useSpotlightTour } from '@/hooks/useSpotlightTour';
 
 type PrimaryTab = 'overview' | 'credentials' | 'renewals' | 'ce-tracker' | 'documents' | 'requirements';
 
@@ -26,10 +29,58 @@ const TABS: { value: PrimaryTab; label: string }[] = [
   { value: 'requirements', label: 'Requirements' },
 ];
 
+const CREDENTIALS_TOUR_STEPS: TourStep[] = [
+  {
+    targetSelector: '[data-tour="cred-overview"]',
+    title: 'Compliance Dashboard',
+    description: 'Your compliance dashboard: see expiring credentials, CE progress, and renewal deadlines at a glance.',
+    placement: 'bottom',
+    icon: ShieldCheck,
+  },
+  {
+    targetSelector: '[data-tour="cred-credentials"]',
+    title: 'Credentials',
+    description: 'Track every license, DEA registration, USDA accreditation, and insurance policy. Get alerts before anything expires.',
+    placement: 'bottom',
+    icon: Award,
+  },
+  {
+    targetSelector: '[data-tour="cred-renewals"]',
+    title: 'Renewals',
+    description: 'Upcoming renewal deadlines sorted by urgency. Direct links to renewal portals so you can renew without searching.',
+    placement: 'bottom',
+    icon: RotateCcw,
+  },
+  {
+    targetSelector: '[data-tour="cred-ce"]',
+    title: 'CE Hub',
+    description: 'Log continuing education hours, track progress toward requirements, and store certificates. Never lose a CE record again.',
+    placement: 'bottom',
+    icon: BookOpen,
+  },
+  {
+    targetSelector: '[data-tour="cred-documents"]',
+    title: 'Document Vault',
+    description: 'Your digital credential vault. Upload and organize copies of licenses, certificates, and insurance docs — always accessible.',
+    placement: 'bottom',
+    icon: FolderOpen,
+  },
+];
+
+const TAB_TOUR_ATTR: Record<PrimaryTab, string> = {
+  overview: 'cred-overview',
+  credentials: 'cred-credentials',
+  renewals: 'cred-renewals',
+  'ce-tracker': 'cred-ce',
+  documents: 'cred-documents',
+  requirements: '',
+};
+
 export default function CredentialsPage() {
   const [activeTab, setActiveTab] = useState<PrimaryTab>('overview');
   const [dialogOpen, setDialogOpen] = useState(false);
   const { isDemo } = useAuth();
+  const credTour = useSpotlightTour('locumops_tour_credentials');
 
   const {
     showWelcome,
@@ -51,12 +102,8 @@ export default function CredentialsPage() {
 
   const [showOnboardingFlow, setShowOnboardingFlow] = useState(false);
 
-  // Auto-trigger onboarding for completely empty state (no credentials + never completed/skipped onboarding)
-      const isCompletelyEmpty = !isDemo && !onboardingLoading && credentialCount === 0 && needsOnboarding;
-
-  // Show welcome modal for first-time users with no credentials
+  const isCompletelyEmpty = !isDemo && !onboardingLoading && credentialCount === 0 && needsOnboarding;
   const shouldShowWelcome = !isDemo && !onboardingLoading && showWelcome && credentialCount === 0;
-  // Show onboarding flow after welcome
   const shouldShowFlow = showOnboardingFlow;
 
   const handleGetStarted = async () => {
@@ -117,6 +164,15 @@ export default function CredentialsPage() {
             <h1 className="page-title">Credential Management</h1>
             <p className="page-subtitle">Manage licenses, CE, renewals, insurance, documents, and compliance tasks in one place</p>
           </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={credTour.startTour}
+            className="ml-auto gap-1.5 text-xs text-primary hover:bg-primary/10"
+          >
+            <Compass className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Tour</span>
+          </Button>
         </div>
       </div>
 
@@ -126,6 +182,7 @@ export default function CredentialsPage() {
             <TabsTrigger
               key={tab.value}
               value={tab.value}
+              data-tour={TAB_TOUR_ATTR[tab.value] || undefined}
               className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-3 text-[13px] font-semibold"
             >
               {tab.label}
@@ -186,6 +243,8 @@ export default function CredentialsPage() {
         onMarkDocumentUploaded={markDocumentUploaded}
         onMarkCEAdded={markCEAdded}
       />
+
+      <SpotlightTour steps={CREDENTIALS_TOUR_STEPS} isOpen={credTour.isOpen} onClose={credTour.closeTour} />
     </div>
   );
 }
