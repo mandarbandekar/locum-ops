@@ -385,6 +385,7 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
       </div>
     );
   }
+  function renderScorpSalaryStep() {
     return (
       <div className="space-y-4">
         <Label className="text-base font-medium">What W-2 salary do you pay yourself through your S-Corp?</Label>
