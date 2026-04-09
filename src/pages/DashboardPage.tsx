@@ -147,6 +147,13 @@ export default function DashboardPage() {
     }
   }, [isTourCompleted, isDemo, user]);
 
+  // Listen for manual tour trigger from header button
+  useEffect(() => {
+    const handler = () => startTour();
+    window.addEventListener('locumops:start-tour', handler);
+    return () => window.removeEventListener('locumops:start-tour', handler);
+  }, [startTour]);
+
   // Getting started checklist dismiss
   const [checklistDismissed, setChecklistDismissed] = useState(() => {
     try { return localStorage.getItem('locumops_checklist_dismissed') === 'true'; } catch { return false; }
