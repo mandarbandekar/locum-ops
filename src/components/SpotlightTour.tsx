@@ -177,7 +177,7 @@ export function SpotlightTour({ steps, isOpen, onClose }: SpotlightTourProps) {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [isOpen, currentStep, steps.length, onClose]);
+  }, [isOpen, currentStep, steps.length, handleClose]);
 
   if (!isOpen || !step) return null;
 
