@@ -53,23 +53,23 @@ export default function FacilityDetailPage() {
 
   return (
     <div>
-      <div className="flex items-center gap-3 mb-6">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/facilities')}>
+      <div className="flex items-center gap-2 sm:gap-3 mb-6 flex-wrap">
+        <Button variant="ghost" size="icon" onClick={() => navigate('/facilities')} className="shrink-0">
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <EditableFacilityName facility={facility} onSave={(newName, newAddress) => { updateFacility({ ...facility, name: newName, address: newAddress }); toast.success('Practice facility updated'); }} />
-        <StatusBadge status={facility.status} className="ml-3" />
+        <StatusBadge status={facility.status} className="ml-1 sm:ml-3 shrink-0" />
         <div className="flex-1" />
       </div>
 
       <Tabs defaultValue="overview">
-        <TabsList className="flex-wrap">
+        <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="shifts">Shifts ({facilityShifts.length})</TabsTrigger>
           <TabsTrigger value="invoices">Invoices ({facilityInvoices.length})</TabsTrigger>
-          <TabsTrigger value="contracts">Contract Vault & Terms</TabsTrigger>
-          <TabsTrigger value="tech-access">Tech Access</TabsTrigger>
-          <TabsTrigger value="clinic-access">Clinic Access</TabsTrigger>
+          <TabsTrigger value="contracts" className="text-xs sm:text-sm">Contracts</TabsTrigger>
+          <TabsTrigger value="tech-access" className="text-xs sm:text-sm">Tech Access</TabsTrigger>
+          <TabsTrigger value="clinic-access" className="text-xs sm:text-sm">Clinic Access</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-4">
@@ -294,12 +294,12 @@ function EditableFacilityName({ facility, onSave }: { facility: any; onSave: (na
   return (
     <div className="space-y-1.5">
       <div className="flex items-center gap-2">
-        <Input value={name} onChange={e => setName(e.target.value)} autoFocus className="text-lg font-semibold h-9 w-64"
+        <Input value={name} onChange={e => setName(e.target.value)} autoFocus className="text-lg font-semibold h-9 w-full max-w-xs"
           onKeyDown={e => { if (e.key === 'Escape') handleCancel(); }} />
-        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleSave}><Check className="h-4 w-4" /></Button>
-        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleCancel}><X className="h-4 w-4" /></Button>
+        <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={handleSave}><Check className="h-4 w-4" /></Button>
+        <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={handleCancel}><X className="h-4 w-4" /></Button>
       </div>
-      <Input value={address} onChange={e => setAddress(e.target.value)} placeholder="Address" className="text-sm h-8 w-80 text-muted-foreground"
+      <Input value={address} onChange={e => setAddress(e.target.value)} placeholder="Address" className="text-sm h-8 w-full max-w-sm text-muted-foreground"
         onKeyDown={e => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') handleCancel(); }} />
     </div>
   );
@@ -440,11 +440,11 @@ function ShiftsTab({ shifts, allShifts, facilityId, facilities, terms, onAdd, on
       <div className="flex justify-end mb-3">
         <Button size="sm" onClick={() => setShowAdd(true)}><Plus className="mr-1 h-3 w-3" /> Add Shift</Button>
       </div>
-      <div className="rounded-lg border bg-card overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="rounded-lg border bg-card overflow-x-auto -mx-3 sm:mx-0">
+        <table className="w-full text-sm min-w-[450px] sm:min-w-0">
           <thead><tr className="border-b bg-muted/50">
             <th className="text-left p-3 font-medium text-muted-foreground">Date</th>
-            <th className="text-left p-3 font-medium text-muted-foreground">Time</th>
+            <th className="text-left p-3 font-medium text-muted-foreground hidden sm:table-cell">Time</th>
             <th className="text-left p-3 font-medium text-muted-foreground">Rate</th>
             <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
           </tr></thead>
@@ -457,7 +457,7 @@ function ShiftsTab({ shifts, allShifts, facilityId, facilities, terms, onAdd, on
                     {format(new Date(s.start_datetime), 'MMM d, yyyy')}
                   </div>
                 </td>
-                <td className="p-3 text-muted-foreground">{format(new Date(s.start_datetime), 'h:mm a')} - {format(new Date(s.end_datetime), 'h:mm a')}</td>
+                <td className="p-3 text-muted-foreground hidden sm:table-cell">{format(new Date(s.start_datetime), 'h:mm a')} - {format(new Date(s.end_datetime), 'h:mm a')}</td>
                 <td className="p-3">${s.rate_applied}</td>
                 <td className="p-3"><StatusBadge status={s.status} /></td>
               </tr>
@@ -497,11 +497,11 @@ function ShiftsTab({ shifts, allShifts, facilityId, facilities, terms, onAdd, on
 
 function InvoicesTab({ invoices, onNavigate }: { invoices: any[]; onNavigate: (id: string) => void }) {
   return (
-    <div className="rounded-lg border bg-card overflow-hidden">
-      <table className="w-full text-sm">
+    <div className="rounded-lg border bg-card overflow-x-auto -mx-3 sm:mx-0">
+      <table className="w-full text-sm min-w-[450px] sm:min-w-0">
         <thead><tr className="border-b bg-muted/50">
           <th className="text-left p-3 font-medium text-muted-foreground">Invoice #</th>
-          <th className="text-left p-3 font-medium text-muted-foreground">Period</th>
+          <th className="text-left p-3 font-medium text-muted-foreground hidden sm:table-cell">Period</th>
           <th className="text-left p-3 font-medium text-muted-foreground">Amount</th>
           <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
         </tr></thead>
@@ -509,7 +509,7 @@ function InvoicesTab({ invoices, onNavigate }: { invoices: any[]; onNavigate: (i
           {invoices.map(i => (
             <tr key={i.id} className="border-b last:border-0 hover:bg-muted/30 cursor-pointer" onClick={() => onNavigate(i.id)}>
               <td className="p-3 font-medium">{i.invoice_number}</td>
-              <td className="p-3 text-muted-foreground">{format(new Date(i.period_start), 'MMM d')} - {format(new Date(i.period_end), 'MMM d')}</td>
+              <td className="p-3 text-muted-foreground hidden sm:table-cell">{format(new Date(i.period_start), 'MMM d')} - {format(new Date(i.period_end), 'MMM d')}</td>
               <td className="p-3">${i.total_amount.toLocaleString()}</td>
               <td className="p-3"><StatusBadge status={i.status} /></td>
             </tr>
