@@ -297,17 +297,21 @@ export function buildStrategies(
   strategies.push({
     id: 'solo_401k',
     title: 'Solo 401(k) vs SEP-IRA Comparison',
-    description: 'Compare retirement plan options — Solo 401(k) may allow higher contributions',
+    description: isScorp
+      ? 'Compare retirement options — Solo 401(k) employee deferral is based on your W-2 salary'
+      : 'Compare retirement plan options — Solo 401(k) may allow higher contributions',
     estimatedSavings: solo401kSavings,
     eligible: solo401kEligible,
     unlockLabel: solo401kEligible ? null : 'Unlocks at $100K+',
     dismissed: dismissed.has('solo_401k'),
     status: dismissed.has('solo_401k') ? 'dismissed' : solo401kEligible ? 'action_available' : 'not_eligible',
-    whyItMatters: `At higher incomes, the Solo 401(k) allows an additional $${RETIREMENT_LIMITS.solo_401k.employeeMax.toLocaleString()} employee deferral on top of employer contributions. This can mean $${solo401kDelta.toLocaleString()} more in tax-sheltered savings compared to a SEP-IRA.`,
+    whyItMatters: isScorp
+      ? `As an S-Corp, your Solo 401(k) employee deferral ($${RETIREMENT_LIMITS.solo_401k.employeeMax.toLocaleString()}) comes from your W-2 salary. Employer contributions are based on 25% of salary.`
+      : `At higher incomes, the Solo 401(k) allows an additional $${RETIREMENT_LIMITS.solo_401k.employeeMax.toLocaleString()} employee deferral on top of employer contributions. This can mean $${solo401kDelta.toLocaleString()} more in tax-sheltered savings compared to a SEP-IRA.`,
     howItWorks: [
-      `SEP-IRA max: 25% of net SE income, capped at $${RETIREMENT_LIMITS.sep_ira.maxContribution.toLocaleString()}`,
+      `SEP-IRA max: 25% of ${isScorp ? 'W-2 salary' : 'net SE income'}, capped at $${RETIREMENT_LIMITS.sep_ira.maxContribution.toLocaleString()}`,
       `Solo 401(k): $${RETIREMENT_LIMITS.solo_401k.employeeMax.toLocaleString()} employee + 25% employer, capped at $${RETIREMENT_LIMITS.solo_401k.totalMax.toLocaleString()}`,
-      'At moderate incomes, both plans have similar limits',
+      isScorp ? 'As an S-Corp, both employee and employer contributions are based on your W-2 salary' : 'At moderate incomes, both plans have similar limits',
       'At higher incomes, the Solo 401(k) employee deferral creates a meaningful gap',
       'Solo 401(k) also allows Roth contributions (post-tax, tax-free growth)',
     ],
