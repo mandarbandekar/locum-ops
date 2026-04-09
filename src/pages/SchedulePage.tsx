@@ -359,8 +359,8 @@ export default function SchedulePage() {
 
           {view === 'month' ? (
             <>
-              <div className="rounded-lg border bg-card overflow-x-auto">
-                <div className="min-w-[500px]">
+              <div className="rounded-lg border bg-card overflow-x-auto -mx-3 sm:mx-0">
+                <div className="min-w-[420px]">
                   <div className="grid grid-cols-7 bg-muted/50">
                     {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
                       <div key={d} className="p-1.5 sm:p-2 text-center text-[10px] sm:text-xs font-medium text-muted-foreground">{d}</div>
