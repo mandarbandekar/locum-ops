@@ -120,6 +120,8 @@ interface InvoiceEditPanelProps {
   billingEmailTo: string;
   readOnly?: boolean;
   invoicePayments?: any[];
+  paymentDialogOpen?: boolean;
+  onPaymentDialogChange?: (open: boolean) => void;
   onUpdateInvoice: (invoice: any) => Promise<void>;
   onAddLineItem?: (item: any) => Promise<void>;
   onUpdateLineItem?: (item: any) => Promise<void>;
