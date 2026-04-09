@@ -79,6 +79,7 @@ export default function TaxStrategiesTab() {
               inputs={inputs}
               annualizedIncome={annualizedIncome}
               combinedRate={combinedRate}
+              entityType={entityType}
               onUpdateInputs={updateInputs}
               onDismiss={dismissStrategy}
               onRestore={restoreStrategy}
@@ -98,6 +99,7 @@ export default function TaxStrategiesTab() {
               inputs={inputs}
               annualizedIncome={annualizedIncome}
               combinedRate={combinedRate}
+              entityType={entityType}
               onUpdateInputs={updateInputs}
               onDismiss={dismissStrategy}
               onRestore={restoreStrategy}
@@ -117,6 +119,7 @@ export default function TaxStrategiesTab() {
               inputs={inputs}
               annualizedIncome={annualizedIncome}
               combinedRate={combinedRate}
+              entityType={entityType}
               onUpdateInputs={updateInputs}
               onDismiss={dismissStrategy}
               onRestore={restoreStrategy}
