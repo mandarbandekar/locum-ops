@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Download, Loader2, Save, DollarSign, Link2, Copy, CheckCircle, Send, RefreshCw } from 'lucide-react';
+import { ArrowRight, Download, Loader2, Save, DollarSign, Link2, Copy, CheckCircle, Send, RefreshCw, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { buildChecklistItems } from '@/components/invoice/ReadyToSendChecklist';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,17 +30,20 @@ interface InvoiceActionBarProps {
   facility: any;
   profile: any;
   dueDate: string;
+  billingNameTo?: string;
   onSave: () => Promise<void>;
   onUpdateInvoice: (invoice: any) => Promise<void>;
   onAddActivity: (activity: any) => Promise<void>;
   onRecordPayment?: () => void;
+  userId?: string;
 }
 
-export function InvoiceActionBar({ invoice, items, facility, profile, dueDate, onSave, onUpdateInvoice, onAddActivity, onRecordPayment }: InvoiceActionBarProps) {
+export function InvoiceActionBar({ invoice, items, facility, profile, dueDate, billingNameTo, onSave, onUpdateInvoice, onAddActivity, onRecordPayment, userId }: InvoiceActionBarProps) {
   const [saving, setSaving] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [shareLoading, setShareLoading] = useState(false);
+  const [emailSending, setEmailSending] = useState(false);
 
   const isDraft = invoice.status === 'draft';
   const computedStatus = computeInvoiceStatus(invoice);
@@ -137,6 +140,37 @@ export function InvoiceActionBar({ invoice, items, facility, profile, dueDate, o
         {/* Sent / Overdue / Partial actions */}
         {!isDraft && !isPaid && (
           <>
+            <Button
+              variant="outline"
+              size="sm"
+              className="shrink-0"
+              disabled={emailSending}
+              onClick={async () => {
+                const billingEmail = (invoice as any).billing_email_to || facility?.invoice_email_to;
+                if (!billingEmail) {
+                  toast.error('No billing email set — add one in facility settings');
+                  return;
+                }
+                setEmailSending(true);
+                try {
+                  await supabase.functions.invoke('send-reminder-emails', {
+                    body: { mode: 'payment_reminder', invoice_id: invoice.id, user_id: userId },
+                  });
+                  await onAddActivity({ invoice_id: invoice.id, action: 'payment_reminder_sent', description: `Payment reminder sent to ${billingEmail}` });
+                  toast.success(`Invoice sent to ${billingEmail}`);
+                } catch {
+                  toast.error('Failed to send email');
+                } finally {
+                  setEmailSending(false);
+                }
+              }}
+            >
+              {emailSending ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Mail className="mr-1 h-3.5 w-3.5" />}
+              <span className="hidden sm:inline">
+                {billingNameTo ? `Email ${billingNameTo}` : 'Send Email'}
+              </span>
+              <span className="sm:hidden">Email</span>
+            </Button>
             {hasShareLink ? (
               <Button variant="outline" size="sm" onClick={handleCopyShareLink} className="shrink-0">
                 <Copy className="mr-1 h-3.5 w-3.5" />

@@ -414,6 +414,8 @@ export default function InvoiceDetailPage() {
         facility={facility}
         profile={profile}
         dueDate={liveFields?.dueDate || invoice.due_date?.split('T')[0] || ''}
+        billingNameTo={billingNameTo}
+        userId={user?.id}
         onSave={async () => { if (saveRef.current) await saveRef.current(); }}
         onUpdateInvoice={updateInvoice}
         onAddActivity={addActivity}
