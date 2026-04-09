@@ -140,37 +140,6 @@ export function InvoiceActionBar({ invoice, items, facility, profile, dueDate, b
         {/* Sent / Overdue / Partial actions */}
         {!isDraft && !isPaid && (
           <>
-            <Button
-              variant="outline"
-              size="sm"
-              className="shrink-0"
-              disabled={emailSending}
-              onClick={async () => {
-                const billingEmail = (invoice as any).billing_email_to || facility?.invoice_email_to;
-                if (!billingEmail) {
-                  toast.error('No billing email set — add one in facility settings');
-                  return;
-                }
-                setEmailSending(true);
-                try {
-                  await supabase.functions.invoke('send-reminder-emails', {
-                    body: { mode: 'payment_reminder', invoice_id: invoice.id, user_id: userId },
-                  });
-                  await onAddActivity({ invoice_id: invoice.id, action: 'payment_reminder_sent', description: `Payment reminder sent to ${billingEmail}` });
-                  toast.success(`Invoice sent to ${billingEmail}`);
-                } catch {
-                  toast.error('Failed to send email');
-                } finally {
-                  setEmailSending(false);
-                }
-              }}
-            >
-              {emailSending ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Mail className="mr-1 h-3.5 w-3.5" />}
-              <span className="hidden sm:inline">
-                {billingNameTo ? `Email ${billingNameTo}` : 'Send Email'}
-              </span>
-              <span className="sm:hidden">Email</span>
-            </Button>
             {hasShareLink ? (
               <Button variant="outline" size="sm" onClick={handleCopyShareLink} className="shrink-0">
                 <Copy className="mr-1 h-3.5 w-3.5" />
