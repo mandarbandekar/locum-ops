@@ -3,8 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { ArrowRight, DollarSign, Loader2, AlertTriangle } from 'lucide-react';
+
+import { ArrowRight, DollarSign, Loader2 } from 'lucide-react';
 import { GooglePlacesAutocomplete } from '@/components/GooglePlacesAutocomplete';
 import type { PlaceSelection } from '@/components/GooglePlacesAutocomplete';
 import type { ManualFacilityInput } from '@/hooks/useManualSetup';
@@ -22,7 +22,7 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
   const [address, setAddress] = useState('');
   const [weekdayRate, setWeekdayRate] = useState('');
   const [billingCadence, setBillingCadence] = useState<BillingCadence>('monthly');
-  const [autoGenerateInvoices, setAutoGenerateInvoices] = useState(true);
+  
   const [clinicSearchValue, setClinicSearchValue] = useState('');
   const [manualEntry, setManualEntry] = useState(false);
   const [clinicSelected, setClinicSelected] = useState(false);
@@ -45,7 +45,7 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
       billing_cadence: billingCadence,
       billing_week_end_day: undefined,
       billing_anchor_date: undefined,
-      auto_generate_invoices: autoGenerateInvoices && !!billingEmail.trim(),
+      auto_generate_invoices: true,
     });
   };
 
@@ -172,20 +172,6 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
             )}
           </div>
 
-          <div className="flex items-center justify-between">
-            <div>
-              <Label>Auto-generate invoices</Label>
-              <p className="text-xs text-muted-foreground">Draft invoices are generated automatically during the early morning system run.</p>
-            </div>
-            <Switch checked={autoGenerateInvoices} onCheckedChange={setAutoGenerateInvoices} />
-          </div>
-
-          {autoGenerateInvoices && !billingEmail.trim() && (
-            <div className="flex items-start gap-2 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
-              <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-              <p className="text-xs text-amber-700 dark:text-amber-400">Add a billing email above to enable invoice generation and sending.</p>
-            </div>
-          )}
         </div>
       </div>
 

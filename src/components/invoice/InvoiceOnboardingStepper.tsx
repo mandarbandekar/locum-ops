@@ -120,7 +120,7 @@ export function InvoiceOnboardingStepper({ onComplete }: Props) {
           ...fac,
           billing_cadence: config.billing_cadence,
           billing_week_end_day: config.billing_week_end_day,
-          auto_generate_invoices: config.auto_generate,
+          auto_generate_invoices: true,
           billing_cycle_anchor_date: config.biweekly_anchor_date,
         });
       }
@@ -188,7 +188,7 @@ export function InvoiceOnboardingStepper({ onComplete }: Props) {
                   <th className="text-left p-3 font-semibold text-muted-foreground">Billing Cadence</th>
                   <th className="text-left p-3 font-semibold text-muted-foreground">Billing Contact</th>
                   <th className="text-left p-3 font-semibold text-muted-foreground">Due</th>
-                  <th className="text-center p-3 font-semibold text-muted-foreground">Auto-generate</th>
+                  
                 </tr>
               </thead>
               <tbody>
@@ -244,12 +244,6 @@ export function InvoiceOnboardingStepper({ onComplete }: Props) {
                         )}
                       </td>
                       <td className="p-3 text-xs text-muted-foreground">Net {fac.invoice_due_days || 15}</td>
-                      <td className="p-3 text-center">
-                        <Switch
-                          checked={config.auto_generate}
-                          onCheckedChange={v => updateConfig(fac.id, { auto_generate: v })}
-                        />
-                      </td>
                     </tr>
                   );
                 })}

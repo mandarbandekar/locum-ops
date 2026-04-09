@@ -25,7 +25,7 @@ const CADENCE_LABELS: Record<string, string> = {
 export function InvoicingPreferencesCard({ facility, onUpdate }: InvoicingPreferencesCardProps) {
   const [editing, setEditing] = useState(false);
   const [billingCadence, setBillingCadence] = useState<BillingCadence>(facility.billing_cadence || 'monthly');
-  const [autoGenerate, setAutoGenerate] = useState(facility.auto_generate_invoices ?? false);
+  
   const [dueDays, setDueDays] = useState(facility.invoice_due_days ?? 15);
   const [prefix, setPrefix] = useState(facility.invoice_prefix || 'INV');
   const [nameTo, setNameTo] = useState(facility.invoice_name_to || '');
@@ -40,12 +40,12 @@ export function InvoicingPreferencesCard({ facility, onUpdate }: InvoicingPrefer
 
   const handleSave = () => {
     // Block auto-generate if no billing contact
-    const finalAutoGenerate = editingHasBillingContact ? autoGenerate : false;
+    
 
     onUpdate({
       ...facility,
       billing_cadence: billingCadence,
-      auto_generate_invoices: finalAutoGenerate,
+      auto_generate_invoices: true,
       invoice_due_days: dueDays,
       invoice_prefix: prefix,
       billing_week_end_day: facility.billing_week_end_day,
@@ -63,7 +63,7 @@ export function InvoicingPreferencesCard({ facility, onUpdate }: InvoicingPrefer
 
   const handleCancel = () => {
     setBillingCadence(facility.billing_cadence || 'monthly');
-    setAutoGenerate(facility.auto_generate_invoices ?? false);
+    
     setDueDays(facility.invoice_due_days ?? 15);
     setPrefix(facility.invoice_prefix || 'INV');
     setNameTo(facility.invoice_name_to || '');
@@ -123,12 +123,6 @@ export function InvoicingPreferencesCard({ facility, onUpdate }: InvoicingPrefer
               <span className="font-medium">Monday – Sunday</span>
             </div>
           )}
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Auto-generate invoices</span>
-            <Badge variant={facility.auto_generate_invoices ? 'default' : 'outline'} className="text-xs">
-              {facility.auto_generate_invoices ? 'On' : 'Off'}
-            </Badge>
-          </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Payment terms</span>
             <span className="font-medium">Net {facility.invoice_due_days ?? 15}</span>
@@ -233,32 +227,6 @@ export function InvoicingPreferencesCard({ facility, onUpdate }: InvoicingPrefer
         </div>
 
         {/* Auto-generate */}
-        <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-          <div>
-            <p className="text-sm font-medium">Auto-generate invoices</p>
-            <p className="text-xs text-muted-foreground">Draft invoices are generated automatically during the early morning system run.</p>
-          </div>
-          <Switch
-            checked={autoGenerate}
-            onCheckedChange={(checked) => {
-              if (checked && !editingHasBillingContact) {
-                toast.error('Add a billing contact first to enable auto-generation.');
-                return;
-              }
-              setAutoGenerate(checked);
-            }}
-          />
-        </div>
-
-        {/* Warning when auto is on but no contact */}
-        {autoGenerate && !editingHasBillingContact && (
-          <div className="flex items-start gap-2 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
-            <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
-            <p className="text-xs text-amber-700 dark:text-amber-300">
-              Add a billing contact below to enable invoice generation and sending.
-            </p>
-          </div>
-        )}
 
         {/* Billing Contact */}
         <div className="pt-2 border-t space-y-3">
