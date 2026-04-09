@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -6,75 +6,57 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { useUserProfile, type Profession, type CurrentTool, type FacilitiesCountBand, type InvoicesPerMonthBand } from '@/contexts/UserProfileContext';
+import { Badge } from '@/components/ui/badge';
+import { useUserProfile } from '@/contexts/UserProfileContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
-import { ArrowRight, Check, Building2, CalendarDays, Plus, MapPin } from 'lucide-react';
+import { ArrowRight, Check, Building2, CalendarDays, Plus, MapPin, DollarSign, Mail, User, Lightbulb } from 'lucide-react';
 import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
 import { WorkspaceReady } from '@/components/onboarding/WorkspaceReady';
 import { AddFacilityDialog } from '@/components/AddFacilityDialog';
 import { ShiftFormDialog } from '@/components/schedule/ShiftFormDialog';
 import { CalendarSyncStep } from '@/components/onboarding/CalendarSyncStep';
-import { GooglePlacesAutocomplete } from '@/components/GooglePlacesAutocomplete';
-
-
-const TOOL_OPTIONS: { value: CurrentTool; label: string }[] = [
-  { value: 'sheets_excel', label: 'Google Sheets / Excel' },
-  { value: 'calendar', label: 'Calendar' },
-  { value: 'quickbooks', label: 'QuickBooks' },
-  { value: 'wave', label: 'Wave' },
-  { value: 'freshbooks', label: 'FreshBooks' },
-  { value: 'notes', label: 'Notes' },
-  { value: 'other', label: 'Other' },
-];
 
 type Phase =
   | 'profile'
-  | 'workflow'
-  | 'tax_enablement'
   | 'manual_facility'
-  | 'manual_shift'
-  | 'manual_expand'
+  | 'first_shift'
+  | 'tax_enablement'
   | 'calendar_sync'
   | 'workspace_ready';
 
 const PHASE_STEP: Record<Phase, number> = {
   profile: 1,
-  workflow: 2,
-  tax_enablement: 3,
-  manual_facility: 4,
-  manual_shift: 5,
-  manual_expand: 6,
-  calendar_sync: 7,
-  workspace_ready: 7,
+  manual_facility: 2,
+  first_shift: 3,
+  tax_enablement: 4,
+  calendar_sync: 5,
+  workspace_ready: 5,
 };
 
-const TOTAL_STEPS = 7;
+const TOTAL_STEPS = 5;
 
 const PHASE_LABEL: Record<Phase, string> = {
-  profile: 'Your business details',
-  workflow: 'Your current workflow',
+  profile: 'Your profile',
+  manual_facility: 'Add a clinic',
+  first_shift: 'Log a shift',
   tax_enablement: 'Tax tracking',
-  manual_facility: 'Add a practice',
-  manual_shift: 'Add a shift',
-  manual_expand: 'Review & finish',
   calendar_sync: 'Calendar sync',
   workspace_ready: 'All done!',
 };
 
 const PHASE_BACK: Record<Phase, Phase | null> = {
   profile: null,
-  workflow: 'profile',
-  tax_enablement: 'workflow',
-  manual_facility: 'tax_enablement',
-  manual_shift: 'manual_facility',
-  manual_expand: 'manual_shift',
-  calendar_sync: 'manual_expand',
+  manual_facility: 'profile',
+  first_shift: 'manual_facility',
+  tax_enablement: 'first_shift',
+  calendar_sync: 'tax_enablement',
   workspace_ready: null,
 };
 
 export default function OnboardingPage() {
   const { profile, updateProfile, completeOnboarding } = useUserProfile();
+  const { user } = useAuth();
   const { facilities, shifts, terms, addShift } = useData();
   const navigate = useNavigate();
   const [phase, setPhase] = useState<Phase>('profile');
@@ -86,42 +68,76 @@ export default function OnboardingPage() {
   // Profile state
   const [firstName, setFirstName] = useState(profile?.first_name || '');
   const [lastName, setLastName] = useState(profile?.last_name || '');
-  const [companyName, setCompanyName] = useState(profile?.company_name || '');
-  const [companyAddress, setCompanyAddress] = useState(profile?.company_address || '');
-  const [invoiceEmail, setInvoiceEmail] = useState(profile?.invoice_email || '');
-  const [invoicePhone, setInvoicePhone] = useState(profile?.invoice_phone || '');
-  
   const [timezone, setTimezone] = useState(profile?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone);
-  const [currency, setCurrency] = useState(profile?.currency || 'USD');
-
-  // Workflow state
-  const [currentTools, setCurrentTools] = useState<CurrentTool[]>(profile?.current_tools || []);
-  const [facilitiesBand, setFacilitiesBand] = useState<FacilitiesCountBand>(profile?.facilities_count_band || 'band_1_3');
-  const [invoicesBand, setInvoicesBand] = useState<InvoicesPerMonthBand>(profile?.invoices_per_month_band || 'inv_1_3');
 
   // Tax opt-in
   const [showTaxSetup, setShowTaxSetup] = useState(false);
   const [taxDisclaimer, setTaxDisclaimer] = useState(false);
 
+  // Auto-advance for profile
+  const autoAdvanceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [userEdited, setUserEdited] = useState(false);
+
+  // Track facility count at time of entering manual_facility to detect new adds
+  const [facilitySavedInStep, setFacilitySavedInStep] = useState(false);
+
+  const userEmail = user?.email || '';
+
+  // Pre-fill from auth metadata
+  useEffect(() => {
+    if (user?.user_metadata) {
+      const meta = user.user_metadata;
+      if (!firstName && meta.first_name) setFirstName(meta.first_name);
+      if (!lastName && meta.last_name) setLastName(meta.last_name);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
   useEffect(() => {
     console.log('onboarding_step_view', { phase });
   }, [phase]);
 
-  // Facility dialog is opened manually by the user clicking "Add Practice"
-
-  // When entering manual_shift phase, open the dialog automatically
+  // Auto-advance for profile step when all fields pre-filled from OAuth
   useEffect(() => {
-    if (phase === 'manual_shift') {
+    if (phase === 'profile' && !userEdited) {
+      const allFilled = firstName.trim() && lastName.trim() && userEmail && timezone;
+      if (allFilled) {
+        setShowWelcome(true);
+        autoAdvanceRef.current = setTimeout(() => {
+          saveProfile();
+        }, 1500);
+      }
+    }
+    return () => {
+      if (autoAdvanceRef.current) clearTimeout(autoAdvanceRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, firstName, lastName, userEmail, timezone, userEdited]);
+
+  const cancelAutoAdvance = () => {
+    setUserEdited(true);
+    setShowWelcome(false);
+    if (autoAdvanceRef.current) {
+      clearTimeout(autoAdvanceRef.current);
+      autoAdvanceRef.current = null;
+    }
+  };
+
+  // When entering first_shift phase, open the dialog automatically
+  useEffect(() => {
+    if (phase === 'first_shift' && shifts.length === 0) {
       setShiftDialogOpen(true);
     }
-  }, [phase]);
+  }, [phase, shifts.length]);
 
   const handleFacilityDialogChange = (open: boolean) => {
     setFacilityDialogOpen(open);
     if (!open && phase === 'manual_facility') {
+      // Mark that a facility was saved if count increased
       setTimeout(() => {
         if (facilities.length > 0) {
-          setPhase('manual_shift');
+          setFacilitySavedInStep(true);
         }
       }, 300);
     }
@@ -129,11 +145,7 @@ export default function OnboardingPage() {
 
   const handleShiftDialogChange = (open: boolean) => {
     setShiftDialogOpen(open);
-    if (!open && phase === 'manual_shift') {
-      setTimeout(() => {
-        setPhase('manual_expand');
-      }, 300);
-    }
+    // Don't auto-advance; user sees results inline
   };
 
   const goBack = () => {
@@ -146,25 +158,9 @@ export default function OnboardingPage() {
     await updateProfile({
       first_name: firstName.trim(),
       last_name: lastName.trim(),
-      company_name: companyName.trim(),
-      company_address: companyAddress.trim(),
-      invoice_email: invoiceEmail.trim() || null,
-      invoice_phone: invoicePhone.trim() || null,
-      
       timezone,
-      currency,
     });
-    setPhase('workflow');
-  };
-
-  const saveWorkflow = async () => {
-    console.log('onboarding_step_submit', { step: 'workflow' });
-    await updateProfile({ current_tools: currentTools, facilities_count_band: facilitiesBand, invoices_per_month_band: invoicesBand });
-    setPhase('tax_enablement');
-  };
-
-  const toggleTool = (tool: CurrentTool) => {
-    setCurrentTools(prev => prev.includes(tool) ? prev.filter(t => t !== tool) : [...prev, tool]);
+    setPhase('manual_facility');
   };
 
   const handleSkipToApp = async () => {
@@ -183,18 +179,22 @@ export default function OnboardingPage() {
   };
 
   const getSkipHandler = (): (() => void) | undefined => {
-    if (phase === 'manual_facility' || phase === 'manual_shift') return () => setPhase('calendar_sync');
-    if (phase === 'tax_enablement') return () => setPhase('manual_facility');
+    if (phase === 'manual_facility') return () => setPhase('calendar_sync');
+    if (phase === 'first_shift') return () => setPhase('tax_enablement');
+    if (phase === 'tax_enablement') return () => setPhase('calendar_sync');
     if (phase === 'calendar_sync') return handleFinishSetup;
     return undefined;
   };
 
   const getSkipLabel = (): string => {
-    if (phase === 'manual_facility' || phase === 'manual_shift') return 'Skip to calendar sync';
+    if (phase === 'manual_facility') return 'Skip — I\'ll add clinics later';
+    if (phase === 'first_shift') return 'Skip for now';
     if (phase === 'tax_enablement') return 'Skip for now';
     if (phase === 'calendar_sync') return 'Skip for now';
     return 'Skip';
   };
+
+  const profileAllFilled = !!(firstName.trim() && lastName.trim() && userEmail && timezone);
 
   const renderContent = () => {
     switch (phase) {
@@ -202,117 +202,244 @@ export default function OnboardingPage() {
         return (
           <div className="space-y-5">
             <div>
-              <h2 className="text-2xl font-bold text-foreground font-[Manrope]">Welcome to LocumOps!</h2>
-              <p className="text-muted-foreground mt-1">Tell us about your business — this info will appear on your invoices.</p>
+              {showWelcome && !userEdited ? (
+                <>
+                  <h2 className="text-2xl font-bold text-foreground font-[Manrope]">Welcome, {firstName}! 👋</h2>
+                  <p className="text-muted-foreground mt-1">We pulled your info from sign-up. Confirm and let's go.</p>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-2xl font-bold text-foreground font-[Manrope]">Welcome to LocumOps!</h2>
+                  <p className="text-muted-foreground mt-1">Quick confirmation — this info helps personalize your workspace.</p>
+                </>
+              )}
             </div>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>First name</Label>
-                  <Input value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Jane" />
+                  <Label>First name <span className="text-destructive">*</span></Label>
+                  <Input
+                    value={firstName}
+                    onChange={e => { setFirstName(e.target.value); cancelAutoAdvance(); }}
+                    placeholder="Jane"
+                  />
                 </div>
                 <div>
-                  <Label>Last name</Label>
-                  <Input value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Smith" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>Timezone</Label>
-                  <Select value={timezone} onValueChange={setTimezone}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="America/New_York">Eastern</SelectItem>
-                      <SelectItem value="America/Chicago">Central</SelectItem>
-                      <SelectItem value="America/Denver">Mountain</SelectItem>
-                      <SelectItem value="America/Phoenix">Arizona</SelectItem>
-                      <SelectItem value="America/Los_Angeles">Pacific</SelectItem>
-                      <SelectItem value="America/Anchorage">Alaska</SelectItem>
-                      <SelectItem value="Pacific/Honolulu">Hawaii</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label>Last name <span className="text-destructive">*</span></Label>
+                  <Input
+                    value={lastName}
+                    onChange={e => { setLastName(e.target.value); cancelAutoAdvance(); }}
+                    placeholder="Smith"
+                  />
                 </div>
               </div>
               <div>
-                <Label>Company / practice name</Label>
-                <Input value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Smith Veterinary Services LLC" />
-                <p className="text-xs text-muted-foreground mt-1">Appears as the sender on your invoices.</p>
+                <Label>Email</Label>
+                <Input value={userEmail} disabled className="bg-muted/50 text-muted-foreground" />
               </div>
               <div>
-                <Label>Business address</Label>
-                <GooglePlacesAutocomplete value={companyAddress} onChange={setCompanyAddress} placeholder="100 Main St, Suite 200, Portland, OR 97201" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>Contact email</Label>
-                  <Input type="email" value={invoiceEmail} onChange={e => setInvoiceEmail(e.target.value)} placeholder="jane@example.com" />
-                </div>
-                <div>
-                  <Label>Phone</Label>
-                  <Input value={invoicePhone} onChange={e => setInvoicePhone(e.target.value)} placeholder="503-555-1234" />
-                </div>
-              </div>
-              <div>
-                <Label>Currency</Label>
-                <Select value={currency} onValueChange={setCurrency}>
+                <Label>Timezone</Label>
+                <Select value={timezone} onValueChange={v => { setTimezone(v); cancelAutoAdvance(); }}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="USD">USD</SelectItem>
-                    <SelectItem value="CAD">CAD</SelectItem>
-                    <SelectItem value="GBP">GBP</SelectItem>
-                    <SelectItem value="EUR">EUR</SelectItem>
-                    <SelectItem value="AUD">AUD</SelectItem>
+                    <SelectItem value="America/New_York">Eastern</SelectItem>
+                    <SelectItem value="America/Chicago">Central</SelectItem>
+                    <SelectItem value="America/Denver">Mountain</SelectItem>
+                    <SelectItem value="America/Phoenix">Arizona</SelectItem>
+                    <SelectItem value="America/Los_Angeles">Pacific</SelectItem>
+                    <SelectItem value="America/Anchorage">Alaska</SelectItem>
+                    <SelectItem value="Pacific/Honolulu">Hawaii</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
-            <Button onClick={saveProfile} className="w-full" size="lg">
-              Continue <ArrowRight className="ml-2 h-4 w-4" />
+            <Button
+              onClick={saveProfile}
+              className="w-full"
+              size="lg"
+              disabled={!firstName.trim() || !lastName.trim()}
+            >
+              {profileAllFilled ? "Looks good, let's go" : 'Continue'} <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </div>
         );
 
-      case 'workflow':
+      case 'manual_facility':
         return (
           <div className="space-y-5">
             <div>
-              <h2 className="text-2xl font-bold text-foreground font-[Manrope]">How do you handle admin back office work today?</h2>
-              <p className="text-muted-foreground mt-1">Helps us understand your workflow.</p>
+              <h2 className="text-2xl font-bold text-foreground font-[Manrope]">Add a clinic you work with</h2>
+              <p className="text-muted-foreground mt-1">
+                Start with the one from your most recent shift. You can always add more later.
+              </p>
             </div>
-            <div className="space-y-4">
-              <div>
-                <Label className="mb-2 block">Current tools (select all that apply)</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {TOOL_OPTIONS.map(t => (
-                    <label key={t.value} className="flex items-center gap-2 cursor-pointer p-2 rounded-lg border border-border hover:bg-muted/50 transition-colors">
-                      <Checkbox checked={currentTools.includes(t.value)} onCheckedChange={() => toggleTool(t.value)} />
-                      <span className="text-sm">{t.label}</span>
-                    </label>
-                  ))}
-                </div>
+
+            {/* Show saved clinic cards */}
+            {facilities.length > 0 && (
+              <div className="space-y-3">
+                {facilities.map(f => (
+                  <Card key={f.id} className="border-primary/30 bg-primary/[0.03]">
+                    <CardContent className="py-4 px-4 space-y-2">
+                      <div className="flex items-start justify-between">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-foreground text-base">{f.name}</p>
+                          {f.address && (
+                            <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
+                              <MapPin className="h-3.5 w-3.5 shrink-0" /> {f.address}
+                            </p>
+                          )}
+                        </div>
+                        <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 shrink-0 ml-2">
+                          <Check className="h-3 w-3 mr-1" /> Added
+                        </Badge>
+                      </div>
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                        {f.invoice_name_to && (
+                          <span className="flex items-center gap-1">
+                            <User className="h-3 w-3" /> {f.invoice_name_to}
+                          </span>
+                        )}
+                        {f.invoice_email_to && (
+                          <span className="flex items-center gap-1">
+                            <Mail className="h-3 w-3" /> {f.invoice_email_to}
+                          </span>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="mb-2 block text-sm"># of facilities</Label>
-                  <RadioGroup value={facilitiesBand} onValueChange={v => setFacilitiesBand(v as FacilitiesCountBand)}>
-                    <div className="flex items-center gap-2"><RadioGroupItem value="band_1_3" id="f1" /><Label htmlFor="f1">1–3</Label></div>
-                    <div className="flex items-center gap-2"><RadioGroupItem value="band_4_8" id="f2" /><Label htmlFor="f2">4–8</Label></div>
-                    <div className="flex items-center gap-2"><RadioGroupItem value="band_9_plus" id="f3" /><Label htmlFor="f3">9+</Label></div>
-                  </RadioGroup>
-                </div>
-                <div>
-                  <Label className="mb-2 block text-sm">Invoices / month</Label>
-                  <RadioGroup value={invoicesBand} onValueChange={v => setInvoicesBand(v as InvoicesPerMonthBand)}>
-                    <div className="flex items-center gap-2"><RadioGroupItem value="inv_1_3" id="i1" /><Label htmlFor="i1">1–3</Label></div>
-                    <div className="flex items-center gap-2"><RadioGroupItem value="inv_4_10" id="i2" /><Label htmlFor="i2">4–10</Label></div>
-                    <div className="flex items-center gap-2"><RadioGroupItem value="inv_11_plus" id="i3" /><Label htmlFor="i3">11+</Label></div>
-                  </RadioGroup>
-                </div>
+            )}
+
+            {/* Show form prompt or add-more option */}
+            {facilities.length === 0 ? (
+              <Card className="border-dashed border-2 border-primary/20 bg-primary/[0.02] hover:border-primary/40 transition-colors cursor-pointer" onClick={() => setFacilityDialogOpen(true)}>
+                <CardContent className="py-8 flex flex-col items-center gap-3 text-center">
+                  <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <Building2 className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-foreground">Add a practice</p>
+                    <p className="text-sm text-muted-foreground mt-0.5">Clinic name, address, contact info, and rates</p>
+                  </div>
+                  <Button size="sm" className="mt-1">
+                    <Plus className="h-3.5 w-3.5 mr-1" /> Add Practice
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-2">
+                <Button onClick={() => setPhase('first_shift')} className="w-full" size="lg">
+                  Log your first shift <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => setFacilityDialogOpen(true)}
+                  className="w-full text-sm text-primary hover:underline py-1"
+                >
+                  + Add another clinic
+                </button>
               </div>
+            )}
+
+            {/* Tip */}
+            <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 rounded-lg p-3">
+              <Lightbulb className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+              <span>The day rate you set here becomes the default when you log shifts — saves you from re-entering it every time.</span>
             </div>
-            <Button onClick={saveWorkflow} className="w-full" size="lg">
+
+            <AddFacilityDialog open={facilityDialogOpen} onOpenChange={handleFacilityDialogChange} />
+          </div>
+        );
+
+      case 'first_shift':
+        return (
+          <div className="space-y-5">
+            <div>
+              <h2 className="text-2xl font-bold text-foreground font-[Manrope]">Log your first shift</h2>
+              <p className="text-muted-foreground mt-1">
+                Add an upcoming or recent shift — invoices are auto-generated from booked shifts.
+              </p>
+            </div>
+
+            {/* Summary of what's been added so far */}
+            {(facilities.length > 0 || shifts.length > 0) && (
+              <Card>
+                <CardContent className="pt-5 space-y-4">
+                  {facilities.length > 0 && (
+                    <div>
+                      <h3 className="font-medium text-xs text-muted-foreground uppercase tracking-wider mb-2">Practices</h3>
+                      <div className="space-y-2">
+                        {facilities.map(f => (
+                          <div key={f.id} className="flex items-center gap-3 py-1.5 px-3 rounded-md bg-muted/50">
+                            <div className="h-7 w-7 rounded-md bg-primary/10 flex items-center justify-center">
+                              <Building2 className="h-3.5 w-3.5 text-primary" />
+                            </div>
+                            <span className="text-sm font-medium">{f.name}</span>
+                            <Check className="h-4 w-4 text-primary ml-auto" />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {shifts.length > 0 && (
+                    <div>
+                      <h3 className="font-medium text-xs text-muted-foreground uppercase tracking-wider mb-2">Shifts</h3>
+                      <div className="space-y-2">
+                        {shifts.map(s => {
+                          const facility = facilities.find(f => f.id === s.facility_id);
+                          const date = new Date(s.start_datetime).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                          const startTime = new Date(s.start_datetime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                          const endTime = new Date(s.end_datetime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                          return (
+                            <div key={s.id} className="flex items-center gap-3 py-1.5 px-3 rounded-md bg-muted/50">
+                              <div className="h-7 w-7 rounded-md bg-primary/10 flex items-center justify-center">
+                                <CalendarDays className="h-3.5 w-3.5 text-primary" />
+                              </div>
+                              <div className="min-w-0">
+                                <span className="text-sm font-medium">{facility?.name}</span>
+                                <p className="text-xs text-muted-foreground">{date} · {startTime} – {endTime}</p>
+                              </div>
+                              <Check className="h-4 w-4 text-primary ml-auto" />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Action buttons */}
+            <div className="space-y-2">
+              <Button variant="outline" className="w-full justify-start h-auto py-3 px-4" onClick={() => setShiftDialogOpen(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                <CalendarDays className="mr-2 h-4 w-4 text-primary" />
+                {shifts.length === 0 ? 'Add a shift' : 'Add another shift'}
+              </Button>
+              <Button variant="outline" className="w-full justify-start h-auto py-3 px-4" onClick={() => setFacilityDialogOpen(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                <Building2 className="mr-2 h-4 w-4 text-primary" />
+                Add another practice
+              </Button>
+            </div>
+
+            <Button onClick={() => setPhase('tax_enablement')} className="w-full" size="lg">
               Continue <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
+
+            <ShiftFormDialog
+              open={shiftDialogOpen}
+              onOpenChange={handleShiftDialogChange}
+              facilities={facilities}
+              shifts={shifts}
+              terms={terms}
+              onSave={async (shift) => {
+                await addShift(shift);
+              }}
+            />
+            <AddFacilityDialog open={facilityDialogOpen} onOpenChange={(open) => setFacilityDialogOpen(open)} />
           </div>
         );
 
@@ -342,198 +469,11 @@ export default function OnboardingPage() {
                     <Check className="h-4 w-4" /> Tax tracker enabled
                   </p>
                 )}
-                <Button onClick={() => setPhase('manual_facility')} className="w-full" size="lg" disabled={!taxDisclaimer}>
+                <Button onClick={() => setPhase('calendar_sync')} className="w-full" size="lg" disabled={!taxDisclaimer}>
                   Continue <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
             )}
-          </div>
-        );
-
-      case 'manual_facility':
-        return (
-          <div className="space-y-5">
-            <div>
-              <h2 className="text-2xl font-bold text-foreground font-[Manrope]">Add your first practice</h2>
-              <p className="text-muted-foreground mt-1">
-                Start with one place you work so we can organize your schedule and billing.
-              </p>
-            </div>
-
-            {facilities.length === 0 ? (
-              <Card className="border-dashed border-2 border-primary/20 bg-primary/[0.02] hover:border-primary/40 transition-colors cursor-pointer" onClick={() => setFacilityDialogOpen(true)}>
-                <CardContent className="py-8 flex flex-col items-center gap-3 text-center">
-                  <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <Building2 className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-foreground">Add a practice</p>
-                    <p className="text-sm text-muted-foreground mt-0.5">Clinic name, address, contact info, and rates</p>
-                  </div>
-                  <Button size="sm" className="mt-1">
-                    <Plus className="h-3.5 w-3.5 mr-1" /> Add Practice
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-3">
-                {facilities.map(f => (
-                  <Card key={f.id} className="border-primary/20 bg-primary/[0.02]">
-                    <CardContent className="py-3 px-4 flex items-center gap-3">
-                      <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                        <Building2 className="h-4 w-4 text-primary" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-medium text-sm text-foreground truncate">{f.name}</p>
-                        {f.address && (
-                          <p className="text-xs text-muted-foreground flex items-center gap-1 truncate">
-                            <MapPin className="h-3 w-3 shrink-0" /> {f.address}
-                          </p>
-                        )}
-                      </div>
-                      <Check className="h-4 w-4 text-primary ml-auto shrink-0" />
-                    </CardContent>
-                  </Card>
-                ))}
-                <Button variant="outline" className="w-full" onClick={() => setFacilityDialogOpen(true)}>
-                  <Plus className="h-3.5 w-3.5 mr-1" /> Add another practice
-                </Button>
-                <Button onClick={() => setPhase('manual_shift')} className="w-full" size="lg">
-                  Continue to shifts <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </div>
-            )}
-            <AddFacilityDialog open={facilityDialogOpen} onOpenChange={handleFacilityDialogChange} />
-          </div>
-        );
-
-      case 'manual_shift':
-        return (
-          <div className="space-y-5">
-            <div>
-              <h2 className="text-2xl font-bold text-foreground font-[Manrope]">Add your first shift</h2>
-              <p className="text-muted-foreground mt-1">
-                Add an upcoming shift so your schedule is ready right away.
-              </p>
-            </div>
-
-            {shifts.length === 0 ? (
-              <Card className="border-dashed border-2 border-primary/20 bg-primary/[0.02] hover:border-primary/40 transition-colors cursor-pointer" onClick={() => setShiftDialogOpen(true)}>
-                <CardContent className="py-8 flex flex-col items-center gap-3 text-center">
-                  <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <CalendarDays className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-foreground">Add a shift</p>
-                    <p className="text-sm text-muted-foreground mt-0.5">Date, time, facility, and rate</p>
-                  </div>
-                  <Button size="sm" className="mt-1">
-                    <Plus className="h-3.5 w-3.5 mr-1" /> Add Shift
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-3">
-                {shifts.map(s => {
-                  const facility = facilities.find(f => f.id === s.facility_id);
-                  const date = new Date(s.start_datetime).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-                  const startTime = new Date(s.start_datetime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-                  const endTime = new Date(s.end_datetime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-                  return (
-                    <Card key={s.id} className="border-primary/20 bg-primary/[0.02]">
-                      <CardContent className="py-3 px-4 flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                          <CalendarDays className="h-4 w-4 text-primary" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-medium text-sm text-foreground truncate">{facility?.name}</p>
-                          <p className="text-xs text-muted-foreground">{date} · {startTime} – {endTime}</p>
-                        </div>
-                        <Check className="h-4 w-4 text-primary ml-auto shrink-0" />
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-                <Button variant="outline" className="w-full" onClick={() => setShiftDialogOpen(true)}>
-                  <Plus className="h-3.5 w-3.5 mr-1" /> Add another shift
-                </Button>
-                <Button onClick={() => setPhase('manual_expand')} className="w-full" size="lg">
-                  Continue <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </div>
-            )}
-            <ShiftFormDialog
-              open={shiftDialogOpen}
-              onOpenChange={handleShiftDialogChange}
-              facilities={facilities}
-              shifts={shifts}
-              terms={terms}
-              onSave={async (shift) => {
-                await addShift(shift);
-              }}
-            />
-          </div>
-        );
-
-      case 'manual_expand':
-        return (
-          <div className="space-y-5">
-            <div>
-              <h2 className="text-2xl font-bold text-foreground font-[Manrope]">You're all set!</h2>
-              <p className="text-muted-foreground mt-1">Here's what we've added to your workspace. You can add more or finish up.</p>
-            </div>
-
-            <Card>
-              <CardContent className="pt-5 space-y-4">
-                <div>
-                  <h3 className="font-medium text-xs text-muted-foreground uppercase tracking-wider mb-2">Practices</h3>
-                  <div className="space-y-2">
-                    {facilities.map(f => (
-                      <div key={f.id} className="flex items-center gap-3 py-1.5 px-3 rounded-md bg-muted/50">
-                        <div className="h-7 w-7 rounded-md bg-primary/10 flex items-center justify-center">
-                          <Building2 className="h-3.5 w-3.5 text-primary" />
-                        </div>
-                        <span className="text-sm font-medium">{f.name}</span>
-                        <Check className="h-4 w-4 text-primary ml-auto" />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <h3 className="font-medium text-xs text-muted-foreground uppercase tracking-wider mb-2">Shifts</h3>
-                  <div className="space-y-2">
-                    {shifts.map(s => {
-                      const facility = facilities.find(f => f.id === s.facility_id);
-                      const date = new Date(s.start_datetime).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-                      return (
-                        <div key={s.id} className="flex items-center gap-3 py-1.5 px-3 rounded-md bg-muted/50">
-                          <div className="h-7 w-7 rounded-md bg-primary/10 flex items-center justify-center">
-                            <CalendarDays className="h-3.5 w-3.5 text-primary" />
-                          </div>
-                          <span className="text-sm font-medium">{facility?.name} — {date}</span>
-                          <Check className="h-4 w-4 text-primary ml-auto" />
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="grid grid-cols-2 gap-2">
-              <Button variant="outline" className="h-auto py-3" onClick={() => setPhase('manual_facility')}>
-                <Plus className="mr-1.5 h-4 w-4" />
-                Add practice
-              </Button>
-              <Button variant="outline" className="h-auto py-3" onClick={() => setPhase('manual_shift')}>
-                <Plus className="mr-1.5 h-4 w-4" />
-                Add shift
-              </Button>
-            </div>
-
-            <Button onClick={() => setPhase('calendar_sync')} className="w-full" size="lg">
-              Continue <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
           </div>
         );
 
