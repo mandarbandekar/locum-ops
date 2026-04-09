@@ -47,6 +47,7 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
   const [priorYearIncome, setPriorYearIncome] = useState(existingProfile?.prior_year_total_income ?? 0);
 
   const isScorp = entityType === 'scorp';
+  const currentYear = new Date().getFullYear();
   const stateData = stateCode ? STATE_TAX_DATA[stateCode] : null;
   const showPTEStep = isScorp && stateData?.hasPTE === true;
 
