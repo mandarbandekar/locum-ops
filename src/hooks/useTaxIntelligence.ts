@@ -21,6 +21,9 @@ export interface TaxIntelligenceProfile {
   spouse_w2_income: number;
   spouse_has_se_income: boolean;
   spouse_se_net_income: number;
+  projection_method: string;
+  annual_income_goal: number;
+  prior_year_total_income: number;
 }
 
 const db = (table: string) => supabase.from(table as any);
