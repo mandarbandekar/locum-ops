@@ -485,18 +485,21 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
       entity_type: entityType === 'unsure' ? 'sole_prop' : entityType,
       filing_status: filingStatus,
       state_code: stateCode,
-      other_w2_income: 0, // Replaced by spouse fields
+      other_w2_income: 0,
       retirement_type: retirementType,
       retirement_contribution: retirementType !== 'none' ? retirementContribution : 0,
       expense_tracking_level: expenseLevel,
       ytd_expenses_estimate: expenseLevel !== 'none' ? ytdExpenses : 0,
       scorp_salary: isScorp ? scorpSalary : 0,
       safe_harbor_method: safeHarbor,
-      prior_year_tax_paid: safeHarbor === 'safe_harbor' ? priorYearTax : 0,
+      prior_year_tax_paid: (safeHarbor === 'safe_harbor' || safeHarbor === '110_percent') ? priorYearTax : 0,
       pte_elected: showPTEStep ? pteElected : false,
       spouse_w2_income: spouseW2Income,
       spouse_has_se_income: spouseHasSE,
       spouse_se_net_income: spouseHasSE ? spouseSENet : 0,
+      projection_method: projectionMethod,
+      annual_income_goal: projectionMethod === 'annual_projection' ? annualIncomeGoal : 0,
+      prior_year_total_income: priorYearIncome,
       setup_completed_at: new Date().toISOString(),
     });
     setSaving(false);
