@@ -61,7 +61,7 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
   const [schedulingContactName, setSchedulingContactName] = useState('');
   const [schedulingContactEmail, setSchedulingContactEmail] = useState('');
   const [billingCadence, setBillingCadence] = useState<BillingCadence>('monthly');
-  const [autoGenerateInvoices, setAutoGenerateInvoices] = useState(true);
+  
   const totalSteps = STEP_META.length;
   const progress = ((step + 1) / totalSteps) * 100;
 
@@ -116,7 +116,7 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
         billing_cadence: billingCadence,
         billing_cycle_anchor_date: null,
         billing_week_end_day: 'saturday',
-        auto_generate_invoices: autoGenerateInvoices && !!(invoiceEmailTo.trim()),
+        auto_generate_invoices: true,
       });
 
       if (hasAnyRates) {
@@ -436,20 +436,6 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
                 )}
               </div>
 
-              <div className="flex items-center justify-between py-2">
-                <div>
-                  <Label>Auto-generate invoices</Label>
-                  <p className="text-xs text-muted-foreground">Drafts are generated automatically during the early morning system run.</p>
-                </div>
-                <Switch checked={autoGenerateInvoices} onCheckedChange={setAutoGenerateInvoices} />
-              </div>
-
-              {autoGenerateInvoices && !invoiceEmailTo.trim() && (
-                <div className="flex items-start gap-2 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                  <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-                  <p className="text-xs text-amber-700 dark:text-amber-400">Add a billing contact in the next step to enable invoice generation and sending.</p>
-                </div>
-              )}
             </>
           )}
 
