@@ -1,9 +1,8 @@
 import {
-  LayoutDashboard, Building2, CalendarDays, FileText, LogOut, ShieldCheck, Settings,
+  LayoutDashboard, Building2, CalendarDays, FileText, ShieldCheck, Settings,
   Receipt, Landmark, ChevronDown, Activity,
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
-import { useAuth } from '@/contexts/AuthContext';
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarFooter, useSidebar,
