@@ -21,10 +21,10 @@ export function useSpotlightTour(tourKey?: string) {
     try { localStorage.removeItem(storageKey); } catch {}
   }, [storageKey]);
 
-  // Auto-start on first visit if not completed
+  // Auto-start on first visit for module-specific tours (not the default dashboard tour)
   useEffect(() => {
-    if (!isTourCompleted) {
-      const t = setTimeout(() => setIsOpen(true), 600);
+    if (tourKey && !isTourCompleted) {
+      const t = setTimeout(() => setIsOpen(true), 800);
       return () => clearTimeout(t);
     }
   }, []); // only on mount
