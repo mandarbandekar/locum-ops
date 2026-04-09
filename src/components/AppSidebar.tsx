@@ -1,9 +1,8 @@
 import {
-  LayoutDashboard, Building2, CalendarDays, FileText, LogOut, ShieldCheck, Settings,
+  LayoutDashboard, Building2, CalendarDays, FileText, ShieldCheck, Settings,
   Receipt, Landmark, ChevronDown, Activity,
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
-import { useAuth } from '@/contexts/AuthContext';
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarFooter, useSidebar,
@@ -42,7 +41,7 @@ function useBadgeCounts() {
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
-  const { signOut } = useAuth();
+  
   const { draftInvoices } = useBadgeCounts();
 
   const groups: NavGroup[] = [
@@ -138,7 +137,7 @@ export function AppSidebar() {
         ))}
       </SidebarContent>
 
-      <SidebarFooter className="p-3 space-y-1">
+      <SidebarFooter className="p-3">
         <SidebarMenu className="px-2">
           <SidebarMenuItem>
             <SidebarMenuButton asChild size="lg">
@@ -153,15 +152,6 @@ export function AppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
-        <Button
-          variant="ghost"
-          size="lg"
-          onClick={signOut}
-          className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary hover:bg-sidebar-accent/60 rounded-xl"
-        >
-          <LogOut className="mr-3 h-[18px] w-[18px] opacity-80" />
-          {!collapsed && 'Logout'}
-        </Button>
       </SidebarFooter>
     </Sidebar>
   );
