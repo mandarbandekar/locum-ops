@@ -167,8 +167,9 @@ export function WorkspaceReady({ facilities, shifts, invoices, taxEnabled, shift
             <Button variant="outline" size="sm" onClick={() => handleNavigate('/invoices')} disabled={completing}>
               <FileText className="mr-1.5 h-4 w-4" /> Invoices
             </Button>
-          </div>
         </div>
+        </div>
+      </div>
       )}
     </div>
   );
