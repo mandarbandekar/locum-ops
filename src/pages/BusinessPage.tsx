@@ -1,18 +1,59 @@
 import { useMemo } from 'react';
-import { Activity, Heart, BarChart3, Building2, DollarSign, AlertTriangle, Calendar, Shield } from 'lucide-react';
+import { Activity, Heart, BarChart3, Building2, DollarSign, AlertTriangle, Calendar, Compass } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import FinancialHealthTab from '@/components/business/FinancialHealthTab';
 import PerformanceInsightsTab from '@/components/business/PerformanceInsightsTab';
 import ClinicScorecardTab from '@/components/business/ClinicScorecardTab';
+import { SpotlightTour, TourStep } from '@/components/SpotlightTour';
+import { useSpotlightTour } from '@/hooks/useSpotlightTour';
+
+const BUSINESS_TOUR_STEPS: TourStep[] = [
+  {
+    targetSelector: '[data-tour="business-kpis"]',
+    title: 'Key Metrics',
+    description: 'Your year-to-date revenue, outstanding balances, monthly shift count, and active clinics — the numbers that matter most for your relief practice.',
+    placement: 'bottom',
+    icon: DollarSign,
+  },
+  {
+    targetSelector: '[data-tour="business-financial"]',
+    title: 'Financial Health',
+    description: 'Revenue trends, payment aging, and cash flow analysis. See which months are strongest and spot slow-paying clinics.',
+    placement: 'bottom',
+    icon: Heart,
+  },
+  {
+    targetSelector: '[data-tour="business-performance"]',
+    title: 'Performance Insights',
+    description: 'Shift frequency, average day rates, utilization metrics, and income-per-clinic breakdowns to optimize your schedule.',
+    placement: 'bottom',
+    icon: BarChart3,
+  },
+  {
+    targetSelector: '[data-tour="business-scorecard"]',
+    title: 'Clinic Scorecard',
+    description: 'Rate each clinic on payment speed, reliability, and overall experience. Identify your most and least profitable relationships.',
+    placement: 'bottom',
+    icon: Building2,
+  },
+  {
+    targetSelector: '[data-tour="business-header"]',
+    title: 'Your Business Hub',
+    description: 'Your back-office command center. Everything a relief vet needs to run their practice like a business — not just a gig.',
+    placement: 'bottom',
+    icon: Activity,
+  },
+];
 
 export default function BusinessPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'financial-health';
   const { invoices, shifts, facilities, lineItems } = useData();
+  const businessTour = useSpotlightTour('locumops_tour_business');
 
   // Hero KPIs
   const kpis = useMemo(() => {
@@ -77,7 +118,7 @@ export default function BusinessPage() {
 
   return (
     <div className="space-y-6">
-      <div className="page-header">
+      <div className="page-header" data-tour="business-header">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-lg bg-primary/10">
             <Activity className="h-6 w-6 text-primary" />
@@ -86,11 +127,20 @@ export default function BusinessPage() {
             <h1 className="page-title">Relief Business Hub</h1>
             <p className="page-subtitle">Your relief practice at a glance</p>
           </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={businessTour.startTour}
+            className="ml-auto gap-1.5 text-xs text-primary hover:bg-primary/10"
+          >
+            <Compass className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Tour</span>
+          </Button>
         </div>
       </div>
 
       {/* Hero Summary Strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3" data-tour="business-kpis">
         <Card>
           <CardContent className="pt-4 pb-3 px-4">
             <div className="flex items-center justify-between mb-1">
@@ -134,6 +184,7 @@ export default function BusinessPage() {
 
       <div className="flex gap-2 sm:gap-3 flex-wrap">
         <button
+          data-tour="business-financial"
           onClick={() => setSearchParams({ tab: 'financial-health' }, { replace: true })}
           className={`primary-tab-btn relative ${activeTab === 'financial-health' ? 'primary-tab-btn--active' : 'primary-tab-btn--inactive'}`}
         >
@@ -144,6 +195,7 @@ export default function BusinessPage() {
           )}
         </button>
         <button
+          data-tour="business-performance"
           onClick={() => setSearchParams({ tab: 'performance' }, { replace: true })}
           className={`primary-tab-btn ${activeTab === 'performance' ? 'primary-tab-btn--active' : 'primary-tab-btn--inactive'}`}
         >
@@ -151,6 +203,7 @@ export default function BusinessPage() {
           <span className="text-xs sm:text-sm">Performance Insights</span>
         </button>
         <button
+          data-tour="business-scorecard"
           onClick={() => setSearchParams({ tab: 'scorecard' }, { replace: true })}
           className={`primary-tab-btn relative ${activeTab === 'scorecard' ? 'primary-tab-btn--active' : 'primary-tab-btn--inactive'}`}
         >
@@ -165,6 +218,8 @@ export default function BusinessPage() {
       {activeTab === 'financial-health' && <FinancialHealthTab />}
       {activeTab === 'performance' && <PerformanceInsightsTab />}
       {activeTab === 'scorecard' && <ClinicScorecardTab />}
+
+      <SpotlightTour steps={BUSINESS_TOUR_STEPS} isOpen={businessTour.isOpen} onClose={businessTour.closeTour} />
     </div>
   );
 }
