@@ -10,9 +10,19 @@ import {
   type StrategyResult,
 } from '@/lib/taxStrategies';
 import type { FilingStatus } from '@/lib/taxConstants2026';
+import { useTaxIntelligence } from '@/hooks/useTaxIntelligence';
+import { STATE_TAX_DATA } from '@/lib/stateTaxData';
 import { toast } from 'sonner';
 
 const db = (table: string) => supabase.from(table as any);
+
+function getTopMarginalStateRate(stateCode: string): number {
+  const state = STATE_TAX_DATA[stateCode];
+  if (!state || state.type === 'none') return 0;
+  if (state.type === 'flat') return state.rate ?? 0;
+  const allBrackets = Object.values(state.brackets || {}).flat();
+  return allBrackets.length > 0 ? Math.max(...allBrackets.map(b => b.rate)) : 0.05;
+}
 
 interface UseTaxStrategiesReturn {
   strategies: StrategyResult[];
@@ -23,12 +33,14 @@ interface UseTaxStrategiesReturn {
   dismissStrategy: (strategyId: string) => Promise<void>;
   restoreStrategy: (strategyId: string) => Promise<void>;
   loading: boolean;
-  paidShiftCount: number;
+  earnedIncome: number;
+  entityType: string;
 }
 
 export function useTaxStrategies(): UseTaxStrategiesReturn {
   const { user, isDemo } = useAuth();
   const { shifts, invoices, facilities } = useData();
+  const { profile: taxProfile } = useTaxIntelligence();
   const [inputs, setInputs] = useState<StrategyInputs>(DEFAULT_INPUTS);
   const [loading, setLoading] = useState(true);
 
@@ -64,22 +76,36 @@ export function useTaxStrategies(): UseTaxStrategiesReturn {
   const annualizedIncome = useMemo(() => getAnnualizedIncome(shifts, invoices), [shifts, invoices]);
   const facilityCount = facilities.length;
 
-  const paidShiftCount = useMemo(() => {
-    return shifts.filter(s => new Date(s.end_datetime) < new Date()).length;
-  }, [shifts]);
+  // Compute YTD earned income for gating
+  const earnedIncome = useMemo(() => {
+    const year = new Date().getFullYear();
+    return invoices
+      .filter(inv => inv.status === 'paid' && inv.paid_at && new Date(inv.paid_at).getFullYear() === year)
+      .reduce((sum, inv) => sum + inv.total_amount, 0);
+  }, [invoices]);
+
+  // Pull filing status and state from tax profile instead of hardcoding
+  const filingStatus: FilingStatus = (taxProfile?.filing_status as FilingStatus) || 'single';
+  const stateRate = taxProfile?.state_code ? getTopMarginalStateRate(taxProfile.state_code) : 0.05;
+  const entityType = taxProfile?.entity_type || 'sole_prop';
 
   const strategies = useMemo(() => {
-    // TODO: pull from user tax profile if available
-    const filingStatus: FilingStatus = 'single';
-    const stateRate = 0.05;
     return buildStrategies(annualizedIncome, inputs, filingStatus, stateRate, facilityCount);
-  }, [annualizedIncome, inputs, facilityCount]);
+  }, [annualizedIncome, inputs, filingStatus, stateRate, facilityCount]);
+
+  // If user is already S-Corp, filter out the scorp strategy
+  const filteredStrategies = useMemo(() => {
+    if (entityType === 'scorp') {
+      return strategies.filter(s => s.id !== 'scorp');
+    }
+    return strategies;
+  }, [strategies, entityType]);
 
   const totalSavings = useMemo(() => {
-    return strategies
+    return filteredStrategies
       .filter(s => s.eligible && !s.dismissed)
       .reduce((sum, s) => sum + s.estimatedSavings, 0);
-  }, [strategies]);
+  }, [filteredStrategies]);
 
   const persistInputs = useCallback(async (newInputs: StrategyInputs) => {
     if (isDemo || !user) return;
@@ -128,7 +154,7 @@ export function useTaxStrategies(): UseTaxStrategiesReturn {
   }, [inputs, persistInputs]);
 
   return {
-    strategies,
+    strategies: filteredStrategies,
     totalSavings,
     annualizedIncome,
     inputs,
@@ -136,6 +162,7 @@ export function useTaxStrategies(): UseTaxStrategiesReturn {
     dismissStrategy,
     restoreStrategy,
     loading,
-    paidShiftCount,
+    earnedIncome,
+    entityType,
   };
 }

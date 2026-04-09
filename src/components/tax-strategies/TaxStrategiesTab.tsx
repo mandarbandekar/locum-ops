@@ -1,37 +1,42 @@
 import { useTaxStrategies } from '@/hooks/useTaxStrategies';
 import { getCombinedMarginalRate } from '@/lib/taxStrategies';
-import { AlertTriangle, TrendingUp, Lightbulb } from 'lucide-react';
+import { AlertTriangle, TrendingUp, Lightbulb, DollarSign } from 'lucide-react';
 import StrategyCard from './StrategyCard';
+import { useTaxIntelligence } from '@/hooks/useTaxIntelligence';
+import type { FilingStatus } from '@/lib/taxConstants2026';
 
 export default function TaxStrategiesTab() {
   const {
     strategies, totalSavings, annualizedIncome, inputs,
-    updateInputs, dismissStrategy, restoreStrategy, loading, paidShiftCount,
+    updateInputs, dismissStrategy, restoreStrategy, loading, earnedIncome, entityType,
   } = useTaxStrategies();
+  const { profile: taxProfile } = useTaxIntelligence();
 
-  const combinedRate = getCombinedMarginalRate(annualizedIncome);
+  const filingStatus: FilingStatus = (taxProfile?.filing_status as FilingStatus) || 'single';
+  const combinedRate = getCombinedMarginalRate(annualizedIncome, filingStatus);
 
   if (loading) {
     return <p className="text-muted-foreground py-8 text-center">Loading…</p>;
   }
 
-  // Gate: require 4 completed shifts
-  if (paidShiftCount < 4) {
+  // Gate: require $10K+ in earned income (paid invoices)
+  const INCOME_GATE = 10000;
+  if (earnedIncome < INCOME_GATE) {
+    const progress = Math.min(1, earnedIncome / INCOME_GATE);
     return (
       <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
         <div className="p-4 rounded-full bg-primary/10 mb-4">
           <Lightbulb className="h-8 w-8 text-primary" />
         </div>
-        <h3 className="text-lg font-semibold text-foreground mb-2">Personalized Tax Strategy Unlocks After 4 Shifts</h3>
+        <h3 className="text-lg font-semibold text-foreground mb-2">Personalized Tax Strategy Unlocks at $10K Income</h3>
         <p className="text-sm text-muted-foreground max-w-md">
-          Log at least 4 completed shifts so we can estimate your annualized income and generate
-          personalized tax-saving strategies. You've completed {paidShiftCount} so far — {4 - paidShiftCount} more to go!
+          We need enough income data to generate meaningful, personalized tax-saving strategies.
+          You've earned ${earnedIncome.toLocaleString()} so far — ${(INCOME_GATE - earnedIncome).toLocaleString()} more to go!
         </p>
-        <div className="mt-4 flex gap-1">
-          {[0, 1, 2, 3].map(i => (
-            <div key={i} className={`h-2 w-8 rounded-full ${i < paidShiftCount ? 'bg-primary' : 'bg-muted'}`} />
-          ))}
+        <div className="mt-4 w-48 h-2 rounded-full bg-muted overflow-hidden">
+          <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${progress * 100}%` }} />
         </div>
+        <p className="text-xs text-muted-foreground mt-2">{Math.round(progress * 100)}% to unlock</p>
       </div>
     );
   }

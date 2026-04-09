@@ -1,12 +1,8 @@
 import { useState } from 'react';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
-import { ChevronDown, MessageSquare, Building2, BookOpen, Sparkles } from 'lucide-react';
-import AskAdvisorTab from '@/components/tax-advisor/AskAdvisorTab';
-import SCorpAssessmentTab from '@/components/tax-advisor/SCorpAssessmentTab';
+import { Sparkles } from 'lucide-react';
 import TaxProfileSetup from '@/components/tax-intelligence/TaxProfileSetup';
 import TaxDashboard from '@/components/tax-intelligence/TaxDashboard';
-import TaxReductionGuide from '@/components/tax-intelligence/TaxReductionGuide';
 import { useTaxIntelligence } from '@/hooks/useTaxIntelligence';
 import type { TaxAdvisorProfile, TaxAdvisorSession, SavedTaxQuestion } from '@/hooks/useTaxAdvisor';
 
@@ -58,59 +54,11 @@ export default function TaxEstimateTab({
           </Button>
         </div>
       ) : (
-        <>
-          {/* Live Tax Dashboard */}
-          <TaxDashboard
-            profile={taxProfile!}
-            onEditProfile={() => setSetupOpen(true)}
-          />
-
-          {/* Tax Reduction Guide */}
-          <Collapsible>
-            <CollapsibleTrigger className="flex items-center gap-2 w-full text-left py-3 px-1 group">
-              <BookOpen className="h-5 w-5 text-primary" />
-              <span className="text-base font-semibold flex-1">Tax Reduction Guide</span>
-              <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <TaxReductionGuide profile={taxProfile!} />
-            </CollapsibleContent>
-          </Collapsible>
-        </>
+        <TaxDashboard
+          profile={taxProfile!}
+          onEditProfile={() => setSetupOpen(true)}
+        />
       )}
-
-      {/* Ask the Tax Advisor */}
-      <Collapsible>
-        <CollapsibleTrigger className="flex items-center gap-2 w-full text-left py-3 px-1 group">
-          <MessageSquare className="h-5 w-5 text-primary" />
-          <span className="text-base font-semibold flex-1">Ask the Tax Advisor</span>
-          <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          <AskAdvisorTab
-            profile={advisorProfile}
-            sessions={sessions}
-            onSaveSession={onSaveSession}
-            onSaveQuestion={onSaveQuestion}
-          />
-        </CollapsibleContent>
-      </Collapsible>
-
-      {/* S-Corp Explorer */}
-      <Collapsible>
-        <CollapsibleTrigger className="flex items-center gap-2 w-full text-left py-3 px-1 group">
-          <Building2 className="h-5 w-5 text-primary" />
-          <span className="text-base font-semibold flex-1">S-Corp Explorer</span>
-          <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          <SCorpAssessmentTab
-            savedResult={scorpResult}
-            onSaveResult={onSaveScorpResult}
-            onSaveQuestion={onSaveQuestion}
-          />
-        </CollapsibleContent>
-      </Collapsible>
     </div>
   );
 }

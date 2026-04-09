@@ -4,6 +4,7 @@ import { useTaxPaymentLogs } from '@/hooks/useTaxPaymentLogs';
 import TaxPaymentHub from './TaxPaymentHub';
 import TaxPaymentHistory from './TaxPaymentHistory';
 import { useExpenses } from '@/hooks/useExpenses';
+import { useTaxStrategies } from '@/hooks/useTaxStrategies';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -218,14 +219,16 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
   const totalIncome = earnedIncome + projectedIncome;
   const hasAnyIncome = earnedIncome > 0 || projectedIncome > 0;
   const actualExpenses = ytdDeductibleCents / 100;
-  const blendedExpenses = Math.max(actualExpenses, profile.ytd_expenses_estimate || 0);
+  const hasLoggedExpenses = actualExpenses > 0;
+  const effectiveExpenses = hasLoggedExpenses ? actualExpenses : (profile.ytd_expenses_estimate || 0);
+  const expenseSource: 'logged' | 'estimated' = hasLoggedExpenses ? 'logged' : 'estimated';
 
-  const taxResult = useMemo(() => calculateTax(totalIncome, profile, blendedExpenses), [totalIncome, profile, blendedExpenses]);
+  const taxResult = useMemo(() => calculateTax(totalIncome, profile, effectiveExpenses), [totalIncome, profile, effectiveExpenses]);
 
   const whatIfCalculator = useCallback((additionalIncome: number) => {
-    const result = calculateTax(totalIncome + additionalIncome, profile, blendedExpenses);
+    const result = calculateTax(totalIncome + additionalIncome, profile, effectiveExpenses);
     return result.quarterlyPayment;
-  }, [totalIncome, profile, blendedExpenses]);
+  }, [totalIncome, profile, effectiveExpenses]);
 
   const nextDue = useMemo(() => {
     for (let q = 1; q <= 4; q++) {
@@ -243,6 +246,7 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
   const isScorp = profile.entity_type === 'scorp';
   const hasPTE = !!(taxResult.scorpPTEPayment !== undefined && taxResult.scorpPTEPayment > 0);
   const stateInfo = getStateInfo(profile.state_code);
+  const { totalSavings: strategySavings } = useTaxStrategies();
 
   // KPI tooltip texts
   const kpiTooltips = useMemo(() => ({
@@ -493,6 +497,30 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
         </CardContent>
       </Card>
 
+      {/* ═══ WITH STRATEGIES COMPARISON ═══ */}
+      {strategySavings > 0 && (
+        <Card className="border-emerald-500/20 bg-gradient-to-r from-emerald-500/5 to-transparent">
+          <CardContent className="pt-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">With Tax Strategies Applied</p>
+                <div className="flex items-baseline gap-3 mt-1">
+                  <span className="text-2xl font-bold text-emerald-500">
+                    ${fmt(Math.max(0, Math.round(taxResult.quarterlyPayment - strategySavings / 4)))}
+                  </span>
+                  <span className="text-sm text-muted-foreground line-through">${fmt(taxResult.quarterlyPayment)}</span>
+                  <span className="text-xs text-muted-foreground">per quarter</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  ${fmt(strategySavings)}/year in potential savings across eligible strategies
+                </p>
+              </div>
+              <TrendingUp className="h-5 w-5 text-emerald-500 hidden sm:block" />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* ═══ BRACKET VISUALIZATION ═══ */}
       <Card>
         <CardHeader className="pb-2">
@@ -591,7 +619,7 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
           <Card className="mt-2">
             <CardContent className="pt-4 space-y-2">
               <Row label="Gross Income" value={taxResult.grossIncome} />
-              <Row label={`Business Expenses${actualExpenses > (profile.ytd_expenses_estimate || 0) ? ' (actual)' : ' (estimated)'}`} value={-taxResult.expenses} />
+              <Row label={`Business Expenses (${expenseSource === 'logged' ? 'from logged expenses' : 'profile estimate'})`} value={-taxResult.expenses} />
               <Row label="Net Income" value={taxResult.netIncome} bold />
               <div className="border-t my-2" />
               {isScorp ? (
