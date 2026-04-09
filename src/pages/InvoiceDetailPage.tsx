@@ -61,6 +61,7 @@ export default function InvoiceDetailPage() {
   const [sendingReminder, setSendingReminder] = useState(false);
   const [mobileTab, setMobileTab] = useState<string>('details');
   const [timelineOpen, setTimelineOpen] = useState(false);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
 
   // Live preview fields from edit panel
   const [liveFields, setLiveFields] = useState<{ invoiceNumber: string; invoiceDate: string; dueDate: string; notes: string; total: number } | null>(null);
