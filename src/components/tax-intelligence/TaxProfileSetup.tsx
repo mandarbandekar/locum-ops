@@ -10,7 +10,7 @@ import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { CheckCircle2, Info, ArrowLeft, ArrowRight, Sparkles } from 'lucide-react';
+import { CheckCircle2, Info, ArrowLeft, ArrowRight, Sparkles, CalendarDays } from 'lucide-react';
 import { US_STATES, getMarginalRate, STANDARD_DEDUCTIONS, type FilingStatus } from '@/lib/taxConstants2026';
 import { getStateInfo, STATE_TAX_DATA } from '@/lib/stateTaxData';
 import type { TaxIntelligenceProfile } from '@/hooks/useTaxIntelligence';
@@ -44,18 +44,20 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
   const [scorpSalary, setScorpSalary] = useState(existingProfile?.scorp_salary ?? 0);
   const [safeHarbor, setSafeHarbor] = useState(existingProfile?.safe_harbor_method || '90_percent');
   const [priorYearTax, setPriorYearTax] = useState(existingProfile?.prior_year_tax_paid ?? 0);
+  const [priorYearIncome, setPriorYearIncome] = useState(existingProfile?.prior_year_total_income ?? 0);
 
   const isScorp = entityType === 'scorp';
+  const currentYear = new Date().getFullYear();
   const stateData = stateCode ? STATE_TAX_DATA[stateCode] : null;
   const showPTEStep = isScorp && stateData?.hasPTE === true;
 
-  // Dynamic steps: 1=entity, 2=filing, 3=state, 3.5=PTE(conditional), 4=household, 5=retirement, 6=scorpSalary(scorp), 7=expenses, 8=safeHarbor, 9=complete
+  // Dynamic steps
   const steps = useMemo(() => {
     const s: string[] = ['entity', 'filing', 'state'];
     if (showPTEStep) s.push('pte');
     s.push('household', 'retirement');
     if (isScorp) s.push('scorpSalary');
-    s.push('expenses', 'safeHarbor', 'complete');
+    s.push('expenses', 'priorYearIncome', 'safeHarbor', 'complete');
     return s;
   }, [isScorp, showPTEStep]);
 
@@ -78,6 +80,7 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
       case 'retirement': return renderRetirementStep();
       case 'scorpSalary': return renderScorpSalaryStep();
       case 'expenses': return renderExpensesStep();
+      case 'priorYearIncome': return renderPriorYearIncomeStep();
       case 'safeHarbor': return renderSafeHarborStep();
       case 'complete': return renderCompletionStep();
       default: return null;
@@ -357,6 +360,32 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
     );
   }
 
+  function renderPriorYearIncomeStep() {
+    return (
+      <div className="space-y-4">
+        <Label className="text-base font-medium">How much 1099 income did you earn last year?</Label>
+        <p className="text-sm text-muted-foreground">
+          This helps us project your full-year income more accurately, especially early in the year. Skip if you're new to relief work.
+        </p>
+        <div className="space-y-1">
+          <Label className="text-sm">Total 1099 / self-employment income ({currentYear - 1})</Label>
+          <Input
+            type="number"
+            value={priorYearIncome || ''}
+            onChange={e => setPriorYearIncome(Number(e.target.value))}
+            placeholder="e.g., 120000"
+          />
+        </div>
+        {priorYearIncome > 0 && (
+          <div className="rounded-lg bg-muted/50 p-3">
+            <p className="text-xs text-muted-foreground">Monthly average from last year</p>
+            <p className="text-lg font-semibold">${Math.round(priorYearIncome / 12).toLocaleString()}/mo</p>
+            <p className="text-xs text-muted-foreground mt-1">We'll use this to estimate income for months without scheduled shifts.</p>
+          </div>
+        )}
+      </div>
+    );
+  }
   function renderScorpSalaryStep() {
     return (
       <div className="space-y-4">
@@ -440,6 +469,7 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
       spouse_w2_income: spouseW2Income,
       spouse_has_se_income: spouseHasSE,
       spouse_se_net_income: spouseHasSE ? spouseSENet : 0,
+      prior_year_total_income: priorYearIncome,
       setup_completed_at: new Date().toISOString(),
     });
     setSaving(false);

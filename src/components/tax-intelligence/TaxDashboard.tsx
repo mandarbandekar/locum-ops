@@ -205,19 +205,41 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
       .reduce((sum, inv) => sum + inv.total_amount, 0);
   }, [invoices, currentYear]);
 
-  const projectedIncome = useMemo(() => {
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() + 90);
-    return shifts
-      .filter(s => {
-        const d = new Date(s.start_datetime);
-        return d >= now && d <= cutoff;
-      })
-      .reduce((sum, s) => sum + (s.rate_applied || 0), 0);
-  }, [shifts, now]);
+  // (2) Upcoming Scheduled — ALL future shifts this year (not just 90 days)
+  const futureShiftsThisYear = useMemo(() => {
+    return shifts.filter(s => {
+      const d = new Date(s.start_datetime);
+      return d > now && d.getFullYear() === currentYear;
+    });
+  }, [shifts, now, currentYear]);
 
-  const totalIncome = earnedIncome + projectedIncome;
-  const hasAnyIncome = earnedIncome > 0 || projectedIncome > 0;
+  const scheduledIncome = useMemo(() => {
+    return futureShiftsThisYear.reduce((sum, s) => sum + (s.rate_applied || 0), 0);
+  }, [futureShiftsThisYear]);
+
+  // (3) Projected Remainder — fill unscheduled months
+  const { projectedRemainder, projectionSource } = useMemo(() => {
+    const monthsElapsed = now.getMonth(); // 0-indexed = months completed
+    const scheduledMonths = new Set(futureShiftsThisYear.map(s => new Date(s.start_datetime).getMonth()));
+    const remainingUnscheduledMonths = Array.from({ length: 12 }, (_, i) => i)
+      .filter(m => m > now.getMonth() && !scheduledMonths.has(m)).length;
+
+    let remainder = 0;
+    let source: 'prior_year' | 'pace' | 'none' = 'none';
+
+    if (profile.prior_year_total_income > 0) {
+      remainder = (profile.prior_year_total_income / 12) * remainingUnscheduledMonths;
+      source = 'prior_year';
+    } else if (monthsElapsed > 0 && earnedIncome > 0) {
+      remainder = (earnedIncome / monthsElapsed) * remainingUnscheduledMonths;
+      source = 'pace';
+    }
+
+    return { projectedRemainder: Math.round(remainder), projectionSource: source };
+  }, [futureShiftsThisYear, now, earnedIncome, profile.prior_year_total_income]);
+
+  const totalIncome = earnedIncome + scheduledIncome + projectedRemainder;
+  const hasAnyIncome = earnedIncome > 0 || scheduledIncome > 0 || projectedRemainder > 0 || (profile.prior_year_total_income > 0);
   const actualExpenses = ytdDeductibleCents / 100;
   const hasLoggedExpenses = actualExpenses > 0;
   const effectiveExpenses = hasLoggedExpenses ? actualExpenses : (profile.ytd_expenses_estimate || 0);
@@ -250,7 +272,7 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
 
   // KPI tooltip texts
   const kpiTooltips = useMemo(() => ({
-    totalIncome: `Sum of paid invoices this year ($${fmt(earnedIncome)} earned) plus projected income from upcoming shifts ($${fmt(projectedIncome)} in next 90 days).`,
+    totalIncome: `YTD Earned: $${fmt(earnedIncome)} (paid invoices) + Scheduled: $${fmt(scheduledIncome)} (future shifts) + Projected: $${fmt(projectedRemainder)} (${projectionSource === 'prior_year' ? `based on ${currentYear - 1} income` : projectionSource === 'pace' ? 'based on current pace' : 'no projection'}).`,
     tax1: isScorp
       ? `Federal income tax applied using 2026 marginal brackets on your taxable income of $${fmt(taxResult.federalTaxableIncome)} after standard deduction of $${fmt(STANDARD_DEDUCTIONS[fs])}.`
       : `Self-employment tax at 15.3% on 92.35% of your net income ($${fmt(taxResult.netIncome)}). Covers Social Security + Medicare since you don't have an employer paying half.`,
@@ -258,7 +280,7 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
       ? `Applied ${profile.state_code || 'state'} progressive income tax rates to your salary + distributions of $${fmt((taxResult.salary || 0) + (taxResult.distribution || 0))}.`
       : `Applied 2026 marginal brackets to your taxable income of $${fmt(taxResult.federalTaxableIncome)} after standard deduction of $${fmt(STANDARD_DEDUCTIONS[fs])}.`,
     totalAnnual: `Sum of all tax obligations. Your effective rate of ${taxResult.effectiveRate}% means ${taxResult.effectiveRate} cents of every dollar goes to taxes.`,
-  }), [earnedIncome, projectedIncome, isScorp, taxResult, fs, profile.state_code]);
+  }), [earnedIncome, scheduledIncome, projectedRemainder, projectionSource, isScorp, taxResult, fs, profile.state_code, currentYear]);
 
   // Plain-language calculation summary
   const calculationSummary = useMemo(() => {
@@ -423,7 +445,7 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
                     Total Income <Info className="h-3 w-3" />
                   </p>
                   <p className="text-xl font-bold mt-1">${fmt(totalIncome)}</p>
-                  <p className="text-[10px] text-muted-foreground">earned + projected</p>
+                  <p className="text-[10px] text-muted-foreground">earned + scheduled + projected</p>
                 </div>
               </TooltipTrigger>
               <TooltipContent className="text-xs max-w-xs">{kpiTooltips.totalIncome}</TooltipContent>
@@ -549,7 +571,7 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
         </CardContent>
       </Card>
 
-      {/* ═══ INCOME SPLIT BAR ═══ */}
+      {/* ═══ INCOME BREAKDOWN ═══ */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center gap-2">
@@ -557,8 +579,31 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
             Income Breakdown
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <IncomeSplitBar earned={earnedIncome} projected={projectedIncome} />
+        <CardContent className="space-y-3">
+          <IncomeSplitBar earned={earnedIncome} projected={scheduledIncome + projectedRemainder} />
+          <div className="grid grid-cols-3 gap-3 pt-2">
+            <div className="rounded-lg bg-muted/50 p-2.5">
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">YTD Earned</p>
+              <p className="text-sm font-semibold mt-0.5">${fmt(earnedIncome)}</p>
+              <p className="text-[10px] text-muted-foreground">Paid invoices</p>
+            </div>
+            <div className="rounded-lg bg-muted/50 p-2.5">
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Scheduled</p>
+              <p className="text-sm font-semibold mt-0.5">${fmt(scheduledIncome)}</p>
+              <p className="text-[10px] text-muted-foreground">Future shifts this year</p>
+            </div>
+            <div className="rounded-lg bg-muted/50 p-2.5">
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Projected</p>
+              <p className="text-sm font-semibold mt-0.5">${fmt(projectedRemainder)}</p>
+              <p className="text-[10px] text-muted-foreground">
+                {projectionSource === 'prior_year'
+                  ? `Based on ${currentYear - 1} income`
+                  : projectionSource === 'pace'
+                    ? 'Based on current pace'
+                    : 'No projection yet'}
+              </p>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
