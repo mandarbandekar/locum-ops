@@ -137,6 +137,7 @@ interface InvoiceEditPanelProps {
 export function InvoiceEditPanel({
   invoice, items, facility, profile, billingNameTo, billingEmailTo,
   readOnly = false, invoicePayments = [],
+  paymentDialogOpen: externalPaymentOpen, onPaymentDialogChange,
   onUpdateInvoice, onAddLineItem, onUpdateLineItem, onDeleteLineItem,
   onAddPayment, onAddActivity, onOpenBillingDialog,
   onSaveRef, onInvoiceFieldChange, onRevertToDraft,
