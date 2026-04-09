@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
 import { useTaxIntelligence } from '@/hooks/useTaxIntelligence';
+import { useExpenses } from '@/hooks/useExpenses';
 import {
   buildStrategies,
   getAnnualizedIncome,

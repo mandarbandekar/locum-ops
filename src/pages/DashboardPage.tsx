@@ -557,7 +557,12 @@ export default function DashboardPage() {
     if (paidIncome <= 0) return undefined;
     const monthsElapsed = Math.max(1, now.getMonth() + 1);
     const annualized = (paidIncome / monthsElapsed) * 12;
-    const result = calculateTax(annualized, taxProfile);
+    // Use actual logged expenses (blended with profile estimate)
+    const actualExpenseTotal = dashExpenses
+      .filter(e => new Date(e.expense_date).getFullYear() === now.getFullYear())
+      .reduce((s, e) => s + e.deductible_amount_cents / 100, 0);
+    const blendedExpenses = Math.max(actualExpenseTotal, taxProfile.ytd_expenses_estimate || 0);
+    const result = calculateTax(annualized, taxProfile, blendedExpenses);
     const quarterlyAmount = Math.round(result.totalAnnualTax / 4);
     const nextQ = taxQuarters.find(q => new Date(q.due_date) >= now && q.status !== 'paid');
     return {
@@ -565,7 +570,7 @@ export default function DashboardPage() {
       nextDueDate: nextQ?.due_date || null,
       nextQuarter: nextQ?.quarter || null,
     };
-  }, [hasTaxProfile, taxProfile, invoices, taxQuarters, now]);
+  }, [hasTaxProfile, taxProfile, invoices, taxQuarters, now, dashExpenses]);
 
   return (
     <div className="space-y-4 h-full">

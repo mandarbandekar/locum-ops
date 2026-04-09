@@ -162,8 +162,11 @@ export function buildStrategies(
   stateRate: number = 0.05,
   facilityCount: number = 0,
   entityType: string = 'sole_prop',
+  businessExpenses: number = 0,
 ): StrategyResult[] {
-  const combinedRate = getCombinedMarginalRate(annualizedIncome, filingStatus, stateRate, entityType);
+  // Use net income (after expenses) for rate and savings calculations
+  const netIncome = Math.max(0, annualizedIncome - businessExpenses);
+  const combinedRate = getCombinedMarginalRate(netIncome, filingStatus, stateRate, entityType);
   const isScorp = entityType === 'scorp';
   const dismissed = new Set(inputs.dismissed_strategies);
 
