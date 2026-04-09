@@ -497,6 +497,30 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
         </CardContent>
       </Card>
 
+      {/* ═══ WITH STRATEGIES COMPARISON ═══ */}
+      {strategySavings > 0 && (
+        <Card className="border-emerald-500/20 bg-gradient-to-r from-emerald-500/5 to-transparent">
+          <CardContent className="pt-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">With Tax Strategies Applied</p>
+                <div className="flex items-baseline gap-3 mt-1">
+                  <span className="text-2xl font-bold text-emerald-500">
+                    ${fmt(Math.max(0, Math.round(taxResult.quarterlyPayment - strategySavings / 4)))}
+                  </span>
+                  <span className="text-sm text-muted-foreground line-through">${fmt(taxResult.quarterlyPayment)}</span>
+                  <span className="text-xs text-muted-foreground">per quarter</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  ${fmt(strategySavings)}/year in potential savings across eligible strategies
+                </p>
+              </div>
+              <TrendingUp className="h-5 w-5 text-emerald-500 hidden sm:block" />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* ═══ BRACKET VISUALIZATION ═══ */}
       <Card>
         <CardHeader className="pb-2">
