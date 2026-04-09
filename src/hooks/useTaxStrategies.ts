@@ -74,7 +74,16 @@ export function useTaxStrategies(): UseTaxStrategiesReturn {
 
   const entityType = profile?.entity_type || 'sole_prop';
   const filingStatus = (profile?.filing_status || 'single') as FilingStatus;
-  const stateRate = profile?.state_code ? (STATE_TAX_DATA[profile.state_code]?.topRate || 0.05) : 0.05;
+  const stateRate = (() => {
+    if (!profile?.state_code) return 0.05;
+    const entry = STATE_TAX_DATA[profile.state_code];
+    if (!entry) return 0.05;
+    if (entry.rate) return entry.rate;
+    // For bracket states, use the top bracket rate
+    const brackets = entry.brackets?.single;
+    if (brackets && brackets.length > 0) return brackets[brackets.length - 1].rate;
+    return 0.05;
+  })();
 
   const strategies = useMemo(() => {
     return buildStrategies(annualizedIncome, inputs, filingStatus, stateRate, facilityCount, entityType);
@@ -142,5 +151,6 @@ export function useTaxStrategies(): UseTaxStrategiesReturn {
     restoreStrategy,
     loading,
     paidShiftCount,
+    entityType,
   };
 }
