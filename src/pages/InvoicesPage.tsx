@@ -208,6 +208,7 @@ export default function InvoicesPage() {
       </div>
 
       {/* Summary Stats */}
+      <div data-tour="invoice-summary">
       <InvoiceSummaryStrip
         overdue={{ count: overdue.length, total: sumBalance(overdue) }}
         awaiting={{ count: [...sent, ...partial].length, total: sumBalance([...sent, ...partial]) }}
