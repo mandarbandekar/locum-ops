@@ -1,74 +1,75 @@
 
 
-# Simplify Clinic Confirmations UX
+# Module-Specific Spotlight Tours for Each Page
 
-## Problem
+## Summary
 
-The current experience has too many layers, statuses, filters, and tabs. Relief vets need a simple monthly ritual: "For each clinic I'm working at next month, confirm my schedule with them." The current UI has:
+Add a dedicated spotlight tour to each of the 5 key module pages (Schedule, Invoices, Relief Business Hub, Tax Intelligence, Credentials). Each tour auto-triggers on first visit and is re-accessible via a "Take a Tour" button in the page header. Tours highlight the key UI sections on that page with vet-specific context.
 
-- Overly complex overview with 4 categorized sections (auto-scheduled, needs update, manual review, recently sent)
-- Status/facility filters that add cognitive load
-- A drawer with 3 tabs (Monthly, Pre-shift, History) that splits attention
-- Settings configuration mixed into the confirmation flow
-- Too many status states visible at once (not_sent, scheduled, sent, confirmed, needs_update, failed)
+## Approach
 
-## Proposed Redesign: "Confirm & Send" Checklist
+### 1. Generalize the tour hook
 
-Replace the current multi-section, multi-filter layout with a single **linear checklist** — one row per clinic, all on one screen.
+Update `useSpotlightTour.ts` to accept a `tourKey` parameter so each module has its own localStorage completion flag (e.g., `locumops_tour_schedule`, `locumops_tour_invoices`, etc.). The existing dashboard tour uses `locumops_tour_completed` — keep that as-is.
 
-```text
-Current                              Proposed
-─────────                            ────────
-Overview tab with 4 sections    →    Single checklist (one row per clinic)
-+ History tab                        Each row: clinic name, shift count,
-+ Filters (status, facility)           status pill, expand to preview/edit/send
-+ Drawer with 3 sub-tabs            "Send All" bulk action at top
-                                    History collapsed into each clinic row
-```
+### 2. Add `data-tour` attributes to page elements
 
-## New Layout
+Each page needs `data-tour="..."` attributes on the key sections the tour will spotlight.
 
-### Header
-- Month navigator (keep as-is)
-- Summary strip: "3 clinics · 2 ready to send · 1 confirmed"
-- **"Send All Unsent"** button (bulk action for all not_sent clinics with contacts)
+### 3. Add tour steps + SpotlightTour to each page
 
-### Clinic Checklist (vertical list, no grid)
-Each clinic is an **accordion row** (not a card grid):
+Each page gets:
+- A `TOUR_STEPS` array with 4-6 steps
+- A "Take a Tour" button (Compass icon) in the page header
+- Auto-trigger on first visit (when tour not yet completed)
+- The existing `SpotlightTour` component rendered at page bottom
 
-**Collapsed state (single row):**
-```text
-[●] Greenfield Vet   |  5 shifts  |  Sarah J.  |  ✓ Confirmed    [Review ▾]
-[●] Evergreen HC      |  3 shifts  |  Dr. Park  |  ⏳ Not Sent     [Send ▸]
-[●] Mt. View Practice |  2 shifts  |  No contact |  ⚠ Add contact  [Setup ▸]
-```
+## Tour Content Per Module
 
-- Status dot: green (confirmed), blue (sent), gray (not sent), orange (needs update)
-- Primary action button changes based on state: "Send", "Resend", "Review", "Add Contact"
-- Single click on the action button performs the action directly (no drawer)
+### Schedule Page (5 steps)
+1. **Add Shift button** — "Book relief shifts at any clinic. Each shift automatically feeds into invoicing so you never forget to bill."
+2. **View switcher (Month/Week/List)** — "Switch between month overview, detailed weekly time grid, or a sortable list. Drag shifts between days to reschedule."
+3. **Clinic Confirmations tab** — "Send monthly schedule confirmations to each clinic before you start. No more back-and-forth emails — one click sends your schedule."
+4. **Calendar Sync tab** — "Sync shifts to Google Calendar or export an ICS feed. Your personal calendar stays up to date automatically."
+5. **Calendar grid/navigation** — "Click any day to add a shift. Color-coded by clinic so you can see your week at a glance. Block personal time to prevent overbooking."
 
-**Expanded state (inline, no drawer):**
-When user clicks "Review" or wants to edit the message:
-- Shows shift table inline (compact: date + time only)
-- Shows editable message textarea (pre-populated)
-- Shows subject line (editable)
-- Action buttons: "Copy to Clipboard" | "Send Confirmation" | "Mark Confirmed"
-- Collapse back to row when done
+### Invoices Page (5 steps)
+1. **Summary strip** — "At-a-glance financial snapshot: overdue balances, invoices awaiting payment, drafts to review, and this month's collections."
+2. **Create Manual Invoice button** — "Most invoices auto-generate from your shifts. Use this for one-off or custom invoices outside your normal schedule."
+3. **Ready to review banner** — "Drafts appear here automatically after your billing period closes. Review the line items, then send with one click."
+4. **Overdue section** — "Invoices past their due date surface here with aging info. Set up automatic email reminders to nudge clinics."
+5. **Paid section** — "Track completed payments and see your monthly collection totals. Record partial payments to track remaining balances."
 
-### Key UX Decisions
-1. **No drawer** — everything happens inline in the accordion. Fewer context switches.
-2. **No separate filters** — the list is short (typically 3-8 clinics). Status dots provide at-a-glance filtering.
-3. **No separate History tab** — move "last sent" timestamp into each row. Full history accessible via a small "View history" link that expands a mini-timeline below the message area.
-4. **No separate Pre-shift section** — pre-shift reminders are a secondary action shown as a subtle link within the expanded row, not a separate tab.
-5. **"Send All" bulk action** — the most requested workflow is "send all my confirmations at once." One button does it.
-6. **Contact setup inline** — if no contact, the row shows "Add contact" as the primary action, with inline name/email fields (no dialog).
+### Relief Business Hub (5 steps)
+1. **KPI cards** — "Your year-to-date revenue, outstanding balances, monthly shift count, and active clinics — the numbers that matter most for your relief practice."
+2. **Financial Health tab** — "Revenue trends, payment aging, and cash flow analysis. See which months are strongest and spot slow-paying clinics."
+3. **Performance Insights tab** — "Shift frequency, average day rates, utilization metrics, and income-per-clinic breakdowns to optimize your schedule."
+4. **Clinic Scorecard tab** — "Rate each clinic on payment speed, reliability, and overall experience. Identify your most and least profitable relationships."
+5. **Page header** — "Your back-office command center. Everything a relief vet needs to run their practice like a business — not just a gig."
+
+### Tax Intelligence (5 steps)
+1. **Tax Estimate tab** — "Real-time quarterly tax estimates based on your actual shift income. Uses 2026 federal brackets, SE tax, and your state rate."
+2. **Personalized Tax Strategy tab** — "Savings opportunities personalized to your income: S-Corp analysis, retirement contributions, vet-specific deductions, and more."
+3. **CPA Prep tab** — "Generate a CPA-ready packet with income summaries, expense reports, and mileage logs. Makes tax season prep take minutes, not days."
+4. **Page header** — "Tax intelligence built specifically for 1099 relief vets. No more guessing what you owe or scrambling at tax time."
+
+### Credentials & CE (5 steps)
+1. **Overview tab** — "Your compliance dashboard: see expiring credentials, CE progress, and renewal deadlines at a glance."
+2. **Credentials tab** — "Track every license, DEA registration, USDA accreditation, and insurance policy. Get alerts before anything expires."
+3. **Renewals tab** — "Upcoming renewal deadlines sorted by urgency. Direct links to renewal portals so you can renew without searching."
+4. **CE Hub tab** — "Log continuing education hours, track progress toward requirements, and store certificates. Never lose a CE record again."
+5. **Documents tab** — "Your digital credential vault. Upload and organize copies of licenses, certificates, and insurance docs — always accessible."
 
 ## File Changes
 
 | File | Change |
 |---|---|
-| `src/components/schedule/ClinicConfirmationsTab.tsx` | Full rewrite — replace grid/tabs/filters with accordion checklist + bulk send |
-| `src/components/schedule/ClinicConfirmationDrawer.tsx` | Delete — no longer needed, everything is inline |
+| `src/hooks/useSpotlightTour.ts` | Add optional `tourKey` parameter for per-module storage keys; add `autoStart` flag |
+| `src/pages/SchedulePage.tsx` | Add `data-tour` attrs, tour steps, SpotlightTour component, header tour button |
+| `src/pages/InvoicesPage.tsx` | Add `data-tour` attrs, tour steps, SpotlightTour component, header tour button |
+| `src/pages/BusinessPage.tsx` | Add `data-tour` attrs, tour steps, SpotlightTour component, header tour button |
+| `src/pages/TaxCenterPage.tsx` | Add `data-tour` attrs, tour steps, SpotlightTour component, header tour button |
+| `src/pages/CredentialsPage.tsx` | Add `data-tour` attrs, tour steps, SpotlightTour component, header tour button |
 
-## No database, routing, or hook changes. The `useClinicConfirmations` hook already provides everything needed.
+No database, routing, or new component changes. Reuses existing `SpotlightTour` component.
 
