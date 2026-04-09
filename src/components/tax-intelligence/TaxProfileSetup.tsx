@@ -10,7 +10,7 @@ import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { CheckCircle2, Info, ArrowLeft, ArrowRight, Sparkles } from 'lucide-react';
+import { CheckCircle2, Info, ArrowLeft, ArrowRight, Sparkles, CalendarDays } from 'lucide-react';
 import { US_STATES, getMarginalRate, STANDARD_DEDUCTIONS, type FilingStatus } from '@/lib/taxConstants2026';
 import { getStateInfo, STATE_TAX_DATA } from '@/lib/stateTaxData';
 import type { TaxIntelligenceProfile } from '@/hooks/useTaxIntelligence';
@@ -359,7 +359,32 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
     );
   }
 
-  function renderScorpSalaryStep() {
+  function renderPriorYearIncomeStep() {
+    return (
+      <div className="space-y-4">
+        <Label className="text-base font-medium">How much 1099 income did you earn last year?</Label>
+        <p className="text-sm text-muted-foreground">
+          This helps us project your full-year income more accurately, especially early in the year. Skip if you're new to relief work.
+        </p>
+        <div className="space-y-1">
+          <Label className="text-sm">Total 1099 / self-employment income ({currentYear - 1})</Label>
+          <Input
+            type="number"
+            value={priorYearIncome || ''}
+            onChange={e => setPriorYearIncome(Number(e.target.value))}
+            placeholder="e.g., 120000"
+          />
+        </div>
+        {priorYearIncome > 0 && (
+          <div className="rounded-lg bg-muted/50 p-3">
+            <p className="text-xs text-muted-foreground">Monthly average from last year</p>
+            <p className="text-lg font-semibold">${Math.round(priorYearIncome / 12).toLocaleString()}/mo</p>
+            <p className="text-xs text-muted-foreground mt-1">We'll use this to estimate income for months without scheduled shifts.</p>
+          </div>
+        )}
+      </div>
+    );
+  }
     return (
       <div className="space-y-4">
         <Label className="text-base font-medium">What W-2 salary do you pay yourself through your S-Corp?</Label>
