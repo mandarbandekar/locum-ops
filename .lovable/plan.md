@@ -1,28 +1,32 @@
 
 
-# Fix: Auto-Advance Bug + Timezone Auto-Detection
+# Skip Profile Step for Google OAuth Users
 
-## Bug Analysis
+## Rationale
 
-The auto-advance fires for **all** users, not just Google OAuth users. Here's why:
+For Google OAuth users, all profile fields (name, email, timezone) are already known. Showing a step that auto-advances after 1.5s is confusing — it flashes content the user can't meaningfully interact with. Better to save the profile silently and land them directly on Step 2 with a personalized welcome header.
 
-1. `timezone` is always truthy (initialized from `Intl.DateTimeFormat()`)
-2. `userEmail` is always truthy for any logged-in user
-3. `firstName`/`lastName` get set from `user.user_metadata` — which includes data from **email/password signup** too (the signup form collects first/last name and stores it in metadata)
-4. So `allFilled` becomes `true` almost immediately, triggering `saveProfile()` after 1.5s — even for non-OAuth users
-
-## Fix
+## Changes
 
 ### `src/pages/OnboardingPage.tsx`
 
-1. **Gate auto-advance to Google OAuth users only**: Check `user?.app_metadata?.provider === 'google'` (or `user?.app_metadata?.providers?.includes('google')`) before enabling auto-advance. Email/password signups should never auto-advance.
+1. **On mount / phase init**: If `user?.app_metadata?.provider === 'google'` and profile fields are all available, silently call `updateProfile(...)` and set initial phase to `'manual_facility'` instead of `'profile'`. No timer, no flash.
 
-2. **Timezone is already auto-detected** — it's initialized as `Intl.DateTimeFormat().resolvedOptions().timeZone` on line 71. The dropdown already shows the correct value. No change needed here; it's working as designed.
+2. **Step 2 welcome banner**: When the user arrived via OAuth skip, show a welcome header at the top of the `manual_facility` step:
+   - "Welcome, [First Name]! 👋"  
+   - "Let's set up your workspace — start by adding a clinic you work with."
+   - For non-OAuth users (who came through Step 1 normally), keep the current headline: "Add a clinic you work with"
 
-| Change | Detail |
+3. **Remove auto-advance logic**: Delete the `useEffect` that sets `showWelcome` and the 1.5s `setTimeout`. Remove `autoAdvanceRef`, `showWelcome`, `userEdited`, and `cancelAutoAdvance` — none are needed anymore.
+
+4. **Progress bar**: For OAuth-skipped users, still show step 1 as complete (start progress at step 2 of 5). The `PHASE_STEP` mapping already handles this since `manual_facility` = step 2.
+
+5. **Back button on Step 2**: For OAuth users who skipped Step 1, the back button should still go to `'profile'` so they can edit their name/timezone if needed. No change to `PHASE_BACK` needed — it already maps `manual_facility → profile`.
+
+| Area | Detail |
 |---|---|
-| Add OAuth provider check | Wrap the auto-advance `useEffect` body with `const isOAuth = user?.app_metadata?.provider === 'google';` and only proceed if `isOAuth` is true |
-| Keep timezone logic as-is | Already auto-detects from browser; dropdown allows override |
-
-Single file change, ~3 lines modified.
+| Initial phase logic | Check OAuth provider + metadata on mount, silently save profile, start at `manual_facility` |
+| Step 2 header | Conditional welcome message for OAuth users |
+| Cleanup | Remove auto-advance timer, `showWelcome`, `userEdited`, `cancelAutoAdvance`, `autoAdvanceRef` |
+| File | `src/pages/OnboardingPage.tsx` only |
 
