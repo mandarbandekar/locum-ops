@@ -246,6 +246,7 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
   const isScorp = profile.entity_type === 'scorp';
   const hasPTE = !!(taxResult.scorpPTEPayment !== undefined && taxResult.scorpPTEPayment > 0);
   const stateInfo = getStateInfo(profile.state_code);
+  const { totalSavings: strategySavings } = useTaxStrategies();
 
   // KPI tooltip texts
   const kpiTooltips = useMemo(() => ({
