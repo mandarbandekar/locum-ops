@@ -289,7 +289,7 @@ export default function OnboardingPage() {
                             </p>
                           )}
                         </div>
-                        <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 shrink-0 ml-2">
+                        <Badge variant="outline" className="border-primary/30 text-primary shrink-0 ml-2">
                           <Check className="h-3 w-3 mr-1" /> Added
                         </Badge>
                       </div>
