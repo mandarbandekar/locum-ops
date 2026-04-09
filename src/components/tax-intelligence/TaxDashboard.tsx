@@ -216,6 +216,7 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
   }, [shifts, now]);
 
   const totalIncome = earnedIncome + projectedIncome;
+  const hasAnyIncome = earnedIncome > 0 || projectedIncome > 0;
   const actualExpenses = ytdDeductibleCents / 100;
   const blendedExpenses = Math.max(actualExpenses, profile.ytd_expenses_estimate || 0);
 
