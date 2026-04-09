@@ -161,8 +161,10 @@ export function buildStrategies(
   filingStatus: FilingStatus = 'single',
   stateRate: number = 0.05,
   facilityCount: number = 0,
+  entityType: string = 'sole_prop',
 ): StrategyResult[] {
-  const combinedRate = getCombinedMarginalRate(annualizedIncome, filingStatus, stateRate);
+  const combinedRate = getCombinedMarginalRate(annualizedIncome, filingStatus, stateRate, entityType);
+  const isScorp = entityType === 'scorp';
   const dismissed = new Set(inputs.dismissed_strategies);
 
   const strategies: StrategyResult[] = [];
@@ -258,18 +260,23 @@ export function buildStrategies(
   const sepSavings = sepEligible ? calcSepIraSavings(annualizedIncome, inputs.retirement_contribution_slider, combinedRate) : 0;
   const netSE = annualizedIncome * SE_TAXABLE_FACTOR;
   const sepMax = Math.min(netSE * RETIREMENT_LIMITS.sep_ira.percentOfNet, RETIREMENT_LIMITS.sep_ira.maxContribution);
+  const retirementIncomeBase = isScorp ? (inputs.scorp_salary_slider || 110000) : annualizedIncome;
   strategies.push({
     id: 'sep_ira',
     title: 'SEP-IRA Contribution',
-    description: 'Shelter up to 25% of net self-employment income in a tax-deferred retirement account',
+    description: isScorp
+      ? 'Shelter up to 25% of your W-2 salary in a tax-deferred retirement account'
+      : 'Shelter up to 25% of net self-employment income in a tax-deferred retirement account',
     estimatedSavings: sepSavings || 0,
     eligible: sepEligible,
     unlockLabel: sepEligible ? null : 'Unlocks at $60K+',
     dismissed: dismissed.has('sep_ira'),
     status: dismissed.has('sep_ira') ? 'dismissed' : sepEligible ? 'action_available' : 'not_eligible',
-    whyItMatters: `At your estimated income of $${Math.round(annualizedIncome).toLocaleString()}, you could contribute up to $${Math.round(sepMax).toLocaleString()} to a SEP-IRA. This reduces your taxable income immediately and grows tax-deferred for retirement.`,
+    whyItMatters: isScorp
+      ? `As an S-Corp, your SEP-IRA contributions are based on your W-2 salary of $${Math.round(retirementIncomeBase).toLocaleString()}. You could contribute up to $${Math.round(Math.min(retirementIncomeBase * 0.25, RETIREMENT_LIMITS.sep_ira.maxContribution)).toLocaleString()}.`
+      : `At your estimated income of $${Math.round(annualizedIncome).toLocaleString()}, you could contribute up to $${Math.round(sepMax).toLocaleString()} to a SEP-IRA. This reduces your taxable income immediately and grows tax-deferred for retirement.`,
     howItWorks: [
-      'Contribute up to 25% of net self-employment income (after SE tax deduction)',
+      isScorp ? 'Contribute up to 25% of your W-2 salary' : 'Contribute up to 25% of net self-employment income (after SE tax deduction)',
       `2026 maximum contribution: $${RETIREMENT_LIMITS.sep_ira.maxContribution.toLocaleString()}`,
       'Contributions are tax-deductible — they reduce your taxable income dollar-for-dollar',
       'Investments grow tax-deferred until withdrawal in retirement',
