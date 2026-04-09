@@ -237,7 +237,7 @@ export default function InvoicesPage() {
       )}
 
       <div className="space-y-4">
-        <div ref={overdueRef}>
+        <div ref={overdueRef} data-tour="invoice-overdue">
           <InvoiceStatusGroup
             title="Overdue"
             icon={<AlertTriangle className="h-4 w-4 text-destructive" />}
@@ -281,7 +281,7 @@ export default function InvoicesPage() {
           />
         </div>
 
-        <div ref={draftsRef}>
+        <div ref={draftsRef} data-tour="invoice-ready">
           <InvoiceStatusGroup
             title="Ready to Review"
             icon={<FileEdit className="h-4 w-4 text-amber-500" />}
