@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-import { ArrowRight, DollarSign, Loader2, AlertTriangle } from 'lucide-react';
+import { ArrowRight, DollarSign, Loader2 } from 'lucide-react';
 import { GooglePlacesAutocomplete } from '@/components/GooglePlacesAutocomplete';
 import type { PlaceSelection } from '@/components/GooglePlacesAutocomplete';
 import type { ManualFacilityInput } from '@/hooks/useManualSetup';
