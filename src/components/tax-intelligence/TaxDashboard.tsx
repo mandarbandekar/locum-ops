@@ -13,7 +13,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   CalendarDays, ChevronDown, DollarSign, Calculator, Settings2,
-  Clock, CheckCircle2, TrendingUp, Info, CreditCard, Lightbulb,
+  Clock, CheckCircle2, TrendingUp, Info, CreditCard, Lightbulb, BarChart3,
 } from 'lucide-react';
 import IncomeSplitBar from './IncomeSplitBar';
 import WhatIfSlider from './WhatIfSlider';
