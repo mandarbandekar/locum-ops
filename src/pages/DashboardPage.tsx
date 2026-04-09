@@ -16,6 +16,7 @@ import { generateCredentialReminders, generateUninvoicedShiftReminders } from '@
 import { computeStatus as computeSubStatus } from '@/hooks/useSubscriptions';
 import { useReminderPreferences } from '@/hooks/useReminderPreferences';
 import { useTaxIntelligence } from '@/hooks/useTaxIntelligence';
+import { useExpenses } from '@/hooks/useExpenses';
 import { calculateTax } from '@/components/tax-intelligence/TaxDashboard';
 
 import { UpcomingShiftsCard } from '@/components/dashboard/UpcomingShiftsCard';
