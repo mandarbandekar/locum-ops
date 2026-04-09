@@ -44,6 +44,9 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
   const [scorpSalary, setScorpSalary] = useState(existingProfile?.scorp_salary ?? 0);
   const [safeHarbor, setSafeHarbor] = useState(existingProfile?.safe_harbor_method || '90_percent');
   const [priorYearTax, setPriorYearTax] = useState(existingProfile?.prior_year_tax_paid ?? 0);
+  const [projectionMethod, setProjectionMethod] = useState(existingProfile?.projection_method || 'annualized_actual');
+  const [annualIncomeGoal, setAnnualIncomeGoal] = useState(existingProfile?.annual_income_goal ?? 0);
+  const [priorYearIncome, setPriorYearIncome] = useState(existingProfile?.prior_year_total_income ?? 0);
 
   const isScorp = entityType === 'scorp';
   const stateData = stateCode ? STATE_TAX_DATA[stateCode] : null;
