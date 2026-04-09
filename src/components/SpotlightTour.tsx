@@ -171,7 +171,7 @@ export function SpotlightTour({ steps, isOpen, onClose }: SpotlightTourProps) {
   useEffect(() => {
     if (!isOpen) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') handleClose();
       if (e.key === 'ArrowRight' && currentStep < steps.length - 1) setCurrentStep(s => s + 1);
       if (e.key === 'ArrowLeft' && currentStep > 0) setCurrentStep(s => s - 1);
     };
@@ -226,7 +226,7 @@ export function SpotlightTour({ steps, isOpen, onClose }: SpotlightTourProps) {
                 Step {currentStep + 1} of {steps.length}
               </span>
               <button
-                onClick={onClose}
+                onClick={handleClose}
                 className="p-1 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
               >
                 <X className="h-3.5 w-3.5" />
@@ -259,7 +259,7 @@ export function SpotlightTour({ steps, isOpen, onClose }: SpotlightTourProps) {
           <Button
             variant="ghost"
             size="sm"
-            onClick={onClose}
+            onClick={handleClose}
             className="text-xs text-muted-foreground hover:text-foreground"
           >
             Skip Tour
@@ -279,7 +279,7 @@ export function SpotlightTour({ steps, isOpen, onClose }: SpotlightTourProps) {
             <Button
               size="sm"
               onClick={() => {
-                if (isLast) onClose();
+                if (isLast) handleClose();
                 else setCurrentStep(s => s + 1);
               }}
               className="h-8 px-4 text-xs"
