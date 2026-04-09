@@ -218,14 +218,16 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
   const totalIncome = earnedIncome + projectedIncome;
   const hasAnyIncome = earnedIncome > 0 || projectedIncome > 0;
   const actualExpenses = ytdDeductibleCents / 100;
-  const blendedExpenses = Math.max(actualExpenses, profile.ytd_expenses_estimate || 0);
+  const hasLoggedExpenses = actualExpenses > 0;
+  const effectiveExpenses = hasLoggedExpenses ? actualExpenses : (profile.ytd_expenses_estimate || 0);
+  const expenseSource: 'logged' | 'estimated' = hasLoggedExpenses ? 'logged' : 'estimated';
 
-  const taxResult = useMemo(() => calculateTax(totalIncome, profile, blendedExpenses), [totalIncome, profile, blendedExpenses]);
+  const taxResult = useMemo(() => calculateTax(totalIncome, profile, effectiveExpenses), [totalIncome, profile, effectiveExpenses]);
 
   const whatIfCalculator = useCallback((additionalIncome: number) => {
-    const result = calculateTax(totalIncome + additionalIncome, profile, blendedExpenses);
+    const result = calculateTax(totalIncome + additionalIncome, profile, effectiveExpenses);
     return result.quarterlyPayment;
-  }, [totalIncome, profile, blendedExpenses]);
+  }, [totalIncome, profile, effectiveExpenses]);
 
   const nextDue = useMemo(() => {
     for (let q = 1; q <= 4; q++) {
@@ -591,7 +593,7 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
           <Card className="mt-2">
             <CardContent className="pt-4 space-y-2">
               <Row label="Gross Income" value={taxResult.grossIncome} />
-              <Row label={`Business Expenses${actualExpenses > (profile.ytd_expenses_estimate || 0) ? ' (actual)' : ' (estimated)'}`} value={-taxResult.expenses} />
+              <Row label={`Business Expenses (${expenseSource === 'logged' ? 'from logged expenses' : 'profile estimate'})`} value={-taxResult.expenses} />
               <Row label="Net Income" value={taxResult.netIncome} bold />
               <div className="border-t my-2" />
               {isScorp ? (
