@@ -2,10 +2,10 @@ import { useMemo, useState, useEffect } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import {
   CalendarDays, FileText, DollarSign, AlertTriangle, ArrowRight,
-  Send, ShieldAlert, CheckSquare, Zap, Clock, Calculator,
+  Send, ShieldAlert, CheckSquare, Zap, Clock, Calculator, Lightbulb, TrendingUp,
 } from 'lucide-react';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
 import { format, differenceInDays, differenceInHours, addMonths, subMonths, startOfMonth, endOfMonth, endOfDay, startOfWeek, endOfWeek, subWeeks, eachMonthOfInterval, isWithinInterval, isToday, isAfter, parseISO } from 'date-fns';
@@ -579,6 +579,49 @@ export default function DashboardPage() {
       {!isDemo && !checklistDismissed && (
         <GettingStartedChecklist onDismiss={handleDismissChecklist} />
       )}
+
+      {/* Tax Savings Opportunities Card */}
+      {(() => {
+        const completedShifts = shifts.filter(s => new Date(s.end_datetime) < now).length;
+        if (completedShifts < 4) {
+          return (
+            <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-muted/30 border border-border">
+              <div className="p-2 rounded-full bg-primary/10 shrink-0">
+                <Lightbulb className="h-4 w-4 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground">Tax Savings Strategies</p>
+                <p className="text-xs text-muted-foreground">Log {4 - completedShifts} more shift{4 - completedShifts > 1 ? 's' : ''} to unlock personalized tax-saving strategies</p>
+              </div>
+            </div>
+          );
+        }
+        const paidIncome = invoices.filter(i => i.paid_at).reduce((s, i) => s + i.total_amount, 0);
+        const monthsElapsed = Math.max(1, now.getMonth() + 1);
+        const annualized = (paidIncome / monthsElapsed) * 12;
+        // Quick estimate of total savings (simplified)
+        const estSavings = annualized > 80000
+          ? Math.round(annualized * 0.04)
+          : annualized > 50000
+          ? Math.round(annualized * 0.025)
+          : Math.round(annualized * 0.015);
+        if (estSavings <= 0) return null;
+        return (
+          <Link
+            to="/tax-center?tab=tax-strategies"
+            className="flex items-center gap-3 px-4 py-3 rounded-lg bg-emerald-500/5 border border-emerald-500/15 hover:bg-emerald-500/10 transition-colors group"
+          >
+            <div className="p-2 rounded-full bg-emerald-500/10 shrink-0">
+              <TrendingUp className="h-4 w-4 text-emerald-500" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground">You could save up to ${estSavings.toLocaleString()} this year</p>
+              <p className="text-xs text-muted-foreground">Personalized tax strategies based on your income</p>
+            </div>
+            <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground shrink-0" />
+          </Link>
+        );
+      })()}
 
       {/* 3-Column Layout */}
       <div className="grid gap-4 sm:gap-5 grid-cols-1 lg:grid-cols-12 lg:items-start">

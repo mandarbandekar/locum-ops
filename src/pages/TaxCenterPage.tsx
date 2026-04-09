@@ -1,7 +1,8 @@
-import { Landmark, FileText, Calculator } from 'lucide-react';
+import { Landmark, FileText, Calculator, Lightbulb } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import TaxEstimateTab from '@/components/business/TaxEstimateTab';
 import CPAPrepTab from '@/components/business/CPAPrepTab';
+import TaxStrategiesTab from '@/components/tax-strategies/TaxStrategiesTab';
 import { useTaxAdvisor } from '@/hooks/useTaxAdvisor';
 
 export default function TaxCenterPage() {
@@ -39,6 +40,13 @@ export default function TaxCenterPage() {
           <span className="text-xs sm:text-sm">Tax Estimate</span>
         </button>
         <button
+          onClick={() => setSearchParams({ tab: 'tax-strategies' }, { replace: true })}
+          className={`primary-tab-btn ${activeTab === 'tax-strategies' ? 'primary-tab-btn--active' : 'primary-tab-btn--inactive'}`}
+        >
+          <Lightbulb className="h-4 w-4 sm:h-5 sm:w-5" />
+          <span className="text-xs sm:text-sm">Tax Strategies</span>
+        </button>
+        <button
           onClick={() => setSearchParams({ tab: 'cpa-prep' }, { replace: true })}
           className={`primary-tab-btn ${activeTab === 'cpa-prep' ? 'primary-tab-btn--active' : 'primary-tab-btn--inactive'}`}
         >
@@ -59,6 +67,7 @@ export default function TaxCenterPage() {
               onSaveScorpResult={saveScorpResult}
             />
       )}
+      {activeTab === 'tax-strategies' && <TaxStrategiesTab />}
       {activeTab === 'cpa-prep' && (
         loading
           ? <p className="text-muted-foreground py-8 text-center">Loading…</p>
