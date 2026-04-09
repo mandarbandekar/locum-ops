@@ -157,6 +157,8 @@ export default function InvoiceDetailPage() {
     billingEmailTo,
     readOnly: !isDraft,
     invoicePayments,
+    paymentDialogOpen,
+    onPaymentDialogChange: setPaymentDialogOpen,
     onUpdateInvoice: updateInvoice,
     onAddLineItem: addLineItem,
     onUpdateLineItem: updateLineItem,
