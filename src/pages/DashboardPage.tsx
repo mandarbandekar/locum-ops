@@ -139,7 +139,7 @@ export default function DashboardPage() {
   const now = new Date();
   const { isOpen: tourOpen, isTourCompleted, startTour, closeTour } = useSpotlightTour();
 
-  // Auto-start tour for new users
+  // Auto-start tour for new users (profile-backed, triggers once)
   useEffect(() => {
     if (!isTourCompleted && !isDemo && user) {
       const t = setTimeout(() => startTour(), 1500);
