@@ -112,6 +112,35 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
                 {nextDue.label} payment due {nextDue.due}
               </p>
               <p className="text-4xl font-bold text-amber-500">${fmt(quarterlyPayment)}</p>
+              <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
+                {is1099 && taxResult.path === '1099' && (
+                  <>
+                    <Badge variant="outline" className="text-[11px] gap-1 font-normal">
+                      <TaxTerm term="federal_taxable_income">Federal</TaxTerm> ${fmt(Math.round(taxResult.vetFederalShare / 4))}
+                    </Badge>
+                    <Badge variant="outline" className="text-[11px] gap-1 font-normal">
+                      <TaxTerm term="se_tax">SE Tax</TaxTerm> ${fmt(Math.round(taxResult.totalSeTax / 4))}
+                    </Badge>
+                    {taxResult.stateTax > 0 && (
+                      <Badge variant="outline" className="text-[11px] gap-1 font-normal">
+                        {profile.state_code || 'State'} ${fmt(Math.round(taxResult.stateTax / 4))}
+                      </Badge>
+                    )}
+                  </>
+                )}
+                {isScorp && taxResult.path === 'scorp' && (
+                  <>
+                    <Badge variant="outline" className="text-[11px] gap-1 font-normal">
+                      <TaxTerm term="federal_taxable_income">Federal</TaxTerm> ${fmt(Math.round(taxResult.federalOnDistribution / 4))}
+                    </Badge>
+                    {taxResult.stateOnDistribution > 0 && (
+                      <Badge variant="outline" className="text-[11px] gap-1 font-normal">
+                        {profile.state_code || 'State'} ${fmt(Math.round(taxResult.stateOnDistribution / 4))}
+                      </Badge>
+                    )}
+                  </>
+                )}
+              </div>
               {isScorp && (
                 <p className="text-xs text-muted-foreground mt-1">
                   This covers income tax on your <TaxTerm term="k1_distribution">K-1 distribution</TaxTerm>. Your salary and spouse income are covered by payroll withholding.
@@ -193,6 +222,17 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
                   <p className="text-xs font-medium text-muted-foreground">{dd.label}</p>
                   <p className="text-xs text-muted-foreground">{dd.months}</p>
                   <p className="text-lg font-bold mt-1">${fmt(quarterlyPayment)}</p>
+                  {is1099 && taxResult.path === '1099' && (
+                    <div className="text-[10px] text-muted-foreground mt-0.5 space-y-0">
+                      <p>Fed ${fmt(Math.round(taxResult.vetFederalShare / 4))} · SE ${fmt(Math.round(taxResult.totalSeTax / 4))}</p>
+                      {taxResult.stateTax > 0 && <p>{profile.state_code} ${fmt(Math.round(taxResult.stateTax / 4))}</p>}
+                    </div>
+                  )}
+                  {isScorp && taxResult.path === 'scorp' && (
+                    <div className="text-[10px] text-muted-foreground mt-0.5">
+                      <p>Fed ${fmt(Math.round(taxResult.federalOnDistribution / 4))}{taxResult.stateOnDistribution > 0 ? ` · ${profile.state_code} $${fmt(Math.round(taxResult.stateOnDistribution / 4))}` : ''}</p>
+                    </div>
+                  )}
                   <p className="text-[11px] text-muted-foreground">Due {dd.due}</p>
                   {isFullyPaid ? (
                     <Badge variant="secondary" className="mt-1 text-[10px] gap-0.5">
