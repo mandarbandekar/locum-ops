@@ -153,7 +153,7 @@ export function generateOutreachReminders(
 export function generateCredentialReminders(
   credentials: Array<{ id: string; custom_title: string; expiration_date: string | null }>,
   now: Date,
-  windowDays = 30
+  windowDays = 60
 ): GeneratedReminder[] {
   const items: GeneratedReminder[] = [];
   credentials.forEach(cred => {
