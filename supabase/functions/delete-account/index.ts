@@ -1,11 +1,25 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+const ALLOWED_ORIGINS = [
+  'https://locum-ops.lovable.app',
+  'https://id-preview--2263427a-5054-4595-ad6b-d5ed09d0eb59.lovable.app',
+];
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('Origin') || '';
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  };
+}
+
+const MAX_REASON_LEN = 500;
+const MAX_FEEDBACK_LEN = 2000;
 
 Deno.serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -22,7 +36,6 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Verify user with anon client
     const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -35,29 +48,42 @@ Deno.serve(async (req) => {
     }
 
     const userId = user.id;
-    const body = await req.json().catch(() => ({}));
-    const { reason, feedback } = body;
 
-    // Use service role to delete all user data
+    // Validate and truncate input
+    let body: any;
+    try {
+      const raw = await req.text();
+      if (raw.length > 50_000) {
+        return new Response(JSON.stringify({ error: "Request too large" }), {
+          status: 413,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      body = raw ? JSON.parse(raw) : {};
+    } catch {
+      body = {};
+    }
+
+    const reason = typeof body.reason === 'string' ? body.reason.slice(0, MAX_REASON_LEN) : '';
+    const feedback = typeof body.feedback === 'string' ? body.feedback.slice(0, MAX_FEEDBACK_LEN) : '';
+
     const admin = createClient(supabaseUrl, serviceRoleKey);
 
-    // Store exit survey before deleting
     if (reason || feedback) {
       await admin.from("account_deletion_logs").insert({
         user_id: userId,
         email: user.email || "",
-        reason: reason || "",
-        feedback: feedback || "",
+        reason,
+        feedback,
       });
     }
 
-    // Delete from all user-owned tables (order matters for FK constraints)
     const userTables = [
       "shift_calendar_sync",
       "calendar_sync_preferences",
       "calendar_feed_tokens",
       "calendar_connections",
-      "confirmation_shift_links",  // depends on confirmation_records
+      "confirmation_shift_links",
       "confirmation_activity",
       "confirmation_records",
       "invoice_activity",
@@ -104,7 +130,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Delete the auth user last
     const { error: deleteUserError } = await admin.auth.admin.deleteUser(userId);
     if (deleteUserError) {
       console.error("Failed to delete auth user:", deleteUserError.message);
@@ -121,7 +146,7 @@ Deno.serve(async (req) => {
     console.error("Delete account error:", err);
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
     });
   }
 });
