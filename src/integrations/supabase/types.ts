@@ -3171,6 +3171,7 @@ export type Database = {
         Row: {
           company_address: string
           company_name: string
+          completed_tours: string[] | null
           created_at: string
           currency: string
           current_tools: Json
@@ -3196,6 +3197,7 @@ export type Database = {
         Insert: {
           company_address?: string
           company_name?: string
+          completed_tours?: string[] | null
           created_at?: string
           currency?: string
           current_tools?: Json
@@ -3221,6 +3223,7 @@ export type Database = {
         Update: {
           company_address?: string
           company_name?: string
+          completed_tours?: string[] | null
           created_at?: string
           currency?: string
           current_tools?: Json
