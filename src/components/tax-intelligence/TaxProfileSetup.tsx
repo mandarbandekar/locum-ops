@@ -238,11 +238,13 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
     );
   }
 
+  // Marginal rate percentage for retirement savings display
+  const marginalPct = useMemo(() => {
+    const taxable = Math.max(0, (annualReliefIncome || 0) - (annualBusinessExpenses || 0));
+    return Math.round(getV1MarginalRate(taxable, filingStatus) * 100);
+  }, [annualReliefIncome, annualBusinessExpenses, filingStatus]);
+
   function renderRetirementStep() {
-    const marginalPct = useMemo(() => {
-      const taxable = Math.max(0, (annualReliefIncome || 0) - (annualBusinessExpenses || 0));
-      return Math.round(getV1MarginalRate(taxable, filingStatus) * 100);
-    }, [annualReliefIncome, annualBusinessExpenses, filingStatus]);
 
     return (
       <div className="space-y-4">
