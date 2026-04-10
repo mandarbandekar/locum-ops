@@ -11,7 +11,7 @@ import {
   IRS_PAYMENT, STATE_PAYMENT_LINKS, getPaymentAccountGuidance,
 } from '@/lib/taxPaymentLinks';
 import type { TaxIntelligenceProfile } from '@/hooks/useTaxIntelligence';
-import type { FullTaxResult } from './TaxDashboard';
+import type { TaxV1Result as FullTaxResult } from '@/lib/taxCalculatorV1';
 import type { useTaxPaymentLogs } from '@/hooks/useTaxPaymentLogs';
 
 interface Props {
