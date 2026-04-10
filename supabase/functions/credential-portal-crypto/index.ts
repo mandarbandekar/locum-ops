@@ -1,19 +1,19 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+const ALLOWED_ORIGINS = [
+  'https://locum-ops.lovable.app',
+  'https://id-preview--2263427a-5054-4595-ad6b-d5ed09d0eb59.lovable.app',
+];
 
-/**
- * Encrypts / decrypts renewal-portal passwords server-side using AES-GCM
- * with a key derived from PORTAL_ENCRYPTION_KEY (Supabase secret).
- *
- * POST /credential-portal-crypto
- *   body: { action: "encrypt" | "decrypt", text: string }
- *   Returns: { result: string }            (hex-encoded ciphertext or plaintext)
- */
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('Origin') || '';
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers':
+      'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+  };
+}
 
 const ENC_KEY_NAME = "PORTAL_ENCRYPTION_KEY";
 
@@ -45,7 +45,6 @@ async function encrypt(plaintext: string, key: CryptoKey): Promise<string> {
     key,
     new TextEncoder().encode(plaintext)
   );
-  // iv (24 hex chars) + ciphertext
   return hexEncode(iv.buffer) + hexEncode(ciphertext);
 }
 
@@ -61,12 +60,13 @@ async function decrypt(blob: string, key: CryptoKey): Promise<string> {
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Auth check – require a valid user JWT
     const authHeader = req.headers.get("Authorization") ?? "";
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -92,10 +92,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { action, text } = await req.json();
-    if (!action || !text) {
+    const body = await req.json();
+    const { action, text, credential_id } = body;
+
+    if (!action || typeof action !== 'string') {
       return new Response(
-        JSON.stringify({ error: "Missing action or text" }),
+        JSON.stringify({ error: "Missing or invalid action" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -104,9 +106,41 @@ Deno.serve(async (req) => {
     let result: string;
 
     if (action === "encrypt") {
+      if (!text || typeof text !== 'string' || text.length > 1000) {
+        return new Response(
+          JSON.stringify({ error: "Missing or invalid text (max 1000 chars)" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
       result = await encrypt(text, key);
     } else if (action === "decrypt") {
-      result = await decrypt(text, key);
+      // For decrypt: require credential_id and verify ownership
+      if (!credential_id || typeof credential_id !== 'string') {
+        return new Response(
+          JSON.stringify({ error: "credential_id is required for decryption" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Use service role to look up the encrypted value scoped to the requesting user
+      const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const adminClient = createClient(supabaseUrl, serviceKey);
+
+      const { data: portal, error: portalError } = await adminClient
+        .from('credential_renewal_portals')
+        .select('renewal_password_encrypted')
+        .eq('credential_id', credential_id)
+        .eq('user_id', user.id)
+        .single();
+
+      if (portalError || !portal?.renewal_password_encrypted) {
+        return new Response(
+          JSON.stringify({ error: "No encrypted password found for this credential" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      result = await decrypt(portal.renewal_password_encrypted, key);
     } else {
       return new Response(
         JSON.stringify({ error: "Invalid action" }),
@@ -120,7 +154,7 @@ Deno.serve(async (req) => {
   } catch (e) {
     return new Response(JSON.stringify({ error: "Processing failed" }), {
       status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
     });
   }
 });

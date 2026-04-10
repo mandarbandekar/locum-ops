@@ -6,8 +6,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { CalendarDays, ShieldCheck } from 'lucide-react';
 import { format } from 'date-fns';
 
-const db = (table: string) => supabase.from(table as any);
-
 interface ConfirmationData {
   facilityName: string;
   clinicianName: string;
@@ -29,55 +27,33 @@ export default function PublicConfirmationPage() {
 
   async function loadConfirmation(token: string) {
     try {
-      // Find confirmation record by share_token
-      const { data: records, error: recError } = await db('confirmation_records')
-        .select('*')
-        .eq('share_token', token)
-        .limit(1);
+      const baseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const response = await fetch(
+        `${baseUrl}/functions/v1/public-confirmation?token=${encodeURIComponent(token)}`,
+        {
+          headers: {
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+        }
+      );
 
-      if (recError || !records || records.length === 0) {
+      if (!response.ok) {
         setError(true);
         setLoading(false);
         return;
       }
 
-      const record = records[0] as any;
+      const payload = await response.json();
 
-      // Check if token is revoked
-      if (record.share_token_revoked_at) {
-        setError(true);
-        setLoading(false);
-        return;
-      }
-
-      // Get facility
-      const { data: facilities } = await db('facilities').select('name').eq('id', record.facility_id).limit(1);
-      const facilityName = (facilities && facilities[0]) ? (facilities[0] as any).name : 'Practice';
-
-      // Get clinician name from user_profiles
-      const { data: profiles } = await db('user_profiles').select('first_name,last_name').eq('user_id', record.user_id).limit(1);
-      const profile = profiles && profiles[0] as any;
-      const clinicianName = profile ? `${profile.first_name} ${profile.last_name}`.trim() : 'Relief Clinician';
-
-      // Get linked shifts
-      const { data: links } = await db('confirmation_shift_links').select('shift_id').eq('confirmation_record_id', record.id);
-      const shiftIds = (links || []).map((l: any) => l.shift_id);
-
-      let shifts: any[] = [];
-      if (shiftIds.length > 0) {
-        const { data: shiftData } = await db('shifts').select('start_datetime,end_datetime,notes').in('id', shiftIds).order('start_datetime');
-        shifts = shiftData || [];
-      }
-
-      const [year, month] = record.month_key.split('-').map(Number);
+      const [year, month] = payload.monthKey.split('-').map(Number);
       const monthLabel = format(new Date(year, month - 1), 'MMMM yyyy');
 
       setData({
-        facilityName,
-        clinicianName,
+        facilityName: payload.facilityName,
+        clinicianName: payload.clinicianName,
         monthLabel,
-        generatedAt: record.sent_at || record.updated_at || record.created_at,
-        shifts: shifts.map((s: any) => ({ start_datetime: s.start_datetime, end_datetime: s.end_datetime, notes: s.notes || '' })),
+        generatedAt: payload.generatedAt,
+        shifts: payload.shifts,
       });
     } catch {
       setError(true);
@@ -111,7 +87,6 @@ export default function PublicConfirmationPage() {
   return (
     <div className="min-h-screen bg-muted p-4 sm:p-8">
       <div className="max-w-2xl mx-auto space-y-6">
-        {/* Header */}
         <div className="text-center space-y-1">
           <div className="flex items-center justify-center gap-2 text-primary mb-2">
             <CalendarDays className="h-5 w-5" />
@@ -122,7 +97,6 @@ export default function PublicConfirmationPage() {
           <p className="text-sm text-muted-foreground">Prepared by {data.clinicianName}</p>
         </div>
 
-        {/* Shifts */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">

@@ -15,10 +15,12 @@ export interface CredentialPortal {
   updated_at: string;
 }
 
-/** Server-side encrypt/decrypt via edge function. Falls back to base64 if unavailable. */
-async function cryptoCall(action: 'encrypt' | 'decrypt', text: string): Promise<string> {
+/** Server-side encrypt/decrypt via edge function. */
+async function cryptoCall(action: 'encrypt' | 'decrypt', text: string, credentialId?: string): Promise<string> {
+  const body: Record<string, string> = { action, text };
+  if (credentialId) body.credential_id = credentialId;
   const { data, error } = await supabase.functions.invoke('credential-portal-crypto', {
-    body: { action, text },
+    body,
   });
   if (error || !data?.result) {
     throw new Error('Encryption service unavailable — password not saved. Please contact support.');
@@ -90,11 +92,10 @@ export function useCredentialPortal(credentialId: string | null) {
   const decryptedPasswordQuery = useQuery({
     queryKey: ['credential_portal_password', credentialId],
     queryFn: async () => {
-      const encrypted = portalQuery.data?.renewal_password_encrypted;
-      if (!encrypted) return null;
-      return cryptoCall('decrypt', encrypted);
+      if (!credentialId) return null;
+      return cryptoCall('decrypt', '', credentialId);
     },
-    enabled: !!user && !!portalQuery.data?.renewal_password_encrypted,
+    enabled: !!user && !!credentialId && !!portalQuery.data?.renewal_password_encrypted,
   });
 
   return {
