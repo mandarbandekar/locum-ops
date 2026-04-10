@@ -11,7 +11,7 @@ import {
   IRS_PAYMENT, STATE_PAYMENT_LINKS, getPaymentAccountGuidance,
 } from '@/lib/taxPaymentLinks';
 import type { TaxIntelligenceProfile } from '@/hooks/useTaxIntelligence';
-import type { FullTaxResult } from './TaxDashboard';
+import type { TaxV1Result as FullTaxResult } from '@/lib/taxCalculatorV1';
 import type { useTaxPaymentLogs } from '@/hooks/useTaxPaymentLogs';
 
 interface Props {
@@ -55,14 +55,14 @@ export default function TaxPaymentHub({ profile, taxResult, nextDue, paymentLogs
   const stateCode = profile.state_code;
   const stateLink = STATE_PAYMENT_LINKS[stateCode];
   const hasStateTax = stateLink?.url !== null;
-  const hasPTE = !!(taxResult.scorpPTEPayment && taxResult.scorpPTEPayment > 0);
+  const hasPTE = false; // PTE not in V1
   const quarterLabel = nextDue?.label || 'Q1';
   const quarterDue = nextDue?.due || '';
 
   // Calculate amounts
   const federalQuarterly = taxResult.quarterlyPayment;
-  const stateQuarterly = Math.round((taxResult.personalStateTax || 0) / 4);
-  const pteQuarterly = taxResult.scorpPTEQuarterly || 0;
+  const stateQuarterly = Math.round((taxResult.stateTax || 0) / 4);
+  const pteQuarterly = 0;
 
   // Check if already paid
   const federalPaid = paymentLogs.getQuarterTotal(quarterLabel, 'federal_1040es');
