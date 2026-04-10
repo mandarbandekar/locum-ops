@@ -13,14 +13,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const company = isDemo ? 'Demo Practice' : (profile?.company_name || '');
 
   const handleStartTour = () => {
-    // Navigate to dashboard first if not there, then trigger tour
     if (window.location.pathname !== '/') {
+      // Store intent, then navigate — dashboard listens for the event on load
+      sessionStorage.setItem('locumops_pending_tour', 'true');
       window.location.href = '/';
-      // Tour auto-triggers on dashboard for non-completed users
-      try { localStorage.removeItem('locumops_tour_completed'); } catch {}
     } else {
-      // Reset and trigger by dispatching a custom event
-      try { localStorage.removeItem('locumops_tour_completed'); } catch {}
       window.dispatchEvent(new CustomEvent('locumops:start-tour'));
     }
   };
