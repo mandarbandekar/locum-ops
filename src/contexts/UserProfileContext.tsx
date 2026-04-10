@@ -39,6 +39,7 @@ export interface UserProfile {
   invoice_email: string | null;
   invoice_phone: string | null;
   home_address: string;
+  completed_tours: string[];
 }
 
 const DEFAULT_TERMS_FIELDS: TermsFieldsEnabled = {
