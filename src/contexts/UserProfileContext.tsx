@@ -71,6 +71,7 @@ export const DEFAULT_PROFILE: Omit<UserProfile, 'id' | 'user_id'> = {
   invoice_email: null,
   invoice_phone: null,
   home_address: '',
+  completed_tours: [],
 };
 
 interface UserProfileContextType {
