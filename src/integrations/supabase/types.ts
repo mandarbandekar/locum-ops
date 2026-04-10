@@ -2717,13 +2717,17 @@ export type Database = {
       }
       tax_intelligence_profiles: {
         Row: {
+          annual_business_expenses: number
           annual_income_goal: number
+          annual_relief_income: number
           created_at: string
           entity_type: string
           expense_tracking_level: string
+          extra_withholding: number
           filing_status: string
           id: string
           other_w2_income: number
+          pay_periods_per_year: number
           prior_year_tax_paid: number
           prior_year_total_income: number
           projection_method: string
@@ -2742,13 +2746,17 @@ export type Database = {
           ytd_expenses_estimate: number
         }
         Insert: {
+          annual_business_expenses?: number
           annual_income_goal?: number
+          annual_relief_income?: number
           created_at?: string
           entity_type?: string
           expense_tracking_level?: string
+          extra_withholding?: number
           filing_status?: string
           id?: string
           other_w2_income?: number
+          pay_periods_per_year?: number
           prior_year_tax_paid?: number
           prior_year_total_income?: number
           projection_method?: string
@@ -2767,13 +2775,17 @@ export type Database = {
           ytd_expenses_estimate?: number
         }
         Update: {
+          annual_business_expenses?: number
           annual_income_goal?: number
+          annual_relief_income?: number
           created_at?: string
           entity_type?: string
           expense_tracking_level?: string
+          extra_withholding?: number
           filing_status?: string
           id?: string
           other_w2_income?: number
+          pay_periods_per_year?: number
           prior_year_tax_paid?: number
           prior_year_total_income?: number
           projection_method?: string

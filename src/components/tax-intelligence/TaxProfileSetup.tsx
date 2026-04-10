@@ -1,18 +1,15 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Slider } from '@/components/ui/slider';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { CheckCircle2, Info, ArrowLeft, ArrowRight, Sparkles, CalendarDays } from 'lucide-react';
-import { US_STATES, getMarginalRate, STANDARD_DEDUCTIONS, type FilingStatus } from '@/lib/taxConstants2026';
-import { getStateInfo, STATE_TAX_DATA } from '@/lib/stateTaxData';
+import { CheckCircle2, Info, ArrowLeft, ArrowRight, Sparkles } from 'lucide-react';
+import { TAX_CONSTANTS, V1_US_STATES, V1_FILING_STATUS_LABELS, type V1FilingStatus } from '@/lib/taxConstantsV1';
+import { getV1MarginalRate } from '@/lib/taxCalculatorV1';
 import type { TaxIntelligenceProfile } from '@/hooks/useTaxIntelligence';
 import { toast } from 'sonner';
 
@@ -28,61 +25,86 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
   const [saving, setSaving] = useState(false);
 
   // Form state
-  const [entityType, setEntityType] = useState(existingProfile?.entity_type || 'sole_prop');
-  const [showEntityHelper, setShowEntityHelper] = useState(false);
-  const [filingStatus, setFilingStatus] = useState(existingProfile?.filing_status || 'single');
-  const [stateCode, setStateCode] = useState(existingProfile?.state_code || '');
-  const [pteElected, setPteElected] = useState(existingProfile?.pte_elected ?? false);
-  const [pteChoice, setPteChoice] = useState<'yes' | 'no' | 'idk'>(existingProfile?.pte_elected ? 'yes' : 'no');
-  const [spouseW2Income, setSpouseW2Income] = useState(existingProfile?.spouse_w2_income ?? 0);
-  const [spouseHasSE, setSpouseHasSE] = useState(existingProfile?.spouse_has_se_income ?? false);
-  const [spouseSENet, setSpouseSENet] = useState(existingProfile?.spouse_se_net_income ?? 0);
-  const [retirementType, setRetirementType] = useState(existingProfile?.retirement_type || 'none');
-  const [retirementContribution, setRetirementContribution] = useState(existingProfile?.retirement_contribution ?? 0);
-  const [expenseLevel, setExpenseLevel] = useState(existingProfile?.expense_tracking_level || 'none');
-  const [ytdExpenses, setYtdExpenses] = useState(existingProfile?.ytd_expenses_estimate ?? 8000);
+  const [entityType, setEntityType] = useState(existingProfile?.entity_type || '1099');
+  const [annualReliefIncome, setAnnualReliefIncome] = useState(existingProfile?.annual_relief_income ?? 0);
   const [scorpSalary, setScorpSalary] = useState(existingProfile?.scorp_salary ?? 0);
-  const [safeHarbor, setSafeHarbor] = useState(existingProfile?.safe_harbor_method || '90_percent');
-  const [priorYearTax, setPriorYearTax] = useState(existingProfile?.prior_year_tax_paid ?? 0);
-  const [priorYearIncome, setPriorYearIncome] = useState(existingProfile?.prior_year_total_income ?? 0);
+  const [annualBusinessExpenses, setAnnualBusinessExpenses] = useState(existingProfile?.annual_business_expenses ?? 0);
+  const [filingStatus, setFilingStatus] = useState<string>(
+    existingProfile?.filing_status === 'married_joint' ? 'mfj'
+    : existingProfile?.filing_status === 'head_of_household' ? 'hoh'
+    : existingProfile?.filing_status === 'mfj' ? 'mfj'
+    : existingProfile?.filing_status === 'hoh' ? 'hoh'
+    : 'single'
+  );
+  const [spouseW2Income, setSpouseW2Income] = useState(existingProfile?.spouse_w2_income ?? 0);
+  const [retirementContributions, setRetirementContributions] = useState(existingProfile?.retirement_contribution ?? 0);
+  const [skipRetirement, setSkipRetirement] = useState(false);
+  const [stateCode, setStateCode] = useState(existingProfile?.state_code || '');
+  const [extraWithholding, setExtraWithholding] = useState(existingProfile?.extra_withholding ?? 0);
+  const [payPeriodsPerYear, setPayPeriodsPerYear] = useState(existingProfile?.pay_periods_per_year ?? 24);
+  const [hasExtraWithholding, setHasExtraWithholding] = useState((existingProfile?.extra_withholding ?? 0) > 0);
+  const [mfjSpouseError, setMfjSpouseError] = useState(false);
+
+  // Reset step when dialog opens
+  useEffect(() => {
+    if (open) setStep(1);
+  }, [open]);
 
   const isScorp = entityType === 'scorp';
-  const currentYear = new Date().getFullYear();
-  const stateData = stateCode ? STATE_TAX_DATA[stateCode] : null;
-  const showPTEStep = isScorp && stateData?.hasPTE === true;
 
-  // Dynamic steps
+  // Steps
   const steps = useMemo(() => {
-    const s: string[] = ['entity', 'filing', 'state'];
-    if (showPTEStep) s.push('pte');
-    s.push('household', 'retirement');
-    if (isScorp) s.push('scorpSalary');
-    s.push('expenses', 'priorYearIncome', 'safeHarbor', 'complete');
+    const s = ['entity', 'income', 'filing', 'retirement', 'state'];
+    if (isScorp) s.push('withholding');
+    s.push('complete');
     return s;
-  }, [isScorp, showPTEStep]);
+  }, [isScorp]);
 
   const totalSteps = steps.length;
   const currentStepName = steps[step - 1] || 'entity';
   const progressPct = Math.round((step / totalSteps) * 100);
 
-  const stateInfo = stateCode ? getStateInfo(stateCode) : null;
+  // Live K-1 distribution calc for S-Corp
+  const k1Distribution = useMemo(() => {
+    if (!isScorp) return 0;
+    const fica = (scorpSalary || 0) * TAX_CONSTANTS.employerFicaRate;
+    return Math.max(0, (annualReliefIncome || 0) - (annualBusinessExpenses || 0) - (scorpSalary || 0) - fica);
+  }, [isScorp, annualReliefIncome, annualBusinessExpenses, scorpSalary]);
 
-  // Compute household total for display
-  const householdTotal = spouseW2Income + (spouseHasSE ? spouseSENet : 0);
+  // Dynamic retirement savings preview
+  const retirementSavings = useMemo(() => {
+    if (retirementContributions <= 0) return 0;
+    const taxable = Math.max(0, (annualReliefIncome || 0) - (annualBusinessExpenses || 0));
+    const marginal = getV1MarginalRate(taxable, filingStatus);
+    return Math.round(retirementContributions * marginal);
+  }, [retirementContributions, annualReliefIncome, annualBusinessExpenses, filingStatus]);
+
+  // State info after selection
+  const stateInfo = useMemo(() => {
+    if (!stateCode) return null;
+    const state = TAX_CONSTANTS.states[stateCode];
+    if (!state) return null;
+    if (state.type === 'none') return { label: `${state.name} · No state income tax`, estimated: 0 };
+    const net = Math.max(0, (annualReliefIncome || 0) - (annualBusinessExpenses || 0));
+    let estimated = 0;
+    if (state.type === 'flat') {
+      estimated = Math.round(net * (state.rate ?? 0));
+    }
+    const rateLabel = state.type === 'flat'
+      ? `Flat ${((state.rate ?? 0) * 100).toFixed(1)}%`
+      : `Progressive brackets`;
+    return { label: `${state.name} · ${rateLabel}`, estimated };
+  }, [stateCode, annualReliefIncome, annualBusinessExpenses]);
 
   function renderStep() {
     switch (currentStepName) {
       case 'entity': return renderEntityStep();
+      case 'income': return renderIncomeStep();
       case 'filing': return renderFilingStep();
-      case 'state': return renderStateStep();
-      case 'pte': return renderPTEStep();
-      case 'household': return renderHouseholdStep();
       case 'retirement': return renderRetirementStep();
-      case 'scorpSalary': return renderScorpSalaryStep();
-      case 'expenses': return renderExpensesStep();
-      case 'priorYearIncome': return renderPriorYearIncomeStep();
-      case 'safeHarbor': return renderSafeHarborStep();
-      case 'complete': return renderCompletionStep();
+      case 'state': return renderStateStep();
+      case 'withholding': return renderWithholdingStep();
+      case 'complete': return renderCompleteStep();
       default: return null;
     }
   }
@@ -90,44 +112,88 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
   function renderEntityStep() {
     return (
       <div className="space-y-4">
-        <Label className="text-base font-medium">How are you currently set up for tax purposes?</Label>
-        <RadioGroup value={entityType} onValueChange={v => { setEntityType(v); setShowEntityHelper(v === 'unsure'); }}>
-          <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent/50 cursor-pointer">
-            <RadioGroupItem value="sole_prop" id="sole_prop" />
-            <Label htmlFor="sole_prop" className="cursor-pointer flex-1">I file as a sole proprietor / 1099 independent contractor</Label>
+        <Label className="text-base font-medium">How are you structured?</Label>
+        <RadioGroup value={entityType} onValueChange={v => setEntityType(v)}>
+          <div className="p-4 rounded-lg border hover:bg-accent/50 cursor-pointer space-y-1">
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="1099" id="ent-1099" />
+              <Label htmlFor="ent-1099" className="cursor-pointer font-semibold">1099 / LLC Sole Proprietor</Label>
+            </div>
+            <p className="text-xs text-muted-foreground ml-6">You receive 1099-NEC forms and file Schedule C.</p>
           </div>
-          <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent/50 cursor-pointer">
-            <RadioGroupItem value="scorp" id="scorp" />
-            <Label htmlFor="scorp" className="cursor-pointer flex-1">I have an S-Corporation</Label>
-          </div>
-          <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent/50 cursor-pointer">
-            <RadioGroupItem value="unsure" id="unsure" />
-            <Label htmlFor="unsure" className="cursor-pointer flex-1">I'm not sure yet</Label>
+          <div className="p-4 rounded-lg border hover:bg-accent/50 cursor-pointer space-y-1">
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="scorp" id="ent-scorp" />
+              <Label htmlFor="ent-scorp" className="cursor-pointer font-semibold">S-Corporation</Label>
+            </div>
+            <p className="text-xs text-muted-foreground ml-6">You pay yourself a W-2 salary and take K-1 distributions.</p>
           </div>
         </RadioGroup>
-        {(showEntityHelper || entityType === 'unsure') && (
-          <Alert className="border-[hsl(var(--info))] bg-[hsl(var(--chip-info-bg))]">
-            <Info className="h-4 w-4 text-[hsl(var(--chip-info-text))]" />
-            <AlertDescription className="text-sm text-[hsl(var(--chip-info-text))]">
-              You should consider an S-Corp if you're consistently netting over <strong>$80,000/year</strong> from relief work. Below that, the setup costs (payroll service, additional accounting — typically $2,500–$4,000/year) usually outweigh the SE tax savings.
+        <Alert className="border-muted bg-muted/30">
+          <Info className="h-4 w-4 text-muted-foreground" />
+          <AlertDescription className="text-xs text-muted-foreground">
+            <strong>Not sure?</strong> If you have a separate business bank account, run payroll through Gusto or QuickBooks, and file an 1120-S — you're S-Corp. If you receive 1099s directly and file Schedule C — you're 1099.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  function renderIncomeStep() {
+    if (isScorp) {
+      return (
+        <div className="space-y-4">
+          <Label className="text-base font-medium">Your S-Corp income</Label>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label className="text-sm">Gross revenue expected this year (total billings)</Label>
+              <Input type="number" value={annualReliefIncome || ''} onChange={e => setAnnualReliefIncome(Number(e.target.value))} placeholder="e.g., 200000" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-sm">Your W-2 salary (what you pay yourself)</Label>
+              <Input type="number" value={scorpSalary || ''} onChange={e => setScorpSalary(Number(e.target.value))} placeholder="e.g., 80000" />
+              <p className="text-xs text-muted-foreground">IRS requires this to be reasonable compensation. Most relief vet CPAs recommend 40–60% of net profit.</p>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-sm">Operating business expenses</Label>
+              <Input type="number" value={annualBusinessExpenses || ''} onChange={e => setAnnualBusinessExpenses(Number(e.target.value))} placeholder="e.g., 15000" />
+              <p className="text-xs text-muted-foreground">Mileage, DEA fees, CE, equipment, software — before salary</p>
+            </div>
+            {annualReliefIncome > 0 && (
+              <div className="rounded-lg bg-muted/50 p-3 border">
+                <p className="text-xs text-muted-foreground">Your estimated K-1 distribution</p>
+                <p className="text-lg font-bold">${Math.round(k1Distribution).toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">Revenue − Expenses − Salary − Employer FICA</p>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        <Label className="text-base font-medium">Your relief vet income</Label>
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <Label className="text-sm">Expected gross income this year (all relief work)</Label>
+            <Input type="number" value={annualReliefIncome || ''} onChange={e => setAnnualReliefIncome(Number(e.target.value))} placeholder="e.g., 120000" />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-sm">Business expenses this year</Label>
+            <Input type="number" value={annualBusinessExpenses || ''} onChange={e => setAnnualBusinessExpenses(Number(e.target.value))} placeholder="e.g., 10000" />
+            <p className="text-xs text-muted-foreground">Mileage, DEA fees, CE, equipment, software, licensing</p>
+          </div>
+          <Alert className="border-muted bg-muted/30">
+            <Info className="h-4 w-4 text-muted-foreground" />
+            <AlertDescription className="text-xs text-muted-foreground">
+              Not sure? Most relief vets deduct $8,000–$15,000 annually.{' '}
+              <button className="text-primary hover:underline font-medium" onClick={() => setAnnualBusinessExpenses(10000)}>
+                Use $10,000 as an estimate
+              </button>
             </AlertDescription>
           </Alert>
-        )}
-        {entityType === 'unsure' && (
-          <div className="pt-2">
-            <Label className="text-sm">Based on this, which applies to you?</Label>
-            <RadioGroup value="" onValueChange={v => { setEntityType(v); setShowEntityHelper(false); }} className="mt-2">
-              <div className="flex items-center space-x-2 p-2 rounded border hover:bg-accent/50 cursor-pointer">
-                <RadioGroupItem value="sole_prop" id="sp2" />
-                <Label htmlFor="sp2" className="cursor-pointer text-sm">Sole Proprietor</Label>
-              </div>
-              <div className="flex items-center space-x-2 p-2 rounded border hover:bg-accent/50 cursor-pointer">
-                <RadioGroupItem value="scorp" id="sc2" />
-                <Label htmlFor="sc2" className="cursor-pointer text-sm">S-Corporation</Label>
-              </div>
-            </RadioGroup>
-          </div>
-        )}
+        </div>
       </div>
     );
   }
@@ -135,42 +201,36 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
   function renderFilingStep() {
     return (
       <div className="space-y-4">
-        <Label className="text-base font-medium">What is your federal filing status?</Label>
-        <RadioGroup value={filingStatus} onValueChange={setFilingStatus}>
-          {[
-            { value: 'single', label: 'Single' },
-            { value: 'married_joint', label: 'Married filing jointly' },
-            { value: 'head_of_household', label: 'Head of household' },
-          ].map(o => (
-            <div key={o.value} className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent/50 cursor-pointer">
-              <RadioGroupItem value={o.value} id={o.value} />
-              <Label htmlFor={o.value} className="cursor-pointer flex-1">{o.label}</Label>
-            </div>
-          ))}
-        </RadioGroup>
-      </div>
-    );
-  }
+        <Label className="text-base font-medium">Your household</Label>
+        <div className="space-y-1">
+          <Label className="text-sm">Filing status</Label>
+          <RadioGroup value={filingStatus} onValueChange={v => { setFilingStatus(v); setMfjSpouseError(false); }}>
+            {(['single', 'mfj', 'hoh'] as V1FilingStatus[]).map(fs => (
+              <div key={fs} className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent/50 cursor-pointer">
+                <RadioGroupItem value={fs} id={`fs-${fs}`} />
+                <Label htmlFor={`fs-${fs}`} className="cursor-pointer flex-1">{V1_FILING_STATUS_LABELS[fs]}</Label>
+              </div>
+            ))}
+          </RadioGroup>
+        </div>
 
-  function renderStateStep() {
-    return (
-      <div className="space-y-4">
-        <Label className="text-base font-medium">Which state do you live in?</Label>
-        <Select value={stateCode} onValueChange={setStateCode}>
-          <SelectTrigger><SelectValue placeholder="Select a state…" /></SelectTrigger>
-          <SelectContent className="max-h-64">
-            {US_STATES.map(s => <SelectItem key={s.code} value={s.code}>{s.name}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        {stateInfo && (
-          <div className="space-y-1.5">
-            <Badge variant="outline" className="text-xs font-normal py-1 px-2">
-              {stateInfo.label}
-            </Badge>
-            {stateInfo.pteLabel && (
-              <Badge variant="outline" className="text-xs font-normal py-1 px-2 ml-1">
-                {stateInfo.pteLabel}
-              </Badge>
+        {filingStatus === 'mfj' && (
+          <div className="space-y-2 mt-4 p-4 rounded-lg border bg-muted/20">
+            <Label className="text-sm font-medium">Spouse income</Label>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Spouse W-2 gross income this year</Label>
+              <Input
+                type="number"
+                value={spouseW2Income || ''}
+                onChange={e => { setSpouseW2Income(Number(e.target.value)); setMfjSpouseError(false); }}
+                placeholder="e.g., 65000"
+              />
+              <p className="text-xs text-muted-foreground">This affects your federal tax bracket significantly. Enter $0 if spouse has no income.</p>
+            </div>
+            {mfjSpouseError && (
+              <p className="text-xs text-destructive font-medium">
+                Spouse income is required for married filing jointly. Enter $0 if your spouse has no income.
+              </p>
             )}
           </div>
         )}
@@ -178,271 +238,143 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
     );
   }
 
-  function renderPTEStep() {
-    const pteRate = stateData?.pteRate ?? 0;
-    const stateName = stateData?.name || stateCode;
-
-    return (
-      <div className="space-y-4">
-        <Label className="text-base font-medium">Pass-Through Entity (PTE) Tax Election</Label>
-        <p className="text-sm text-muted-foreground">
-          {stateName} offers a PTE tax election for S-Corporations that can significantly reduce your federal tax bill.
-        </p>
-        <Alert className="border-[hsl(var(--info))] bg-[hsl(var(--chip-info-bg))]">
-          <Info className="h-4 w-4 text-[hsl(var(--chip-info-text))]" />
-          <AlertDescription className="text-sm text-[hsl(var(--chip-info-text))]">
-            <strong>How it works:</strong> Your S-Corp pays state income tax at the entity level. That payment is fully deductible federally — bypassing the $10,000 SALT cap that applies to individuals.
-          </AlertDescription>
-        </Alert>
-        <Label className="text-sm font-medium">Has your S-Corp elected PTE tax in {stateName}?</Label>
-        <RadioGroup value={pteChoice} onValueChange={(v: string) => {
-          const choice = v as 'yes' | 'no' | 'idk';
-          setPteChoice(choice);
-          setPteElected(choice === 'yes');
-        }}>
-          <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent/50 cursor-pointer">
-            <RadioGroupItem value="yes" id="pte-yes" />
-            <Label htmlFor="pte-yes" className="cursor-pointer flex-1">Yes — our S-Corp files and pays PTE tax</Label>
-          </div>
-          <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent/50 cursor-pointer">
-            <RadioGroupItem value="no" id="pte-no" />
-            <Label htmlFor="pte-no" className="cursor-pointer flex-1">No — we haven't elected PTE</Label>
-          </div>
-          <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent/50 cursor-pointer">
-            <RadioGroupItem value="idk" id="pte-idk" />
-            <Label htmlFor="pte-idk" className="cursor-pointer flex-1">I don't know — show me more</Label>
-          </div>
-        </RadioGroup>
-        {pteChoice === 'idk' && (
-          <div className="rounded-lg border p-4 space-y-3 bg-muted/30">
-            <p className="text-sm text-muted-foreground">
-              At your projected income, electing PTE could save you an estimated amount in federal taxes annually by making your state tax bill federally deductible.
-            </p>
-            <p className="text-sm text-muted-foreground">
-              The PTE rate in {stateName} is <strong>{(pteRate * 100).toFixed(1)}%</strong>. This election is made on your S-Corp state tax return. Ask your CPA or tax advisor whether this makes sense for your situation.
-            </p>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => { setPteChoice('no'); setPteElected(false); }}>
-                I'll ask my CPA — set to No for now
-              </Button>
-              <Button variant="default" size="sm" onClick={() => { setPteChoice('yes'); setPteElected(true); }}>
-                Yes, we've elected PTE
-              </Button>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  function renderHouseholdStep() {
-    return (
-      <div className="space-y-4">
-        <Label className="text-base font-medium">Household Income</Label>
-        <p className="text-sm text-muted-foreground">This determines your federal tax bracket. Leave fields blank if not applicable.</p>
-
-        <div className="space-y-3">
-          <div className="space-y-1">
-            <Label className="text-sm">Spouse / partner W-2 gross income</Label>
-            <Input
-              type="number"
-              value={spouseW2Income || ''}
-              onChange={e => setSpouseW2Income(Number(e.target.value))}
-              placeholder="e.g., 65000"
-            />
-          </div>
-
-          <div className="flex items-center justify-between p-3 rounded-lg border">
-            <Label className="text-sm cursor-pointer">Spouse has self-employment income?</Label>
-            <Switch checked={spouseHasSE} onCheckedChange={v => { setSpouseHasSE(v); if (!v) setSpouseSENet(0); }} />
-          </div>
-
-          {spouseHasSE && (
-            <div className="space-y-1">
-              <Label className="text-sm">Spouse estimated net SE income</Label>
-              <p className="text-xs text-muted-foreground">(net after their business expenses)</p>
-              <Input
-                type="number"
-                value={spouseSENet || ''}
-                onChange={e => setSpouseSENet(Number(e.target.value))}
-                placeholder="e.g., 40000"
-              />
-            </div>
-          )}
-
-          {householdTotal > 0 && (
-            <div className="rounded-lg bg-muted/50 p-3">
-              <p className="text-xs text-muted-foreground">Total additional household income (calculated)</p>
-              <p className="text-lg font-semibold">${householdTotal.toLocaleString()}</p>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
   function renderRetirementStep() {
+    const marginalPct = useMemo(() => {
+      const taxable = Math.max(0, (annualReliefIncome || 0) - (annualBusinessExpenses || 0));
+      return Math.round(getV1MarginalRate(taxable, filingStatus) * 100);
+    }, [annualReliefIncome, annualBusinessExpenses, filingStatus]);
+
     return (
       <div className="space-y-4">
-        <Label className="text-base font-medium">Are you contributing to a retirement account this year?</Label>
-        <RadioGroup value={retirementType} onValueChange={setRetirementType}>
-          {[
-            { value: 'sep_ira', label: 'SEP-IRA' },
-            { value: 'solo_401k', label: 'Solo 401(k)' },
-            { value: 'simple_ira', label: 'SIMPLE IRA' },
-            { value: 'none', label: 'No retirement contributions currently' },
-          ].map(o => (
-            <div key={o.value} className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent/50 cursor-pointer">
-              <RadioGroupItem value={o.value} id={`ret-${o.value}`} />
-              <Label htmlFor={`ret-${o.value}`} className="cursor-pointer flex-1">{o.label}</Label>
-            </div>
-          ))}
-        </RadioGroup>
-        {retirementType !== 'none' && (
-          <div className="space-y-1">
-            <Label className="text-sm">Planned annual contribution ($)</Label>
-            <Input type="number" value={retirementContribution || ''} onChange={e => setRetirementContribution(Number(e.target.value))} placeholder="e.g., 10000" />
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  function renderExpensesStep() {
-    return (
-      <div className="space-y-4">
-        <Label className="text-base font-medium">Do you track deductible business expenses?</Label>
-        <RadioGroup value={expenseLevel} onValueChange={setExpenseLevel}>
-          <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent/50 cursor-pointer">
-            <RadioGroupItem value="careful" id="exp-careful" />
-            <Label htmlFor="exp-careful" className="cursor-pointer flex-1">Yes, I track them carefully</Label>
-          </div>
-          <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent/50 cursor-pointer">
-            <RadioGroupItem value="estimate" id="exp-est" />
-            <Label htmlFor="exp-est" className="cursor-pointer flex-1">I have some but I'm not sure of the total</Label>
-          </div>
-          <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent/50 cursor-pointer">
-            <RadioGroupItem value="none" id="exp-none" />
-            <Label htmlFor="exp-none" className="cursor-pointer flex-1">I don't really track them</Label>
-          </div>
-        </RadioGroup>
-
-        {expenseLevel === 'careful' && (
-          <div className="space-y-1">
-            <Label className="text-sm">YTD total so far ($)</Label>
-            <Input type="number" value={ytdExpenses || ''} onChange={e => setYtdExpenses(Number(e.target.value))} placeholder="e.g., 8500" />
-          </div>
-        )}
-
-        {expenseLevel === 'estimate' && (
-          <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">Most relief vets in your income range have $6,000–$12,000 in deductible expenses annually. Pick a starting estimate:</p>
-            <div className="px-2">
-              <Slider value={[ytdExpenses]} onValueChange={v => setYtdExpenses(v[0])} min={3000} max={20000} step={500} />
-              <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                <span>$3,000</span>
-                <span className="font-medium text-foreground">${ytdExpenses.toLocaleString()}</span>
-                <span>$20,000</span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {expenseLevel === 'none' && (
-          <Alert className="border-[hsl(var(--warning))] bg-[hsl(var(--chip-warning-bg))]">
-            <Info className="h-4 w-4 text-[hsl(var(--chip-warning-text))]" />
-            <AlertDescription className="text-sm text-[hsl(var(--chip-warning-text))]">
-              You may be overpaying taxes. We'll remind you to log expenses — it takes under 2 minutes per week.
-            </AlertDescription>
-          </Alert>
-        )}
-      </div>
-    );
-  }
-
-  function renderPriorYearIncomeStep() {
-    return (
-      <div className="space-y-4">
-        <Label className="text-base font-medium">How much 1099 income did you earn last year?</Label>
-        <p className="text-sm text-muted-foreground">
-          This helps us project your full-year income more accurately, especially early in the year. Skip if you're new to relief work.
-        </p>
+        <Label className="text-base font-medium">Retirement contributions this year</Label>
+        <p className="text-sm text-muted-foreground">Are you contributing to a retirement account?</p>
         <div className="space-y-1">
-          <Label className="text-sm">Total 1099 / self-employment income ({currentYear - 1})</Label>
           <Input
             type="number"
-            value={priorYearIncome || ''}
-            onChange={e => setPriorYearIncome(Number(e.target.value))}
-            placeholder="e.g., 120000"
+            value={skipRetirement ? '' : (retirementContributions || '')}
+            onChange={e => { setRetirementContributions(Number(e.target.value)); setSkipRetirement(false); }}
+            placeholder="Total planned for this year"
+            disabled={skipRetirement}
           />
+          <p className="text-xs text-muted-foreground">SEP-IRA, Solo 401(k), SIMPLE IRA — combined</p>
         </div>
-        {priorYearIncome > 0 && (
-          <div className="rounded-lg bg-muted/50 p-3">
-            <p className="text-xs text-muted-foreground">Monthly average from last year</p>
-            <p className="text-lg font-semibold">${Math.round(priorYearIncome / 12).toLocaleString()}/mo</p>
-            <p className="text-xs text-muted-foreground mt-1">We'll use this to estimate income for months without scheduled shifts.</p>
+
+        {retirementContributions > 0 && !skipRetirement && (
+          <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-3">
+            <p className="text-sm text-foreground">
+              At your income level, every $10,000 contributed saves approximately{' '}
+              <strong className="text-emerald-500">${(marginalPct * 100).toLocaleString()}</strong> in federal tax.
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Your ${retirementContributions.toLocaleString()} contribution saves ≈ ${retirementSavings.toLocaleString()}
+            </p>
           </div>
         )}
+
+        <Alert className="border-muted bg-muted/30">
+          <Info className="h-4 w-4 text-muted-foreground" />
+          <AlertDescription className="text-xs text-muted-foreground">
+            SEP-IRA max: 25% of net income up to $70,000. Solo 401(k) max: $23,500 employee + 25% employer up to $70,000.
+          </AlertDescription>
+        </Alert>
+
+        <button
+          className="text-sm text-primary hover:underline"
+          onClick={() => { setSkipRetirement(true); setRetirementContributions(0); }}
+        >
+          Skip for now — I'll add this later
+        </button>
       </div>
     );
   }
-  function renderScorpSalaryStep() {
+
+  function renderStateStep() {
     return (
       <div className="space-y-4">
-        <Label className="text-base font-medium">What W-2 salary do you pay yourself through your S-Corp?</Label>
-        <Input type="number" value={scorpSalary || ''} onChange={e => setScorpSalary(Number(e.target.value))} placeholder="e.g., 60000" />
-        {(scorpSalary > 0 && scorpSalary < 40000) && (
-          <Alert className="border-[hsl(var(--warning))] bg-[hsl(var(--chip-warning-bg))]">
-            <Info className="h-4 w-4 text-[hsl(var(--chip-warning-text))]" />
-            <AlertDescription className="text-sm text-[hsl(var(--chip-warning-text))]">
-              IRS requires "reasonable compensation." Most relief vet CPAs recommend 40–60% of net profit as salary.
-            </AlertDescription>
-          </Alert>
+        <Label className="text-base font-medium">Which state do you file in?</Label>
+        <Select value={stateCode} onValueChange={setStateCode}>
+          <SelectTrigger><SelectValue placeholder="Select a state…" /></SelectTrigger>
+          <SelectContent className="max-h-64">
+            {V1_US_STATES.map(s => <SelectItem key={s.code} value={s.code}>{s.name}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        {stateInfo && (
+          <div className="rounded-lg bg-muted/50 border p-3">
+            <p className="text-sm font-medium">{stateInfo.label}</p>
+            {stateInfo.estimated > 0 && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Estimated state tax: ${stateInfo.estimated.toLocaleString()}
+              </p>
+            )}
+            {stateInfo.estimated === 0 && TAX_CONSTANTS.states[stateCode]?.type === 'none' && (
+              <p className="text-xs text-muted-foreground mt-1">→ $0 state tax on your estimate</p>
+            )}
+          </div>
         )}
       </div>
     );
   }
 
-  function renderSafeHarborStep() {
+  function renderWithholdingStep() {
     return (
       <div className="space-y-4">
-        <Label className="text-base font-medium">How would you like us to calculate your quarterly estimates?</Label>
-        <RadioGroup value={safeHarbor} onValueChange={setSafeHarbor}>
-          <div className="flex items-start space-x-2 p-3 rounded-lg border hover:bg-accent/50 cursor-pointer">
-            <RadioGroupItem value="90_percent" id="sh-90" className="mt-0.5" />
-            <div>
-              <Label htmlFor="sh-90" className="cursor-pointer font-medium">Based on this year's projected income (90% method)</Label>
-              <p className="text-xs text-muted-foreground mt-0.5">More accurate but varies quarter to quarter</p>
+        <Label className="text-base font-medium">Your payroll withholding</Label>
+        <p className="text-sm text-muted-foreground">
+          When your S-Corp runs payroll, federal and state income tax is withheld from your salary — just like any W-2 employee. This reduces what you owe on your quarterly 1040-ES.
+        </p>
+        <div className="space-y-1">
+          <Label className="text-sm">Do you withhold extra federal tax from your paycheck to cover your distribution income?</Label>
+          <RadioGroup value={hasExtraWithholding ? 'yes' : 'no'} onValueChange={v => { setHasExtraWithholding(v === 'yes'); if (v === 'no') setExtraWithholding(0); }}>
+            <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent/50 cursor-pointer">
+              <RadioGroupItem value="no" id="wh-no" />
+              <Label htmlFor="wh-no" className="cursor-pointer flex-1">No — standard withholding only</Label>
             </div>
-          </div>
-          <div className="flex items-start space-x-2 p-3 rounded-lg border hover:bg-accent/50 cursor-pointer">
-            <RadioGroupItem value="safe_harbor" id="sh-prior" className="mt-0.5" />
-            <div>
-              <Label htmlFor="sh-prior" className="cursor-pointer font-medium">Based on last year's tax liability (safe harbor method)</Label>
-              <p className="text-xs text-muted-foreground mt-0.5">Steadier, avoids underpayment penalties</p>
+            <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent/50 cursor-pointer">
+              <RadioGroupItem value="yes" id="wh-yes" />
+              <Label htmlFor="wh-yes" className="cursor-pointer flex-1">Yes — I withhold extra each paycheck</Label>
             </div>
-          </div>
-        </RadioGroup>
-        {safeHarbor === 'safe_harbor' && (
-          <div className="space-y-1">
-            <Label className="text-sm">Last year's total federal tax paid ($)</Label>
-            <Input type="number" value={priorYearTax || ''} onChange={e => setPriorYearTax(Number(e.target.value))} placeholder="e.g., 18000" />
+          </RadioGroup>
+        </div>
+        {hasExtraWithholding && (
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label className="text-sm">Extra amount per paycheck ($)</Label>
+              <Input type="number" value={extraWithholding || ''} onChange={e => setExtraWithholding(Number(e.target.value))} placeholder="e.g., 500" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-sm">Pay periods per year</Label>
+              <Select value={String(payPeriodsPerYear)} onValueChange={v => setPayPeriodsPerYear(Number(v))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="12">12 (Monthly)</SelectItem>
+                  <SelectItem value="24">24 (Bimonthly)</SelectItem>
+                  <SelectItem value="26">26 (Biweekly)</SelectItem>
+                  <SelectItem value="52">52 (Weekly)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         )}
+        <Alert className="border-muted bg-muted/30">
+          <Info className="h-4 w-4 text-muted-foreground" />
+          <AlertDescription className="text-xs text-muted-foreground">
+            Many S-Corp owners skip quarterly payments entirely by over-withholding on salary. Your CPA can advise whether this makes sense for you.
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }
 
-  function renderCompletionStep() {
+  function renderCompleteStep() {
     return (
       <div className="text-center space-y-4 py-4">
         <div className="mx-auto w-16 h-16 rounded-full bg-[hsl(var(--chip-success-bg))] flex items-center justify-center">
           <CheckCircle2 className="h-8 w-8 text-[hsl(var(--chip-success-text))]" />
         </div>
         <div>
-          <h3 className="text-lg font-semibold">Your Tax Profile is {existingProfile ? 'Updated' : 'Set'}</h3>
+          <h3 className="text-lg font-semibold">Your Tax Profile is {existingProfile ? 'Updated' : 'Ready'}</h3>
           <p className="text-sm text-muted-foreground mt-1">
-            We'll now calculate your quarterly estimates automatically as you log shifts. You can update this profile any time from Settings or the Tax Dashboard.
+            We'll now show your quarterly tax estimate. You can update your profile any time.
           </p>
         </div>
       </div>
@@ -451,25 +383,46 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
 
   const isLastStep = currentStepName === 'complete';
 
+  const canProceed = () => {
+    if (currentStepName === 'income') return (annualReliefIncome || 0) > 0;
+    if (currentStepName === 'state') return stateCode !== '';
+    if (currentStepName === 'filing') {
+      if (filingStatus === 'mfj' && spouseW2Income === 0 && !document.querySelector('input[type="number"]:focus')) {
+        // Allow 0 but require explicit entry — we'll validate on next
+      }
+      return true;
+    }
+    return true;
+  };
+
+  function handleNext() {
+    // MFJ validation
+    if (currentStepName === 'filing' && filingStatus === 'mfj') {
+      const input = document.querySelector<HTMLInputElement>('[placeholder="e.g., 65000"]');
+      if (input && input.value === '') {
+        setMfjSpouseError(true);
+        return;
+      }
+    }
+    setStep(step + 1);
+  }
+
+  // Map filing status back to DB format
+  const dbFilingStatus = filingStatus === 'mfj' ? 'married_joint' : filingStatus === 'hoh' ? 'head_of_household' : 'single';
+
   async function handleComplete() {
     setSaving(true);
     await onSave({
-      entity_type: entityType === 'unsure' ? 'sole_prop' : entityType,
-      filing_status: filingStatus,
+      entity_type: entityType,
+      filing_status: dbFilingStatus,
       state_code: stateCode,
-      other_w2_income: 0, // Replaced by spouse fields
-      retirement_type: retirementType,
-      retirement_contribution: retirementType !== 'none' ? retirementContribution : 0,
-      expense_tracking_level: expenseLevel,
-      ytd_expenses_estimate: expenseLevel !== 'none' ? ytdExpenses : 0,
+      spouse_w2_income: filingStatus === 'mfj' ? spouseW2Income : 0,
+      retirement_contribution: retirementContributions,
       scorp_salary: isScorp ? scorpSalary : 0,
-      safe_harbor_method: safeHarbor,
-      prior_year_tax_paid: safeHarbor === 'safe_harbor' ? priorYearTax : 0,
-      pte_elected: showPTEStep ? pteElected : false,
-      spouse_w2_income: spouseW2Income,
-      spouse_has_se_income: spouseHasSE,
-      spouse_se_net_income: spouseHasSE ? spouseSENet : 0,
-      prior_year_total_income: priorYearIncome,
+      annual_relief_income: annualReliefIncome,
+      annual_business_expenses: annualBusinessExpenses,
+      extra_withholding: isScorp ? extraWithholding : 0,
+      pay_periods_per_year: isScorp ? payPeriodsPerYear : 24,
       setup_completed_at: new Date().toISOString(),
     });
     setSaving(false);
@@ -477,13 +430,6 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
     onOpenChange(false);
     setStep(1);
   }
-
-  const canProceed = () => {
-    if (currentStepName === 'entity') return entityType !== 'unsure';
-    if (currentStepName === 'state') return stateCode !== '';
-    if (currentStepName === 'pte') return pteChoice !== 'idk';
-    return true;
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -518,7 +464,7 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
               <CheckCircle2 className="h-4 w-4 ml-1" />
             </Button>
           ) : (
-            <Button onClick={() => setStep(step + 1)} disabled={!canProceed()} size="sm">
+            <Button onClick={handleNext} disabled={!canProceed()} size="sm">
               Next
               <ArrowRight className="h-4 w-4 ml-1" />
             </Button>

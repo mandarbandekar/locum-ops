@@ -22,6 +22,11 @@ export interface TaxIntelligenceProfile {
   spouse_has_se_income: boolean;
   spouse_se_net_income: number;
   prior_year_total_income: number;
+  // V1 fields
+  annual_relief_income: number;
+  extra_withholding: number;
+  pay_periods_per_year: number;
+  annual_business_expenses: number;
 }
 
 const db = (table: string) => supabase.from(table as any);
@@ -29,7 +34,7 @@ const db = (table: string) => supabase.from(table as any);
 const DEMO_PROFILE: TaxIntelligenceProfile = {
   id: 'demo-tip',
   user_id: 'demo',
-  entity_type: 'sole_prop',
+  entity_type: '1099',
   filing_status: 'single',
   state_code: 'OR',
   other_w2_income: 0,
@@ -46,6 +51,11 @@ const DEMO_PROFILE: TaxIntelligenceProfile = {
   spouse_has_se_income: false,
   spouse_se_net_income: 0,
   prior_year_total_income: 120000,
+  // V1
+  annual_relief_income: 120000,
+  extra_withholding: 0,
+  pay_periods_per_year: 24,
+  annual_business_expenses: 9500,
 };
 
 export function useTaxIntelligence() {
@@ -73,6 +83,11 @@ export function useTaxIntelligence() {
     spouse_has_se_income: Boolean(d.spouse_has_se_income),
     spouse_se_net_income: Number(d.spouse_se_net_income ?? 0),
     prior_year_total_income: Number(d.prior_year_total_income ?? 0),
+    // V1
+    annual_relief_income: Number(d.annual_relief_income ?? 0),
+    extra_withholding: Number(d.extra_withholding ?? 0),
+    pay_periods_per_year: Number(d.pay_periods_per_year ?? 24),
+    annual_business_expenses: Number(d.annual_business_expenses ?? 0),
   });
 
   const load = useCallback(async () => {
