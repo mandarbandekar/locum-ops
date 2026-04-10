@@ -27,15 +27,6 @@ export default function PublicConfirmationPage() {
 
   async function loadConfirmation(token: string) {
     try {
-      const { data: result, error: fnError } = await supabase.functions.invoke('public-confirmation', {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-        body: undefined,
-      });
-
-      // supabase.functions.invoke doesn't support query params natively,
-      // so we use a direct fetch instead
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const baseUrl = import.meta.env.VITE_SUPABASE_URL;
       const response = await fetch(
         `${baseUrl}/functions/v1/public-confirmation?token=${encodeURIComponent(token)}`,
