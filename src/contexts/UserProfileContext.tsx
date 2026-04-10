@@ -178,6 +178,7 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
           invoice_email: d.invoice_email || null,
           invoice_phone: d.invoice_phone || null,
           home_address: d.home_address || '',
+          completed_tours: (d.completed_tours as string[]) || [],
         });
       } else {
         // Pull signup metadata from auth user to pre-populate profile
@@ -229,6 +230,7 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
             invoice_email: nd.invoice_email || null,
             invoice_phone: nd.invoice_phone || null,
             home_address: nd.home_address || '',
+            completed_tours: [],
           });
         }
       }
