@@ -14,6 +14,7 @@ import {
   Clock, CheckCircle2, Info, CreditCard, TrendingUp, AlertTriangle,
 } from 'lucide-react';
 import WhatIfSlider from './WhatIfSlider';
+import EntityComparisonCard from './EntityComparisonCard';
 import type { TaxIntelligenceProfile } from '@/hooks/useTaxIntelligence';
 import { TAX_CONSTANTS, V1_FILING_STATUS_LABELS, V1_DISCLAIMER, getV1QuarterlyDueDates, type V1FilingStatus } from '@/lib/taxConstantsV1';
 import { calculateTaxV1, mapDbProfileToV1, type TaxV1Result, type Tax1099Result, type TaxSCorpResult } from '@/lib/taxCalculatorV1';
@@ -171,6 +172,9 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
           </Card>
         </CollapsibleContent>
       </Collapsible>
+
+      {/* ═══ ENTITY COMPARISON ═══ */}
+      <EntityComparisonCard profile={profile} />
 
       {/* ═══ QUARTERLY TIMELINE ═══ */}
       <div>
