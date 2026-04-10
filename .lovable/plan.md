@@ -1,68 +1,51 @@
 
 
-# Guided 3-Step Shift Creation Flow
+# Fix Spotlight Tour: Persist Completion Server-Side
 
-## Analysis
+## Problem
+Tour completion flags are stored in `localStorage`, which is:
+- Lost when browser data is cleared
+- Not shared across devices
+- Reset in incognito/private browsing
 
-The current shift form crams everything into one dense two-column layout — facility, calendar, time, rate, color, notes all at once. This works for power users but is overwhelming on mobile and for new users. A stepped flow lets users focus on one decision at a time while keeping things fast (3 steps, not 5).
+This causes tours to re-trigger on every fresh login instead of just once per account.
 
-### Recommended 3-Step Flow
+## Solution
+Store tour completion flags in the `user_profiles` table and fall back to localStorage only for demo mode.
 
-**Step 1 — Where?** Pick a facility (or add new). This is the anchor decision — it determines available rates.
+## Changes
 
-**Step 2 — When?** Multi-date calendar + start/end time. Conflict warnings show inline. This is the core scheduling step and deserves full attention.
+### 1. Database Migration
+Add a `completed_tours` column (text array) to `user_profiles`:
+```sql
+ALTER TABLE public.user_profiles 
+ADD COLUMN completed_tours text[] DEFAULT '{}';
+```
 
-**Step 3 — Details** — Rate (auto-populated from facility terms), color, optional note. Review summary of what's being created, then submit.
+### 2. Modified: `src/hooks/useSpotlightTour.ts`
+- Accept the user's profile context (or auth state) to determine if we should use DB vs localStorage
+- On mount, check if `storageKey` exists in `profile.completed_tours` array
+- `closeTour()` calls `updateProfile({ completed_tours: [...existing, storageKey] })` to persist server-side
+- Keep localStorage as fallback for demo mode only
+- Auto-start logic checks the DB-backed completion state
 
-This order is better than calendar-first because: selecting the facility first lets us pre-populate rates in step 3 and show facility-specific conflicts in step 2.
+### 3. Modified: `src/pages/DashboardPage.tsx`
+- Remove the separate auto-start `useEffect` (lines 143-148) — the hook itself handles auto-start
+- The pending-tour sessionStorage + event listener for manual "Take a Tour" stays unchanged
 
-### Edit mode stays single-screen
-When editing an existing shift, skip the stepper and show the current flat form (all fields visible). The guided flow only applies to new shift creation.
+### 4. Modified: Module pages (TaxCenterPage, CredentialsPage, SchedulePage)
+- No code changes needed — they already use `useSpotlightTour('key')` which will now check DB internally
 
-## File Changes
+## How it works after the fix
+1. New user signs up → `completed_tours` is `[]` → tours auto-trigger once per module
+2. User completes a tour → `completed_tours` updated to `['locumops_tour_completed']` in DB
+3. User logs back in on any device → tours don't re-trigger
+4. User clicks "Take a Tour" button → tour opens manually regardless of completion state
+5. Demo mode → falls back to localStorage (no DB writes)
 
-### Modified: `src/components/schedule/ShiftFormDialog.tsx`
-
-**Add stepper state:**
-- `const [step, setStep] = useState(1)` — reset to 1 when dialog opens
-- Step indicator: 3 small circles/pills at top with labels ("Facility", "Schedule", "Details")
-- Back/Next buttons replace the single Submit button (Submit only on step 3)
-
-**Step 1 — Facility selection:**
-- Full-width facility selector (existing Select + "Add New" option)
-- Large facility cards could be nice but the Select is already clean — keep it, just give it more breathing room
-- Next button enabled when `facilityId` is set
-- On mobile: full-width, centered
-
-**Step 2 — Calendar + Time:**
-- Calendar component (multi-select mode) takes full width on mobile
-- Start/end time inputs below calendar
-- Selected dates summary + conflict warnings
-- Back button + Next button (enabled when ≥1 date selected)
-
-**Step 3 — Rate, Color, Notes + Review:**
-- Rate selector (preset or custom, same logic as today)
-- Color picker row
-- Optional notes toggle
-- Summary strip: "3 shifts at Animal Hospital, Dec 5–7, 8am–6pm, $850/day"
-- Submit button: "Add 3 Shifts" / "Add Shift"
-
-**Mobile responsive:**
-- Each step is a single column, full-width
-- Calendar renders full-width on mobile (no side-by-side)
-- Step indicator uses compact dots on mobile, pills with labels on desktop
-- Navigation buttons are full-width on mobile
-
-**Edit mode bypass:**
-- When `existing` is set, render the current flat layout (no stepper)
-- Only new shift creation uses the guided flow
-
-**Dialog sizing:**
-- Keep `max-w-[680px]` but step content is simpler per screen so it never feels cramped
-- Step transitions use a simple fade or no animation (keep it snappy)
-
-### No other files change
-- Props and external API stay identical
-- `onSave`, `onDelete`, conflict detection, custom rate saving — all unchanged
-- The `embedded` mode (used in onboarding) continues to work by rendering the form content directly
+## Technical Details
+- Single column addition, no new tables
+- Uses existing `updateProfile()` from `UserProfileContext`
+- The hook will import `useUserProfile` and `useAuth` to access profile data
+- Array-based storage allows tracking each module tour independently
 
