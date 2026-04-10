@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Slider } from '@/components/ui/slider';
 import { Card, CardContent } from '@/components/ui/card';
 import { TrendingUp } from 'lucide-react';
+import TaxTerm from './TaxTerm';
 
 interface Props {
   currentQuarterlyPayment: number;
@@ -40,7 +41,7 @@ export default function WhatIfSlider({ currentQuarterlyPayment, onIncomeChange }
         </div>
         {extra > 0 && (
           <div className="flex items-center justify-between text-sm pt-2 border-t">
-            <span className="text-muted-foreground">New quarterly payment</span>
+            <span className="text-muted-foreground">New <TaxTerm term="quarterly_payment">quarterly payment</TaxTerm></span>
             <div className="text-right">
               <span className="font-semibold">{fmt(newPayment)}</span>
               <span className="text-xs text-destructive ml-2">(+{fmt(diff)})</span>

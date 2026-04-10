@@ -7,6 +7,7 @@ import { ArrowRight, Info, Scale } from 'lucide-react';
 import type { TaxIntelligenceProfile } from '@/hooks/useTaxIntelligence';
 import { calculate1099Tax, calculateSCorpTax, mapDbProfileToV1 } from '@/lib/taxCalculatorV1';
 import { ENTITY_DISCLAIMER } from '@/components/tax-strategy/TaxDisclaimer';
+import TaxTerm from './TaxTerm';
 
 interface Props {
   profile: TaxIntelligenceProfile;
@@ -55,7 +56,7 @@ export default function EntityComparisonCard({ profile }: Props) {
         {/* Salary slider */}
         <div className="space-y-2 rounded-lg border p-3 bg-muted/30">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">S-Corp W-2 salary</span>
+            <span className="text-muted-foreground">S-Corp <TaxTerm term="w2_salary">W-2 salary</TaxTerm></span>
             <span className="font-semibold">${fmt(scorpSalary)} <span className="text-muted-foreground font-normal">({salaryPct}%)</span></span>
           </div>
           <Slider
@@ -66,7 +67,7 @@ export default function EntityComparisonCard({ profile }: Props) {
             step={1}
           />
           <p className="text-[10px] text-muted-foreground">
-            Reasonable compensation range: 30–60% of net income
+            <TaxTerm term="reasonable_compensation">Reasonable compensation</TaxTerm> range: 30–60% of net income
           </p>
         </div>
 
@@ -77,14 +78,14 @@ export default function EntityComparisonCard({ profile }: Props) {
             <Badge variant="outline" className="mb-2">1099 / Sole Prop</Badge>
             <CompRow label="Gross income" value={result1099.grossIncome} />
             <CompRow label="Expenses" value={-result1099.expenses} />
-            <CompRow label="Net income" value={result1099.netIncome} bold />
+            <CompRow label="Net income" value={result1099.netIncome} bold term="net_income" />
             <div className="border-t my-2" />
-            <CompRow label="SE tax" value={result1099.totalSeTax} highlight />
+            <CompRow label="SE tax" value={result1099.totalSeTax} highlight term="se_tax" />
             <CompRow label="Federal tax" value={result1099.totalFederalTax} />
             <CompRow label="State tax" value={result1099.stateTax} />
             <div className="border-t my-2" />
             <CompRow label="Total tax burden" value={total1099} bold />
-            <CompRow label="Quarterly 1040-ES" value={result1099.quarterlyPayment} bold />
+            <CompRow label="Quarterly 1040-ES" value={result1099.quarterlyPayment} bold term="1040es" />
           </div>
 
           {/* S-Corp column */}
@@ -92,16 +93,16 @@ export default function EntityComparisonCard({ profile }: Props) {
             <Badge className="mb-2 bg-primary/10 text-primary border-primary/20">S-Corporation</Badge>
             <CompRow label="Gross revenue" value={resultScorp.grossRevenue} />
             <CompRow label="Expenses" value={-resultScorp.operatingExpenses} />
-            <CompRow label="W-2 salary" value={-resultScorp.salary} />
-            <CompRow label="Employer FICA" value={-resultScorp.employerFica} sub="Corp expense" />
-            <CompRow label="K-1 distribution" value={resultScorp.distribution} bold />
+            <CompRow label="W-2 salary" value={-resultScorp.salary} term="w2_salary" />
+            <CompRow label="Employer FICA" value={-resultScorp.employerFica} sub="Corp expense" term="employer_fica" />
+            <CompRow label="K-1 distribution" value={resultScorp.distribution} bold term="k1_distribution" />
             <div className="border-t my-2" />
-            <CompRow label="SE tax" value={0} highlight saved />
+            <CompRow label="SE tax" value={0} highlight saved term="se_tax" />
             <CompRow label="Federal tax" value={resultScorp.totalFederalTax} />
             <CompRow label="State tax" value={resultScorp.stateTax} />
             <div className="border-t my-2" />
             <CompRow label="Total tax burden" value={totalScorp} bold />
-            <CompRow label="Quarterly 1040-ES" value={resultScorp.quarterlyPayment} bold />
+            <CompRow label="Quarterly 1040-ES" value={resultScorp.quarterlyPayment} bold term="1040es" />
           </div>
         </div>
 
@@ -113,7 +114,7 @@ export default function EntityComparisonCard({ profile }: Props) {
               Potential annual savings as S-Corp: ~${fmt(annualSavings)}
             </p>
             <p className="text-[11px] text-emerald-600/80 dark:text-emerald-400/70 mt-1">
-              Primarily from eliminating SE tax on your K-1 distribution
+              Primarily from eliminating <TaxTerm term="se_tax">SE tax</TaxTerm> on your <TaxTerm term="k1_distribution">K-1 distribution</TaxTerm>
             </p>
           </div>
         )}
@@ -146,14 +147,16 @@ export default function EntityComparisonCard({ profile }: Props) {
   );
 }
 
-function CompRow({ label, value, bold, sub, highlight, saved }: {
-  label: string; value: number; bold?: boolean; sub?: string; highlight?: boolean; saved?: boolean;
+function CompRow({ label, value, bold, sub, highlight, saved, term }: {
+  label: string; value: number; bold?: boolean; sub?: string; highlight?: boolean; saved?: boolean; term?: string;
 }) {
   const isNeg = value < 0;
   return (
     <div>
       <div className={`flex justify-between text-sm ${bold ? 'font-semibold' : ''}`}>
-        <span className="text-muted-foreground">{label}</span>
+        <span className="text-muted-foreground">
+          {term ? <TaxTerm term={term}>{label}</TaxTerm> : label}
+        </span>
         <span className={saved ? 'text-emerald-600 dark:text-emerald-400 line-through' : highlight ? 'text-amber-600 dark:text-amber-400' : ''}>
           {isNeg ? '-' : ''}${fmt(Math.abs(value))}
         </span>
