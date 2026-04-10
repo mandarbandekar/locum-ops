@@ -17,10 +17,6 @@ export function useSpotlightTour(tourKey?: string) {
     try { localStorage.setItem(storageKey, 'true'); } catch {}
   }, [storageKey]);
 
-  const resetTour = useCallback(() => {
-    try { localStorage.removeItem(storageKey); } catch {}
-  }, [storageKey]);
-
   // Auto-start on first visit for module-specific tours (not the default dashboard tour)
   useEffect(() => {
     if (tourKey && !isTourCompleted) {
@@ -29,5 +25,5 @@ export function useSpotlightTour(tourKey?: string) {
     }
   }, []); // only on mount
 
-  return { isOpen, isTourCompleted, startTour, closeTour, resetTour };
+  return { isOpen, isTourCompleted, startTour, closeTour };
 }
