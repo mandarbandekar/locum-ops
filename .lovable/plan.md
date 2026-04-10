@@ -1,37 +1,34 @@
 
 
-# Show Federal & State Breakdown on Quarterly Estimate Hero
+# Spotlight Tour: Show Once, Then Only on Manual Trigger
 
-## Summary
-Add a compact federal/state/SE-tax sub-breakdown beneath the big quarterly payment number in the hero card, so users know exactly how much to pay where.
+## Current State
 
-## What changes
+The tour system already mostly works this way:
+- **Module tours** (Tax, Credentials, Schedule, etc.) auto-trigger once on first visit via `useEffect` that checks `localStorage`
+- **Dashboard tour** auto-triggers once for new users, then only via the header "Take a Tour" button
+- `closeTour()` always marks the tour as completed in `localStorage`
 
-### Modified: `src/components/tax-intelligence/TaxDashboard.tsx`
+However, there's one issue: the **Layout.tsx "Take a Tour" button** calls `localStorage.removeItem()` to reset the dashboard key before triggering. If the user clicks "Take a Tour", the key is removed. If they then navigate away before the tour closes (or refresh), the tour will auto-trigger again because the completed flag was wiped.
 
-Below the `$X,XXX` quarterly payment number (line ~114), add a small 2–3 row breakdown:
+## Changes
 
-**For 1099 users** (three components quarterly):
-- Federal income tax: `vetFederalShare / 4`
-- SE tax: `totalSeTax / 4`
-- State tax: `stateTax / 4`
+### Modified: `src/hooks/useSpotlightTour.ts`
+- Remove the `resetTour` function entirely (no longer needed)
+- Keep `startTour` as the only way to manually open a tour — it opens the tour without resetting the completed flag
+- Keep `closeTour` marking completed in localStorage (no change)
+- Keep auto-start logic for module tours gated on `!isTourCompleted` (no change)
 
-**For S-Corp users** (two components quarterly):
-- Federal on K-1: `federalOnDistribution / 4`
-- State on K-1: `stateOnDistribution / 4`
+### Modified: `src/components/Layout.tsx`
+- Simplify the "Take a Tour" button handler: just dispatch the `locumops:start-tour` custom event (or navigate to dashboard and let the event fire)
+- **Stop removing** the `locumops_tour_completed` localStorage key — the tour opens via `startTour()` directly, not by resetting state
+- This ensures closing the tour always leaves it marked as completed, and it never auto-triggers again
 
-Display as a compact row of pills or a mini table right under the big number, e.g.:
+### Result
+- First visit to any module → tour auto-triggers once
+- After completion → never auto-triggers again
+- User clicks "Tour" button on any page → tour opens manually regardless of completed state
+- Closing always marks completed — no accidental re-triggers on refresh
 
-```
-Federal $X,XXX  ·  SE Tax $X,XXX  ·  CA $XXX
-```
-
-If state tax is $0 (no-income-tax state), hide that chip. Each label gets a `<TaxTerm>` tooltip for context.
-
-Also update the quarterly timeline cards (the 4-card grid) to show the same federal/state split beneath each quarter's total — keeping it minimal (just two small lines of text).
-
-## Technical details
-- No new files, no DB changes
-- All values already exist on `Tax1099Result` and `TaxSCorpResult`
-- Responsive: pills wrap naturally on mobile
+No new files, no DB changes. Two small edits.
 
