@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { AlertTriangle, Trash2, CalendarDays, DollarSign, Clock, Building2, StickyNote, Palette, Plus } from 'lucide-react';
+import { AlertTriangle, Trash2, CalendarDays, DollarSign, Clock, Building2, StickyNote, Palette, Plus, ChevronRight, ChevronLeft, Check } from 'lucide-react';
 import { AddFacilityDialog } from '@/components/AddFacilityDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
@@ -18,6 +18,7 @@ import { termsToRates, RateEntry } from '@/components/facilities/RatesEditor';
 import { useData } from '@/contexts/DataContext';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ShiftFormDialogProps {
   open: boolean;
@@ -26,7 +27,7 @@ interface ShiftFormDialogProps {
   shifts: any[];
   terms: TermsSnapshot[];
   existing?: any;
-   onSave: (s: any) => void | Promise<void>;
+  onSave: (s: any) => void | Promise<void>;
   onDelete?: (id: string) => void;
   embedded?: boolean;
   defaultDate?: Date;
@@ -50,6 +51,43 @@ const COLOR_MAP: Record<ShiftColor, string> = {
   yellow: 'bg-yellow-500',
 };
 
+const STEP_LABELS = ['Facility', 'Schedule', 'Details'] as const;
+
+/* ─── Step Indicator ─── */
+function StepIndicator({ step, isMobile }: { step: number; isMobile: boolean }) {
+  return (
+    <div className="flex items-center justify-center gap-2 mb-5">
+      {STEP_LABELS.map((label, i) => {
+        const num = i + 1;
+        const isActive = num === step;
+        const isDone = num < step;
+        return (
+          <div key={label} className="flex items-center gap-2">
+            {i > 0 && <div className={cn("h-px w-5 sm:w-8", isDone ? 'bg-primary' : 'bg-border')} />}
+            <div className="flex items-center gap-1.5">
+              <div className={cn(
+                "flex items-center justify-center rounded-full text-xs font-semibold transition-colors shrink-0",
+                "h-6 w-6",
+                isDone && 'bg-primary text-primary-foreground',
+                isActive && 'bg-primary text-primary-foreground ring-2 ring-primary/30 ring-offset-1 ring-offset-background',
+                !isActive && !isDone && 'bg-muted text-muted-foreground',
+              )}>
+                {isDone ? <Check className="h-3 w-3" /> : num}
+              </div>
+              {!isMobile && (
+                <span className={cn(
+                  "text-xs font-medium",
+                  isActive ? 'text-foreground' : 'text-muted-foreground',
+                )}>{label}</span>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms, existing, onSave, onDelete, embedded, defaultDate, defaultStartTime }: ShiftFormDialogProps) {
   const [facilityId, setFacilityId] = useState(existing?.facility_id || facilities[0]?.id || '');
   const [selectedDates, setSelectedDates] = useState<Date[]>(
@@ -67,19 +105,34 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   const [showNotes, setShowNotes] = useState(!!existing?.notes);
   const [showAddFacility, setShowAddFacility] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [step, setStep] = useState(1);
 
+  const isMobile = useIsMobile();
   const { updateTerms } = useData();
-
   const isMultiMode = !existing;
+
+  // Reset step when dialog opens for new shift
+  useEffect(() => {
+    if (open && !existing) {
+      setStep(1);
+    }
+  }, [open, existing]);
 
   const rateOptions = useMemo(() => buildRateOptions(terms, facilityId), [terms, facilityId]);
 
+  // Auto-select first rate when entering step 3 if no rate set
+  useEffect(() => {
+    if (step === 3 && !rate && rateOptions.length > 0) {
+      setRate(rateOptions[0].amount.toString());
+      setSelectedRateKey('rate-0');
+    }
+  }, [step, rate, rateOptions]);
+
   const bookedDateObjects = useMemo(() =>
-    shifts
-      .map(s => {
-        const d = new Date(s.start_datetime);
-        return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-      }),
+    shifts.map(s => {
+      const d = new Date(s.start_datetime);
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    }),
   [shifts]);
 
   const handleFacilityChange = (newFacilityId: string) => {
@@ -93,7 +146,6 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     }
   };
 
-  // Use live shifts for conflict detection, but suppress recalculation during batch submission
   const conflicts = useMemo(() => {
     if (isSubmitting || selectedDates.length === 0 || !facilityId || !startTime || !endTime) return [];
     const allConflicts: Shift[] = [];
@@ -118,7 +170,6 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     const facilityTerms = terms.find(t => t.facility_id === facilityId);
     if (facilityTerms) {
       const existingCustom = facilityTerms.custom_rates || [];
-      // Don't add duplicate
       if (existingCustom.some(cr => cr.amount === Number(rate) && cr.label === label)) return;
       await updateTerms({
         ...facilityTerms,
@@ -132,9 +183,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      // Save custom rate to facility terms if opted in
       await saveCustomRateToTerms();
-
       if (existing) {
         const date = format(selectedDates[0] || new Date(), 'yyyy-MM-dd');
         await onSave({
@@ -164,87 +213,316 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     }
   };
 
-  const formContent = (
+  const facilityName = facilities.find(f => f.id === facilityId)?.name || '';
+
+  /* ─── Step 1: Facility ─── */
+  const renderStep1 = () => (
+    <div className="flex flex-col gap-4">
+      <div className="text-center mb-2">
+        <p className="text-sm text-muted-foreground">Which facility is this shift at?</p>
+      </div>
+      <div>
+        <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+          <Building2 className="h-3.5 w-3.5" />
+          Facility
+        </Label>
+        <Select value={facilityId} onValueChange={(v) => {
+          if (v === '__add_new__') {
+            setShowAddFacility(true);
+            return;
+          }
+          handleFacilityChange(v);
+        }}>
+          <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {facilities.map(c => (
+              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+            ))}
+            <SelectItem value="__add_new__" className="text-primary font-medium">
+              <span className="flex items-center gap-1.5">
+                <Plus className="h-3.5 w-3.5" /> Add New Facility
+              </span>
+            </SelectItem>
+          </SelectContent>
+        </Select>
+        <AddFacilityDialog
+          open={showAddFacility}
+          onOpenChange={setShowAddFacility}
+          onCreated={(newId) => handleFacilityChange(newId)}
+        />
+      </div>
+      <div className="flex justify-end pt-2">
+        <Button type="button" onClick={() => setStep(2)} disabled={!facilityId} className="h-10 min-w-[120px]">
+          Next <ChevronRight className="h-4 w-4 ml-1" />
+        </Button>
+      </div>
+    </div>
+  );
+
+  /* ─── Step 2: Schedule ─── */
+  const renderStep2 = () => (
+    <div className="flex flex-col gap-4">
+      <div className="text-center mb-1">
+        <p className="text-sm text-muted-foreground">
+          Select dates and time for <span className="font-medium text-foreground">{facilityName}</span>
+        </p>
+      </div>
+
+      {/* Calendar */}
+      <div className="flex justify-center">
+        <div className="border border-border rounded-xl overflow-hidden">
+          <Calendar
+            mode="multiple"
+            selected={selectedDates}
+            onSelect={(dates) => setSelectedDates(dates || [])}
+            modifiers={{ booked: bookedDateObjects }}
+            modifiersClassNames={{ booked: "bg-destructive/20 text-destructive font-semibold" }}
+            className={cn("p-2 pointer-events-auto")}
+          />
+        </div>
+      </div>
+
+      {selectedDates.length > 0 ? (
+        <p className="text-xs text-muted-foreground text-center">
+          {selectedDates.length} date{selectedDates.length !== 1 ? 's' : ''}: {[...selectedDates].sort((a, b) => a.getTime() - b.getTime()).map(d => format(d, 'MMM d')).join(', ')}
+        </p>
+      ) : (
+        <p className="text-xs text-amber-600 dark:text-amber-400 text-center">Tap dates to select</p>
+      )}
+
+      {/* Time row */}
+      <div>
+        <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+          <Clock className="h-3.5 w-3.5" />
+          Time
+        </Label>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <span className="text-[10px] text-muted-foreground">Start</span>
+            <Input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="h-10" />
+          </div>
+          <div>
+            <span className="text-[10px] text-muted-foreground">End</span>
+            <Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="h-10" />
+          </div>
+        </div>
+      </div>
+
+      {/* Conflict warnings */}
+      {conflicts.length > 0 && (
+        <div className="flex items-start gap-1.5 p-2 rounded-md bg-destructive/10 text-destructive">
+          <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+          <div className="text-[11px] leading-snug">
+            <p className="font-semibold">Scheduling conflict{conflicts.length > 1 ? 's' : ''}:</p>
+            {conflicts.map(c => (
+              <p key={c.id} className="mt-0.5">
+                {facilities.find((f: any) => f.id === c.facility_id)?.name || 'Unknown'} — {format(new Date(c.start_datetime), 'MMM d, h:mm a')} to {format(new Date(c.end_datetime), 'h:mm a')}
+              </p>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Navigation */}
+      <div className="flex gap-2 pt-1">
+        <Button type="button" variant="outline" onClick={() => setStep(1)} className="h-10 min-w-[100px]">
+          <ChevronLeft className="h-4 w-4 mr-1" /> Back
+        </Button>
+        <Button type="button" onClick={() => setStep(3)} disabled={selectedDates.length === 0} className="flex-1 h-10">
+          Next <ChevronRight className="h-4 w-4 ml-1" />
+        </Button>
+      </div>
+    </div>
+  );
+
+  /* ─── Step 3: Details + Review ─── */
+  const renderStep3 = () => (
+    <div className="flex flex-col gap-4">
+      {/* Rate */}
+      <div>
+        <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+          <DollarSign className="h-3.5 w-3.5" />
+          Rate
+        </Label>
+        {rateOptions.length > 0 && !isCustomRate ? (
+          <div className="space-y-2">
+            <Select
+              value={selectedRateKey || (rateOptions.length > 0 && rate ? (rateOptions.findIndex(o => o.amount.toString() === rate) >= 0 ? `rate-${rateOptions.findIndex(o => o.amount.toString() === rate)}` : 'custom') : 'custom')}
+              onValueChange={(v) => {
+                if (v === 'custom') {
+                  setIsCustomRate(true);
+                  setSelectedRateKey('');
+                  setRate('');
+                } else {
+                  const idx = parseInt(v.replace('rate-', ''));
+                  const opt = rateOptions[idx];
+                  if (opt) {
+                    setRate(opt.amount.toString());
+                    setSelectedRateKey(v);
+                    setIsCustomRate(false);
+                  }
+                }
+              }}
+            >
+              <SelectTrigger className="h-10">
+                <SelectValue placeholder="Select rate" />
+              </SelectTrigger>
+              <SelectContent>
+                {rateOptions.map((opt, i) => (
+                  <SelectItem key={`rate-${i}`} value={`rate-${i}`}>
+                    {opt.label} — ${opt.amount.toLocaleString()}
+                  </SelectItem>
+                ))}
+                <SelectItem value="custom">Custom</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <Input
+              type="text"
+              value={customRateLabel}
+              onChange={e => setCustomRateLabel(e.target.value)}
+              placeholder="Rate label (e.g. Emergency Rate)"
+              className="h-9 text-sm"
+            />
+            <div className="relative">
+              <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input type="number" value={rate} onChange={e => setRate(e.target.value)} placeholder="0" min={0} className="pl-7 h-10" />
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="save-custom-rate"
+                checked={saveCustomRate}
+                onCheckedChange={(v) => setSaveCustomRate(!!v)}
+              />
+              <label htmlFor="save-custom-rate" className="text-xs text-muted-foreground cursor-pointer">
+                Save to facility rates
+              </label>
+            </div>
+            {rateOptions.length > 0 && isCustomRate && (
+              <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => { setIsCustomRate(false); setCustomRateLabel(''); setSelectedRateKey('rate-0'); setRate(rateOptions[0]?.amount.toString() || ''); }}>
+                ← Back to preset rates
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Color row */}
+      <div>
+        <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+          <Palette className="h-3.5 w-3.5" />
+          Color
+        </Label>
+        <div className="flex items-center gap-2">
+          <div className="flex gap-2 flex-wrap">
+            {SHIFT_COLORS.map(c => (
+              <button
+                key={c.value}
+                type="button"
+                onClick={() => setColor(c.value)}
+                className={cn(
+                  "w-7 h-7 rounded-full transition-all",
+                  COLOR_MAP[c.value],
+                  color === c.value ? 'ring-2 ring-foreground ring-offset-2 ring-offset-background scale-110' : 'opacity-50 hover:opacity-90 hover:scale-105'
+                )}
+                title={c.label}
+              />
+            ))}
+          </div>
+          {!showNotes && (
+            <Button type="button" variant="ghost" size="sm" className="text-xs text-muted-foreground shrink-0 h-7 px-2 ml-auto" onClick={() => setShowNotes(true)}>
+              <StickyNote className="h-3.5 w-3.5 mr-1" />
+              Add note
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {showNotes && (
+        <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Shift notes..." className="resize-none text-sm" />
+      )}
+
+      {/* Review summary */}
+      <div className="rounded-lg bg-muted/60 border border-border p-3">
+        <p className="text-xs font-medium text-foreground">
+          {selectedDates.length} shift{selectedDates.length !== 1 ? 's' : ''} at{' '}
+          <span className="text-primary">{facilityName}</span>
+        </p>
+        <p className="text-[11px] text-muted-foreground mt-0.5">
+          {[...selectedDates].sort((a, b) => a.getTime() - b.getTime()).map(d => format(d, 'MMM d')).join(', ')}
+          {' · '}
+          {startTime}–{endTime}
+          {rate ? ` · $${Number(rate).toLocaleString()}/day` : ''}
+        </p>
+      </div>
+
+      {/* Navigation */}
+      <div className="flex gap-2">
+        <Button type="button" variant="outline" onClick={() => setStep(2)} className="h-11 min-w-[100px]">
+          <ChevronLeft className="h-4 w-4 mr-1" /> Back
+        </Button>
+        <Button type="submit" className="flex-1 h-11" disabled={selectedDates.length === 0}>
+          {isSubmitting ? 'Saving...' : selectedDates.length > 1 ? `Add ${selectedDates.length} Shifts` : 'Add Shift'}
+        </Button>
+      </div>
+    </div>
+  );
+
+  /* ─── Edit mode: flat layout (unchanged) ─── */
+  const renderEditForm = () => (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-      {/* Two-column layout: left = calendar, right = details */}
       <div className="flex flex-col sm:flex-row gap-6">
         {/* Left column: Date picker */}
         <div className="sm:w-[280px] shrink-0 flex flex-col">
           <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <CalendarDays className="h-3.5 w-3.5" />
-            {isMultiMode ? 'Select Dates' : 'Date'}
+            Date
           </Label>
-          {isMultiMode ? (
-            <div className="flex-1 flex flex-col">
-              <div className="border border-border rounded-xl overflow-hidden">
-                <Calendar
-                  mode="multiple"
-                  selected={selectedDates}
-                  onSelect={(dates) => setSelectedDates(dates || [])}
-                  modifiers={{ booked: bookedDateObjects }}
-                  modifiersClassNames={{ booked: "bg-destructive/20 text-destructive font-semibold" }}
-                  className={cn("p-2 pointer-events-auto")}
-                />
-              </div>
-               {selectedDates.length > 0 ? (
-                <p className="text-xs text-muted-foreground mt-2">
-                  {selectedDates.length} date{selectedDates.length !== 1 ? 's' : ''}: {selectedDates.sort((a, b) => a.getTime() - b.getTime()).map(d => format(d, 'MMM d')).join(', ')}
-                </p>
-              ) : (
-                <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">Tap to select dates</p>
-              )}
-              <div className="min-h-[8px]">
-                {conflicts.length > 0 && (
-                  <div className="mt-2 flex items-start gap-1.5 p-2 rounded-md bg-destructive/10 text-destructive">
-                    <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                    <div className="text-[11px] leading-snug">
-                      <p className="font-semibold">Scheduling conflict{conflicts.length > 1 ? 's' : ''}:</p>
-                      {conflicts.map(c => (
-                        <p key={c.id} className="mt-0.5">
-                          {facilities.find((f: any) => f.id === c.facility_id)?.name || 'Unknown'} — {format(new Date(c.start_datetime), 'MMM d, h:mm a')} to {format(new Date(c.end_datetime), 'h:mm a')}
-                        </p>
-                      ))}
-                    </div>
-                  </div>
-                )}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className={cn("w-full justify-start text-left font-normal h-10", !selectedDates[0] && "text-muted-foreground")}>
+                <CalendarDays className="mr-2 h-4 w-4" />
+                {selectedDates[0] ? format(selectedDates[0], 'PPP') : 'Pick a date'}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={selectedDates[0]}
+                onSelect={(date) => date && setSelectedDates([date])}
+                initialFocus
+                modifiers={{ booked: bookedDateObjects }}
+                modifiersClassNames={{ booked: "bg-destructive/20 text-destructive font-semibold" }}
+                className={cn("p-3 pointer-events-auto")}
+              />
+            </PopoverContent>
+          </Popover>
+          {conflicts.length > 0 && (
+            <div className="mt-2 flex items-start gap-1.5 p-2 rounded-md bg-destructive/10 text-destructive">
+              <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+              <div className="text-[11px] leading-snug">
+                <p className="font-semibold">Scheduling conflict{conflicts.length > 1 ? 's' : ''}:</p>
+                {conflicts.map(c => (
+                  <p key={c.id} className="mt-0.5">
+                    {facilities.find((f: any) => f.id === c.facility_id)?.name || 'Unknown'} — {format(new Date(c.start_datetime), 'MMM d, h:mm a')} to {format(new Date(c.end_datetime), 'h:mm a')}
+                  </p>
+                ))}
               </div>
             </div>
-          ) : (
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className={cn("w-full justify-start text-left font-normal h-10", !selectedDates[0] && "text-muted-foreground")}>
-                  <CalendarDays className="mr-2 h-4 w-4" />
-                  {selectedDates[0] ? format(selectedDates[0], 'PPP') : 'Pick a date'}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={selectedDates[0]}
-                  onSelect={(date) => date && setSelectedDates([date])}
-                  initialFocus
-                  modifiers={{ booked: bookedDateObjects }}
-                  modifiersClassNames={{ booked: "bg-destructive/20 text-destructive font-semibold" }}
-                  className={cn("p-3 pointer-events-auto")}
-                />
-              </PopoverContent>
-            </Popover>
           )}
         </div>
 
-        {/* Right column: Shift details */}
+        {/* Right column */}
         <div className="flex-1 flex flex-col gap-4 min-w-0">
-          {/* Facility */}
           <div>
             <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
               <Building2 className="h-3.5 w-3.5" />
               Facility
             </Label>
             <Select value={facilityId} onValueChange={(v) => {
-              if (v === '__add_new__') {
-                setShowAddFacility(true);
-                return;
-              }
+              if (v === '__add_new__') { setShowAddFacility(true); return; }
               handleFacilityChange(v);
             }}>
               <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
@@ -253,24 +531,16 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
                   <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                 ))}
                 <SelectItem value="__add_new__" className="text-primary font-medium">
-                  <span className="flex items-center gap-1.5">
-                    <Plus className="h-3.5 w-3.5" /> Add New Facility
-                  </span>
+                  <span className="flex items-center gap-1.5"><Plus className="h-3.5 w-3.5" /> Add New Facility</span>
                 </SelectItem>
               </SelectContent>
             </Select>
-            <AddFacilityDialog
-              open={showAddFacility}
-              onOpenChange={setShowAddFacility}
-              onCreated={(newId) => handleFacilityChange(newId)}
-            />
+            <AddFacilityDialog open={showAddFacility} onOpenChange={setShowAddFacility} onCreated={(newId) => handleFacilityChange(newId)} />
           </div>
 
-          {/* Time row */}
           <div>
             <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-              <Clock className="h-3.5 w-3.5" />
-              Time
+              <Clock className="h-3.5 w-3.5" /> Time
             </Label>
             <div className="grid grid-cols-2 gap-3">
               <Input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="h-10" />
@@ -278,124 +548,82 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
             </div>
           </div>
 
-          {/* Rate */}
           <div>
-            <div>
-              <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                <DollarSign className="h-3.5 w-3.5" />
-                Rate
-              </Label>
-              {rateOptions.length > 0 && !isCustomRate ? (
-                <div className="space-y-2">
-                  <Select
-                    value={selectedRateKey || (rateOptions.length > 0 && rate ? (rateOptions.findIndex(o => o.amount.toString() === rate) >= 0 ? `rate-${rateOptions.findIndex(o => o.amount.toString() === rate)}` : 'custom') : 'custom')}
-                    onValueChange={(v) => {
-                      if (v === 'custom') {
-                        setIsCustomRate(true);
-                        setSelectedRateKey('');
-                        setRate('');
-                      } else {
-                        const idx = parseInt(v.replace('rate-', ''));
-                        const opt = rateOptions[idx];
-                        if (opt) {
-                          setRate(opt.amount.toString());
-                          setSelectedRateKey(v);
-                          setIsCustomRate(false);
-                        }
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="h-10">
-                      <SelectValue placeholder="Select rate" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {rateOptions.map((opt, i) => (
-                        <SelectItem key={`rate-${i}`} value={`rate-${i}`}>
-                          {opt.label} — ${opt.amount.toLocaleString()}
-                        </SelectItem>
-                      ))}
-                      <SelectItem value="custom">Custom</SelectItem>
-                    </SelectContent>
-                  </Select>
+            <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+              <DollarSign className="h-3.5 w-3.5" /> Rate
+            </Label>
+            {rateOptions.length > 0 && !isCustomRate ? (
+              <Select
+                value={selectedRateKey || (rateOptions.findIndex(o => o.amount.toString() === rate) >= 0 ? `rate-${rateOptions.findIndex(o => o.amount.toString() === rate)}` : 'custom')}
+                onValueChange={(v) => {
+                  if (v === 'custom') { setIsCustomRate(true); setSelectedRateKey(''); setRate(''); }
+                  else {
+                    const idx = parseInt(v.replace('rate-', ''));
+                    const opt = rateOptions[idx];
+                    if (opt) { setRate(opt.amount.toString()); setSelectedRateKey(v); setIsCustomRate(false); }
+                  }
+                }}
+              >
+                <SelectTrigger className="h-10"><SelectValue placeholder="Select rate" /></SelectTrigger>
+                <SelectContent>
+                  {rateOptions.map((opt, i) => (
+                    <SelectItem key={`rate-${i}`} value={`rate-${i}`}>{opt.label} — ${opt.amount.toLocaleString()}</SelectItem>
+                  ))}
+                  <SelectItem value="custom">Custom</SelectItem>
+                </SelectContent>
+              </Select>
+            ) : (
+              <div className="space-y-2">
+                <Input type="text" value={customRateLabel} onChange={e => setCustomRateLabel(e.target.value)} placeholder="Rate label" className="h-9 text-sm" />
+                <div className="relative">
+                  <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input type="number" value={rate} onChange={e => setRate(e.target.value)} placeholder="0" min={0} className="pl-7 h-10" />
                 </div>
-              ) : (
-                <div className="space-y-2">
-                  <Input
-                    type="text"
-                    value={customRateLabel}
-                    onChange={e => setCustomRateLabel(e.target.value)}
-                    placeholder="Rate label (e.g. Emergency Rate)"
-                    className="h-9 text-sm"
-                  />
-                  <div className="relative">
-                    <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                    <Input type="number" value={rate} onChange={e => setRate(e.target.value)} placeholder="0" min={0} className="pl-7 h-10" />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="save-custom-rate"
-                      checked={saveCustomRate}
-                      onCheckedChange={(v) => setSaveCustomRate(!!v)}
-                    />
-                    <label htmlFor="save-custom-rate" className="text-xs text-muted-foreground cursor-pointer">
-                      Save to facility rates
-                    </label>
-                  </div>
-                  {rateOptions.length > 0 && isCustomRate && (
-                    <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => { setIsCustomRate(false); setCustomRateLabel(''); setSelectedRateKey('rate-0'); setRate(rateOptions[0]?.amount.toString() || ''); }}>
-                      ← Back to preset rates
-                    </Button>
-                  )}
+                <div className="flex items-center gap-2">
+                  <Checkbox id="save-custom-rate-edit" checked={saveCustomRate} onCheckedChange={(v) => setSaveCustomRate(!!v)} />
+                  <label htmlFor="save-custom-rate-edit" className="text-xs text-muted-foreground cursor-pointer">Save to facility rates</label>
                 </div>
-              )}
-            </div>
+                {rateOptions.length > 0 && isCustomRate && (
+                  <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => { setIsCustomRate(false); setCustomRateLabel(''); setSelectedRateKey('rate-0'); setRate(rateOptions[0]?.amount.toString() || ''); }}>
+                    ← Back to preset rates
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Color row */}
           <div>
             <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
-              <Palette className="h-3.5 w-3.5" />
-              Color
+              <Palette className="h-3.5 w-3.5" /> Color
             </Label>
             <div className="flex items-center gap-2">
               <div className="flex gap-2 flex-wrap">
                 {SHIFT_COLORS.map(c => (
-                  <button
-                    key={c.value}
-                    type="button"
-                    onClick={() => setColor(c.value)}
-                    className={cn(
-                      "w-7 h-7 rounded-full transition-all",
-                      COLOR_MAP[c.value],
+                  <button key={c.value} type="button" onClick={() => setColor(c.value)}
+                    className={cn("w-7 h-7 rounded-full transition-all", COLOR_MAP[c.value],
                       color === c.value ? 'ring-2 ring-foreground ring-offset-2 ring-offset-background scale-110' : 'opacity-50 hover:opacity-90 hover:scale-105'
-                    )}
-                    title={c.label}
-                  />
+                    )} title={c.label} />
                 ))}
               </div>
               {!showNotes && (
                 <Button type="button" variant="ghost" size="sm" className="text-xs text-muted-foreground shrink-0 h-7 px-2 ml-auto" onClick={() => setShowNotes(true)}>
-                  <StickyNote className="h-3.5 w-3.5 mr-1" />
-                  Add note
+                  <StickyNote className="h-3.5 w-3.5 mr-1" /> Add note
                 </Button>
               )}
             </div>
           </div>
 
-          {/* Notes (collapsible) */}
           {showNotes && (
             <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Shift notes..." className="resize-none text-sm" />
           )}
         </div>
       </div>
 
-
-      {/* Actions */}
       <div className="flex gap-2">
         <Button type="submit" className="flex-1 h-11" disabled={selectedDates.length === 0}>
-          {isSubmitting ? 'Saving...' : existing ? 'Update Shift' : selectedDates.length > 1 ? `Add ${selectedDates.length} Shifts` : 'Add Shift'}
+          {isSubmitting ? 'Saving...' : 'Update Shift'}
         </Button>
-        {existing && onDelete && (
+        {onDelete && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button type="button" variant="destructive" size="icon" className="h-11 w-11"><Trash2 className="h-4 w-4" /></Button>
@@ -416,11 +644,23 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     </form>
   );
 
+  /* ─── New shift: guided stepper ─── */
+  const renderGuidedForm = () => (
+    <form onSubmit={handleSubmit} className="flex flex-col">
+      <StepIndicator step={step} isMobile={isMobile} />
+      {step === 1 && renderStep1()}
+      {step === 2 && renderStep2()}
+      {step === 3 && renderStep3()}
+    </form>
+  );
+
+  const formContent = existing ? renderEditForm() : renderGuidedForm();
+
   if (embedded) return formContent;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[680px] overflow-hidden">
+      <DialogContent className={cn("overflow-hidden", existing ? "max-w-[680px]" : "max-w-[480px]")}>
         <DialogHeader><DialogTitle>{existing ? 'Edit Shift' : 'Add Shift'}</DialogTitle></DialogHeader>
         {formContent}
       </DialogContent>
