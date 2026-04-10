@@ -7,6 +7,7 @@ import {
   ExternalLink, ChevronDown, CheckCircle2,
   Wallet, Building2, AlertTriangle, HelpCircle,
 } from 'lucide-react';
+import TaxTerm from './TaxTerm';
 import {
   IRS_PAYMENT, STATE_PAYMENT_LINKS, getPaymentAccountGuidance,
 } from '@/lib/taxPaymentLinks';
@@ -117,7 +118,7 @@ export default function TaxPaymentHub({ profile, taxResult, nextDue, paymentLogs
         {/* ── Row 1: Federal Payment ── */}
         <div className="rounded-lg border p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <h4 className="text-sm font-semibold">Federal</h4>
+            <h4 className="text-sm font-semibold"><TaxTerm term="1040es">Federal 1040-ES</TaxTerm></h4>
             <span className="text-xs text-muted-foreground">{quarterLabel} due {quarterDue}</span>
           </div>
 
@@ -206,7 +207,7 @@ export default function TaxPaymentHub({ profile, taxResult, nextDue, paymentLogs
         {hasPTE && hasStateTax && (
           <div className="rounded-lg border p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <h4 className="text-sm font-semibold">{stateLink?.name || stateCode} — PTE Tax (S-Corp pays)</h4>
+              <h4 className="text-sm font-semibold">{stateLink?.name || stateCode} — <TaxTerm term="pte">PTE Tax</TaxTerm> (S-Corp pays)</h4>
               <span className="text-xs text-muted-foreground">{quarterLabel} due {quarterDue}</span>
             </div>
 
@@ -268,7 +269,7 @@ export default function TaxPaymentHub({ profile, taxResult, nextDue, paymentLogs
                     <div className="flex gap-2">
                       <AccountBadge account="personal" />
                       <div>
-                        <p className="font-medium text-foreground">Your 1040-ES (federal quarterly)</p>
+                        <p className="font-medium text-foreground">Your <TaxTerm term="1040es">1040-ES</TaxTerm> (federal quarterly)</p>
                         <p>Pay personally. This is income tax on your salary and distributions. It is not deductible by the S-Corp. Use IRS Direct Pay.</p>
                       </div>
                     </div>
@@ -282,14 +283,14 @@ export default function TaxPaymentHub({ profile, taxResult, nextDue, paymentLogs
                     <div className="flex gap-2">
                       <AccountBadge account="business" />
                       <div>
-                        <p className="font-medium text-foreground">PTE tax (if elected)</p>
+                        <p className="font-medium text-foreground"><TaxTerm term="pte">PTE tax</TaxTerm> (if elected)</p>
                         <p>Pay from S-Corp business account through {stateLink?.name || stateCode} business portal. This IS a deductible S-Corp expense. Paying from personal account disqualifies the deduction.</p>
                       </div>
                     </div>
                     <div className="flex gap-2">
                       <AccountBadge account="business" />
                       <div>
-                        <p className="font-medium text-foreground">Payroll taxes (FICA)</p>
+                        <p className="font-medium text-foreground">Payroll taxes (<TaxTerm term="fica">FICA</TaxTerm>)</p>
                         <p>Handled by your payroll provider (Gusto, QuickBooks, etc.) from your S-Corp business account automatically. Do not pay this manually.</p>
                       </div>
                     </div>

@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import WhatIfSlider from './WhatIfSlider';
 import EntityComparisonCard from './EntityComparisonCard';
+import TaxTerm from './TaxTerm';
 import type { TaxIntelligenceProfile } from '@/hooks/useTaxIntelligence';
 import { TAX_CONSTANTS, V1_FILING_STATUS_LABELS, V1_DISCLAIMER, getV1QuarterlyDueDates, type V1FilingStatus } from '@/lib/taxConstantsV1';
 import { calculateTaxV1, mapDbProfileToV1, type TaxV1Result, type Tax1099Result, type TaxSCorpResult } from '@/lib/taxCalculatorV1';
@@ -113,7 +114,7 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
               <p className="text-4xl font-bold text-amber-500">${fmt(quarterlyPayment)}</p>
               {isScorp && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  This covers income tax on your K-1 distribution. Your salary and spouse income are covered by payroll withholding.
+                  This covers income tax on your <TaxTerm term="k1_distribution">K-1 distribution</TaxTerm>. Your salary and spouse income are covered by payroll withholding.
                 </p>
               )}
               <div className="flex items-center justify-center gap-2 mt-2">
@@ -219,7 +220,7 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
       <Alert className="border-[hsl(var(--info))] bg-[hsl(var(--chip-info-bg))]">
         <DollarSign className="h-4 w-4 text-[hsl(var(--chip-info-text))]" />
         <AlertDescription className="text-sm text-[hsl(var(--chip-info-text))]">
-          <strong>Set aside {Math.ceil(effectiveRate)}%</strong> of each payment to cover taxes. That's <strong>${fmt(Math.round((effectiveRate / 100) * 1000))} per $1,000 earned</strong>.
+          <strong>Set aside {Math.ceil(effectiveRate)}%</strong> (<TaxTerm term="effective_rate">effective rate</TaxTerm>) of each payment to cover taxes. That's <strong>${fmt(Math.round((effectiveRate / 100) * 1000))} per $1,000 earned</strong>.
         </AlertDescription>
       </Alert>
 
@@ -245,31 +246,30 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
 
 // ── 1099 Breakdown ──────────────────────────────────
 function render1099Breakdown(r: Tax1099Result) {
-  const stdDed = TAX_CONSTANTS.standardDeduction[r.path === '1099' ? 'single' : 'single'];
   return (
     <>
       <Row label="Gross relief income" value={r.grossIncome} />
       <Row label="Business expenses" value={-r.expenses} />
-      <Row label="Net self-employment income" value={r.netIncome} bold />
+      <Row label="Net self-employment income" value={r.netIncome} bold term="net_income" />
       <div className="border-t my-2" />
-      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">SE Tax</p>
+      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider"><TaxTerm term="se_tax">SE Tax</TaxTerm></p>
       <Row label={`Social Security (12.4%) · capped at $${fmt(TAX_CONSTANTS.ssWageBase)}`} value={r.ssTax} />
       <Row label="Medicare (2.9%)" value={r.medicareTax} />
       {r.additionalMedicare > 0 && <Row label="Additional Medicare (0.9%)" value={r.additionalMedicare} />}
-      <Row label="Total SE tax" value={r.totalSeTax} bold />
+      <Row label="Total SE tax" value={r.totalSeTax} bold term="se_tax" />
       <div className="border-t my-2" />
       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Federal Income Tax</p>
-      <Row label="Household AGI" value={r.agi} />
-      <Row label="Standard deduction" value={-TAX_CONSTANTS.standardDeduction.single} />
-      <Row label="Federal taxable income" value={r.federalTaxableIncome} />
-      <Row label={`Tax (at ${Math.round(r.marginalRate * 100)}% marginal rate)`} value={r.totalFederalTax} />
-      {r.spouseWithholdingEstimate > 0 && <Row label="Less: spouse withholding" value={-r.spouseWithholdingEstimate} sub="covered by her employer" />}
+      <Row label="Household AGI" value={r.agi} term="agi" />
+      <Row label="Standard deduction" value={-TAX_CONSTANTS.standardDeduction.single} term="standard_deduction" />
+      <Row label="Federal taxable income" value={r.federalTaxableIncome} term="federal_taxable_income" />
+      <Row label={`Tax (at ${Math.round(r.marginalRate * 100)}% marginal rate)`} value={r.totalFederalTax} term="marginal_rate" />
+      {r.spouseWithholdingEstimate > 0 && <Row label="Less: spouse withholding" value={-r.spouseWithholdingEstimate} sub="covered by her employer" term="spouse_withholding" />}
       <Row label="Your federal share" value={r.vetFederalShare} bold />
       <div className="border-t my-2" />
       <Row label="State tax" value={r.stateTax} />
       <div className="border-t my-2" />
-      <Row label="Annual tax due via 1040-ES" value={r.annualEstimatedTaxDue} bold />
-      <Row label="Quarterly payment" value={r.quarterlyPayment} bold />
+      <Row label="Annual tax due via 1040-ES" value={r.annualEstimatedTaxDue} bold term="1040es" />
+      <Row label="Quarterly payment" value={r.quarterlyPayment} bold term="quarterly_payment" />
     </>
   );
 }
@@ -281,9 +281,9 @@ function renderSCorpBreakdown(r: TaxSCorpResult, profile: TaxIntelligenceProfile
       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Your S-Corp P&L</p>
       <Row label="Gross revenue" value={r.grossRevenue} />
       <Row label="Operating expenses" value={-r.operatingExpenses} />
-      <Row label="Your W-2 salary" value={-r.salary} />
-      <Row label="Employer FICA (7.65%)" value={-r.employerFica} sub="S-Corp expense, not your 1040-ES" />
-      <Row label="K-1 distribution" value={r.distribution} bold sub="← this is what needs quarterly payment" />
+      <Row label="Your W-2 salary" value={-r.salary} term="w2_salary" />
+      <Row label="Employer FICA (7.65%)" value={-r.employerFica} sub="S-Corp expense, not your 1040-ES" term="employer_fica" />
+      <Row label="K-1 distribution" value={r.distribution} bold sub="← this is what needs quarterly payment" term="k1_distribution" />
       <div className="border-t my-2" />
 
       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Personal Tax Picture</p>
@@ -294,40 +294,42 @@ function renderSCorpBreakdown(r: TaxSCorpResult, profile: TaxIntelligenceProfile
           <span className="text-right">Tax covered by</span>
         </div>
         <div className="grid grid-cols-3 text-sm px-3 py-2 border-t">
-          <span className="text-muted-foreground">Your W-2 salary</span>
+          <span className="text-muted-foreground"><TaxTerm term="w2_salary">Your W-2 salary</TaxTerm></span>
           <span className="text-right">${fmt(r.salary)}</span>
           <span className="text-right text-xs text-muted-foreground">Payroll withholding ✓</span>
         </div>
         <div className="grid grid-cols-3 text-sm px-3 py-2 border-t">
-          <span className="text-muted-foreground">Your K-1 dist.</span>
+          <span className="text-muted-foreground"><TaxTerm term="k1_distribution">Your K-1 dist.</TaxTerm></span>
           <span className="text-right">${fmt(r.distribution)}</span>
-          <span className="text-right text-xs text-amber-500 font-medium">→ Your 1040-ES ←</span>
+          <span className="text-right text-xs text-amber-500 font-medium">→ Your <TaxTerm term="1040es">1040-ES</TaxTerm> ←</span>
         </div>
         {profile.spouse_w2_income > 0 && (
           <div className="grid grid-cols-3 text-sm px-3 py-2 border-t">
             <span className="text-muted-foreground">Spouse W-2</span>
             <span className="text-right">${fmt(profile.spouse_w2_income)}</span>
-            <span className="text-right text-xs text-muted-foreground">Her employer ✓</span>
+            <span className="text-right text-xs text-muted-foreground"><TaxTerm term="spouse_withholding">Her employer ✓</TaxTerm></span>
           </div>
         )}
       </div>
 
-      <Row label={`Federal on K-1 (at ${Math.round(r.marginalRate * 100)}% marginal)`} value={r.federalOnDistribution} />
+      <Row label={`Federal on K-1 (at ${Math.round(r.marginalRate * 100)}% marginal)`} value={r.federalOnDistribution} term="marginal_rate" />
       <Row label={`State on K-1 (${profile.state_code || 'N/A'})`} value={r.stateOnDistribution} />
-      {r.extraWithholdingAnnual > 0 && <Row label="Extra withholding credit" value={-r.extraWithholdingAnnual} />}
+      {r.extraWithholdingAnnual > 0 && <Row label="Extra withholding credit" value={-r.extraWithholdingAnnual} term="extra_withholding" />}
       <div className="border-t my-2" />
-      <Row label="Annual 1040-ES obligation" value={r.annualEstimatedTaxDue} bold />
-      <Row label="Quarterly payment" value={r.quarterlyPayment} bold />
+      <Row label="Annual 1040-ES obligation" value={r.annualEstimatedTaxDue} bold term="1040es" />
+      <Row label="Quarterly payment" value={r.quarterlyPayment} bold term="quarterly_payment" />
     </>
   );
 }
 
-function Row({ label, value, bold, sub }: { label: string; value: number; bold?: boolean; sub?: string }) {
+function Row({ label, value, bold, sub, term }: { label: string; value: number; bold?: boolean; sub?: string; term?: string }) {
   const isNegative = value < 0;
   return (
     <div>
       <div className={`flex justify-between text-sm ${bold ? 'font-semibold' : ''}`}>
-        <span className="text-muted-foreground">{label}</span>
+        <span className="text-muted-foreground">
+          {term ? <TaxTerm term={term}>{label}</TaxTerm> : label}
+        </span>
         <span className={isNegative ? '' : value > 0 ? '' : ''}>
           {isNegative ? '-' : ''}${fmt(Math.abs(value))}
         </span>

@@ -12,6 +12,7 @@ import { TAX_CONSTANTS, V1_US_STATES, V1_FILING_STATUS_LABELS, type V1FilingStat
 import { getV1MarginalRate } from '@/lib/taxCalculatorV1';
 import type { TaxIntelligenceProfile } from '@/hooks/useTaxIntelligence';
 import { toast } from 'sonner';
+import TaxTerm from './TaxTerm';
 
 interface Props {
   open: boolean;
@@ -119,20 +120,20 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
               <RadioGroupItem value="1099" id="ent-1099" />
               <Label htmlFor="ent-1099" className="cursor-pointer font-semibold">1099 / LLC Sole Proprietor</Label>
             </div>
-            <p className="text-xs text-muted-foreground ml-6">You receive 1099-NEC forms and file Schedule C.</p>
+            <p className="text-xs text-muted-foreground ml-6">You receive 1099-NEC forms and file <TaxTerm term="schedule_c">Schedule C</TaxTerm>.</p>
           </div>
           <div className="p-4 rounded-lg border hover:bg-accent/50 cursor-pointer space-y-1">
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="scorp" id="ent-scorp" />
               <Label htmlFor="ent-scorp" className="cursor-pointer font-semibold">S-Corporation</Label>
             </div>
-            <p className="text-xs text-muted-foreground ml-6">You pay yourself a W-2 salary and take K-1 distributions.</p>
+            <p className="text-xs text-muted-foreground ml-6">You pay yourself a <TaxTerm term="w2_salary">W-2 salary</TaxTerm> and take <TaxTerm term="k1_distribution">K-1 distributions</TaxTerm>.</p>
           </div>
         </RadioGroup>
         <Alert className="border-muted bg-muted/30">
           <Info className="h-4 w-4 text-muted-foreground" />
           <AlertDescription className="text-xs text-muted-foreground">
-            <strong>Not sure?</strong> If you have a separate business bank account, run payroll through Gusto or QuickBooks, and file an 1120-S — you're S-Corp. If you receive 1099s directly and file Schedule C — you're 1099.
+            <strong>Not sure?</strong> If you have a separate business bank account, run payroll through Gusto or QuickBooks, and file an <TaxTerm term="1120s">1120-S</TaxTerm> — you're S-Corp. If you receive 1099s directly and file <TaxTerm term="schedule_c">Schedule C</TaxTerm> — you're 1099.
           </AlertDescription>
         </Alert>
       </div>
@@ -150,9 +151,9 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
               <Input type="number" value={annualReliefIncome || ''} onChange={e => setAnnualReliefIncome(Number(e.target.value))} placeholder="e.g., 200000" />
             </div>
             <div className="space-y-1">
-              <Label className="text-sm">Your W-2 salary (what you pay yourself)</Label>
+              <Label className="text-sm">Your <TaxTerm term="w2_salary">W-2 salary</TaxTerm> (what you pay yourself)</Label>
               <Input type="number" value={scorpSalary || ''} onChange={e => setScorpSalary(Number(e.target.value))} placeholder="e.g., 80000" />
-              <p className="text-xs text-muted-foreground">IRS requires this to be reasonable compensation. Most relief vet CPAs recommend 40–60% of net profit.</p>
+              <p className="text-xs text-muted-foreground">IRS requires this to be <TaxTerm term="reasonable_compensation">reasonable compensation</TaxTerm>. Most relief vet CPAs recommend 40–60% of net profit.</p>
             </div>
             <div className="space-y-1">
               <Label className="text-sm">Operating business expenses</Label>
@@ -161,9 +162,9 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
             </div>
             {annualReliefIncome > 0 && (
               <div className="rounded-lg bg-muted/50 p-3 border">
-                <p className="text-xs text-muted-foreground">Your estimated K-1 distribution</p>
+                <p className="text-xs text-muted-foreground">Your estimated <TaxTerm term="k1_distribution">K-1 distribution</TaxTerm></p>
                 <p className="text-lg font-bold">${Math.round(k1Distribution).toLocaleString()}</p>
-                <p className="text-xs text-muted-foreground">Revenue − Expenses − Salary − Employer FICA</p>
+                <p className="text-xs text-muted-foreground">Revenue − Expenses − Salary − <TaxTerm term="employer_fica">Employer FICA</TaxTerm></p>
               </div>
             )}
           </div>
@@ -208,7 +209,15 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
             {(['single', 'mfj', 'hoh'] as V1FilingStatus[]).map(fs => (
               <div key={fs} className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent/50 cursor-pointer">
                 <RadioGroupItem value={fs} id={`fs-${fs}`} />
-                <Label htmlFor={`fs-${fs}`} className="cursor-pointer flex-1">{V1_FILING_STATUS_LABELS[fs]}</Label>
+                <Label htmlFor={`fs-${fs}`} className="cursor-pointer flex-1">
+                  {fs === 'mfj' ? (
+                    <TaxTerm term="filing_status_mfj">{V1_FILING_STATUS_LABELS[fs]}</TaxTerm>
+                  ) : fs === 'hoh' ? (
+                    <TaxTerm term="filing_status_hoh">{V1_FILING_STATUS_LABELS[fs]}</TaxTerm>
+                  ) : (
+                    V1_FILING_STATUS_LABELS[fs]
+                  )}
+                </Label>
               </div>
             ))}
           </RadioGroup>
@@ -258,7 +267,7 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
             placeholder="Total planned for this year"
             disabled={skipRetirement}
           />
-          <p className="text-xs text-muted-foreground">SEP-IRA, Solo 401(k), SIMPLE IRA — combined</p>
+          <p className="text-xs text-muted-foreground"><TaxTerm term="retirement_sep">SEP-IRA</TaxTerm>, <TaxTerm term="retirement_solo401k">Solo 401(k)</TaxTerm>, SIMPLE IRA — combined</p>
         </div>
 
         {retirementContributions > 0 && !skipRetirement && (
@@ -276,7 +285,7 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
         <Alert className="border-muted bg-muted/30">
           <Info className="h-4 w-4 text-muted-foreground" />
           <AlertDescription className="text-xs text-muted-foreground">
-            SEP-IRA max: 25% of net income up to $70,000. Solo 401(k) max: $23,500 employee + 25% employer up to $70,000.
+            <TaxTerm term="retirement_sep">SEP-IRA</TaxTerm> max: 25% of net income up to $70,000. <TaxTerm term="retirement_solo401k">Solo 401(k)</TaxTerm> max: $23,500 employee + 25% employer up to $70,000.
           </AlertDescription>
         </Alert>
 
@@ -322,10 +331,10 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
       <div className="space-y-4">
         <Label className="text-base font-medium">Your payroll withholding</Label>
         <p className="text-sm text-muted-foreground">
-          When your S-Corp runs payroll, federal and state income tax is withheld from your salary — just like any W-2 employee. This reduces what you owe on your quarterly 1040-ES.
+          When your S-Corp runs payroll, federal and state income tax is withheld from your salary — just like any W-2 employee. This reduces what you owe on your <TaxTerm term="quarterly_payment">quarterly 1040-ES</TaxTerm>.
         </p>
         <div className="space-y-1">
-          <Label className="text-sm">Do you withhold extra federal tax from your paycheck to cover your distribution income?</Label>
+          <Label className="text-sm">Do you withhold <TaxTerm term="extra_withholding">extra federal tax</TaxTerm> from your paycheck to cover your distribution income?</Label>
           <RadioGroup value={hasExtraWithholding ? 'yes' : 'no'} onValueChange={v => { setHasExtraWithholding(v === 'yes'); if (v === 'no') setExtraWithholding(0); }}>
             <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent/50 cursor-pointer">
               <RadioGroupItem value="no" id="wh-no" />
@@ -360,7 +369,7 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
         <Alert className="border-muted bg-muted/30">
           <Info className="h-4 w-4 text-muted-foreground" />
           <AlertDescription className="text-xs text-muted-foreground">
-            Many S-Corp owners skip quarterly payments entirely by over-withholding on salary. Your CPA can advise whether this makes sense for you.
+            Many S-Corp owners skip <TaxTerm term="quarterly_payment">quarterly payments</TaxTerm> entirely by over-withholding on salary. Your CPA can advise whether this makes sense for you.
           </AlertDescription>
         </Alert>
       </div>
