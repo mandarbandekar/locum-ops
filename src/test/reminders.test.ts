@@ -82,23 +82,54 @@ describe('Reminder Engine', () => {
   });
 
   describe('generateCredentialReminders', () => {
-    it('triggers for credential due within window', () => {
+    it('triggers for credential due within 60-day window', () => {
       const now = new Date();
-      const dueIn15 = new Date(now);
-      dueIn15.setDate(dueIn15.getDate() + 15);
-      const creds = [{ id: 'c1', custom_title: 'CA License', expiration_date: dueIn15.toISOString().split('T')[0] }];
-      const result = generateCredentialReminders(creds, now, 30);
+      const dueIn45 = new Date(now);
+      dueIn45.setDate(dueIn45.getDate() + 45);
+      const creds = [{ id: 'c1', custom_title: 'CA License', expiration_date: dueIn45.toISOString().split('T')[0] }];
+      const result = generateCredentialReminders(creds, now);
       expect(result).toHaveLength(1);
       expect(result[0].title).toContain('CA License');
     });
 
-    it('does not trigger for credential far in future', () => {
+    it('triggers for credential due within 15 days (urgent)', () => {
+      const now = new Date();
+      const dueIn15 = new Date(now);
+      dueIn15.setDate(dueIn15.getDate() + 15);
+      const creds = [{ id: 'c1', custom_title: 'CA License', expiration_date: dueIn15.toISOString().split('T')[0] }];
+      const result = generateCredentialReminders(creds, now);
+      expect(result).toHaveLength(1);
+      expect(result[0].urgency).toBe(6);
+    });
+
+    it('marks credential due within 7 days as high urgency', () => {
+      const now = new Date();
+      const dueIn5 = new Date(now);
+      dueIn5.setDate(dueIn5.getDate() + 5);
+      const creds = [{ id: 'c1', custom_title: 'DEA License', expiration_date: dueIn5.toISOString().split('T')[0] }];
+      const result = generateCredentialReminders(creds, now);
+      expect(result).toHaveLength(1);
+      expect(result[0].urgency).toBe(3);
+    });
+
+    it('does not trigger for credential far in future (>60 days)', () => {
       const now = new Date();
       const dueIn90 = new Date(now);
       dueIn90.setDate(dueIn90.getDate() + 90);
       const creds = [{ id: 'c1', custom_title: 'CA License', expiration_date: dueIn90.toISOString().split('T')[0] }];
-      const result = generateCredentialReminders(creds, now, 30);
+      const result = generateCredentialReminders(creds, now);
       expect(result).toHaveLength(0);
+    });
+
+    it('respects custom windowDays parameter', () => {
+      const now = new Date();
+      const dueIn45 = new Date(now);
+      dueIn45.setDate(dueIn45.getDate() + 45);
+      const creds = [{ id: 'c1', custom_title: 'CA License', expiration_date: dueIn45.toISOString().split('T')[0] }];
+      const result30 = generateCredentialReminders(creds, now, 30);
+      expect(result30).toHaveLength(0);
+      const result60 = generateCredentialReminders(creds, now, 60);
+      expect(result60).toHaveLength(1);
     });
   });
 
