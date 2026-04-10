@@ -1,34 +1,68 @@
 
 
-# Spotlight Tour: Show Once, Then Only on Manual Trigger
+# Guided 3-Step Shift Creation Flow
 
-## Current State
+## Analysis
 
-The tour system already mostly works this way:
-- **Module tours** (Tax, Credentials, Schedule, etc.) auto-trigger once on first visit via `useEffect` that checks `localStorage`
-- **Dashboard tour** auto-triggers once for new users, then only via the header "Take a Tour" button
-- `closeTour()` always marks the tour as completed in `localStorage`
+The current shift form crams everything into one dense two-column layout — facility, calendar, time, rate, color, notes all at once. This works for power users but is overwhelming on mobile and for new users. A stepped flow lets users focus on one decision at a time while keeping things fast (3 steps, not 5).
 
-However, there's one issue: the **Layout.tsx "Take a Tour" button** calls `localStorage.removeItem()` to reset the dashboard key before triggering. If the user clicks "Take a Tour", the key is removed. If they then navigate away before the tour closes (or refresh), the tour will auto-trigger again because the completed flag was wiped.
+### Recommended 3-Step Flow
 
-## Changes
+**Step 1 — Where?** Pick a facility (or add new). This is the anchor decision — it determines available rates.
 
-### Modified: `src/hooks/useSpotlightTour.ts`
-- Remove the `resetTour` function entirely (no longer needed)
-- Keep `startTour` as the only way to manually open a tour — it opens the tour without resetting the completed flag
-- Keep `closeTour` marking completed in localStorage (no change)
-- Keep auto-start logic for module tours gated on `!isTourCompleted` (no change)
+**Step 2 — When?** Multi-date calendar + start/end time. Conflict warnings show inline. This is the core scheduling step and deserves full attention.
 
-### Modified: `src/components/Layout.tsx`
-- Simplify the "Take a Tour" button handler: just dispatch the `locumops:start-tour` custom event (or navigate to dashboard and let the event fire)
-- **Stop removing** the `locumops_tour_completed` localStorage key — the tour opens via `startTour()` directly, not by resetting state
-- This ensures closing the tour always leaves it marked as completed, and it never auto-triggers again
+**Step 3 — Details** — Rate (auto-populated from facility terms), color, optional note. Review summary of what's being created, then submit.
 
-### Result
-- First visit to any module → tour auto-triggers once
-- After completion → never auto-triggers again
-- User clicks "Tour" button on any page → tour opens manually regardless of completed state
-- Closing always marks completed — no accidental re-triggers on refresh
+This order is better than calendar-first because: selecting the facility first lets us pre-populate rates in step 3 and show facility-specific conflicts in step 2.
 
-No new files, no DB changes. Two small edits.
+### Edit mode stays single-screen
+When editing an existing shift, skip the stepper and show the current flat form (all fields visible). The guided flow only applies to new shift creation.
+
+## File Changes
+
+### Modified: `src/components/schedule/ShiftFormDialog.tsx`
+
+**Add stepper state:**
+- `const [step, setStep] = useState(1)` — reset to 1 when dialog opens
+- Step indicator: 3 small circles/pills at top with labels ("Facility", "Schedule", "Details")
+- Back/Next buttons replace the single Submit button (Submit only on step 3)
+
+**Step 1 — Facility selection:**
+- Full-width facility selector (existing Select + "Add New" option)
+- Large facility cards could be nice but the Select is already clean — keep it, just give it more breathing room
+- Next button enabled when `facilityId` is set
+- On mobile: full-width, centered
+
+**Step 2 — Calendar + Time:**
+- Calendar component (multi-select mode) takes full width on mobile
+- Start/end time inputs below calendar
+- Selected dates summary + conflict warnings
+- Back button + Next button (enabled when ≥1 date selected)
+
+**Step 3 — Rate, Color, Notes + Review:**
+- Rate selector (preset or custom, same logic as today)
+- Color picker row
+- Optional notes toggle
+- Summary strip: "3 shifts at Animal Hospital, Dec 5–7, 8am–6pm, $850/day"
+- Submit button: "Add 3 Shifts" / "Add Shift"
+
+**Mobile responsive:**
+- Each step is a single column, full-width
+- Calendar renders full-width on mobile (no side-by-side)
+- Step indicator uses compact dots on mobile, pills with labels on desktop
+- Navigation buttons are full-width on mobile
+
+**Edit mode bypass:**
+- When `existing` is set, render the current flat layout (no stepper)
+- Only new shift creation uses the guided flow
+
+**Dialog sizing:**
+- Keep `max-w-[680px]` but step content is simpler per screen so it never feels cramped
+- Step transitions use a simple fade or no animation (keep it snappy)
+
+### No other files change
+- Props and external API stay identical
+- `onSave`, `onDelete`, conflict detection, custom rate saving — all unchanged
+- The `embedded` mode (used in onboarding) continues to work by rendering the form content directly
 
