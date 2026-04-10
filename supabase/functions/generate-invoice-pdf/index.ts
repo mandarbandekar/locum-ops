@@ -350,7 +350,7 @@ Deno.serve(async (req) => {
       headers: {
         ...corsHeaders,
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${(invoice.invoice_number || 'invoice').replace(/[^\x20-\x7E]/g, '')}.pdf"`,
+        'Content-Disposition': `attachment; filename="${(invoice.invoice_number || 'invoice').replace(/[^a-zA-Z0-9_\-]/g, '_')}.pdf"`,
       },
     });
   } catch (err) {
