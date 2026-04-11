@@ -1,11 +1,12 @@
-import { useMemo } from 'react';
+import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { DollarSign, FileText, ArrowRight, TrendingUp, Send, Clock, Wallet, Target, AlertCircle, Calculator } from 'lucide-react';
+import { DollarSign, FileText, ArrowRight, TrendingUp, Send, Clock, Wallet, Target, AlertCircle, Calculator, ChevronDown } from 'lucide-react';
 import { differenceInDays, parseISO } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { StatusBadge } from '@/components/StatusBadge';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface RevenueMonth {
   month: string;
@@ -62,6 +63,7 @@ export function MoneyToCollectCard({
 }: MoneyToCollectCardProps) {
   const navigate = useNavigate();
   const totalCollectable = outstandingTotal;
+  const [invoicesOpen, setInvoicesOpen] = useState(false);
 
   const getIcon = (status: string) => {
     if (status === 'draft') return <FileText className="h-3.5 w-3.5 text-warning" />;
@@ -76,10 +78,10 @@ export function MoneyToCollectCard({
   };
 
   return (
-    <Card className="flex flex-col border-0 shadow-md">
-      <CardContent className="p-0 flex flex-col min-h-0">
+    <Card className="flex flex-col border-0 shadow-md h-full overflow-hidden">
+      <CardContent className="p-0 flex flex-col min-h-0 flex-1">
         {/* Header with total collectable */}
-        <div className="px-5 pt-5 pb-2">
+        <div className="px-5 pt-5 pb-2 shrink-0">
           <div className="flex items-center gap-2 mb-1">
             <div className="p-2 rounded-xl bg-warning/10">
               <DollarSign className="h-5 w-5 text-warning" />
@@ -107,11 +109,10 @@ export function MoneyToCollectCard({
         </div>
 
         {/* This Week's Earnings */}
-        <div className="mx-5 mt-2 mb-1 px-3 py-2.5 rounded-lg bg-primary/5 border border-primary/10">
+        <div className="mx-5 mt-1 mb-1 px-3 py-2 rounded-lg bg-primary/5 border border-primary/10 shrink-0">
           <div className="flex items-center gap-2">
             <Wallet className="h-3.5 w-3.5 text-primary" />
             <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">This Week</span>
-            {/* Mini sparkline */}
             {weeklySparkline.length >= 4 && (() => {
               const max = Math.max(...weeklySparkline, 1);
               const h = 16;
@@ -134,7 +135,7 @@ export function MoneyToCollectCard({
         {/* Oldest unpaid invoice */}
         {oldestUnpaid && (
           <div
-            className="mx-5 mt-1 mb-1 px-3 py-2 rounded-lg bg-warning/5 border border-warning/10 cursor-pointer hover:bg-warning/10 transition-colors"
+            className="mx-5 mt-1 mb-1 px-3 py-2 rounded-lg bg-warning/5 border border-warning/10 cursor-pointer hover:bg-warning/10 transition-colors shrink-0"
             onClick={() => navigate(`/invoices/${oldestUnpaid.id}`)}
           >
             <div className="flex items-center gap-2">
@@ -146,51 +147,64 @@ export function MoneyToCollectCard({
           </div>
         )}
 
-        {/* Individual invoice list */}
-        <div className="px-4 pt-3 min-h-0">
-          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-2 px-1">
-            Ready to Review ({invoiceItems.length})
-          </p>
-          <ScrollArea className="max-h-[180px]">
-            <div className="space-y-1.5 pr-2">
-              {invoiceItems.length === 0 && (
-                <div className="py-4 text-center">
+        {/* Collapsible Ready to Review */}
+        <Collapsible open={invoicesOpen} onOpenChange={setInvoicesOpen} className="flex-1 min-h-0 flex flex-col">
+          <CollapsibleTrigger className="px-5 pt-3 pb-2 flex items-center justify-between cursor-pointer hover:bg-muted/30 transition-colors shrink-0">
+            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.08em]">
+              Ready to Review
+            </p>
+            <div className="flex items-center gap-1.5">
+              {invoiceItems.length > 0 && (
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5">
+                  {invoiceItems.length}
+                </Badge>
+              )}
+              <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 ${invoicesOpen ? 'rotate-180' : ''}`} />
+            </div>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="flex-1 min-h-0 overflow-auto">
+            <div className="px-4 pb-2">
+              {invoiceItems.length === 0 ? (
+                <div className="py-3 text-center">
                   <p className="text-[12px] text-muted-foreground">All caught up!</p>
                 </div>
-              )}
-              {invoiceItems.map((inv) => (
-                <div
-                  key={inv.id}
-                  className="flex items-center gap-3 px-3 py-2 rounded-lg bg-muted/40 cursor-pointer hover:bg-muted/70 transition-colors"
-                  onClick={() => navigate(`/invoices/${inv.id}`)}
-                >
-                  <div className={`p-1.5 rounded-md ${getIconBg(inv.status)}`}>
-                    {getIcon(inv.status)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-[12px] font-semibold leading-tight truncate">
-                        {inv.invoice_number}
-                      </p>
-                      <StatusBadge status={inv.status} className="text-[9px] px-1.5 py-0" />
+              ) : (
+                <div className="space-y-1.5">
+                  {invoiceItems.map((inv) => (
+                    <div
+                      key={inv.id}
+                      className="flex items-center gap-3 px-3 py-2 rounded-lg bg-muted/40 cursor-pointer hover:bg-muted/70 transition-colors"
+                      onClick={() => navigate(`/invoices/${inv.id}`)}
+                    >
+                      <div className={`p-1.5 rounded-md ${getIconBg(inv.status)}`}>
+                        {getIcon(inv.status)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-[12px] font-semibold leading-tight truncate">
+                            {inv.invoice_number}
+                          </p>
+                          <StatusBadge status={inv.status} className="text-[9px] px-1.5 py-0" />
+                        </div>
+                        <p className="text-[11px] text-muted-foreground truncate">{inv.facility_name}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-[12px] font-bold">
+                          ${(inv.status === 'draft' ? inv.total_amount : inv.balance_due).toLocaleString()}
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-[11px] text-muted-foreground truncate">{inv.facility_name}</p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-[12px] font-bold">
-                      ${(inv.status === 'draft' ? inv.total_amount : inv.balance_due).toLocaleString()}
-                    </p>
-                  </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
-          </ScrollArea>
-        </div>
+          </CollapsibleContent>
+        </Collapsible>
 
         {/* Tax Snapshot */}
         {taxSnapshot && (
           <div
-            className="mx-5 mt-1 mb-1 px-3 py-2.5 rounded-lg bg-accent/30 border border-accent/20 cursor-pointer hover:bg-accent/50 transition-colors"
+            className="mx-5 mt-1 mb-1 px-3 py-2 rounded-lg bg-accent/30 border border-accent/20 cursor-pointer hover:bg-accent/50 transition-colors shrink-0"
             onClick={() => navigate('/tax-center')}
           >
             <div className="flex items-center gap-2">
@@ -211,10 +225,10 @@ export function MoneyToCollectCard({
         )}
 
         {/* CTA */}
-        <div className="px-4 pt-3 pb-5">
+        <div className="px-4 pt-2 pb-4 shrink-0 mt-auto border-t border-border/50">
           <Button
             variant="outline"
-            className="w-full h-10 font-bold text-[13px]"
+            className="w-full h-9 font-bold text-[12px]"
             onClick={() => navigate('/invoices')}
           >
             Go to Invoicing

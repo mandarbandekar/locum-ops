@@ -568,16 +568,18 @@ export default function DashboardPage() {
   }, [hasTaxProfile, taxProfile, invoices, taxQuarters, now]);
 
   return (
-    <div className="space-y-4 h-full">
+    <div className="flex flex-col h-[calc(100vh-theme(spacing.14)-theme(spacing.6)-theme(spacing.10))] overflow-hidden">
       {/* Daily Briefing Strip */}
-      <div data-tour="briefing" className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-primary/5 border border-primary/10">
+      <div data-tour="briefing" className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/5 border border-primary/10 shrink-0">
         <Zap className="h-3.5 w-3.5 text-primary shrink-0" />
-        <p className="text-[12px] sm:text-[13px] font-medium text-foreground">{briefing}</p>
+        <p className="text-[12px] sm:text-[13px] font-medium text-foreground truncate">{briefing}</p>
       </div>
 
       {/* Getting Started Checklist */}
       {!isDemo && !checklistDismissed && (
-        <GettingStartedChecklist onDismiss={handleDismissChecklist} />
+        <div className="mt-3 shrink-0">
+          <GettingStartedChecklist onDismiss={handleDismissChecklist} />
+        </div>
       )}
 
       {/* Tax Savings Opportunities Card */}
@@ -585,7 +587,7 @@ export default function DashboardPage() {
         const completedShifts = shifts.filter(s => new Date(s.end_datetime) < now).length;
         if (completedShifts < 4) {
           return (
-            <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-muted/30 border border-border">
+            <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-muted/30 border border-border mt-3 shrink-0">
               <div className="p-2 rounded-full bg-primary/10 shrink-0">
                 <Lightbulb className="h-4 w-4 text-primary" />
               </div>
@@ -599,7 +601,6 @@ export default function DashboardPage() {
         const paidIncome = invoices.filter(i => i.paid_at).reduce((s, i) => s + i.total_amount, 0);
         const monthsElapsed = Math.max(1, now.getMonth() + 1);
         const annualized = (paidIncome / monthsElapsed) * 12;
-        // Quick estimate of total savings (simplified)
         const estSavings = annualized > 80000
           ? Math.round(annualized * 0.04)
           : annualized > 50000
@@ -609,7 +610,7 @@ export default function DashboardPage() {
         return (
           <Link
             to="/tax-center?tab=tax-strategies"
-            className="flex items-center gap-3 px-4 py-3 rounded-lg bg-emerald-500/5 border border-emerald-500/15 hover:bg-emerald-500/10 transition-colors group"
+            className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-emerald-500/5 border border-emerald-500/15 hover:bg-emerald-500/10 transition-colors group mt-3 shrink-0"
           >
             <div className="p-2 rounded-full bg-emerald-500/10 shrink-0">
               <TrendingUp className="h-4 w-4 text-emerald-500" />
@@ -624,9 +625,9 @@ export default function DashboardPage() {
       })()}
 
       {/* 3-Column Layout */}
-      <div className="grid gap-4 sm:gap-5 grid-cols-1 lg:grid-cols-12 lg:items-start">
+      <div className="grid gap-4 sm:gap-5 grid-cols-1 lg:grid-cols-12 lg:items-stretch mt-3 flex-1 min-h-0">
         {/* Left: Upcoming Shifts */}
-        <div data-tour="shifts" className="order-2 lg:order-none lg:col-span-4">
+        <div data-tour="shifts" className="order-2 lg:order-none lg:col-span-4 min-h-0">
           <UpcomingShiftsCard
             shifts={shifts}
             getFacilityName={getFacilityName}
@@ -637,7 +638,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Center: Money to Collect */}
-        <div data-tour="money" className="order-3 lg:order-none lg:col-span-4">
+        <div data-tour="money" className="order-3 lg:order-none lg:col-span-4 min-h-0">
            <MoneyToCollectCard
             outstandingTotal={summary.outstandingTotal}
             paidThisMonth={summary.paidThisMonth}
@@ -652,7 +653,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Right: Needs Attention */}
-        <div data-tour="attention" className="order-first lg:order-none lg:col-span-4">
+        <div data-tour="attention" className="order-first lg:order-none lg:col-span-4 min-h-0">
           <NeedsAttentionCard items={attentionItems} readinessItems={readinessItems} />
         </div>
       </div>
