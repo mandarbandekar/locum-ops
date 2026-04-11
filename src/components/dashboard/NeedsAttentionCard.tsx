@@ -25,8 +25,8 @@ export function NeedsAttentionCard({ items, readinessItems = [] }: NeedsAttentio
   const navigate = useNavigate();
 
   return (
-    <Card className="h-full flex flex-col border-0 shadow-md">
-      <CardContent className="p-0 flex flex-col flex-1">
+    <Card className="h-full flex flex-col border-0 shadow-md overflow-hidden">
+      <CardContent className="p-0 flex flex-col flex-1 min-h-0">
         {/* Header */}
         <div className="px-5 pt-5 pb-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -51,7 +51,7 @@ export function NeedsAttentionCard({ items, readinessItems = [] }: NeedsAttentio
         <div className="h-px bg-border mx-5" />
 
         {/* Items */}
-        <div className="flex-1 px-5 pt-3 pb-2">
+        <div className="flex-1 px-5 pt-3 pb-2 min-h-0 overflow-auto">
           {items.length === 0 ? (
             <div className="py-10 text-center">
               <p className="text-sm font-semibold text-foreground">You're all caught up! 🎉</p>
