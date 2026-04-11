@@ -294,7 +294,8 @@ Deno.serve(async (req) => {
                   text,
                   purpose: 'transactional',
                   label: 'shift_reminder',
-                  queued_at: now.toISOString(),
+                 queued_at: now.toISOString(),
+                 unsubscribe_token: unsubscribeToken,
                 },
               })
 
@@ -402,6 +403,7 @@ Deno.serve(async (req) => {
               purpose: 'transactional',
               label: 'credential_reminder',
               queued_at: now.toISOString(),
+              unsubscribe_token: unsubscribeToken,
             },
           })
 
