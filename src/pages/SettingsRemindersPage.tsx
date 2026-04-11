@@ -8,6 +8,10 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useReminderPreferences, ACTIVE_CATEGORIES, type ActiveReminderCategory } from '@/hooks/useReminderPreferences';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { Bell, Mail, MessageSquare, Smartphone, Clock, Send, Loader2 } from 'lucide-react';
 
 const CATEGORY_LABELS: Record<ActiveReminderCategory, string> = {
   invoices: 'Invoices',
@@ -161,7 +165,7 @@ export default function SettingsRemindersPage() {
           <CardHeader><CardTitle className="text-base">Categories</CardTitle></CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {CATEGORIES.map(cat => {
+              {ACTIVE_CATEGORIES.map(cat => {
                 const setting = categories.find(c => c.category === cat);
                 if (!setting) return null;
                 return (
