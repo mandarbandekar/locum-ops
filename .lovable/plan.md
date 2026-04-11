@@ -1,41 +1,23 @@
 
 
-# Add Notification Preferences to Onboarding
+# Update Settings → Reminders to Match Scoped Categories
 
-## Overview
-Add a new step to the onboarding flow where users choose how they want to be notified. The step is lightweight — just channel selection (email/SMS) and which reminder categories to enable. We scope categories to only the four the user cares about: invoice review, overdue invoices, credential expirations, and CE deadlines.
+## Problem
+The Categories card currently shows all 7 categories (invoices, confirmations, shifts, credentials, contracts, outreach, taxes). Per the agreed scope, we should only show **Invoices** and **Credentials / CE** — the two categories users actually receive reminders for right now.
 
 ## Changes
 
-### 1. New component: `src/components/onboarding/OnboardingRemindersStep.tsx`
-A focused step with:
-- **Channel toggles**: Email (on by default), SMS (off by default, shows phone input when enabled)
-- **Category toggles** (all on by default):
-  - "Invoice ready for review" 
-  - "Overdue invoices"
-  - "Credential expirations" 
-  - "CE deadlines"
-- A "Continue" button that persists selections to `reminder_preferences` and `reminder_category_settings` tables
-- A note: "You can change these anytime in Settings → Reminders"
+### 1. `src/pages/SettingsRemindersPage.tsx`
+- Filter the Categories card to only render `invoices` and `credentials` instead of iterating over all `CATEGORIES`
+- Update `CATEGORY_LABELS` and `CATEGORY_DESCRIPTIONS` to only include those two, with descriptions matching the scoped reminders:
+  - **Invoices**: "Invoice ready for review and overdue payment alerts"
+  - **Credentials / CE**: "License expiration warnings (60 days out) and CE deadline alerts"
+- Remove the unused category label/description entries (confirmations, shifts, contracts, outreach, taxes)
+- Keep the timing options, channel sub-toggles, and everything else as-is
 
-The component will use `useReminderPreferences` under the hood — on save, it calls `updatePrefs` for channel toggles and `updateCategory` for each relevant category. Since `useReminderPreferences` auto-seeds default rows on first load, the rows will exist by the time the user hits this step.
+### 2. `src/hooks/useReminderPreferences.ts`
+- Add an exported constant `ACTIVE_CATEGORIES = ['invoices', 'credentials'] as const` for the settings page to use instead of the full `CATEGORIES` array
+- No other changes — the full `CATEGORIES` array stays for future use and DB seeding
 
-### 2. Update `src/pages/OnboardingPage.tsx`
-- Add a new phase `'reminders'` between `tax_enablement` and `calendar_sync`
-- Update `TOTAL_STEPS` from 5 → 6
-- Update `PHASE_STEP`, `PHASE_LABEL`, `PHASE_BACK` maps
-- Render `OnboardingRemindersStep` for the `reminders` phase
-- Allow skipping (defaults stay as-is)
-
-### 3. Update `src/components/onboarding/OnboardingLayout.tsx`
-No changes needed — it already accepts dynamic `totalSteps`.
-
-### No database changes
-The `reminder_preferences` and `reminder_category_settings` tables already exist with the right columns. The hook auto-seeds default rows on first access.
-
-## Design Details
-- The step groups invoice reminders (ready for review + overdue) and credential reminders (expirations + CE) visually with small section headers
-- SMS toggle reveals a phone number input inline (similar to Settings page)
-- Clean, minimal UI matching the rest of the onboarding aesthetic
-- Categories not shown in onboarding (confirmations, contracts, outreach, shifts, taxes) keep their seeded defaults — users can customize later in Settings
+This is a small UI-only change — no database or edge function modifications needed.
 
