@@ -138,12 +138,19 @@ export default function SettingsRemindersPage() {
               ['sms_enabled', 'SMS reminders', Smartphone],
               ['in_app_enabled', 'In-app reminders', MessageSquare],
             ] as const).map(([field, label, Icon]) => (
-              <div key={field} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Icon className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">{label}</span>
+              <div key={field}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Icon className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">{label}</span>
+                  </div>
+                  <Switch checked={prefs[field]} onCheckedChange={() => handleToggleChannel(field)} />
                 </div>
-                <Switch checked={prefs[field]} onCheckedChange={() => handleToggleChannel(field)} />
+                {field === 'sms_enabled' && prefs.sms_enabled && !prefs.phone_number && (
+                  <p className="text-xs text-destructive mt-1.5 ml-6">
+                    ⚠ Enter your phone number below to receive SMS alerts.
+                  </p>
+                )}
               </div>
             ))}
           </CardContent>
