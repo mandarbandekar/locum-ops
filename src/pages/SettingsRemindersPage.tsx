@@ -147,7 +147,7 @@ export default function SettingsRemindersPage() {
                   <Switch checked={prefs[field]} onCheckedChange={() => handleToggleChannel(field)} />
                 </div>
                 {field === 'sms_enabled' && prefs.sms_enabled && !prefs.phone_number && (
-                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-1.5 ml-6">
+                  <p className="text-xs text-destructive mt-1.5 ml-6">
                     ⚠ Enter your phone number below to receive SMS alerts.
                   </p>
                 )}
