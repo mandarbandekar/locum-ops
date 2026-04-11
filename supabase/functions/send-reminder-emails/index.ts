@@ -2,8 +2,9 @@ import * as React from 'npm:react@18.3.1'
 import { renderAsync } from 'npm:@react-email/components@0.0.22'
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { InvoiceReminderEmail } from '../_shared/email-templates/invoice-reminder.tsx'
+import { InvoiceDigestEmail } from '../_shared/email-templates/invoice-digest.tsx'
 import { ShiftReminderEmail } from '../_shared/email-templates/shift-reminder.tsx'
-import { CredentialReminderEmail } from '../_shared/email-templates/credential-reminder.tsx'
+import { CredentialDigestEmail } from '../_shared/email-templates/credential-digest.tsx'
 
 const SITE_NAME = 'LocumOps'
 const SENDER_DOMAIN = 'notify.locum-ops.com'
@@ -151,7 +152,7 @@ Deno.serve(async (req) => {
     const siteUrl = `https://${ROOT_DOMAIN}`
 
     // ═══════════════════════════════════════════
-    // SECTION 1: INVOICE REMINDERS
+    // SECTION 1: INVOICE REMINDERS (DIGEST)
     // ═══════════════════════════════════════════
     const invoiceCat = getCatSetting('invoices')
     if (!invoiceCat || (invoiceCat.enabled && invoiceCat.email_enabled)) {
@@ -165,6 +166,7 @@ Deno.serve(async (req) => {
         .eq('module', 'invoices')
         .eq('channel', 'email')
         .eq('status', 'sent')
+        .in('reminder_type', ['invoice_digest', 'invoice_draft_unsent', 'invoice_overdue'])
         .gte('sent_at', todayStart.toISOString())
         .limit(1)
 
@@ -183,27 +185,97 @@ Deno.serve(async (req) => {
 
           const getFacName = (id: string) => facilities?.find((f: any) => f.id === id)?.name || 'Unknown'
 
-          // 1a) Draft invoices
+          // Collect drafts
           const drafts = invoices.filter((i: any) => i.status === 'draft')
-          if (drafts.length > 0) {
-            totalEnqueued += await enqueueDraftReminder(supabase, userId, recipientEmail, drafts, getFacName, siteUrl, now, unsubscribeToken)
-          }
 
-          // 1b) Overdue invoices
+          // Collect overdue
           const overdue = invoices.filter((i: any) => {
             if (i.status === 'paid' || i.status === 'draft') return false
             if (!i.due_date || !i.sent_at) return false
             return new Date(i.due_date) < now && i.balance_due > 0
           })
 
-          for (const inv of overdue) {
-            totalEnqueued += await enqueueOverdueReminder(supabase, userId, recipientEmail, inv, getFacName, siteUrl, now, unsubscribeToken)
-            // SMS for overdue invoices (high urgency)
-            await maybeSendSMS(supabase, userId, prefs, invoiceCat,
-              `⚠️ Invoice ${inv.invoice_number} is overdue — $${inv.balance_due.toLocaleString()} outstanding at ${getFacName(inv.facility_id)}. Open LocumOps to follow up.`)
+          // Send ONE digest email if there's anything to report
+          if (drafts.length > 0 || overdue.length > 0) {
+            const draftItems = drafts.map((inv: any) => ({
+              invoiceNumber: inv.invoice_number,
+              facilityName: getFacName(inv.facility_id),
+              amount: inv.total_amount.toLocaleString(),
+            }))
+
+            const overdueItems = overdue.map((inv: any) => {
+              const daysOverdue = Math.ceil((now.getTime() - new Date(inv.due_date).getTime()) / (24 * 60 * 60 * 1000))
+              return {
+                invoiceNumber: inv.invoice_number,
+                facilityName: getFacName(inv.facility_id),
+                amount: inv.balance_due.toLocaleString(),
+                daysOverdue,
+              }
+            })
+
+            const subject = overdue.length > 0
+              ? `${overdue.length} overdue invoice${overdue.length > 1 ? 's' : ''}${drafts.length > 0 ? ` + ${drafts.length} draft${drafts.length > 1 ? 's' : ''}` : ''}`
+              : `${drafts.length} invoice draft${drafts.length > 1 ? 's' : ''} ready to send`
+
+            const props = {
+              siteName: SITE_NAME,
+              siteUrl,
+              drafts: draftItems,
+              overdue: overdueItems,
+              actionUrl: `${siteUrl}/invoices`,
+            }
+
+            const html = await renderAsync(React.createElement(InvoiceDigestEmail, props))
+            const text = await renderAsync(React.createElement(InvoiceDigestEmail, props), { plainText: true })
+            const messageId = crypto.randomUUID()
+
+            await supabase.from('reminders').insert({
+              user_id: userId,
+              module: 'invoices',
+              reminder_type: 'invoice_digest',
+              channel: 'email',
+              title: subject,
+              body: `${drafts.length} draft${drafts.length !== 1 ? 's' : ''}, ${overdue.length} overdue`,
+              send_at: now.toISOString(),
+              status: 'sent',
+              sent_at: now.toISOString(),
+            })
+
+            await supabase.rpc('enqueue_email', {
+              queue_name: 'transactional_emails',
+              payload: {
+                idempotency_key: messageId,
+                message_id: messageId,
+                to: recipientEmail,
+                from: `${SITE_NAME} <reminders@${FROM_DOMAIN}>`,
+                sender_domain: SENDER_DOMAIN,
+                subject,
+                html,
+                text,
+                purpose: 'transactional',
+                label: 'invoice_digest',
+                queued_at: now.toISOString(),
+                unsubscribe_token: unsubscribeToken,
+              },
+            })
+
+            await supabase.from('email_send_log').insert({
+              message_id: messageId,
+              template_name: 'invoice_digest',
+              recipient_email: recipientEmail,
+              status: 'pending',
+            })
+
+            totalEnqueued++
+
+            // SMS for overdue invoices (high urgency) — still per-item for actionability
+            for (const inv of overdue) {
+              await maybeSendSMS(supabase, userId, prefs, invoiceCat,
+                `⚠️ Invoice ${inv.invoice_number} is overdue — $${inv.balance_due.toLocaleString()} outstanding at ${getFacName(inv.facility_id)}. Open LocumOps to follow up.`)
+            }
           }
 
-          // 1c) Uninvoiced shifts
+          // 1c) Uninvoiced shifts (stays unchanged — already grouped by facility)
           const { data: allShifts } = await supabase
             .from('shifts')
             .select('id, facility_id, start_datetime, end_datetime, rate_applied')
@@ -252,8 +324,8 @@ Deno.serve(async (req) => {
               const total = facilityShifts.reduce((s: number, sh: any) => s + (sh.rate_applied || 0), 0)
               const name = getFacName(facilityId)
 
-              const subject = `Ready to invoice ${count} shift${count > 1 ? 's' : ''} at ${name}?`
-              const props = {
+              const shiftSubject = `Ready to invoice ${count} shift${count > 1 ? 's' : ''} at ${name}?`
+              const shiftProps = {
                 siteName: SITE_NAME,
                 siteUrl,
                 reminderType: 'uninvoiced' as const,
@@ -263,16 +335,16 @@ Deno.serve(async (req) => {
                 actionUrl: `${siteUrl}/invoices`,
               }
 
-              const html = await renderAsync(React.createElement(ShiftReminderEmail, props))
-              const text = await renderAsync(React.createElement(ShiftReminderEmail, props), { plainText: true })
-              const messageId = crypto.randomUUID()
+              const shiftHtml = await renderAsync(React.createElement(ShiftReminderEmail, shiftProps))
+              const shiftText = await renderAsync(React.createElement(ShiftReminderEmail, shiftProps), { plainText: true })
+              const shiftMsgId = crypto.randomUUID()
 
               await supabase.from('reminders').insert({
                 user_id: userId,
                 module: 'invoices',
                 reminder_type: 'uninvoiced_shifts',
                 channel: 'email',
-                title: subject,
+                title: shiftSubject,
                 body: `$${total.toLocaleString()} across ${count} shifts at ${name}`,
                 related_entity_type: 'facility',
                 related_entity_id: facilityId,
@@ -284,23 +356,23 @@ Deno.serve(async (req) => {
               await supabase.rpc('enqueue_email', {
                 queue_name: 'transactional_emails',
                 payload: {
-                  idempotency_key: messageId,
-                  message_id: messageId,
+                  idempotency_key: shiftMsgId,
+                  message_id: shiftMsgId,
                   to: recipientEmail,
                   from: `${SITE_NAME} <reminders@${FROM_DOMAIN}>`,
                   sender_domain: SENDER_DOMAIN,
-                  subject,
-                  html,
-                  text,
+                  subject: shiftSubject,
+                  html: shiftHtml,
+                  text: shiftText,
                   purpose: 'transactional',
                   label: 'shift_reminder',
-                 queued_at: now.toISOString(),
-                 unsubscribe_token: unsubscribeToken,
+                  queued_at: now.toISOString(),
+                  unsubscribe_token: unsubscribeToken,
                 },
               })
 
               await supabase.from('email_send_log').insert({
-                message_id: messageId,
+                message_id: shiftMsgId,
                 template_name: 'shift_reminder_uninvoiced',
                 recipient_email: recipientEmail,
                 status: 'pending',
@@ -314,7 +386,7 @@ Deno.serve(async (req) => {
     }
 
     // ═══════════════════════════════════════════
-    // SECTION 2: CREDENTIAL EXPIRATION REMINDERS
+    // SECTION 2: CREDENTIAL EXPIRATION (DIGEST)
     // ═══════════════════════════════════════════
     const credCat = getCatSetting('credentials')
     if (!credCat || (credCat.enabled && credCat.email_enabled)) {
@@ -331,20 +403,23 @@ Deno.serve(async (req) => {
         // Dedup window: 14 days per credential
         const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000)
 
+        // Filter credentials: only those expiring within 60 days or expired up to 7 days ago
+        // AND not already reminded in the last 14 days
+        const eligibleCreds: Array<{ id: string; custom_title: string; expiration_date: string; daysRemaining: number }> = []
+
         for (const cred of credentials) {
           const expDate = new Date(cred.expiration_date)
           const daysRemaining = Math.ceil((expDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000))
 
-          // Only remind for credentials expiring within 60 days (or already expired up to 7 days ago)
           if (daysRemaining < -7) continue
 
-          // Check dedup
+          // Check dedup per credential
           const { data: existing } = await supabase
             .from('reminders')
             .select('id')
             .eq('user_id', userId)
             .eq('module', 'credentials')
-            .eq('reminder_type', 'credential_expiration')
+            .in('reminder_type', ['credential_expiration', 'credential_digest'])
             .eq('channel', 'email')
             .eq('related_entity_id', cred.id)
             .gte('sent_at', fourteenDaysAgo.toISOString())
@@ -352,42 +427,62 @@ Deno.serve(async (req) => {
 
           if (existing && existing.length > 0) continue
 
-          const formattedDate = expDate.toLocaleDateString('en-US', {
+          eligibleCreds.push({ ...cred, daysRemaining })
+        }
+
+        if (eligibleCreds.length > 0) {
+          // Split into urgent (≤14 days or expired) and upcoming (15-60 days)
+          const urgentCreds = eligibleCreds.filter(c => c.daysRemaining <= 14)
+          const upcomingCreds = eligibleCreds.filter(c => c.daysRemaining > 14)
+
+          const formatDate = (d: string) => new Date(d).toLocaleDateString('en-US', {
             month: 'long', day: 'numeric', year: 'numeric',
           })
 
-          const subject = daysRemaining <= 0
-            ? `⚠️ ${cred.custom_title} has expired`
-            : daysRemaining <= 14
-              ? `⚠️ ${cred.custom_title} expires in ${daysRemaining} days`
-              : `${cred.custom_title} expires on ${formattedDate}`
+          const urgentItems = urgentCreds.map(c => ({
+            credentialName: c.custom_title,
+            expirationDate: formatDate(c.expiration_date),
+            daysRemaining: Math.max(0, c.daysRemaining),
+          }))
+
+          const upcomingItems = upcomingCreds.map(c => ({
+            credentialName: c.custom_title,
+            expirationDate: formatDate(c.expiration_date),
+            daysRemaining: c.daysRemaining,
+          }))
+
+          const subject = urgentCreds.length > 0
+            ? `⚠️ ${urgentCreds.length} credential${urgentCreds.length > 1 ? 's' : ''} need${urgentCreds.length === 1 ? 's' : ''} urgent attention`
+            : `${upcomingCreds.length} credential renewal${upcomingCreds.length > 1 ? 's' : ''} coming up`
 
           const props = {
             siteName: SITE_NAME,
             siteUrl,
-            credentialName: cred.custom_title,
-            expirationDate: formattedDate,
-            daysRemaining: Math.max(0, daysRemaining),
+            urgent: urgentItems,
+            upcoming: upcomingItems,
             actionUrl: `${siteUrl}/credentials`,
           }
 
-          const html = await renderAsync(React.createElement(CredentialReminderEmail, props))
-          const text = await renderAsync(React.createElement(CredentialReminderEmail, props), { plainText: true })
+          const html = await renderAsync(React.createElement(CredentialDigestEmail, props))
+          const text = await renderAsync(React.createElement(CredentialDigestEmail, props), { plainText: true })
           const messageId = crypto.randomUUID()
 
-          await supabase.from('reminders').insert({
-            user_id: userId,
-            module: 'credentials',
-            reminder_type: 'credential_expiration',
-            channel: 'email',
-            title: subject,
-            body: `${cred.custom_title} — ${daysRemaining <= 0 ? 'expired' : `${daysRemaining} days remaining`}`,
-            related_entity_type: 'credential',
-            related_entity_id: cred.id,
-            send_at: now.toISOString(),
-            status: 'sent',
-            sent_at: now.toISOString(),
-          })
+          // Insert one reminder per eligible credential for dedup tracking
+          for (const cred of eligibleCreds) {
+            await supabase.from('reminders').insert({
+              user_id: userId,
+              module: 'credentials',
+              reminder_type: 'credential_digest',
+              channel: 'email',
+              title: subject,
+              body: `${cred.custom_title} — ${cred.daysRemaining <= 0 ? 'expired' : `${cred.daysRemaining} days remaining`}`,
+              related_entity_type: 'credential',
+              related_entity_id: cred.id,
+              send_at: now.toISOString(),
+              status: 'sent',
+              sent_at: now.toISOString(),
+            })
+          }
 
           await supabase.rpc('enqueue_email', {
             queue_name: 'transactional_emails',
@@ -401,7 +496,7 @@ Deno.serve(async (req) => {
               html,
               text,
               purpose: 'transactional',
-              label: 'credential_reminder',
+              label: 'credential_digest',
               queued_at: now.toISOString(),
               unsubscribe_token: unsubscribeToken,
             },
@@ -409,18 +504,18 @@ Deno.serve(async (req) => {
 
           await supabase.from('email_send_log').insert({
             message_id: messageId,
-            template_name: 'credential_reminder_expiration',
+            template_name: 'credential_digest',
             recipient_email: recipientEmail,
             status: 'pending',
           })
 
           totalEnqueued++
 
-          // SMS for urgent credentials (≤14 days)
-          if (daysRemaining <= 14) {
-            const smsText = daysRemaining <= 0
+          // SMS for urgent credentials — still per-item
+          for (const cred of urgentCreds) {
+            const smsText = cred.daysRemaining <= 0
               ? `⚠️ Your ${cred.custom_title} has expired. Renew ASAP to avoid gaps. — ${SITE_NAME}`
-              : `⚠️ ${cred.custom_title} expires in ${daysRemaining} days (${formattedDate}). Start your renewal now. — ${SITE_NAME}`
+              : `⚠️ ${cred.custom_title} expires in ${cred.daysRemaining} days. Start your renewal now. — ${SITE_NAME}`
             await maybeSendSMS(supabase, userId, prefs, credCat, smsText)
           }
         }
@@ -469,106 +564,6 @@ async function maybeSendSMS(
   } catch (e) {
     console.error('SMS send failed:', e)
   }
-}
-
-// ── Helper: enqueue draft invoice reminder ──
-async function enqueueDraftReminder(
-  supabase: any, userId: string, recipientEmail: string,
-  drafts: any[], getFacName: (id: string) => string, siteUrl: string, now: Date, unsubscribeToken: string,
-): Promise<number> {
-  let props: any
-  let subject: string
-  let entityId: string | null = null
-
-  if (drafts.length === 1) {
-    const inv = drafts[0]
-    entityId = inv.id
-    subject = `Send invoice ${inv.invoice_number}`
-    props = {
-      siteName: SITE_NAME, siteUrl, reminderType: 'draft',
-      invoiceNumber: inv.invoice_number, facilityName: getFacName(inv.facility_id),
-      amount: inv.total_amount.toLocaleString(), actionUrl: `${siteUrl}/invoices/${inv.id}`,
-    }
-  } else {
-    subject = `${drafts.length} invoice drafts ready to send`
-    props = {
-      siteName: SITE_NAME, siteUrl, reminderType: 'draft',
-      draftCount: drafts.length,
-      totalAmount: drafts.reduce((s: number, i: any) => s + i.total_amount, 0).toLocaleString(),
-      actionUrl: `${siteUrl}/invoices`,
-    }
-  }
-
-  const html = await renderAsync(React.createElement(InvoiceReminderEmail, props))
-  const text = await renderAsync(React.createElement(InvoiceReminderEmail, props), { plainText: true })
-  const messageId = crypto.randomUUID()
-
-  await supabase.from('reminders').insert({
-    user_id: userId, module: 'invoices', reminder_type: 'invoice_draft_unsent',
-    channel: 'email', title: subject,
-    body: props.draftCount ? `$${props.totalAmount} total across ${props.draftCount} drafts` : `$${props.amount} to ${props.facilityName}`,
-    related_entity_type: entityId ? 'invoice' : null, related_entity_id: entityId,
-    send_at: now.toISOString(), status: 'sent', sent_at: now.toISOString(),
-  })
-
-  await supabase.rpc('enqueue_email', {
-    queue_name: 'transactional_emails',
-    payload: {
-      idempotency_key: messageId, message_id: messageId, to: recipientEmail,
-      from: `${SITE_NAME} <reminders@${FROM_DOMAIN}>`, sender_domain: SENDER_DOMAIN,
-      subject, html, text, purpose: 'transactional', label: 'invoice_reminder',
-      queued_at: now.toISOString(), unsubscribe_token: unsubscribeToken,
-    },
-  })
-
-  await supabase.from('email_send_log').insert({
-    message_id: messageId, template_name: 'invoice_reminder_draft',
-    recipient_email: recipientEmail, status: 'pending',
-  })
-
-  return 1
-}
-
-// ── Helper: enqueue overdue invoice reminder ──
-async function enqueueOverdueReminder(
-  supabase: any, userId: string, recipientEmail: string,
-  inv: any, getFacName: (id: string) => string, siteUrl: string, now: Date, unsubscribeToken: string,
-): Promise<number> {
-  const subject = `Invoice ${inv.invoice_number} is overdue`
-  const props = {
-    siteName: SITE_NAME, siteUrl, reminderType: 'overdue' as const,
-    invoiceNumber: inv.invoice_number, facilityName: getFacName(inv.facility_id),
-    amount: inv.balance_due.toLocaleString(), actionUrl: `${siteUrl}/invoices/${inv.id}`,
-  }
-
-  const html = await renderAsync(React.createElement(InvoiceReminderEmail, props))
-  const text = await renderAsync(React.createElement(InvoiceReminderEmail, props), { plainText: true })
-  const messageId = crypto.randomUUID()
-
-  await supabase.from('reminders').insert({
-    user_id: userId, module: 'invoices', reminder_type: 'invoice_overdue',
-    channel: 'email', title: subject,
-    body: `$${inv.balance_due.toLocaleString()} outstanding · ${getFacName(inv.facility_id)}`,
-    related_entity_type: 'invoice', related_entity_id: inv.id,
-    send_at: now.toISOString(), status: 'sent', sent_at: now.toISOString(),
-  })
-
-  await supabase.rpc('enqueue_email', {
-    queue_name: 'transactional_emails',
-    payload: {
-      idempotency_key: messageId, message_id: messageId, to: recipientEmail,
-      from: `${SITE_NAME} <reminders@${FROM_DOMAIN}>`, sender_domain: SENDER_DOMAIN,
-      subject, html, text, purpose: 'transactional', label: 'invoice_reminder',
-      queued_at: now.toISOString(), unsubscribe_token: unsubscribeToken,
-    },
-  })
-
-  await supabase.from('email_send_log').insert({
-    message_id: messageId, template_name: 'invoice_reminder_overdue',
-    recipient_email: recipientEmail, status: 'pending',
-  })
-
-  return 1
 }
 
 // ── Payment reminder mode (called from invoice detail) ──
