@@ -87,13 +87,9 @@ export function AppSidebar() {
     credentialBadgeVariant,
   } = useBadgeCounts();
 
+  const dashboardItem: NavItem = { title: 'Dashboard', url: '/', icon: LayoutDashboard };
+
   const groups: NavGroup[] = [
-    {
-      label: 'Overview',
-      items: [
-        { title: 'Dashboard', url: '/', icon: LayoutDashboard },
-      ],
-    },
     {
       label: 'Practice',
       items: [
@@ -115,7 +111,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarContent className="pt-3">
+      <SidebarContent className="pt-3 overflow-hidden">
         {/* Logo */}
         <div className={`flex items-center gap-3 px-4 py-4 ${collapsed ? 'justify-center' : ''}`}>
           <img src={locumOpsLogo} alt="LocumOps" className="h-8 w-8 rounded-lg" />
