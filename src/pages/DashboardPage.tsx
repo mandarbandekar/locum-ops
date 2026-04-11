@@ -21,9 +21,7 @@ import { calculateTax } from '@/components/tax-intelligence/TaxDashboard';
 import { UpcomingShiftsCard } from '@/components/dashboard/UpcomingShiftsCard';
 import { MoneyToCollectCard } from '@/components/dashboard/MoneyToCollectCard';
 import { NeedsAttentionCard, AttentionItem, type ReminderModule } from '@/components/dashboard/NeedsAttentionCard';
-import { GettingStartedChecklist } from '@/components/dashboard/GettingStartedChecklist';
 import { useUserProfile } from '@/contexts/UserProfileContext';
-import { ReadinessItem } from '@/components/dashboard/WorkReadinessStrip';
 import { SpotlightTour, TourStep } from '@/components/SpotlightTour';
 import { useSpotlightTour } from '@/hooks/useSpotlightTour';
 import {
@@ -42,14 +40,14 @@ const TOUR_STEPS: TourStep[] = [
   {
     targetSelector: '[data-tour="shifts"]',
     title: 'Upcoming Shifts',
-    description: "Your next 7 days at a glance. See which clinics you're covering, track your shift streak, and jump straight to your schedule. Relief vets juggling multiple clinics can spot gaps or double-bookings instantly.",
+    description: "Your next 7 days at a glance. See which clinics you're covering and jump straight to your schedule. Relief vets juggling multiple clinics can spot gaps or double-bookings instantly.",
     icon: CalendarDaysIcon2,
     placement: 'bottom',
   },
   {
     targetSelector: '[data-tour="money"]',
     title: 'Money to Collect',
-    description: "Track outstanding invoices, monthly revenue pace, and your oldest unpaid balance. LocumOps auto-generates invoices from your shifts — this card shows you who owes you money and how your cash flow is trending.",
+    description: "Track outstanding invoices and monthly collections. LocumOps auto-generates invoices from your shifts — this card shows you who owes you money.",
     icon: DollarSign,
     placement: 'bottom',
   },
@@ -99,36 +97,6 @@ const TOUR_STEPS: TourStep[] = [
 
 const dashDb = (table: string) => supabase.from(table as any);
 
-function computeStreak(): number {
-  try {
-    const key = 'locumops_last_visits';
-    const raw = localStorage.getItem(key);
-    const visits: string[] = raw ? JSON.parse(raw) : [];
-    const todayStr = format(new Date(), 'yyyy-MM-dd');
-
-    // Add today if not already there
-    if (!visits.includes(todayStr)) {
-      visits.push(todayStr);
-      // Keep last 90 days only
-      const recent = visits.slice(-90);
-      localStorage.setItem(key, JSON.stringify(recent));
-    }
-
-    // Count consecutive days ending today
-    const sorted = [...new Set(visits)].sort().reverse();
-    if (sorted[0] !== todayStr) return 0;
-    let streak = 1;
-    for (let i = 1; i < sorted.length; i++) {
-      const expected = format(new Date(new Date(sorted[0]).getTime() - i * 86400000), 'yyyy-MM-dd');
-      if (sorted[i] === expected) streak++;
-      else break;
-    }
-    return streak;
-  } catch {
-    return 0;
-  }
-}
-
 export default function DashboardPage() {
   const { shifts, invoices, facilities, payments, checklistItems, lineItems } = useData();
   const { user, isDemo } = useAuth();
@@ -139,7 +107,7 @@ export default function DashboardPage() {
   const now = new Date();
   const { isOpen: tourOpen, isTourCompleted, startTour, closeTour } = useSpotlightTour();
 
-  // Auto-start tour for new users (profile-backed, triggers once)
+  // Auto-start tour for new users
   useEffect(() => {
     if (!isTourCompleted && !isDemo && user) {
       const t = setTimeout(() => startTour(), 1500);
@@ -147,35 +115,22 @@ export default function DashboardPage() {
     }
   }, [isTourCompleted, isDemo, user]);
 
-  // Listen for manual tour trigger from header button
   useEffect(() => {
     const handler = () => startTour();
     window.addEventListener('locumops:start-tour', handler);
     return () => window.removeEventListener('locumops:start-tour', handler);
   }, [startTour]);
 
-  // Getting started checklist dismiss
-  const [checklistDismissed, setChecklistDismissed] = useState(() => {
-    try { return localStorage.getItem('locumops_checklist_dismissed') === 'true'; } catch { return false; }
-  });
-  const handleDismissChecklist = () => {
-    setChecklistDismissed(true);
-    try { localStorage.setItem('locumops_checklist_dismissed', 'true'); } catch {}
-  };
-
   // Tax & subscription data
-  const [taxChecklist, setTaxChecklist] = useState<{ completed: boolean }[]>([]);
   const [taxQuarters, setTaxQuarters] = useState<{ quarter: number; due_date: string; status: string }[]>([]);
   const [subscriptions, setSubscriptions] = useState<{ name: string; renewal_date: string | null; status: string; archived_at: string | null }[]>([]);
 
   useEffect(() => {
     if (isDemo || !user) return;
     Promise.all([
-      dashDb('tax_checklist_items').select('completed'),
       dashDb('tax_quarter_statuses').select('quarter,due_date,status').eq('tax_year', now.getFullYear()).order('quarter'),
       dashDb('required_subscriptions').select('name,renewal_date,status,archived_at').is('archived_at', null),
-    ]).then(([clRes, qsRes, subRes]) => {
-      if (clRes.data) setTaxChecklist(clRes.data as any[]);
+    ]).then(([qsRes, subRes]) => {
       if (qsRes.data) setTaxQuarters(qsRes.data as any[]);
       if (subRes.data) setSubscriptions(subRes.data as any[]);
     });
@@ -183,10 +138,7 @@ export default function DashboardPage() {
 
   const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
 
-  // Streak
-  const streakDays = useMemo(() => computeStreak(), []);
-
-  // ── This week's earnings ──
+  // ── This week's earnings (for briefing bar) ──
   const thisWeekEarnings = useMemo(() => {
     const weekStart = startOfWeek(now, { weekStartsOn: 1 });
     const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
@@ -198,52 +150,9 @@ export default function DashboardPage() {
       .reduce((sum, s) => sum + (s.rate_applied || 0), 0);
   }, [shifts, now]);
 
-  // ── 4-week sparkline data ──
-  const weeklySparkline = useMemo(() => {
-    return [3, 2, 1, 0].map(weeksAgo => {
-      const wStart = startOfWeek(subWeeks(now, weeksAgo), { weekStartsOn: 1 });
-      const wEnd = endOfWeek(subWeeks(now, weeksAgo), { weekStartsOn: 1 });
-      return shifts
-        .filter(s => {
-          const d = parseISO(s.start_datetime);
-          return isWithinInterval(d, { start: wStart, end: wEnd }) && new Date(s.end_datetime) < now;
-        })
-        .reduce((sum, s) => sum + (s.rate_applied || 0), 0);
-    });
-  }, [shifts, now]);
-
-  // ── Monthly pace ──
-  const monthlyPace = useMemo(() => {
-    const monthStart = startOfMonth(now);
-    const monthEnd = endOfMonth(now);
-    return shifts
-      .filter(s => {
-        const d = parseISO(s.start_datetime);
-        return isWithinInterval(d, { start: monthStart, end: monthEnd });
-      })
-      .reduce((sum, s) => sum + (s.rate_applied || 0), 0);
-  }, [shifts, now]);
-
-  // ── Oldest unpaid invoice ──
-  const oldestUnpaid = useMemo(() => {
-    const unpaid = invoices.filter(i => {
-      const st = computeInvoiceStatus(i);
-      return (st === 'sent' || st === 'partial' || st === 'overdue') && i.sent_at;
-    });
-    if (unpaid.length === 0) return undefined;
-    const oldest = unpaid.reduce((a, b) => (a.sent_at! < b.sent_at! ? a : b));
-    return {
-      id: oldest.id,
-      invoice_number: oldest.invoice_number,
-      facility_name: getFacilityName(oldest.facility_id),
-      daysOutstanding: differenceInDays(now, parseISO(oldest.sent_at!)),
-    };
-  }, [invoices, facilities, now]);
-
   // ── Summary data ──
   const summary = useMemo(() => {
     const draftInvoices = invoices.filter(i => i.status === 'draft');
-    const draftTotal = draftInvoices.reduce((s, i) => s + i.total_amount, 0);
 
     const unpaidInvoices = invoices.filter(i => {
       const status = computeInvoiceStatus(i);
@@ -256,36 +165,6 @@ export default function DashboardPage() {
     const paidThisMonth = payments
       .filter(p => { const d = new Date(p.payment_date); return d.getMonth() === currentMonth && d.getFullYear() === currentYear; })
       .reduce((s, p) => s + p.amount, 0);
-
-    // Revenue data for mini chart (last 6 months)
-    const months = eachMonthOfInterval({
-      start: startOfMonth(subMonths(new Date(), 5)),
-      end: endOfMonth(new Date()),
-    });
-    const revenueData = months.map(month => {
-      const monthEnd = endOfMonth(month);
-      const monthInvoices = invoices.filter(inv => {
-        const invDate = parseISO(inv.invoice_date);
-        return isWithinInterval(invDate, { start: month, end: monthEnd });
-      });
-      const paid = monthInvoices.filter(i => i.status === 'paid').reduce((s, i) => s + i.total_amount, 0);
-      const outstanding = monthInvoices.filter(i => {
-        const st = computeInvoiceStatus(i);
-        return st === 'sent' || st === 'partial' || st === 'overdue';
-      }).reduce((s, i) => s + i.balance_due, 0);
-
-      const invoicedShiftIds = new Set(
-        monthInvoices.flatMap(inv => (inv as any).line_items?.map((li: any) => li.shift_id) || [])
-      );
-      const anticipatedShifts = shifts.filter(s => {
-        const shiftDate = parseISO(s.start_datetime);
-        return isWithinInterval(shiftDate, { start: month, end: monthEnd }) &&
-          !invoicedShiftIds.has(s.id);
-      });
-      const anticipated = anticipatedShifts.reduce((s, sh) => s + sh.rate_applied, 0);
-
-      return { month: format(month, 'MMM'), paid, outstanding, anticipated };
-    });
 
     const todayEnd = endOfDay(now);
     const readyToReviewInvoices = draftInvoices.filter(inv =>
@@ -302,7 +181,7 @@ export default function DashboardPage() {
       due_date: inv.due_date,
     }));
 
-    return { draftInvoices, unpaidInvoices, outstandingTotal, paidThisMonth, revenueData, invoiceItems };
+    return { draftInvoices, unpaidInvoices, outstandingTotal, paidThisMonth, invoiceItems };
   }, [invoices, payments, now]);
 
   // ── Priorities / Attention items ──
@@ -316,8 +195,7 @@ export default function DashboardPage() {
     const manualReview = queue.filter(q => !(q.autoSendMonthly || q.autoSendPreshift) && (q.status === 'not_sent' || q.status === 'scheduled')).length;
     const needsUpdate = queue.filter(q => q.status === 'needs_update').length;
     const missingContact = queue.filter(q => !q.contactEmail && (q.monthlyEnabled || q.preshiftEnabled)).length;
-    const autoSendSoon = queue.filter(q => (q.autoSendMonthly || q.autoSendPreshift) && (q.status === 'not_sent' || q.status === 'scheduled')).length;
-    return { manualReview, needsUpdate, missingContact, autoSendSoon };
+    return { manualReview, needsUpdate, missingContact };
   }, [getMonthQueue, now]);
 
   const attentionItems = useMemo(() => {
@@ -391,7 +269,6 @@ export default function DashboardPage() {
       });
     }
 
-    // Uninvoiced shifts
     generateUninvoicedShiftReminders(shifts, lineItems, getFacilityName, now).forEach(r => {
       items.push({ title: r.title, context: r.body, link: r.link, icon: Clock, urgency: r.urgency, module: 'invoices' });
     });
@@ -419,7 +296,6 @@ export default function DashboardPage() {
       }
     }
 
-    // S-Corp nudge based on annualized income
     const paidIncome = invoices
       .filter(i => i.paid_at)
       .reduce((s, i) => s + i.total_amount, 0);
@@ -434,7 +310,6 @@ export default function DashboardPage() {
       });
     }
 
-    // Tax profile setup nudge
     if (!hasTaxProfile) {
       const hasPaidInvoice = invoices.some(i => i.paid_at);
       if (hasPaidInvoice) {
@@ -447,182 +322,68 @@ export default function DashboardPage() {
       }
     }
 
+    // Tax savings nudge as attention item
+    const completedShifts = shifts.filter(s => new Date(s.end_datetime) < now).length;
+    if (completedShifts >= 4 && annualizedIncome > 0) {
+      const estSavings = annualizedIncome > 80000
+        ? Math.round(annualizedIncome * 0.04)
+        : annualizedIncome > 50000
+        ? Math.round(annualizedIncome * 0.025)
+        : Math.round(annualizedIncome * 0.015);
+      if (estSavings > 0) {
+        items.push({
+          title: `Potential tax savings: ~$${estSavings.toLocaleString()}/yr`,
+          context: 'Personalized strategies based on your income',
+          link: '/tax-center?tab=tax-strategies', icon: TrendingUp, urgency: 11,
+          module: 'taxes',
+        });
+      }
+    }
+
     const sorted = items.sort((a, b) => a.urgency - b.urgency);
 
-    // Filter by user's reminder category preferences (in-app channel)
     return sorted.filter(item => {
       if (!item.module) return true;
       const catSetting = reminderCategories.find(c => c.category === item.module);
       if (!catSetting) return true;
       return catSetting.enabled && catSetting.in_app_enabled;
     });
-  }, [invoices, summary, checklistItems, confirmationBreakdown, credentialsList, subscriptions, taxQuarters, reminderCategories, now]);
-
-  // ── Work Readiness ──
-  const readinessItems = useMemo(() => {
-    const lines: ReadinessItem[] = [];
-
-    if (confirmationBreakdown.manualReview > 0 || confirmationBreakdown.needsUpdate > 0) {
-      const total = confirmationBreakdown.manualReview + confirmationBreakdown.needsUpdate;
-      lines.push({ text: `Confirmations: ${total} need${total > 1 ? '' : 's'} action`, link: '/schedule' });
-    }
-
-    const dueSoonChecklist = checklistItems.filter(item => {
-      const badge = getChecklistBadge(item);
-      return badge === 'due_soon' || badge === 'overdue';
-    });
-    if (dueSoonChecklist.length > 0) {
-      lines.push({ text: `Contracts: ${dueSoonChecklist.length} item${dueSoonChecklist.length > 1 ? 's' : ''} due soon`, link: '/facilities' });
-    }
-
-    if (credentialsList) {
-      const expiringSoon = credentialsList.filter(c => {
-        if (c.status === 'archived') return false;
-        if (!c.expiration_date) return false;
-        const days = differenceInDays(new Date(c.expiration_date), now);
-        return days >= 0 && days <= 30;
-      });
-      if (expiringSoon.length > 0) {
-        lines.push({ text: `Credentials: ${expiringSoon.length} renewal${expiringSoon.length > 1 ? 's' : ''} soon`, link: '/credentials' });
-      }
-    }
-
-    if (taxChecklist.length > 0) {
-      const completed = taxChecklist.filter(c => c.completed).length;
-      const percent = Math.round((completed / taxChecklist.length) * 100);
-      if (percent < 100) lines.push({ text: `Tax readiness: ${percent}%`, link: '/business?tab=tax-strategy&subtab=tracker' });
-    }
-
-    return lines;
-  }, [checklistItems, taxChecklist, confirmationBreakdown, credentialsList, now]);
+  }, [invoices, summary, checklistItems, confirmationBreakdown, credentialsList, subscriptions, taxQuarters, reminderCategories, shifts, hasTaxProfile, now]);
 
   const greeting = (() => {
     const hour = new Date().getHours();
     return hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
   })();
 
-  // ── Daily Briefing computation ──
+  // ── Compact briefing line ──
   const briefing = useMemo(() => {
     const todayShifts = shifts.filter(s => isToday(parseISO(s.start_datetime)));
-    const todayEarnings = todayShifts.reduce((sum, s) => sum + (s.rate_applied || 0), 0);
-    const totalCollectable = summary.outstandingTotal;
-    const overdueCount = invoices.filter(i => computeInvoiceStatus(i) === 'overdue').length;
-
     const parts: string[] = [];
 
     if (todayShifts.length > 0) {
-      parts.push(`${todayShifts.length} shift${todayShifts.length > 1 ? 's' : ''} today worth $${todayEarnings.toLocaleString()}`);
-    } else {
-      parts.push('No shifts today');
+      parts.push(`${todayShifts.length} shift${todayShifts.length > 1 ? 's' : ''} today`);
     }
 
     if (thisWeekEarnings > 0) {
-      parts.push(`$${thisWeekEarnings.toLocaleString()} earned this week`);
+      parts.push(`$${thisWeekEarnings.toLocaleString()} this week`);
     }
 
-    if (overdueCount > 0) {
-      parts.push(`${overdueCount} invoice${overdueCount > 1 ? 's' : ''} overdue`);
-    } else if (totalCollectable > 0) {
-      parts.push(`$${totalCollectable.toLocaleString()} to collect`);
-    }
-
-    // Next credential expiring within 60 days
-    if (credentialsList) {
-      const upcoming = credentialsList
-        .filter(c => c.status !== 'archived' && c.expiration_date)
-        .map(c => ({ title: c.custom_title, days: differenceInDays(parseISO(c.expiration_date!), now) }))
-        .filter(c => c.days >= 0 && c.days <= 60)
-        .sort((a, b) => a.days - b.days);
-      if (upcoming.length > 0) {
-        parts.push(`${upcoming[0].title} expires in ${upcoming[0].days}d`);
-      }
-    }
-
-    // Tax deadline within 30 days
-    const nextQ = taxQuarters.find(q => new Date(q.due_date) >= now && q.status !== 'paid');
-    if (nextQ) {
-      const dUntil = differenceInDays(new Date(nextQ.due_date), now);
-      if (dUntil <= 30) {
-        parts.push(`Q${nextQ.quarter} taxes due in ${dUntil}d`);
-      }
+    if (summary.outstandingTotal > 0) {
+      parts.push(`$${summary.outstandingTotal.toLocaleString()} to collect`);
     }
 
     return parts.join(' · ');
-  }, [shifts, summary, invoices, thisWeekEarnings, credentialsList, taxQuarters, now]);
-
-  // ── Tax snapshot for MoneyToCollectCard ──
-  const taxSnapshot = useMemo(() => {
-    if (!hasTaxProfile || !taxProfile) return undefined;
-    const paidIncome = invoices.filter(i => i.paid_at).reduce((s, i) => s + i.total_amount, 0);
-    if (paidIncome <= 0) return undefined;
-    const monthsElapsed = Math.max(1, now.getMonth() + 1);
-    const annualized = (paidIncome / monthsElapsed) * 12;
-    const result = calculateTax(annualized, taxProfile);
-    const quarterlyAmount = Math.round(result.totalAnnualTax / 4);
-    const nextQ = taxQuarters.find(q => new Date(q.due_date) >= now && q.status !== 'paid');
-    return {
-      quarterlyAmount,
-      nextDueDate: nextQ?.due_date || null,
-      nextQuarter: nextQ?.quarter || null,
-    };
-  }, [hasTaxProfile, taxProfile, invoices, taxQuarters, now]);
+  }, [shifts, thisWeekEarnings, summary.outstandingTotal, now]);
 
   return (
     <div className="flex flex-col h-[calc(100vh-theme(spacing.14)-theme(spacing.6)-theme(spacing.10))] overflow-hidden">
-      {/* Daily Briefing Strip */}
-      <div data-tour="briefing" className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/5 border border-primary/10 shrink-0">
+      {/* Compact greeting bar */}
+      <div data-tour="briefing" className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/5 border border-primary/10 shrink-0">
         <Zap className="h-3.5 w-3.5 text-primary shrink-0" />
-        <p className="text-[12px] sm:text-[13px] font-medium text-foreground truncate">{briefing}</p>
+        <p className="text-[12px] sm:text-[13px] font-medium text-foreground truncate">
+          {greeting}, {profile?.first_name || 'there'}{briefing ? ` · ${briefing}` : ''}
+        </p>
       </div>
-
-      {/* Getting Started Checklist */}
-      {!isDemo && !checklistDismissed && (
-        <div className="mt-3 shrink-0">
-          <GettingStartedChecklist onDismiss={handleDismissChecklist} />
-        </div>
-      )}
-
-      {/* Tax Savings Opportunities Card */}
-      {(() => {
-        const completedShifts = shifts.filter(s => new Date(s.end_datetime) < now).length;
-        if (completedShifts < 4) {
-          return (
-            <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-muted/30 border border-border mt-3 shrink-0">
-              <div className="p-2 rounded-full bg-primary/10 shrink-0">
-                <Lightbulb className="h-4 w-4 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground">Tax Savings Strategies</p>
-                <p className="text-xs text-muted-foreground">Log {4 - completedShifts} more shift{4 - completedShifts > 1 ? 's' : ''} to unlock personalized tax-saving strategies</p>
-              </div>
-            </div>
-          );
-        }
-        const paidIncome = invoices.filter(i => i.paid_at).reduce((s, i) => s + i.total_amount, 0);
-        const monthsElapsed = Math.max(1, now.getMonth() + 1);
-        const annualized = (paidIncome / monthsElapsed) * 12;
-        const estSavings = annualized > 80000
-          ? Math.round(annualized * 0.04)
-          : annualized > 50000
-          ? Math.round(annualized * 0.025)
-          : Math.round(annualized * 0.015);
-        if (estSavings <= 0) return null;
-        return (
-          <Link
-            to="/tax-center?tab=tax-strategies"
-            className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-emerald-500/5 border border-emerald-500/15 hover:bg-emerald-500/10 transition-colors group mt-3 shrink-0"
-          >
-            <div className="p-2 rounded-full bg-emerald-500/10 shrink-0">
-              <TrendingUp className="h-4 w-4 text-emerald-500" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground">You could save up to ${estSavings.toLocaleString()} this year</p>
-              <p className="text-xs text-muted-foreground">Personalized tax strategies based on your income</p>
-            </div>
-            <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground shrink-0" />
-          </Link>
-        );
-      })()}
 
       {/* 3-Column Layout */}
       <div className="grid gap-4 sm:gap-5 grid-cols-1 lg:grid-cols-12 lg:items-stretch mt-3 flex-1 min-h-0">
@@ -633,28 +394,21 @@ export default function DashboardPage() {
             getFacilityName={getFacilityName}
             greeting={`${greeting}, ${profile?.first_name || 'there'}`}
             firstName={profile?.first_name || 'there'}
-            streakDays={streakDays}
           />
         </div>
 
         {/* Center: Money to Collect */}
         <div data-tour="money" className="order-3 lg:order-none lg:col-span-4 min-h-0">
-           <MoneyToCollectCard
+          <MoneyToCollectCard
             outstandingTotal={summary.outstandingTotal}
             paidThisMonth={summary.paidThisMonth}
-            revenueData={summary.revenueData}
             invoiceItems={summary.invoiceItems}
-            thisWeekEarnings={thisWeekEarnings}
-            monthlyPace={monthlyPace}
-            oldestUnpaid={oldestUnpaid}
-            weeklySparkline={weeklySparkline}
-            taxSnapshot={taxSnapshot}
           />
         </div>
 
         {/* Right: Needs Attention */}
         <div data-tour="attention" className="order-first lg:order-none lg:col-span-4 min-h-0">
-          <NeedsAttentionCard items={attentionItems} readinessItems={readinessItems} />
+          <NeedsAttentionCard items={attentionItems} />
         </div>
       </div>
 

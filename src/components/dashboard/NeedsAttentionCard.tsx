@@ -1,8 +1,7 @@
 import { Card, CardContent } from '@/components/ui/card';
-import { AlertCircle, ArrowRight, Zap } from 'lucide-react';
+import { AlertCircle, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
-import { ReadinessItem } from '@/components/dashboard/WorkReadinessStrip';
 
 export type ReminderModule = 'invoices' | 'confirmations' | 'credentials' | 'contracts' | 'taxes' | 'outreach' | 'shifts';
 
@@ -18,17 +17,16 @@ export interface AttentionItem {
 
 interface NeedsAttentionCardProps {
   items: AttentionItem[];
-  readinessItems?: ReadinessItem[];
 }
 
-export function NeedsAttentionCard({ items, readinessItems = [] }: NeedsAttentionCardProps) {
+export function NeedsAttentionCard({ items }: NeedsAttentionCardProps) {
   const navigate = useNavigate();
 
   return (
     <Card className="h-full flex flex-col border-0 shadow-md overflow-hidden">
       <CardContent className="p-0 flex flex-col flex-1 min-h-0">
         {/* Header */}
-        <div className="px-5 pt-5 pb-4 flex items-center justify-between">
+        <div className="px-5 pt-5 pb-4 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-warning/10">
               <AlertCircle className="h-5 w-5 text-warning" />
@@ -48,7 +46,7 @@ export function NeedsAttentionCard({ items, readinessItems = [] }: NeedsAttentio
         </div>
 
         {/* Divider */}
-        <div className="h-px bg-border mx-5" />
+        <div className="h-px bg-border mx-5 shrink-0" />
 
         {/* Items */}
         <div className="flex-1 px-5 pt-3 pb-2 min-h-0 overflow-auto">
@@ -59,7 +57,7 @@ export function NeedsAttentionCard({ items, readinessItems = [] }: NeedsAttentio
             </div>
           ) : (
             <div className="space-y-0.5">
-              {items.slice(0, 6).map((item, i) => (
+              {items.slice(0, 8).map((item, i) => (
                 <div
                   key={i}
                   className="flex items-center gap-3 py-2.5 px-2 rounded-lg hover:bg-muted/40 transition-colors cursor-pointer group"
@@ -81,31 +79,6 @@ export function NeedsAttentionCard({ items, readinessItems = [] }: NeedsAttentio
             </div>
           )}
         </div>
-
-        {/* Work Readiness Section */}
-        {readinessItems.length > 0 && (
-          <>
-            <div className="h-px bg-border mx-5" />
-            <div className="px-5 pt-3 pb-4">
-              <div className="flex items-center gap-1.5 mb-2">
-                <Zap className="h-3 w-3 text-warning" />
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.08em]">Work Readiness</span>
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {readinessItems.map((item, i) => (
-                  <button
-                    key={i}
-                    className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-1 rounded-full border border-border/60 bg-card hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"
-                    onClick={() => navigate(item.link)}
-                  >
-                    <span className="truncate max-w-[140px]">{item.text}</span>
-                    <ArrowRight className="h-2.5 w-2.5 shrink-0" />
-                  </button>
-                ))}
-              </div>
-            </div>
-          </>
-        )}
       </CardContent>
     </Card>
   );

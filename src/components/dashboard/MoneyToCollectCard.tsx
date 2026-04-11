@@ -1,19 +1,11 @@
 import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { DollarSign, FileText, ArrowRight, TrendingUp, Send, Clock, Wallet, Target, AlertCircle, Calculator, ChevronDown } from 'lucide-react';
-import { differenceInDays, parseISO } from 'date-fns';
+import { DollarSign, FileText, ArrowRight, TrendingUp, Send, Clock, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-
-interface RevenueMonth {
-  month: string;
-  paid: number;
-  outstanding: number;
-  anticipated?: number;
-}
 
 interface InvoiceItem {
   id: string;
@@ -25,44 +17,18 @@ interface InvoiceItem {
   due_date: string | null;
 }
 
-interface OldestUnpaid {
-  id: string;
-  invoice_number: string;
-  facility_name: string;
-  daysOutstanding: number;
-}
-
-interface TaxSnapshotData {
-  quarterlyAmount: number;
-  nextDueDate: string | null;
-  nextQuarter: number | null;
-}
-
 interface MoneyToCollectCardProps {
   outstandingTotal: number;
   paidThisMonth: number;
-  revenueData: RevenueMonth[];
   invoiceItems: InvoiceItem[];
-  thisWeekEarnings?: number;
-  monthlyPace?: number;
-  oldestUnpaid?: OldestUnpaid;
-  weeklySparkline?: number[];
-  taxSnapshot?: TaxSnapshotData;
 }
 
 export function MoneyToCollectCard({
   outstandingTotal,
   paidThisMonth,
-  revenueData,
   invoiceItems,
-  thisWeekEarnings = 0,
-  monthlyPace = 0,
-  oldestUnpaid,
-  weeklySparkline = [],
-  taxSnapshot,
 }: MoneyToCollectCardProps) {
   const navigate = useNavigate();
-  const totalCollectable = outstandingTotal;
   const [invoicesOpen, setInvoicesOpen] = useState(false);
 
   const getIcon = (status: string) => {
@@ -89,7 +55,7 @@ export function MoneyToCollectCard({
             <div>
               <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">To Collect</p>
               <p className="text-2xl font-extrabold tracking-tight text-foreground leading-none">
-                ${totalCollectable.toLocaleString()}
+                ${outstandingTotal.toLocaleString()}
               </p>
             </div>
           </div>
@@ -98,54 +64,10 @@ export function MoneyToCollectCard({
             <span className="text-muted-foreground">Collected this month:</span>
             <span className="font-bold text-success">${paidThisMonth.toLocaleString()}</span>
           </div>
-          {monthlyPace > 0 && (
-            <div className="flex items-center gap-2 text-[12px] mt-1">
-              <Target className="h-3.5 w-3.5 text-primary" />
-              <span className="text-muted-foreground">On pace for</span>
-              <span className="font-bold text-foreground">${monthlyPace.toLocaleString()}</span>
-              <span className="text-muted-foreground">this month</span>
-            </div>
-          )}
         </div>
 
-        {/* This Week's Earnings */}
-        <div className="mx-5 mt-1 mb-1 px-3 py-2 rounded-lg bg-primary/5 border border-primary/10 shrink-0">
-          <div className="flex items-center gap-2">
-            <Wallet className="h-3.5 w-3.5 text-primary" />
-            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">This Week</span>
-            {weeklySparkline.length >= 4 && (() => {
-              const max = Math.max(...weeklySparkline, 1);
-              const h = 16;
-              const w = 40;
-              const points = weeklySparkline.map((v, i) => `${(i / 3) * w},${h - (v / max) * h}`).join(' ');
-              return (
-                <svg width={w} height={h} className="ml-1 shrink-0">
-                  <polyline points={points} fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  {weeklySparkline.map((v, i) => (
-                    <circle key={i} cx={(i / 3) * w} cy={h - (v / max) * h} r="1.5" fill="hsl(var(--primary))" />
-                  ))}
-                </svg>
-              );
-            })()}
-            <span className="ml-auto text-[15px] font-extrabold text-foreground">${thisWeekEarnings.toLocaleString()}</span>
-          </div>
-          <p className="text-[10px] text-muted-foreground mt-0.5 pl-5">Earned from completed shifts</p>
-        </div>
-
-        {/* Oldest unpaid invoice */}
-        {oldestUnpaid && (
-          <div
-            className="mx-5 mt-1 mb-1 px-3 py-2 rounded-lg bg-warning/5 border border-warning/10 cursor-pointer hover:bg-warning/10 transition-colors shrink-0"
-            onClick={() => navigate(`/invoices/${oldestUnpaid.id}`)}
-          >
-            <div className="flex items-center gap-2">
-              <AlertCircle className="h-3.5 w-3.5 text-warning shrink-0" />
-              <span className="text-[11px] text-muted-foreground truncate">
-                Oldest unpaid: <span className="font-semibold text-foreground">{oldestUnpaid.invoice_number}</span> · {oldestUnpaid.facility_name} · <span className="font-semibold text-warning">{oldestUnpaid.daysOutstanding}d</span>
-              </span>
-            </div>
-          </div>
-        )}
+        {/* Divider */}
+        <div className="h-px bg-border mx-5 shrink-0" />
 
         {/* Collapsible Ready to Review */}
         <Collapsible open={invoicesOpen} onOpenChange={setInvoicesOpen} className="flex-1 min-h-0 flex flex-col">
@@ -200,29 +122,6 @@ export function MoneyToCollectCard({
             </div>
           </CollapsibleContent>
         </Collapsible>
-
-        {/* Tax Snapshot */}
-        {taxSnapshot && (
-          <div
-            className="mx-5 mt-1 mb-1 px-3 py-2 rounded-lg bg-accent/30 border border-accent/20 cursor-pointer hover:bg-accent/50 transition-colors shrink-0"
-            onClick={() => navigate('/tax-center')}
-          >
-            <div className="flex items-center gap-2">
-              <Calculator className="h-3.5 w-3.5 text-accent-foreground shrink-0" />
-              <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Tax Set-Aside</span>
-              <span className="ml-auto text-[13px] font-extrabold text-foreground">
-                ~${taxSnapshot.quarterlyAmount.toLocaleString()}/qtr
-              </span>
-            </div>
-            {taxSnapshot.nextDueDate && taxSnapshot.nextQuarter && (
-              <p className="text-[10px] text-muted-foreground mt-0.5 pl-5">
-                Q{taxSnapshot.nextQuarter} due {differenceInDays(parseISO(taxSnapshot.nextDueDate), new Date()) <= 0
-                  ? 'now'
-                  : `in ${differenceInDays(parseISO(taxSnapshot.nextDueDate), new Date())}d`}
-              </p>
-            )}
-          </div>
-        )}
 
         {/* CTA */}
         <div className="px-4 pt-2 pb-4 shrink-0 mt-auto border-t border-border/50">
