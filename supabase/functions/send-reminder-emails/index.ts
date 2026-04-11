@@ -633,6 +633,8 @@ async function handlePaymentReminder(supabase: any, body: any, apiKey: string) {
   const text = await renderAsync(React.createElement(InvoiceReminderEmail, props), { plainText: true })
   const messageId = crypto.randomUUID()
 
+  const paymentUnsubToken = await getOrCreateUnsubscribeToken(supabase, recipientEmail)
+
   await supabase.rpc('enqueue_email', {
     queue_name: 'transactional_emails',
     payload: {
@@ -640,7 +642,7 @@ async function handlePaymentReminder(supabase: any, body: any, apiKey: string) {
       from: `${senderName} via ${SITE_NAME} <reminders@${FROM_DOMAIN}>`,
       sender_domain: SENDER_DOMAIN, subject, html, text,
       purpose: 'transactional', label: 'payment_reminder',
-      queued_at: now.toISOString(),
+      queued_at: now.toISOString(), unsubscribe_token: paymentUnsubToken,
     },
   })
 
