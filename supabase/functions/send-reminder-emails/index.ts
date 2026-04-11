@@ -18,6 +18,22 @@ const corsHeaders = {
     'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 }
 
+// ── Unsubscribe token helper ──
+async function getOrCreateUnsubscribeToken(supabase: any, email: string): Promise<string> {
+  const { data: existing } = await supabase
+    .from('email_unsubscribe_tokens')
+    .select('token')
+    .eq('email', email)
+    .is('used_at', null)
+    .maybeSingle()
+
+  if (existing?.token) return existing.token
+
+  const token = crypto.randomUUID()
+  await supabase.from('email_unsubscribe_tokens').insert({ email, token })
+  return token
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -120,6 +136,9 @@ Deno.serve(async (req) => {
     }
     if (!recipientEmail) continue
 
+    // Get unsubscribe token for this recipient (reused across all reminders)
+    const unsubscribeToken = await getOrCreateUnsubscribeToken(supabase, recipientEmail)
+
     // ── Load all category settings for this user ──
     const { data: allCatSettings } = await supabase
       .from('reminder_category_settings')
@@ -167,7 +186,7 @@ Deno.serve(async (req) => {
           // 1a) Draft invoices
           const drafts = invoices.filter((i: any) => i.status === 'draft')
           if (drafts.length > 0) {
-            totalEnqueued += await enqueueDraftReminder(supabase, userId, recipientEmail, drafts, getFacName, siteUrl, now)
+            totalEnqueued += await enqueueDraftReminder(supabase, userId, recipientEmail, drafts, getFacName, siteUrl, now, unsubscribeToken)
           }
 
           // 1b) Overdue invoices
@@ -178,7 +197,7 @@ Deno.serve(async (req) => {
           })
 
           for (const inv of overdue) {
-            totalEnqueued += await enqueueOverdueReminder(supabase, userId, recipientEmail, inv, getFacName, siteUrl, now)
+            totalEnqueued += await enqueueOverdueReminder(supabase, userId, recipientEmail, inv, getFacName, siteUrl, now, unsubscribeToken)
             // SMS for overdue invoices (high urgency)
             await maybeSendSMS(supabase, userId, prefs, invoiceCat,
               `⚠️ Invoice ${inv.invoice_number} is overdue — $${inv.balance_due.toLocaleString()} outstanding at ${getFacName(inv.facility_id)}. Open LocumOps to follow up.`)
@@ -275,7 +294,8 @@ Deno.serve(async (req) => {
                   text,
                   purpose: 'transactional',
                   label: 'shift_reminder',
-                  queued_at: now.toISOString(),
+                 queued_at: now.toISOString(),
+                 unsubscribe_token: unsubscribeToken,
                 },
               })
 
@@ -383,6 +403,7 @@ Deno.serve(async (req) => {
               purpose: 'transactional',
               label: 'credential_reminder',
               queued_at: now.toISOString(),
+              unsubscribe_token: unsubscribeToken,
             },
           })
 
@@ -453,7 +474,7 @@ async function maybeSendSMS(
 // ── Helper: enqueue draft invoice reminder ──
 async function enqueueDraftReminder(
   supabase: any, userId: string, recipientEmail: string,
-  drafts: any[], getFacName: (id: string) => string, siteUrl: string, now: Date,
+  drafts: any[], getFacName: (id: string) => string, siteUrl: string, now: Date, unsubscribeToken: string,
 ): Promise<number> {
   let props: any
   let subject: string
@@ -496,7 +517,7 @@ async function enqueueDraftReminder(
       idempotency_key: messageId, message_id: messageId, to: recipientEmail,
       from: `${SITE_NAME} <reminders@${FROM_DOMAIN}>`, sender_domain: SENDER_DOMAIN,
       subject, html, text, purpose: 'transactional', label: 'invoice_reminder',
-      queued_at: now.toISOString(),
+      queued_at: now.toISOString(), unsubscribe_token: unsubscribeToken,
     },
   })
 
@@ -511,7 +532,7 @@ async function enqueueDraftReminder(
 // ── Helper: enqueue overdue invoice reminder ──
 async function enqueueOverdueReminder(
   supabase: any, userId: string, recipientEmail: string,
-  inv: any, getFacName: (id: string) => string, siteUrl: string, now: Date,
+  inv: any, getFacName: (id: string) => string, siteUrl: string, now: Date, unsubscribeToken: string,
 ): Promise<number> {
   const subject = `Invoice ${inv.invoice_number} is overdue`
   const props = {
@@ -538,7 +559,7 @@ async function enqueueOverdueReminder(
       idempotency_key: messageId, message_id: messageId, to: recipientEmail,
       from: `${SITE_NAME} <reminders@${FROM_DOMAIN}>`, sender_domain: SENDER_DOMAIN,
       subject, html, text, purpose: 'transactional', label: 'invoice_reminder',
-      queued_at: now.toISOString(),
+      queued_at: now.toISOString(), unsubscribe_token: unsubscribeToken,
     },
   })
 
@@ -612,6 +633,8 @@ async function handlePaymentReminder(supabase: any, body: any, apiKey: string) {
   const text = await renderAsync(React.createElement(InvoiceReminderEmail, props), { plainText: true })
   const messageId = crypto.randomUUID()
 
+  const paymentUnsubToken = await getOrCreateUnsubscribeToken(supabase, recipientEmail)
+
   await supabase.rpc('enqueue_email', {
     queue_name: 'transactional_emails',
     payload: {
@@ -619,7 +642,7 @@ async function handlePaymentReminder(supabase: any, body: any, apiKey: string) {
       from: `${senderName} via ${SITE_NAME} <reminders@${FROM_DOMAIN}>`,
       sender_domain: SENDER_DOMAIN, subject, html, text,
       purpose: 'transactional', label: 'payment_reminder',
-      queued_at: now.toISOString(),
+      queued_at: now.toISOString(), unsubscribe_token: paymentUnsubToken,
     },
   })
 

@@ -147,6 +147,19 @@ Deno.serve(async (req) => {
         const text = await renderAsync(React.createElement(ShiftReminderEmail, props), { plainText: true })
         const messageId = crypto.randomUUID()
 
+        // Get unsubscribe token
+        const { data: existingToken } = await supabase
+          .from('email_unsubscribe_tokens')
+          .select('token')
+          .eq('email', recipientEmail)
+          .is('used_at', null)
+          .maybeSingle()
+        let unsubToken = existingToken?.token
+        if (!unsubToken) {
+          unsubToken = crypto.randomUUID()
+          await supabase.from('email_unsubscribe_tokens').insert({ email: recipientEmail, token: unsubToken })
+        }
+
         await supabase.rpc('enqueue_email', {
           queue_name: 'transactional_emails',
           payload: {
@@ -161,6 +174,7 @@ Deno.serve(async (req) => {
             purpose: 'transactional',
             label: 'shift_reminder',
             queued_at: now.toISOString(),
+            unsubscribe_token: unsubToken,
           },
         })
 
