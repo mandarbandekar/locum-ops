@@ -156,7 +156,8 @@ export default function OnboardingPage() {
   const getSkipHandler = (): (() => void) | undefined => {
     if (phase === 'manual_facility') return () => setPhase('calendar_sync');
     if (phase === 'first_shift') return () => setPhase('tax_enablement');
-    if (phase === 'tax_enablement') return () => setPhase('calendar_sync');
+    if (phase === 'tax_enablement') return () => setPhase('reminders');
+    if (phase === 'reminders') return () => setPhase('calendar_sync');
     if (phase === 'calendar_sync') return undefined; // handled inside WorkspaceReady
     return undefined;
   };
@@ -165,6 +166,7 @@ export default function OnboardingPage() {
     if (phase === 'manual_facility') return "Skip — I'll add clinics later";
     if (phase === 'first_shift') return 'Skip for now';
     if (phase === 'tax_enablement') return 'Skip for now';
+    if (phase === 'reminders') return 'Skip for now';
     return 'Skip';
   };
 
@@ -371,8 +373,15 @@ export default function OnboardingPage() {
             timezone={timezone}
             onContinue={(enabled) => {
               setTaxEnabled(enabled);
-              setPhase('calendar_sync');
+              setPhase('reminders');
             }}
+          />
+        );
+
+      case 'reminders':
+        return (
+          <OnboardingRemindersStep
+            onContinue={() => setPhase('calendar_sync')}
           />
         );
 
