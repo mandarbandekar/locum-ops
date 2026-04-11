@@ -14,6 +14,7 @@ import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
 import { AddFacilityDialog } from '@/components/AddFacilityDialog';
 import { OnboardingShiftStep } from '@/components/onboarding/OnboardingShiftStep';
 import { OnboardingTaxStep } from '@/components/onboarding/OnboardingTaxStep';
+import { OnboardingRemindersStep } from '@/components/onboarding/OnboardingRemindersStep';
 import { WorkspaceReady } from '@/components/onboarding/WorkspaceReady';
 
 type Phase =
@@ -21,6 +22,7 @@ type Phase =
   | 'manual_facility'
   | 'first_shift'
   | 'tax_enablement'
+  | 'reminders'
   | 'calendar_sync';
 
 const PHASE_STEP: Record<Phase, number> = {
@@ -28,16 +30,18 @@ const PHASE_STEP: Record<Phase, number> = {
   manual_facility: 2,
   first_shift: 3,
   tax_enablement: 4,
-  calendar_sync: 5,
+  reminders: 5,
+  calendar_sync: 6,
 };
 
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 6;
 
 const PHASE_LABEL: Record<Phase, string> = {
   profile: 'Your profile',
   manual_facility: 'Add a clinic',
   first_shift: 'Log a shift',
   tax_enablement: 'Tax tracking',
+  reminders: 'Notifications',
   calendar_sync: 'Finish up',
 };
 
@@ -46,7 +50,8 @@ const PHASE_BACK: Record<Phase, Phase | null> = {
   manual_facility: 'profile',
   first_shift: 'manual_facility',
   tax_enablement: 'first_shift',
-  calendar_sync: 'tax_enablement',
+  reminders: 'tax_enablement',
+  calendar_sync: 'reminders',
 };
 
 export default function OnboardingPage() {
