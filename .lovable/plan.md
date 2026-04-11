@@ -1,23 +1,48 @@
 
 
-# Update Settings → Reminders to Match Scoped Categories
+# Combine Reminder Emails into Digest Format
 
 ## Problem
-The Categories card currently shows all 7 categories (invoices, confirmations, shifts, credentials, contracts, outreach, taxes). Per the agreed scope, we should only show **Invoices** and **Credentials / CE** — the two categories users actually receive reminders for right now.
+Currently the system sends **one email per overdue invoice** and **one email per expiring credential**. If a user has 3 overdue invoices and 4 expiring credentials, they get 7 separate emails. Draft invoices are already batched, but overdue and credentials are not.
+
+## Solution
+Consolidate each category into a single digest-style email per run:
+- **One "Invoice Summary" email** covering all drafts + all overdue invoices in a single message
+- **One "Credentials Summary" email** covering all expiring/expired credentials in a single message
+
+This reduces inbox noise from N emails to at most 2.
 
 ## Changes
 
-### 1. `src/pages/SettingsRemindersPage.tsx`
-- Filter the Categories card to only render `invoices` and `credentials` instead of iterating over all `CATEGORIES`
-- Update `CATEGORY_LABELS` and `CATEGORY_DESCRIPTIONS` to only include those two, with descriptions matching the scoped reminders:
-  - **Invoices**: "Invoice ready for review and overdue payment alerts"
-  - **Credentials / CE**: "License expiration warnings (60 days out) and CE deadline alerts"
-- Remove the unused category label/description entries (confirmations, shifts, contracts, outreach, taxes)
-- Keep the timing options, channel sub-toggles, and everything else as-is
+### 1. New email template: `_shared/email-templates/invoice-digest.tsx`
+A combined invoice reminder that lists:
+- A "Ready to Send" section with draft invoices (count + total + individual line items)
+- An "Overdue" section with overdue invoices (each with number, facility, amount, days overdue)
+- Single CTA button: "Review Invoices"
 
-### 2. `src/hooks/useReminderPreferences.ts`
-- Add an exported constant `ACTIVE_CATEGORIES = ['invoices', 'credentials'] as const` for the settings page to use instead of the full `CATEGORIES` array
-- No other changes — the full `CATEGORIES` array stays for future use and DB seeding
+### 2. New email template: `_shared/email-templates/credential-digest.tsx`
+A combined credential reminder that lists:
+- An "Urgent" section for credentials expiring within 14 days or already expired
+- An "Upcoming" section for credentials expiring within 15-60 days
+- Each row: credential name, expiration date, days remaining
+- Single CTA button: "View Credentials"
 
-This is a small UI-only change — no database or edge function modifications needed.
+### 3. Update `send-reminder-emails/index.ts`
+- **Invoice section**: Collect all drafts and all overdue invoices, then send ONE email using the new digest template instead of calling `enqueueDraftReminder` + looping `enqueueOverdueReminder`
+- **Credential section**: Collect all expiring credentials (after dedup filtering), then send ONE email using the new digest template instead of looping per credential
+- Keep SMS behavior as-is (individual SMS for high-urgency items is fine — those are short and actionable)
+- Keep the per-item dedup logic for credentials (14-day window) but apply it to the batch: if ALL credentials in the batch were already reminded, skip; if any are new, send the digest with all current items
+- Uninvoiced shifts section stays unchanged (already grouped by facility)
+
+### 4. Simplify old templates
+Keep the single-item templates (`invoice-reminder.tsx`, `credential-reminder.tsx`) for the payment reminder flow (which sends to clinics, not the user) but the user-facing reminder path switches entirely to digests.
+
+### 5. Redeploy
+Deploy the updated `send-reminder-emails` edge function.
+
+## Template Design
+Both digest templates will use the same brand styling (Inter font, teal primary, red for urgent) and render a clean table/list of items with visual urgency indicators.
+
+## No database changes needed
+The `reminders` table entries will use a new `reminder_type` like `invoice_digest` and `credential_digest` for dedup tracking.
 
