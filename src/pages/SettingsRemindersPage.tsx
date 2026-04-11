@@ -7,30 +7,16 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useReminderPreferences, CATEGORIES, type ReminderCategory } from '@/hooks/useReminderPreferences';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { Bell, Mail, MessageSquare, Smartphone, Clock, Send, Loader2 } from 'lucide-react';
+import { useReminderPreferences, ACTIVE_CATEGORIES, type ActiveReminderCategory } from '@/hooks/useReminderPreferences';
 
-const CATEGORY_LABELS: Record<ReminderCategory, string> = {
+const CATEGORY_LABELS: Record<ActiveReminderCategory, string> = {
   invoices: 'Invoices',
-  confirmations: 'Confirmations',
-  shifts: 'Shifts',
   credentials: 'Credentials / CE',
-  contracts: 'Contracts',
-  outreach: 'Outreach',
-  taxes: 'Taxes',
 };
 
-const CATEGORY_DESCRIPTIONS: Partial<Record<ReminderCategory, string>> = {
-  invoices: 'Draft invoices, overdue payments, and uninvoiced shift nudges',
-  shifts: 'Pre-shift-end email & SMS alerts (1 hour before shift ends)',
-  confirmations: 'Monthly and pre-shift clinic confirmations',
-  credentials: 'Credential expirations, CE deadlines, and renewals',
-  contracts: 'Contract checklist due dates and overdue items',
-  outreach: 'Facility outreach follow-ups',
-  taxes: 'Quarterly estimated tax deadlines & S-Corp assessment nudge',
+const CATEGORY_DESCRIPTIONS: Record<ActiveReminderCategory, string> = {
+  invoices: 'Invoice ready for review and overdue payment alerts',
+  credentials: 'License expiration warnings (60 days out) and CE deadline alerts',
 };
 
 const TIMING_OPTIONS = [

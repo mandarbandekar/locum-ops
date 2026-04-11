@@ -29,6 +29,8 @@ export interface ReminderCategorySetting {
 const CATEGORIES = ['invoices', 'confirmations', 'shifts', 'credentials', 'contracts', 'outreach', 'taxes'] as const;
 export type ReminderCategory = typeof CATEGORIES[number];
 export { CATEGORIES };
+export const ACTIVE_CATEGORIES = ['invoices', 'credentials'] as const;
+export type ActiveReminderCategory = typeof ACTIVE_CATEGORIES[number];
 
 const DEFAULT_PREFS: Omit<ReminderPreferences, 'id'> = {
   email_enabled: true,
