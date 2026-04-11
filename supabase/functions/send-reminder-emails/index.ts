@@ -18,6 +18,22 @@ const corsHeaders = {
     'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 }
 
+// ── Unsubscribe token helper ──
+async function getOrCreateUnsubscribeToken(supabase: any, email: string): Promise<string> {
+  const { data: existing } = await supabase
+    .from('email_unsubscribe_tokens')
+    .select('token')
+    .eq('email', email)
+    .is('used_at', null)
+    .maybeSingle()
+
+  if (existing?.token) return existing.token
+
+  const token = crypto.randomUUID()
+  await supabase.from('email_unsubscribe_tokens').insert({ email, token })
+  return token
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
