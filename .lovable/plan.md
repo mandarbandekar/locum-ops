@@ -1,48 +1,43 @@
 
 
-# Combine Reminder Emails into Digest Format
+# Sidebar Visual Polish + Dynamic Badges
 
-## Problem
-Currently the system sends **one email per overdue invoice** and **one email per expiring credential**. If a user has 3 overdue invoices and 4 expiring credentials, they get 7 separate emails. Draft invoices are already batched, but overdue and credentials are not.
-
-## Solution
-Consolidate each category into a single digest-style email per run:
-- **One "Invoice Summary" email** covering all drafts + all overdue invoices in a single message
-- **One "Credentials Summary" email** covering all expiring/expired credentials in a single message
-
-This reduces inbox noise from N emails to at most 2.
+## Overview
+Refresh the left navigation with better visual hierarchy, more informative badges, and subtle polish to match the premium dark sidebar aesthetic.
 
 ## Changes
 
-### 1. New email template: `_shared/email-templates/invoice-digest.tsx`
-A combined invoice reminder that lists:
-- A "Ready to Send" section with draft invoices (count + total + individual line items)
-- An "Overdue" section with overdue invoices (each with number, facility, amount, days overdue)
-- Single CTA button: "Review Invoices"
+### 1. Dynamic Badge Counts (`useBadgeCounts` in AppSidebar.tsx)
+Expand the existing hook to surface more actionable counts:
+- **Invoices & Payments**: Keep draft count, add overdue count → show combined (e.g. `3` drafts + `1` overdue = badge shows `4`)
+- **Credentials & CE**: Count credentials expiring within 60 days → show badge when > 0
+- **Schedule**: Count unconfirmed upcoming shifts (confirmations needing action) → show badge when > 0
 
-### 2. New email template: `_shared/email-templates/credential-digest.tsx`
-A combined credential reminder that lists:
-- An "Urgent" section for credentials expiring within 14 days or already expired
-- An "Upcoming" section for credentials expiring within 15-60 days
-- Each row: credential name, expiration date, days remaining
-- Single CTA button: "View Credentials"
+Badges use color coding:
+- Default (gray/secondary) for informational counts
+- Destructive/red tint for overdue invoices or expired credentials
+- Warning/amber for items expiring soon
 
-### 3. Update `send-reminder-emails/index.ts`
-- **Invoice section**: Collect all drafts and all overdue invoices, then send ONE email using the new digest template instead of calling `enqueueDraftReminder` + looping `enqueueOverdueReminder`
-- **Credential section**: Collect all expiring credentials (after dedup filtering), then send ONE email using the new digest template instead of looping per credential
-- Keep SMS behavior as-is (individual SMS for high-urgency items is fine — those are short and actionable)
-- Keep the per-item dedup logic for credentials (14-day window) but apply it to the batch: if ALL credentials in the batch were already reminded, skip; if any are new, send the digest with all current items
-- Uninvoiced shifts section stays unchanged (already grouped by facility)
+### 2. Visual Polish (AppSidebar.tsx + index.css)
+- **Active state**: Add a left accent bar (3px primary-colored border-left) on the active nav item instead of just a background change, making the current page instantly scannable
+- **Hover states**: Add a subtle scale transform (`scale-[1.01]`) and smoother transition on hover
+- **Group headers**: Slightly more letter-spacing and uppercase styling for group labels to create stronger visual separation
+- **Icon treatment**: Active item icons get full opacity (1.0) and primary color tint; inactive stay at 0.6 opacity
+- **Spacing**: Tighten vertical gap between items within a group (currently `space-y-0.5`); add slightly more gap between groups
+- **Footer separator**: Add a subtle top border or divider line above the Settings item to visually separate it from the main nav
 
-### 4. Simplify old templates
-Keep the single-item templates (`invoice-reminder.tsx`, `credential-reminder.tsx`) for the payment reminder flow (which sends to clinics, not the user) but the user-facing reminder path switches entirely to digests.
+### 3. Badge Component Styling
+- Use a small dot indicator (no number) for low-urgency items (e.g. 1 credential expiring in 50 days)
+- Use numbered pill badges for higher counts or urgent items
+- Animate badge appearance with a subtle fade-in when counts change
 
-### 5. Redeploy
-Deploy the updated `send-reminder-emails` edge function.
+## Technical Details
+- `useBadgeCounts` will read `invoices` from `DataContext` (already available) and `credentials` from `useCredentials` or a lightweight Supabase query
+- For credentials, add a simple `useQuery` call filtered to `expiration_date` within 60 days of today
+- All changes are in `AppSidebar.tsx` and `index.css` — no database changes needed
+- Confirmations count uses the existing `useConfirmations` hook or a direct query
 
-## Template Design
-Both digest templates will use the same brand styling (Inter font, teal primary, red for urgent) and render a clean table/list of items with visual urgency indicators.
-
-## No database changes needed
-The `reminders` table entries will use a new `reminder_type` like `invoice_digest` and `credential_digest` for dedup tracking.
+## Files Modified
+- `src/components/AppSidebar.tsx` — badge logic, visual classes, active state indicator
+- `src/index.css` — sidebar-specific utility classes for active bar and transitions
 
