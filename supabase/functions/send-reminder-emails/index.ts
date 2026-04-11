@@ -136,6 +136,9 @@ Deno.serve(async (req) => {
     }
     if (!recipientEmail) continue
 
+    // Get unsubscribe token for this recipient (reused across all reminders)
+    const unsubscribeToken = await getOrCreateUnsubscribeToken(supabase, recipientEmail)
+
     // ── Load all category settings for this user ──
     const { data: allCatSettings } = await supabase
       .from('reminder_category_settings')
