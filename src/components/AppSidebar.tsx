@@ -87,13 +87,9 @@ export function AppSidebar() {
     credentialBadgeVariant,
   } = useBadgeCounts();
 
+  const dashboardItem: NavItem = { title: 'Dashboard', url: '/', icon: LayoutDashboard };
+
   const groups: NavGroup[] = [
-    {
-      label: 'Overview',
-      items: [
-        { title: 'Dashboard', url: '/', icon: LayoutDashboard },
-      ],
-    },
     {
       label: 'Practice',
       items: [
@@ -115,7 +111,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarContent className="pt-3">
+      <SidebarContent className="pt-3 overflow-hidden">
         {/* Logo */}
         <div className={`flex items-center gap-3 px-4 py-4 ${collapsed ? 'justify-center' : ''}`}>
           <img src={locumOpsLogo} alt="LocumOps" className="h-8 w-8 rounded-lg" />
@@ -125,6 +121,26 @@ export function AppSidebar() {
             </span>
           )}
         </div>
+        {/* Dashboard - standalone item */}
+        <SidebarGroup className="py-1">
+          <SidebarGroupContent>
+            <SidebarMenu className="space-y-px px-2">
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild size="lg">
+                  <NavLink
+                    to="/"
+                    end
+                    className="sidebar-nav-item group/navitem"
+                    activeClassName="sidebar-nav-item--active"
+                  >
+                    <LayoutDashboard className="mr-3 h-[18px] w-[18px] opacity-60 transition-all duration-150 group-[.sidebar-nav-item--active]/navitem:opacity-100 group-[.sidebar-nav-item--active]/navitem:text-sidebar-primary" />
+                    {!collapsed && <span className="flex-1 truncate">Dashboard</span>}
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
 
         {groups.map((group) => (
           <Collapsible key={group.label} defaultOpen className="group/collapsible">
