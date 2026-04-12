@@ -1,79 +1,39 @@
 
 
-# Dashboard Simplification — Single-Screen Command Center
+# Align Onboarding Tax Preview with V1 Calculator
 
-## Problem
-The dashboard is overloaded with competing elements:
-- **3 conditional banners** above the grid (briefing strip, getting started checklist, tax savings card)
-- **UpcomingShiftsCard** has: greeting, streak, next shift preview, collapsible shift list, Add Shift button, +Invoice/+CE links, "View full schedule" link — 7 distinct sections
-- **MoneyToCollectCard** has: total collectable, collected this month, monthly pace, this week earnings with sparkline, oldest unpaid alert, collapsible invoice list, tax snapshot, CTA button — 8 distinct sections
-- **NeedsAttentionCard** has: header with count badge, scrollable items list, work readiness pills section
+## Problem Found
+The onboarding tax step (`OnboardingTaxStep.tsx`) uses **hardcoded flat percentages** that don't match the real tax engine (`taxCalculatorV1.ts`):
 
-On a 616px-tall viewport with the header, there is roughly 530px of usable space. The banners consume ~100-140px before the cards even start, leaving the three cards cramped.
+| Component | Onboarding (current) | In-App V1 Engine |
+|-----------|---------------------|------------------|
+| Federal income tax | Flat 22% of quarterly income | Progressive brackets (10–37%) with standard deduction |
+| SE tax | Flat 15.3% of gross | 15.3% on 92.35% of net, with SS wage cap |
+| State tax | Flat 5% | State-specific (progressive/flat/none) |
+| Effective rate | Hardcoded 30% | Computed from all components |
+| S-Corp savings | Flat 5% of income | Compares full 1099 vs S-Corp paths |
 
-## Redesign Principles
-1. **One greeting, one glance** — merge the briefing strip into the greeting inside the shifts card
-2. **Remove conditional banners** — tax savings and getting started checklist move into the Needs Attention list as regular items (they already partially overlap)
-3. **Each card does ONE job well** with minimal sub-sections
-4. **No redundant data** — "this week earnings" and "monthly pace" overlap with "to collect" and "paid this month"; keep only the most actionable
+For a user earning $650/day × 240 days = $156K/year, the onboarding shows ~$11,700/quarter tax while the real engine would compute ~$9,800 — a meaningful gap that erodes trust when the user sees different numbers after setup.
 
-## New Layout
+## Solution
+Replace the hardcoded math in `OnboardingTaxStep.tsx` with a call to `calculate1099Tax()` from the V1 engine, using sensible defaults for fields not yet known (single filer, no expenses, detected state from timezone, no retirement contributions).
 
-```text
-┌─────────────────────────────────────────────────────┐
-│  Good Morning, Sarah · 2 shifts today · $1.2k week  │  ← compact greeting bar
-├──────────────┬──────────────┬────────────────────────┤
-│  SCHEDULE    │  MONEY       │  ACTION ITEMS          │
-│              │              │                        │
-│  Next shift  │  $X to       │  • 3 overdue invoices  │
-│  Today 8a-5p │  collect     │  • DEA expires in 12d  │
-│  ABC Clinic  │              │  • Q2 taxes due 14d    │
-│              │  $Y paid     │  • 2 confirmations     │
-│  ▼ 4 more    │  this month  │  • Set up tax profile  │
-│  this week   │              │  • Tax savings $2.1k   │
-│              │  ▼ 3 to      │                        │
-│              │  review      │                        │
-│              │              │                        │
-│  [Add Shift] │  [Invoices]  │                        │
-└──────────────┴──────────────┴────────────────────────┘
-```
+## Changes
 
-## Specific Changes
+### `src/components/onboarding/OnboardingTaxStep.tsx`
+- Import `calculate1099Tax` and `TaxProfileV1` from `@/lib/taxCalculatorV1`
+- Map timezone → state code using the existing `getStateFromTimezone` helper
+- Build a `TaxProfileV1` with: `entityType: '1099'`, `annualReliefIncome: rate × 240`, defaults for all other fields
+- Call `calculate1099Tax(profile)` and use the result for display values:
+  - `quarterlyPayment` → estimated quarterly tax
+  - `quarterlyIncome` = `rate × 60` (unchanged)
+  - Federal line = `vetFederalShare / 4`
+  - SE line = `totalSeTax / 4`
+  - State line = `stateTax / 4`
+  - Effective rate = `result.effectiveRate`
+- For S-Corp savings nudge: call `calculateSCorpTax` with a reasonable salary of 40% and show the delta
+- Update the "How we calculate this" copy to reference brackets instead of a flat 30%
 
-### 1. Remove top banners, merge into cards
-- **Delete** the Daily Briefing Strip — merge key stats into a single compact greeting row at the very top (same data, one line)
-- **Delete** the Tax Savings Opportunities card — add it as an attention item in NeedsAttentionCard instead
-- **Delete** the Getting Started Checklist from the dashboard surface — it already has overlap with attention items; move the incomplete checklist steps into the attention list as low-urgency items
-
-### 2. Slim down UpcomingShiftsCard
-- Remove the streak counter (nice-to-have but adds clutter)
-- Remove the "+Invoice" and "+CE Entry" footer links (these exist in the sidebar)
-- Remove the "View full schedule" link (the Add Shift button already navigates to schedule)
-- Keep: greeting/next shift, collapsible shift list, single Add Shift CTA
-
-### 3. Slim down MoneyToCollectCard
-- Remove "This Week" earnings box (redundant with briefing bar)
-- Remove the weekly sparkline SVG
-- Remove "Monthly Pace" line (nice stat but secondary)
-- Remove "Oldest Unpaid" standalone alert (already appears in attention items as overdue)
-- Remove "Tax Set-Aside" section (move to attention items when deadline is near)
-- Keep: total to collect, paid this month, collapsible invoice list, single CTA button
-
-### 4. Consolidate NeedsAttentionCard
-- Remove the separate "Work Readiness" pills section at the bottom — those items are already represented in the main attention list
-- Absorb the tax savings nudge and getting started steps as attention items
-- Increase max visible items from 6 to 8 (since the card now has more vertical space)
-
-### 5. Compact greeting bar
-Replace the briefing strip with a single-line bar inside the page (not a separate card):
-- Format: `Good Morning, Sarah · 2 shifts today · $1.2k this week · $4.5k to collect`
-- Same data, ~32px height instead of ~44px
-
-## Files Modified
-- `src/pages/DashboardPage.tsx` — remove banners, restructure layout, add checklist/tax items to attention list
-- `src/components/dashboard/UpcomingShiftsCard.tsx` — remove streak, footer links, simplify
-- `src/components/dashboard/MoneyToCollectCard.tsx` — remove sparkline, this-week box, oldest unpaid, tax snapshot, monthly pace
-- `src/components/dashboard/NeedsAttentionCard.tsx` — remove work readiness section, increase item cap
-
-## No database changes needed
+### No other files changed
+The V1 calculator is already the shared engine — this just wires the onboarding into it.
 
