@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { ArrowRight, Check, Lightbulb } from 'lucide-react';
+import { calculate1099Tax, calculateSCorpTax, TaxProfileV1 } from '@/lib/taxCalculatorV1';
 
 interface Props {
   shiftRate: number | null; // null = no shift data
@@ -13,17 +14,17 @@ interface Props {
   onContinue: (taxEnabled: boolean) => void;
 }
 
-function getStateFromTimezone(tz: string): string {
-  const map: Record<string, string> = {
-    'America/New_York': 'NY',
-    'America/Chicago': 'IL',
-    'America/Denver': 'CO',
-    'America/Phoenix': 'AZ',
-    'America/Los_Angeles': 'CA',
-    'America/Anchorage': 'AK',
-    'Pacific/Honolulu': 'HI',
+function getStateFromTimezone(tz: string): { code: string; label: string } {
+  const map: Record<string, { code: string; label: string }> = {
+    'America/New_York': { code: 'NY', label: 'NY' },
+    'America/Chicago': { code: 'IL', label: 'IL' },
+    'America/Denver': { code: 'CO', label: 'CO' },
+    'America/Phoenix': { code: 'AZ', label: 'AZ' },
+    'America/Los_Angeles': { code: 'CA', label: 'CA' },
+    'America/Anchorage': { code: 'AK', label: 'AK' },
+    'Pacific/Honolulu': { code: 'HI', label: 'HI' },
   };
-  return map[tz] || 'State';
+  return map[tz] || { code: '', label: 'State' };
 }
 
 export function OnboardingTaxStep({ shiftRate, hasShiftData, timezone, onContinue }: Props) {
@@ -31,13 +32,44 @@ export function OnboardingTaxStep({ shiftRate, hasShiftData, timezone, onContinu
   const [disclaimer, setDisclaimer] = useState(false);
 
   const rate = shiftRate || 650;
+  const annualIncome = rate * 240;
   const quarterlyIncome = rate * 60;
-  const quarterlyTax = quarterlyIncome * 0.30;
-  const federalEst = quarterlyIncome * 0.22;
-  const seTax = quarterlyIncome * 0.153;
-  const stateEst = quarterlyIncome * 0.05;
-  const scorpSavings = quarterlyIncome * 0.05;
-  const stateLabel = getStateFromTimezone(timezone);
+  const { code: stateCode, label: stateLabel } = getStateFromTimezone(timezone);
+
+  const taxResult = useMemo(() => {
+    const profile: TaxProfileV1 = {
+      entityType: '1099',
+      annualReliefIncome: annualIncome,
+      scorpSalary: 0,
+      extraWithholding: 0,
+      payPeriodsPerYear: 24,
+      filingStatus: 'single',
+      spouseW2Income: 0,
+      retirementContributions: 0,
+      annualBusinessExpenses: 0,
+      stateKey: stateCode,
+    };
+    return calculate1099Tax(profile);
+  }, [annualIncome, stateCode]);
+
+  const scorpSavings = useMemo(() => {
+    const scorpProfile: TaxProfileV1 = {
+      entityType: 'scorp',
+      annualReliefIncome: annualIncome,
+      scorpSalary: Math.round(annualIncome * 0.4),
+      extraWithholding: 0,
+      payPeriodsPerYear: 24,
+      filingStatus: 'single',
+      spouseW2Income: 0,
+      retirementContributions: 0,
+      annualBusinessExpenses: 0,
+      stateKey: stateCode,
+    };
+    const scorpResult = calculateSCorpTax(scorpProfile);
+    const sole1099Annual = taxResult.annualEstimatedTaxDue;
+    const scorpAnnual = scorpResult.annualEstimatedTaxDue + scorpResult.totalAlreadyWithheld;
+    return Math.max(0, Math.round((sole1099Annual - scorpAnnual) / 4));
+  }, [annualIncome, stateCode, taxResult]);
 
   const canProceed = !taxEnabled || (taxEnabled && disclaimer);
 
