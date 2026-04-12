@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { ArrowRight, Check, Lightbulb } from 'lucide-react';
+import { calculate1099Tax, calculateSCorpTax, TaxProfileV1 } from '@/lib/taxCalculatorV1';
 
 interface Props {
   shiftRate: number | null; // null = no shift data
@@ -13,17 +14,17 @@ interface Props {
   onContinue: (taxEnabled: boolean) => void;
 }
 
-function getStateFromTimezone(tz: string): string {
-  const map: Record<string, string> = {
-    'America/New_York': 'NY',
-    'America/Chicago': 'IL',
-    'America/Denver': 'CO',
-    'America/Phoenix': 'AZ',
-    'America/Los_Angeles': 'CA',
-    'America/Anchorage': 'AK',
-    'Pacific/Honolulu': 'HI',
+function getStateFromTimezone(tz: string): { code: string; label: string } {
+  const map: Record<string, { code: string; label: string }> = {
+    'America/New_York': { code: 'NY', label: 'NY' },
+    'America/Chicago': { code: 'IL', label: 'IL' },
+    'America/Denver': { code: 'CO', label: 'CO' },
+    'America/Phoenix': { code: 'AZ', label: 'AZ' },
+    'America/Los_Angeles': { code: 'CA', label: 'CA' },
+    'America/Anchorage': { code: 'AK', label: 'AK' },
+    'Pacific/Honolulu': { code: 'HI', label: 'HI' },
   };
-  return map[tz] || 'State';
+  return map[tz] || { code: '', label: 'State' };
 }
 
 export function OnboardingTaxStep({ shiftRate, hasShiftData, timezone, onContinue }: Props) {
@@ -31,13 +32,44 @@ export function OnboardingTaxStep({ shiftRate, hasShiftData, timezone, onContinu
   const [disclaimer, setDisclaimer] = useState(false);
 
   const rate = shiftRate || 650;
+  const annualIncome = rate * 240;
   const quarterlyIncome = rate * 60;
-  const quarterlyTax = quarterlyIncome * 0.30;
-  const federalEst = quarterlyIncome * 0.22;
-  const seTax = quarterlyIncome * 0.153;
-  const stateEst = quarterlyIncome * 0.05;
-  const scorpSavings = quarterlyIncome * 0.05;
-  const stateLabel = getStateFromTimezone(timezone);
+  const { code: stateCode, label: stateLabel } = getStateFromTimezone(timezone);
+
+  const taxResult = useMemo(() => {
+    const profile: TaxProfileV1 = {
+      entityType: '1099',
+      annualReliefIncome: annualIncome,
+      scorpSalary: 0,
+      extraWithholding: 0,
+      payPeriodsPerYear: 24,
+      filingStatus: 'single',
+      spouseW2Income: 0,
+      retirementContributions: 0,
+      annualBusinessExpenses: 0,
+      stateKey: stateCode,
+    };
+    return calculate1099Tax(profile);
+  }, [annualIncome, stateCode]);
+
+  const scorpSavings = useMemo(() => {
+    const scorpProfile: TaxProfileV1 = {
+      entityType: 'scorp',
+      annualReliefIncome: annualIncome,
+      scorpSalary: Math.round(annualIncome * 0.4),
+      extraWithholding: 0,
+      payPeriodsPerYear: 24,
+      filingStatus: 'single',
+      spouseW2Income: 0,
+      retirementContributions: 0,
+      annualBusinessExpenses: 0,
+      stateKey: stateCode,
+    };
+    const scorpResult = calculateSCorpTax(scorpProfile);
+    const sole1099Annual = taxResult.annualEstimatedTaxDue;
+    const scorpAnnual = scorpResult.annualEstimatedTaxDue + scorpResult.totalAlreadyWithheld;
+    return Math.max(0, Math.round((sole1099Annual - scorpAnnual) / 4));
+  }, [annualIncome, stateCode, taxResult]);
 
   const canProceed = !taxEnabled || (taxEnabled && disclaimer);
 
@@ -66,7 +98,7 @@ export function OnboardingTaxStep({ shiftRate, hasShiftData, timezone, onContinu
                 <div className="text-center p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/50 dark:border-amber-800/30">
                   <p className="text-xs text-muted-foreground mb-1">Est. quarterly tax</p>
                   <p className="text-2xl font-bold text-amber-600 dark:text-amber-400 animate-scale-up">
-                    ${quarterlyTax.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    ${taxResult.quarterlyPayment.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                   </p>
                 </div>
                 <div className="text-center p-4 rounded-xl bg-green-50 dark:bg-green-950/30 border border-green-200/50 dark:border-green-800/30">
@@ -80,27 +112,27 @@ export function OnboardingTaxStep({ shiftRate, hasShiftData, timezone, onContinu
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between py-1.5 border-b border-border/50">
                   <span className="text-muted-foreground">Federal income (est.)</span>
-                  <span className="font-medium">${federalEst.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                  <span className="font-medium">${Math.round(taxResult.vetFederalShare / 4).toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between py-1.5 border-b border-border/50">
                   <span className="text-muted-foreground">Self-employment tax</span>
-                  <span className="font-medium">${seTax.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                  <span className="font-medium">${Math.round(taxResult.totalSeTax / 4).toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between py-1.5">
                   <span className="text-muted-foreground">{stateLabel} state (est.)</span>
-                  <span className="font-medium">${stateEst.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                  <span className="font-medium">${Math.round(taxResult.stateTax / 4).toLocaleString()}</span>
                 </div>
               </div>
 
               <p className="text-xs text-muted-foreground">
-                Based on ~60 shift-days/quarter at ${rate}/day · 30% effective rate · Refines as you log more shifts
+                Based on ~60 shift-days/quarter at ${rate}/day · {taxResult.effectiveRate}% effective rate · Refines as you log more shifts
               </p>
 
               {/* How we calculate this */}
               <div className="bg-muted/50 rounded-lg p-3 space-y-1">
                 <p className="text-xs font-semibold text-muted-foreground">How we calculate this</p>
                 <p className="text-xs text-muted-foreground">
-                  We project your quarterly income based on your day rate and an average of 60 shift-days per quarter. Your effective tax rate (30%) includes federal income tax, self-employment tax, and an estimated state rate. These numbers refine automatically as you log more shifts throughout the year.
+                  We project your annual income based on your day rate and ~240 shift-days per year. Taxes are calculated using 2025 federal progressive brackets, self-employment tax (15.3% on 92.35% of net income with Social Security wage cap), and state-specific rates. These numbers refine automatically as you log more shifts throughout the year.
                 </p>
               </div>
             </CardContent>
