@@ -1,0 +1,1 @@
+ALTER TABLE public.user_profiles ADD COLUMN has_seen_welcome boolean NOT NULL DEFAULT false;

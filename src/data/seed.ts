@@ -201,4 +201,5 @@ export const seedUserProfile: UserProfile = {
   invoice_phone: '503-555-1234',
   home_address: '742 Evergreen Terrace\nPortland, OR 97201',
   completed_tours: [],
+  has_seen_welcome: true,
 };

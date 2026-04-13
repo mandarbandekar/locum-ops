@@ -30,6 +30,7 @@ import QuizPage from "@/pages/QuizPage";
 import ResultsPage from "@/pages/ResultsPage";
 import ThanksPage from "@/pages/ThanksPage";
 import OnboardingPage from "@/pages/OnboardingPage";
+import WelcomePage from "@/pages/WelcomePage";
 import SettingsProfilePage from "@/pages/SettingsProfilePage";
 import SettingsSchedulingPage from "@/pages/SettingsSchedulingPage";
 import SettingsCalendarSyncPage from "@/pages/SettingsCalendarSyncPage";
@@ -59,6 +60,17 @@ function AuthenticatedApp() {
   }
 
   if (needsOnboarding && !isDemo) {
+    const { profile } = useUserProfile();
+    if (!profile?.has_seen_welcome) {
+      return (
+        <DataProvider isDemo={false}>
+          <Routes>
+            <Route path="/welcome" element={<WelcomePage />} />
+            <Route path="*" element={<Navigate to="/welcome" replace />} />
+          </Routes>
+        </DataProvider>
+      );
+    }
     return (
       <DataProvider isDemo={false}>
         <Routes>

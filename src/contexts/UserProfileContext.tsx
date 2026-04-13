@@ -40,6 +40,7 @@ export interface UserProfile {
   invoice_phone: string | null;
   home_address: string;
   completed_tours: string[];
+  has_seen_welcome: boolean;
 }
 
 const DEFAULT_TERMS_FIELDS: TermsFieldsEnabled = {
@@ -72,6 +73,7 @@ export const DEFAULT_PROFILE: Omit<UserProfile, 'id' | 'user_id'> = {
   invoice_phone: null,
   home_address: '',
   completed_tours: [],
+  has_seen_welcome: false,
 };
 
 interface UserProfileContextType {
@@ -103,7 +105,8 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
           company_address: '2480 NW Thurman St, Suite 3\nPortland, OR 97210',
           invoice_email: 'sarah@mitchellvetrelief.com',
           invoice_phone: '503-555-0147',
-          home_address: '1234 Elm Street\nPortland, OR 97201',
+           home_address: '1234 Elm Street\nPortland, OR 97201',
+           has_seen_welcome: true,
         }
       : null
   );
@@ -179,6 +182,7 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
           invoice_phone: d.invoice_phone || null,
           home_address: d.home_address || '',
           completed_tours: (d.completed_tours as string[]) || [],
+          has_seen_welcome: !!d.has_seen_welcome,
         });
       } else {
         // Pull signup metadata from auth user to pre-populate profile
@@ -231,6 +235,7 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
             invoice_phone: nd.invoice_phone || null,
             home_address: nd.home_address || '',
             completed_tours: [],
+            has_seen_welcome: false,
           });
         }
       }

@@ -3178,6 +3178,7 @@ export type Database = {
           email_tone: string
           facilities_count_band: string
           first_name: string
+          has_seen_welcome: boolean
           home_address: string
           id: string
           invoice_due_default_days: number
@@ -3204,6 +3205,7 @@ export type Database = {
           email_tone?: string
           facilities_count_band?: string
           first_name?: string
+          has_seen_welcome?: boolean
           home_address?: string
           id?: string
           invoice_due_default_days?: number
@@ -3230,6 +3232,7 @@ export type Database = {
           email_tone?: string
           facilities_count_band?: string
           first_name?: string
+          has_seen_welcome?: boolean
           home_address?: string
           id?: string
           invoice_due_default_days?: number
