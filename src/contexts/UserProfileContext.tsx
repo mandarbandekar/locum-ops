@@ -40,6 +40,7 @@ export interface UserProfile {
   invoice_phone: string | null;
   home_address: string;
   completed_tours: string[];
+  has_seen_welcome: boolean;
 }
 
 const DEFAULT_TERMS_FIELDS: TermsFieldsEnabled = {
@@ -72,6 +73,7 @@ export const DEFAULT_PROFILE: Omit<UserProfile, 'id' | 'user_id'> = {
   invoice_phone: null,
   home_address: '',
   completed_tours: [],
+  has_seen_welcome: false,
 };
 
 interface UserProfileContextType {
@@ -179,6 +181,7 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
           invoice_phone: d.invoice_phone || null,
           home_address: d.home_address || '',
           completed_tours: (d.completed_tours as string[]) || [],
+          has_seen_welcome: !!d.has_seen_welcome,
         });
       } else {
         // Pull signup metadata from auth user to pre-populate profile
@@ -231,6 +234,7 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
             invoice_phone: nd.invoice_phone || null,
             home_address: nd.home_address || '',
             completed_tours: [],
+            has_seen_welcome: false,
           });
         }
       }
