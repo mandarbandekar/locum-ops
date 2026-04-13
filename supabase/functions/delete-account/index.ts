@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const ALLOWED_ORIGINS = [
   'https://locum-ops.lovable.app',
   'https://id-preview--2263427a-5054-4595-ad6b-d5ed09d0eb59.lovable.app',
+  'https://2263427a-5054-4595-ad6b-d5ed09d0eb59.lovableproject.com',
 ];
 
 function getCorsHeaders(req: Request) {
@@ -10,7 +11,7 @@ function getCorsHeaders(req: Request) {
   const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
   };
 }
 
