@@ -74,13 +74,12 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Tables with user_id column (order matters for FK dependencies)
     const userTables = [
       "shift_calendar_sync",
       "calendar_sync_preferences",
       "calendar_feed_tokens",
       "calendar_connections",
-      "confirmation_shift_links",
-      "confirmation_activity",
       "confirmation_records",
       "invoice_activity",
       "invoice_payments",
@@ -93,13 +92,10 @@ Deno.serve(async (req) => {
       "email_logs",
       "shifts",
       "facilities",
-      "credential_packet_items",
       "credential_packets",
       "credential_reminders",
       "credential_renewal_portals",
-      "credential_history",
       "credential_documents",
-      "ce_credential_links",
       "ce_entries",
       "clinic_requirement_mappings",
       "clinic_requirements",
@@ -117,6 +113,10 @@ Deno.serve(async (req) => {
       "user_profiles",
       "profiles",
     ];
+
+    // Tables without user_id that are cleaned via cascade or don't need direct deletion:
+    // confirmation_shift_links, confirmation_activity, credential_packet_items,
+    // credential_history, ce_credential_links — these cascade from parent tables
 
     for (const table of userTables) {
       const col = table === "profiles" ? "id" : "user_id";
