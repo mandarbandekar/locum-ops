@@ -13,7 +13,7 @@ const steps = [
   {
     icon: CalendarClock,
     title: 'Log a few shifts',
-    description: 'Past or upcoming — we'll use these to generate invoices.',
+    description: "Past or upcoming — we'll use these to generate invoices.",
     time: '~3 min',
   },
   {
