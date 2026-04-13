@@ -1,33 +1,21 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const ALLOWED_ORIGINS = [
-  'https://locum-ops.lovable.app',
-  'https://id-preview--2263427a-5054-4595-ad6b-d5ed09d0eb59.lovable.app',
-  'https://2263427a-5054-4595-ad6b-d5ed09d0eb59.lovableproject.com',
-];
-
-function getCorsHeaders(req: Request) {
-  const origin = req.headers.get('Origin') || '';
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
-  return {
-    'Access-Control-Allow-Origin': allowedOrigin,
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
-  };
-}
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+};
 
 const MAX_REASON_LEN = 500;
 const MAX_FEEDBACK_LEN = 2000;
 
 Deno.serve(async (req) => {
-  const corsHeaders = getCorsHeaders(req);
-
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
+    if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Not authenticated" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -36,19 +24,26 @@ Deno.serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+    // Use anon client with user's auth header to validate session
+    const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
-    const { data: { user }, error: authError } = await anonClient.auth.getUser();
-    if (authError || !user) {
+
+    // Use getClaims for fast JWT validation
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      console.error("Claims validation error:", claimsError);
       return new Response(JSON.stringify({ error: "Invalid session" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const userId = user.id;
+    const userId = claimsData.claims.sub as string;
+    const userEmail = (claimsData.claims.email as string) || "";
 
     // Validate and truncate input
     let body: any;
@@ -73,19 +68,18 @@ Deno.serve(async (req) => {
     if (reason || feedback) {
       await admin.from("account_deletion_logs").insert({
         user_id: userId,
-        email: user.email || "",
+        email: userEmail,
         reason,
         feedback,
       });
     }
 
+    // Tables with user_id column (order matters for FK dependencies)
     const userTables = [
       "shift_calendar_sync",
       "calendar_sync_preferences",
       "calendar_feed_tokens",
       "calendar_connections",
-      "confirmation_shift_links",
-      "confirmation_activity",
       "confirmation_records",
       "invoice_activity",
       "invoice_payments",
@@ -98,13 +92,10 @@ Deno.serve(async (req) => {
       "email_logs",
       "shifts",
       "facilities",
-      "credential_packet_items",
       "credential_packets",
       "credential_reminders",
       "credential_renewal_portals",
-      "credential_history",
       "credential_documents",
-      "ce_credential_links",
       "ce_entries",
       "clinic_requirement_mappings",
       "clinic_requirements",
@@ -122,6 +113,10 @@ Deno.serve(async (req) => {
       "user_profiles",
       "profiles",
     ];
+
+    // Tables without user_id that are cleaned via cascade or don't need direct deletion:
+    // confirmation_shift_links, confirmation_activity, credential_packet_items,
+    // credential_history, ce_credential_links — these cascade from parent tables
 
     for (const table of userTables) {
       const col = table === "profiles" ? "id" : "user_id";
@@ -147,7 +142,7 @@ Deno.serve(async (req) => {
     console.error("Delete account error:", err);
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
-      headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
