@@ -105,7 +105,8 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
           company_address: '2480 NW Thurman St, Suite 3\nPortland, OR 97210',
           invoice_email: 'sarah@mitchellvetrelief.com',
           invoice_phone: '503-555-0147',
-          home_address: '1234 Elm Street\nPortland, OR 97201',
+           home_address: '1234 Elm Street\nPortland, OR 97201',
+           has_seen_welcome: true,
         }
       : null
   );
