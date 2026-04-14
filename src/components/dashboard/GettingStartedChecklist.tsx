@@ -9,6 +9,9 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
+import { useTaxIntelligence } from '@/hooks/useTaxIntelligence';
+import { SCHEDULE_OPTIONS, daysPerWeekToIndex } from '@/components/tax-intelligence/TaxProjectionDisplay';
+import { calculate1099Tax, type TaxProfileV1 } from '@/lib/taxCalculatorV1';
 import { toast } from 'sonner';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
