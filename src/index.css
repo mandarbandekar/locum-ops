@@ -147,6 +147,13 @@
 
     --border-soft: 50 3% 22%;           /* #3A3A38 border-subtle */
 
+    /* Card tokens – dark */
+    --card-border: 50 3% 22%;           /* #3A3A38 */
+    --stat-card-bg: 155 69% 37% / 0.12;
+    --stat-card-value: 155 52% 75%;     /* #9FE1CB */
+    --stat-card-label: 155 50% 58%;     /* #5DCAA5 */
+    --dialog-overlay: 0 0% 0% / 0.7;
+
     /* Button tokens – dark */
     --btn-primary-bg: 155 69% 37%;      /* #1D9E75 */
     --btn-primary-text: 0 0% 100%;
