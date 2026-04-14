@@ -190,6 +190,15 @@
     --btn-ghost-border: 155 50% 58% / 0.3;
     --btn-accent-bg: 16 65% 52%;        /* #D85A30 */
     --btn-accent-text: 0 0% 100%;
+
+    /* Form field tokens – dark */
+    --input-bg: 50 3% 18%;              /* #2F2F2D */
+    --input-border: 50 2% 26%;          /* #444441 */
+    --input-text: 40 22% 93%;           /* #F1EFE8 */
+    --input-placeholder: 60 2% 36%;     /* #5F5E5A */
+    --input-focus-border: 155 69% 37%;  /* #1D9E75 */
+    --input-focus-ring: 155 69% 37% / 0.15;
+    --label-color: 44 6% 68%;           /* #B4B2A9 */
   }
 }
 
