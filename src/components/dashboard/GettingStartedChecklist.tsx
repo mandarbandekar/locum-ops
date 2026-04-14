@@ -9,6 +9,9 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
+import { useTaxIntelligence } from '@/hooks/useTaxIntelligence';
+import { SCHEDULE_OPTIONS, daysPerWeekToIndex } from '@/components/tax-intelligence/TaxProjectionDisplay';
+import { calculate1099Tax, type TaxProfileV1 } from '@/lib/taxCalculatorV1';
 import { toast } from 'sonner';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
@@ -25,6 +28,7 @@ export function GettingStartedChecklist({ onOpenAddClinic, onOpenAddShift }: Pro
   const navigate = useNavigate();
   const { facilities, shifts, invoices } = useData();
   const { profile, updateProfile } = useUserProfile();
+  const { profile: taxProfile } = useTaxIntelligence();
   const [confirmDismiss, setConfirmDismiss] = useState(false);
   const [autoHidden, setAutoHidden] = useState(false);
 
@@ -62,14 +66,39 @@ export function GettingStartedChecklist({ onOpenAddClinic, onOpenAddShift }: Pro
     await handleDismissSilent();
   };
 
-  // Don't render if dismissed or auto-hidden
-  if (profile?.dismissed_prompts?.getting_started || autoHidden) return null;
+  // Quarterly tax estimate using the same calculation as the Tax Estimate page
+  const quarterlyEstimate = useMemo(() => {
+    const firstShiftRate = shifts.length > 0 ? shifts[0].rate_applied : 0;
+    if (firstShiftRate <= 0) return 0;
 
-  // Quarterly tax estimate for display
-  const firstShiftRate = shifts.length > 0 ? shifts[0].rate_applied : 0;
-  const quarterlyEstimate = firstShiftRate > 0 ? Math.round(firstShiftRate * 144 * 0.30 / 4) : 0;
+    const savedDays = (taxProfile as any)?.typical_days_per_week;
+    const scheduleIdx = savedDays ? daysPerWeekToIndex(savedDays) : 1; // default 3 days/wk
+    const daysPerYear = SCHEDULE_OPTIONS[scheduleIdx]?.daysPerYear ?? 144;
+    const annualIncome = firstShiftRate * daysPerYear;
+    const expenses = Number((taxProfile as any)?.annual_business_expenses ?? 9500);
+    const stateCode = ((taxProfile as any)?.state_code ?? 'CA').toLowerCase();
+
+    const taxInput: TaxProfileV1 = {
+      entityType: '1099',
+      annualReliefIncome: annualIncome,
+      scorpSalary: 0,
+      extraWithholding: 0,
+      payPeriodsPerYear: 24,
+      filingStatus: (taxProfile as any)?.filing_status ?? 'single',
+      spouseW2Income: 0,
+      retirementContributions: 0,
+      annualBusinessExpenses: expenses,
+      stateKey: stateCode,
+    };
+
+    const result = calculate1099Tax(taxInput);
+    return Math.round(result.quarterlyPayment);
+  }, [shifts, taxProfile]);
 
   const firstClinicName = facilities.length > 0 ? facilities[0].name : '';
+
+  // Don't render if dismissed or auto-hidden
+  if (profile?.dismissed_prompts?.getting_started || autoHidden) return null;
 
   return (
     <>
