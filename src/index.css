@@ -68,6 +68,17 @@
 
     /* Soft border */
     --border-soft: 45 10% 81%;          /* #D3D1C7 border-subtle */
+
+    /* Button tokens – light */
+    --btn-primary-bg: 160 75% 25%;      /* #0F6E56 */
+    --btn-primary-text: 0 0% 100%;
+    --btn-secondary-bg: 155 55% 92%;    /* #E1F5EE */
+    --btn-secondary-text: 160 82% 17%;  /* #085041 */
+    --btn-secondary-border: 155 52% 75%;/* #9FE1CB */
+    --btn-ghost-text: 160 75% 25%;      /* #0F6E56 */
+    --btn-ghost-border: 155 50% 58%;    /* #5DCAA5 */
+    --btn-accent-bg: 16 65% 52%;        /* #D85A30 */
+    --btn-accent-text: 0 0% 100%;
   }
 
   .dark {
@@ -128,6 +139,17 @@
     --chip-info-text: 208 40% 65%;
 
     --border-soft: 50 3% 22%;           /* #3A3A38 border-subtle */
+
+    /* Button tokens – dark */
+    --btn-primary-bg: 155 69% 37%;      /* #1D9E75 */
+    --btn-primary-text: 0 0% 100%;
+    --btn-secondary-bg: 155 69% 37% / 0.15;
+    --btn-secondary-text: 155 52% 75%;  /* #9FE1CB */
+    --btn-secondary-border: 155 50% 58% / 0.3;
+    --btn-ghost-text: 155 52% 75%;      /* #9FE1CB */
+    --btn-ghost-border: 155 50% 58% / 0.3;
+    --btn-accent-bg: 16 65% 52%;        /* #D85A30 */
+    --btn-accent-text: 0 0% 100%;
   }
 }
 
