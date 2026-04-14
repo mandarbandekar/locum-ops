@@ -1,60 +1,65 @@
 
 
-# Onboarding Flow Restructure: 6 Steps → 3 Steps
+# Fix Invoice Reminder Emails: Only Send "Ready to Review" + Overdue
 
-## Summary
-Restructure the onboarding from 6 steps to 3, remove Profile/Notifications/Calendar Sync as separate screens, update micro-copy throughout, and simplify the finish screen.
+## Problem
+The `send-reminder-emails` Edge Function sends digest emails that include ALL draft invoices — both "ready to review" and "upcoming" (future-dated). The app's Invoices page correctly splits these using `invoice_date`, but the email function doesn't apply this filter.
 
-## Files to Modify
+## Root Cause
+Line 189 of `supabase/functions/send-reminder-emails/index.ts`:
+```typescript
+const drafts = invoices.filter((i: any) => i.status === 'draft')
+```
+This grabs every draft regardless of `invoice_date`. It needs to exclude drafts where `invoice_date` (or `period_end`) is in the future.
 
-### 1. `src/pages/OnboardingPage.tsx` — Major rewrite
-- Change `Phase` type to `'manual_facility' | 'first_shift' | 'tax_enablement' | 'finish'`
-- Update `PHASE_STEP` to 3-step mapping (manual_facility=1, first_shift=2, tax_enablement=3, finish not shown in layout)
-- Set `TOTAL_STEPS = 3` and update `PHASE_LABEL` ("Add a clinic", "Log a shift", "Your taxes")
-- Remove `'profile'` phase rendering entirely
-- Always auto-save profile on mount (first/last name from auth metadata + auto-detected timezone), not just for OAuth users
-- Auto-set default notification preferences on mount (call `useReminderPreferences` to seed defaults)
-- Add inline greeting bar at top of `manual_facility` phase: "Hi [FirstName]! Timezone: [tz] ✏️ Change" with timezone dropdown
-- Update `manual_facility` micro-copy (title, subtitle, "Why add clinics?" box text per spec)
-- Tax step now calls `onContinue` → sets phase to `'finish'` (no reminders/calendar_sync)
-- Update skip handlers to only offer skips for steps 1 and 2
-- Render a simplified finish screen inline (no `WorkspaceReady` component) OR create a new lightweight component
+## Changes
 
-### 2. `src/components/onboarding/OnboardingShiftStep.tsx` — Micro-copy updates
-- Subtitle: "Each shift you log feeds your invoices, earnings, and tax estimate automatically."
-- Invoice callout text: "Every shift you log creates a draft invoice. Review, edit, and send it from your Invoices page — or set up auto-reminders."
-- Earnings helper text: "Based on 1 shift. Your Business Hub shows weekly, monthly, and annual earnings across all clinics. The more shifts you log, the more complete your financial picture becomes."
+### 1. `supabase/functions/send-reminder-emails/index.ts`
 
-### 3. `src/components/onboarding/OnboardingTaxStep.tsx` — Multiple changes
-- Remove `Checkbox` import and `disclaimer` state
-- Replace interactive disclaimer checkbox with static gray text block containing the disclaimer text
-- Remove `canProceed` logic that requires checkbox — button always enabled when tax toggle is on or off
-- Change CTA text from "Almost done →" to "Finish Setup →"
-- Add helper line above CTA: "Your tax estimate updates as you log more shifts throughout the year."
-- Update `onContinue` call to pass `taxEnabled` directly (no disclaimer gating)
+**Update the invoice query** (line 176) to also select `invoice_date` and `period_end`:
+```typescript
+.select('id, invoice_number, status, total_amount, balance_due, due_date, facility_id, sent_at, invoice_date, period_end')
+```
 
-### 4. `src/components/onboarding/WorkspaceReady.tsx` — Simplify into finish screen
-- Remove Calendar Sync section entirely (no `CalendarSyncStep` import)
-- Remove `calendarDone` state — show completion summary immediately
-- Update heading to "🎉 You're all set!"
-- Update subtext to: "Everything you just entered is working together — your shifts generate invoices, your invoices feed your tax picture."
-- Keep the 4 result checkmark cards
-- Remove "Optional Next Steps" card entirely
-- Remove secondary navigation buttons (Schedule, Clinics, Invoices grid)
-- Keep only the single "Go to My Dashboard →" primary CTA
+**Filter drafts to "ready to review" only** (line 189) — match the same logic the UI uses:
+```typescript
+const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999)
+const drafts = invoices.filter((i: any) => {
+  if (i.status !== 'draft') return false
+  const refDate = i.invoice_date || i.period_end
+  if (!refDate) return true // no date = include it
+  const d = new Date(refDate.replace(/-/g, '/').split('T')[0]) // parse as local
+  return d <= todayEnd
+})
+```
 
-### 5. `src/components/onboarding/OnboardingLayout.tsx` — No changes needed
-The layout already accepts dynamic `step`, `totalSteps`, and `stepLabel` props.
+This ensures only drafts whose billing period has closed appear in reminder emails. Future-dated "upcoming" invoices are excluded.
 
-## No changes to:
-- Welcome page (`WelcomePage.tsx`) — stays as-is
-- Visual design, colors, layout
-- Form validation, onChange handlers, submit logic
-- Any other components outside onboarding
+### 2. Update the client-side reminder engine
 
-## Technical Notes
-- Profile auto-save uses existing `updateProfile()` from `useUserProfile` context
-- Timezone detection uses existing `Intl.DateTimeFormat().resolvedOptions().timeZone`
-- Default notification prefs will be seeded by calling the existing `useReminderPreferences` hook's update methods on mount
-- The inline timezone picker reuses the same `Select` component already used in the old profile step
+**`src/lib/reminderEngine.ts`** — `generateInvoiceReminders()` (line 29):
+Apply the same filter so dashboard "needs attention" items also exclude upcoming drafts:
+```typescript
+const now = new Date()
+const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999)
+const drafts = invoices.filter(i => {
+  if (i.status !== 'draft') return false
+  const refDate = (i as any).invoice_date || (i as any).period_end
+  if (!refDate) return true
+  return new Date(refDate) <= todayEnd
+})
+```
+
+**`src/hooks/useReminders.ts`** — `useGeneratedReminders()` (line 80):
+Same filter for the draft invoice reminders generated here.
+
+### 3. Redeploy the Edge Function
+After editing, deploy `send-reminder-emails` so the fix takes effect.
+
+## What stays the same
+- Overdue invoice logic (already correct — only includes sent invoices past due date)
+- Credential digest logic
+- Uninvoiced shift reminders
+- SMS alerts for overdue invoices
+- Email template rendering
 
