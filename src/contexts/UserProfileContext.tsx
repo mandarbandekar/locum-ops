@@ -41,6 +41,7 @@ export interface UserProfile {
   home_address: string;
   completed_tours: string[];
   has_seen_welcome: boolean;
+  dismissed_prompts: Record<string, boolean>;
 }
 
 const DEFAULT_TERMS_FIELDS: TermsFieldsEnabled = {
@@ -74,6 +75,7 @@ export const DEFAULT_PROFILE: Omit<UserProfile, 'id' | 'user_id'> = {
   home_address: '',
   completed_tours: [],
   has_seen_welcome: false,
+  dismissed_prompts: {},
 };
 
 interface UserProfileContextType {
@@ -107,6 +109,7 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
           invoice_phone: '503-555-0147',
            home_address: '1234 Elm Street\nPortland, OR 97201',
            has_seen_welcome: true,
+           dismissed_prompts: {},
         }
       : null
   );
@@ -183,6 +186,7 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
           home_address: d.home_address || '',
           completed_tours: (d.completed_tours as string[]) || [],
           has_seen_welcome: !!d.has_seen_welcome,
+          dismissed_prompts: (d.dismissed_prompts as Record<string, boolean>) || {},
         });
       } else {
         // Pull signup metadata from auth user to pre-populate profile
@@ -236,6 +240,7 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
             home_address: nd.home_address || '',
             completed_tours: [],
             has_seen_welcome: false,
+            dismissed_prompts: {},
           });
         }
       }

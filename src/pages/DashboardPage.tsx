@@ -21,6 +21,7 @@ import { calculateTax } from '@/components/tax-intelligence/TaxDashboard';
 import { UpcomingShiftsCard } from '@/components/dashboard/UpcomingShiftsCard';
 import { MoneyToCollectCard } from '@/components/dashboard/MoneyToCollectCard';
 import { NeedsAttentionCard, AttentionItem, type ReminderModule } from '@/components/dashboard/NeedsAttentionCard';
+import { DashboardPromptCards } from '@/components/dashboard/DashboardPromptCards';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { SpotlightTour, TourStep } from '@/components/SpotlightTour';
 import { useSpotlightTour } from '@/hooks/useSpotlightTour';
@@ -384,6 +385,14 @@ export default function DashboardPage() {
           {greeting}, {profile?.first_name || 'there'}{briefing ? ` · ${briefing}` : ''}
         </p>
       </div>
+
+      {/* Contextual prompt cards */}
+      <DashboardPromptCards
+        credentialCount={credentialsList?.length ?? 0}
+        shiftCount={shifts.length}
+        hasSentInvoice={invoices.some(i => i.status === 'sent' || i.sent_at)}
+        userCreatedAt={user?.created_at}
+      />
 
       {/* 3-Column Layout */}
       <div className="grid gap-4 sm:gap-5 grid-cols-1 lg:grid-cols-12 lg:items-stretch mt-3 flex-1 min-h-0">

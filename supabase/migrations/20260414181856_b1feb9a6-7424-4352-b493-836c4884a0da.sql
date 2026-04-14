@@ -1,0 +1,1 @@
+ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS dismissed_prompts jsonb NOT NULL DEFAULT '{}'::jsonb;

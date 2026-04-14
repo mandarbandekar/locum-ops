@@ -202,4 +202,5 @@ export const seedUserProfile: UserProfile = {
   home_address: '742 Evergreen Terrace\nPortland, OR 97201',
   completed_tours: [],
   has_seen_welcome: true,
+  dismissed_prompts: {},
 };
