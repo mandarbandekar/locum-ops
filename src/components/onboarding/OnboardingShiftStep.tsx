@@ -87,7 +87,7 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
       <div className="space-y-2">
         <h2 className="text-2xl font-bold text-foreground font-[Manrope]">Log your first shift</h2>
         <p className="text-muted-foreground">
-          Each shift you log feeds your invoices, earnings, and tax estimate automatically.
+          Each shift you log creates a draft invoice and updates your earnings and tax estimate.
         </p>
       </div>
 

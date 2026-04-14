@@ -144,7 +144,7 @@ export function OnboardingTaxStep({ shiftRate, hasShiftData, timezone, onContinu
                   At your current rate, an S-Corp election could save you ~${scorpSavings.toLocaleString(undefined, { maximumFractionDigits: 0 })}/quarter.
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  LocumOps monitors your income trajectory and will alert you when switching to an S-Corp structure could meaningfully reduce your self-employment tax burden.
+                  Your Tax Center tracks whether an S-Corp structure could reduce your self-employment tax — review it anytime.
                 </p>
               </div>
             </CardContent>
@@ -154,7 +154,7 @@ export function OnboardingTaxStep({ shiftRate, hasShiftData, timezone, onContinu
         <Card className="bg-muted/20 border-dashed">
           <CardContent className="p-5 text-center space-y-3">
             <p className="text-muted-foreground text-sm">
-              Tax Intelligence automatically calculates your estimated quarterly taxes, tracks payment deadlines, and alerts you before due dates. It uses your actual shift income — no manual data entry needed.
+              Your Tax Center calculates estimated quarterly taxes from your shift income and tracks payment deadlines — no manual data entry needed.
             </p>
             <div className="rounded-xl bg-muted/50 p-5 opacity-50">
               <div className="grid grid-cols-2 gap-4">
