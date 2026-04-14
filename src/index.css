@@ -69,6 +69,13 @@
     /* Soft border */
     --border-soft: 45 10% 81%;          /* #D3D1C7 border-subtle */
 
+    /* Card tokens – light */
+    --card-border: 155 55% 92%;         /* #E1F5EE */
+    --stat-card-bg: 155 55% 92%;        /* #E1F5EE */
+    --stat-card-value: 160 82% 17%;     /* #085041 */
+    --stat-card-label: 160 75% 25%;     /* #0F6E56 */
+    --dialog-overlay: 0 0% 0% / 0.5;
+
     /* Button tokens – light */
     --btn-primary-bg: 160 75% 25%;      /* #0F6E56 */
     --btn-primary-text: 0 0% 100%;
