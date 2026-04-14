@@ -46,15 +46,21 @@
 
     --radius: 1rem;
 
-    /* Sidebar */
-    --sidebar-background: 210 28% 11%;
-    --sidebar-foreground: 150 14% 87%;
-    --sidebar-primary: 155 69% 37%;
+    /* Sidebar – light: deep teal */
+    --sidebar-background: 160 82% 17%;   /* #085041 */
+    --sidebar-foreground: 155 52% 75%;   /* #9FE1CB */
+    --sidebar-primary: 0 0% 100%;        /* white active text */
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 22% 16%;
-    --sidebar-accent-foreground: 150 14% 93%;
-    --sidebar-border: 210 20% 18%;
+    --sidebar-accent: 160 75% 25%;       /* #0F6E56 active bg */
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 160 75% 25%;
     --sidebar-ring: 155 69% 37%;
+
+    /* Tab tokens – light */
+    --tab-container-bg: 40 22% 93%;      /* #F1EFE8 */
+    --tab-inactive-text: 60 2% 36%;      /* #5F5E5A */
+    --tab-active-bg: 160 75% 25%;        /* #0F6E56 */
+    --tab-active-text: 0 0% 100%;
 
     /* Pill tag tokens – light */
     --pill-paid-bg: 86 40% 72%;          /* #EAF3DE */
@@ -128,14 +134,21 @@
     --input: 50 2% 26%;
     --ring: 155 50% 58%;
 
-    --sidebar-background: 0 0% 10%;
-    --sidebar-foreground: 44 6% 68%;
-    --sidebar-primary: 155 50% 58%;
+    /* Sidebar – dark */
+    --sidebar-background: 0 0% 10%;      /* #1A1A1A */
+    --sidebar-foreground: 155 50% 58%;   /* #5DCAA5 */
+    --sidebar-primary: 0 0% 100%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 15%;
-    --sidebar-accent-foreground: 40 22% 93%;
-    --sidebar-border: 50 2% 22%;
+    --sidebar-accent: 160 75% 25%;       /* #0F6E56 active bg */
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 50 3% 22%;         /* #3A3A38 */
     --sidebar-ring: 155 50% 58%;
+
+    /* Tab tokens – dark */
+    --tab-container-bg: 50 3% 18%;       /* #2F2F2D */
+    --tab-inactive-text: 48 2% 52%;      /* #888780 */
+    --tab-active-bg: 155 69% 37%;        /* #1D9E75 */
+    --tab-active-text: 0 0% 100%;
 
     /* Pill tag tokens – dark */
     --pill-paid-bg: 100 53% 37% / 0.15;
@@ -237,24 +250,39 @@
     color: hsl(var(--pill-draft-text));
   }
 
-  /* Primary tab selector – card-style nav on Business, Credentials, etc. */
+  /* Primary tab selector */
+  .primary-tab-container {
+    background: hsl(var(--tab-container-bg));
+    @apply inline-flex rounded-[10px] p-1 gap-1;
+  }
   .primary-tab-btn {
-    @apply flex items-center gap-1.5 sm:gap-2.5 px-3 sm:px-5 py-2.5 sm:py-3.5 rounded-xl border-2 font-semibold text-xs sm:text-sm transition-all flex-1 sm:flex-none min-w-0;
+    @apply flex items-center gap-1.5 sm:gap-2 rounded-[8px] px-3.5 py-2 font-semibold text-xs sm:text-sm transition-all flex-1 sm:flex-none min-w-0 border-0;
+    color: hsl(var(--tab-inactive-text));
   }
   .primary-tab-btn--active {
-    @apply border-primary bg-primary/5 text-primary shadow-sm;
+    background: hsl(var(--tab-active-bg));
+    color: hsl(var(--tab-active-text));
   }
   .primary-tab-btn--inactive {
-    @apply border-border bg-card text-muted-foreground hover:border-primary/30 hover:bg-muted/50;
+    @apply bg-transparent;
+    color: hsl(var(--tab-inactive-text));
+  }
+  .primary-tab-btn--inactive:hover {
+    @apply opacity-80;
   }
 
   /* Sidebar nav items */
   .sidebar-nav-item {
-    @apply relative rounded-xl px-3 py-2.5 text-[14px] font-medium transition-all duration-150
-           hover:bg-sidebar-accent/60;
+    @apply relative rounded-[8px] px-3 py-2.5 text-[14px] font-medium transition-all duration-150;
+    color: hsl(var(--sidebar-foreground));
+  }
+  .sidebar-nav-item:hover {
+    background: hsl(var(--sidebar-accent) / 0.6);
   }
   .sidebar-nav-item--active {
-    @apply bg-sidebar-accent text-sidebar-primary font-semibold;
+    @apply font-semibold;
+    background: hsl(var(--sidebar-accent));
+    color: hsl(var(--sidebar-primary));
     box-shadow: inset 3px 0 0 hsl(var(--sidebar-primary));
   }
 
