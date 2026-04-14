@@ -28,6 +28,7 @@ export function GettingStartedChecklist({ onOpenAddClinic, onOpenAddShift }: Pro
   const navigate = useNavigate();
   const { facilities, shifts, invoices } = useData();
   const { profile, updateProfile } = useUserProfile();
+  const { taxProfile } = useTaxIntelligence();
   const [confirmDismiss, setConfirmDismiss] = useState(false);
   const [autoHidden, setAutoHidden] = useState(false);
 
