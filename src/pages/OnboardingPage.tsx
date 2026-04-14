@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
-import { ArrowRight, Check, MapPin, Mail, User, Lightbulb, Pencil, Plus } from 'lucide-react';
+import { ArrowRight, Check, MapPin, Mail, User, Pencil, Plus, LayoutDashboard } from 'lucide-react';
 import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
 import { OnboardingClinicForm } from '@/components/onboarding/OnboardingClinicForm';
 import { OnboardingShiftStep } from '@/components/onboarding/OnboardingShiftStep';
@@ -71,6 +71,7 @@ export default function OnboardingPage() {
   const [taxEnabled, setTaxEnabled] = useState(false);
   const [lastShiftRate, setLastShiftRate] = useState<number | null>(null);
   const [showClinicForm, setShowClinicForm] = useState(false);
+  const [shiftSubmitted, setShiftSubmitted] = useState(false);
 
   const firstName = profile?.first_name || user?.user_metadata?.first_name || '';
 
@@ -105,6 +106,12 @@ export default function OnboardingPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timezone]);
 
+  // Track shift submission state from child
+  useEffect(() => {
+    const btn = document.getElementById('onboarding-shift-continue');
+    setShiftSubmitted(!!btn);
+  });
+
   const goBack = () => {
     const prev = PHASE_BACK[phase];
     if (prev) setPhase(prev);
@@ -114,23 +121,119 @@ export default function OnboardingPage() {
     navigate(path);
   };
 
-  const getSkipHandler = (): (() => void) | undefined => {
-    if (phase === 'manual_facility' && !showClinicForm) return () => setPhase('finish');
-    if (phase === 'first_shift') return () => setPhase('tax_enablement');
-    return undefined;
-  };
+  const renderStickyFooter = () => {
+    switch (phase) {
+      case 'manual_facility': {
+        if (facilities.length > 0 && !showClinicForm) {
+          // Clinic saved — show "Log your first shift" as sticky CTA
+          return (
+            <>
+              <Button onClick={() => setPhase('first_shift')} className="w-full h-12" size="lg">
+                Log your first shift <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+              <button
+                type="button"
+                onClick={() => setShowClinicForm(true)}
+                className="w-full text-sm text-primary hover:underline py-1 text-center"
+              >
+                <Plus className="h-3.5 w-3.5 inline mr-1" />Add another clinic
+              </button>
+            </>
+          );
+        }
+        // Showing clinic form — Save Clinic CTA
+        return (
+          <>
+            <Button
+              className="w-full h-12"
+              size="lg"
+              onClick={() => {
+                const btn = document.getElementById('onboarding-clinic-save') as HTMLButtonElement;
+                btn?.click();
+              }}
+            >
+              Save Clinic & Continue <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+            <button
+              type="button"
+              onClick={() => setPhase('finish')}
+              className="w-full text-sm text-muted-foreground hover:text-foreground py-1 text-center"
+            >
+              Skip — I'll add clinics later
+            </button>
+          </>
+        );
+      }
 
-  const getSkipLabel = (): string => {
-    if (phase === 'manual_facility') return "Skip — I'll add clinics later";
-    if (phase === 'first_shift') return 'Skip for now';
-    return 'Skip';
+      case 'first_shift': {
+        // Check if shift was submitted (post-shift state)
+        const continueBtn = document.getElementById('onboarding-shift-continue');
+        if (continueBtn) {
+          return (
+            <Button onClick={() => setPhase('tax_enablement')} className="w-full h-12" size="lg">
+              See my tax estimate <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        }
+        // Pre-shift form
+        return (
+          <>
+            <Button
+              className="w-full h-12"
+              size="lg"
+              onClick={() => {
+                const btn = document.getElementById('onboarding-shift-save') as HTMLButtonElement;
+                btn?.click();
+              }}
+            >
+              Log Shift <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+            <button
+              type="button"
+              onClick={() => setPhase('tax_enablement')}
+              className="w-full text-sm text-muted-foreground hover:text-foreground py-1 text-center"
+            >
+              Skip for now
+            </button>
+          </>
+        );
+      }
+
+      case 'tax_enablement':
+        return (
+          <Button
+            className="w-full h-12"
+            size="lg"
+            onClick={() => {
+              const btn = document.getElementById('onboarding-tax-finish') as HTMLButtonElement;
+              btn?.click();
+            }}
+          >
+            Finish Setup <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        );
+
+      case 'finish':
+        return (
+          <Button
+            className="w-full h-12"
+            size="lg"
+            onClick={async () => {
+              await completeOnboarding();
+              navigate('/');
+            }}
+          >
+            <LayoutDashboard className="mr-2 h-5 w-5" /> Go to My Dashboard
+          </Button>
+        );
+    }
   };
 
   const renderContent = () => {
     switch (phase) {
       case 'manual_facility':
         return (
-          <div className="space-y-5">
+          <div className="space-y-4">
             {/* Inline greeting bar */}
             <div className="flex items-center gap-2 text-sm bg-muted/50 rounded-lg px-3 py-2">
               <span className="text-foreground">
@@ -161,9 +264,9 @@ export default function OnboardingPage() {
               )}
             </div>
 
-            <div>
+            <div className="space-y-2">
               <h2 className="text-2xl font-bold text-foreground font-[Manrope]">Add a clinic you work with</h2>
-              <p className="text-muted-foreground mt-1">
+              <p className="text-muted-foreground">
                 Start with one clinic you work with regularly. LocumOps keeps your rates, contacts, and billing terms organized per clinic — so everything's in one place when you need it.
               </p>
             </div>
@@ -173,7 +276,7 @@ export default function OnboardingPage() {
               <div className="space-y-3">
                 {facilities.map(f => (
                   <Card key={f.id} className="border-primary/30 bg-primary/[0.03]">
-                    <CardContent className="py-4 px-4 space-y-2">
+                    <CardContent className="py-3 px-4 space-y-2">
                       <div className="flex items-start justify-between">
                         <div className="min-w-0 flex-1">
                           <p className="font-semibold text-foreground text-base">{f.name}</p>
@@ -202,44 +305,14 @@ export default function OnboardingPage() {
                     </CardContent>
                   </Card>
                 ))}
-
-                <div className="space-y-2">
-                  <Button onClick={() => setPhase('first_shift')} className="w-full" size="lg">
-                    Log your first shift <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                  <button
-                    type="button"
-                    onClick={() => setShowClinicForm(true)}
-                    className="w-full text-sm text-primary hover:underline py-1"
-                  >
-                    <Plus className="h-3.5 w-3.5 inline mr-1" />Add another clinic
-                  </button>
-                </div>
-
-                {/* Tip */}
-                <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 rounded-lg p-3">
-                  <Lightbulb className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
-                  <span>The day rate you set here becomes the default when you log shifts — saves you from re-entering it every time.</span>
-                </div>
               </div>
             )}
 
-            {/* Inline clinic form — shown when no facilities or when adding */}
+            {/* Inline clinic form */}
             {(facilities.length === 0 || showClinicForm) && (
               <OnboardingClinicForm
                 onSaved={() => setShowClinicForm(false)}
               />
-            )}
-
-            {/* Skip link when showing form */}
-            {(facilities.length === 0 || showClinicForm) && (
-              <button
-                type="button"
-                onClick={() => setPhase('finish')}
-                className="w-full text-sm text-muted-foreground hover:text-foreground py-1 text-center"
-              >
-                Skip — I'll add clinics later
-              </button>
             )}
           </div>
         );
@@ -291,8 +364,7 @@ export default function OnboardingPage() {
       totalSteps={TOTAL_STEPS}
       stepLabel={PHASE_LABEL[phase]}
       onBack={PHASE_BACK[phase] ? goBack : undefined}
-      onSkip={phase !== 'finish' ? getSkipHandler() : undefined}
-      skipLabel={getSkipLabel()}
+      stickyFooter={renderStickyFooter()}
     >
       {renderContent()}
     </OnboardingLayout>

@@ -1,12 +1,12 @@
 import { useState, useRef } from 'react';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { ArrowRight, Building2, MapPin, Zap, FileText, TrendingUp, Plus, ClipboardList, ChevronRight } from 'lucide-react';
+import { ArrowRight, Building2, MapPin, Zap, Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { format, subDays } from 'date-fns';
 import type { Facility, Shift, TermsSnapshot, Invoice, InvoiceLineItem } from '@/types';
 import { AddFacilityDialog } from '@/components/AddFacilityDialog';
@@ -73,55 +73,23 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
     formRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Compute hours from times
   const startDt = new Date(`${shiftDate}T${startTime}:00`);
   const endDt = new Date(`${shiftDate}T${endTime}:00`);
   const hours = Math.max(0, (endDt.getTime() - startDt.getTime()) / 3600000);
   const shiftRate = parseFloat(rate) || 650;
 
-  // Find the latest invoice that was auto-generated for this facility
   const latestInvoice = submitted
     ? invoices.find(inv => inv.facility_id === selectedFacility?.id && inv.status === 'draft')
     : null;
 
-  const invoiceLineItems = latestInvoice
-    ? lineItems.filter(li => li.invoice_id === latestInvoice.id)
-    : [];
-
   return (
-    <div className="space-y-5">
-      <div>
+    <div className="space-y-4">
+      <div className="space-y-2">
         <h2 className="text-2xl font-bold text-foreground font-[Manrope]">Log your first shift</h2>
-        <p className="text-muted-foreground mt-1">
+        <p className="text-muted-foreground">
           Each shift you log feeds your invoices, earnings, and tax estimate automatically.
         </p>
       </div>
-
-      {/* How it works strip */}
-      {!submitted && (
-        <div className="flex items-center justify-between gap-2 bg-muted/50 rounded-xl p-3">
-          <div className="flex flex-col items-center gap-1 flex-1 text-center">
-            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <ClipboardList className="h-4 w-4 text-primary" />
-            </div>
-            <span className="text-[11px] text-muted-foreground font-medium leading-tight">Log a shift</span>
-          </div>
-          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
-          <div className="flex flex-col items-center gap-1 flex-1 text-center">
-            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <FileText className="h-4 w-4 text-primary" />
-            </div>
-            <span className="text-[11px] text-muted-foreground font-medium leading-tight">Invoice auto-created</span>
-          </div>
-          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
-          <div className="flex flex-col items-center gap-1 flex-1 text-center">
-            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <TrendingUp className="h-4 w-4 text-primary" />
-            </div>
-            <span className="text-[11px] text-muted-foreground font-medium leading-tight">Track earnings</span>
-          </div>
-        </div>
-      )}
 
       {/* Shift Form */}
       <div ref={formRef} className={`space-y-4 transition-opacity duration-300 ${submitted ? 'opacity-50' : ''}`}>
@@ -144,7 +112,7 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
             </CardContent>
           </Card>
         ) : (
-          <div>
+          <div className="space-y-1.5">
             <Label>Practice</Label>
             <Select value={selectedFacilityId} onValueChange={setSelectedFacilityId}>
               <SelectTrigger><SelectValue placeholder="Select a clinic" /></SelectTrigger>
@@ -157,48 +125,53 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
           </div>
         )}
 
-        <div>
-          <Label>Shift date</Label>
-          <Input type="date" value={shiftDate} onChange={e => setShiftDate(e.target.value)} />
+        {/* Side-by-side: Shift date + Day rate on desktop */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label>Shift date</Label>
+            <Input type="date" value={shiftDate} onChange={e => setShiftDate(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Day rate ($)</Label>
+            <Input
+              type="number"
+              value={rate}
+              onChange={e => setRate(e.target.value)}
+              placeholder="650"
+            />
+          </div>
         </div>
 
+        {/* Side-by-side: Start + End time */}
         <div className="grid grid-cols-2 gap-3">
-          <div>
+          <div className="space-y-1.5">
             <Label>Start time</Label>
             <Input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} />
           </div>
-          <div>
+          <div className="space-y-1.5">
             <Label>End time</Label>
             <Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} />
           </div>
         </div>
 
-        <div>
-          <Label>Day rate ($)</Label>
-          <Input
-            type="number"
-            value={rate}
-            onChange={e => setRate(e.target.value)}
-            placeholder="650"
-          />
-        </div>
-
+        {/* Hidden submit button for sticky CTA */}
         {!submitted && (
-          <Button
+          <button
+            id="onboarding-shift-save"
+            type="button"
             onClick={handleSubmit}
-            className="w-full"
-            size="lg"
             disabled={!selectedFacility || submitting}
-          >
-            {submitting ? 'Saving…' : 'Log shift'} <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
+            className="hidden"
+            data-can-save={!!selectedFacility && !submitting}
+            data-saving={submitting}
+          />
         )}
       </div>
 
       {/* Results Phase */}
       {submitted && (
         <div className="space-y-4">
-          {/* Block 1: Invoice Generated Banner */}
+          {/* Invoice Generated Banner */}
           <div
             className="rounded-xl bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20 p-4 flex items-center gap-3 animate-slide-up"
             style={{ animationDelay: '0ms', animationFillMode: 'both' }}
@@ -212,12 +185,12 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
             </div>
           </div>
 
-          {/* Block 2: Invoice Preview Card */}
+          {/* Invoice Preview Card */}
           <Card
             className="border shadow-card animate-slide-up"
             style={{ animationDelay: '200ms', animationFillMode: 'both' }}
           >
-            <CardContent className="p-5 space-y-4">
+            <CardContent className="p-4 space-y-3">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Invoice</p>
@@ -254,12 +227,12 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
             </CardContent>
           </Card>
 
-          {/* Block 3: Earnings Snapshot */}
+          {/* Earnings Snapshot */}
           <Card
             className="animate-slide-up"
             style={{ animationDelay: '400ms', animationFillMode: 'both' }}
           >
-            <CardContent className="p-5 space-y-3">
+            <CardContent className="p-4 space-y-2">
               <p className="text-sm font-semibold text-foreground">📊 Business Hub — Earnings this week</p>
               <p className="text-3xl font-bold text-green-600 dark:text-green-400 animate-scale-up">
                 ${shiftRate.toLocaleString()}
@@ -269,20 +242,23 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
             </CardContent>
           </Card>
 
-          {/* CTAs */}
-          <div className="space-y-3 pt-2">
-            <Button onClick={onContinue} className="w-full" size="lg">
-              See my tax estimate <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-            <div className="flex justify-center gap-4 text-sm">
-              <button type="button" onClick={handleAddAnotherShift} className="text-primary hover:underline">
-                Add another shift
-              </button>
-              <button type="button" onClick={() => setFacilityDialogOpen(true)} className="text-primary hover:underline">
-                Add another practice
-              </button>
-            </div>
+          {/* Secondary links */}
+          <div className="flex justify-center gap-4 text-sm">
+            <button type="button" onClick={handleAddAnotherShift} className="text-primary hover:underline">
+              Add another shift
+            </button>
+            <button type="button" onClick={() => setFacilityDialogOpen(true)} className="text-primary hover:underline">
+              Add another practice
+            </button>
           </div>
+
+          {/* Hidden button for sticky CTA */}
+          <button
+            id="onboarding-shift-continue"
+            type="button"
+            onClick={onContinue}
+            className="hidden"
+          />
         </div>
       )}
 

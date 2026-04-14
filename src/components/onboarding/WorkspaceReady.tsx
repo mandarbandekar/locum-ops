@@ -1,7 +1,5 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Check, LayoutDashboard } from 'lucide-react';
+import { Check } from 'lucide-react';
 import type { Facility, Shift, Invoice } from '@/types';
 
 interface Props {
@@ -21,9 +19,7 @@ interface ResultItem {
   completed: boolean;
 }
 
-export function WorkspaceReady({ facilities, shifts, invoices, taxEnabled, shiftRate, onNavigate, onCompleteOnboarding }: Props) {
-  const [completing, setCompleting] = useState(false);
-
+export function WorkspaceReady({ facilities, shifts, invoices, taxEnabled, shiftRate }: Props) {
   const draftInvoice = invoices.find(i => i.status === 'draft');
   const quarterlyEst = shiftRate ? shiftRate * 60 * 0.3 : null;
 
@@ -56,17 +52,10 @@ export function WorkspaceReady({ facilities, shifts, invoices, taxEnabled, shift
     },
   ];
 
-  const handleGoToDashboard = async () => {
-    if (completing) return;
-    setCompleting(true);
-    await onCompleteOnboarding();
-    onNavigate('/');
-  };
-
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <div className="text-center space-y-2">
-        <div className="mx-auto h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+        <div className="mx-auto h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center mb-2">
           <span className="text-2xl">🎉</span>
         </div>
         <h2 className="text-2xl font-bold text-foreground font-[Manrope]">You're all set!</h2>
@@ -94,16 +83,6 @@ export function WorkspaceReady({ facilities, shifts, invoices, taxEnabled, shift
           </Card>
         ))}
       </div>
-
-      {/* Single CTA */}
-      <Button
-        className="w-full"
-        size="lg"
-        onClick={handleGoToDashboard}
-        disabled={completing}
-      >
-        <LayoutDashboard className="mr-2 h-5 w-5" /> Go to My Dashboard
-      </Button>
     </div>
   );
 }

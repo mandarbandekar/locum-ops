@@ -1,5 +1,4 @@
 import { useState, useRef } from 'react';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,7 +10,7 @@ import { useClinicConfirmations } from '@/hooks/useClinicConfirmations';
 import { generateId } from '@/lib/businessLogic';
 import { toast } from 'sonner';
 import {
-  ArrowRight, Building2, DollarSign, UserCheck, Settings2, Info,
+  Building2, DollarSign, UserCheck, Settings2, Info,
 } from 'lucide-react';
 import { GooglePlacesAutocomplete } from '@/components/GooglePlacesAutocomplete';
 import type { PlaceSelection } from '@/components/GooglePlacesAutocomplete';
@@ -19,6 +18,8 @@ import type { BillingCadence } from '@/lib/invoiceBillingDefaults';
 
 interface Props {
   onSaved: () => void;
+  /** Expose save handler + disabled state so parent can render sticky CTA */
+  onRegisterSave?: (handler: () => Promise<void>, disabled: boolean) => void;
 }
 
 export function OnboardingClinicForm({ onSaved }: Props) {
@@ -132,9 +133,12 @@ export function OnboardingClinicForm({ onSaved }: Props) {
     }
   };
 
+  // Expose save handler for parent sticky CTA
+  const canSave = name.trim().length > 0 && !saving;
+
   return (
     <TooltipProvider delayDuration={0}>
-      <div ref={formRef} className="space-y-6">
+      <div ref={formRef} className="space-y-5">
         {/* ── SECTION: Clinic Details ── */}
         <div className="space-y-4">
           <div className="flex items-center gap-2">
@@ -172,18 +176,18 @@ export function OnboardingClinicForm({ onSaved }: Props) {
                   ← Search again
                 </button>
               )}
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label>Clinic name <span className="text-destructive">*</span></Label>
                 <Input value={name} onChange={e => setName(e.target.value)} placeholder="Practice facility name" autoFocus={manualEntry} />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label>Address</Label>
                 <GooglePlacesAutocomplete value={address} onChange={setAddress} placeholder="Full address" />
               </div>
             </>
           )}
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label>Default day rate</Label>
             <div className="relative">
               <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -202,7 +206,7 @@ export function OnboardingClinicForm({ onSaved }: Props) {
         </div>
 
         {/* ── SECTION: Contacts ── */}
-        <div className="space-y-4 border-t border-border pt-5">
+        <div className="space-y-4 border-t border-border pt-4">
           <div className="flex items-center gap-2">
             <UserCheck className="h-4 w-4 text-primary" />
             <p className="text-sm font-semibold text-foreground">Contacts</p>
@@ -213,7 +217,7 @@ export function OnboardingClinicForm({ onSaved }: Props) {
 
           <div className="space-y-3">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Scheduling Contact</p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs">Name</Label>
                 <Input value={schedulingContactName} onChange={e => setSchedulingContactName(e.target.value)} placeholder="Practice Manager" />
@@ -239,7 +243,7 @@ export function OnboardingClinicForm({ onSaved }: Props) {
               )}
             </div>
             {!sameAsScheduling && (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs">Name</Label>
                   <Input value={invoiceNameTo} onChange={e => setInvoiceNameTo(e.target.value)} placeholder="Billing Department" />
@@ -261,7 +265,7 @@ export function OnboardingClinicForm({ onSaved }: Props) {
         </div>
 
         {/* ── SECTION: Billing Preferences ── */}
-        <div className="space-y-4 border-t border-border pt-5">
+        <div className="space-y-4 border-t border-border pt-4">
           <div className="flex items-center gap-2">
             <Settings2 className="h-4 w-4 text-primary" />
             <p className="text-sm font-semibold text-foreground">Billing Preferences</p>
@@ -270,8 +274,8 @@ export function OnboardingClinicForm({ onSaved }: Props) {
             Set your billing preferences for this clinic. LocumOps uses these to generate draft invoices from your logged shifts.
           </p>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
               <div className="flex items-center gap-1.5">
                 <Label>Billing cadence</Label>
                 <Tooltip>
@@ -303,7 +307,7 @@ export function OnboardingClinicForm({ onSaved }: Props) {
                 <p className="text-xs text-muted-foreground">A draft invoice each morning you have a shift.</p>
               )}
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <div className="flex items-center gap-1.5">
                 <Label>Payment terms</Label>
                 <Tooltip>
@@ -332,29 +336,18 @@ export function OnboardingClinicForm({ onSaved }: Props) {
             </div>
           </div>
         </div>
-
-        {/* Why add clinics? */}
-        <Card className="bg-muted/30 border-dashed">
-          <CardContent className="p-4">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Why add clinics?</p>
-            <p className="text-sm text-muted-foreground">
-              Each clinic you add becomes a billing entity. When you log shifts at this clinic, LocumOps generates draft invoices and builds your earnings picture — no spreadsheets needed.
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Sticky bottom CTA */}
-        <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm pt-3 pb-1 -mx-1 px-1 space-y-2 border-t border-border/50">
-          <Button
-            onClick={handleSave}
-            className="w-full h-12"
-            size="lg"
-            disabled={!name.trim() || saving}
-          >
-            {saving ? 'Saving…' : 'Save Clinic & Continue'} <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        </div>
       </div>
+
+      {/* Hidden button for parent to trigger save */}
+      <button
+        id="onboarding-clinic-save"
+        type="button"
+        onClick={handleSave}
+        disabled={!canSave}
+        className="hidden"
+        data-can-save={canSave}
+        data-saving={saving}
+      />
     </TooltipProvider>
   );
 }
