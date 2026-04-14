@@ -183,7 +183,14 @@
 
 @layer components {
   .stat-card {
-    @apply bg-card rounded-2xl border p-5 sm:p-6 shadow-soft transition-shadow hover:shadow-card;
+    @apply rounded-[12px] border border-[hsl(var(--card-border))] px-5 py-4;
+    background: hsl(var(--stat-card-bg));
+  }
+  .stat-card .stat-value {
+    color: hsl(var(--stat-card-value));
+  }
+  .stat-card .stat-label {
+    color: hsl(var(--stat-card-label));
   }
   .page-header {
     @apply mb-4 sm:mb-6 md:mb-8 flex items-start sm:items-center justify-between;
