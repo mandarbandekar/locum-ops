@@ -116,7 +116,7 @@ export function AppSidebar() {
         <div className={`flex items-center gap-3 px-4 py-4 ${collapsed ? 'justify-center' : ''}`}>
           <img src={locumOpsLogo} alt="LocumOps" className="h-8 w-8 rounded-lg" />
           {!collapsed && (
-            <span className="font-semibold text-[15px] tracking-tight text-sidebar-foreground">
+            <span className="font-semibold text-[15px] tracking-tight" style={{ color: 'hsl(var(--sidebar-foreground))' }}>
               LocumOps
             </span>
           )}
@@ -133,7 +133,7 @@ export function AppSidebar() {
                     className="sidebar-nav-item group/navitem"
                     activeClassName="sidebar-nav-item--active"
                   >
-                    <LayoutDashboard className="mr-3 h-[18px] w-[18px] opacity-60 transition-all duration-150 group-[.sidebar-nav-item--active]/navitem:opacity-100 group-[.sidebar-nav-item--active]/navitem:text-sidebar-primary" />
+                    <LayoutDashboard className="mr-3 h-[18px] w-[18px] transition-all duration-150 text-[hsl(var(--sidebar-icon-inactive))] group-[.sidebar-nav-item--active]/navitem:text-white" />
                     {!collapsed && <span className="flex-1 truncate">Dashboard</span>}
                   </NavLink>
                 </SidebarMenuButton>
@@ -172,7 +172,7 @@ export function AppSidebar() {
                             className="sidebar-nav-item group/navitem"
                             activeClassName="sidebar-nav-item--active"
                           >
-                            <item.icon className="mr-3 h-[18px] w-[18px] opacity-60 transition-all duration-150 group-[.sidebar-nav-item--active]/navitem:opacity-100 group-[.sidebar-nav-item--active]/navitem:text-sidebar-primary" />
+                            <item.icon className="mr-3 h-[18px] w-[18px] transition-all duration-150 text-[hsl(var(--sidebar-icon-inactive))] group-[.sidebar-nav-item--active]/navitem:text-white" />
                             {!collapsed && (
                               <>
                                 <span className="flex-1 truncate">{item.title}</span>
@@ -205,10 +205,10 @@ export function AppSidebar() {
             <SidebarMenuButton asChild size="lg">
               <NavLink
                 to="/settings/profile"
-                className="sidebar-nav-item group/navitem"
+                className="sidebar-nav-item sidebar-settings-item group/navitem"
                 activeClassName="sidebar-nav-item--active"
               >
-                <Settings className="mr-3 h-[18px] w-[18px] opacity-60 transition-all duration-150 group-[.sidebar-nav-item--active]/navitem:opacity-100 group-[.sidebar-nav-item--active]/navitem:text-sidebar-primary" />
+                <Settings className="mr-3 h-[18px] w-[18px] transition-all duration-150 text-[hsl(var(--sidebar-icon-inactive))] group-[.sidebar-nav-item--active]/navitem:text-white" />
                 {!collapsed && <span>Settings</span>}
               </NavLink>
             </SidebarMenuButton>
