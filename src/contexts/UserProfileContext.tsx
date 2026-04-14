@@ -41,6 +41,7 @@ export interface UserProfile {
   home_address: string;
   completed_tours: string[];
   has_seen_welcome: boolean;
+  dismissed_prompts: Record<string, boolean>;
 }
 
 const DEFAULT_TERMS_FIELDS: TermsFieldsEnabled = {
@@ -74,6 +75,7 @@ export const DEFAULT_PROFILE: Omit<UserProfile, 'id' | 'user_id'> = {
   home_address: '',
   completed_tours: [],
   has_seen_welcome: false,
+  dismissed_prompts: {},
 };
 
 interface UserProfileContextType {
