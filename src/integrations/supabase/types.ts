@@ -2741,6 +2741,7 @@ export type Database = {
           spouse_se_net_income: number | null
           spouse_w2_income: number | null
           state_code: string
+          typical_days_per_week: number
           updated_at: string
           user_id: string
           ytd_expenses_estimate: number
@@ -2770,6 +2771,7 @@ export type Database = {
           spouse_se_net_income?: number | null
           spouse_w2_income?: number | null
           state_code?: string
+          typical_days_per_week?: number
           updated_at?: string
           user_id?: string
           ytd_expenses_estimate?: number
@@ -2799,6 +2801,7 @@ export type Database = {
           spouse_se_net_income?: number | null
           spouse_w2_income?: number | null
           state_code?: string
+          typical_days_per_week?: number
           updated_at?: string
           user_id?: string
           ytd_expenses_estimate?: number
