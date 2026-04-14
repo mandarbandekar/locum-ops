@@ -6,26 +6,26 @@
 
 @layer base {
   :root {
-    /* Light theme — warm gray + teal ramp + coral accent */
-    --background: 40 22% 93%;            /* #F1EFE8 warm gray */
-    --foreground: 200 26% 18%;           /* #22313A */
+    /* Light mode */
+    --background: 140 14% 97%;           /* #F9FBF9 page */
+    --foreground: 60 4% 17%;             /* #2C2C2A text-primary */
 
-    --card: 0 0% 100%;
-    --card-foreground: 200 26% 18%;
+    --card: 0 0% 100%;                   /* #FFFFFF */
+    --card-foreground: 60 4% 17%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 200 26% 18%;
+    --popover-foreground: 60 4% 17%;
 
     --primary: 155 69% 37%;              /* #1D9E75 */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 40 18% 96%;
-    --secondary-foreground: 200 26% 18%;
+    --secondary: 40 22% 93%;             /* #F1EFE8 surface */
+    --secondary-foreground: 60 2% 36%;   /* #5F5E5A text-secondary */
 
-    --muted: 40 18% 96%;
-    --muted-foreground: 199 11% 45%;     /* #667781 */
+    --muted: 40 22% 93%;
+    --muted-foreground: 48 2% 52%;       /* #888780 text-muted */
 
-    --accent: 40 18% 96%;
+    --accent: 40 22% 93%;
     --accent-foreground: 16 65% 52%;     /* coral #D85A30 */
 
     --destructive: 0 45% 62%;
@@ -40,7 +40,7 @@
     --info: 208 30% 54%;
     --info-foreground: 0 0% 100%;
 
-    --border: 44 6% 68%;                /* #B4B2A9 warm gray */
+    --border: 44 6% 68%;                /* #B4B2A9 border-default */
     --input: 44 6% 68%;
     --ring: 155 69% 37%;
 
@@ -67,29 +67,29 @@
     --chip-info-text: 208 30% 40%;
 
     /* Soft border */
-    --border-soft: 40 14% 88%;
+    --border-soft: 45 10% 81%;          /* #D3D1C7 border-subtle */
   }
 
   .dark {
-    --background: 210 24% 7%;
-    --foreground: 150 18% 92%;
+    --background: 0 0% 10%;              /* #1A1A1A page */
+    --foreground: 40 22% 93%;            /* #F1EFE8 text-primary */
 
-    --card: 207 24% 12%;
-    --card-foreground: 150 18% 92%;
+    --card: 0 0% 15%;                    /* #262626 */
+    --card-foreground: 40 22% 93%;
 
-    --popover: 207 24% 12%;
-    --popover-foreground: 150 18% 92%;
+    --popover: 0 0% 15%;
+    --popover-foreground: 40 22% 93%;
 
     --primary: 155 50% 58%;              /* #5DCAA5 primary-200 */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 207 22% 15%;
-    --secondary-foreground: 150 10% 68%;
+    --secondary: 50 3% 18%;              /* #2F2F2D surface */
+    --secondary-foreground: 44 6% 68%;   /* #B4B2A9 text-secondary */
 
-    --muted: 207 22% 15%;
-    --muted-foreground: 155 6% 52%;
+    --muted: 50 3% 18%;
+    --muted-foreground: 48 2% 52%;       /* #888780 text-muted */
 
-    --accent: 207 22% 15%;
+    --accent: 50 3% 18%;
     --accent-foreground: 16 55% 60%;     /* lighter coral */
 
     --destructive: 0 45% 62%;
@@ -104,17 +104,17 @@
     --info: 208 30% 54%;
     --info-foreground: 0 0% 100%;
 
-    --border: 35 10% 20%;
-    --input: 35 10% 20%;
+    --border: 50 2% 26%;                /* #444441 border-default */
+    --input: 50 2% 26%;
     --ring: 155 50% 58%;
 
-    --sidebar-background: 210 28% 9%;
-    --sidebar-foreground: 150 10% 68%;
+    --sidebar-background: 0 0% 10%;
+    --sidebar-foreground: 44 6% 68%;
     --sidebar-primary: 155 50% 58%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 207 24% 12%;
-    --sidebar-accent-foreground: 150 14% 87%;
-    --sidebar-border: 205 26% 11%;
+    --sidebar-accent: 0 0% 15%;
+    --sidebar-accent-foreground: 40 22% 93%;
+    --sidebar-border: 50 2% 22%;
     --sidebar-ring: 155 50% 58%;
 
     /* Semantic chip tokens – dark */
@@ -127,7 +127,7 @@
     --chip-info-bg: 208 25% 14%;
     --chip-info-text: 208 40% 65%;
 
-    --border-soft: 35 10% 17%;
+    --border-soft: 50 3% 22%;           /* #3A3A38 border-subtle */
   }
 }
 
