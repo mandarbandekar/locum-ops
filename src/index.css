@@ -46,15 +46,19 @@
 
     --radius: 1rem;
 
-    /* Sidebar – light: deep teal */
-    --sidebar-background: 160 82% 17%;   /* #085041 */
-    --sidebar-foreground: 155 52% 75%;   /* #9FE1CB */
+    /* Sidebar – light: soft mint */
+    --sidebar-background: 150 30% 96%;   /* #F4F9F6 */
+    --sidebar-foreground: 160 82% 17%;   /* #085041 */
     --sidebar-primary: 0 0% 100%;        /* white active text */
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 160 75% 25%;       /* #0F6E56 active bg */
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 160 75% 25%;
+    --sidebar-border: 152 38% 88%;       /* #D6EDE2 */
     --sidebar-ring: 155 69% 37%;
+    --sidebar-icon-inactive: 155 50% 58%;/* #5DCAA5 */
+    --sidebar-group-label: 155 69% 37%;  /* #1D9E75 */
+    --sidebar-hover: 155 55% 92%;        /* #E1F5EE */
+    --sidebar-settings-text: 155 50% 58%;/* #5DCAA5 */
 
     /* Tab tokens – light */
     --tab-container-bg: 40 22% 93%;      /* #F1EFE8 */
@@ -143,15 +147,19 @@
     --input: 50 2% 26%;
     --ring: 155 50% 58%;
 
-    /* Sidebar – dark */
-    --sidebar-background: 0 0% 10%;      /* #1A1A1A */
-    --sidebar-foreground: 155 50% 58%;   /* #5DCAA5 */
+    /* Sidebar – dark: deep forest */
+    --sidebar-background: 156 24% 15%;   /* #1E2E28 */
+    --sidebar-foreground: 155 52% 75%;   /* #9FE1CB */
     --sidebar-primary: 0 0% 100%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 160 75% 25%;       /* #0F6E56 active bg */
+    --sidebar-accent: 155 69% 37% / 0.25;/* rgba(29,158,117,0.25) */
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 50 3% 22%;         /* #3A3A38 */
+    --sidebar-border: 156 22% 20%;       /* #2A3F37 */
     --sidebar-ring: 155 50% 58%;
+    --sidebar-icon-inactive: 155 50% 58%;/* #5DCAA5 */
+    --sidebar-group-label: 155 50% 58%;  /* #5DCAA5 */
+    --sidebar-hover: 155 69% 37% / 0.12;
+    --sidebar-settings-text: 155 50% 58%;/* #5DCAA5 */
 
     /* Tab tokens – dark */
     --tab-container-bg: 50 3% 18%;       /* #2F2F2D */
@@ -291,27 +299,33 @@
 
   /* Sidebar nav items */
   .sidebar-nav-item {
-    @apply relative rounded-[8px] px-3 py-2.5 text-[14px] font-medium transition-all duration-150;
+    @apply relative rounded-[8px] px-2.5 py-2 text-[14px] font-normal transition-all duration-150;
     color: hsl(var(--sidebar-foreground));
   }
   .sidebar-nav-item:hover {
-    background: hsl(var(--sidebar-accent) / 0.6);
+    background: hsl(var(--sidebar-hover));
   }
   .sidebar-nav-item--active {
-    @apply font-semibold;
+    @apply font-medium;
     background: hsl(var(--sidebar-accent));
     color: hsl(var(--sidebar-primary));
-    box-shadow: inset 3px 0 0 hsl(var(--sidebar-primary));
   }
 
   /* Sidebar group labels */
   .sidebar-group-label {
-    @apply uppercase text-[10px] tracking-[0.08em] font-semibold;
+    @apply uppercase text-[10px] font-semibold;
+    letter-spacing: 1.2px;
+    color: hsl(var(--sidebar-group-label));
   }
 
   /* Sidebar badge animation */
   .sidebar-badge {
     @apply h-5 min-w-[20px] px-1.5 text-[10px] font-bold animate-in fade-in duration-300;
+  }
+
+  /* Sidebar settings link */
+  .sidebar-settings-item {
+    color: hsl(var(--sidebar-settings-text));
   }
 }
 
