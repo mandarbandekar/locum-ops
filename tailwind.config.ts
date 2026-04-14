@@ -76,15 +76,18 @@ export default {
         },
         /* Brand colors as direct references */
         teal: {
-          500: "#3F8C8D",
-          600: "#2C7A7B",
-          700: "#256B6C",
+          50: "#E1F5EE",
+          100: "#9FE1CB",
+          200: "#5DCAA5",
+          400: "#1D9E75",
+          500: "#1D9E75",
+          600: "#0F6E56",
+          700: "#085041",
+          800: "#085041",
         },
-        navy: {
-          900: "#1E2A38",
-        },
-        sage: {
-          400: "#9BB8A5",
+        coral: {
+          DEFAULT: "#D85A30",
+          500: "#D85A30",
         },
         amber: {
           500: "#D1A15B",
