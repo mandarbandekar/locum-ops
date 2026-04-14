@@ -305,6 +305,9 @@ export default function OnboardingPage() {
                     </CardContent>
                   </Card>
                 ))}
+                <p className="text-sm text-muted-foreground">
+                  Next: log a shift at this clinic and watch your first invoice appear.
+                </p>
               </div>
             )}
 
