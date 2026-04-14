@@ -63,7 +63,12 @@ export function DashboardPromptCards({
 
   const dismissed = (profile?.dismissed_prompts as Record<string, boolean> | undefined) ?? {};
 
+  // Gate: never show contextual cards while Getting Started checklist is active
+  const gettingStartedDone = !!dismissed.getting_started;
+
   const activePrompt = useMemo<PromptDef | null>(() => {
+    if (!gettingStartedDone) return null;
+
     // Credentials: signed up >24h ago and 0 credentials
     if (!dismissed.credentials) {
       const signedUpOver24h = userCreatedAt
@@ -79,7 +84,7 @@ export function DashboardPromptCards({
     if (!dismissed.notifications && hasSentInvoice) return PROMPTS[2];
 
     return null;
-  }, [dismissed, credentialCount, shiftCount, hasSentInvoice, userCreatedAt]);
+  }, [gettingStartedDone, dismissed, credentialCount, shiftCount, hasSentInvoice, userCreatedAt]);
 
   const handleDismiss = useCallback(
     async (key: PromptKey) => {
