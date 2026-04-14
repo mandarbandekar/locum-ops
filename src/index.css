@@ -250,24 +250,39 @@
     color: hsl(var(--pill-draft-text));
   }
 
-  /* Primary tab selector – card-style nav on Business, Credentials, etc. */
+  /* Primary tab selector */
+  .primary-tab-container {
+    background: hsl(var(--tab-container-bg));
+    @apply inline-flex rounded-[10px] p-1 gap-1;
+  }
   .primary-tab-btn {
-    @apply flex items-center gap-1.5 sm:gap-2.5 px-3 sm:px-5 py-2.5 sm:py-3.5 rounded-xl border-2 font-semibold text-xs sm:text-sm transition-all flex-1 sm:flex-none min-w-0;
+    @apply flex items-center gap-1.5 sm:gap-2 rounded-[8px] px-3.5 py-2 font-semibold text-xs sm:text-sm transition-all flex-1 sm:flex-none min-w-0 border-0;
+    color: hsl(var(--tab-inactive-text));
   }
   .primary-tab-btn--active {
-    @apply border-primary bg-primary/5 text-primary shadow-sm;
+    background: hsl(var(--tab-active-bg));
+    color: hsl(var(--tab-active-text));
   }
   .primary-tab-btn--inactive {
-    @apply border-border bg-card text-muted-foreground hover:border-primary/30 hover:bg-muted/50;
+    @apply bg-transparent;
+    color: hsl(var(--tab-inactive-text));
+  }
+  .primary-tab-btn--inactive:hover {
+    @apply opacity-80;
   }
 
   /* Sidebar nav items */
   .sidebar-nav-item {
-    @apply relative rounded-xl px-3 py-2.5 text-[14px] font-medium transition-all duration-150
-           hover:bg-sidebar-accent/60;
+    @apply relative rounded-[8px] px-3 py-2.5 text-[14px] font-medium transition-all duration-150;
+    color: hsl(var(--sidebar-foreground));
+  }
+  .sidebar-nav-item:hover {
+    background: hsl(var(--sidebar-accent) / 0.6);
   }
   .sidebar-nav-item--active {
-    @apply bg-sidebar-accent text-sidebar-primary font-semibold;
+    @apply font-semibold;
+    background: hsl(var(--sidebar-accent));
+    color: hsl(var(--sidebar-primary));
     box-shadow: inset 3px 0 0 hsl(var(--sidebar-primary));
   }
 
