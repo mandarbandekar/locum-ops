@@ -60,7 +60,6 @@ Deno.serve(async (req) => {
     .from('shifts')
     .select('*')
     .eq('user_id', userId)
-    .eq('status', 'booked')
     .gte('start_datetime', now)
     .order('start_datetime', { ascending: true });
 
