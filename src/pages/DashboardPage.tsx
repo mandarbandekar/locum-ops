@@ -103,14 +103,31 @@ const TOUR_STEPS: TourStep[] = [
 const dashDb = (table: string) => supabase.from(table as any);
 
 export default function DashboardPage() {
-  const { shifts, invoices, facilities, payments, checklistItems, lineItems } = useData();
+  const { shifts, invoices, facilities, payments, checklistItems, lineItems, addShift } = useData();
   const { user, isDemo } = useAuth();
-  const { profile } = useUserProfile();
+  const { profile, updateProfile } = useUserProfile();
   const { profile: taxProfile, hasProfile: hasTaxProfile } = useTaxIntelligence();
   const { categories: reminderCategories } = useReminderPreferences();
   const navigate = useNavigate();
   const now = new Date();
   const { isOpen: tourOpen, isTourCompleted, startTour, closeTour } = useSpotlightTour();
+
+  // Getting started dialogs
+  const [addClinicOpen, setAddClinicOpen] = useState(false);
+  const [addShiftOpen, setAddShiftOpen] = useState(false);
+
+  // Welcome banner for users who skipped onboarding entirely
+  const skippedOnboarding = profile && !profile.onboarding_completed_at && profile.has_seen_welcome;
+  const showWelcomeBanner = skippedOnboarding && !profile?.dismissed_prompts?.welcome_banner && facilities.length === 0 && shifts.length === 0;
+
+  const dismissWelcomeBanner = useCallback(async () => {
+    await updateProfile({
+      dismissed_prompts: { ...profile?.dismissed_prompts, welcome_banner: true },
+    });
+  }, [profile, updateProfile]);
+
+  // Show getting started if setup is incomplete and not dismissed
+  const showGettingStarted = !profile?.dismissed_prompts?.getting_started && (facilities.length === 0 || shifts.length === 0);
 
   // Auto-start tour for new users
   useEffect(() => {
