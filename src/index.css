@@ -59,6 +59,7 @@
     --sidebar-group-label: 155 69% 37%;  /* #1D9E75 */
     --sidebar-hover: 155 55% 92%;        /* #E1F5EE */
     --sidebar-settings-text: 155 50% 58%;/* #5DCAA5 */
+    --sidebar-logo-text: 160 82% 17%;   /* #085041 */
 
     /* Tab tokens – light */
     --tab-container-bg: 40 22% 93%;      /* #F1EFE8 */
@@ -160,6 +161,7 @@
     --sidebar-group-label: 0 0% 40%;     /* #666666 */
     --sidebar-hover: 0 0% 16%;           /* #2A2A2A */
     --sidebar-settings-text: 0 0% 40%;   /* #666666 */
+    --sidebar-logo-text: 0 0% 88%;      /* #E0E0E0 */
 
     /* Tab tokens – dark */
     --tab-container-bg: 50 3% 18%;       /* #2F2F2D */

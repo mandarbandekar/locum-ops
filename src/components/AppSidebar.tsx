@@ -116,7 +116,7 @@ export function AppSidebar() {
         <div className={`flex items-center gap-3 px-4 py-4 ${collapsed ? 'justify-center' : ''}`}>
           <img src={locumOpsLogo} alt="LocumOps" className="h-8 w-8 rounded-lg" />
           {!collapsed && (
-            <span className="font-semibold text-[15px] tracking-tight" style={{ color: 'hsl(var(--sidebar-foreground))' }}>
+            <span className="font-semibold text-[15px] tracking-tight" style={{ color: 'hsl(var(--sidebar-logo-text))' }}>
               LocumOps
             </span>
           )}
