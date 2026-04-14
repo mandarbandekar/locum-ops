@@ -46,15 +46,21 @@
 
     --radius: 1rem;
 
-    /* Sidebar */
-    --sidebar-background: 210 28% 11%;
-    --sidebar-foreground: 150 14% 87%;
-    --sidebar-primary: 155 69% 37%;
+    /* Sidebar – light: deep teal */
+    --sidebar-background: 160 82% 17%;   /* #085041 */
+    --sidebar-foreground: 155 52% 75%;   /* #9FE1CB */
+    --sidebar-primary: 0 0% 100%;        /* white active text */
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 22% 16%;
-    --sidebar-accent-foreground: 150 14% 93%;
-    --sidebar-border: 210 20% 18%;
+    --sidebar-accent: 160 75% 25%;       /* #0F6E56 active bg */
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 160 75% 25%;
     --sidebar-ring: 155 69% 37%;
+
+    /* Tab tokens – light */
+    --tab-container-bg: 40 22% 93%;      /* #F1EFE8 */
+    --tab-inactive-text: 60 2% 36%;      /* #5F5E5A */
+    --tab-active-bg: 160 75% 25%;        /* #0F6E56 */
+    --tab-active-text: 0 0% 100%;
 
     /* Pill tag tokens – light */
     --pill-paid-bg: 86 40% 72%;          /* #EAF3DE */
