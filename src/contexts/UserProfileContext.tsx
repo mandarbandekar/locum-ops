@@ -109,6 +109,7 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
           invoice_phone: '503-555-0147',
            home_address: '1234 Elm Street\nPortland, OR 97201',
            has_seen_welcome: true,
+           dismissed_prompts: {},
         }
       : null
   );

@@ -21,6 +21,7 @@ import { calculateTax } from '@/components/tax-intelligence/TaxDashboard';
 import { UpcomingShiftsCard } from '@/components/dashboard/UpcomingShiftsCard';
 import { MoneyToCollectCard } from '@/components/dashboard/MoneyToCollectCard';
 import { NeedsAttentionCard, AttentionItem, type ReminderModule } from '@/components/dashboard/NeedsAttentionCard';
+import { DashboardPromptCards } from '@/components/dashboard/DashboardPromptCards';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { SpotlightTour, TourStep } from '@/components/SpotlightTour';
 import { useSpotlightTour } from '@/hooks/useSpotlightTour';
