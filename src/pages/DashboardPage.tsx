@@ -478,6 +478,8 @@ export default function DashboardPage() {
           open={addShiftOpen}
           onOpenChange={setAddShiftOpen}
           facilities={facilities}
+          shifts={shifts}
+          terms={[]}
           onSave={async (shift) => {
             await addShift(shift);
             setAddShiftOpen(false);
