@@ -59,6 +59,7 @@
     --sidebar-group-label: 155 69% 37%;  /* #1D9E75 */
     --sidebar-hover: 155 55% 92%;        /* #E1F5EE */
     --sidebar-settings-text: 155 50% 58%;/* #5DCAA5 */
+    --sidebar-logo-text: 160 82% 17%;   /* #085041 */
 
     /* Tab tokens – light */
     --tab-container-bg: 40 22% 93%;      /* #F1EFE8 */
@@ -147,19 +148,20 @@
     --input: 50 2% 26%;
     --ring: 155 50% 58%;
 
-    /* Sidebar – dark: deep forest */
-    --sidebar-background: 158 60% 10%;   /* #0A2A20 */
-    --sidebar-foreground: 155 52% 75%;   /* #9FE1CB */
+    /* Sidebar – dark: neutral charcoal */
+    --sidebar-background: 0 0% 12%;      /* #1E1E1E */
+    --sidebar-foreground: 0 0% 63%;      /* #A0A0A0 */
     --sidebar-primary: 0 0% 100%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 160 75% 25%;       /* #0F6E56 active bg */
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 155 50% 16%;       /* #133D2F */
+    --sidebar-border: 0 0% 18%;          /* #2E2E2E */
     --sidebar-ring: 155 50% 58%;
-    --sidebar-icon-inactive: 155 50% 58%;/* #5DCAA5 */
-    --sidebar-group-label: 155 50% 58%;  /* #5DCAA5 */
-    --sidebar-hover: 160 75% 25% / 0.2;  /* rgba(15,110,86,0.2) */
-    --sidebar-settings-text: 155 50% 58%;/* #5DCAA5 */
+    --sidebar-icon-inactive: 0 0% 40%;   /* #666666 */
+    --sidebar-group-label: 0 0% 40%;     /* #666666 */
+    --sidebar-hover: 0 0% 16%;           /* #2A2A2A */
+    --sidebar-settings-text: 0 0% 40%;   /* #666666 */
+    --sidebar-logo-text: 0 0% 88%;      /* #E0E0E0 */
 
     /* Tab tokens – dark */
     --tab-container-bg: 50 3% 18%;       /* #2F2F2D */
