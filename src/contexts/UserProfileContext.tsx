@@ -185,6 +185,7 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
           home_address: d.home_address || '',
           completed_tours: (d.completed_tours as string[]) || [],
           has_seen_welcome: !!d.has_seen_welcome,
+          dismissed_prompts: (d.dismissed_prompts as Record<string, boolean>) || {},
         });
       } else {
         // Pull signup metadata from auth user to pre-populate profile
@@ -238,6 +239,7 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
             home_address: nd.home_address || '',
             completed_tours: [],
             has_seen_welcome: false,
+            dismissed_prompts: {},
           });
         }
       }
