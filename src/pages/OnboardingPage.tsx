@@ -1,15 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
-import { ArrowRight, Check, Building2, Plus, MapPin, Mail, User, Lightbulb, Pencil } from 'lucide-react';
+import { ArrowRight, Check, MapPin, Mail, User, Lightbulb, Pencil, Plus } from 'lucide-react';
 import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
-import { AddFacilityDialog } from '@/components/AddFacilityDialog';
+import { OnboardingClinicForm } from '@/components/onboarding/OnboardingClinicForm';
 import { OnboardingShiftStep } from '@/components/onboarding/OnboardingShiftStep';
 import { OnboardingTaxStep } from '@/components/onboarding/OnboardingTaxStep';
 import { WorkspaceReady } from '@/components/onboarding/WorkspaceReady';
@@ -66,16 +66,15 @@ export default function OnboardingPage() {
   const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   const [phase, setPhase] = useState<Phase>('manual_facility');
-  const [facilityDialogOpen, setFacilityDialogOpen] = useState(false);
   const [timezone, setTimezone] = useState(profile?.timezone || detectedTimezone);
   const [editingTimezone, setEditingTimezone] = useState(false);
   const [taxEnabled, setTaxEnabled] = useState(false);
   const [lastShiftRate, setLastShiftRate] = useState<number | null>(null);
-  const [facilitySavedInStep, setFacilitySavedInStep] = useState(false);
+  const [showClinicForm, setShowClinicForm] = useState(false);
 
   const firstName = profile?.first_name || user?.user_metadata?.first_name || '';
 
-  // Auto-save profile on mount (name from auth metadata + detected timezone)
+  // Auto-save profile on mount
   const profileSavedRef = useRef(false);
   useEffect(() => {
     if (profileSavedRef.current) return;
@@ -93,14 +92,12 @@ export default function OnboardingPage() {
     console.log('onboarding_step_view', { phase });
   }, [phase]);
 
-  // Track shift rate when shifts change
   useEffect(() => {
     if (shifts.length > 0 && !lastShiftRate) {
       setLastShiftRate(shifts[shifts.length - 1].rate_applied);
     }
   }, [shifts, lastShiftRate]);
 
-  // Save timezone when changed
   useEffect(() => {
     if (timezone !== detectedTimezone) {
       updateProfile({ timezone });
@@ -108,29 +105,17 @@ export default function OnboardingPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timezone]);
 
-  const handleFacilityDialogChange = (open: boolean) => {
-    setFacilityDialogOpen(open);
-    if (!open && phase === 'manual_facility') {
-      setTimeout(() => {
-        if (facilities.length > 0) {
-          setFacilitySavedInStep(true);
-        }
-      }, 300);
-    }
-  };
-
   const goBack = () => {
     const prev = PHASE_BACK[phase];
     if (prev) setPhase(prev);
   };
 
   const handleNavigate = (path: string) => {
-    console.log('onboarding_navigate', { path });
     navigate(path);
   };
 
   const getSkipHandler = (): (() => void) | undefined => {
-    if (phase === 'manual_facility') return () => setPhase('finish');
+    if (phase === 'manual_facility' && !showClinicForm) return () => setPhase('finish');
     if (phase === 'first_shift') return () => setPhase('tax_enablement');
     return undefined;
   };
@@ -184,7 +169,7 @@ export default function OnboardingPage() {
             </div>
 
             {/* Show saved clinic cards */}
-            {facilities.length > 0 && (
+            {facilities.length > 0 && !showClinicForm && (
               <div className="space-y-3">
                 {facilities.map(f => (
                   <Card key={f.id} className="border-primary/30 bg-primary/[0.03]">
@@ -217,57 +202,45 @@ export default function OnboardingPage() {
                     </CardContent>
                   </Card>
                 ))}
-              </div>
-            )}
 
-            {/* Show form prompt or add-more option */}
-            {facilities.length === 0 ? (
-              <Card className="border-dashed border-2 border-primary/20 bg-primary/[0.02] hover:border-primary/40 transition-colors cursor-pointer" onClick={() => setFacilityDialogOpen(true)}>
-                <CardContent className="py-8 flex flex-col items-center gap-3 text-center">
-                  <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <Building2 className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-foreground">Add a practice</p>
-                    <p className="text-sm text-muted-foreground mt-0.5">Clinic name, address, contact info, and rates</p>
-                  </div>
-                  <Button size="sm" className="mt-1">
-                    <Plus className="h-3.5 w-3.5 mr-1" /> Add Practice
+                <div className="space-y-2">
+                  <Button onClick={() => setPhase('first_shift')} className="w-full" size="lg">
+                    Log your first shift <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-2">
-                <Button onClick={() => setPhase('first_shift')} className="w-full" size="lg">
-                  Log your first shift <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-                <button
-                  type="button"
-                  onClick={() => setFacilityDialogOpen(true)}
-                  className="w-full text-sm text-primary hover:underline py-1"
-                >
-                  + Add another clinic
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowClinicForm(true)}
+                    className="w-full text-sm text-primary hover:underline py-1"
+                  >
+                    <Plus className="h-3.5 w-3.5 inline mr-1" />Add another clinic
+                  </button>
+                </div>
+
+                {/* Tip */}
+                <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 rounded-lg p-3">
+                  <Lightbulb className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+                  <span>The day rate you set here becomes the default when you log shifts — saves you from re-entering it every time.</span>
+                </div>
               </div>
             )}
 
-            {/* Tip */}
-            <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 rounded-lg p-3">
-              <Lightbulb className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
-              <span>The day rate you set here becomes the default when you log shifts — saves you from re-entering it every time.</span>
-            </div>
+            {/* Inline clinic form — shown when no facilities or when adding */}
+            {(facilities.length === 0 || showClinicForm) && (
+              <OnboardingClinicForm
+                onSaved={() => setShowClinicForm(false)}
+              />
+            )}
 
-            {/* Why add clinics? */}
-            <Card className="bg-muted/30 border-dashed">
-              <CardContent className="p-4">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Why add clinics?</p>
-                <p className="text-sm text-muted-foreground">
-                  Each clinic you add becomes a billing entity. When you log shifts at this clinic, LocumOps generates draft invoices and builds your earnings picture — no spreadsheets needed.
-                </p>
-              </CardContent>
-            </Card>
-
-            <AddFacilityDialog open={facilityDialogOpen} onOpenChange={handleFacilityDialogChange} />
+            {/* Skip link when showing form */}
+            {(facilities.length === 0 || showClinicForm) && (
+              <button
+                type="button"
+                onClick={() => setPhase('finish')}
+                className="w-full text-sm text-muted-foreground hover:text-foreground py-1 text-center"
+              >
+                Skip — I'll add clinics later
+              </button>
+            )}
           </div>
         );
 
