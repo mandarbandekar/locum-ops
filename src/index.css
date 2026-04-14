@@ -148,17 +148,17 @@
     --ring: 155 50% 58%;
 
     /* Sidebar – dark: deep forest */
-    --sidebar-background: 156 24% 15%;   /* #1E2E28 */
+    --sidebar-background: 158 60% 10%;   /* #0A2A20 */
     --sidebar-foreground: 155 52% 75%;   /* #9FE1CB */
     --sidebar-primary: 0 0% 100%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 155 69% 37% / 0.25;/* rgba(29,158,117,0.25) */
+    --sidebar-accent: 160 75% 25%;       /* #0F6E56 active bg */
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 156 22% 20%;       /* #2A3F37 */
+    --sidebar-border: 155 50% 16%;       /* #133D2F */
     --sidebar-ring: 155 50% 58%;
     --sidebar-icon-inactive: 155 50% 58%;/* #5DCAA5 */
     --sidebar-group-label: 155 50% 58%;  /* #5DCAA5 */
-    --sidebar-hover: 155 69% 37% / 0.12;
+    --sidebar-hover: 160 75% 25% / 0.2;  /* rgba(15,110,86,0.2) */
     --sidebar-settings-text: 155 50% 58%;/* #5DCAA5 */
 
     /* Tab tokens – dark */
