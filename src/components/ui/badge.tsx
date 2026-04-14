@@ -4,17 +4,17 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const badgeVariants = cva(
-  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  "inline-flex items-center rounded-[20px] border px-2.5 py-1 text-[11px] font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
   {
     variants: {
       variant: {
-        default: "border-transparent bg-primary/15 text-primary",
-        secondary: "border-transparent bg-secondary text-secondary-foreground",
-        destructive: "border-transparent chip-error",
+        default: "border-transparent pill-sent",
+        secondary: "border-transparent pill-draft",
+        destructive: "border-transparent pill-overdue",
         outline: "text-foreground",
-        success: "border-transparent chip-success",
-        warning: "border-transparent chip-warning",
-        info: "border-transparent chip-info",
+        success: "border-transparent pill-paid",
+        warning: "border-transparent pill-pending",
+        info: "border-transparent pill-sent",
       },
     },
     defaultVariants: {

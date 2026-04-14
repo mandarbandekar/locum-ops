@@ -1,21 +1,21 @@
 import { cn } from '@/lib/utils';
 
 const statusStyles: Record<string, string> = {
-  active: 'chip-success',
-  archived: 'bg-muted text-muted-foreground',
-  draft: 'bg-muted text-muted-foreground',
-  sent: 'chip-info',
-  paid: 'chip-success',
-  overdue: 'chip-error',
-  pending: 'chip-warning',
-  scheduled: 'chip-info',
-  confirmed: 'chip-success',
-  'needs action': 'chip-warning',
+  active: 'pill-sent',
+  archived: 'pill-draft',
+  draft: 'pill-draft',
+  sent: 'pill-sent',
+  paid: 'pill-paid',
+  overdue: 'pill-overdue',
+  pending: 'pill-pending',
+  scheduled: 'pill-sent',
+  confirmed: 'pill-paid',
+  'needs action': 'pill-overdue',
 };
 
 export function StatusBadge({ status, className }: { status: string; className?: string }) {
   return (
-    <span className={cn('status-badge', statusStyles[status] || 'bg-muted text-muted-foreground', className)}>
+    <span className={cn('status-badge', statusStyles[status] || 'pill-draft', className)}>
       {status}
     </span>
   );
