@@ -1,79 +1,60 @@
 
 
-# Global Design Refresh — Color Theme Update
+# Onboarding Flow Restructure: 6 Steps → 3 Steps
 
-## Overview
-Replace the current cool teal/sage palette with the new teal ramp, coral accent, and warm gray system. Changes are limited to two files: `src/index.css` (CSS variables) and `tailwind.config.ts` (brand color tokens). No component logic changes.
+## Summary
+Restructure the onboarding from 6 steps to 3, remove Profile/Notifications/Calendar Sync as separate screens, update micro-copy throughout, and simplify the finish screen.
 
-## Color Conversions (hex → HSL)
+## Files to Modify
 
-**New primary teal ramp:**
-- primary-50 #E1F5EE → 155 55% 92%
-- primary-100 #9FE1CB → 155 52% 75%
-- primary-200 #5DCAA5 → 155 50% 58%
-- primary-400 #1D9E75 → 155 69% 37%
-- primary-600 #0F6E56 → 160 75% 25%
-- primary-800 #085041 → 160 82% 17%
+### 1. `src/pages/OnboardingPage.tsx` — Major rewrite
+- Change `Phase` type to `'manual_facility' | 'first_shift' | 'tax_enablement' | 'finish'`
+- Update `PHASE_STEP` to 3-step mapping (manual_facility=1, first_shift=2, tax_enablement=3, finish not shown in layout)
+- Set `TOTAL_STEPS = 3` and update `PHASE_LABEL` ("Add a clinic", "Log a shift", "Your taxes")
+- Remove `'profile'` phase rendering entirely
+- Always auto-save profile on mount (first/last name from auth metadata + auto-detected timezone), not just for OAuth users
+- Auto-set default notification preferences on mount (call `useReminderPreferences` to seed defaults)
+- Add inline greeting bar at top of `manual_facility` phase: "Hi [FirstName]! Timezone: [tz] ✏️ Change" with timezone dropdown
+- Update `manual_facility` micro-copy (title, subtitle, "Why add clinics?" box text per spec)
+- Tax step now calls `onContinue` → sets phase to `'finish'` (no reminders/calendar_sync)
+- Update skip handlers to only offer skips for steps 1 and 2
+- Render a simplified finish screen inline (no `WorkspaceReady` component) OR create a new lightweight component
 
-**Accent/CTA coral:** #D85A30 → 16 65% 52%
+### 2. `src/components/onboarding/OnboardingShiftStep.tsx` — Micro-copy updates
+- Subtitle: "Each shift you log feeds your invoices, earnings, and tax estimate automatically."
+- Invoice callout text: "Every shift you log creates a draft invoice. Review, edit, and send it from your Invoices page — or set up auto-reminders."
+- Earnings helper text: "Based on 1 shift. Your Business Hub shows weekly, monthly, and annual earnings across all clinics. The more shifts you log, the more complete your financial picture becomes."
 
-**Warm grays:**
-- Background #F1EFE8 → 40 22% 93%
-- Border #B4B2A9 → 44 6% 68%
+### 3. `src/components/onboarding/OnboardingTaxStep.tsx` — Multiple changes
+- Remove `Checkbox` import and `disclaimer` state
+- Replace interactive disclaimer checkbox with static gray text block containing the disclaimer text
+- Remove `canProceed` logic that requires checkbox — button always enabled when tax toggle is on or off
+- Change CTA text from "Almost done →" to "Finish Setup →"
+- Add helper line above CTA: "Your tax estimate updates as you log more shifts throughout the year."
+- Update `onContinue` call to pass `taxEnabled` directly (no disclaimer gating)
 
-## Changes
+### 4. `src/components/onboarding/WorkspaceReady.tsx` — Simplify into finish screen
+- Remove Calendar Sync section entirely (no `CalendarSyncStep` import)
+- Remove `calendarDone` state — show completion summary immediately
+- Update heading to "🎉 You're all set!"
+- Update subtext to: "Everything you just entered is working together — your shifts generate invoices, your invoices feed your tax picture."
+- Keep the 4 result checkmark cards
+- Remove "Optional Next Steps" card entirely
+- Remove secondary navigation buttons (Schedule, Clinics, Invoices grid)
+- Keep only the single "Go to My Dashboard →" primary CTA
 
-### `src/index.css`
-**Light theme `:root`:**
-- `--background` → `40 22% 93%` (warm gray #F1EFE8)
-- `--primary` → `155 69% 37%` (primary-400 #1D9E75, the main interactive color)
-- `--primary-foreground` → stays `0 0% 100%`
-- `--secondary` → `40 18% 96%` (slightly lighter warm gray)
-- `--secondary-foreground` → keep current
-- `--muted` → `40 18% 96%`
-- `--accent` → `40 18% 96%`
-- `--accent-foreground` → `16 65% 52%` (coral for accent text)
-- `--border` → `44 6% 68%` (#B4B2A9)
-- `--border-soft` → `40 14% 88%`
-- `--input` → `44 6% 68%`
-- `--ring` → `155 69% 37%`
-- `--sidebar-primary` → `155 69% 37%`
-- `--sidebar-ring` → `155 69% 37%`
+### 5. `src/components/onboarding/OnboardingLayout.tsx` — No changes needed
+The layout already accepts dynamic `step`, `totalSteps`, and `stepLabel` props.
 
-**Dark theme `.dark`:**
-- `--primary` → `155 50% 58%` (primary-200 for dark mode visibility)
-- `--accent-foreground` → `16 55% 60%` (lighter coral for dark)
-- `--border` → warm-shifted dark: `35 10% 20%`
-- `--input` → match border
-- `--ring` → `155 50% 58%`
-- `--sidebar-primary` → `155 50% 58%`
-- `--sidebar-ring` → `155 50% 58%`
+## No changes to:
+- Welcome page (`WelcomePage.tsx`) — stays as-is
+- Visual design, colors, layout
+- Form validation, onChange handlers, submit logic
+- Any other components outside onboarding
 
-### `tailwind.config.ts`
-Update the brand color block:
-```typescript
-teal: {
-  50: "#E1F5EE",
-  100: "#9FE1CB",
-  200: "#5DCAA5",
-  400: "#1D9E75",
-  500: "#1D9E75", // alias for existing teal-500 references
-  600: "#0F6E56",
-  700: "#085041",
-  800: "#085041",
-},
-coral: {
-  DEFAULT: "#D85A30",
-  500: "#D85A30",
-},
-```
-Remove old `sage` and `navy` entries (or update to warm equivalents).
+## Technical Notes
+- Profile auto-save uses existing `updateProfile()` from `useUserProfile` context
+- Timezone detection uses existing `Intl.DateTimeFormat().resolvedOptions().timeZone`
+- Default notification prefs will be seeded by calling the existing `useReminderPreferences` hook's update methods on mount
+- The inline timezone picker reuses the same `Select` component already used in the old profile step
 
-### Existing `bg-teal-500` references
-The `teal.500` key in the Tailwind config maps to the new `#1D9E75`, so existing shift color dot references (`bg-teal-500`) automatically pick up the new value with no component changes needed.
-
-## Files Modified
-- `src/index.css` — CSS variable values only
-- `tailwind.config.ts` — brand color hex values only
-
-## No component, layout, or logic changes
