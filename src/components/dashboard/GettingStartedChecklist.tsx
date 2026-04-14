@@ -1,150 +1,203 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import {
-  Building2, CalendarDays, FileText, DollarSign, ShieldCheck,
-  CheckCircle2, Circle, ArrowRight, X,
+  Building2, CalendarDays, Landmark,
+  CheckCircle2, Circle, Plus, ArrowRight,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
-import { useCredentials } from '@/hooks/useCredentials';
-
-interface ChecklistStep {
-  key: string;
-  label: string;
-  description: string;
-  icon: React.ElementType;
-  done: boolean;
-  action: () => void;
-  actionLabel: string;
-}
+import { useUserProfile } from '@/contexts/UserProfileContext';
+import { toast } from 'sonner';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface Props {
-  onDismiss: () => void;
+  onOpenAddClinic: () => void;
+  onOpenAddShift: () => void;
 }
 
-export function GettingStartedChecklist({ onDismiss }: Props) {
+export function GettingStartedChecklist({ onOpenAddClinic, onOpenAddShift }: Props) {
   const navigate = useNavigate();
-  const { facilities, shifts, invoices, payments } = useData();
-  const { credentials } = useCredentials();
+  const { facilities, shifts, invoices } = useData();
+  const { profile, updateProfile } = useUserProfile();
+  const [confirmDismiss, setConfirmDismiss] = useState(false);
+  const [autoHidden, setAutoHidden] = useState(false);
 
-  const steps: ChecklistStep[] = useMemo(() => [
-    {
-      key: 'facility',
-      label: 'Add your first practice',
-      description: 'Set up a clinic with billing preferences and contacts.',
-      icon: Building2,
-      done: facilities.length > 0,
-      action: () => navigate('/facilities'),
-      actionLabel: 'Add practice',
-    },
-    {
-      key: 'shift',
-      label: 'Schedule a shift',
-      description: 'Add an upcoming shift — invoices are auto-generated from booked shifts.',
-      icon: CalendarDays,
-      done: shifts.length > 0,
-      action: () => navigate('/schedule'),
-      actionLabel: 'Add shift',
-    },
-    {
-      key: 'invoice',
-      label: 'Review your first invoice',
-      description: 'Drafts are created automatically. Review and send to your clinic.',
-      icon: FileText,
-      done: invoices.length > 0,
-      action: () => navigate('/invoices'),
-      actionLabel: 'View invoices',
-    },
-    {
-      key: 'payment',
-      label: 'Record a payment',
-      description: 'Track when you get paid to stay on top of your revenue.',
-      icon: DollarSign,
-      done: payments.length > 0,
-      action: () => navigate('/invoices'),
-      actionLabel: 'Record payment',
-    },
-    {
-      key: 'credential',
-      label: 'Add a credential',
-      description: 'Track your licenses, DEA, and insurance with renewal alerts.',
-      icon: ShieldCheck,
-      done: (credentials?.length || 0) > 0,
-      action: () => navigate('/credentials'),
-      actionLabel: 'Set up credentials',
-    },
-  ], [facilities, shifts, invoices, payments, credentials, navigate]);
+  const hasClinic = facilities.length > 0;
+  const hasShift = shifts.length > 0;
+  const hasViewedTax = !!profile?.dismissed_prompts?.getting_started_tax_viewed;
 
-  const completedCount = steps.filter(s => s.done).length;
-  const progress = Math.round((completedCount / steps.length) * 100);
+  // Item 3 counts as done if they have a shift (they can see the estimate)
+  const taxDone = hasShift || hasViewedTax;
 
-  // Don't render if all done
-  if (completedCount === steps.length) return null;
+  const completedCount = [hasClinic, hasShift, taxDone].filter(Boolean).length;
+  const allDone = completedCount === 3;
+  const progress = Math.round((completedCount / 3) * 100);
 
-  // Find next incomplete step
-  const nextStep = steps.find(s => !s.done);
+  // Auto-hide when all done
+  useEffect(() => {
+    if (allDone && !autoHidden) {
+      const t = setTimeout(() => {
+        setAutoHidden(true);
+        toast.success("🎉 You're all set! Your dashboard is ready.");
+        handleDismissSilent();
+      }, 2000);
+      return () => clearTimeout(t);
+    }
+  }, [allDone]);
+
+  const handleDismissSilent = useCallback(async () => {
+    await updateProfile({
+      dismissed_prompts: { ...profile?.dismissed_prompts, getting_started: true },
+    });
+  }, [profile, updateProfile]);
+
+  const handleDismissConfirmed = async () => {
+    setConfirmDismiss(false);
+    await handleDismissSilent();
+  };
+
+  // Don't render if dismissed or auto-hidden
+  if (profile?.dismissed_prompts?.getting_started || autoHidden) return null;
+
+  // Quarterly tax estimate for display
+  const firstShiftRate = shifts.length > 0 ? shifts[0].rate_applied : 0;
+  const quarterlyEstimate = firstShiftRate > 0 ? Math.round(firstShiftRate * 144 * 0.30 / 4) : 0;
+
+  const firstClinicName = facilities.length > 0 ? facilities[0].name : '';
 
   return (
-    <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent overflow-hidden">
-      <CardContent className="p-5 space-y-4">
-        {/* Header */}
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <h3 className="font-bold text-sm text-foreground">Get started with LocumOps</h3>
-            <p className="text-xs text-muted-foreground">
-              {completedCount} of {steps.length} steps completed
-            </p>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 text-muted-foreground hover:text-foreground -mt-1 -mr-1"
-            onClick={onDismiss}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-
-        {/* Progress */}
-        <Progress value={progress} className="h-2" />
-
-        {/* Steps */}
-        <div className="space-y-1">
-          {steps.map((step) => (
-            <div
-              key={step.key}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors ${
-                step.done
-                  ? 'opacity-60'
-                  : step === nextStep
-                  ? 'bg-primary/5 border border-primary/15'
-                  : ''
-              }`}
-            >
-              {step.done ? (
-                <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
-              ) : (
-                <Circle className="h-5 w-5 text-muted-foreground/40 shrink-0" />
-              )}
-              <div className="flex-1 min-w-0">
-                <p className={`text-sm font-medium ${step.done ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
-                  {step.label}
-                </p>
-                {!step.done && step === nextStep && (
-                  <p className="text-xs text-muted-foreground mt-0.5">{step.description}</p>
-                )}
-              </div>
-              {!step.done && step === nextStep && (
-                <Button size="sm" variant="outline" className="shrink-0 text-xs h-7" onClick={step.action}>
-                  {step.actionLabel} <ArrowRight className="ml-1 h-3 w-3" />
-                </Button>
-              )}
+    <>
+      <Card className="border-primary/20 bg-gradient-to-br from-primary/[0.03] to-transparent shrink-0">
+        <CardContent className="p-4 space-y-3">
+          {/* Header */}
+          <div className="flex items-start justify-between">
+            <div className="space-y-0.5">
+              <h3 className="font-semibold text-sm text-foreground">Get the most out of LocumOps</h3>
+              <p className="text-xs text-muted-foreground">{completedCount} of 3 complete</p>
             </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+            <button
+              type="button"
+              onClick={() => setConfirmDismiss(true)}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Dismiss
+            </button>
+          </div>
+
+          <Progress value={progress} className="h-1.5" />
+
+          {/* Checklist items */}
+          <div className="space-y-1">
+            {/* Item 1: Add clinic */}
+            <ChecklistRow
+              done={hasClinic}
+              doneText={`${firstClinicName} added`}
+              description="Start with one clinic you work with regularly."
+              ctaLabel="+ Add Clinic"
+              onAction={onOpenAddClinic}
+            />
+
+            {/* Item 2: Log shift */}
+            <ChecklistRow
+              done={hasShift}
+              doneText={`1 shift logged${invoices.length > 0 ? ' — draft invoice created' : ''}`}
+              description={hasClinic
+                ? "Log a recent shift — it feeds your invoices and tax estimate."
+                : "Add a clinic first, then log a shift."
+              }
+              ctaLabel="+ Log Shift"
+              onAction={onOpenAddShift}
+              disabled={!hasClinic}
+            />
+
+            {/* Item 3: Tax estimate */}
+            <ChecklistRow
+              done={taxDone}
+              doneText={quarterlyEstimate > 0 ? `$${quarterlyEstimate.toLocaleString()} estimated quarterly` : 'Tax estimate viewed'}
+              description={hasShift
+                ? "Your estimated quarterly tax bill is ready."
+                : "Log a shift first to see your estimated quarterly taxes."
+              }
+              ctaLabel="See Estimate →"
+              onAction={() => {
+                updateProfile({
+                  dismissed_prompts: { ...profile?.dismissed_prompts, getting_started_tax_viewed: true },
+                });
+                navigate('/tax-estimate');
+              }}
+              disabled={!hasShift}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Dismiss confirmation */}
+      <AlertDialog open={confirmDismiss} onOpenChange={setConfirmDismiss}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Dismiss getting started?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You can always find these actions in the sidebar.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep showing</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDismissConfirmed}>
+              Yes, dismiss
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
+
+function ChecklistRow({
+  done,
+  doneText,
+  description,
+  ctaLabel,
+  onAction,
+  disabled,
+}: {
+  done: boolean;
+  doneText: string;
+  description: string;
+  ctaLabel: string;
+  onAction: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className={`flex items-center gap-3 rounded-lg px-3 py-2.5 ${done ? 'opacity-60' : ''}`}>
+      {done ? (
+        <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
+      ) : (
+        <Circle className="h-5 w-5 text-muted-foreground/30 shrink-0" />
+      )}
+      <div className="flex-1 min-w-0">
+        {done ? (
+          <p className="text-sm text-emerald-500 font-medium">✓ {doneText}</p>
+        ) : (
+          <p className="text-xs text-muted-foreground">{description}</p>
+        )}
+      </div>
+      {!done && (
+        <Button
+          size="sm"
+          variant="outline"
+          className="shrink-0 text-xs h-7"
+          onClick={onAction}
+          disabled={disabled}
+        >
+          {ctaLabel}
+        </Button>
+      )}
+    </div>
   );
 }
