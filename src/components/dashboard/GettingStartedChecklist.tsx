@@ -95,7 +95,7 @@ export function GettingStartedChecklist({ onOpenAddClinic, onOpenAddShift }: Pro
     };
 
     const result = calculate1099Tax(taxInput);
-    return Math.round(result.totalTax / 4);
+    return Math.round(result.quarterlyPayment);
   }, [shifts, taxProfile]);
 
   const firstClinicName = facilities.length > 0 ? facilities[0].name : '';
