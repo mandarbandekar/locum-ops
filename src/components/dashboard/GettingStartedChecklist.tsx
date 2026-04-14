@@ -69,9 +69,34 @@ export function GettingStartedChecklist({ onOpenAddClinic, onOpenAddShift }: Pro
   // Don't render if dismissed or auto-hidden
   if (profile?.dismissed_prompts?.getting_started || autoHidden) return null;
 
-  // Quarterly tax estimate for display
-  const firstShiftRate = shifts.length > 0 ? shifts[0].rate_applied : 0;
-  const quarterlyEstimate = firstShiftRate > 0 ? Math.round(firstShiftRate * 144 * 0.30 / 4) : 0;
+  // Quarterly tax estimate using the same calculation as the Tax Estimate page
+  const quarterlyEstimate = useMemo(() => {
+    const firstShiftRate = shifts.length > 0 ? shifts[0].rate_applied : 0;
+    if (firstShiftRate <= 0) return 0;
+
+    const savedDays = (taxProfile as any)?.typical_days_per_week;
+    const scheduleIdx = savedDays ? daysPerWeekToIndex(savedDays) : 1; // default 3 days/wk
+    const daysPerYear = SCHEDULE_OPTIONS[scheduleIdx]?.daysPerYear ?? 144;
+    const annualIncome = firstShiftRate * daysPerYear;
+    const expenses = Number((taxProfile as any)?.annual_business_expenses ?? 9500);
+    const stateCode = ((taxProfile as any)?.state_code ?? 'CA').toLowerCase();
+
+    const taxInput: TaxProfileV1 = {
+      entityType: '1099',
+      annualReliefIncome: annualIncome,
+      scorpSalary: 0,
+      extraWithholding: 0,
+      payPeriodsPerYear: 24,
+      filingStatus: (taxProfile as any)?.filing_status ?? 'single',
+      spouseW2Income: 0,
+      retirementContributions: 0,
+      annualBusinessExpenses: expenses,
+      stateKey: stateCode,
+    };
+
+    const result = calculate1099Tax(taxInput);
+    return Math.round(result.totalTax / 4);
+  }, [shifts, taxProfile]);
 
   const firstClinicName = facilities.length > 0 ? facilities[0].name : '';
 
