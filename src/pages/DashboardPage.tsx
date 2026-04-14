@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -6,8 +6,12 @@ import { useNavigate, Link } from 'react-router-dom';
 import {
   CalendarDays, FileText, DollarSign, AlertTriangle, ArrowRight,
   Send, ShieldAlert, CheckSquare, Zap, Clock, Calculator, Lightbulb, TrendingUp,
+  X,
 } from 'lucide-react';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
+import { GettingStartedChecklist } from '@/components/dashboard/GettingStartedChecklist';
+import { AddFacilityDialog } from '@/components/AddFacilityDialog';
+import { ShiftFormDialog } from '@/components/schedule/ShiftFormDialog';
 import { format, differenceInDays, differenceInHours, addMonths, subMonths, startOfMonth, endOfMonth, endOfDay, startOfWeek, endOfWeek, subWeeks, eachMonthOfInterval, isWithinInterval, isToday, isAfter, parseISO } from 'date-fns';
 import { getChecklistBadge } from '@/types/contracts';
 import { useClinicConfirmations } from '@/hooks/useClinicConfirmations';
