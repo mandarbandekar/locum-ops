@@ -173,7 +173,7 @@ Deno.serve(async (req) => {
       if (!sentToday || sentToday.length === 0) {
         const { data: invoices } = await supabase
           .from('invoices')
-          .select('id, invoice_number, status, total_amount, balance_due, due_date, facility_id, sent_at')
+          .select('id, invoice_number, status, total_amount, balance_due, due_date, facility_id, sent_at, invoice_date, period_end')
           .eq('user_id', userId)
 
         if (invoices && invoices.length > 0) {
@@ -185,8 +185,14 @@ Deno.serve(async (req) => {
 
           const getFacName = (id: string) => facilities?.find((f: any) => f.id === id)?.name || 'Unknown'
 
-          // Collect drafts
-          const drafts = invoices.filter((i: any) => i.status === 'draft')
+          // Collect drafts — only "ready to review" (invoice_date <= today), exclude upcoming
+          const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999)
+          const drafts = invoices.filter((i: any) => {
+            if (i.status !== 'draft') return false
+            const refDate = i.invoice_date || i.period_end
+            if (!refDate) return true
+            return new Date(refDate) <= todayEnd
+          })
 
           // Collect overdue
           const overdue = invoices.filter((i: any) => {

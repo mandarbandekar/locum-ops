@@ -25,8 +25,15 @@ export function generateInvoiceReminders(
 ): GeneratedReminder[] {
   const items: GeneratedReminder[] = [];
 
-  // Draft invoices not sent
-  const drafts = invoices.filter(i => i.status === 'draft');
+  // Draft invoices not sent — only "ready to review" (invoice_date <= today)
+  const now = new Date();
+  const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+  const drafts = invoices.filter(i => {
+    if (i.status !== 'draft') return false;
+    const refDate = (i as any).invoice_date || (i as any).period_end;
+    if (!refDate) return true;
+    return new Date(refDate) <= todayEnd;
+  });
   if (drafts.length === 1) {
     const inv = drafts[0];
     items.push({

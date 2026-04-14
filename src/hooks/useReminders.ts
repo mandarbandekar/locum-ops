@@ -79,8 +79,14 @@ export function useGeneratedReminders() {
 
     const getFacilityName = (id: string) => facilities.find(f => f.id === id)?.name || 'Unknown';
 
-    // 1) Invoice draft not sent
-    const draftInvoices = invoices.filter(i => i.status === 'draft');
+    // 1) Invoice draft not sent — only "ready to review" (invoice_date <= today)
+    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    const draftInvoices = invoices.filter(i => {
+      if (i.status !== 'draft') return false;
+      const refDate = (i as any).invoice_date || (i as any).period_end;
+      if (!refDate) return true;
+      return new Date(refDate) <= todayEnd;
+    });
     if (draftInvoices.length > 0) {
       if (draftInvoices.length === 1) {
         const inv = draftInvoices[0];
