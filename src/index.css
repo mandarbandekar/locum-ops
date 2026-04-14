@@ -56,15 +56,17 @@
     --sidebar-border: 210 20% 18%;
     --sidebar-ring: 155 69% 37%;
 
-    /* Semantic chip tokens – light */
-    --chip-success-bg: 142 38% 93%;
-    --chip-success-text: 150 50% 36%;
-    --chip-warning-bg: 38 100% 95%;
-    --chip-warning-text: 32 73% 42%;
-    --chip-error-bg: 0 68% 96%;
-    --chip-error-text: 0 42% 51%;
-    --chip-info-bg: 208 50% 94%;
-    --chip-info-text: 208 30% 40%;
+    /* Pill tag tokens – light */
+    --pill-paid-bg: 86 40% 72%;          /* #EAF3DE */
+    --pill-paid-text: 100 76% 17%;       /* #27500A */
+    --pill-pending-bg: 35 81% 73%;       /* #FAEEDA */
+    --pill-pending-text: 28 90% 21%;     /* #633806 */
+    --pill-overdue-bg: 14 77% 94%;       /* #FAECE7 */
+    --pill-overdue-text: 16 70% 26%;     /* #712B13 */
+    --pill-sent-bg: 155 55% 92%;         /* #E1F5EE */
+    --pill-sent-text: 160 82% 17%;       /* #085041 */
+    --pill-draft-bg: 40 22% 93%;         /* #F1EFE8 */
+    --pill-draft-text: 50 2% 26%;        /* #444441 */
 
     /* Soft border */
     --border-soft: 45 10% 81%;          /* #D3D1C7 border-subtle */
@@ -135,15 +137,17 @@
     --sidebar-border: 50 2% 22%;
     --sidebar-ring: 155 50% 58%;
 
-    /* Semantic chip tokens – dark */
-    --chip-success-bg: 142 30% 14%;
-    --chip-success-text: 142 36% 60%;
-    --chip-warning-bg: 37 30% 14%;
-    --chip-warning-text: 37 50% 65%;
-    --chip-error-bg: 0 30% 14%;
-    --chip-error-text: 0 45% 70%;
-    --chip-info-bg: 208 25% 14%;
-    --chip-info-text: 208 40% 65%;
+    /* Pill tag tokens – dark */
+    --pill-paid-bg: 100 53% 37% / 0.15;
+    --pill-paid-text: 90 40% 73%;        /* #C0DD97 */
+    --pill-pending-bg: 37 78% 41% / 0.15;
+    --pill-pending-text: 40 93% 72%;     /* #FAC775 */
+    --pill-overdue-bg: 16 65% 52% / 0.15;
+    --pill-overdue-text: 16 80% 83%;     /* #F5C4B3 */
+    --pill-sent-bg: 155 69% 37% / 0.15;
+    --pill-sent-text: 155 52% 75%;       /* #9FE1CB */
+    --pill-draft-bg: 48 2% 52% / 0.12;
+    --pill-draft-text: 44 6% 68%;        /* #B4B2A9 */
 
     --border-soft: 50 3% 22%;           /* #3A3A38 border-subtle */
 
@@ -203,7 +207,7 @@
     @apply text-[13px] sm:text-[15px] text-muted-foreground mt-0.5;
   }
   .status-badge {
-    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+    @apply inline-flex items-center rounded-[20px] px-2.5 py-1 text-[11px] font-medium;
   }
 
   /* Section heading for card groups */
@@ -211,22 +215,26 @@
     @apply text-base sm:text-lg font-semibold tracking-tight text-foreground;
   }
 
-  /* Premium chip styles using semantic tokens */
-  .chip-success {
-    background: hsl(var(--chip-success-bg));
-    color: hsl(var(--chip-success-text));
+  /* Pill tag styles using semantic tokens */
+  .chip-success, .pill-paid {
+    background: hsl(var(--pill-paid-bg));
+    color: hsl(var(--pill-paid-text));
   }
-  .chip-warning {
-    background: hsl(var(--chip-warning-bg));
-    color: hsl(var(--chip-warning-text));
+  .chip-warning, .pill-pending {
+    background: hsl(var(--pill-pending-bg));
+    color: hsl(var(--pill-pending-text));
   }
-  .chip-error {
-    background: hsl(var(--chip-error-bg));
-    color: hsl(var(--chip-error-text));
+  .chip-error, .pill-overdue {
+    background: hsl(var(--pill-overdue-bg));
+    color: hsl(var(--pill-overdue-text));
   }
-  .chip-info {
-    background: hsl(var(--chip-info-bg));
-    color: hsl(var(--chip-info-text));
+  .chip-info, .pill-sent {
+    background: hsl(var(--pill-sent-bg));
+    color: hsl(var(--pill-sent-text));
+  }
+  .pill-draft {
+    background: hsl(var(--pill-draft-bg));
+    color: hsl(var(--pill-draft-text));
   }
 
   /* Primary tab selector – card-style nav on Business, Credentials, etc. */
