@@ -88,7 +88,11 @@ export function MoneyToCollectCard({
             <div className="px-4 pb-2">
               {invoiceItems.length === 0 ? (
                 <div className="py-3 text-center">
-                  <p className="text-[12px] text-muted-foreground">All caught up!</p>
+                  <p className="text-[12px] text-muted-foreground">
+                    {outstandingTotal === 0 && paidThisMonth === 0
+                      ? 'Invoices are generated when you log shifts. Your first draft will appear here.'
+                      : 'All caught up!'}
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-1.5">
