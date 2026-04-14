@@ -1,7 +1,6 @@
-import { ArrowLeft, SkipForward } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import onboardingIllustration from '@/assets/onboarding-illustration.png';
 
 interface OnboardingLayoutProps {
   children: React.ReactNode;
@@ -9,8 +8,8 @@ interface OnboardingLayoutProps {
   totalSteps: number;
   stepLabel: string;
   onBack?: () => void;
-  onSkip?: () => void;
-  skipLabel?: string;
+  /** Sticky bottom CTA content — rendered in fixed bar at bottom */
+  stickyFooter?: React.ReactNode;
 }
 
 export function OnboardingLayout({
@@ -19,8 +18,7 @@ export function OnboardingLayout({
   totalSteps,
   stepLabel,
   onBack,
-  onSkip,
-  skipLabel = 'Skip for now',
+  stickyFooter,
 }: OnboardingLayoutProps) {
   const progress = (step / totalSteps) * 100;
 
@@ -40,35 +38,26 @@ export function OnboardingLayout({
               Step {step} of {totalSteps}
             </span>
           </div>
-          {onSkip && (
-            <Button variant="ghost" size="sm" onClick={onSkip} className="gap-1.5 text-muted-foreground hover:text-foreground">
-              {skipLabel}
-              <SkipForward className="h-3.5 w-3.5" />
-            </Button>
-          )}
         </div>
         <Progress value={progress} className="h-1.5" />
         <p className="text-xs text-muted-foreground">{stepLabel}</p>
       </div>
 
-      {/* Split content */}
-      <div className="flex-1 flex min-h-0">
-        {/* Left: form area */}
-        <div className="flex-1 flex items-center justify-center px-6 lg:px-12 overflow-y-auto">
-          <div className="w-full max-w-lg py-6">
-            {children}
-          </div>
-        </div>
-
-        {/* Right: decorative panel (hidden on mobile) */}
-        <div className="hidden lg:flex w-[420px] xl:w-[480px] shrink-0 bg-muted/50 items-center justify-center p-8">
-          <img
-            src={onboardingIllustration}
-            alt="LocumOps onboarding"
-            className="max-w-full max-h-[70vh] object-contain opacity-90"
-          />
+      {/* Full-width centered content — no illustration panel */}
+      <div className="flex-1 min-h-0 overflow-y-auto px-6">
+        <div className="w-full max-w-[680px] mx-auto pt-6 pb-32">
+          {children}
         </div>
       </div>
+
+      {/* Sticky bottom CTA bar */}
+      {stickyFooter && (
+        <div className="shrink-0 border-t border-border/50 bg-background px-4 pt-3 pb-4">
+          <div className="w-full max-w-[680px] mx-auto space-y-2">
+            {stickyFooter}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

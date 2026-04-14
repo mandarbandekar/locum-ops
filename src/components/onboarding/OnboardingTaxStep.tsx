@@ -1,9 +1,8 @@
 import { useMemo, useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { ArrowRight, Check, Lightbulb } from 'lucide-react';
+import { Check, Lightbulb } from 'lucide-react';
 import { calculate1099Tax, calculateSCorpTax, TaxProfileV1 } from '@/lib/taxCalculatorV1';
 
 interface Props {
@@ -69,11 +68,14 @@ export function OnboardingTaxStep({ shiftRate, hasShiftData, timezone, onContinu
     return Math.max(0, Math.round((sole1099Annual - scorpAnnual) / 4));
   }, [annualIncome, stateCode, taxResult]);
 
+  // Expose for parent sticky CTA
+  const handleFinish = () => onContinue(taxEnabled);
+
   return (
-    <div className="space-y-5">
-      <div>
+    <div className="space-y-4">
+      <div className="space-y-2">
         <h2 className="text-2xl font-bold text-foreground font-[Manrope]">Tax Intelligence</h2>
-        <p className="text-muted-foreground mt-1">
+        <p className="text-muted-foreground">
           {hasShiftData
             ? "Here's a preview of your estimated taxes based on your first shift."
             : 'Enable Tax Intelligence to automatically estimate your quarterly taxes as you log shifts.'}
@@ -84,20 +86,20 @@ export function OnboardingTaxStep({ shiftRate, hasShiftData, timezone, onContinu
         <>
           {/* Tax Snapshot Card */}
           <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/[0.03] to-transparent">
-            <CardContent className="p-5 space-y-5">
+            <CardContent className="p-4 space-y-4">
               <div>
                 <p className="font-semibold text-foreground">Your tax snapshot</p>
                 <p className="text-sm text-muted-foreground">Here's what you'd owe this quarter if you keep this pace.</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/50 dark:border-amber-800/30">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="text-center p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/50 dark:border-amber-800/30">
                   <p className="text-xs text-muted-foreground mb-1">Est. quarterly tax</p>
                   <p className="text-2xl font-bold text-amber-600 dark:text-amber-400 animate-scale-up">
                     ${taxResult.quarterlyPayment.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                   </p>
                 </div>
-                <div className="text-center p-4 rounded-xl bg-green-50 dark:bg-green-950/30 border border-green-200/50 dark:border-green-800/30">
+                <div className="text-center p-3 rounded-xl bg-green-50 dark:bg-green-950/30 border border-green-200/50 dark:border-green-800/30">
                   <p className="text-xs text-muted-foreground mb-1">Projected quarterly income</p>
                   <p className="text-2xl font-bold text-green-600 dark:text-green-400 animate-scale-up">
                     ${quarterlyIncome.toLocaleString(undefined, { maximumFractionDigits: 0 })}
@@ -124,7 +126,6 @@ export function OnboardingTaxStep({ shiftRate, hasShiftData, timezone, onContinu
                 Based on ~60 shift-days/quarter at ${rate}/day · {taxResult.effectiveRate}% effective rate · Refines as you log more shifts
               </p>
 
-              {/* How we calculate this */}
               <div className="bg-muted/50 rounded-lg p-3 space-y-1">
                 <p className="text-xs font-semibold text-muted-foreground">How we calculate this</p>
                 <p className="text-xs text-muted-foreground">
@@ -150,13 +151,12 @@ export function OnboardingTaxStep({ shiftRate, hasShiftData, timezone, onContinu
           </Card>
         </>
       ) : (
-        /* No shift data — simplified view */
         <Card className="bg-muted/20 border-dashed">
-          <CardContent className="p-6 text-center space-y-3">
+          <CardContent className="p-5 text-center space-y-3">
             <p className="text-muted-foreground text-sm">
               Tax Intelligence automatically calculates your estimated quarterly taxes, tracks payment deadlines, and alerts you before due dates. It uses your actual shift income — no manual data entry needed.
             </p>
-            <div className="rounded-xl bg-muted/50 p-6 opacity-50">
+            <div className="rounded-xl bg-muted/50 p-5 opacity-50">
               <div className="grid grid-cols-2 gap-4">
                 <div className="rounded-lg bg-background p-3 space-y-1">
                   <div className="h-3 w-20 bg-muted rounded mx-auto" />
@@ -188,7 +188,6 @@ export function OnboardingTaxStep({ shiftRate, hasShiftData, timezone, onContinu
           <p className="text-xs text-muted-foreground px-1">You can always enable or disable this later in Settings → Business & Taxes.</p>
         </div>
 
-        {/* Static disclaimer */}
         <div className="rounded-lg bg-muted/50 p-3">
           <p className="text-xs text-muted-foreground">
             These estimates are based on standard self-employment tax rates and federal/state brackets. LocumOps does not provide tax, legal, or financial advice. We recommend consulting a CPA for your specific situation.
@@ -204,13 +203,13 @@ export function OnboardingTaxStep({ shiftRate, hasShiftData, timezone, onContinu
 
       <p className="text-xs text-muted-foreground text-center">Your tax estimate updates as you log more shifts throughout the year.</p>
 
-      <Button
-        onClick={() => onContinue(taxEnabled)}
-        className="w-full"
-        size="lg"
-      >
-        Finish Setup <ArrowRight className="ml-2 h-4 w-4" />
-      </Button>
+      {/* Hidden button for sticky CTA */}
+      <button
+        id="onboarding-tax-finish"
+        type="button"
+        onClick={handleFinish}
+        className="hidden"
+      />
     </div>
   );
 }
