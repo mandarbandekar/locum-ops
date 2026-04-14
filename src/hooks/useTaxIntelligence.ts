@@ -27,6 +27,7 @@ export interface TaxIntelligenceProfile {
   extra_withholding: number;
   pay_periods_per_year: number;
   annual_business_expenses: number;
+  typical_days_per_week: number;
 }
 
 const db = (table: string) => supabase.from(table as any);
@@ -56,6 +57,7 @@ const DEMO_PROFILE: TaxIntelligenceProfile = {
   extra_withholding: 0,
   pay_periods_per_year: 24,
   annual_business_expenses: 9500,
+  typical_days_per_week: 3,
 };
 
 export function useTaxIntelligence() {
@@ -88,6 +90,7 @@ export function useTaxIntelligence() {
     extra_withholding: Number(d.extra_withholding ?? 0),
     pay_periods_per_year: Number(d.pay_periods_per_year ?? 24),
     annual_business_expenses: Number(d.annual_business_expenses ?? 0),
+    typical_days_per_week: Number(d.typical_days_per_week ?? 3),
   });
 
   const load = useCallback(async () => {

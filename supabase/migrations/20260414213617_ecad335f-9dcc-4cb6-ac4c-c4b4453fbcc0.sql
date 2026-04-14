@@ -1,0 +1,1 @@
+ALTER TABLE public.tax_intelligence_profiles ADD COLUMN typical_days_per_week integer NOT NULL DEFAULT 3;
