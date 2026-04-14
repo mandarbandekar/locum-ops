@@ -27,6 +27,7 @@ export interface TaxIntelligenceProfile {
   extra_withholding: number;
   pay_periods_per_year: number;
   annual_business_expenses: number;
+  typical_days_per_week: number;
 }
 
 const db = (table: string) => supabase.from(table as any);
