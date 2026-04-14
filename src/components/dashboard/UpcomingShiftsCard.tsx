@@ -99,7 +99,7 @@ export function UpcomingShiftsCard({ shifts, getFacilityName, greeting, firstNam
               {upcoming.length === 0 ? (
                 <div className="py-4 text-center">
                   <CalendarDays className="h-8 w-8 text-muted-foreground/20 mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground mb-3">No upcoming shifts</p>
+                  <p className="text-sm text-muted-foreground mb-3">Your upcoming shifts appear here. Log past or future shifts to build your schedule.</p>
                   <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate('/schedule')}>
                     <Plus className="h-3.5 w-3.5" /> Add Shift
                   </Button>
