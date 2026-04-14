@@ -1,14 +1,13 @@
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { ArrowRight, Check, Lightbulb } from 'lucide-react';
 import { calculate1099Tax, calculateSCorpTax, TaxProfileV1 } from '@/lib/taxCalculatorV1';
 
 interface Props {
-  shiftRate: number | null; // null = no shift data
+  shiftRate: number | null;
   hasShiftData: boolean;
   timezone: string;
   onContinue: (taxEnabled: boolean) => void;
@@ -29,7 +28,6 @@ function getStateFromTimezone(tz: string): { code: string; label: string } {
 
 export function OnboardingTaxStep({ shiftRate, hasShiftData, timezone, onContinue }: Props) {
   const [taxEnabled, setTaxEnabled] = useState(hasShiftData);
-  const [disclaimer, setDisclaimer] = useState(false);
 
   const rate = shiftRate || 650;
   const annualIncome = rate * 240;
@@ -70,8 +68,6 @@ export function OnboardingTaxStep({ shiftRate, hasShiftData, timezone, onContinu
     const scorpAnnual = scorpResult.annualEstimatedTaxDue + scorpResult.totalAlreadyWithheld;
     return Math.max(0, Math.round((sole1099Annual - scorpAnnual) / 4));
   }, [annualIncome, stateCode, taxResult]);
-
-  const canProceed = !taxEnabled || (taxEnabled && disclaimer);
 
   return (
     <div className="space-y-5">
@@ -179,42 +175,41 @@ export function OnboardingTaxStep({ shiftRate, hasShiftData, timezone, onContinu
       {/* Tax toggle + disclaimer */}
       <div className="space-y-3">
         <div className="space-y-1.5">
-        <div className="flex items-center justify-between p-3 rounded-lg border border-border">
-          <Label htmlFor="tax-toggle" className="cursor-pointer text-sm font-medium">
-            Keep tracking my taxes automatically
-          </Label>
-          <Switch
-            id="tax-toggle"
-            checked={taxEnabled}
-            onCheckedChange={setTaxEnabled}
-          />
+          <div className="flex items-center justify-between p-3 rounded-lg border border-border">
+            <Label htmlFor="tax-toggle" className="cursor-pointer text-sm font-medium">
+              Keep tracking my taxes automatically
+            </Label>
+            <Switch
+              id="tax-toggle"
+              checked={taxEnabled}
+              onCheckedChange={setTaxEnabled}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground px-1">You can always enable or disable this later in Settings → Business & Taxes.</p>
         </div>
-        <p className="text-xs text-muted-foreground px-1">You can always enable or disable this later in Settings → Business & Taxes.</p>
+
+        {/* Static disclaimer */}
+        <div className="rounded-lg bg-muted/50 p-3">
+          <p className="text-xs text-muted-foreground">
+            These estimates are based on standard self-employment tax rates and federal/state brackets. LocumOps does not provide tax, legal, or financial advice. We recommend consulting a CPA for your specific situation.
+          </p>
         </div>
 
         {taxEnabled && (
-          <label className="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-border bg-muted/50">
-            <Checkbox checked={disclaimer} onCheckedChange={v => setDisclaimer(!!v)} className="mt-0.5" />
-            <span className="text-sm text-muted-foreground">
-              I understand LocumOps does not provide tax, legal, or financial advice. I'll confirm due dates and amounts with my accountant.
-            </span>
-          </label>
-        )}
-
-        {taxEnabled && disclaimer && (
           <p className="text-sm text-primary flex items-center gap-1.5 justify-center">
             <Check className="h-4 w-4" /> Tax tracker enabled
           </p>
         )}
       </div>
 
+      <p className="text-xs text-muted-foreground text-center">Your tax estimate updates as you log more shifts throughout the year.</p>
+
       <Button
-        onClick={() => onContinue(taxEnabled && disclaimer)}
+        onClick={() => onContinue(taxEnabled)}
         className="w-full"
         size="lg"
-        disabled={!canProceed}
       >
-        Almost done <ArrowRight className="ml-2 h-4 w-4" />
+        Finish Setup <ArrowRight className="ml-2 h-4 w-4" />
       </Button>
     </div>
   );

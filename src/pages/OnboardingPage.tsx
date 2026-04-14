@@ -2,57 +2,60 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
-import { ArrowRight, Check, Building2, Plus, MapPin, Mail, User, Lightbulb } from 'lucide-react';
+import { ArrowRight, Check, Building2, Plus, MapPin, Mail, User, Lightbulb, Pencil } from 'lucide-react';
 import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
 import { AddFacilityDialog } from '@/components/AddFacilityDialog';
 import { OnboardingShiftStep } from '@/components/onboarding/OnboardingShiftStep';
 import { OnboardingTaxStep } from '@/components/onboarding/OnboardingTaxStep';
-import { OnboardingRemindersStep } from '@/components/onboarding/OnboardingRemindersStep';
 import { WorkspaceReady } from '@/components/onboarding/WorkspaceReady';
 
 type Phase =
-  | 'profile'
   | 'manual_facility'
   | 'first_shift'
   | 'tax_enablement'
-  | 'reminders'
-  | 'calendar_sync';
+  | 'finish';
 
 const PHASE_STEP: Record<Phase, number> = {
-  profile: 1,
-  manual_facility: 2,
-  first_shift: 3,
-  tax_enablement: 4,
-  reminders: 5,
-  calendar_sync: 6,
+  manual_facility: 1,
+  first_shift: 2,
+  tax_enablement: 3,
+  finish: 3,
 };
 
-const TOTAL_STEPS = 6;
+const TOTAL_STEPS = 3;
 
 const PHASE_LABEL: Record<Phase, string> = {
-  profile: 'Your profile',
   manual_facility: 'Add a clinic',
   first_shift: 'Log a shift',
-  tax_enablement: 'Tax tracking',
-  reminders: 'Notifications',
-  calendar_sync: 'Finish up',
+  tax_enablement: 'Your taxes',
+  finish: 'Your taxes',
 };
 
 const PHASE_BACK: Record<Phase, Phase | null> = {
-  profile: null,
-  manual_facility: 'profile',
+  manual_facility: null,
   first_shift: 'manual_facility',
   tax_enablement: 'first_shift',
-  reminders: 'tax_enablement',
-  calendar_sync: 'reminders',
+  finish: null,
 };
+
+const TIMEZONE_OPTIONS = [
+  { value: 'America/New_York', label: 'Eastern' },
+  { value: 'America/Chicago', label: 'Central' },
+  { value: 'America/Denver', label: 'Mountain' },
+  { value: 'America/Phoenix', label: 'Arizona' },
+  { value: 'America/Los_Angeles', label: 'Pacific' },
+  { value: 'America/Anchorage', label: 'Alaska' },
+  { value: 'Pacific/Honolulu', label: 'Hawaii' },
+];
+
+function getTimezoneLabel(tz: string): string {
+  return TIMEZONE_OPTIONS.find(o => o.value === tz)?.label || tz;
+}
 
 export default function OnboardingPage() {
   const { profile, updateProfile, completeOnboarding } = useUserProfile();
@@ -60,60 +63,35 @@ export default function OnboardingPage() {
   const { facilities, shifts, terms, invoices, lineItems, addShift } = useData();
   const navigate = useNavigate();
 
-  // OAuth skip logic
-  const isOAuth = user?.app_metadata?.provider === 'google';
-  const oauthFirstName = user?.user_metadata?.first_name || '';
-  const oauthLastName = user?.user_metadata?.last_name || '';
   const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const canSkipProfile = isOAuth && oauthFirstName && oauthLastName && (user?.email || '');
 
-  const [phase, setPhase] = useState<Phase>(canSkipProfile ? 'manual_facility' : 'profile');
-  const [skippedProfileViaOAuth] = useState(canSkipProfile);
-
-  // Dialog open states
+  const [phase, setPhase] = useState<Phase>('manual_facility');
   const [facilityDialogOpen, setFacilityDialogOpen] = useState(false);
-
-  // Profile state
-  const [firstName, setFirstName] = useState(profile?.first_name || oauthFirstName);
-  const [lastName, setLastName] = useState(profile?.last_name || oauthLastName);
   const [timezone, setTimezone] = useState(profile?.timezone || detectedTimezone);
-
-  // Tax state
+  const [editingTimezone, setEditingTimezone] = useState(false);
   const [taxEnabled, setTaxEnabled] = useState(false);
   const [lastShiftRate, setLastShiftRate] = useState<number | null>(null);
-
-  const userEmail = user?.email || '';
-
-  // Track facility saved in step
   const [facilitySavedInStep, setFacilitySavedInStep] = useState(false);
 
-  // Pre-fill from auth metadata (non-OAuth)
+  const firstName = profile?.first_name || user?.user_metadata?.first_name || '';
+
+  // Auto-save profile on mount (name from auth metadata + detected timezone)
+  const profileSavedRef = useRef(false);
   useEffect(() => {
-    if (!isOAuth && user?.user_metadata) {
-      const meta = user.user_metadata;
-      if (!firstName && meta.first_name) setFirstName(meta.first_name);
-      if (!lastName && meta.last_name) setLastName(meta.last_name);
-    }
+    if (profileSavedRef.current) return;
+    profileSavedRef.current = true;
+    const meta = user?.user_metadata || {};
+    updateProfile({
+      first_name: meta.first_name || profile?.first_name || '',
+      last_name: meta.last_name || profile?.last_name || '',
+      timezone: detectedTimezone,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, []);
 
   useEffect(() => {
     console.log('onboarding_step_view', { phase });
   }, [phase]);
-
-  // Silently save profile for OAuth users who skipped Step 1
-  const profileSavedRef = useRef(false);
-  useEffect(() => {
-    if (skippedProfileViaOAuth && !profileSavedRef.current) {
-      profileSavedRef.current = true;
-      updateProfile({
-        first_name: oauthFirstName,
-        last_name: oauthLastName,
-        timezone: detectedTimezone,
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // Track shift rate when shifts change
   useEffect(() => {
@@ -121,6 +99,14 @@ export default function OnboardingPage() {
       setLastShiftRate(shifts[shifts.length - 1].rate_applied);
     }
   }, [shifts, lastShiftRate]);
+
+  // Save timezone when changed
+  useEffect(() => {
+    if (timezone !== detectedTimezone) {
+      updateProfile({ timezone });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timezone]);
 
   const handleFacilityDialogChange = (open: boolean) => {
     setFacilityDialogOpen(open);
@@ -138,130 +124,63 @@ export default function OnboardingPage() {
     if (prev) setPhase(prev);
   };
 
-  const saveProfile = async () => {
-    console.log('onboarding_step_submit', { step: 'profile' });
-    await updateProfile({
-      first_name: firstName.trim(),
-      last_name: lastName.trim(),
-      timezone,
-    });
-    setPhase('manual_facility');
-  };
-
   const handleNavigate = (path: string) => {
     console.log('onboarding_navigate', { path });
     navigate(path);
   };
 
   const getSkipHandler = (): (() => void) | undefined => {
-    if (phase === 'manual_facility') return () => setPhase('calendar_sync');
+    if (phase === 'manual_facility') return () => setPhase('finish');
     if (phase === 'first_shift') return () => setPhase('tax_enablement');
-    if (phase === 'tax_enablement') return () => setPhase('reminders');
-    if (phase === 'reminders') return () => setPhase('calendar_sync');
-    if (phase === 'calendar_sync') return undefined; // handled inside WorkspaceReady
     return undefined;
   };
 
   const getSkipLabel = (): string => {
     if (phase === 'manual_facility') return "Skip — I'll add clinics later";
     if (phase === 'first_shift') return 'Skip for now';
-    if (phase === 'tax_enablement') return 'Skip for now';
-    if (phase === 'reminders') return 'Skip for now';
     return 'Skip';
   };
 
-  const profileAllFilled = !!(firstName.trim() && lastName.trim() && userEmail && timezone);
-
   const renderContent = () => {
     switch (phase) {
-      case 'profile':
-        return (
-          <div className="space-y-5">
-            <div>
-              <h2 className="text-2xl font-bold text-foreground font-[Manrope]">Welcome to LocumOps!</h2>
-              <p className="text-muted-foreground mt-1">Quick confirmation — this info helps personalize your workspace.</p>
-            </div>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>First name <span className="text-destructive">*</span></Label>
-                  <Input
-                    value={firstName}
-                    onChange={e => setFirstName(e.target.value)}
-                    placeholder="Jane"
-                  />
-                </div>
-                <div>
-                  <Label>Last name <span className="text-destructive">*</span></Label>
-                  <Input
-                    value={lastName}
-                    onChange={e => setLastName(e.target.value)}
-                    placeholder="Smith"
-                  />
-                </div>
-              </div>
-              <div>
-                <Label>Email</Label>
-                <Input value={userEmail} disabled className="bg-muted/50 text-muted-foreground" />
-              </div>
-              <div>
-                <Label>Timezone</Label>
-                <Select value={timezone} onValueChange={v => setTimezone(v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="America/New_York">Eastern</SelectItem>
-                    <SelectItem value="America/Chicago">Central</SelectItem>
-                    <SelectItem value="America/Denver">Mountain</SelectItem>
-                    <SelectItem value="America/Phoenix">Arizona</SelectItem>
-                    <SelectItem value="America/Los_Angeles">Pacific</SelectItem>
-                    <SelectItem value="America/Anchorage">Alaska</SelectItem>
-                    <SelectItem value="Pacific/Honolulu">Hawaii</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <Button
-              onClick={saveProfile}
-              className="w-full"
-              size="lg"
-              disabled={!firstName.trim() || !lastName.trim()}
-            >
-              {profileAllFilled ? "Looks good, let's go" : 'Continue'} <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-
-            {/* What is LocumOps? */}
-            <Card className="bg-muted/30 border-dashed">
-              <CardContent className="p-4 space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">What LocumOps does for you</p>
-                <ul className="space-y-1.5 text-sm text-muted-foreground">
-                  <li className="flex items-start gap-2"><Check className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" /> Centralize your clinics, shifts, and invoices in one place</li>
-                  <li className="flex items-start gap-2"><Check className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" /> Auto-generate invoices when you log shifts</li>
-                  <li className="flex items-start gap-2"><Check className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" /> Track taxes and credentials so nothing slips through the cracks</li>
-                </ul>
-              </CardContent>
-            </Card>
-          </div>
-        );
-
       case 'manual_facility':
         return (
           <div className="space-y-5">
-            <div>
-              {skippedProfileViaOAuth ? (
-                <>
-                  <h2 className="text-2xl font-bold text-foreground font-[Manrope]">Welcome, {firstName}! 👋</h2>
-                  <p className="text-muted-foreground mt-1">
-                    Let's set up your workspace — start by adding a clinic you work with.
-                  </p>
-                </>
+            {/* Inline greeting bar */}
+            <div className="flex items-center gap-2 text-sm bg-muted/50 rounded-lg px-3 py-2">
+              <span className="text-foreground">
+                Hi{firstName ? ` ${firstName}` : ''}!
+              </span>
+              <span className="text-muted-foreground">
+                Timezone: {getTimezoneLabel(timezone)}
+              </span>
+              {!editingTimezone ? (
+                <button
+                  type="button"
+                  onClick={() => setEditingTimezone(true)}
+                  className="text-primary hover:underline text-xs flex items-center gap-0.5"
+                >
+                  <Pencil className="h-3 w-3" /> Change
+                </button>
               ) : (
-                <>
-                  <h2 className="text-2xl font-bold text-foreground font-[Manrope]">Add a clinic you work with</h2>
-                  <p className="text-muted-foreground mt-1">
-                    Start with the one from your most recent shift. You can always add more later.
-                  </p>
-                </>
+                <Select value={timezone} onValueChange={v => { setTimezone(v); setEditingTimezone(false); }}>
+                  <SelectTrigger className="h-7 w-32 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TIMEZONE_OPTIONS.map(o => (
+                      <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               )}
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-bold text-foreground font-[Manrope]">Add a clinic you work with</h2>
+              <p className="text-muted-foreground mt-1">
+                Start with one clinic you work with regularly. LocumOps keeps your rates, contacts, and billing terms organized per clinic — so everything's in one place when you need it.
+              </p>
             </div>
 
             {/* Show saved clinic cards */}
@@ -343,7 +262,7 @@ export default function OnboardingPage() {
               <CardContent className="p-4">
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Why add clinics?</p>
                 <p className="text-sm text-muted-foreground">
-                  Each clinic you add becomes a billing entity. When you log shifts at this clinic, LocumOps auto-generates invoices, tracks payments, and builds your earnings reports — no spreadsheets needed.
+                  Each clinic you add becomes a billing entity. When you log shifts at this clinic, LocumOps generates draft invoices and builds your earnings picture — no spreadsheets needed.
                 </p>
               </CardContent>
             </Card>
@@ -373,19 +292,12 @@ export default function OnboardingPage() {
             timezone={timezone}
             onContinue={(enabled) => {
               setTaxEnabled(enabled);
-              setPhase('reminders');
+              setPhase('finish');
             }}
           />
         );
 
-      case 'reminders':
-        return (
-          <OnboardingRemindersStep
-            onContinue={() => setPhase('calendar_sync')}
-          />
-        );
-
-      case 'calendar_sync':
+      case 'finish':
         return (
           <WorkspaceReady
             facilities={facilities}
@@ -406,7 +318,7 @@ export default function OnboardingPage() {
       totalSteps={TOTAL_STEPS}
       stepLabel={PHASE_LABEL[phase]}
       onBack={PHASE_BACK[phase] ? goBack : undefined}
-      onSkip={getSkipHandler()}
+      onSkip={phase !== 'finish' ? getSkipHandler() : undefined}
       skipLabel={getSkipLabel()}
     >
       {renderContent()}

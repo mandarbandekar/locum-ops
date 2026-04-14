@@ -93,7 +93,7 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
       <div>
         <h2 className="text-2xl font-bold text-foreground font-[Manrope]">Log your first shift</h2>
         <p className="text-muted-foreground mt-1">
-          See how LocumOps turns a shift into an invoice automatically.
+          Each shift you log feeds your invoices, earnings, and tax estimate automatically.
         </p>
       </div>
 
@@ -208,7 +208,7 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
             </div>
             <div>
               <p className="font-semibold text-foreground">Invoice auto-generated</p>
-              <p className="text-sm text-muted-foreground">Every shift you log automatically creates a draft invoice. Review, edit, and send it from your Invoices page — or set up auto-reminders.</p>
+              <p className="text-sm text-muted-foreground">Every shift you log creates a draft invoice. Review, edit, and send it from your Invoices page — or set up auto-reminders.</p>
             </div>
           </div>
 
@@ -265,7 +265,7 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
                 ${shiftRate.toLocaleString()}
               </p>
               <Progress value={35} className="h-2" />
-              <p className="text-xs text-muted-foreground">Based on 1 shift · Your Business Hub tracks weekly, monthly, and annual earnings across all clinics. The more shifts you log, the more accurate your financial picture becomes.</p>
+              <p className="text-xs text-muted-foreground">Based on 1 shift. Your Business Hub shows weekly, monthly, and annual earnings across all clinics. The more shifts you log, the more complete your financial picture becomes.</p>
             </CardContent>
           </Card>
 
