@@ -398,7 +398,19 @@ export default function DashboardPage() {
   }, [shifts, thisWeekEarnings, summary.outstandingTotal, now]);
 
   return (
-    <div className="flex flex-col h-[calc(100vh-theme(spacing.14)-theme(spacing.6)-theme(spacing.10))] overflow-hidden">
+    <div className="flex flex-col h-[calc(100vh-theme(spacing.14)-theme(spacing.6)-theme(spacing.10))] overflow-auto">
+      {/* Welcome banner for users who skipped onboarding entirely */}
+      {showWelcomeBanner && (
+        <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-primary/10 border border-primary/20 shrink-0 mb-2">
+          <p className="text-[13px] text-foreground flex-1">
+            Welcome to LocumOps, {profile?.first_name || 'there'}! Complete the steps below to set up your workspace — it takes about 5 minutes.
+          </p>
+          <button type="button" onClick={dismissWelcomeBanner} className="text-muted-foreground hover:text-foreground shrink-0">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
       {/* Compact greeting bar */}
       <div data-tour="briefing" className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/5 border border-primary/10 shrink-0">
         <Zap className="h-3.5 w-3.5 text-primary shrink-0" />
@@ -407,13 +419,25 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      {/* Contextual prompt cards */}
-      <DashboardPromptCards
-        credentialCount={credentialsList?.length ?? 0}
-        shiftCount={shifts.length}
-        hasSentInvoice={invoices.some(i => i.status === 'sent' || i.sent_at)}
-        userCreatedAt={user?.created_at}
-      />
+      {/* Getting Started checklist */}
+      {showGettingStarted && (
+        <div className="mt-3 shrink-0">
+          <GettingStartedChecklist
+            onOpenAddClinic={() => setAddClinicOpen(true)}
+            onOpenAddShift={() => setAddShiftOpen(true)}
+          />
+        </div>
+      )}
+
+      {/* Contextual prompt cards (only when setup is done) */}
+      {!showGettingStarted && (
+        <DashboardPromptCards
+          credentialCount={credentialsList?.length ?? 0}
+          shiftCount={shifts.length}
+          hasSentInvoice={invoices.some(i => i.status === 'sent' || i.sent_at)}
+          userCreatedAt={user?.created_at}
+        />
+      )}
 
       {/* 3-Column Layout */}
       <div className="grid gap-4 sm:gap-5 grid-cols-1 lg:grid-cols-12 lg:items-stretch mt-3 flex-1 min-h-0">
@@ -444,6 +468,22 @@ export default function DashboardPage() {
 
       {/* Spotlight Tour */}
       <SpotlightTour steps={TOUR_STEPS} isOpen={tourOpen} onClose={closeTour} />
+
+      {/* Add Clinic Dialog (from Getting Started) */}
+      <AddFacilityDialog open={addClinicOpen} onOpenChange={setAddClinicOpen} />
+
+      {/* Add Shift Dialog (from Getting Started) */}
+      {addShiftOpen && facilities.length > 0 && (
+        <ShiftFormDialog
+          open={addShiftOpen}
+          onOpenChange={setAddShiftOpen}
+          facilities={facilities}
+          onSave={async (shift) => {
+            await addShift(shift);
+            setAddShiftOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }
