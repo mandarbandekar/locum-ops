@@ -66,9 +66,6 @@ export function GettingStartedChecklist({ onOpenAddClinic, onOpenAddShift }: Pro
     await handleDismissSilent();
   };
 
-  // Don't render if dismissed or auto-hidden
-  if (profile?.dismissed_prompts?.getting_started || autoHidden) return null;
-
   // Quarterly tax estimate using the same calculation as the Tax Estimate page
   const quarterlyEstimate = useMemo(() => {
     const firstShiftRate = shifts.length > 0 ? shifts[0].rate_applied : 0;
@@ -99,6 +96,9 @@ export function GettingStartedChecklist({ onOpenAddClinic, onOpenAddShift }: Pro
   }, [shifts, taxProfile]);
 
   const firstClinicName = facilities.length > 0 ? facilities[0].name : '';
+
+  // Don't render if dismissed or auto-hidden
+  if (profile?.dismissed_prompts?.getting_started || autoHidden) return null;
 
   return (
     <>
