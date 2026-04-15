@@ -1,33 +1,37 @@
 
 
-## Plan: Replace Default Day Rate with Multi-Rate Editor and Clean Up Enrichment Step
+## Plan: Improve Shift Form Wizard — Multi-Select Visibility, Bold Selection, No-Scroll, Mobile-Friendly
 
-### What changes
+### Problem
+1. The calendar doesn't clearly communicate that multiple dates can be selected
+2. Selected dates aren't visually bold enough
+3. The dialog content can overflow, requiring scroll on smaller screens
+4. Mobile layout needs tightening
 
-**1. OnboardingClinicForm.tsx — Replace single day rate with RatesEditor**
-- Remove the `dayRate` state and the single `$` input field (lines 34, 190-205)
-- Add `rates: RateEntry[]` state, import `RatesEditor` and `ratesToTermsFields`
-- Render `RatesEditor` (with `showCard={false}`, `compact`) in place of the old day rate input
-- Update `handleSave` to use `ratesToTermsFields(rates)` instead of setting only `weekday_rate`
-- Update helper text to: "The rates you set become the defaults for new shifts at this clinic — one less thing to enter each time."
+### Changes
 
-**2. AddFacilityDialog.tsx — Same replacement on Step 1**
-- Remove `dayRate` state (line 48) and the single input (lines 431-446)
-- Add `rates: RateEntry[]` state, render `RatesEditor` inline on Step 1
-- Update `handleCreateFacility` to use `ratesToTermsFields(rates)` instead of `parsedRate`/`weekday_rate`
-- Remove `dayRate` from `resetForm` and `summaryItems`
+**1. Calendar component (`src/components/ui/calendar.tsx`)**
+- Make `day_selected` use `font-bold` so selected dates are visually heavy
+- Keep the existing `ring-2` highlight from earlier fix
 
-**3. AddFacilityDialog.tsx — Remove from enrichment step (Step 4)**
-- Remove the "Detailed Shift Rates" accordion (lines 580-609) — rates are now captured in Step 1
-- Remove the "Mileage from Home" accordion (lines 611-645)
-- Remove related state: `enrichRates`, `mileageMiles` and their usage in `handleSaveEnrichment`
-- Keep Tech Access and Clinic Access accordions
-- Update welcome step checklist text from "Clinic name, address, and day rate" to "Clinic name, address, and shift rates"
+**2. ShiftFormDialog Step 2 (`src/components/schedule/ShiftFormDialog.tsx`)**
+- Add a helper text below the subtitle: "Tap multiple dates to batch-schedule shifts" with a multi-select icon
+- Make the calendar more compact on mobile: reduce padding, use tighter cell sizes
+- Show selected count as a pill/badge near the calendar (e.g., "3 selected") instead of just listing dates below
+- Tighten vertical spacing throughout all 3 steps to eliminate scroll
 
-**4. Summary items update**
-- Replace the "Day Rate" summary item with a "Rates" item showing count (e.g., "2 rates" or "Skipped")
+**3. Dialog container sizing**
+- Change `max-h-[90vh]` to `max-h-[95vh]` or `max-h-[calc(100dvh-2rem)]` for mobile
+- Reduce internal padding and margins across all steps to keep content within viewport
+- Make the calendar border wrapper use `p-1` instead of `p-2`
+
+**4. Step 2 layout compaction**
+- Reduce `gap-4` to `gap-3` in step containers
+- Remove `mb-5` from StepIndicator, use `mb-3`
+- Reduce time inputs row spacing
+- Move the date summary inline with the calendar section header rather than a separate line
 
 ### Files modified
-- `src/components/onboarding/OnboardingClinicForm.tsx`
-- `src/components/AddFacilityDialog.tsx`
+- `src/components/ui/calendar.tsx` — add `font-bold` to `day_selected`
+- `src/components/schedule/ShiftFormDialog.tsx` — compact layout, multi-select hint, tighter spacing
 
