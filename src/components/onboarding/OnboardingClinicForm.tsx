@@ -15,6 +15,7 @@ import {
 import { GooglePlacesAutocomplete } from '@/components/GooglePlacesAutocomplete';
 import type { PlaceSelection } from '@/components/GooglePlacesAutocomplete';
 import type { BillingCadence } from '@/lib/invoiceBillingDefaults';
+import { RatesEditor, ratesToTermsFields, type RateEntry } from '@/components/facilities/RatesEditor';
 
 interface Props {
   onSaved: () => void;
@@ -31,7 +32,7 @@ export function OnboardingClinicForm({ onSaved }: Props) {
   const [clinicSearchValue, setClinicSearchValue] = useState('');
   const [manualEntry, setManualEntry] = useState(false);
   const [clinicSelected, setClinicSelected] = useState(false);
-  const [dayRate, setDayRate] = useState('');
+  const [rates, setRates] = useState<RateEntry[]>([]);
   const [schedulingContactName, setSchedulingContactName] = useState('');
   const [schedulingContactEmail, setSchedulingContactEmail] = useState('');
   const [invoiceNameTo, setInvoiceNameTo] = useState('');
@@ -65,7 +66,7 @@ export function OnboardingClinicForm({ onSaved }: Props) {
     setSaving(true);
     try {
       const prefix = getInitials(name);
-      const parsedRate = dayRate ? parseFloat(dayRate) : 0;
+      const rateFields = ratesToTermsFields(rates);
 
       const facility = await addFacility({
         name: name.trim(),
@@ -92,16 +93,11 @@ export function OnboardingClinicForm({ onSaved }: Props) {
         auto_generate_invoices: true,
       });
 
-      if (parsedRate > 0) {
+      if (rates.length > 0) {
         await updateTerms({
           id: generateId(),
           facility_id: facility.id,
-          weekday_rate: parsedRate,
-          weekend_rate: 0,
-          partial_day_rate: 0,
-          holiday_rate: 0,
-          telemedicine_rate: 0,
-          custom_rates: [],
+          ...rateFields,
           cancellation_policy_text: '',
           overtime_policy_text: '',
           late_payment_policy_text: '',
@@ -188,20 +184,17 @@ export function OnboardingClinicForm({ onSaved }: Props) {
           )}
 
           <div className="space-y-1.5">
-            <Label>Default day rate</Label>
-            <div className="relative">
-              <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input
-                type="number"
-                value={dayRate}
-                onChange={e => setDayRate(e.target.value)}
-                placeholder="e.g. 800"
-                className="pl-7"
-                min={0}
-                step={50}
-              />
+            <div className="flex items-center gap-2">
+              <DollarSign className="h-4 w-4 text-primary" />
+              <Label>Shift Rates</Label>
             </div>
-            <p className="text-xs text-muted-foreground">Used for automatic invoice calculations. You can add more rate types later.</p>
+            <RatesEditor
+              rates={rates}
+              onChange={setRates}
+              showCard={false}
+              compact
+            />
+            <p className="text-xs text-muted-foreground">The rates you set become the defaults for new shifts at this clinic — one less thing to enter each time.</p>
           </div>
         </div>
 

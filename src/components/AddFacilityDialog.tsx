@@ -18,7 +18,7 @@ import {
   ArrowLeft, ArrowRight, SkipForward,
   Building2, DollarSign, UserCheck, CalendarClock,
   Sparkles, Check, Info, CircleDot, Settings2,
-  Car, Monitor, DoorOpen
+  Monitor, DoorOpen
 } from 'lucide-react';
 import { GooglePlacesAutocomplete } from '@/components/GooglePlacesAutocomplete';
 import type { PlaceSelection } from '@/components/GooglePlacesAutocomplete';
@@ -45,7 +45,7 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
   const [clinicSearchValue, setClinicSearchValue] = useState('');
   const [manualEntry, setManualEntry] = useState(false);
   const [clinicSelected, setClinicSelected] = useState(false);
-  const [dayRate, setDayRate] = useState('');
+  const [rates, setRates] = useState<RateEntry[]>([]);
   const [schedulingContactName, setSchedulingContactName] = useState('');
   const [schedulingContactEmail, setSchedulingContactEmail] = useState('');
   const [invoiceNameTo, setInvoiceNameTo] = useState('');
@@ -56,7 +56,7 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
 
   // Step 4 enrichment state
   const [enrichRates, setEnrichRates] = useState<RateEntry[]>([]);
-  const [mileageMiles, setMileageMiles] = useState('');
+  
   const [techComputer, setTechComputer] = useState('');
   const [techWifi, setTechWifi] = useState('');
   const [techPims, setTechPims] = useState('');
@@ -75,12 +75,12 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
     setStep(0);
     setName(''); setAddress('');
     setClinicSearchValue(''); setManualEntry(false); setClinicSelected(false);
-    setDayRate('');
+    setRates([]);
     setSchedulingContactName(''); setSchedulingContactEmail('');
     setInvoiceNameTo(''); setInvoiceEmailTo('');
     setSameAsScheduling(false);
     setBillingCadence('monthly'); setInvoiceDueDays(15);
-    setEnrichRates([]); setMileageMiles('');
+    
     setTechComputer(''); setTechWifi(''); setTechPims(''); setClinicAccess('');
     createdFacilityIdRef.current = null;
   };
@@ -102,7 +102,7 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
     }
 
     const prefix = getInitials(name);
-    const parsedRate = dayRate ? parseFloat(dayRate) : 0;
+    const rateFields = ratesToTermsFields(rates);
 
     try {
       const facility = await addFacility({
@@ -128,23 +128,16 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
 
       createdFacilityIdRef.current = facility.id;
 
-      if (parsedRate > 0) {
+      if (rates.length > 0) {
         await updateTerms({
           id: generateId(),
           facility_id: facility.id,
-          weekday_rate: parsedRate,
-          weekend_rate: 0,
-          partial_day_rate: 0,
-          holiday_rate: 0,
-          telemedicine_rate: 0,
-          custom_rates: [],
+          ...rateFields,
           cancellation_policy_text: '',
           overtime_policy_text: '',
           late_payment_policy_text: '',
           special_notes: '',
         });
-        // Pre-populate enrichment rates with the day rate
-        setEnrichRates([{ type: 'weekday', label: 'Weekday Rate', amount: parsedRate }]);
       }
 
       await saveConfirmationSettings({
@@ -173,29 +166,12 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
     if (!facilityId) return;
 
     try {
-      // Save rates if any were added beyond the initial day rate
-      if (enrichRates.length > 0) {
-        const rateFields = ratesToTermsFields(enrichRates);
-        await updateTerms({
-          id: generateId(),
-          facility_id: facilityId,
-          ...rateFields,
-          cancellation_policy_text: '',
-          overtime_policy_text: '',
-          late_payment_policy_text: '',
-          special_notes: '',
-        });
-      }
-
       // Save facility-level enrichment fields
       const updates: Record<string, unknown> = {};
       if (techComputer.trim()) updates.tech_computer_info = techComputer.trim();
       if (techWifi.trim()) updates.tech_wifi_info = techWifi.trim();
       if (techPims.trim()) updates.tech_pims_info = techPims.trim();
       if (clinicAccess.trim()) updates.clinic_access_info = clinicAccess.trim();
-      if (mileageMiles.trim() && parseFloat(mileageMiles) > 0) {
-        updates.mileage_override_miles = parseFloat(mileageMiles);
-      }
 
       if (Object.keys(updates).length > 0) {
         await supabase.from('facilities').update(updates).eq('id', facilityId);
@@ -265,19 +241,19 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
     if (step > 0 && step < coreSteps) setStep(step - 1);
   };
 
-  const hasDayRate = !!dayRate && parseFloat(dayRate) > 0;
+  const hasRates = rates.length > 0;
 
   const summaryItems = [
     { label: 'Clinic', value: name || '—', filled: !!name },
     { label: 'Address', value: address || 'Skipped', filled: !!address },
-    { label: 'Day Rate', value: hasDayRate ? `$${dayRate}` : 'Skipped', filled: hasDayRate },
+    { label: 'Rates', value: hasRates ? `${rates.length} rate${rates.length > 1 ? 's' : ''}` : 'Skipped', filled: hasRates },
     { label: 'Scheduling Contact', value: schedulingContactName || '—', filled: !!schedulingContactName },
     { label: 'Billing Contact', value: effectiveBillingName || '—', filled: !!effectiveBillingName },
     { label: 'Billing Cadence', value: billingCadence.charAt(0).toUpperCase() + billingCadence.slice(1), filled: true },
     { label: 'Payment Terms', value: `Net ${invoiceDueDays}`, filled: true },
   ];
 
-  const hasAnyEnrichment = enrichRates.length > 0 || mileageMiles.trim() || techComputer.trim() || techWifi.trim() || techPims.trim() || clinicAccess.trim();
+  const hasAnyEnrichment = techComputer.trim() || techWifi.trim() || techPims.trim() || clinicAccess.trim();
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) resetForm(); onOpenChange(o); }}>
@@ -364,7 +340,7 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
               </div>
               <div className="text-left space-y-3 w-full max-w-sm">
                 {[
-                  { icon: Building2, text: 'Clinic name, address, and day rate' },
+                  { icon: Building2, text: 'Clinic name, address, and shift rates' },
                   { icon: UserCheck, text: 'Scheduling and billing contacts' },
                   { icon: CalendarClock, text: 'Billing cadence and payment terms' },
                 ].map(({ icon: Ic, text }) => (
@@ -429,20 +405,17 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
               )}
 
               <div className="space-y-2 pt-1">
-                <Label>Default day rate</Label>
-                <div className="relative">
-                  <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                  <Input
-                    type="number"
-                    value={dayRate}
-                    onChange={e => setDayRate(e.target.value)}
-                    placeholder="e.g. 800"
-                    className="pl-7"
-                    min={0}
-                    step={50}
-                  />
+                <div className="flex items-center gap-2">
+                  <DollarSign className="h-4 w-4 text-primary" />
+                  <Label>Shift Rates</Label>
                 </div>
-                <p className="text-xs text-muted-foreground">Used for automatic invoice calculations. You can add more rate types later.</p>
+                <RatesEditor
+                  rates={rates}
+                  onChange={setRates}
+                  showCard={false}
+                  compact
+                />
+                <p className="text-xs text-muted-foreground">The rates you set become the defaults for new shifts at this clinic — one less thing to enter each time.</p>
               </div>
             </>
           )}
@@ -577,72 +550,6 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
               </div>
 
               <Accordion type="multiple" className="space-y-2">
-                {/* Shift Rates */}
-                <AccordionItem value="rates" className="border rounded-lg px-3">
-                  <AccordionTrigger className="hover:no-underline py-3">
-                    <div className="flex items-center gap-2 text-left">
-                      <DollarSign className="h-4 w-4 text-primary shrink-0" />
-                      <div>
-                        <p className="text-sm font-medium">Detailed Shift Rates</p>
-                        <p className="text-xs text-muted-foreground font-normal">
-                          Weekend, holiday, partial day, and custom rates for accurate invoices
-                        </p>
-                      </div>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="pb-3">
-                    <div className="space-y-2">
-                      <div className="flex items-start gap-2 p-2 rounded-md bg-muted/50">
-                        <Info className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
-                        <p className="text-xs text-muted-foreground">
-                          Different clinics pay different rates for weekends, holidays, and partial days. Setting these now means your invoices are accurate from day one.
-                        </p>
-                      </div>
-                      <RatesEditor
-                        rates={enrichRates}
-                        onChange={setEnrichRates}
-                        showCard={false}
-                        compact
-                      />
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-
-                {/* Mileage */}
-                <AccordionItem value="mileage" className="border rounded-lg px-3">
-                  <AccordionTrigger className="hover:no-underline py-3">
-                    <div className="flex items-center gap-2 text-left">
-                      <Car className="h-4 w-4 text-primary shrink-0" />
-                      <div>
-                        <p className="text-sm font-medium">Mileage from Home</p>
-                        <p className="text-xs text-muted-foreground font-normal">
-                          Auto-track mileage deductions after every shift
-                        </p>
-                      </div>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="pb-3">
-                    <div className="space-y-3">
-                      <div className="flex items-start gap-2 p-2 rounded-md bg-muted/50">
-                        <Info className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
-                        <p className="text-xs text-muted-foreground">
-                          Enter your one-way drive distance so LocumOps can automatically log mileage deductions after every shift at this clinic. At the current IRS rate, each mile saves you ~$0.70 in deductions.
-                        </p>
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-xs">One-way distance (miles)</Label>
-                        <Input
-                          type="number"
-                          value={mileageMiles}
-                          onChange={e => setMileageMiles(e.target.value)}
-                          placeholder="e.g. 25"
-                          min={0}
-                          step={1}
-                        />
-                      </div>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
 
                 {/* Tech Access */}
                 <AccordionItem value="tech" className="border rounded-lg px-3">
