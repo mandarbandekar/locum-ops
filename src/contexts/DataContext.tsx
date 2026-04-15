@@ -3,6 +3,7 @@ import { Facility, FacilityContact, TermsSnapshot, Shift, Invoice, InvoiceLineIt
 import { ContractChecklistItem } from '@/types/contracts';
 import {
   seedFacilities, seedContacts, seedTerms, seedShifts, seedInvoices, seedLineItems, seedEmailLogs, seedChecklistItems,
+  seedPayments, seedActivities,
 } from '@/data/seed';
 import { computeInvoiceStatus, generateId, generateInvoiceNumber } from '@/lib/businessLogic';
 import {
