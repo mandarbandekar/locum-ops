@@ -231,6 +231,7 @@ export function InvoiceStatusGroup({
                 onDelete={onDelete}
                 getFacilityName={getFacilityName}
                 navigate={navigate}
+                onMarkAsPaid={onMarkAsPaid}
               />
             ))}
           </div>
@@ -243,6 +244,7 @@ export function InvoiceStatusGroup({
               onDelete={onDelete}
               getFacilityName={getFacilityName}
               navigate={navigate}
+              onMarkAsPaid={onMarkAsPaid}
             />
           </div>
         )}
@@ -251,7 +253,7 @@ export function InvoiceStatusGroup({
   );
 }
 
-function FacilitySubGroup({ name, invoices, selected, onToggleSelect, onDelete, getFacilityName, navigate }: {
+function FacilitySubGroup({ name, invoices, selected, onToggleSelect, onDelete, getFacilityName, navigate, onMarkAsPaid }: {
   name: string;
   invoices: InvoiceWithStatus[];
   selected: Set<string>;
@@ -259,6 +261,7 @@ function FacilitySubGroup({ name, invoices, selected, onToggleSelect, onDelete, 
   onDelete: (id: string) => Promise<void>;
   getFacilityName: (id: string) => string;
   navigate: (path: string) => void;
+  onMarkAsPaid?: (invoice: InvoiceWithStatus) => void;
 }) {
   const [subOpen, setSubOpen] = useState(true);
   const total = invoices.reduce((s, i) => s + (i.total_amount ?? 0), 0);
