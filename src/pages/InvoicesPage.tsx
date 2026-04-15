@@ -294,6 +294,7 @@ export default function InvoicesPage() {
                 You have ${sumBalance(overdue).toLocaleString()} overdue across {overdue.length} invoice{overdue.length !== 1 ? 's' : ''}. Follow up with facilities to collect payment.
               </div>
             ) : undefined}
+            onMarkAsPaid={handleMarkAsPaid}
           />
         </div>
 
@@ -313,6 +314,7 @@ export default function InvoicesPage() {
                 ${sumBalance([...sent, ...partial]).toLocaleString()} outstanding
               </span>
             ) : undefined}
+            onMarkAsPaid={handleMarkAsPaid}
           />
         </div>
 
