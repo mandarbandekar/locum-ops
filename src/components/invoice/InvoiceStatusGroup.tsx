@@ -152,13 +152,22 @@ function InvoiceTable({ invoices, selected, onToggleSelect, onDelete, getFacilit
               </Badge>
             </td>
             <td className="p-3" onClick={e => e.stopPropagation()}>
-              <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                onClick={async () => {
-                  await onDelete(inv.id);
-                  toast.success('Invoice deleted');
-                }}>
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
+              <div className="flex items-center gap-0.5">
+                {onMarkAsPaid && ['sent', 'partial', 'overdue'].includes(inv.computedStatus) && (
+                  <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-primary"
+                    title="Mark as Paid"
+                    onClick={() => onMarkAsPaid(inv)}>
+                    <DollarSign className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+                <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                  onClick={async () => {
+                    await onDelete(inv.id);
+                    toast.success('Invoice deleted');
+                  }}>
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
             </td>
           </tr>
         ))}
@@ -170,7 +179,7 @@ function InvoiceTable({ invoices, selected, onToggleSelect, onDelete, getFacilit
 export function InvoiceStatusGroup({
   title, icon, invoices, selected, onToggleSelect, onDelete,
   getFacilityName, emptyMessage, defaultOpen = true, groupByFacility = false,
-  headerRight, alertBanner,
+  headerRight, alertBanner, onMarkAsPaid,
 }: Props & { groupByFacility?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
   const navigate = useNavigate();
