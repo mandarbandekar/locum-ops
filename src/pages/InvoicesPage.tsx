@@ -67,7 +67,7 @@ export default function InvoicesPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [autoDeleteTarget, setAutoDeleteTarget] = useState<{ id: string; invoiceNumber: string; facilityName: string; periodStart: string; periodEnd: string; facilityId: string } | null>(null);
-  const [markAsPaidTarget, setMarkAsPaidTarget] = useState<typeof allInvoices[0] | null>(null);
+  const [markAsPaidTarget, setMarkAsPaidTarget] = useState<any>(null);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
 
   // Refs for scroll-to
