@@ -60,13 +60,15 @@ const INVOICE_TOUR_STEPS: TourStep[] = [
 ];
 
 export default function InvoicesPage() {
-  const { invoices, facilities, shifts, addInvoice, deleteInvoice, suppressInvoicePeriod, dataLoading } = useData();
+  const { invoices, facilities, shifts, addInvoice, deleteInvoice, suppressInvoicePeriod, updateInvoice, addPayment, addActivity, dataLoading } = useData();
   const navigate = useNavigate();
   const invoiceTour = useSpotlightTour('locumops_tour_invoices');
   const [showCreate, setShowCreate] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [autoDeleteTarget, setAutoDeleteTarget] = useState<{ id: string; invoiceNumber: string; facilityName: string; periodStart: string; periodEnd: string; facilityId: string } | null>(null);
+  const [markAsPaidTarget, setMarkAsPaidTarget] = useState<typeof allInvoices[0] | null>(null);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
 
   // Refs for scroll-to
   const overdueRef = useRef<HTMLDivElement>(null);
