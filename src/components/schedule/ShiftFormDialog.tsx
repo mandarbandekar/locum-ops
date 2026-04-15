@@ -217,8 +217,8 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
 
   /* ─── Step 1: Facility ─── */
   const renderStep1 = () => (
-    <div className="flex flex-col gap-4">
-      <div className="text-center mb-2">
+    <div className="flex flex-col gap-3">
+      <div className="text-center mb-1">
         <p className="text-sm text-muted-foreground">Which facility is this shift at?</p>
       </div>
       <div>
@@ -340,7 +340,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
 
   /* ─── Step 3: Details + Review ─── */
   const renderStep3 = () => (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3">
       {/* Rate */}
       <div>
         <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
