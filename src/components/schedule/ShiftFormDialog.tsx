@@ -56,7 +56,7 @@ const STEP_LABELS = ['Facility', 'Schedule', 'Details'] as const;
 /* ─── Step Indicator ─── */
 function StepIndicator({ step, isMobile }: { step: number; isMobile: boolean }) {
   return (
-    <div className="flex items-center justify-center gap-2 mb-5">
+    <div className="flex items-center justify-center gap-2 mb-3">
       {STEP_LABELS.map((label, i) => {
         const num = i + 1;
         const isActive = num === step;
@@ -217,8 +217,8 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
 
   /* ─── Step 1: Facility ─── */
   const renderStep1 = () => (
-    <div className="flex flex-col gap-4">
-      <div className="text-center mb-2">
+    <div className="flex flex-col gap-3">
+      <div className="text-center mb-1">
         <p className="text-sm text-muted-foreground">Which facility is this shift at?</p>
       </div>
       <div>
@@ -261,15 +261,16 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
 
   /* ─── Step 2: Schedule ─── */
   const renderStep2 = () => (
-    <div className="flex flex-col gap-4">
-      <div className="text-center mb-1">
+    <div className="flex flex-col gap-3">
+      <div className="text-center">
         <p className="text-sm text-muted-foreground">
-          Select dates and time for <span className="font-medium text-foreground">{facilityName}</span>
+          Select dates for <span className="font-medium text-foreground">{facilityName}</span>
         </p>
+        <p className="text-[11px] text-muted-foreground/70 mt-0.5">Tap multiple dates to batch-schedule shifts</p>
       </div>
 
-      {/* Calendar */}
-      <div className="flex justify-center">
+      {/* Calendar with selected count */}
+      <div className="flex flex-col items-center gap-1.5">
         <div className="border border-border rounded-xl overflow-hidden">
           <Calendar
             mode="multiple"
@@ -277,18 +278,20 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
             onSelect={(dates) => setSelectedDates(dates || [])}
             modifiers={{ booked: bookedDateObjects }}
             modifiersClassNames={{ booked: "bg-destructive/20 text-destructive font-semibold" }}
-            className={cn("p-2 pointer-events-auto")}
+            className={cn("p-1 pointer-events-auto")}
           />
         </div>
+        {selectedDates.length > 0 ? (
+          <div className="flex items-center gap-1.5">
+            <span className="inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[11px] font-bold h-5 min-w-[20px] px-1.5">{selectedDates.length}</span>
+            <span className="text-xs text-muted-foreground">
+              {[...selectedDates].sort((a, b) => a.getTime() - b.getTime()).map(d => format(d, 'MMM d')).join(', ')}
+            </span>
+          </div>
+        ) : (
+          <p className="text-xs text-amber-600 dark:text-amber-400">Tap dates to select</p>
+        )}
       </div>
-
-      {selectedDates.length > 0 ? (
-        <p className="text-xs text-muted-foreground text-center">
-          {selectedDates.length} date{selectedDates.length !== 1 ? 's' : ''}: {[...selectedDates].sort((a, b) => a.getTime() - b.getTime()).map(d => format(d, 'MMM d')).join(', ')}
-        </p>
-      ) : (
-        <p className="text-xs text-amber-600 dark:text-amber-400 text-center">Tap dates to select</p>
-      )}
 
       {/* Time row */}
       <div>
@@ -337,7 +340,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
 
   /* ─── Step 3: Details + Review ─── */
   const renderStep3 = () => (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3">
       {/* Rate */}
       <div>
         <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
@@ -660,7 +663,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={cn("max-h-[90vh] overflow-y-auto", existing ? "max-w-[680px]" : "max-w-[480px]")}>
+      <DialogContent className={cn("max-h-[calc(100dvh-2rem)] overflow-y-auto", existing ? "max-w-[680px]" : "max-w-[480px]")}>
         <DialogHeader><DialogTitle>{existing ? 'Edit Shift' : 'Add Shift'}</DialogTitle></DialogHeader>
         {formContent}
       </DialogContent>
