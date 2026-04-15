@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, ChevronRight, Trash2, Zap, CheckCircle2, PartyPopper } from 'lucide-react';
+import { ChevronDown, ChevronRight, Trash2, Zap, CheckCircle2, PartyPopper, DollarSign } from 'lucide-react';
 import { differenceInCalendarDays } from 'date-fns';
 
 /** Format a date string to 'MMM d, yyyy' without timezone shift. */
@@ -39,6 +39,7 @@ interface Props {
   defaultOpen?: boolean;
   headerRight?: React.ReactNode;
   alertBanner?: React.ReactNode;
+  onMarkAsPaid?: (invoice: InvoiceWithStatus) => void;
 }
 
 const statusStyles: Record<string, string> = {
