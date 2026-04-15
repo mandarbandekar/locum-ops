@@ -286,6 +286,7 @@ function FacilitySubGroup({ name, invoices, selected, onToggleSelect, onDelete, 
             getFacilityName={getFacilityName}
             navigate={navigate}
             showFacility={false}
+            onMarkAsPaid={onMarkAsPaid}
           />
         </div>
       </CollapsibleContent>
