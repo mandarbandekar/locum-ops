@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge } from '@/components/StatusBadge';
-import { ArrowLeft, Plus, Trash2, Edit2, Save, Pencil, Check, X, Monitor, Wifi, KeyRound, DoorOpen, Car, Info } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Edit2, Save, Pencil, Check, X, Car, Info } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { FacilityContact, ContactRole, TermsSnapshot, SHIFT_COLORS, ShiftColor } from '@/types';
 import { generateId } from '@/lib/businessLogic';
@@ -21,6 +21,7 @@ import { ShiftFormDialog } from '@/components/schedule/ShiftFormDialog';
 import { FacilityConfirmationSettingsCard } from '@/components/schedule/FacilityConfirmationSettingsCard';
 import { useClinicConfirmations } from '@/hooks/useClinicConfirmations';
 import { InvoicingPreferencesCard } from '@/components/facilities/InvoicingPreferencesCard';
+import { ClinicNotesCard } from '@/components/facilities/ClinicNotesCard';
 
 export default function FacilityDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -68,8 +69,6 @@ export default function FacilityDetailPage() {
           <TabsTrigger value="shifts">Shifts ({facilityShifts.length})</TabsTrigger>
           <TabsTrigger value="invoices">Invoices ({facilityInvoices.length})</TabsTrigger>
           <TabsTrigger value="contracts" className="text-xs sm:text-sm">Contracts</TabsTrigger>
-          <TabsTrigger value="tech-access" className="text-xs sm:text-sm">Tech Access</TabsTrigger>
-          <TabsTrigger value="clinic-access" className="text-xs sm:text-sm">Clinic Access</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-4">
@@ -88,13 +87,6 @@ export default function FacilityDetailPage() {
           <ContractsTab facilityId={facility.id} facilityTerms={facilityTerms} onUpdateTerms={updateTerms} />
         </TabsContent>
 
-        <TabsContent value="tech-access" className="mt-4">
-          <TechAccessTab facility={facility} onUpdate={updateFacility} />
-        </TabsContent>
-
-        <TabsContent value="clinic-access" className="mt-4">
-          <ClinicAccessTab facility={facility} onUpdate={updateFacility} />
-        </TabsContent>
 
       </Tabs>
 
