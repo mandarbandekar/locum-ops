@@ -45,7 +45,7 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
   const [clinicSearchValue, setClinicSearchValue] = useState('');
   const [manualEntry, setManualEntry] = useState(false);
   const [clinicSelected, setClinicSelected] = useState(false);
-  const [dayRate, setDayRate] = useState('');
+  const [rates, setRates] = useState<RateEntry[]>([]);
   const [schedulingContactName, setSchedulingContactName] = useState('');
   const [schedulingContactEmail, setSchedulingContactEmail] = useState('');
   const [invoiceNameTo, setInvoiceNameTo] = useState('');
@@ -56,7 +56,7 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
 
   // Step 4 enrichment state
   const [enrichRates, setEnrichRates] = useState<RateEntry[]>([]);
-  const [mileageMiles, setMileageMiles] = useState('');
+  
   const [techComputer, setTechComputer] = useState('');
   const [techWifi, setTechWifi] = useState('');
   const [techPims, setTechPims] = useState('');
@@ -75,12 +75,12 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
     setStep(0);
     setName(''); setAddress('');
     setClinicSearchValue(''); setManualEntry(false); setClinicSelected(false);
-    setDayRate('');
+    setRates([]);
     setSchedulingContactName(''); setSchedulingContactEmail('');
     setInvoiceNameTo(''); setInvoiceEmailTo('');
     setSameAsScheduling(false);
     setBillingCadence('monthly'); setInvoiceDueDays(15);
-    setEnrichRates([]); setMileageMiles('');
+    
     setTechComputer(''); setTechWifi(''); setTechPims(''); setClinicAccess('');
     createdFacilityIdRef.current = null;
   };
@@ -102,7 +102,7 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
     }
 
     const prefix = getInitials(name);
-    const parsedRate = dayRate ? parseFloat(dayRate) : 0;
+    const rateFields = ratesToTermsFields(rates);
 
     try {
       const facility = await addFacility({
@@ -128,23 +128,16 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
 
       createdFacilityIdRef.current = facility.id;
 
-      if (parsedRate > 0) {
+      if (rates.length > 0) {
         await updateTerms({
           id: generateId(),
           facility_id: facility.id,
-          weekday_rate: parsedRate,
-          weekend_rate: 0,
-          partial_day_rate: 0,
-          holiday_rate: 0,
-          telemedicine_rate: 0,
-          custom_rates: [],
+          ...rateFields,
           cancellation_policy_text: '',
           overtime_policy_text: '',
           late_payment_policy_text: '',
           special_notes: '',
         });
-        // Pre-populate enrichment rates with the day rate
-        setEnrichRates([{ type: 'weekday', label: 'Weekday Rate', amount: parsedRate }]);
       }
 
       await saveConfirmationSettings({
