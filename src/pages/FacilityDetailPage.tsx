@@ -204,29 +204,22 @@ function OverviewTab({ facility, shifts, contacts, onUpdate, onAddContact, onUpd
           </CardContent>
         </Card>
 
-        {/* Rates Editor */}
-        <RatesEditor
-          rates={rates}
-          onChange={setRates}
-          onSave={onSaveRates}
-        />
+        <RatesEditor rates={rates} onChange={setRates} onSave={onSaveRates} />
+
+        <ClinicNotesCard facility={facility} onUpdate={onUpdate} />
+
+        <MileageOverrideCard facility={facility} onUpdate={onUpdate} />
       </div>
 
       <div className="space-y-4">
-        {/* Invoicing Preferences */}
         <InvoicingPreferencesCard facility={facility} onUpdate={onUpdate} />
 
-        {/* Confirmation Settings */}
         <FacilityConfirmationSettingsCard
           facilityId={facilityId}
           settings={confirmationSettings}
           onSave={onSaveConfirmationSettings}
         />
 
-        {/* Mileage from Home */}
-        <MileageOverrideCard facility={facility} onUpdate={onUpdate} />
-
-        {/* Upcoming Shifts */}
         <Card>
           <CardHeader><CardTitle className="text-base">Upcoming Shifts</CardTitle></CardHeader>
           <CardContent>
