@@ -1,4 +1,4 @@
-import { Facility, FacilityContact, TermsSnapshot, Shift, Invoice, InvoiceLineItem, EmailLog } from '@/types';
+import { Facility, FacilityContact, TermsSnapshot, Shift, Invoice, InvoiceLineItem, InvoicePayment, InvoiceActivity, EmailLog } from '@/types';
 import type { UserProfile } from '@/contexts/UserProfileContext';
 import { Contract, ContractTerms, ContractChecklistItem } from '@/types/contracts';
 
