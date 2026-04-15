@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge } from '@/components/StatusBadge';
-import { ArrowLeft, Plus, Trash2, Edit2, Save, Pencil, Check, X, Monitor, Wifi, KeyRound, DoorOpen, Car, Info } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Edit2, Save, Pencil, Check, X, Car, Info } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { FacilityContact, ContactRole, TermsSnapshot, SHIFT_COLORS, ShiftColor } from '@/types';
 import { generateId } from '@/lib/businessLogic';
@@ -21,6 +21,7 @@ import { ShiftFormDialog } from '@/components/schedule/ShiftFormDialog';
 import { FacilityConfirmationSettingsCard } from '@/components/schedule/FacilityConfirmationSettingsCard';
 import { useClinicConfirmations } from '@/hooks/useClinicConfirmations';
 import { InvoicingPreferencesCard } from '@/components/facilities/InvoicingPreferencesCard';
+import { ClinicNotesCard } from '@/components/facilities/ClinicNotesCard';
 
 export default function FacilityDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -68,8 +69,6 @@ export default function FacilityDetailPage() {
           <TabsTrigger value="shifts">Shifts ({facilityShifts.length})</TabsTrigger>
           <TabsTrigger value="invoices">Invoices ({facilityInvoices.length})</TabsTrigger>
           <TabsTrigger value="contracts" className="text-xs sm:text-sm">Contracts</TabsTrigger>
-          <TabsTrigger value="tech-access" className="text-xs sm:text-sm">Tech Access</TabsTrigger>
-          <TabsTrigger value="clinic-access" className="text-xs sm:text-sm">Clinic Access</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-4">
@@ -88,13 +87,6 @@ export default function FacilityDetailPage() {
           <ContractsTab facilityId={facility.id} facilityTerms={facilityTerms} onUpdateTerms={updateTerms} />
         </TabsContent>
 
-        <TabsContent value="tech-access" className="mt-4">
-          <TechAccessTab facility={facility} onUpdate={updateFacility} />
-        </TabsContent>
-
-        <TabsContent value="clinic-access" className="mt-4">
-          <ClinicAccessTab facility={facility} onUpdate={updateFacility} />
-        </TabsContent>
 
       </Tabs>
 
@@ -212,29 +204,22 @@ function OverviewTab({ facility, shifts, contacts, onUpdate, onAddContact, onUpd
           </CardContent>
         </Card>
 
-        {/* Rates Editor */}
-        <RatesEditor
-          rates={rates}
-          onChange={setRates}
-          onSave={onSaveRates}
-        />
+        <RatesEditor rates={rates} onChange={setRates} onSave={onSaveRates} />
+
+        <ClinicNotesCard facility={facility} onUpdate={onUpdate} />
+
+        <MileageOverrideCard facility={facility} onUpdate={onUpdate} />
       </div>
 
       <div className="space-y-4">
-        {/* Invoicing Preferences */}
         <InvoicingPreferencesCard facility={facility} onUpdate={onUpdate} />
 
-        {/* Confirmation Settings */}
         <FacilityConfirmationSettingsCard
           facilityId={facilityId}
           settings={confirmationSettings}
           onSave={onSaveConfirmationSettings}
         />
 
-        {/* Mileage from Home */}
-        <MileageOverrideCard facility={facility} onUpdate={onUpdate} />
-
-        {/* Upcoming Shifts */}
         <Card>
           <CardHeader><CardTitle className="text-base">Upcoming Shifts</CardTitle></CardHeader>
           <CardContent>
@@ -309,116 +294,7 @@ function EditableFacilityName({ facility, onSave }: { facility: any; onSave: (na
 
 // (Terms tab removed — rates moved to Overview, policies moved to Contract Vault & Terms)
 
-// ─── Tech Access Tab ───────────────────────────────────────
-
-function TechAccessTab({ facility, onUpdate }: { facility: any; onUpdate: any }) {
-  const [editing, setEditing] = useState(false);
-  const [computer, setComputer] = useState(facility.tech_computer_info || '');
-  const [wifi, setWifi] = useState(facility.tech_wifi_info || '');
-  const [pims, setPims] = useState(facility.tech_pims_info || '');
-
-  const handleSave = () => {
-    onUpdate({ ...facility, tech_computer_info: computer, tech_wifi_info: wifi, tech_pims_info: pims });
-    setEditing(false);
-    toast.success('Tech access info saved');
-  };
-
-  return (
-    <div className="grid gap-4 lg:grid-cols-3">
-      <Card>
-        <CardHeader className="flex flex-row items-center gap-2">
-          <Monitor className="h-4 w-4 text-primary" />
-          <CardTitle className="text-base">Computer / Login</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {editing ? (
-            <Textarea value={computer} onChange={e => setComputer(e.target.value)} rows={4} placeholder="Computer login, desktop credentials..." />
-          ) : (
-            <p className="text-sm whitespace-pre-wrap">{computer || <span className="text-muted-foreground italic">No info added</span>}</p>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center gap-2">
-          <Wifi className="h-4 w-4 text-primary" />
-          <CardTitle className="text-base">WiFi Passwords</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {editing ? (
-            <Textarea value={wifi} onChange={e => setWifi(e.target.value)} rows={4} placeholder="Network name, password..." />
-          ) : (
-            <p className="text-sm whitespace-pre-wrap">{wifi || <span className="text-muted-foreground italic">No info added</span>}</p>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center gap-2">
-          <KeyRound className="h-4 w-4 text-primary" />
-          <CardTitle className="text-base">PIMS Credentials</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {editing ? (
-            <Textarea value={pims} onChange={e => setPims(e.target.value)} rows={4} placeholder="PIMS system, username, password..." />
-          ) : (
-            <p className="text-sm whitespace-pre-wrap">{pims || <span className="text-muted-foreground italic">No info added</span>}</p>
-          )}
-        </CardContent>
-      </Card>
-
-      <div className="lg:col-span-3">
-        {editing ? (
-          <div className="flex gap-2">
-            <Button onClick={handleSave}><Save className="mr-1 h-3 w-3" /> Save</Button>
-            <Button variant="ghost" onClick={() => { setComputer(facility.tech_computer_info || ''); setWifi(facility.tech_wifi_info || ''); setPims(facility.tech_pims_info || ''); setEditing(false); }}>Cancel</Button>
-          </div>
-        ) : (
-          <Button variant="outline" onClick={() => setEditing(true)}><Edit2 className="mr-1 h-3 w-3" /> Edit Tech Access</Button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ─── Clinic Access Tab ─────────────────────────────────────
-
-function ClinicAccessTab({ facility, onUpdate }: { facility: any; onUpdate: any }) {
-  const [editing, setEditing] = useState(false);
-  const [info, setInfo] = useState(facility.clinic_access_info || '');
-
-  const handleSave = () => {
-    onUpdate({ ...facility, clinic_access_info: info });
-    setEditing(false);
-    toast.success('Clinic access info saved');
-  };
-
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div className="flex items-center gap-2">
-          <DoorOpen className="h-4 w-4 text-primary" />
-          <CardTitle className="text-base">General Clinic Access Information</CardTitle>
-        </div>
-        {editing ? (
-          <div className="flex gap-2">
-            <Button size="sm" onClick={handleSave}><Save className="mr-1 h-3 w-3" /> Save</Button>
-            <Button size="sm" variant="ghost" onClick={() => { setInfo(facility.clinic_access_info || ''); setEditing(false); }}>Cancel</Button>
-          </div>
-        ) : (
-          <Button size="sm" variant="ghost" onClick={() => setEditing(true)}><Edit2 className="mr-1 h-3 w-3" /> Edit</Button>
-        )}
-      </CardHeader>
-      <CardContent>
-        {editing ? (
-          <Textarea value={info} onChange={e => setInfo(e.target.value)} rows={6} placeholder="Door codes, parking instructions, key pickup, building access hours, after-hours protocols..." />
-        ) : (
-          <p className="text-sm whitespace-pre-wrap">{info || <span className="text-muted-foreground italic">No clinic access info added. Click Edit to add door codes, parking info, key details, etc.</span>}</p>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
+// (Tech Access and Clinic Access merged into ClinicNotesCard on Overview tab)
 
 // ─── Shifts Tab ────────────────────────────────────────────
 
