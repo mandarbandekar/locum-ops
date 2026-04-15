@@ -85,6 +85,10 @@ export const seedInvoices: Invoice[] = [
   { id: 'i2', facility_id: 'c2', invoice_number: 'EHC-2026-001', invoice_date: fmt(addDays(today, -2)), period_start: fmt(addDays(today, -15)), period_end: fmt(addDays(today, -1)), total_amount: 2100, balance_due: 2100, status: 'sent', sent_at: fmt(addDays(today, -1)), paid_at: null, due_date: fmt(addDays(today, 13)), notes: '', share_token: null, share_token_created_at: null, share_token_revoked_at: null, invoice_type: 'bulk', ...invDefaults },
   { id: 'i3', facility_id: 'c1', invoice_number: 'GMC-2026-002', invoice_date: fmt(today), period_start: fmt(addDays(today, -14)), period_end: fmt(addDays(today, -1)), total_amount: 850, balance_due: 850, status: 'draft', sent_at: null, paid_at: null, due_date: null, notes: '', share_token: null, share_token_created_at: null, share_token_revoked_at: null, invoice_type: 'single', ...invDefaults },
   { id: 'i4', facility_id: 'c4', invoice_number: 'MVP-2025-042', invoice_date: fmt(addDays(today, -45)), period_start: fmt(addDays(today, -60)), period_end: fmt(addDays(today, -46)), total_amount: 1600, balance_due: 1600, status: 'sent', sent_at: fmt(addDays(today, -44)), paid_at: null, due_date: fmt(addDays(today, -30)), notes: '', share_token: null, share_token_created_at: null, share_token_revoked_at: null, invoice_type: 'single', ...invDefaults },
+  // Partial payment invoice — showcases Mark as Paid flow
+  { id: 'i5', facility_id: 'c4', invoice_number: 'MVP-2026-001', invoice_date: fmt(addDays(today, -20)), period_start: fmt(addDays(today, -35)), period_end: fmt(addDays(today, -21)), total_amount: 1600, balance_due: 800, status: 'partial', sent_at: fmt(addDays(today, -19)), paid_at: null, due_date: fmt(addDays(today, -5)), notes: 'Partial payment received', share_token: null, share_token_created_at: null, share_token_revoked_at: null, invoice_type: 'single', ...invDefaults },
+  // Another sent invoice for Greenfield — ready for Mark as Paid
+  { id: 'i6', facility_id: 'c1', invoice_number: 'GMC-2025-012', invoice_date: fmt(addDays(today, -25)), period_start: fmt(addDays(today, -40)), period_end: fmt(addDays(today, -26)), total_amount: 1700, balance_due: 0, status: 'paid', sent_at: fmt(addDays(today, -24)), paid_at: fmt(addDays(today, -18)), due_date: fmt(addDays(today, -10)), notes: '', share_token: null, share_token_created_at: null, share_token_revoked_at: null, invoice_type: 'single', ...invDefaults },
 ];
 
 export const seedLineItems: InvoiceLineItem[] = [
@@ -93,6 +97,37 @@ export const seedLineItems: InvoiceLineItem[] = [
   { id: 'li3', invoice_id: 'i2', shift_id: 's4', description: 'Weekend shift - Evergreen Health Clinic', service_date: addDays(today, -3).toISOString().split('T')[0], qty: 1, unit_rate: 1200, line_total: 1200 },
   { id: 'li4', invoice_id: 'i3', shift_id: 's2', description: 'Weekday shift - Greenfield Medical Center', service_date: addDays(today, -5).toISOString().split('T')[0], qty: 1, unit_rate: 850, line_total: 850 },
   { id: 'li5', invoice_id: 'i4', shift_id: null, description: 'Weekday shifts x2 - Mountain View Practice', service_date: null, qty: 2, unit_rate: 800, line_total: 1600 },
+  { id: 'li6', invoice_id: 'i5', shift_id: null, description: 'Weekday shifts x2 - Mountain View Practice', service_date: null, qty: 2, unit_rate: 800, line_total: 1600 },
+  { id: 'li7', invoice_id: 'i6', shift_id: null, description: 'Weekday shift + Weekend shift - Greenfield Medical Center', service_date: null, qty: 2, unit_rate: 850, line_total: 1700 },
+];
+
+// === INVOICE PAYMENTS seed data (demo mode) ===
+
+export const seedPayments: InvoicePayment[] = [
+  // Full payment for i1
+  { id: 'pay1', invoice_id: 'i1', payment_date: addDays(today, -7).toISOString().split('T')[0], amount: 850, method: 'check', account: 'Business Checking', memo: 'Check #4521' },
+  // Partial payment for i5
+  { id: 'pay2', invoice_id: 'i5', payment_date: addDays(today, -10).toISOString().split('T')[0], amount: 800, method: 'ach', account: 'Business Checking', memo: 'First installment' },
+  // Full payment for i6
+  { id: 'pay3', invoice_id: 'i6', payment_date: addDays(today, -18).toISOString().split('T')[0], amount: 1700, method: 'ach', account: 'Business Checking', memo: '' },
+];
+
+// === INVOICE ACTIVITY seed data (demo mode) ===
+
+export const seedActivities: InvoiceActivity[] = [
+  { id: 'act1', invoice_id: 'i1', action: 'created', description: 'Invoice created', created_at: fmt(addDays(today, -15)) },
+  { id: 'act2', invoice_id: 'i1', action: 'sent', description: 'Invoice sent to billing@greenfield.com', created_at: fmt(addDays(today, -14)) },
+  { id: 'act3', invoice_id: 'i1', action: 'payment_recorded', description: 'Payment of $850 recorded via check — invoice fully paid', created_at: fmt(addDays(today, -7)) },
+  { id: 'act4', invoice_id: 'i2', action: 'created', description: 'Invoice created', created_at: fmt(addDays(today, -2)) },
+  { id: 'act5', invoice_id: 'i2', action: 'sent', description: 'Invoice sent to emily@evergreen-hc.com', created_at: fmt(addDays(today, -1)) },
+  { id: 'act6', invoice_id: 'i4', action: 'created', description: 'Invoice created', created_at: fmt(addDays(today, -45)) },
+  { id: 'act7', invoice_id: 'i4', action: 'sent', description: 'Invoice sent to rachel@mtviewpractice.com', created_at: fmt(addDays(today, -44)) },
+  { id: 'act8', invoice_id: 'i5', action: 'created', description: 'Invoice created', created_at: fmt(addDays(today, -20)) },
+  { id: 'act9', invoice_id: 'i5', action: 'sent', description: 'Invoice sent to rachel@mtviewpractice.com', created_at: fmt(addDays(today, -19)) },
+  { id: 'act10', invoice_id: 'i5', action: 'payment_recorded', description: 'Payment of $800 recorded via ACH', created_at: fmt(addDays(today, -10)) },
+  { id: 'act11', invoice_id: 'i6', action: 'created', description: 'Invoice created', created_at: fmt(addDays(today, -25)) },
+  { id: 'act12', invoice_id: 'i6', action: 'sent', description: 'Invoice sent to billing@greenfield.com', created_at: fmt(addDays(today, -24)) },
+  { id: 'act13', invoice_id: 'i6', action: 'payment_recorded', description: 'Payment of $1,700 recorded via ACH — invoice fully paid', created_at: fmt(addDays(today, -18)) },
 ];
 
 export const seedEmailLogs: EmailLog[] = [
