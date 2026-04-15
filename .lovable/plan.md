@@ -1,65 +1,33 @@
 
 
-# Fix Invoice Reminder Emails: Only Send "Ready to Review" + Overdue
+## Plan: Replace Default Day Rate with Multi-Rate Editor and Clean Up Enrichment Step
 
-## Problem
-The `send-reminder-emails` Edge Function sends digest emails that include ALL draft invoices — both "ready to review" and "upcoming" (future-dated). The app's Invoices page correctly splits these using `invoice_date`, but the email function doesn't apply this filter.
+### What changes
 
-## Root Cause
-Line 189 of `supabase/functions/send-reminder-emails/index.ts`:
-```typescript
-const drafts = invoices.filter((i: any) => i.status === 'draft')
-```
-This grabs every draft regardless of `invoice_date`. It needs to exclude drafts where `invoice_date` (or `period_end`) is in the future.
+**1. OnboardingClinicForm.tsx — Replace single day rate with RatesEditor**
+- Remove the `dayRate` state and the single `$` input field (lines 34, 190-205)
+- Add `rates: RateEntry[]` state, import `RatesEditor` and `ratesToTermsFields`
+- Render `RatesEditor` (with `showCard={false}`, `compact`) in place of the old day rate input
+- Update `handleSave` to use `ratesToTermsFields(rates)` instead of setting only `weekday_rate`
+- Update helper text to: "The rates you set become the defaults for new shifts at this clinic — one less thing to enter each time."
 
-## Changes
+**2. AddFacilityDialog.tsx — Same replacement on Step 1**
+- Remove `dayRate` state (line 48) and the single input (lines 431-446)
+- Add `rates: RateEntry[]` state, render `RatesEditor` inline on Step 1
+- Update `handleCreateFacility` to use `ratesToTermsFields(rates)` instead of `parsedRate`/`weekday_rate`
+- Remove `dayRate` from `resetForm` and `summaryItems`
 
-### 1. `supabase/functions/send-reminder-emails/index.ts`
+**3. AddFacilityDialog.tsx — Remove from enrichment step (Step 4)**
+- Remove the "Detailed Shift Rates" accordion (lines 580-609) — rates are now captured in Step 1
+- Remove the "Mileage from Home" accordion (lines 611-645)
+- Remove related state: `enrichRates`, `mileageMiles` and their usage in `handleSaveEnrichment`
+- Keep Tech Access and Clinic Access accordions
+- Update welcome step checklist text from "Clinic name, address, and day rate" to "Clinic name, address, and shift rates"
 
-**Update the invoice query** (line 176) to also select `invoice_date` and `period_end`:
-```typescript
-.select('id, invoice_number, status, total_amount, balance_due, due_date, facility_id, sent_at, invoice_date, period_end')
-```
+**4. Summary items update**
+- Replace the "Day Rate" summary item with a "Rates" item showing count (e.g., "2 rates" or "Skipped")
 
-**Filter drafts to "ready to review" only** (line 189) — match the same logic the UI uses:
-```typescript
-const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999)
-const drafts = invoices.filter((i: any) => {
-  if (i.status !== 'draft') return false
-  const refDate = i.invoice_date || i.period_end
-  if (!refDate) return true // no date = include it
-  const d = new Date(refDate.replace(/-/g, '/').split('T')[0]) // parse as local
-  return d <= todayEnd
-})
-```
-
-This ensures only drafts whose billing period has closed appear in reminder emails. Future-dated "upcoming" invoices are excluded.
-
-### 2. Update the client-side reminder engine
-
-**`src/lib/reminderEngine.ts`** — `generateInvoiceReminders()` (line 29):
-Apply the same filter so dashboard "needs attention" items also exclude upcoming drafts:
-```typescript
-const now = new Date()
-const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999)
-const drafts = invoices.filter(i => {
-  if (i.status !== 'draft') return false
-  const refDate = (i as any).invoice_date || (i as any).period_end
-  if (!refDate) return true
-  return new Date(refDate) <= todayEnd
-})
-```
-
-**`src/hooks/useReminders.ts`** — `useGeneratedReminders()` (line 80):
-Same filter for the draft invoice reminders generated here.
-
-### 3. Redeploy the Edge Function
-After editing, deploy `send-reminder-emails` so the fix takes effect.
-
-## What stays the same
-- Overdue invoice logic (already correct — only includes sent invoices past due date)
-- Credential digest logic
-- Uninvoiced shift reminders
-- SMS alerts for overdue invoices
-- Email template rendering
+### Files modified
+- `src/components/onboarding/OnboardingClinicForm.tsx`
+- `src/components/AddFacilityDialog.tsx`
 
