@@ -1,37 +1,29 @@
 
 
-## Plan: Improve Shift Form Wizard — Multi-Select Visibility, Bold Selection, No-Scroll, Mobile-Friendly
+## Plan: Improve Facility Detail Page UX
 
-### Problem
-1. The calendar doesn't clearly communicate that multiple dates can be selected
-2. Selected dates aren't visually bold enough
-3. The dialog content can overflow, requiring scroll on smaller screens
-4. Mobile layout needs tightening
+### Current issues
+- 6 tabs is too many — Tech Access and Clinic Access are low-traffic, single-field tabs that fragment the experience
+- The Overview tab has a lot of cards but the layout could be better organized with clearer grouping
+- Details card has minimal info (status, timezone, notes) that could be denser
 
 ### Changes
 
-**1. Calendar component (`src/components/ui/calendar.tsx`)**
-- Make `day_selected` use `font-bold` so selected dates are visually heavy
-- Keep the existing `ring-2` highlight from earlier fix
+**1. Merge Tech Access + Clinic Access into a single "Clinic Notes" card on the Overview tab**
+- Remove the `tech-access` and `clinic-access` tabs entirely (reduce from 6 tabs to 4: Overview, Shifts, Invoices, Contracts)
+- Create a new `ClinicNotesCard` component that combines all 4 fields (Computer/Login, WiFi, PIMS, General Access) into a single card with labeled sections
+- In read mode: show each section as a compact labeled block (icon + label + text), hiding empty sections with a subtle "Add info" link
+- In edit mode: expand all fields inline with textareas
+- Place this card on the Overview tab in the left column, below Shift Rates
 
-**2. ShiftFormDialog Step 2 (`src/components/schedule/ShiftFormDialog.tsx`)**
-- Add a helper text below the subtitle: "Tap multiple dates to batch-schedule shifts" with a multi-select icon
-- Make the calendar more compact on mobile: reduce padding, use tighter cell sizes
-- Show selected count as a pill/badge near the calendar (e.g., "3 selected") instead of just listing dates below
-- Tighten vertical spacing throughout all 3 steps to eliminate scroll
+**2. Reorganize Overview tab layout**
+- Left column: Details → Shift Rates → Clinic Notes (new combined card) → Mileage from Home
+- Right column: Invoicing Preferences → Scheduling/Confirmation Settings → Upcoming Shifts
+- This groups "about the clinic" on the left and "operational settings" on the right
 
-**3. Dialog container sizing**
-- Change `max-h-[90vh]` to `max-h-[95vh]` or `max-h-[calc(100dvh-2rem)]` for mobile
-- Reduce internal padding and margins across all steps to keep content within viewport
-- Make the calendar border wrapper use `p-1` instead of `p-2`
-
-**4. Step 2 layout compaction**
-- Reduce `gap-4` to `gap-3` in step containers
-- Remove `mb-5` from StepIndicator, use `mb-3`
-- Reduce time inputs row spacing
-- Move the date summary inline with the calendar section header rather than a separate line
+**3. Minor density improvements**
+- Move Mileage from Home from right column to left column (it's clinic-specific info, not a setting)
 
 ### Files modified
-- `src/components/ui/calendar.tsx` — add `font-bold` to `day_selected`
-- `src/components/schedule/ShiftFormDialog.tsx` — compact layout, multi-select hint, tighter spacing
+- `src/pages/FacilityDetailPage.tsx` — remove 2 tab triggers/contents, merge TechAccessTab + ClinicAccessTab into a ClinicNotesCard, reorder Overview cards
 
