@@ -139,6 +139,38 @@ export default function InvoicesPage() {
     setShowDeleteConfirm(false);
   };
 
+  const handleMarkAsPaid = (invoice: any) => {
+    setMarkAsPaidTarget(invoice);
+    setPaymentDialogOpen(true);
+  };
+
+  const handleRecordPayment = async (payment: { payment_date: string; amount: number; method: string; account: string; memo: string }) => {
+    if (!markAsPaidTarget) return;
+    const inv = safeInvoices.find(i => i.id === markAsPaidTarget.id);
+    if (!inv) return;
+
+    await addPayment({ invoice_id: inv.id, ...payment });
+
+    const newBalance = Math.max(0, (inv.balance_due ?? 0) - payment.amount);
+    const isFullPayment = newBalance <= 0;
+
+    await updateInvoice({
+      ...inv,
+      balance_due: newBalance,
+      status: isFullPayment ? 'paid' : 'partial',
+      paid_at: isFullPayment ? new Date().toISOString() : inv.paid_at,
+    });
+
+    await addActivity({
+      invoice_id: inv.id,
+      action: 'payment_recorded',
+      description: `Payment of $${payment.amount.toLocaleString()} recorded via ${payment.method}${isFullPayment ? ' — invoice fully paid' : ''}`,
+    });
+
+    toast.success(isFullPayment ? 'Invoice marked as paid' : 'Partial payment recorded');
+    setMarkAsPaidTarget(null);
+  };
+
   // Group by status in priority order
   const overdue = allInvoices.filter(i => i.computedStatus === 'overdue');
   const sent = allInvoices.filter(i => i.computedStatus === 'sent');
