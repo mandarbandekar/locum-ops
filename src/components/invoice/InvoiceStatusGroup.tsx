@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, ChevronRight, Trash2, Zap, CheckCircle2, PartyPopper } from 'lucide-react';
+import { ChevronDown, ChevronRight, Trash2, Zap, CheckCircle2, PartyPopper, DollarSign } from 'lucide-react';
 import { differenceInCalendarDays } from 'date-fns';
 
 /** Format a date string to 'MMM d, yyyy' without timezone shift. */
@@ -39,6 +39,7 @@ interface Props {
   defaultOpen?: boolean;
   headerRight?: React.ReactNode;
   alertBanner?: React.ReactNode;
+  onMarkAsPaid?: (invoice: InvoiceWithStatus) => void;
 }
 
 const statusStyles: Record<string, string> = {
@@ -76,7 +77,7 @@ function getDueBadge(dueDate: string | null, status: string) {
   return <span className="text-[11px] text-muted-foreground">Due in {days}d</span>;
 }
 
-function InvoiceTable({ invoices, selected, onToggleSelect, onDelete, getFacilityName, navigate, showFacility = true }: {
+function InvoiceTable({ invoices, selected, onToggleSelect, onDelete, getFacilityName, navigate, showFacility = true, onMarkAsPaid }: {
   invoices: InvoiceWithStatus[];
   selected: Set<string>;
   onToggleSelect: (id: string, e: React.MouseEvent) => void;
@@ -84,6 +85,7 @@ function InvoiceTable({ invoices, selected, onToggleSelect, onDelete, getFacilit
   getFacilityName: (id: string) => string;
   navigate: (path: string) => void;
   showFacility?: boolean;
+  onMarkAsPaid?: (invoice: InvoiceWithStatus) => void;
 }) {
   return (
     <table className="w-full text-[13px] min-w-[600px] sm:min-w-0">
@@ -150,13 +152,22 @@ function InvoiceTable({ invoices, selected, onToggleSelect, onDelete, getFacilit
               </Badge>
             </td>
             <td className="p-3" onClick={e => e.stopPropagation()}>
-              <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                onClick={async () => {
-                  await onDelete(inv.id);
-                  toast.success('Invoice deleted');
-                }}>
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
+              <div className="flex items-center gap-0.5">
+                {onMarkAsPaid && ['sent', 'partial', 'overdue'].includes(inv.computedStatus) && (
+                  <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-primary"
+                    title="Mark as Paid"
+                    onClick={() => onMarkAsPaid(inv)}>
+                    <DollarSign className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+                <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                  onClick={async () => {
+                    await onDelete(inv.id);
+                    toast.success('Invoice deleted');
+                  }}>
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
             </td>
           </tr>
         ))}
@@ -168,7 +179,7 @@ function InvoiceTable({ invoices, selected, onToggleSelect, onDelete, getFacilit
 export function InvoiceStatusGroup({
   title, icon, invoices, selected, onToggleSelect, onDelete,
   getFacilityName, emptyMessage, defaultOpen = true, groupByFacility = false,
-  headerRight, alertBanner,
+  headerRight, alertBanner, onMarkAsPaid,
 }: Props & { groupByFacility?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
   const navigate = useNavigate();
@@ -220,6 +231,7 @@ export function InvoiceStatusGroup({
                 onDelete={onDelete}
                 getFacilityName={getFacilityName}
                 navigate={navigate}
+                onMarkAsPaid={onMarkAsPaid}
               />
             ))}
           </div>
@@ -232,6 +244,7 @@ export function InvoiceStatusGroup({
               onDelete={onDelete}
               getFacilityName={getFacilityName}
               navigate={navigate}
+              onMarkAsPaid={onMarkAsPaid}
             />
           </div>
         )}
@@ -240,7 +253,7 @@ export function InvoiceStatusGroup({
   );
 }
 
-function FacilitySubGroup({ name, invoices, selected, onToggleSelect, onDelete, getFacilityName, navigate }: {
+function FacilitySubGroup({ name, invoices, selected, onToggleSelect, onDelete, getFacilityName, navigate, onMarkAsPaid }: {
   name: string;
   invoices: InvoiceWithStatus[];
   selected: Set<string>;
@@ -248,6 +261,7 @@ function FacilitySubGroup({ name, invoices, selected, onToggleSelect, onDelete, 
   onDelete: (id: string) => Promise<void>;
   getFacilityName: (id: string) => string;
   navigate: (path: string) => void;
+  onMarkAsPaid?: (invoice: InvoiceWithStatus) => void;
 }) {
   const [subOpen, setSubOpen] = useState(true);
   const total = invoices.reduce((s, i) => s + (i.total_amount ?? 0), 0);
@@ -272,6 +286,7 @@ function FacilitySubGroup({ name, invoices, selected, onToggleSelect, onDelete, 
             getFacilityName={getFacilityName}
             navigate={navigate}
             showFacility={false}
+            onMarkAsPaid={onMarkAsPaid}
           />
         </div>
       </CollapsibleContent>

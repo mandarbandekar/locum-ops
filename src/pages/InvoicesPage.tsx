@@ -12,6 +12,7 @@ import { InvoiceStatusGroup } from '@/components/invoice/InvoiceStatusGroup';
 import { InvoiceSummaryStrip } from '@/components/invoice/InvoiceSummaryStrip';
 import { InvoiceWorkflowHint } from '@/components/invoice/InvoiceWorkflowHint';
 import { AutoInvoiceDeleteDialog } from '@/components/invoice/AutoInvoiceDeleteDialog';
+import { RecordPaymentDialog } from '@/components/invoice/RecordPaymentDialog';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -59,13 +60,15 @@ const INVOICE_TOUR_STEPS: TourStep[] = [
 ];
 
 export default function InvoicesPage() {
-  const { invoices, facilities, shifts, addInvoice, deleteInvoice, suppressInvoicePeriod, dataLoading } = useData();
+  const { invoices, facilities, shifts, addInvoice, deleteInvoice, suppressInvoicePeriod, updateInvoice, addPayment, addActivity, dataLoading } = useData();
   const navigate = useNavigate();
   const invoiceTour = useSpotlightTour('locumops_tour_invoices');
   const [showCreate, setShowCreate] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [autoDeleteTarget, setAutoDeleteTarget] = useState<{ id: string; invoiceNumber: string; facilityName: string; periodStart: string; periodEnd: string; facilityId: string } | null>(null);
+  const [markAsPaidTarget, setMarkAsPaidTarget] = useState<any>(null);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
 
   // Refs for scroll-to
   const overdueRef = useRef<HTMLDivElement>(null);
@@ -134,6 +137,38 @@ export default function InvoicesPage() {
     toast.success(`${selected.size} invoice(s) deleted`);
     setSelected(new Set());
     setShowDeleteConfirm(false);
+  };
+
+  const handleMarkAsPaid = (invoice: any) => {
+    setMarkAsPaidTarget(invoice);
+    setPaymentDialogOpen(true);
+  };
+
+  const handleRecordPayment = async (payment: { payment_date: string; amount: number; method: string; account: string; memo: string }) => {
+    if (!markAsPaidTarget) return;
+    const inv = safeInvoices.find(i => i.id === markAsPaidTarget.id);
+    if (!inv) return;
+
+    await addPayment({ invoice_id: inv.id, ...payment });
+
+    const newBalance = Math.max(0, (inv.balance_due ?? 0) - payment.amount);
+    const isFullPayment = newBalance <= 0;
+
+    await updateInvoice({
+      ...inv,
+      balance_due: newBalance,
+      status: isFullPayment ? 'paid' : 'partial',
+      paid_at: isFullPayment ? new Date().toISOString() : inv.paid_at,
+    });
+
+    await addActivity({
+      invoice_id: inv.id,
+      action: 'payment_recorded',
+      description: `Payment of $${payment.amount.toLocaleString()} recorded via ${payment.method}${isFullPayment ? ' — invoice fully paid' : ''}`,
+    });
+
+    toast.success(isFullPayment ? 'Invoice marked as paid' : 'Partial payment recorded');
+    setMarkAsPaidTarget(null);
   };
 
   // Group by status in priority order
@@ -259,6 +294,7 @@ export default function InvoicesPage() {
                 You have ${sumBalance(overdue).toLocaleString()} overdue across {overdue.length} invoice{overdue.length !== 1 ? 's' : ''}. Follow up with facilities to collect payment.
               </div>
             ) : undefined}
+            onMarkAsPaid={handleMarkAsPaid}
           />
         </div>
 
@@ -278,6 +314,7 @@ export default function InvoicesPage() {
                 ${sumBalance([...sent, ...partial]).toLocaleString()} outstanding
               </span>
             ) : undefined}
+            onMarkAsPaid={handleMarkAsPaid}
           />
         </div>
 
@@ -391,6 +428,18 @@ export default function InvoicesPage() {
       )}
 
       <SpotlightTour steps={INVOICE_TOUR_STEPS} isOpen={invoiceTour.isOpen} onClose={invoiceTour.closeTour} />
+
+      {markAsPaidTarget && (
+        <RecordPaymentDialog
+          open={paymentDialogOpen}
+          onOpenChange={(open) => {
+            setPaymentDialogOpen(open);
+            if (!open) setMarkAsPaidTarget(null);
+          }}
+          balanceDue={markAsPaidTarget.balance_due ?? 0}
+          onRecord={handleRecordPayment}
+        />
+      )}
     </div>
   );
 }
