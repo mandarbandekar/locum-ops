@@ -3,6 +3,7 @@ import { Facility, FacilityContact, TermsSnapshot, Shift, Invoice, InvoiceLineIt
 import { ContractChecklistItem } from '@/types/contracts';
 import {
   seedFacilities, seedContacts, seedTerms, seedShifts, seedInvoices, seedLineItems, seedEmailLogs, seedChecklistItems,
+  seedPayments, seedActivities,
 } from '@/data/seed';
 import { computeInvoiceStatus, generateId, generateInvoiceNumber } from '@/lib/businessLogic';
 import {
@@ -93,8 +94,8 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
   const [invoices, setInvoices] = useState<Invoice[]>(isDemo ? seedInvoices : []);
   const [lineItems, setLineItems] = useState<InvoiceLineItem[]>(isDemo ? seedLineItems : []);
   const [emailLogs, setEmailLogs] = useState<EmailLog[]>(isDemo ? seedEmailLogs : []);
-  const [payments, setPayments] = useState<InvoicePayment[]>([]);
-  const [activities, setActivities] = useState<InvoiceActivity[]>([]);
+  const [payments, setPayments] = useState<InvoicePayment[]>(isDemo ? seedPayments : []);
+  const [activities, setActivities] = useState<InvoiceActivity[]>(isDemo ? seedActivities : []);
   const [checklistItems, setChecklistItems] = useState<ContractChecklistItem[]>(isDemo ? seedChecklistItems : []);
   const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>([]);
   const [suppressedPeriods, setSuppressedPeriods] = useState<SuppressedPeriod[]>([]);
