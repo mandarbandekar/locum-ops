@@ -428,6 +428,18 @@ export default function InvoicesPage() {
       )}
 
       <SpotlightTour steps={INVOICE_TOUR_STEPS} isOpen={invoiceTour.isOpen} onClose={invoiceTour.closeTour} />
+
+      {markAsPaidTarget && (
+        <RecordPaymentDialog
+          open={paymentDialogOpen}
+          onOpenChange={(open) => {
+            setPaymentDialogOpen(open);
+            if (!open) setMarkAsPaidTarget(null);
+          }}
+          balanceDue={markAsPaidTarget.balance_due ?? 0}
+          onRecord={handleRecordPayment}
+        />
+      )}
     </div>
   );
 }
