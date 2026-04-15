@@ -12,6 +12,7 @@ import { InvoiceStatusGroup } from '@/components/invoice/InvoiceStatusGroup';
 import { InvoiceSummaryStrip } from '@/components/invoice/InvoiceSummaryStrip';
 import { InvoiceWorkflowHint } from '@/components/invoice/InvoiceWorkflowHint';
 import { AutoInvoiceDeleteDialog } from '@/components/invoice/AutoInvoiceDeleteDialog';
+import { RecordPaymentDialog } from '@/components/invoice/RecordPaymentDialog';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
