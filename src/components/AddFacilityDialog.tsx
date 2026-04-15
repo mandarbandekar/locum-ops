@@ -18,7 +18,7 @@ import {
   ArrowLeft, ArrowRight, SkipForward,
   Building2, DollarSign, UserCheck, CalendarClock,
   Sparkles, Check, Info, CircleDot, Settings2,
-  Car, Monitor, DoorOpen
+  Monitor, DoorOpen
 } from 'lucide-react';
 import { GooglePlacesAutocomplete } from '@/components/GooglePlacesAutocomplete';
 import type { PlaceSelection } from '@/components/GooglePlacesAutocomplete';
@@ -340,7 +340,7 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
               </div>
               <div className="text-left space-y-3 w-full max-w-sm">
                 {[
-                  { icon: Building2, text: 'Clinic name, address, and day rate' },
+                  { icon: Building2, text: 'Clinic name, address, and shift rates' },
                   { icon: UserCheck, text: 'Scheduling and billing contacts' },
                   { icon: CalendarClock, text: 'Billing cadence and payment terms' },
                 ].map(({ icon: Ic, text }) => (
