@@ -9,7 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Trash2, AlertTriangle, Layers, Undo2, ArrowRight, Mail, FileText, Eye, Loader2 } from 'lucide-react';
+import { ArrowLeft, Trash2, AlertTriangle, Layers, Mail, FileText, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
 import { toast } from 'sonner';
@@ -26,11 +26,11 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AutoInvoiceDeleteDialog } from '@/components/invoice/AutoInvoiceDeleteDialog';
 import { InvoiceComposeDialog } from '@/components/invoice/InvoiceComposeDialog';
+
+
 
 const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
   draft: { label: 'Draft', variant: 'secondary' },
@@ -39,13 +39,6 @@ const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secon
   overdue: { label: 'Overdue', variant: 'destructive' },
   paid: { label: 'Paid', variant: 'default' },
 };
-
-function getStepOrder(status: string): number {
-  if (status === 'draft') return 0;
-  if (status === 'sent' || status === 'partial' || status === 'overdue') return 1;
-  if (status === 'paid') return 2;
-  return 0;
-}
 
 export default function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -57,8 +50,6 @@ export default function InvoiceDetailPage() {
   const { user } = useAuth();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [autoDeleteOpen, setAutoDeleteOpen] = useState(false);
-  const [moveDialogOpen, setMoveDialogOpen] = useState(false);
-  const [moveTarget, setMoveTarget] = useState<string | null>(null);
   const [billingDialogOpen, setBillingDialogOpen] = useState(false);
   const [sendingReminder, setSendingReminder] = useState(false);
   const [composeOpen, setComposeOpen] = useState(false);
@@ -99,54 +90,6 @@ export default function InvoiceDetailPage() {
     await deleteInvoice(invoice.id);
     toast.success('Invoice deleted');
     navigate('/invoices');
-  };
-
-  const handleStatusTransition = async (targetStatus: string) => {
-    switch (targetStatus) {
-      case 'draft':
-        await updateInvoice({ ...invoice, status: 'draft', sent_at: null, paid_at: null });
-        await addActivity({ invoice_id: invoice.id, action: 'reverted_to_draft', description: 'Invoice reverted to draft' });
-        toast.success('Invoice moved back to Draft');
-        break;
-      case 'sent':
-        if (invoice.status === 'paid' || invoice.status === 'partial') {
-          await updateInvoice({ ...invoice, status: 'sent', paid_at: null });
-          await addActivity({ invoice_id: invoice.id, action: 'reverted_to_sent', description: 'Invoice moved back to Sent' });
-          toast.success('Invoice moved back to Sent');
-        }
-        break;
-      case 'paid':
-        toast.info('Record a payment to mark this invoice as paid');
-        break;
-    }
-    setMoveDialogOpen(false);
-    setMoveTarget(null);
-  };
-
-  const handleStepClick = (stepKey: string) => {
-    const targetOrder = getStepOrder(stepKey);
-    const currentOrder = getStepOrder(computedStatus);
-
-    if (stepKey === 'paid' && invoice.status !== 'paid') {
-      toast.info('Record a payment to mark this invoice as paid');
-      return;
-    }
-
-    // Forward moves: just do it (no confirmation for forward)
-    // Backward moves: confirm
-    if (targetOrder < currentOrder) {
-      setMoveTarget(stepKey);
-      setMoveDialogOpen(true);
-    }
-  };
-
-  const getMoveDescription = (target: string): string => {
-    const currentLabel = STATUS_CONFIG[computedStatus]?.label || computedStatus;
-    const targetLabel = STATUS_CONFIG[target]?.label || target;
-    return `This will move the invoice from "${currentLabel}" back to "${targetLabel}". ${
-      target === 'draft' ? 'The sent date will be cleared and you can edit the invoice again.' :
-      'The payment status will be reset.'
-    }`;
   };
 
   const handleRevertToDraft = async () => {
@@ -283,7 +226,7 @@ export default function InvoiceDetailPage() {
 
       {/* Stepper */}
       <div className="mb-4 max-w-2xl print:hidden">
-        <InvoiceStepper status={computedStatus} onStepClick={handleStepClick} />
+        <InvoiceStepper status={computedStatus} />
       </div>
 
       {/* Alerts */}
@@ -381,29 +324,6 @@ export default function InvoiceDetailPage() {
             </TabsContent>
             <TabsContent value="preview">
               {previewComponent}
-              {/* Send Invoice CTA — mobile */}
-              {!isDraft && !isPaid && (
-                <div className="mt-4">
-                  <Button
-                    size="lg"
-                    className="w-full gap-2 text-base"
-                    disabled={!billingEmailTo}
-                    onClick={() => {
-                      if (!billingEmailTo) {
-                        toast.error('No billing email set — add one in facility settings');
-                        return;
-                      }
-                      setComposeOpen(true);
-                    }}
-                  >
-                    <Mail className="h-4 w-4" />
-                    Send Invoice to {billingNameTo || 'Billing Contact'} at {facility?.name || 'Clinic'}
-                  </Button>
-                  <p className="text-[11px] text-muted-foreground text-center mt-1.5">
-                    Please verify all details in the preview above are accurate before sending.
-                  </p>
-                </div>
-              )}
             </TabsContent>
           </Tabs>
         </div>
@@ -441,29 +361,6 @@ export default function InvoiceDetailPage() {
               {isDraft && <span className="text-[10px] text-muted-foreground">Changes update in real-time</span>}
             </div>
             {previewComponent}
-            {/* Send Invoice CTA — visible for sent/overdue/partial */}
-            {!isDraft && !isPaid && (
-              <div className="mt-4 print:hidden">
-                <Button
-                  size="lg"
-                  className="w-full gap-2 text-base"
-                  disabled={!billingEmailTo}
-                  onClick={() => {
-                    if (!billingEmailTo) {
-                      toast.error('No billing email set — add one in facility settings');
-                      return;
-                    }
-                    setComposeOpen(true);
-                  }}
-                >
-                  <Mail className="h-4 w-4" />
-                  Send Invoice to {billingNameTo || 'Billing Contact'} at {facility?.name || 'Clinic'}
-                </Button>
-                <p className="text-[11px] text-muted-foreground text-center mt-1.5">
-                  Please verify all details in the preview above are accurate before sending.
-                </p>
-              </div>
-            )}
           </div>
         </div>
       )}
@@ -483,25 +380,6 @@ export default function InvoiceDetailPage() {
         onRecordPayment={() => setPaymentDialogOpen(true)}
         onOpenCompose={() => setComposeOpen(true)}
       />
-
-      {/* Move Status Dialog — only for backward moves */}
-      <Dialog open={moveDialogOpen} onOpenChange={setMoveDialogOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Undo2 className="h-4 w-4 text-muted-foreground" />
-              Move to {STATUS_CONFIG[moveTarget || '']?.label || moveTarget}?
-            </DialogTitle>
-            <DialogDescription>
-              {moveTarget ? getMoveDescription(moveTarget) : ''}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setMoveDialogOpen(false)}>Cancel</Button>
-            <Button onClick={() => moveTarget && handleStatusTransition(moveTarget)}>Confirm</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Billing Details Dialog */}
       <BillingDetailsDialog
