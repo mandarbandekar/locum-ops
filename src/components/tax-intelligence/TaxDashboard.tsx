@@ -203,8 +203,8 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
         </CollapsibleContent>
       </Collapsible>
 
-      {/* ═══ ENTITY COMPARISON ═══ */}
-      <EntityComparisonCard profile={profile} />
+      {/* ═══ ENTITY COMPARISON — only for non-S-Corp users ═══ */}
+      {!isScorp && <EntityComparisonCard profile={profile} />}
 
       {/* ═══ QUARTERLY TIMELINE ═══ */}
       <div>
