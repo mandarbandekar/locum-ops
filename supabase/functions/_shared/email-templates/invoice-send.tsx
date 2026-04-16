@@ -12,7 +12,6 @@ import {
   Html,
   Link,
   Preview,
-  Section,
   Text,
 } from 'npm:@react-email/components@0.0.22'
 
@@ -50,7 +49,6 @@ export const InvoiceSendEmail = ({
   daysOverdue,
 }: InvoiceSendEmailProps) => {
   const previewText = `Invoice ${invoiceNumber} — $${totalAmount} due ${dueDate}`
-  const customLines = customBody ? customBody.split(/\r?\n/) : []
 
   const defaultBody = isFollowUp
     ? `This is a follow-up regarding an outstanding invoice for services at ${facilityName}.${
@@ -60,6 +58,9 @@ export const InvoiceSendEmail = ({
       }`
     : `Please find your invoice for relief veterinary coverage at ${facilityName}.`
 
+  const bodyContent = customBody && customBody.trim() ? customBody : defaultBody
+  const bodyLines = bodyContent.split(/\r?\n/)
+
   return (
     <Html lang="en" dir="ltr">
       <Head />
@@ -68,70 +69,54 @@ export const InvoiceSendEmail = ({
         <Container style={container}>
           <Heading style={h1}>{senderBusinessName}</Heading>
 
-          {customBody ? (
-            <Text style={text}>
-              {customLines.map((line, i) => (
-                <React.Fragment key={i}>
-                  {line}
-                  {i < customLines.length - 1 ? <br /> : null}
-                </React.Fragment>
-              ))}
+          {bodyLines.map((line, i) => (
+            <Text key={i} style={text}>
+              {line || '\u00A0'}
             </Text>
-          ) : (
-            <Text style={text}>{defaultBody}</Text>
-          )}
+          ))}
 
-          <Section style={summaryCard}>
-            <Text style={summaryRow}>
-              <span style={summaryLabel}>Invoice #:</span>{' '}
-              <strong>{invoiceNumber}</strong>
-            </Text>
-            <Text style={summaryRow}>
-              <span style={summaryLabel}>Date:</span> {invoiceDate}
-            </Text>
-            <Text style={summaryAmountRow}>
-              <span style={summaryLabel}>Amount Due:</span>{' '}
-              <strong style={amountStrong}>${totalAmount}</strong>
-            </Text>
-            <Text style={summaryRow}>
-              <span style={summaryLabel}>Due Date:</span> <strong>{dueDate}</strong>
-            </Text>
-          </Section>
+          <Hr style={hr} />
 
-          <Section style={{ textAlign: 'center', margin: '28px 0 12px' }}>
-            <Button style={button} href={viewInvoiceUrl}>
-              View Invoice
-            </Button>
-          </Section>
+          <Text style={summaryRow}>
+            <strong>Invoice #:</strong> {invoiceNumber}
+          </Text>
+          <Text style={summaryRow}>
+            <strong>Date:</strong> {invoiceDate}
+          </Text>
+          <Text style={summaryRow}>
+            <strong>Amount Due:</strong>{' '}
+            <span style={amountStrong}>${totalAmount}</span>
+          </Text>
+          <Text style={summaryRow}>
+            <strong>Due Date:</strong> {dueDate}
+          </Text>
+
+          <Hr style={hr} />
+
+          <Button style={button} href={viewInvoiceUrl}>
+            View Invoice
+          </Button>
 
           <Text style={pdfLinkText}>
+            or{' '}
             <Link href={downloadPdfUrl} style={link}>
-              Download PDF
+              download the PDF
             </Link>
           </Text>
 
           <Hr style={hr} />
 
+          <Text style={signature}>{senderName}</Text>
+          {senderBusinessName && senderBusinessName !== senderName ? (
+            <Text style={signature}>{senderBusinessName}</Text>
+          ) : null}
           <Text style={signature}>
-            {senderName}
-            {senderBusinessName && senderBusinessName !== senderName ? (
-              <>
-                <br />
-                {senderBusinessName}
-              </>
-            ) : null}
-            <br />
             Reply to:{' '}
             <Link href={`mailto:${senderEmail}`} style={link}>
               {senderEmail}
             </Link>
-            {senderPhone ? (
-              <>
-                <br />
-                {senderPhone}
-              </>
-            ) : null}
           </Text>
+          {senderPhone ? <Text style={signature}>{senderPhone}</Text> : null}
 
           <Text style={footer}>
             Sent via LocumOps ·{' '}
@@ -162,14 +147,7 @@ const text = {
   fontSize: '14px',
   color: 'hsl(215, 13%, 30%)',
   lineHeight: '1.6',
-  margin: '0 0 20px',
-}
-const summaryCard = {
-  backgroundColor: 'hsl(210, 20%, 97%)',
-  border: '1px solid hsl(215, 13%, 88%)',
-  borderRadius: '0.5rem',
-  padding: '16px 20px',
-  margin: '20px 0',
+  margin: '0 0 12px',
 }
 const summaryRow = {
   fontSize: '14px',
@@ -177,19 +155,9 @@ const summaryRow = {
   margin: '4px 0',
   lineHeight: '1.5',
 }
-const summaryAmountRow = {
-  fontSize: '14px',
-  color: 'hsl(215, 13%, 25%)',
-  margin: '8px 0',
-  lineHeight: '1.5',
-}
-const summaryLabel = {
-  color: 'hsl(215, 13%, 50%)',
-  display: 'inline-block',
-  minWidth: '110px',
-}
 const amountStrong = {
   fontSize: '18px',
+  fontWeight: 'bold' as const,
   color: 'hsl(215, 25%, 15%)',
 }
 const button = {
@@ -205,8 +173,7 @@ const button = {
 const pdfLinkText = {
   fontSize: '13px',
   color: 'hsl(215, 13%, 50%)',
-  textAlign: 'center' as const,
-  margin: '0 0 24px',
+  margin: '12px 0 0',
 }
 const link = {
   color: 'hsl(173, 58%, 39%)',
@@ -214,19 +181,18 @@ const link = {
 }
 const hr = {
   borderColor: 'hsl(215, 13%, 90%)',
-  margin: '28px 0 20px',
+  margin: '24px 0',
 }
 const signature = {
   fontSize: '14px',
   color: 'hsl(215, 13%, 25%)',
   lineHeight: '1.6',
-  margin: '0 0 20px',
+  margin: '0 0 4px',
 }
 const footer = {
   fontSize: '12px',
   color: 'hsl(215, 13%, 55%)',
-  textAlign: 'center' as const,
-  margin: '20px 0 0',
+  margin: '24px 0 0',
 }
 const footerLink = {
   color: 'hsl(215, 13%, 55%)',
