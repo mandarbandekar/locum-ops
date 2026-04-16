@@ -240,23 +240,6 @@ export function generateUninvoicedShiftReminders(
 
   return items;
 }
-
-/**
- * Detect shifts ending within a time window (for pre-shift-end reminders).
- * Returns shifts ending between `now` and `now + windowMinutes`.
- */
-export function getShiftsEndingSoon(
-  shifts: Array<{ id: string; facility_id: string; end_datetime: string; rate_applied: number }>,
-  now: Date,
-  windowMinutes = 65,
-): Array<{ id: string; facility_id: string; end_datetime: string; rate_applied: number }> {
-  const windowEnd = new Date(now.getTime() + windowMinutes * 60 * 1000);
-  return shifts.filter(s => {
-    const end = new Date(s.end_datetime);
-    return end > now && end <= windowEnd;
-  });
-}
-
 /** Check if a send_at time falls within quiet hours */
 export function isInQuietHours(
   sendAt: Date,

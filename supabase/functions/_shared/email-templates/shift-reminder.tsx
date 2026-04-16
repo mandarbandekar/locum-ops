@@ -16,39 +16,23 @@ import {
 interface ShiftReminderEmailProps {
   siteName: string
   siteUrl: string
-  reminderType: 'uninvoiced' | 'shift_ending'
+  reminderType: 'uninvoiced'
   facilityName: string
   shiftCount?: number
   totalAmount?: string
-  shiftEndTime?: string
   actionUrl: string
 }
 
 export const ShiftReminderEmail = ({
   siteName = 'LocumOps',
-  siteUrl = '',
-  reminderType,
   facilityName,
   shiftCount,
   totalAmount,
-  shiftEndTime,
   actionUrl,
 }: ShiftReminderEmailProps) => {
-  const isUninvoiced = reminderType === 'uninvoiced'
-
-  const previewText = isUninvoiced
-    ? `You worked ${shiftCount} shift${(shiftCount || 0) > 1 ? 's' : ''} at ${facilityName} — ready to invoice?`
-    : `Your shift at ${facilityName} ends at ${shiftEndTime}`
-
-  const heading = isUninvoiced
-    ? `Ready to invoice ${facilityName}?`
-    : `Shift ending soon`
-
-  const bodyText = isUninvoiced
-    ? `You worked ${shiftCount} shift${(shiftCount || 0) > 1 ? 's' : ''} at ${facilityName} totaling $${totalAmount}. Create an invoice to get paid faster.`
-    : `Your shift at ${facilityName} ends at ${shiftEndTime}. Your invoice will be auto-generated once the shift is complete.`
-
-  const buttonLabel = isUninvoiced ? 'Create Invoice' : 'View Schedule'
+  const previewText = `You worked ${shiftCount} shift${(shiftCount || 0) > 1 ? 's' : ''} at ${facilityName} — ready to invoice?`
+  const heading = `Ready to invoice ${facilityName}?`
+  const bodyText = `You worked ${shiftCount} shift${(shiftCount || 0) > 1 ? 's' : ''} at ${facilityName} totaling $${totalAmount}. Create an invoice to get paid faster.`
 
   return (
     <Html lang="en" dir="ltr">
@@ -59,7 +43,7 @@ export const ShiftReminderEmail = ({
           <Heading style={h1}>{heading}</Heading>
           <Text style={text}>{bodyText}</Text>
           <Button style={button} href={actionUrl}>
-            {buttonLabel}
+            Create Invoice
           </Button>
           <Text style={footer}>
             You're receiving this because you have email reminders enabled in your {siteName} settings.
