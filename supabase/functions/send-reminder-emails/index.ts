@@ -10,6 +10,7 @@ const SITE_NAME = 'LocumOps'
 const SENDER_DOMAIN = 'notify.locum-ops.com'
 const FROM_DOMAIN = 'locum-ops.com'
 const ROOT_DOMAIN = 'locum-ops.com'
+const APP_DOMAIN = 'app.locum-ops.com'
 
 const TWILIO_GATEWAY_URL = 'https://connector-gateway.lovable.dev/twilio'
 
@@ -149,7 +150,7 @@ Deno.serve(async (req) => {
     const getCatSetting = (category: string) =>
       allCatSettings?.find((c: any) => c.category === category)
 
-    const siteUrl = `https://${ROOT_DOMAIN}`
+    const siteUrl = `https://${APP_DOMAIN}`
 
     // ═══════════════════════════════════════════
     // SECTION 1: INVOICE REMINDERS (DIGEST)
@@ -618,7 +619,7 @@ async function handlePaymentReminder(supabase: any, body: any, apiKey: string) {
     ? `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim() || userProfile.company_name || 'Your relief vet'
     : 'Your relief vet'
 
-  const siteUrl = `https://${ROOT_DOMAIN}`
+  const siteUrl = `https://${APP_DOMAIN}`
   const now = new Date()
 
   const subject = `Payment reminder: Invoice ${invoice.invoice_number}`
@@ -627,7 +628,7 @@ async function handlePaymentReminder(supabase: any, body: any, apiKey: string) {
     invoiceNumber: invoice.invoice_number,
     facilityName: facility?.name || 'your clinic',
     amount: invoice.balance_due.toLocaleString(),
-    actionUrl: invoice.share_token ? `${siteUrl}/invoice/${invoice.share_token}` : `${siteUrl}/invoices/${invoice.id}`,
+    actionUrl: invoice.share_token ? `${siteUrl}/invoice/public/${invoice.share_token}` : `${siteUrl}/invoices/${invoice.id}`,
   }
 
   const html = await renderAsync(React.createElement(InvoiceReminderEmail, props))
