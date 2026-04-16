@@ -30,6 +30,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { AutoInvoiceDeleteDialog } from '@/components/invoice/AutoInvoiceDeleteDialog';
+import { InvoiceComposeDialog } from '@/components/invoice/InvoiceComposeDialog';
 
 const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
   draft: { label: 'Draft', variant: 'secondary' },
@@ -59,6 +60,7 @@ export default function InvoiceDetailPage() {
   const [moveTarget, setMoveTarget] = useState<string | null>(null);
   const [billingDialogOpen, setBillingDialogOpen] = useState(false);
   const [sendingReminder, setSendingReminder] = useState(false);
+  const [composeOpen, setComposeOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState<string>('details');
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
@@ -373,28 +375,16 @@ export default function InvoiceDetailPage() {
                   <Button
                     size="lg"
                     className="w-full gap-2 text-base"
-                    disabled={sendingReminder || !billingEmailTo}
-                    onClick={async () => {
+                    disabled={!billingEmailTo}
+                    onClick={() => {
                       if (!billingEmailTo) {
                         toast.error('No billing email set — add one in facility settings');
                         return;
                       }
-                      setSendingReminder(true);
-                      try {
-                        const { supabase } = await import('@/integrations/supabase/client');
-                        await supabase.functions.invoke('send-reminder-emails', {
-                          body: { mode: 'payment_reminder', invoice_id: invoice.id, user_id: user?.id },
-                        });
-                        await addActivity({ invoice_id: invoice.id, action: 'payment_reminder_sent', description: `Invoice sent to ${billingEmailTo}` });
-                        toast.success(`Invoice sent to ${billingEmailTo}`);
-                      } catch {
-                        toast.error('Failed to send invoice');
-                      } finally {
-                        setSendingReminder(false);
-                      }
+                      setComposeOpen(true);
                     }}
                   >
-                    {sendingReminder ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                    <Mail className="h-4 w-4" />
                     Send Invoice to {billingNameTo || 'Billing Contact'} at {facility?.name || 'Clinic'}
                   </Button>
                   <p className="text-[11px] text-muted-foreground text-center mt-1.5">
@@ -445,28 +435,16 @@ export default function InvoiceDetailPage() {
                 <Button
                   size="lg"
                   className="w-full gap-2 text-base"
-                  disabled={sendingReminder || !billingEmailTo}
-                  onClick={async () => {
+                  disabled={!billingEmailTo}
+                  onClick={() => {
                     if (!billingEmailTo) {
                       toast.error('No billing email set — add one in facility settings');
                       return;
                     }
-                    setSendingReminder(true);
-                    try {
-                      const { supabase } = await import('@/integrations/supabase/client');
-                      await supabase.functions.invoke('send-reminder-emails', {
-                        body: { mode: 'payment_reminder', invoice_id: invoice.id, user_id: user?.id },
-                      });
-                      await addActivity({ invoice_id: invoice.id, action: 'payment_reminder_sent', description: `Invoice sent to ${billingEmailTo}` });
-                      toast.success(`Invoice sent to ${billingEmailTo}`);
-                    } catch {
-                      toast.error('Failed to send invoice');
-                    } finally {
-                      setSendingReminder(false);
-                    }
+                    setComposeOpen(true);
                   }}
                 >
-                  {sendingReminder ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                  <Mail className="h-4 w-4" />
                   Send Invoice to {billingNameTo || 'Billing Contact'} at {facility?.name || 'Clinic'}
                 </Button>
                 <p className="text-[11px] text-muted-foreground text-center mt-1.5">
@@ -523,6 +501,26 @@ export default function InvoiceDetailPage() {
             toast.success('Billing contact details saved');
           }
           setBillingDialogOpen(false);
+        }}
+      />
+
+      {/* Compose & Send Invoice Dialog */}
+      <InvoiceComposeDialog
+        open={composeOpen}
+        onOpenChange={setComposeOpen}
+        invoice={invoice}
+        facility={facility}
+        profile={profile}
+        userEmail={user?.email || ''}
+        billingNameTo={billingNameTo}
+        billingEmailTo={billingEmailTo}
+        onSent={async () => {
+          // Reflect new sent_at / status set by the edge function
+          await updateInvoice({
+            ...invoice,
+            status: invoice.status === 'draft' ? 'sent' : invoice.status,
+            sent_at: new Date().toISOString(),
+          });
         }}
       />
     </div>

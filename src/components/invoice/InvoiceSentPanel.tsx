@@ -7,10 +7,13 @@ import { format } from 'date-fns';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
 import { toast } from 'sonner';
 import { RecordPaymentDialog } from '@/components/invoice/RecordPaymentDialog';
+import { InvoiceComposeDialog } from '@/components/invoice/InvoiceComposeDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useTaxIntelligence } from '@/hooks/useTaxIntelligence';
 import { computeEffectiveSetAsideRate, getShiftTaxNudge } from '@/lib/taxNudge';
 import { useData } from '@/contexts/DataContext';
+import { useUserProfile } from '@/contexts/UserProfileContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 async function downloadInvoicePdf(invoiceId: string, invoiceNumber: string) {
   const { data: { session } } = await supabase.auth.getSession();
@@ -46,12 +49,16 @@ export function InvoiceSentPanel({ invoice, items, invoicePayments, facility, bi
   const [shareLoading, setShareLoading] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [showPayNudge, setShowPayNudge] = useState(false);
+  const [composeOpen, setComposeOpen] = useState(false);
   const { profile: taxProfile, hasProfile: hasTaxProfile } = useTaxIntelligence();
+  const { profile } = useUserProfile();
+  const { user } = useAuth();
   const { invoices: allInvoices, shifts } = useData();
   const computedStatus = computeInvoiceStatus(invoice);
   const isPaid = invoice.status === 'paid';
   const hasShareLink = !!invoice.share_token && !invoice.share_token_revoked_at;
   const shareUrl = hasShareLink ? `${window.location.origin}/invoice/public/${invoice.share_token}` : '';
+  const billingEmailTo = (invoice as any).billing_email_to || facility?.invoice_email_to || '';
 
   // Compute effective rate for nudge
   const effectiveRate = (() => {
@@ -146,7 +153,7 @@ export function InvoiceSentPanel({ invoice, items, invoicePayments, facility, bi
       <Card>
         <CardHeader className="pb-1.5 pt-3 px-3"><CardTitle className="text-xs text-muted-foreground uppercase tracking-wider">Send & Share</CardTitle></CardHeader>
         <CardContent className="space-y-2 px-3 pb-3">
-          <Button className="w-full h-auto py-2.5 px-4 text-sm justify-center text-center whitespace-normal" onClick={() => toast.info('Email sending coming soon!')}>
+          <Button className="w-full h-auto py-2.5 px-4 text-sm justify-center text-center whitespace-normal" onClick={() => setComposeOpen(true)}>
             <Send className="mr-2 h-4 w-4 shrink-0" />
             <span>Send invoice to {billingNameTo || 'Billing Contact'} at {facility?.name || 'Facility'} via email</span>
           </Button>
@@ -288,6 +295,24 @@ export function InvoiceSentPanel({ invoice, items, invoicePayments, facility, bi
       </Card>
 
       <RecordPaymentDialog open={showPayment} onOpenChange={setShowPayment} balanceDue={invoice.balance_due} onRecord={handleRecordPayment} />
+
+      <InvoiceComposeDialog
+        open={composeOpen}
+        onOpenChange={setComposeOpen}
+        invoice={invoice}
+        facility={facility}
+        profile={profile}
+        userEmail={user?.email || ''}
+        billingNameTo={billingNameTo}
+        billingEmailTo={billingEmailTo}
+        onSent={async () => {
+          await onUpdateInvoice({
+            ...invoice,
+            status: invoice.status === 'draft' ? 'sent' : invoice.status,
+            sent_at: new Date().toISOString(),
+          });
+        }}
+      />
     </div>
   );
 }
