@@ -232,6 +232,7 @@ Deno.serve(async (req) => {
         text,
         purpose: 'transactional',
         label: 'invoice_send',
+        idempotency_key: `invoice-send-${invoice.id}-${messageId}`,
         reply_to: userAuthEmail || undefined,
         queued_at: new Date().toISOString(),
       },
@@ -273,6 +274,7 @@ Deno.serve(async (req) => {
           text,
           purpose: 'transactional',
           label: 'invoice_send_copy',
+          idempotency_key: `invoice-send-copy-${invoice.id}-${copyId}`,
           queued_at: new Date().toISOString(),
         },
       })
