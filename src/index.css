@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,27 +6,27 @@
 
 @layer base {
   :root {
-    /* Light mode */
-    --background: 140 14% 97%;           /* #F9FBF9 page */
-    --foreground: 60 4% 17%;             /* #2C2C2A text-primary */
+    /* Light mode — Sage & Gold */
+    --background: 90 20% 98%;              /* #FAFBF9 page */
+    --foreground: 60 4% 17%;               /* #2C2C2A text-primary */
 
-    --card: 0 0% 100%;                   /* #FFFFFF */
+    --card: 0 0% 100%;                     /* #FFFFFF */
     --card-foreground: 60 4% 17%;
 
     --popover: 0 0% 100%;
     --popover-foreground: 60 4% 17%;
 
-    --primary: 155 69% 37%;              /* #1D9E75 */
+    --primary: 162 25% 39%;                /* #4A7C6F sage */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 40 22% 93%;             /* #F1EFE8 surface */
-    --secondary-foreground: 60 2% 36%;   /* #5F5E5A text-secondary */
+    --secondary: 135 17% 95%;              /* #EFF3F0 sage mist */
+    --secondary-foreground: 60 2% 36%;     /* #5F5E5A text-secondary */
 
-    --muted: 40 22% 93%;
-    --muted-foreground: 48 2% 52%;       /* #888780 text-muted */
+    --muted: 135 17% 95%;
+    --muted-foreground: 48 2% 52%;         /* #888780 text-muted */
 
-    --accent: 40 22% 93%;
-    --accent-foreground: 16 65% 52%;     /* coral #D85A30 */
+    --accent: 135 17% 95%;
+    --accent-foreground: 39 54% 50%;       /* gold #C49A3C */
 
     --destructive: 0 45% 62%;
     --destructive-foreground: 0 0% 100%;
@@ -34,103 +34,103 @@
     --success: 142 36% 47%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 37 57% 56%;
+    --warning: 39 54% 50%;                 /* gold */
     --warning-foreground: 0 0% 100%;
 
     --info: 208 30% 54%;
     --info-foreground: 0 0% 100%;
 
-    --border: 44 6% 68%;                /* #B4B2A9 border-default */
+    --border: 44 6% 68%;                   /* #B4B2A9 border-default */
     --input: 44 6% 68%;
-    --ring: 155 69% 37%;
+    --ring: 162 25% 39%;
 
     --radius: 1rem;
 
-    /* Sidebar – light: soft mint */
-    --sidebar-background: 150 30% 96%;   /* #F4F9F6 */
-    --sidebar-foreground: 160 82% 17%;   /* #085041 */
-    --sidebar-primary: 0 0% 100%;        /* white active text */
+    /* Sidebar – light: soft sage tint */
+    --sidebar-background: 135 25% 96%;     /* #F2F6F3 */
+    --sidebar-foreground: 162 30% 18%;     /* deep sage text */
+    --sidebar-primary: 0 0% 100%;          /* white active text */
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 160 75% 25%;       /* #0F6E56 active bg */
+    --sidebar-accent: 162 30% 28%;         /* dark sage active bg */
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 152 38% 88%;       /* #D6EDE2 */
-    --sidebar-ring: 155 69% 37%;
-    --sidebar-icon-inactive: 155 50% 58%;/* #5DCAA5 */
-    --sidebar-group-label: 155 69% 37%;  /* #1D9E75 */
-    --sidebar-hover: 155 55% 92%;        /* #E1F5EE */
-    --sidebar-settings-text: 155 50% 58%;/* #5DCAA5 */
-    --sidebar-logo-text: 160 82% 17%;   /* #085041 */
+    --sidebar-border: 140 20% 90%;         /* sage border */
+    --sidebar-ring: 162 25% 39%;
+    --sidebar-icon-inactive: 162 20% 55%;  /* muted sage icons */
+    --sidebar-group-label: 162 25% 39%;    /* sage */
+    --sidebar-hover: 135 25% 93%;          /* light sage hover */
+    --sidebar-settings-text: 162 20% 55%;  /* muted sage */
+    --sidebar-logo-text: 162 30% 18%;      /* deep sage */
 
     /* Tab tokens – light */
-    --tab-container-bg: 40 22% 93%;      /* #F1EFE8 */
-    --tab-inactive-text: 60 2% 36%;      /* #5F5E5A */
-    --tab-active-bg: 160 75% 25%;        /* #0F6E56 */
+    --tab-container-bg: 135 17% 95%;       /* sage mist */
+    --tab-inactive-text: 60 2% 36%;        /* #5F5E5A */
+    --tab-active-bg: 162 30% 28%;          /* dark sage */
     --tab-active-text: 0 0% 100%;
 
     /* Pill tag tokens – light */
-    --pill-paid-bg: 86 40% 72%;          /* #EAF3DE */
-    --pill-paid-text: 100 76% 17%;       /* #27500A */
-    --pill-pending-bg: 35 81% 73%;       /* #FAEEDA */
-    --pill-pending-text: 28 90% 21%;     /* #633806 */
-    --pill-overdue-bg: 14 77% 94%;       /* #FAECE7 */
-    --pill-overdue-text: 16 70% 26%;     /* #712B13 */
-    --pill-sent-bg: 155 55% 92%;         /* #E1F5EE */
-    --pill-sent-text: 160 82% 17%;       /* #085041 */
-    --pill-draft-bg: 40 22% 93%;         /* #F1EFE8 */
-    --pill-draft-text: 50 2% 26%;        /* #444441 */
+    --pill-paid-bg: 86 40% 72%;
+    --pill-paid-text: 100 76% 17%;
+    --pill-pending-bg: 39 70% 85%;         /* warm gold tint */
+    --pill-pending-text: 33 70% 24%;       /* dark gold */
+    --pill-overdue-bg: 14 77% 94%;
+    --pill-overdue-text: 16 70% 26%;
+    --pill-sent-bg: 135 25% 93%;           /* sage tint */
+    --pill-sent-text: 162 30% 18%;         /* deep sage */
+    --pill-draft-bg: 135 17% 95%;          /* sage mist */
+    --pill-draft-text: 50 2% 26%;
 
     /* Soft border */
-    --border-soft: 45 10% 81%;          /* #D3D1C7 border-subtle */
+    --border-soft: 45 10% 81%;
 
     /* Card tokens – light */
-    --card-border: 155 55% 92%;         /* #E1F5EE */
-    --stat-card-bg: 155 55% 92%;        /* #E1F5EE */
-    --stat-card-value: 160 82% 17%;     /* #085041 */
-    --stat-card-label: 160 75% 25%;     /* #0F6E56 */
+    --card-border: 135 25% 93%;            /* sage tint */
+    --stat-card-bg: 135 25% 93%;
+    --stat-card-value: 162 30% 18%;        /* deep sage */
+    --stat-card-label: 162 30% 28%;        /* dark sage */
     --dialog-overlay: 0 0% 0% / 0.5;
 
     /* Button tokens – light */
-    --btn-primary-bg: 160 75% 25%;      /* #0F6E56 */
+    --btn-primary-bg: 162 30% 28%;         /* dark sage */
     --btn-primary-text: 0 0% 100%;
-    --btn-secondary-bg: 155 55% 92%;    /* #E1F5EE */
-    --btn-secondary-text: 160 82% 17%;  /* #085041 */
-    --btn-secondary-border: 155 52% 75%;/* #9FE1CB */
-    --btn-ghost-text: 160 75% 25%;      /* #0F6E56 */
-    --btn-ghost-border: 155 50% 58%;    /* #5DCAA5 */
-    --btn-accent-bg: 16 65% 52%;        /* #D85A30 */
+    --btn-secondary-bg: 135 25% 93%;       /* sage tint */
+    --btn-secondary-text: 162 30% 18%;     /* deep sage */
+    --btn-secondary-border: 162 20% 70%;   /* muted sage */
+    --btn-ghost-text: 162 30% 28%;
+    --btn-ghost-border: 162 20% 55%;
+    --btn-accent-bg: 39 54% 50%;           /* gold */
     --btn-accent-text: 0 0% 100%;
 
     /* Form field tokens – light */
     --input-bg: 0 0% 100%;
-    --input-border: 44 6% 68%;           /* #B4B2A9 */
-    --input-text: 60 4% 17%;             /* #2C2C2A */
-    --input-placeholder: 44 6% 68%;      /* #B4B2A9 */
-    --input-focus-border: 160 75% 25%;   /* #0F6E56 */
-    --input-focus-ring: 160 75% 25% / 0.12;
-    --label-color: 60 2% 36%;            /* #5F5E5A */
+    --input-border: 44 6% 68%;
+    --input-text: 60 4% 17%;
+    --input-placeholder: 44 6% 68%;
+    --input-focus-border: 162 30% 28%;     /* dark sage */
+    --input-focus-ring: 162 30% 28% / 0.12;
+    --label-color: 60 2% 36%;
   }
 
   .dark {
-    --background: 0 0% 10%;              /* #1A1A1A page */
-    --foreground: 40 22% 93%;            /* #F1EFE8 text-primary */
+    --background: 156 10% 10%;             /* #161B19 evergreen-black */
+    --foreground: 135 17% 95%;             /* #EFF3F0 text-primary */
 
-    --card: 0 0% 15%;                    /* #262626 */
-    --card-foreground: 40 22% 93%;
+    --card: 150 13% 13%;                   /* #1E2622 forest dark */
+    --card-foreground: 135 17% 95%;
 
-    --popover: 0 0% 15%;
-    --popover-foreground: 40 22% 93%;
+    --popover: 150 13% 13%;
+    --popover-foreground: 135 17% 95%;
 
-    --primary: 155 50% 58%;              /* #5DCAA5 primary-200 */
+    --primary: 162 30% 52%;                /* lighter sage for dark */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 50 3% 18%;              /* #2F2F2D surface */
-    --secondary-foreground: 44 6% 68%;   /* #B4B2A9 text-secondary */
+    --secondary: 150 10% 16%;              /* dark surface */
+    --secondary-foreground: 44 6% 68%;
 
-    --muted: 50 3% 18%;
-    --muted-foreground: 48 2% 52%;       /* #888780 text-muted */
+    --muted: 150 10% 16%;
+    --muted-foreground: 48 2% 52%;
 
-    --accent: 50 3% 18%;
-    --accent-foreground: 16 55% 60%;     /* lighter coral */
+    --accent: 150 10% 16%;
+    --accent-foreground: 39 50% 60%;       /* lighter gold */
 
     --destructive: 0 45% 62%;
     --destructive-foreground: 0 0% 100%;
@@ -138,77 +138,77 @@
     --success: 142 36% 47%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 37 57% 56%;
+    --warning: 39 54% 50%;
     --warning-foreground: 0 0% 100%;
 
     --info: 208 30% 54%;
     --info-foreground: 0 0% 100%;
 
-    --border: 50 2% 26%;                /* #444441 border-default */
-    --input: 50 2% 26%;
-    --ring: 155 50% 58%;
+    --border: 150 6% 22%;                  /* dark sage border */
+    --input: 150 6% 22%;
+    --ring: 162 30% 52%;
 
-    /* Sidebar – dark: neutral charcoal */
-    --sidebar-background: 0 0% 12%;      /* #1E1E1E */
-    --sidebar-foreground: 0 0% 63%;      /* #A0A0A0 */
+    /* Sidebar – dark: deep forest */
+    --sidebar-background: 171 11% 11%;     /* #1A2120 */
+    --sidebar-foreground: 0 0% 63%;
     --sidebar-primary: 0 0% 100%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 160 75% 25%;       /* #0F6E56 active bg */
+    --sidebar-accent: 162 30% 28%;         /* dark sage active bg */
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 0 0% 18%;          /* #2E2E2E */
-    --sidebar-ring: 155 50% 58%;
-    --sidebar-icon-inactive: 0 0% 40%;   /* #666666 */
-    --sidebar-group-label: 0 0% 40%;     /* #666666 */
-    --sidebar-hover: 0 0% 16%;           /* #2A2A2A */
-    --sidebar-settings-text: 0 0% 40%;   /* #666666 */
-    --sidebar-logo-text: 0 0% 88%;      /* #E0E0E0 */
+    --sidebar-border: 150 8% 16%;
+    --sidebar-ring: 162 30% 52%;
+    --sidebar-icon-inactive: 0 0% 40%;
+    --sidebar-group-label: 0 0% 40%;
+    --sidebar-hover: 150 10% 14%;
+    --sidebar-settings-text: 0 0% 40%;
+    --sidebar-logo-text: 0 0% 88%;
 
     /* Tab tokens – dark */
-    --tab-container-bg: 50 3% 18%;       /* #2F2F2D */
-    --tab-inactive-text: 48 2% 52%;      /* #888780 */
-    --tab-active-bg: 155 69% 37%;        /* #1D9E75 */
+    --tab-container-bg: 150 10% 16%;
+    --tab-inactive-text: 48 2% 52%;
+    --tab-active-bg: 162 25% 39%;          /* sage */
     --tab-active-text: 0 0% 100%;
 
     /* Pill tag tokens – dark */
     --pill-paid-bg: 100 53% 37% / 0.15;
-    --pill-paid-text: 90 40% 73%;        /* #C0DD97 */
-    --pill-pending-bg: 37 78% 41% / 0.15;
-    --pill-pending-text: 40 93% 72%;     /* #FAC775 */
+    --pill-paid-text: 90 40% 73%;
+    --pill-pending-bg: 39 60% 45% / 0.15;  /* gold tint */
+    --pill-pending-text: 39 70% 72%;       /* light gold */
     --pill-overdue-bg: 16 65% 52% / 0.15;
-    --pill-overdue-text: 16 80% 83%;     /* #F5C4B3 */
-    --pill-sent-bg: 155 69% 37% / 0.15;
-    --pill-sent-text: 155 52% 75%;       /* #9FE1CB */
+    --pill-overdue-text: 16 80% 83%;
+    --pill-sent-bg: 162 25% 39% / 0.15;
+    --pill-sent-text: 162 25% 70%;
     --pill-draft-bg: 48 2% 52% / 0.12;
-    --pill-draft-text: 44 6% 68%;        /* #B4B2A9 */
+    --pill-draft-text: 44 6% 68%;
 
-    --border-soft: 50 3% 22%;           /* #3A3A38 border-subtle */
+    --border-soft: 150 6% 20%;
 
     /* Card tokens – dark */
-    --card-border: 50 3% 22%;           /* #3A3A38 */
-    --stat-card-bg: 155 69% 37% / 0.12;
-    --stat-card-value: 155 52% 75%;     /* #9FE1CB */
-    --stat-card-label: 155 50% 58%;     /* #5DCAA5 */
+    --card-border: 150 6% 20%;
+    --stat-card-bg: 162 25% 39% / 0.12;
+    --stat-card-value: 162 25% 70%;
+    --stat-card-label: 162 30% 52%;
     --dialog-overlay: 0 0% 0% / 0.7;
 
     /* Button tokens – dark */
-    --btn-primary-bg: 155 69% 37%;      /* #1D9E75 */
+    --btn-primary-bg: 162 25% 39%;         /* sage */
     --btn-primary-text: 0 0% 100%;
-    --btn-secondary-bg: 155 69% 37% / 0.15;
-    --btn-secondary-text: 155 52% 75%;  /* #9FE1CB */
-    --btn-secondary-border: 155 50% 58% / 0.3;
-    --btn-ghost-text: 155 52% 75%;      /* #9FE1CB */
-    --btn-ghost-border: 155 50% 58% / 0.3;
-    --btn-accent-bg: 16 65% 52%;        /* #D85A30 */
+    --btn-secondary-bg: 162 25% 39% / 0.15;
+    --btn-secondary-text: 162 25% 70%;
+    --btn-secondary-border: 162 20% 55% / 0.3;
+    --btn-ghost-text: 162 25% 70%;
+    --btn-ghost-border: 162 20% 55% / 0.3;
+    --btn-accent-bg: 39 54% 50%;           /* gold */
     --btn-accent-text: 0 0% 100%;
 
     /* Form field tokens – dark */
-    --input-bg: 50 3% 18%;              /* #2F2F2D */
-    --input-border: 50 2% 26%;          /* #444441 */
-    --input-text: 40 22% 93%;           /* #F1EFE8 */
-    --input-placeholder: 60 2% 36%;     /* #5F5E5A */
-    --input-focus-border: 155 69% 37%;  /* #1D9E75 */
-    --input-focus-ring: 155 69% 37% / 0.15;
-    --label-color: 44 6% 68%;           /* #B4B2A9 */
+    --input-bg: 150 10% 16%;
+    --input-border: 150 6% 22%;
+    --input-text: 135 17% 95%;
+    --input-placeholder: 60 2% 36%;
+    --input-focus-border: 162 25% 39%;
+    --input-focus-ring: 162 25% 39% / 0.15;
+    --label-color: 44 6% 68%;
   }
 }
 
@@ -242,7 +242,7 @@
   }
   .page-title {
     @apply text-[22px] sm:text-[26px] md:text-[34px] font-bold tracking-tight text-foreground;
-    font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+    font-family: 'DM Sans', 'Inter', system-ui, sans-serif;
   }
   .page-subtitle {
     @apply text-[13px] sm:text-[15px] text-muted-foreground mt-0.5;
