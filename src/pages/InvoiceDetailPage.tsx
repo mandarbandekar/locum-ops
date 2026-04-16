@@ -385,25 +385,6 @@ export default function InvoiceDetailPage() {
         onOpenCompose={() => setComposeOpen(true)}
       />
 
-      {/* Move Status Dialog — only for backward moves */}
-      <Dialog open={moveDialogOpen} onOpenChange={setMoveDialogOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Undo2 className="h-4 w-4 text-muted-foreground" />
-              Move to {STATUS_CONFIG[moveTarget || '']?.label || moveTarget}?
-            </DialogTitle>
-            <DialogDescription>
-              {moveTarget ? getMoveDescription(moveTarget) : ''}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setMoveDialogOpen(false)}>Cancel</Button>
-            <Button onClick={() => moveTarget && handleStatusTransition(moveTarget)}>Confirm</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* Billing Details Dialog */}
       <BillingDetailsDialog
         open={billingDialogOpen}
