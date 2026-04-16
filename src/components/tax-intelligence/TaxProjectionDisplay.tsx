@@ -241,12 +241,21 @@ export default function TaxProjectionDisplay({
             negative
             tip="Calculated using 2025 federal progressive brackets on your projected annual taxable income."
           />
-          <WaterfallRow
-            label="− Self-employment tax"
-            value={`−$${fmt(quarterlySE)}`}
-            negative
-            tip="15.3% on 92.35% of net income — covers Social Security (12.4%) and Medicare (2.9%)."
-          />
+          {isScorp ? (
+            <WaterfallRow
+              label="− Payroll taxes (employer FICA)"
+              value={`−$${fmt(quarterlyEmployerFica)}`}
+              negative
+              tip="As an S-Corp, you pay employer-side FICA (7.65%) on your reasonable salary instead of full 15.3% SE tax on all net income."
+            />
+          ) : (
+            <WaterfallRow
+              label="− Self-employment tax"
+              value={`−$${fmt(quarterlySE)}`}
+              negative
+              tip="15.3% on 92.35% of net income — covers Social Security (12.4%) and Medicare (2.9%)."
+            />
+          )}
           {quarterlyState > 0 && (
             <WaterfallRow
               label={`− ${stateName} state tax`}
@@ -275,8 +284,8 @@ export default function TaxProjectionDisplay({
         </CollapsibleContent>
       </Collapsible>
 
-      {/* ═══ SECTION 4: S-CORP CALLOUT ═══ */}
-      {scorpSavings > 0 && (
+      {/* ═══ SECTION 4: S-CORP CALLOUT (only for 1099 users) ═══ */}
+      {!isScorp && scorpSavings > 0 && (
         <div className="flex items-start gap-3 rounded-[14px] border border-border bg-card px-4 py-3">
           <Lightbulb className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
           <div>
