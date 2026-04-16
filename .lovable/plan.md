@@ -1,26 +1,16 @@
 
 
-## Plan: Make Schedule Impact Module Entity-Aware (1099 vs S-Corp)
+## Plan: Require Tax Profile Before Showing Tax Data
 
-### Problem
-`TaxProjectionDisplay` always calculates taxes as 1099 (hardcoded `entityType: '1099'` on line 91), regardless of what the user selected in their tax profile. S-Corp users see incorrect numbers and a misleading "S-Corp could save you..." callout.
+### What changes
+Currently, when a user has shifts but no tax profile, the Tax Estimate page shows a projection display with rough estimates. Instead, **always** show the "Set Up Your Tax Profile" prompt — regardless of whether shifts exist — until the user completes the profile setup. No tax numbers should appear before that.
 
-### Changes
+### How it works
+In `src/components/business/TaxEstimateTab.tsx`, simplify the `!hasProfile` branch: remove the `shifts.length > 0` conditional that shows `TaxProjectionDisplay`, and always render the setup CTA (the "Answer 8 quick questions…" empty state). This ensures every user must complete the tax profile wizard before seeing any quarterly tax information.
 
-**`src/components/tax-intelligence/TaxProjectionDisplay.tsx`**
-- Add optional props: `entityType?: '1099' | 'scorp'`, `scorpSalary?: number`, `filingStatus?`, `spouseW2Income?`, `retirementContributions?`, `annualBusinessExpenses?`
-- When `entityType === 'scorp'`, use `calculateSCorpTax()` instead of `calculate1099Tax()` for the main numbers
-- Adjust waterfall labels for S-Corp: replace "Self-employment tax" with "Payroll taxes (employer FICA)" and show salary/distribution split
-- Hide the S-Corp savings callout (Section 4) when user is already S-Corp
-- Pass through profile fields (filing status, retirement, expenses) so calculations match the full profile
-
-**`src/components/tax-intelligence/TaxDashboard.tsx`**
-- Pass `entityType`, `scorpSalary`, and other profile fields to `TaxProjectionDisplay` at line 269
-
-**`src/components/business/TaxEstimateTab.tsx`**
-- Pass profile fields through to `TaxProjectionDisplay` in the pre-profile state (lines ~72-78) — here it stays 1099 default since no profile exists yet
-
-### Behavior
-- **1099 users**: No change — same calculations, S-Corp callout still shown
-- **S-Corp users**: Calculations use S-Corp logic (salary + distribution split, employer FICA instead of full SE tax), waterfall reflects S-Corp structure, S-Corp callout hidden
+### File modified
+**`src/components/business/TaxEstimateTab.tsx`** (lines 62–113)
+- Remove the `shifts.length > 0` branch that renders `TaxProjectionDisplay` and the "Your tax snapshot" header
+- Always show the "Set Up Your Tax Profile" empty state with the Get Started button when `!hasProfile`
+- Remove unused imports (`TaxProjectionDisplay`, `daysPerWeekToIndex`, `indexToDaysPerWeek`, `useData`) and schedule-related state that's no longer needed in the pre-profile path
 
