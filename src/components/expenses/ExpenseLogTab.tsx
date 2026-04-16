@@ -6,19 +6,17 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Plus, Trash2, Search, Receipt, Car, DollarSign, TrendingUp, CalendarDays, MapPin, CheckCircle2, AlertCircle, Info, Hash, X, Repeat } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Plus, Trash2, Search, Receipt, DollarSign, TrendingUp, CalendarDays, X, Repeat, PiggyBank } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
-import { useUserProfile } from '@/contexts/UserProfileContext';
 import { EXPENSE_CATEGORIES, findSubcategory } from '@/lib/expenseCategories';
 import AddExpenseDialog from './AddExpenseDialog';
+import LogExpenseSheet from './LogExpenseSheet';
 import { ExpenseOnboarding } from './ExpenseOnboarding';
-import ExpenseCategoryGrid from './ExpenseCategoryGrid';
-
-import { MileageReviewBanner } from './MileageReviewBanner';
-import MileageBackfillCard from './MileageBackfillCard';
 import type { Expense } from '@/hooks/useExpenses';
+import type { TaxIntelligenceProfile } from '@/hooks/useTaxIntelligence';
+import { getCombinedMarginalRate, getAnnualizedIncome } from '@/lib/taxStrategies';
+import { getStateTaxRate } from '@/lib/stateTaxData';
+import type { FilingStatus } from '@/lib/taxConstants2026';
 
 interface Props {
   expenses: Expense[];
@@ -39,18 +37,16 @@ interface Props {
   dismissMileage: (id: string) => Promise<void>;
   confirmAllMileage: () => Promise<void>;
   reload: () => void;
+  taxProfile?: TaxIntelligenceProfile | null;
 }
 
 export default function ExpenseLogTab({
   expenses, loading, config, addExpense, editExpense, deleteExpense, uploadReceipt,
-  ytdTotalCents, ytdDeductibleCents, thisMonthCents,
-  draftMileageExpenses, confirmedMileageExpenses, ytdMileageMiles, ytdMileageDeductionCents,
-  confirmMileage, dismissMileage, confirmAllMileage, reload,
+  ytdTotalCents, ytdDeductibleCents, thisMonthCents, taxProfile,
 }: Props) {
-  const navigate = useNavigate();
-  const { facilities } = useData();
-  const { profile: userProfile } = useUserProfile();
+  const { facilities, shifts, invoices } = useData();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
@@ -60,8 +56,22 @@ export default function ExpenseLogTab({
     return localStorage.getItem('expense-onboarding-dismissed') !== 'true';
   });
 
-  const homeAddressSet = !!(userProfile as any)?.home_address;
-  const irsRate = config.irs_mileage_rate_cents;
+  // Calculate estimated tax savings
+  const estimatedTaxSavingsCents = useMemo(() => {
+    if (!taxProfile?.setup_completed_at) {
+      return Math.round(ytdDeductibleCents * 0.24);
+    }
+    const annualized = getAnnualizedIncome(shifts, invoices);
+    const stateRate = getStateTaxRate(taxProfile.state_code);
+    const rate = getCombinedMarginalRate(
+      annualized,
+      taxProfile.filing_status as FilingStatus,
+      stateRate,
+      taxProfile.entity_type,
+      taxProfile.scorp_salary,
+    );
+    return Math.round(ytdDeductibleCents * rate);
+  }, [ytdDeductibleCents, taxProfile, shifts, invoices]);
 
   const filtered = useMemo(() => {
     let list = expenses;
@@ -82,12 +92,6 @@ export default function ExpenseLogTab({
     return m;
   }, [facilities]);
 
-  function openCategoryAdd(subcategory: string) {
-    setEditingExpense(null);
-    setInitialSubcategory(subcategory);
-    setDialogOpen(true);
-  }
-
   function openNew() {
     setEditingExpense(null);
     setInitialSubcategory('');
@@ -103,7 +107,6 @@ export default function ExpenseLogTab({
   if (loading) return <p className="text-muted-foreground py-8 text-center">Loading…</p>;
 
   const hasExpenses = expenses.length > 0;
-
   const fmt = (cents: number) => '$' + (cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   return (
@@ -136,7 +139,7 @@ export default function ExpenseLogTab({
             </div>
             <h2 className="text-lg font-bold tracking-tight">Track Every Deductible Expense</h2>
             <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              Tap a category below to log your first expense. We'll auto-calculate deductions and build your YTD summary.
+              Tap "Log Expense" below to record your first expense. We'll auto-calculate deductions and build your YTD summary.
             </p>
           </CardContent>
         </Card>
@@ -144,8 +147,8 @@ export default function ExpenseLogTab({
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             { label: 'YTD Spent', value: fmt(ytdTotalCents), icon: DollarSign, color: 'text-primary' },
-            { label: 'YTD Write-Offs', value: fmt(ytdDeductibleCents), icon: TrendingUp, color: 'text-green-600' },
-            { label: 'YTD Mileage', value: `${ytdMileageMiles.toLocaleString()} mi`, icon: Car, color: 'text-blue-600' },
+            { label: 'Est. Tax Savings YTD', value: fmt(estimatedTaxSavingsCents), icon: PiggyBank, color: 'text-green-600' },
+            { label: 'YTD Write-Offs', value: fmt(ytdDeductibleCents), icon: TrendingUp, color: 'text-blue-600' },
             { label: 'This Month', value: fmt(thisMonthCents), icon: CalendarDays, color: 'text-muted-foreground' },
           ].map(stat => (
             <Card key={stat.label}>
@@ -161,55 +164,11 @@ export default function ExpenseLogTab({
         </div>
       ) : null}
 
-      {/* Category Grid — primary entry point */}
-      <ExpenseCategoryGrid onSelectCategory={openCategoryAdd} />
-
-      {/* Pending Mileage Review */}
-      <MileageReviewBanner
-        drafts={draftMileageExpenses}
-        onConfirm={confirmMileage}
-        onDismiss={dismissMileage}
-        onConfirmAll={confirmAllMileage}
-        onEdit={openEdit}
-      />
-
-      {/* Mileage Setup Status */}
-      <Card className={homeAddressSet ? 'border-green-200 dark:border-green-900' : 'border-amber-200 dark:border-amber-900'}>
-        <CardContent className="py-3 px-4 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            {homeAddressSet ? (
-              <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
-            ) : (
-              <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
-            )}
-            <div>
-              <p className="text-sm font-medium">
-                {homeAddressSet ? 'Auto-mileage active' : 'Set your home address for auto-mileage'}
-              </p>
-              <p className="text-[11px] text-muted-foreground">
-                IRS rate: ${(irsRate / 100).toFixed(2)}/mile ({new Date().getFullYear()})
-              </p>
-            </div>
-          </div>
-          {!homeAddressSet && (
-            <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => navigate('/settings/profile')}>
-              <MapPin className="h-3.5 w-3.5" />
-              Set Address
-            </Button>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Backfill Past Shifts */}
-      <MileageBackfillCard onComplete={reload} />
-
-      {/* Secondary manual add */}
-      <div className="flex justify-center">
-        <Button variant="outline" size="sm" className="gap-1.5" onClick={openNew}>
-          <Plus className="h-3.5 w-3.5" />
-          Log Expense Manually
-        </Button>
-      </div>
+      {/* Primary Log Expense Button */}
+      <Button className="w-full gap-2 h-12 text-base" onClick={() => setSheetOpen(true)}>
+        <Plus className="h-5 w-5" />
+        Log Expense
+      </Button>
 
       {/* IRS Receipt Reminder */}
       <Alert className="border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20">
@@ -309,6 +268,13 @@ export default function ExpenseLogTab({
           </div>
         </div>
       )}
+
+      {/* Log Expense Bottom Sheet */}
+      <LogExpenseSheet
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        onManualEntry={openNew}
+      />
 
       <AddExpenseDialog
         open={dialogOpen}

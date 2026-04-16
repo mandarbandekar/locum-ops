@@ -15,7 +15,7 @@ export default function LogExpenseSheet({ open, onOpenChange, onManualEntry }: P
     {
       icon: Camera,
       label: 'Snap Receipt',
-      description: 'Take a photo and we'll extract the details',
+      description: "Take a photo and we'll extract the details",
       comingSoon: true,
     },
     {
