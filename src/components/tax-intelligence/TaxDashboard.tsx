@@ -273,6 +273,12 @@ export default function TaxDashboard({ profile, onEditProfile, onSaveProfile }: 
         selectedScheduleIndex={scheduleIndex}
         onScheduleChange={handleScheduleChange}
         variant="page"
+        entityType={(profile.entity_type as '1099' | 'scorp') || '1099'}
+        scorpSalary={profile.scorp_salary || undefined}
+        filingStatus={profile.filing_status || undefined}
+        spouseW2Income={profile.spouse_w2_income || undefined}
+        retirementContributions={profile.retirement_contributions || undefined}
+        annualBusinessExpenses={profile.annual_business_expenses || undefined}
       />
 
       {/* ═══ SAVE NUDGE ═══ */}
