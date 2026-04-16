@@ -230,7 +230,7 @@ export default function InvoiceDetailPage() {
 
       {/* Stepper */}
       <div className="mb-4 max-w-2xl print:hidden">
-        <InvoiceStepper status={computedStatus} onStepClick={handleStepClick} />
+        <InvoiceStepper status={computedStatus} />
       </div>
 
       {/* Alerts */}
@@ -328,29 +328,6 @@ export default function InvoiceDetailPage() {
             </TabsContent>
             <TabsContent value="preview">
               {previewComponent}
-              {/* Send Invoice CTA — mobile */}
-              {!isDraft && !isPaid && (
-                <div className="mt-4">
-                  <Button
-                    size="lg"
-                    className="w-full gap-2 text-base"
-                    disabled={!billingEmailTo}
-                    onClick={() => {
-                      if (!billingEmailTo) {
-                        toast.error('No billing email set — add one in facility settings');
-                        return;
-                      }
-                      setComposeOpen(true);
-                    }}
-                  >
-                    <Mail className="h-4 w-4" />
-                    Send Invoice to {billingNameTo || 'Billing Contact'} at {facility?.name || 'Clinic'}
-                  </Button>
-                  <p className="text-[11px] text-muted-foreground text-center mt-1.5">
-                    Please verify all details in the preview above are accurate before sending.
-                  </p>
-                </div>
-              )}
             </TabsContent>
           </Tabs>
         </div>
@@ -388,29 +365,6 @@ export default function InvoiceDetailPage() {
               {isDraft && <span className="text-[10px] text-muted-foreground">Changes update in real-time</span>}
             </div>
             {previewComponent}
-            {/* Send Invoice CTA — visible for sent/overdue/partial */}
-            {!isDraft && !isPaid && (
-              <div className="mt-4 print:hidden">
-                <Button
-                  size="lg"
-                  className="w-full gap-2 text-base"
-                  disabled={!billingEmailTo}
-                  onClick={() => {
-                    if (!billingEmailTo) {
-                      toast.error('No billing email set — add one in facility settings');
-                      return;
-                    }
-                    setComposeOpen(true);
-                  }}
-                >
-                  <Mail className="h-4 w-4" />
-                  Send Invoice to {billingNameTo || 'Billing Contact'} at {facility?.name || 'Clinic'}
-                </Button>
-                <p className="text-[11px] text-muted-foreground text-center mt-1.5">
-                  Please verify all details in the preview above are accurate before sending.
-                </p>
-              </div>
-            )}
           </div>
         </div>
       )}
