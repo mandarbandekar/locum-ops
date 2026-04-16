@@ -46,14 +46,16 @@ interface InvoiceActionBarProps {
   onAddActivity: (activity: any) => Promise<void>;
   onRecordPayment?: () => void;
   userId?: string;
+  onOpenCompose?: () => void;
 }
 
-export function InvoiceActionBar({ invoice, items, facility, profile, dueDate, billingNameTo, onSave, onUpdateInvoice, onAddActivity, onRecordPayment, userId }: InvoiceActionBarProps) {
+export function InvoiceActionBar({ invoice, items, facility, profile, dueDate, billingNameTo, onSave, onUpdateInvoice, onAddActivity, onRecordPayment, userId, onOpenCompose }: InvoiceActionBarProps) {
   const [saving, setSaving] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [shareLoading, setShareLoading] = useState(false);
   const [emailSending, setEmailSending] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const isDraft = invoice.status === 'draft';
   const computedStatus = computeInvoiceStatus(invoice);
