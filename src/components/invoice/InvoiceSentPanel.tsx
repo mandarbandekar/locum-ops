@@ -7,10 +7,13 @@ import { format } from 'date-fns';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
 import { toast } from 'sonner';
 import { RecordPaymentDialog } from '@/components/invoice/RecordPaymentDialog';
+import { InvoiceComposeDialog } from '@/components/invoice/InvoiceComposeDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useTaxIntelligence } from '@/hooks/useTaxIntelligence';
 import { computeEffectiveSetAsideRate, getShiftTaxNudge } from '@/lib/taxNudge';
 import { useData } from '@/contexts/DataContext';
+import { useUserProfile } from '@/contexts/UserProfileContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 async function downloadInvoicePdf(invoiceId: string, invoiceNumber: string) {
   const { data: { session } } = await supabase.auth.getSession();
