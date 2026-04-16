@@ -19,8 +19,6 @@ project_id = "eavfxjsdamienrcginvi"
     verify_jwt = false
   [functions.calendar-ics-feed]
     verify_jwt = false
-  [functions.send-shift-reminders]
-    verify_jwt = false
   [functions.auto-mileage-tracker]
     verify_jwt = false
   [functions.public-confirmation]

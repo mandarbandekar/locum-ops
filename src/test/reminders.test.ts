@@ -5,7 +5,6 @@ import {
   generateOutreachReminders,
   generateCredentialReminders,
   generateUninvoicedShiftReminders,
-  getShiftsEndingSoon,
   isInQuietHours,
   filterByPreferences,
 } from '@/lib/reminderEngine';
@@ -237,25 +236,4 @@ describe('Reminder Engine', () => {
     });
   });
 
-  describe('getShiftsEndingSoon', () => {
-    it('returns shifts ending within the window', () => {
-      const now = new Date('2026-03-15T14:00:00');
-      const shifts = [
-        { id: 's1', facility_id: 'f1', end_datetime: '2026-03-15T15:00:00', rate_applied: 800 },
-        { id: 's2', facility_id: 'f1', end_datetime: '2026-03-15T16:30:00', rate_applied: 800 },
-      ];
-      const result = getShiftsEndingSoon(shifts, now, 65);
-      expect(result).toHaveLength(1);
-      expect(result[0].id).toBe('s1');
-    });
-
-    it('excludes shifts already ended', () => {
-      const now = new Date('2026-03-15T16:00:00');
-      const shifts = [
-        { id: 's1', facility_id: 'f1', end_datetime: '2026-03-15T15:00:00', rate_applied: 800 },
-      ];
-      const result = getShiftsEndingSoon(shifts, now, 65);
-      expect(result).toHaveLength(0);
-    });
-  });
 });
