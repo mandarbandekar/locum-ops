@@ -143,8 +143,14 @@ export function InvoiceActionBar({ invoice, items, facility, profile, dueDate, b
               <Save className="mr-1 h-3.5 w-3.5" />
               <span className="hidden sm:inline">{saving ? 'Saving…' : 'Save'}</span>
             </Button>
-            <Button size="sm" onClick={handleProceedToSend} disabled={sending} className="shrink-0">
-              {sending ? 'Processing…' : <><span className="hidden sm:inline">Mark as Sent</span><span className="sm:hidden">Send</span> <ArrowRight className="ml-1 h-3.5 w-3.5" /></>}
+            <Button variant="outline" size="sm" onClick={() => setConfirmOpen(true)} disabled={sending} className="shrink-0">
+              <span className="hidden sm:inline">I already sent this</span>
+              <span className="sm:hidden">Already Sent</span>
+            </Button>
+            <Button size="sm" onClick={onOpenCompose} className="shrink-0">
+              <Send className="mr-1 h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Send to Clinic</span>
+              <span className="sm:hidden">Send</span>
             </Button>
           </>
         )}
