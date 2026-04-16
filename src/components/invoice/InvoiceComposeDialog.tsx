@@ -189,7 +189,7 @@ ${signOffName}${company ? `\n${company}` : ""}`;
               placeholder="billing@clinic.com"
             />
             {!trimmedTo && (
-              <p className="text-xs text-amber-600 dark:text-amber-500 mt-1.5">
+              <p className="text-xs text-warning mt-1.5">
                 No billing email configured — add one in clinic settings.
               </p>
             )}
