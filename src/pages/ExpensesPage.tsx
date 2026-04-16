@@ -5,9 +5,11 @@ import ExpenseLogTab from '@/components/expenses/ExpenseLogTab';
 import MileageTrackerTab from '@/components/expenses/MileageTrackerTab';
 import ExpenseSummaryTab from '@/components/expenses/ExpenseSummaryTab';
 import { useExpenses } from '@/hooks/useExpenses';
+import { useTaxIntelligence } from '@/hooks/useTaxIntelligence';
 
 export default function ExpensesPage() {
   const expenseData = useExpenses();
+  const { taxProfile } = useTaxIntelligence();
   const draftCount = expenseData.draftMileageExpenses.length;
 
   return (
@@ -24,29 +26,29 @@ export default function ExpensesPage() {
         </div>
       </div>
 
-    <Tabs defaultValue="tracker" className="space-y-4">
-      <TabsList>
-        <TabsTrigger value="tracker">Expense Tracker</TabsTrigger>
-        <TabsTrigger value="mileage" className="gap-1.5">
-          Mileage Tracker
-          {draftCount > 0 && (
-            <Badge variant="destructive" className="h-5 min-w-[20px] px-1.5 text-[10px] font-bold">
-              {draftCount}
-            </Badge>
-          )}
-        </TabsTrigger>
-        <TabsTrigger value="summary">Write-Off Summary</TabsTrigger>
-      </TabsList>
-      <TabsContent value="tracker">
-        <ExpenseLogTab {...expenseData} />
-      </TabsContent>
-      <TabsContent value="mileage">
-        <MileageTrackerTab {...expenseData} />
-      </TabsContent>
-      <TabsContent value="summary">
-        <ExpenseSummaryTab {...expenseData} />
-      </TabsContent>
-    </Tabs>
+      <Tabs defaultValue="expenses" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="expenses">Expenses</TabsTrigger>
+          <TabsTrigger value="mileage" className="gap-1.5">
+            Mileage
+            {draftCount > 0 && (
+              <Badge variant="destructive" className="h-5 min-w-[20px] px-1.5 text-[10px] font-bold">
+                {draftCount}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="summary">Write-Off Summary</TabsTrigger>
+        </TabsList>
+        <TabsContent value="expenses">
+          <ExpenseLogTab {...expenseData} taxProfile={taxProfile} />
+        </TabsContent>
+        <TabsContent value="mileage">
+          <MileageTrackerTab {...expenseData} />
+        </TabsContent>
+        <TabsContent value="summary">
+          <ExpenseSummaryTab {...expenseData} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
