@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Loader2, Paperclip } from "lucide-react";
 import { toast } from "sonner";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, differenceInCalendarDays } from "date-fns";
 
 import {
   Dialog,
@@ -27,6 +27,7 @@ interface InvoiceComposeDialogProps {
   billingNameTo: string;
   billingEmailTo: string;
   onSent: () => void;
+  mode?: 'initial' | 'followup';
 }
 
 function safeFormatDate(d: string | null | undefined): string {
@@ -56,7 +57,10 @@ export function InvoiceComposeDialog({
   billingNameTo,
   billingEmailTo,
   onSent,
+  mode = 'initial',
 }: InvoiceComposeDialogProps) {
+  const isFollowup = mode === 'followup';
+
   const senderName = useMemo(() => {
     const company = profile?.company_name?.trim();
     if (company) return company;
@@ -74,16 +78,40 @@ export function InvoiceComposeDialog({
     [invoice?.balance_due, invoice?.total_amount],
   );
 
-  const defaultSubject = useMemo(
-    () => `Invoice ${invoice?.invoice_number ?? ""} from ${senderName}`,
-    [invoice?.invoice_number, senderName],
-  );
+  const daysOverdue = useMemo(() => {
+    if (!invoice?.due_date) return 0;
+    try {
+      const days = differenceInCalendarDays(new Date(), parseISO(invoice.due_date));
+      return Math.max(0, days);
+    } catch {
+      return 0;
+    }
+  }, [invoice?.due_date]);
+
+  const defaultSubject = useMemo(() => {
+    if (isFollowup) {
+      return `Follow-up: Invoice ${invoice?.invoice_number ?? ""} — payment overdue`;
+    }
+    return `Invoice ${invoice?.invoice_number ?? ""} from ${senderName}`;
+  }, [invoice?.invoice_number, senderName, isFollowup]);
 
   const defaultBody = useMemo(() => {
     const greetingName = billingNameTo?.trim() || "there";
     const signOffName =
       [profile?.first_name, profile?.last_name].filter(Boolean).join(" ").trim() || senderName;
     const company = profile?.company_name?.trim();
+
+    if (isFollowup) {
+      return `Hi ${greetingName},
+
+I'm following up on invoice ${invoice?.invoice_number ?? ""} for relief coverage at ${facility?.name ?? ""}. The total of $${totalAmountFormatted} was due on ${dueDateFormatted || "the due date"} and is now ${daysOverdue} day${daysOverdue === 1 ? "" : "s"} overdue.
+
+You can view the invoice using the link in this email. Please let me know if you have any questions or if there's anything I can help with on your end.
+
+Thanks,
+${signOffName}${company ? `\n${company}` : ""}`;
+    }
+
     return `Hi ${greetingName},
 
 Please find attached invoice ${invoice?.invoice_number ?? ""} for relief coverage at ${facility?.name ?? ""}. Total due: $${totalAmountFormatted}${dueDateFormatted ? `, by ${dueDateFormatted}` : ""}.
@@ -98,8 +126,10 @@ ${signOffName}${company ? `\n${company}` : ""}`;
     facility?.name,
     totalAmountFormatted,
     dueDateFormatted,
+    daysOverdue,
     profile,
     senderName,
+    isFollowup,
   ]);
 
   const [to, setTo] = useState(billingEmailTo || "");
@@ -143,6 +173,7 @@ ${signOffName}${company ? `\n${company}` : ""}`;
         invoice_id: invoice.id,
         user_id: user.id,
         cc_sender: ccSender,
+        mode,
       };
       if (subject.trim() !== defaultSubject.trim()) {
         payload.custom_subject = subject;
@@ -157,12 +188,16 @@ ${signOffName}${company ? `\n${company}` : ""}`;
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
-      toast.success(`Invoice sent to ${trimmedTo}`);
+      toast.success(isFollowup ? `Follow-up sent to ${trimmedTo}` : `Invoice sent to ${trimmedTo}`);
       onSent();
       onOpenChange(false);
     } catch (e) {
       console.error("send-invoice-to-clinic failed", e);
-      toast.error("Failed to send invoice — check the billing email and try again");
+      toast.error(
+        isFollowup
+          ? "Failed to send follow-up — check the billing email and try again"
+          : "Failed to send invoice — check the billing email and try again",
+      );
     } finally {
       setSending(false);
     }
@@ -172,7 +207,11 @@ ${signOffName}${company ? `\n${company}` : ""}`;
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[680px]">
         <DialogHeader>
-          <DialogTitle>Send Invoice {invoice?.invoice_number}</DialogTitle>
+          <DialogTitle>
+            {isFollowup
+              ? `Follow Up: Invoice ${invoice?.invoice_number ?? ""}`
+              : `Send Invoice ${invoice?.invoice_number ?? ""}`}
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-5">
@@ -261,7 +300,11 @@ ${signOffName}${company ? `\n${company}` : ""}`;
           </Button>
           <Button onClick={handleSend} disabled={!canSend}>
             {sending && <Loader2 className="h-4 w-4 animate-spin" />}
-            {sending ? "Sending..." : "Send Invoice"}
+            {sending
+              ? "Sending..."
+              : isFollowup
+              ? "Send Follow-Up"
+              : "Send Invoice"}
           </Button>
         </DialogFooter>
       </DialogContent>
