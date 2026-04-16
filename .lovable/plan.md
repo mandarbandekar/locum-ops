@@ -1,74 +1,99 @@
 
-## Plan: Consolidate "overdue" to a computed-only status
 
-**Strategy (per your answers):** `'overdue'` stops being a *stored* status (removed from the `InvoiceStatus` type, scrubbed from DB) but remains a *derived/computed* value returned by `computeInvoiceStatus` and used freely throughout the UI. Existing call sites keep working with zero churn. The new `isInvoiceOverdue()` helper becomes the canonical raw-data check; `computeInvoiceStatus` is refactored to delegate to it.
+## The problem
 
-### 1. New helper — `src/lib/invoiceHelpers.ts` (create)
-```ts
-export function isInvoiceOverdue(invoice: {
-  status: string;
-  due_date: string | null;
-  balance_due: number;
-  paid_at?: string | null;
-}): boolean {
-  if (invoice.status !== 'sent' && invoice.status !== 'partial') return false;
-  if (!invoice.due_date || invoice.balance_due <= 0) return false;
-  if (invoice.paid_at) return false;
-  return new Date(invoice.due_date) < new Date();
-}
+The invoice detail screen today juggles three overlapping UIs that duplicate the same actions:
+
+1. **`InvoiceEditPanel`** (left column) — From, Bill To, fields, line items, balance card.
+2. **`InvoicePreview`** (right column, sticky) — visual preview.
+3. **`InvoiceSentPanel`** — a parallel "Send & Share" view used elsewhere with its own send/resend/share/balance/line-items cards.
+4. **`InvoiceActionBar`** (fixed bottom) — duplicates Save / Send / PDF / Record Payment / Share.
+5. **Inline Send button** under the preview — *another* send CTA.
+6. **`InvoiceStepper`** — clickable Draft → Sent → Paid header with a confirmation dialog for backward moves.
+7. **"Revert to Draft"** card — yet another way to change state.
+
+The user lands on a "post-send" view that still loudly says "Send invoice to..." again, because we re-render the same compose CTA in three places without distinguishing pre-send vs post-send context. Status changes happen in 4 different spots (stepper, action bar, sent panel, edit panel). It's confusing because it's actually four UIs stacked on one route.
+
+## Proposed UX: one screen, one action zone, status-aware
+
+**Principle:** Same screen for the entire lifecycle. The *content* (line items, dates, preview) stays put. Only one **Action Zone** changes based on status. Eliminate `InvoiceSentPanel` as a separate panel — fold its logic into the unified screen.
+
+### New layout (desktop, single screen)
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│ ← INV-0042 · Greenfield Medical Center      [Status pill]   │
+├─────────────────────────────────────────────────────────────┤
+│ Status strip:  ●━━━━━━○─────○   Draft → Sent → Paid         │
+│                  (read-only progress, no clicks)            │
+├──────────────────────────────┬──────────────────────────────┤
+│  EDITOR (left, 2/5)          │  PREVIEW (right, 3/5 sticky) │
+│  • From / Bill to            │  Live invoice preview        │
+│  • Invoice # / dates         │  (always visible, always     │
+│  • Line items (editable in   │   reflects current state)    │
+│    Draft, read-only after)   │                              │
+│  • Notes                     │                              │
+│  • Activity (collapsible)    │                              │
+└──────────────────────────────┴──────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│  ACTION ZONE (sticky bottom — single source of truth)        │
+│                                                              │
+│  DRAFT:    [Total $X]  [PDF] [I already sent it] [Send →]   │
+│  SENT:     [Bal $X · Sent Apr 12]  [PDF] [Resend] [Record   │
+│            Payment]                                          │
+│  OVERDUE:  [Bal $X · 12d overdue]  [PDF] [Send follow-up]   │
+│            [Record Payment]                                  │
+│  PARTIAL:  [Bal $X · partially paid]  [PDF] [Send follow-up]│
+│            [Record Payment]                                  │
+│  PAID:     [Paid in full · Apr 18]  [PDF] [Share link]      │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### 2. Type narrowing — `src/types/index.ts`
-- Change `InvoiceStatus` from `'draft' | 'sent' | 'partial' | 'paid' | 'overdue'` → `'draft' | 'sent' | 'partial' | 'paid'`.
-- Update `computeInvoiceStatus` return type so it can still return `'overdue'` as a *display* status: change its return type to `InvoiceStatus | 'overdue'`. This keeps every existing `=== 'overdue'` call site type-safe with no edits.
+Mobile collapses to a Tabs (Edit | Preview) — same as today — with the same single Action Zone pinned to the bottom.
 
-### 3. Refactor — `src/lib/businessLogic.ts`
-Update `computeInvoiceStatus` to delegate the overdue check to the helper, and also handle `'partial'` (currently it only flags `'sent'` as overdue):
-```ts
-import { isInvoiceOverdue } from './invoiceHelpers';
+### What gets removed
 
-export function computeInvoiceStatus(invoice: Invoice): InvoiceStatus | 'overdue' {
-  if (invoice.status === 'paid' || invoice.status === 'draft') return invoice.status;
-  if (isInvoiceOverdue(invoice)) return 'overdue';
-  return invoice.status;
-}
-```
+1. **`InvoiceSentPanel.tsx`** — delete. Its responsibilities (send confirmation, resend, share link, balance card, payment history, revert) merge into the unified screen.
+2. **Inline "Send Invoice to..." CTA below the preview** — gone. The bottom Action Zone is the only send entry point.
+3. **Clickable `InvoiceStepper`** — becomes a passive progress indicator. No more "Move to" confirmation dialog (`moveDialogOpen`). Backward moves only happen via the explicit "Revert to Draft" button in an overflow menu.
+4. **"I already sent this" duplication** — only in the Action Zone (Draft state).
+5. **Floating bottom `InvoiceActionBar`** + inline preview Send button + "Revert to Draft" card — consolidated into one bottom bar.
 
-### 4. `InvoicesPage.tsx` — use helper for the overdue bucket
-Replace `i.computedStatus === 'overdue'` filter with `isInvoiceOverdue(i)`. Drop overdue rows from the `sent` and `partial` buckets so they don't double-count:
-```ts
-const overdue   = allInvoices.filter(i => isInvoiceOverdue(i));
-const sent      = allInvoices.filter(i => i.computedStatus === 'sent'    && !isInvoiceOverdue(i));
-const partial   = allInvoices.filter(i => i.computedStatus === 'partial' && !isInvoiceOverdue(i));
-```
+### Post-send clarity (the user's complaint)
 
-### 5. `InvoiceStatusGroup.tsx` — no changes
-Keep `'overdue'` keys in `statusStyles` and `statusLabels` (display-only). `getDueBadge` already correct.
+Once `sent_at` is set:
+- The hero of the bottom bar becomes **"Sent to {name} · Apr 12 at 4:12 PM"** with a subtle ✓.
+- Primary CTA flips to **"Record Payment"** (the next logical action).
+- Send becomes a quiet **"Resend"** secondary button, not a screaming primary CTA.
+- Balance Due is shown inline in the bar, not in a separate card.
+- Share link, PDF download move into a small **⋯ More** menu to declutter.
 
-### 6. Scrub one stale stored-status check — `ClinicScorecardTab.tsx`
-Currently: `i.status === 'overdue' || (...)`. Since `'overdue'` is no longer stored, simplify to:
-```ts
-const overdueCount = fInvoices.filter(i => isInvoiceOverdue(i)).length;
-```
+This solves the screenshot issue: after sending, the user sees a confirmation (not "Send invoice to..." again), and the next step (Record Payment) is the obvious primary action.
 
-### 7. Migration — `supabase/migrations/<ts>_drop_overdue_invoice_status.sql`
-The `invoices.status` column is plain `text` with no check constraint and no enum, and currently has zero `'overdue'` rows — but adding the safety net per your spec:
-```sql
-UPDATE public.invoices SET status = 'sent' WHERE status = 'overdue';
-ALTER TABLE public.invoices
-  ADD CONSTRAINT invoices_status_check
-  CHECK (status IN ('draft','sent','partial','paid'));
-```
+### Compose dialog (unchanged)
 
-### Files NOT touched (intentionally)
-- `useReminders.ts`, `reminderEngine.ts`, `DashboardPage.tsx`, `FinancialHealthTab.tsx`, `InvoiceEditPanel.tsx`, `AccountsReceivable.tsx`, `ExportCPAPacket.tsx`, `send-reminder-emails/index.ts`, `invoice-reminder.tsx` — all consume `computeInvoiceStatus(...)==='overdue'` or a `reminderType: 'overdue'` literal, which still works correctly.
-- Contract checklist `getChecklistBadge` returns its own unrelated `'overdue'`.
-- `useTaxAdvisor`, `CPAPrepSummaryTab`, etc. — same, derived only.
+Stays the same component. Opens in `'initial'` mode for never-sent invoices, `'followup'` mode when `isInvoiceOverdue` is true. Triggered only from the Action Zone.
 
-### Files modified
-1. `src/lib/invoiceHelpers.ts` *(new)*
-2. `src/types/index.ts`
-3. `src/lib/businessLogic.ts`
-4. `src/pages/InvoicesPage.tsx`
-5. `src/components/business/ClinicScorecardTab.tsx`
-6. `supabase/migrations/<timestamp>_drop_overdue_invoice_status.sql` *(new)*
+### State changes
+
+- Remove `moveDialogOpen`, `moveTarget`, `handleStatusTransition`, `handleStepClick` from `InvoiceDetailPage`.
+- Remove the `Revert to Draft` card from `InvoiceEditPanel` (the action moves into a "⋯ More" menu in the Action Zone, available from any post-Draft status).
+- `InvoiceActionBar` is rewritten to be *the* status-aware control center.
+
+### Files to change
+
+1. **`src/pages/InvoiceDetailPage.tsx`** — remove dual Send CTAs, remove stepper click handlers + Move dialog, delete the extra inline Send under preview, simplify layout.
+2. **`src/components/invoice/InvoiceActionBar.tsx`** — rewrite as the single status-aware bar (Draft/Sent/Overdue/Partial/Paid branches, with sent confirmation chip, balance, primary next-action, "⋯ More" menu containing PDF, Share link, Resend, Revert to Draft).
+3. **`src/components/invoice/InvoiceStepper.tsx`** — remove click handlers/tooltips, make it a passive indicator.
+4. **`src/components/invoice/InvoiceEditPanel.tsx`** — remove the "Balance Due" card (now in Action Zone), remove the "Revert to Draft" card, keep only From/BillTo/Fields/LineItems/Notes/Payment history.
+5. **`src/components/invoice/InvoiceSentPanel.tsx`** — **delete** (and remove its imports from `InvoicesPage` if any — check).
+6. Tests: `src/test/invoiceOnboarding.test.ts` — verify nothing references removed components.
+
+### Behavioral guarantees
+
+- Auto-save on Draft fields stays (debounced 800ms).
+- "Ready to Send" checklist stays in the alerts strip above the layout (Draft only).
+- Overdue alert banner stays (Overdue only).
+- Compose dialog deep-link `?action=followup` continues to work.
+- All status transitions remain reversible via "Revert to Draft" in the More menu.
+
