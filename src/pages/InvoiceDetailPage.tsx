@@ -503,6 +503,26 @@ export default function InvoiceDetailPage() {
           setBillingDialogOpen(false);
         }}
       />
+
+      {/* Compose & Send Invoice Dialog */}
+      <InvoiceComposeDialog
+        open={composeOpen}
+        onOpenChange={setComposeOpen}
+        invoice={invoice}
+        facility={facility}
+        profile={profile}
+        userEmail={user?.email || ''}
+        billingNameTo={billingNameTo}
+        billingEmailTo={billingEmailTo}
+        onSent={async () => {
+          // Reflect new sent_at / status set by the edge function
+          await updateInvoice({
+            ...invoice,
+            status: invoice.status === 'draft' ? 'sent' : invoice.status,
+            sent_at: new Date().toISOString(),
+          });
+        }}
+      />
     </div>
   );
 }
