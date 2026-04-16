@@ -49,12 +49,16 @@ export function InvoiceSentPanel({ invoice, items, invoicePayments, facility, bi
   const [shareLoading, setShareLoading] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [showPayNudge, setShowPayNudge] = useState(false);
+  const [composeOpen, setComposeOpen] = useState(false);
   const { profile: taxProfile, hasProfile: hasTaxProfile } = useTaxIntelligence();
+  const { profile } = useUserProfile();
+  const { user } = useAuth();
   const { invoices: allInvoices, shifts } = useData();
   const computedStatus = computeInvoiceStatus(invoice);
   const isPaid = invoice.status === 'paid';
   const hasShareLink = !!invoice.share_token && !invoice.share_token_revoked_at;
   const shareUrl = hasShareLink ? `${window.location.origin}/invoice/public/${invoice.share_token}` : '';
+  const billingEmailTo = (invoice as any).billing_email_to || facility?.invoice_email_to || '';
 
   // Compute effective rate for nudge
   const effectiveRate = (() => {
