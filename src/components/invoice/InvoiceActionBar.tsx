@@ -194,6 +194,23 @@ export function InvoiceActionBar({ invoice, items, facility, profile, dueDate, b
           </>
         )}
       </div>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Use this only if you've already sent this invoice from your own email. The invoice will move to "Sent & Awaiting Payment" without sending any email from Locum Ops.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={async () => { setConfirmOpen(false); await handleProceedToSend(); }}>
+              Yes, mark as sent
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
