@@ -5,6 +5,16 @@ import { toast } from 'sonner';
 import { buildChecklistItems } from '@/components/invoice/ReadyToSendChecklist';
 import { supabase } from '@/integrations/supabase/client';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 async function downloadInvoicePdf(invoiceId: string, invoiceNumber: string) {
   const { data: { session } } = await supabase.auth.getSession();
