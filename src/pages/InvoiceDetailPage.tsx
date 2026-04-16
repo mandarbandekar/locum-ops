@@ -44,13 +44,6 @@ const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secon
   paid: { label: 'Paid', variant: 'default' },
 };
 
-function getStepOrder(status: string): number {
-  if (status === 'draft') return 0;
-  if (status === 'sent' || status === 'partial' || status === 'overdue') return 1;
-  if (status === 'paid') return 2;
-  return 0;
-}
-
 export default function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -61,8 +54,6 @@ export default function InvoiceDetailPage() {
   const { user } = useAuth();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [autoDeleteOpen, setAutoDeleteOpen] = useState(false);
-  const [moveDialogOpen, setMoveDialogOpen] = useState(false);
-  const [moveTarget, setMoveTarget] = useState<string | null>(null);
   const [billingDialogOpen, setBillingDialogOpen] = useState(false);
   const [sendingReminder, setSendingReminder] = useState(false);
   const [composeOpen, setComposeOpen] = useState(false);
@@ -103,54 +94,6 @@ export default function InvoiceDetailPage() {
     await deleteInvoice(invoice.id);
     toast.success('Invoice deleted');
     navigate('/invoices');
-  };
-
-  const handleStatusTransition = async (targetStatus: string) => {
-    switch (targetStatus) {
-      case 'draft':
-        await updateInvoice({ ...invoice, status: 'draft', sent_at: null, paid_at: null });
-        await addActivity({ invoice_id: invoice.id, action: 'reverted_to_draft', description: 'Invoice reverted to draft' });
-        toast.success('Invoice moved back to Draft');
-        break;
-      case 'sent':
-        if (invoice.status === 'paid' || invoice.status === 'partial') {
-          await updateInvoice({ ...invoice, status: 'sent', paid_at: null });
-          await addActivity({ invoice_id: invoice.id, action: 'reverted_to_sent', description: 'Invoice moved back to Sent' });
-          toast.success('Invoice moved back to Sent');
-        }
-        break;
-      case 'paid':
-        toast.info('Record a payment to mark this invoice as paid');
-        break;
-    }
-    setMoveDialogOpen(false);
-    setMoveTarget(null);
-  };
-
-  const handleStepClick = (stepKey: string) => {
-    const targetOrder = getStepOrder(stepKey);
-    const currentOrder = getStepOrder(computedStatus);
-
-    if (stepKey === 'paid' && invoice.status !== 'paid') {
-      toast.info('Record a payment to mark this invoice as paid');
-      return;
-    }
-
-    // Forward moves: just do it (no confirmation for forward)
-    // Backward moves: confirm
-    if (targetOrder < currentOrder) {
-      setMoveTarget(stepKey);
-      setMoveDialogOpen(true);
-    }
-  };
-
-  const getMoveDescription = (target: string): string => {
-    const currentLabel = STATUS_CONFIG[computedStatus]?.label || computedStatus;
-    const targetLabel = STATUS_CONFIG[target]?.label || target;
-    return `This will move the invoice from "${currentLabel}" back to "${targetLabel}". ${
-      target === 'draft' ? 'The sent date will be cleared and you can edit the invoice again.' :
-      'The payment status will be reset.'
-    }`;
   };
 
   const handleRevertToDraft = async () => {
