@@ -27,6 +27,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { SpotlightTour, TourStep } from '@/components/SpotlightTour';
 import { useSpotlightTour } from '@/hooks/useSpotlightTour';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const STORAGE_KEY = 'schedule-view-pref';
 
