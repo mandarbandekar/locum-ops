@@ -13,7 +13,7 @@ import {
   CalendarDays, ChevronDown, DollarSign, Calculator, Settings2,
   Clock, CheckCircle2, Info, CreditCard, TrendingUp, AlertTriangle,
 } from 'lucide-react';
-import WhatIfSlider from './WhatIfSlider';
+import TaxProjectionDisplay, { daysPerWeekToIndex, indexToDaysPerWeek, SCHEDULE_OPTIONS } from './TaxProjectionDisplay';
 import EntityComparisonCard from './EntityComparisonCard';
 import TaxTerm from './TaxTerm';
 import type { TaxIntelligenceProfile } from '@/hooks/useTaxIntelligence';
@@ -23,6 +23,7 @@ import { calculateTaxV1, mapDbProfileToV1, type TaxV1Result, type Tax1099Result,
 interface Props {
   profile: TaxIntelligenceProfile;
   onEditProfile: () => void;
+  onSaveProfile?: (updates: Partial<TaxIntelligenceProfile>) => void;
 }
 
 function fmt(n: number) {
@@ -40,7 +41,7 @@ export function calculateTax(grossIncome: number, profile: TaxIntelligenceProfil
   return { quarterlyPayment: result.quarterlyPayment, totalAnnualTax: result.annualEstimatedTaxDue, effectiveRate: result.effectiveRate, marginalRate: result.marginalRate, seTax: 0, federalTax: result.totalFederalTax, personalStateTax: result.stateTax, netIncome: result.grossRevenue - result.operatingExpenses, federalTaxableIncome: result.federalTaxableIncome, agi: result.agi, grossIncome: result.grossRevenue, expenses: result.operatingExpenses, stateTax: result.stateTax, seDeduction: 0, distribution: result.distribution, salary: result.salary };
 }
 
-export default function TaxDashboard({ profile, onEditProfile }: Props) {
+export default function TaxDashboard({ profile, onEditProfile, onSaveProfile }: Props) {
   const now = new Date();
   const currentYear = now.getFullYear();
   const paymentLogs = useTaxPaymentLogs(currentYear);
@@ -63,6 +64,25 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
   const isScorp = profile.entity_type === 'scorp';
   const is1099 = !isScorp;
 
+  // Schedule selector state for TaxProjectionDisplay
+  const savedDays = (profile as any)?.typical_days_per_week;
+  const [scheduleIndex, setScheduleIndex] = useState(savedDays ? daysPerWeekToIndex(savedDays) : 1);
+
+  const handleScheduleChange = (index: number) => {
+    setScheduleIndex(index);
+    const days = indexToDaysPerWeek(index);
+    onSaveProfile?.({ typical_days_per_week: days } as any);
+  };
+
+  // Derive day rate from annual income and schedule
+  const dayRate = useMemo(() => {
+    if (profile.annual_relief_income) {
+      const schedule = SCHEDULE_OPTIONS[scheduleIndex] ?? SCHEDULE_OPTIONS[1];
+      return Math.round(profile.annual_relief_income / schedule.daysPerYear);
+    }
+    return 650;
+  }, [profile.annual_relief_income, scheduleIndex]);
+
   const nextDue = useMemo(() => {
     for (let q = 1; q <= 4; q++) {
       const d = new Date(dueDates[q].due);
@@ -71,11 +91,6 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
     return null;
   }, [dueDates, now]);
 
-  const whatIfCalculator = useCallback((additionalIncome: number) => {
-    const p = { ...v1Profile, annualReliefIncome: v1Profile.annualReliefIncome + additionalIncome };
-    const r = calculateTaxV1(p);
-    return r?.quarterlyPayment ?? 0;
-  }, [v1Profile]);
 
   if (!taxResult) {
     return <p className="text-muted-foreground py-8 text-center">Unable to calculate taxes. Please check your profile.</p>;
@@ -250,10 +265,14 @@ export default function TaxDashboard({ profile, onEditProfile }: Props) {
         </div>
       </div>
 
-      {/* ═══ WHAT-IF ═══ */}
-      <WhatIfSlider
-        currentQuarterlyPayment={quarterlyPayment}
-        onIncomeChange={whatIfCalculator}
+      {/* ═══ SCHEDULE IMPACT ═══ */}
+      <TaxProjectionDisplay
+        dayRate={dayRate}
+        timezone={Intl.DateTimeFormat().resolvedOptions().timeZone}
+        stateCode={profile.state_code || undefined}
+        selectedScheduleIndex={scheduleIndex}
+        onScheduleChange={handleScheduleChange}
+        variant="page"
       />
 
       {/* ═══ SAVE NUDGE ═══ */}
