@@ -281,7 +281,19 @@ export default function InvoiceDetailPage() {
         {invoice.generation_type === 'automatic' && (
           <div className="rounded-md border bg-primary/5 p-2.5 flex items-center gap-2 text-sm">
             <Layers className="h-4 w-4 text-primary shrink-0" />
-            <span>Auto-generated for <strong>{facility?.name}</strong> · {items.filter(li => li.shift_id).length} shifts</span>
+            <span>
+              Auto-generated from{' '}
+              <button
+                onClick={() => {
+                  const el = document.querySelector('[data-line-items-section]');
+                  el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }}
+                className="underline-offset-2 hover:underline font-semibold text-primary"
+              >
+                {items.filter(li => li.shift_id).length} shift{items.filter(li => li.shift_id).length === 1 ? '' : 's'}
+              </button>
+              {' '}— review and adjust below before sending.
+            </span>
           </div>
         )}
       </div>

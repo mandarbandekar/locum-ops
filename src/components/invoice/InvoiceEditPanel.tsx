@@ -1,14 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Pencil, Check, X, Trash2, CheckCircle, PiggyBank, ChevronDown } from 'lucide-react';
+import { Plus, Pencil, Check, X, Trash2, CheckCircle, PiggyBank, ChevronDown, CalendarClock, FileText, Pencil as PencilIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
-import { computeInvoiceStatus } from '@/lib/businessLogic';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { RecordPaymentDialog } from '@/components/invoice/RecordPaymentDialog';
 import { useTaxIntelligence } from '@/hooks/useTaxIntelligence';
@@ -28,7 +26,17 @@ function toDateOnlyISO(v: string | Date | null | undefined): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-function EditableLineItemRow({ item, onUpdate, onDelete }: { item: any; onUpdate: (updated: any) => Promise<void>; onDelete: () => Promise<void> }) {
+const fmtMoney = (n: number) => `$${(n || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+
+function parseShiftMeta(item: any): { dateStr: string | null; timeStr: string | null; label: string } {
+  // description tends to look like: "Apr 16, 2026 — Relief coverage (8:00 AM – 6:00 PM)"
+  const desc: string = item.description || '';
+  const m = desc.match(/^(.+?)\s+[—-]\s+(.+?)\s*\(([^)]+)\)\s*$/);
+  if (m) return { dateStr: m[1], label: m[2], timeStr: m[3] };
+  return { dateStr: null, timeStr: null, label: desc };
+}
+
+function ShiftLineItemCard({ item, readOnly, onUpdate, onDelete }: { item: any; readOnly?: boolean; onUpdate?: (u: any) => Promise<void>; onDelete?: () => Promise<void> }) {
   const [editing, setEditing] = useState(false);
   const [desc, setDesc] = useState(item.description);
   const [date, setDate] = useState(item.service_date || '');
@@ -36,78 +44,89 @@ function EditableLineItemRow({ item, onUpdate, onDelete }: { item: any; onUpdate
   const [rate, setRate] = useState(item.unit_rate);
 
   const handleSave = async () => {
+    if (!onUpdate) return;
     const lineTotal = qty * rate;
     await onUpdate({ ...item, description: desc, service_date: date || null, qty, unit_rate: rate, line_total: lineTotal });
     setEditing(false);
     toast.success('Line item updated');
   };
-
   const handleCancel = () => {
-    setDesc(item.description);
-    setDate(item.service_date || '');
-    setQty(item.qty);
-    setRate(item.unit_rate);
-    setEditing(false);
+    setDesc(item.description); setDate(item.service_date || '');
+    setQty(item.qty); setRate(item.unit_rate); setEditing(false);
   };
+
+  const meta = parseShiftMeta(item);
+  const isShift = !!item.shift_id;
+  const Icon = isShift ? CalendarClock : FileText;
 
   if (editing) {
     return (
-      <tr className="border-b last:border-0 bg-muted/30">
-        <td className="py-1.5 pr-1">
-          <Input value={desc} onChange={e => setDesc(e.target.value)} className="h-7 text-sm" />
-        </td>
-        <td className="py-1.5 px-1">
-          <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="h-7 text-sm" />
-        </td>
-        <td className="py-1.5 px-1">
-          <Input type="number" value={qty} onChange={e => setQty(Number(e.target.value))} className="h-7 text-sm text-right w-16" min={1} />
-        </td>
-        <td className="py-1.5 px-1">
-          <Input type="number" value={rate} onChange={e => setRate(Number(e.target.value))} className="h-7 text-sm text-right w-20" min={0} step="0.01" />
-        </td>
-        <td className="py-1.5 text-right font-medium text-sm">${(qty * rate).toLocaleString()}</td>
-        <td className="py-1.5">
-          <div className="flex gap-0.5">
-            <Button size="icon" variant="ghost" className="h-5 w-5" onClick={handleSave}><Check className="h-3 w-3" /></Button>
-            <Button size="icon" variant="ghost" className="h-5 w-5" onClick={handleCancel}><X className="h-3 w-3" /></Button>
+      <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+        <Input value={desc} onChange={e => setDesc(e.target.value)} className="h-8 text-sm" placeholder="Description" />
+        <div className="grid grid-cols-3 gap-2">
+          <div>
+            <Label className="text-[10px] text-muted-foreground uppercase">Date</Label>
+            <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="h-8 text-sm" />
           </div>
-        </td>
-      </tr>
+          <div>
+            <Label className="text-[10px] text-muted-foreground uppercase">Qty</Label>
+            <Input type="number" value={qty} onChange={e => setQty(Number(e.target.value))} className="h-8 text-sm" min={1} />
+          </div>
+          <div>
+            <Label className="text-[10px] text-muted-foreground uppercase">Rate</Label>
+            <Input type="number" value={rate} onChange={e => setRate(Number(e.target.value))} className="h-8 text-sm" min={0} step="0.01" />
+          </div>
+        </div>
+        <div className="flex justify-between items-center pt-1">
+          <span className="text-sm text-muted-foreground">Line total: <span className="font-semibold text-foreground">{fmtMoney(qty * rate)}</span></span>
+          <div className="flex gap-1">
+            <Button size="sm" variant="ghost" className="h-7" onClick={handleCancel}><X className="h-3.5 w-3.5 mr-1" />Cancel</Button>
+            <Button size="sm" className="h-7" onClick={handleSave}><Check className="h-3.5 w-3.5 mr-1" />Save</Button>
+          </div>
+        </div>
+      </div>
     );
   }
 
   return (
-    <tr className="border-b last:border-0 group hover:bg-muted/20 cursor-pointer" onClick={() => setEditing(true)}>
-      <td className="py-1.5">
-        {item.description}
-        {item.shift_id && <span className="text-xs text-primary ml-1">↗ shift</span>}
-      </td>
-      <td className="py-1.5 text-muted-foreground text-xs">{item.service_date ? format(new Date(item.service_date + 'T00:00:00'), 'MMM d') : '—'}</td>
-      <td className="py-1.5 text-right">{item.qty}</td>
-      <td className="py-1.5 text-right">${item.unit_rate}</td>
-      <td className="py-1.5 text-right font-medium">${item.line_total}</td>
-      <td className="py-1.5">
-        <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button size="icon" variant="ghost" className="h-5 w-5" onClick={e => { e.stopPropagation(); setEditing(true); }}><Pencil className="h-3 w-3" /></Button>
-          <Button size="icon" variant="ghost" className="h-5 w-5" onClick={async e => { e.stopPropagation(); await onDelete(); }}><Trash2 className="h-3 w-3" /></Button>
+    <div
+      className={`group rounded-lg border bg-card p-3 transition-colors ${!readOnly ? 'cursor-pointer hover:border-primary/40 hover:bg-muted/30' : ''}`}
+      onClick={() => !readOnly && setEditing(true)}
+    >
+      <div className="flex items-start gap-3">
+        <div className={`mt-0.5 rounded-md p-1.5 shrink-0 ${isShift ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
+          <Icon className="h-3.5 w-3.5" />
         </div>
-      </td>
-    </tr>
-  );
-}
-
-function ReadOnlyLineItemRow({ item }: { item: any }) {
-  return (
-    <tr className="border-b last:border-0">
-      <td className="py-1.5">
-        {item.description}
-        {item.shift_id && <span className="text-xs text-primary ml-1">↗ shift</span>}
-      </td>
-      <td className="py-1.5 text-muted-foreground text-xs">{item.service_date ? format(new Date(item.service_date + 'T00:00:00'), 'MMM d') : '—'}</td>
-      <td className="py-1.5 text-right">{item.qty}</td>
-      <td className="py-1.5 text-right">${item.unit_rate}</td>
-      <td className="py-1.5 text-right font-medium">${item.line_total}</td>
-    </tr>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-baseline justify-between gap-2">
+            <p className="text-sm font-medium truncate">
+              {meta.dateStr || (item.service_date ? format(new Date(item.service_date + 'T00:00:00'), 'MMM d, yyyy') : meta.label)}
+            </p>
+            <p className="text-sm font-semibold tabular-nums shrink-0">{fmtMoney(item.line_total)}</p>
+          </div>
+          <p className="text-xs text-muted-foreground mt-0.5 truncate">
+            {meta.dateStr ? <>{meta.label}{meta.timeStr ? ` · ${meta.timeStr}` : ''}</> : null}
+            {!meta.dateStr && item.qty > 1 ? null : null}
+          </p>
+          <div className="flex items-center justify-between mt-1">
+            <p className="text-[11px] text-muted-foreground">
+              {item.qty} × {fmtMoney(item.unit_rate)}
+              {isShift && <span className="ml-1.5 text-primary">· from shift ✓</span>}
+            </p>
+            {!readOnly && (
+              <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={e => { e.stopPropagation(); setEditing(true); }}>
+                  <Pencil className="h-3 w-3" />
+                </Button>
+                <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={async e => { e.stopPropagation(); if (onDelete) await onDelete(); }}>
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -140,9 +159,8 @@ export function InvoiceEditPanel({
   paymentDialogOpen: externalPaymentOpen, onPaymentDialogChange,
   onUpdateInvoice, onAddLineItem, onUpdateLineItem, onDeleteLineItem,
   onAddPayment, onAddActivity, onOpenBillingDialog,
-  onSaveRef, onInvoiceFieldChange, onRevertToDraft,
+  onSaveRef, onInvoiceFieldChange,
 }: InvoiceEditPanelProps) {
-  const navigate = useNavigate();
   const [invoiceNumber, setInvoiceNumber] = useState(invoice.invoice_number);
   const [invoiceDate, setInvoiceDate] = useState(invoice.invoice_date?.split('T')[0] || format(new Date(), 'yyyy-MM-dd'));
   const [dueDate, setDueDate] = useState(invoice.due_date?.split('T')[0] || '');
@@ -156,13 +174,21 @@ export function InvoiceEditPanel({
   const setShowPayment = onPaymentDialogChange ?? (() => {});
   const [showPayNudge, setShowPayNudge] = useState(false);
   const [paymentHistoryOpen, setPaymentHistoryOpen] = useState(false);
+  const [notesOpen, setNotesOpen] = useState(!!(invoice.notes && invoice.notes.length > 0));
 
   const { profile: taxProfile, hasProfile: hasTaxProfile } = useTaxIntelligence();
   const { invoices: allInvoices, shifts } = useData();
 
   const total = items.reduce((s: number, li: any) => s + li.line_total, 0);
-  const computedStatus = computeInvoiceStatus(invoice);
   const isPaid = invoice.status === 'paid';
+  const isAuto = invoice.generation_type === 'automatic';
+  const netDays = facility?.invoice_due_days ?? 15;
+
+  // Find last shift date represented in line items (for date helper text)
+  const lastShiftDate = (() => {
+    const dates = items.map((li: any) => li.service_date).filter(Boolean).sort();
+    return dates.length ? dates[dates.length - 1] : null;
+  })();
 
   // Compute effective rate for tax nudge
   const effectiveRate = (() => {
@@ -175,7 +201,6 @@ export function InvoiceEditPanel({
     return computeEffectiveSetAsideRate(taxProfile, (earned + projected) || 1);
   })();
 
-  // Auto-dismiss pay nudge
   useEffect(() => {
     if (showPayNudge) {
       const t = setTimeout(() => setShowPayNudge(false), 4000);
@@ -183,7 +208,6 @@ export function InvoiceEditPanel({
     }
   }, [showPayNudge]);
 
-  // Sync state when invoice changes externally (e.g. after status transition)
   useEffect(() => {
     setInvoiceNumber(invoice.invoice_number);
     setInvoiceDate(invoice.invoice_date?.split('T')[0] || format(new Date(), 'yyyy-MM-dd'));
@@ -191,14 +215,12 @@ export function InvoiceEditPanel({
     setNotes(invoice.notes || '');
   }, [invoice.id, invoice.status]);
 
-  // Expose fields for live preview
   useEffect(() => {
     if (!readOnly) {
       onInvoiceFieldChange?.({ invoiceNumber, invoiceDate, dueDate, notes, total });
     }
   }, [invoiceNumber, invoiceDate, dueDate, notes, total, readOnly]);
 
-  // Auto-save draft on field changes (debounced) — only in edit mode
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (readOnly) return;
@@ -217,7 +239,6 @@ export function InvoiceEditPanel({
     return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
   }, [invoiceNumber, invoiceDate, dueDate, notes, total, readOnly]);
 
-  // Expose save function for action bar
   const handleSave = async () => {
     await onUpdateInvoice({
       ...invoice,
@@ -267,12 +288,10 @@ export function InvoiceEditPanel({
     await onAddActivity({
       invoice_id: invoice.id,
       action: isPaidNow ? 'paid_in_full' : 'payment_recorded',
-      description: isPaidNow ? `Paid in full — $${payment.amount}` : `Payment recorded — $${payment.amount} via ${payment.method}`,
+      description: isPaidNow ? `Paid in full — ${fmtMoney(payment.amount)}` : `Payment recorded — ${fmtMoney(payment.amount)} via ${payment.method}`,
     });
     toast.success(isPaidNow ? 'Invoice paid in full!' : 'Payment recorded');
-    if (isPaidNow && hasTaxProfile) {
-      setShowPayNudge(true);
-    }
+    if (isPaidNow && hasTaxProfile) setShowPayNudge(true);
   };
 
   return (
@@ -292,43 +311,18 @@ export function InvoiceEditPanel({
             <span className="font-medium">Invoice marked paid ✓</span>
             <span className="text-muted-foreground mx-1">·</span>
             <span className="text-[hsl(var(--warning))]">
-              Set aside ${getShiftTaxNudge(invoice.total_amount || 0, effectiveRate).setAsideAmount.toLocaleString()} for taxes
+              Set aside {fmtMoney(getShiftTaxNudge(invoice.total_amount || 0, effectiveRate).setAsideAmount)} for taxes
             </span>
           </span>
         </div>
       )}
 
-      {/* From + Bill To compact */}
-      <div className="grid grid-cols-2 gap-3">
-        <Card>
-          <CardHeader className="pb-1.5 pt-3 px-3"><CardTitle className="text-xs text-muted-foreground uppercase tracking-wider">From</CardTitle></CardHeader>
-          <CardContent className="text-sm px-3 pb-3">
-            {profile?.company_name ? (
-              <div>
-                <p className="font-medium text-sm">{profile.first_name} {profile.last_name}</p>
-                <p className="text-xs text-muted-foreground">{profile.company_name}</p>
-              </div>
-            ) : (
-              <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => navigate('/settings/invoice-profile')}>Add business info</Button>
-            )}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-1.5 pt-3 px-3"><CardTitle className="text-xs text-muted-foreground uppercase tracking-wider">Bill To</CardTitle></CardHeader>
-          <CardContent className="text-sm px-3 pb-3">
-            <p className="font-medium text-sm">{facility?.name || 'Unknown'}</p>
-            {billingNameTo ? (
-              <p className="text-xs text-muted-foreground">{billingNameTo}</p>
-            ) : (
-              <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={onOpenBillingDialog}>Add billing contact</Button>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Invoice Details */}
+      {/* Dates Card */}
       <Card>
-        <CardContent className="pt-3 pb-3 space-y-2">
+        <CardHeader className="pb-1.5 pt-3 px-3">
+          <CardTitle className="text-xs text-muted-foreground uppercase tracking-wider">Invoice Details</CardTitle>
+        </CardHeader>
+        <CardContent className="px-3 pb-3 space-y-2">
           {readOnly ? (
             <div className="grid grid-cols-3 gap-2 text-sm">
               <div>
@@ -336,113 +330,150 @@ export function InvoiceEditPanel({
                 <p className="font-medium">{invoice.invoice_number}</p>
               </div>
               <div>
-                <Label className="text-xs text-muted-foreground">Invoice Date</Label>
+                <Label className="text-xs text-muted-foreground">Issued</Label>
                 <p className="font-medium">{format(new Date(invoice.invoice_date), 'MMM d, yyyy')}</p>
               </div>
               <div>
-                <Label className="text-xs text-muted-foreground">Due Date</Label>
+                <Label className="text-xs text-muted-foreground">Due</Label>
                 <p className="font-medium">{invoice.due_date ? format(new Date(invoice.due_date), 'MMM d, yyyy') : '—'}</p>
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-2">
-              <div>
-                <Label className="text-xs text-muted-foreground">Invoice #</Label>
-                <Input value={invoiceNumber} onChange={e => setInvoiceNumber(e.target.value)} className="h-8 text-sm" />
+            <>
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Invoice #</Label>
+                  <Input value={invoiceNumber} onChange={e => setInvoiceNumber(e.target.value)} className="h-8 text-sm" />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Issued</Label>
+                  <Input type="date" value={invoiceDate} onChange={e => setInvoiceDate(e.target.value)} className="h-8 text-sm" />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Due</Label>
+                  <Input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="h-8 text-sm" />
+                </div>
               </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Invoice Date</Label>
-                <Input type="date" value={invoiceDate} onChange={e => setInvoiceDate(e.target.value)} className="h-8 text-sm" />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Due Date</Label>
-                <Input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="h-8 text-sm" />
-              </div>
-            </div>
+              {isAuto && (
+                <div className="text-[11px] text-muted-foreground space-y-0.5 pt-0.5">
+                  {lastShiftDate && (
+                    <p>↳ Issue date set to last shift ({format(new Date(lastShiftDate + 'T00:00:00'), 'MMM d')})</p>
+                  )}
+                  <p>↳ Due date is Net {netDays} from issue date</p>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
 
-      {/* Line Items */}
+      {/* Line Items as card list */}
       <Card>
         <CardHeader className="pb-1.5 pt-3 px-3 flex flex-row items-center justify-between">
-          <CardTitle className="text-xs text-muted-foreground uppercase tracking-wider">Line Items ({items.length})</CardTitle>
+          <CardTitle className="text-xs text-muted-foreground uppercase tracking-wider">
+            {readOnly ? 'Line Items' : 'Shifts on this invoice'} ({items.length})
+          </CardTitle>
           {!readOnly && (
-            <Button variant="ghost" size="sm" onClick={() => setShowAddLine(true)} className="h-6 text-xs"><Plus className="h-3 w-3 mr-1" /> Add</Button>
+            <Button variant="ghost" size="sm" onClick={() => setShowAddLine(true)} className="h-6 text-xs">
+              <Plus className="h-3 w-3 mr-1" /> Add custom line
+            </Button>
           )}
         </CardHeader>
-        <CardContent className="px-3 pb-3">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              {!readOnly && (
-                <thead><tr className="border-b text-left">
-                  <th className="pb-1.5 font-medium text-muted-foreground text-xs">Description</th>
-                  <th className="pb-1.5 font-medium text-muted-foreground text-xs w-24">Date</th>
-                  <th className="pb-1.5 font-medium text-muted-foreground text-xs w-16 text-right">Qty</th>
-                  <th className="pb-1.5 font-medium text-muted-foreground text-xs w-20 text-right">Rate</th>
-                  <th className="pb-1.5 font-medium text-muted-foreground text-xs w-20 text-right">Total</th>
-                  <th className="w-8" />
-                </tr></thead>
-              )}
-              <tbody>
-                {readOnly
-                  ? items.map((li: any) => <ReadOnlyLineItemRow key={li.id} item={li} />)
-                  : items.map((li: any) => (
-                    <EditableLineItemRow
-                      key={li.id}
-                      item={li}
-                      onUpdate={async (updated: any) => {
-                        if (!onUpdateLineItem) return;
-                        await onUpdateLineItem(updated);
-                        const newTotal = items.reduce((s: number, x: any) => s + (x.id === updated.id ? updated.line_total : x.line_total), 0);
-                        await onUpdateInvoice({ ...invoice, total_amount: newTotal, balance_due: newTotal });
-                      }}
-                      onDelete={async () => {
-                        if (!onDeleteLineItem) return;
-                        await onDeleteLineItem(li.id);
-                        const newTotal = total - li.line_total;
-                        await onUpdateInvoice({ ...invoice, total_amount: newTotal, balance_due: newTotal });
-                      }}
-                    />
-                  ))
-                }
-                {items.length === 0 && <tr><td colSpan={6} className="py-3 text-center text-muted-foreground text-xs">No line items</td></tr>}
-              </tbody>
-            </table>
-          </div>
+        <CardContent className="px-3 pb-3 space-y-2">
+          {items.length === 0 ? (
+            <p className="py-3 text-center text-muted-foreground text-xs">No line items yet</p>
+          ) : (
+            items.map((li: any) => (
+              <ShiftLineItemCard
+                key={li.id}
+                item={li}
+                readOnly={readOnly}
+                onUpdate={async (updated) => {
+                  if (!onUpdateLineItem) return;
+                  await onUpdateLineItem(updated);
+                  const newTotal = items.reduce((s: number, x: any) => s + (x.id === updated.id ? updated.line_total : x.line_total), 0);
+                  await onUpdateInvoice({ ...invoice, total_amount: newTotal, balance_due: newTotal });
+                }}
+                onDelete={async () => {
+                  if (!onDeleteLineItem) return;
+                  await onDeleteLineItem(li.id);
+                  const newTotal = total - li.line_total;
+                  await onUpdateInvoice({ ...invoice, total_amount: newTotal, balance_due: newTotal });
+                }}
+              />
+            ))
+          )}
+
           {!readOnly && showAddLine && (
-            <div className="border-t pt-3 mt-2 space-y-2">
+            <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
               <Input placeholder="Description" value={newDesc} onChange={e => setNewDesc(e.target.value)} className="h-8 text-sm" />
               <div className="grid grid-cols-3 gap-2">
                 <Input type="date" value={newDate} onChange={e => setNewDate(e.target.value)} className="h-8 text-sm" />
                 <Input type="number" placeholder="Qty" value={newQty} onChange={e => setNewQty(Number(e.target.value))} className="h-8 text-sm" min={1} />
-                <Input type="number" placeholder="Rate" value={newRate} onChange={e => setNewRate(Number(e.target.value))} className="h-8 text-sm" min={0} />
+                <Input type="number" placeholder="Rate" value={newRate} onChange={e => setNewRate(Number(e.target.value))} className="h-8 text-sm" min={0} step="0.01" />
               </div>
-              <div className="flex gap-2">
-                <Button size="sm" onClick={handleAddLineItem} className="h-7">Add</Button>
-                <Button size="sm" variant="ghost" onClick={() => setShowAddLine(false)} className="h-7">Cancel</Button>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Line total: <span className="font-semibold text-foreground">{fmtMoney(newQty * newRate)}</span></span>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="ghost" onClick={() => setShowAddLine(false)} className="h-7">Cancel</Button>
+                  <Button size="sm" onClick={handleAddLineItem} className="h-7">Add</Button>
+                </div>
               </div>
             </div>
           )}
-          <div className="flex justify-end border-t mt-3 pt-2">
-            <p className="text-sm text-muted-foreground">Total: <span className="font-bold text-foreground text-base">${total.toLocaleString()}</span></p>
+
+          {/* Subtotal mirror */}
+          <div className="flex items-center justify-between border-t pt-2 mt-2">
+            <span className="text-sm text-muted-foreground">Subtotal</span>
+            <span className="text-base font-bold tabular-nums">{fmtMoney(total)}</span>
           </div>
         </CardContent>
       </Card>
 
-      {/* Notes */}
-      <Card>
-        <CardContent className="pt-3 pb-3">
-          <Label className="text-xs text-muted-foreground uppercase tracking-wider">Notes / Memo</Label>
-          {readOnly ? (
-            <p className="text-sm mt-1.5">{invoice.notes || <span className="text-muted-foreground italic">No notes</span>}</p>
-          ) : (
-            <Textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Payment terms, thank you note, etc." rows={2} className="text-sm mt-1.5" />
-          )}
-        </CardContent>
-      </Card>
+      {/* Bill-to one-liner */}
+      <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+        <span className="truncate">
+          Billing to: <span className="text-foreground font-medium">{billingNameTo || 'No contact set'}</span>
+          {facility?.name && <> at {facility.name}</>}
+        </span>
+        {!readOnly && (
+          <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={onOpenBillingDialog}>
+            <PencilIcon className="h-3 w-3 mr-1" /> Edit
+          </Button>
+        )}
+      </div>
 
-      {/* Payment History — collapsible, shown in read-only mode */}
+      {/* Notes — collapsed by default */}
+      {readOnly ? (
+        invoice.notes ? (
+          <Card>
+            <CardContent className="pt-3 pb-3">
+              <Label className="text-xs text-muted-foreground uppercase tracking-wider">Notes</Label>
+              <p className="text-sm mt-1.5">{invoice.notes}</p>
+            </CardContent>
+          </Card>
+        ) : null
+      ) : (
+        <Collapsible open={notesOpen} onOpenChange={setNotesOpen}>
+          <Card>
+            <CollapsibleTrigger asChild>
+              <div className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-muted/40 rounded-lg">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  {notesOpen ? 'Notes / Memo' : (notes ? 'Notes / Memo' : '+ Add notes')}
+                </span>
+                <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${notesOpen ? 'rotate-180' : ''}`} />
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="pt-0 pb-3 px-3">
+                <Textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Payment terms, thank you note, etc." rows={2} className="text-sm" />
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
+      )}
+
+      {/* Payment History — collapsible (read-only) */}
       {readOnly && invoicePayments.length > 0 && (
         <Collapsible open={paymentHistoryOpen} onOpenChange={setPaymentHistoryOpen}>
           <Card>
@@ -458,7 +489,7 @@ export function InvoiceEditPanel({
                   {invoicePayments.map((p: any) => (
                     <div key={p.id} className="flex justify-between text-sm p-2 rounded bg-muted/50">
                       <div>
-                        <p className="font-medium">${p.amount.toLocaleString()} via {p.method}</p>
+                        <p className="font-medium">{fmtMoney(p.amount)} via {p.method}</p>
                         <p className="text-xs text-muted-foreground">{p.account}{p.memo ? ` — ${p.memo}` : ''}</p>
                       </div>
                       <span className="text-xs text-muted-foreground">{format(new Date(p.payment_date), 'MMM d, yyyy')}</span>
@@ -471,7 +502,6 @@ export function InvoiceEditPanel({
         </Collapsible>
       )}
 
-      {/* Record Payment Dialog */}
       <RecordPaymentDialog
         open={showPayment}
         onOpenChange={setShowPayment}
