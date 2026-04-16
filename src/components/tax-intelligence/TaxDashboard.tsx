@@ -265,8 +265,8 @@ export default function TaxDashboard({ profile, onEditProfile, onSaveProfile }: 
         </div>
       </div>
 
-      {/* ═══ SCHEDULE IMPACT ═══ */}
-      <TaxProjectionDisplay
+      {/* ═══ SCHEDULE IMPACT — hidden for now ═══ */}
+      {/* <TaxProjectionDisplay
         dayRate={dayRate}
         timezone={Intl.DateTimeFormat().resolvedOptions().timeZone}
         stateCode={profile.state_code || undefined}
@@ -279,7 +279,7 @@ export default function TaxDashboard({ profile, onEditProfile, onSaveProfile }: 
         spouseW2Income={profile.spouse_w2_income || undefined}
         retirementContributions={profile.retirement_contribution || undefined}
         annualBusinessExpenses={profile.annual_business_expenses || undefined}
-      />
+      /> */}
 
       {/* ═══ SAVE NUDGE ═══ */}
       <Alert className="border-[hsl(var(--info))] bg-[hsl(var(--chip-info-bg))]">
