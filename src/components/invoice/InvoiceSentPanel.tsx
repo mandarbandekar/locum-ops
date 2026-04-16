@@ -295,6 +295,24 @@ export function InvoiceSentPanel({ invoice, items, invoicePayments, facility, bi
       </Card>
 
       <RecordPaymentDialog open={showPayment} onOpenChange={setShowPayment} balanceDue={invoice.balance_due} onRecord={handleRecordPayment} />
+
+      <InvoiceComposeDialog
+        open={composeOpen}
+        onOpenChange={setComposeOpen}
+        invoice={invoice}
+        facility={facility}
+        profile={profile}
+        userEmail={user?.email || ''}
+        billingNameTo={billingNameTo}
+        billingEmailTo={billingEmailTo}
+        onSent={async () => {
+          await onUpdateInvoice({
+            ...invoice,
+            status: invoice.status === 'draft' ? 'sent' : invoice.status,
+            sent_at: new Date().toISOString(),
+          });
+        }}
+      />
     </div>
   );
 }
