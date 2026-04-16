@@ -1,63 +1,28 @@
 
 
-## Plan: Redesign /expenses Page
+## Plan: Align Schedule Page with Standard Module Layout
 
-### Summary
-Replace the category tile grid with a single "Log Expense" button + bottom sheet, change the hero metric to "Estimated Tax Savings YTD", and restructure the tab layout so Mileage is its own dedicated tab with confirmed-by-default entries.
+### Problem
+The Schedule page header uses custom inline styles (`text-lg font-semibold`, `bg-card/50` toolbar, compact `h-8` buttons) that look visually different from every other module page. Other pages use the standard `page-header`, `page-title` (Manrope, 22-34px bold), and `page-subtitle` CSS classes, plus standard-sized buttons and the `TabsList`/`TabsTrigger` component for view switching.
 
-### Changes
+### Design approach
+Bring the Schedule page in line with the established pattern while keeping the streamlined 2-row layout. Use the same heading hierarchy, font family, tab switcher component, and button sizes as Invoices, Expenses, Credentials, etc.
 
-**1. `src/pages/ExpensesPage.tsx`** — Restructure tabs
-- Keep 3 tabs but rename: **Expenses** (was "Expense Tracker"), **Mileage** (unchanged), **Write-Off Summary** (unchanged)
-- Import `useTaxIntelligence` to get `taxProfile` for marginal rate calculation
-- Pass `taxProfile` down to `ExpenseLogTab` for the hero card calculation
+### Changes — `src/pages/SchedulePage.tsx`
 
-**2. `src/components/expenses/ExpenseLogTab.tsx`** — Major rework of the Expense Tracker tab
-- **Remove** `ExpenseCategoryGrid` import and rendering (the 9 category tiles)
-- **Remove** mileage-related UI from this tab: `MileageReviewBanner`, `MileageBackfillCard`, mileage setup status card — all move to the Mileage tab exclusively
-- **Replace hero stats**: Change "YTD Write-Offs" card to **"Estimated Tax Savings YTD"** calculated as `ytdDeductibleCents × marginalRate`. Marginal rate comes from the user's tax profile via `getCombinedMarginalRate()` (uses filing status, entity type, state), defaulting to 24% if no profile exists.
-- **Add primary "Log Expense" button** at the top (prominent, full-width-ish) that opens a `Drawer` (bottom sheet) with three options:
-  - **Snap Receipt** — shows `toast.info('Coming soon')` on tap
-  - **Upload Statement** — shows `toast.info('Coming soon')` on tap
-  - **Enter Manually** — opens the existing `AddExpenseDialog`
-- Keep the existing expense log list below with search/filter
-- Keep IRS Receipt Reminder alert
-- Remove the secondary "Log Expense Manually" button (replaced by the primary one)
+1. **Title row**: Replace the custom `text-lg font-semibold` title with the standard `page-header` / `page-title` pattern. Add a `CalendarDays` icon and `page-subtitle` to match Expenses/Credentials/Tax pages. Remove the `bg-card/50` background — other modules don't use a distinct header background.
 
-**3. Create `src/components/expenses/LogExpenseSheet.tsx`** — New bottom sheet component
-- Uses the `Drawer` component (already exists in ui/drawer.tsx)
-- Three option cards: Snap Receipt (Camera icon), Upload Statement (FileUp icon), Enter Manually (PenLine icon)
-- First two show "Coming soon" badge and trigger a toast
-- Third opens the AddExpenseDialog via callback
+2. **View switcher**: Replace the custom hand-rolled segmented control (`bg-muted p-0.5 rounded-lg` with manual active states) with the standard `TabsList` / `TabsTrigger` components already used across Expenses, Credentials, Tax Center, etc. This gives consistent rounded-xl pill styling, font size, and active state.
 
-**4. `src/components/expenses/MileageTrackerTab.tsx`** — Minor: confirmed-by-default
-- Change new auto-mileage entries to default to `confirmed` status (this is a hook-level change)
-- Tab already has its own setup status, backfill, review, and confirmed log — no structural changes needed
+3. **Action buttons**: Use standard `size="sm"` buttons (not the overridden `h-8 text-xs px-3` compact ones) to match Invoices and Facilities pages.
 
-**5. `src/hooks/useExpenses.ts`** — No changes needed for confirmed-by-default
-- The `mileage_status` default is set at the edge function (`auto-mileage-tracker`) level. For the UI, the Mileage tab already shows confirmed entries. The "confirmed by default" behavior means we treat auto-generated entries as confirmed unless the user disputes — this is a display-level change in `MileageTrackerTab` where we skip the draft review step and show all mileage as confirmed with an option to dispute.
+4. **Sub-bar (date nav + stats)**: Keep the compact navigation row but use standard spacing (`px-0` within the content flow, not `px-4` with separate `border-b`) — let it flow naturally within the page content area like summary strips do on Invoices.
 
-### Hero Card Calculation
-```typescript
-// In ExpenseLogTab
-import { getCombinedMarginalRate, getAnnualizedIncome } from '@/lib/taxStrategies';
+5. **Content container**: Keep the fixed-height `h-[calc(100vh-4rem)]` layout since the calendar genuinely needs it, but use the standard content padding pattern.
 
-const marginalRate = taxProfile?.setup_completed_at
-  ? getCombinedMarginalRate(
-      annualizedIncome,
-      taxProfile.filing_status as FilingStatus,
-      stateRate,
-      taxProfile.entity_type,
-      taxProfile.scorp_salary
-    )
-  : 0.24; // default 24%
-
-const estimatedTaxSavingsCents = Math.round(ytdDeductibleCents * marginalRate);
-```
+### Result
+The Schedule page will share the same Manrope heading, TabsList view switcher, button sizes, and spacing rhythm as Expenses, Invoices, Credentials, and other modules — while keeping the compact navigation bar and fixed-height calendar that make it functional.
 
 ### Files modified
-- `src/pages/ExpensesPage.tsx`
-- `src/components/expenses/ExpenseLogTab.tsx`
-- `src/components/expenses/LogExpenseSheet.tsx` (new)
-- `src/components/expenses/MileageTrackerTab.tsx`
+- `src/pages/SchedulePage.tsx` — restructure header to use `page-header`/`page-title`/`page-subtitle`, replace custom view switcher with `TabsList`/`TabsTrigger`, normalize button sizing and spacing
 
