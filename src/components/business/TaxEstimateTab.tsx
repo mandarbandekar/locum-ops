@@ -124,6 +124,7 @@ export default function TaxEstimateTab({
       <TaxDashboard
         profile={taxProfile!}
         onEditProfile={() => setSetupOpen(true)}
+        onSaveProfile={(updates) => saveProfile(updates as any)}
       />
     </div>
   );
