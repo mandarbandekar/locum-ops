@@ -74,23 +74,23 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
-        /* Brand colors as direct references */
-        teal: {
-          50: "#E1F5EE",
-          100: "#9FE1CB",
-          200: "#5DCAA5",
-          400: "#1D9E75",
-          500: "#1D9E75",
-          600: "#0F6E56",
-          700: "#085041",
-          800: "#085041",
+        /* Brand colors — Sage & Gold */
+        sage: {
+          50: "#EFF3F0",
+          100: "#D6E5DA",
+          200: "#A3C5AD",
+          400: "#4A7C6F",
+          500: "#4A7C6F",
+          600: "#3A6358",
+          700: "#2A4A42",
+          800: "#1E352F",
         },
-        coral: {
-          DEFAULT: "#D85A30",
-          500: "#D85A30",
+        gold: {
+          DEFAULT: "#C49A3C",
+          500: "#C49A3C",
         },
         amber: {
-          500: "#D1A15B",
+          500: "#C49A3C",
         },
       },
       borderRadius: {
