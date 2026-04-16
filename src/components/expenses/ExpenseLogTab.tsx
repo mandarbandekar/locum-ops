@@ -136,7 +136,7 @@ export default function ExpenseLogTab({
           >
             <X className="h-4 w-4" />
           </Button>
-          <ExpenseOnboarding onAddExpense={openNew} />
+          <ExpenseOnboarding onAddExpense={() => setSheetOpen(true)} />
         </div>
       )}
 
