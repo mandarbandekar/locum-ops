@@ -19,37 +19,46 @@ import {
 interface InvoiceSendEmailProps {
   senderName: string
   senderBusinessName: string
+  senderEmail: string
+  senderPhone?: string
   facilityName: string
   invoiceNumber: string
   totalAmount: string
-  dueDate?: string
-  invoiceDate?: string
-  shiftDates?: string
+  dueDate: string
+  invoiceDate: string
   viewInvoiceUrl: string
   downloadPdfUrl: string
   customBody?: string
-  senderEmail: string
-  senderPhone?: string
+  isFollowUp?: boolean
+  daysOverdue?: number
 }
 
 export const InvoiceSendEmail = ({
   senderName,
   senderBusinessName,
+  senderEmail,
+  senderPhone,
   facilityName,
   invoiceNumber,
   totalAmount,
   dueDate,
   invoiceDate,
-  shiftDates,
   viewInvoiceUrl,
   downloadPdfUrl,
   customBody,
-  senderEmail,
-  senderPhone,
+  isFollowUp,
+  daysOverdue,
 }: InvoiceSendEmailProps) => {
-  const previewText = `Invoice ${invoiceNumber} from ${senderBusinessName} — $${totalAmount}`
-
+  const previewText = `Invoice ${invoiceNumber} — $${totalAmount} due ${dueDate}`
   const customLines = customBody ? customBody.split(/\r?\n/) : []
+
+  const defaultBody = isFollowUp
+    ? `This is a follow-up regarding an outstanding invoice for services at ${facilityName}.${
+        typeof daysOverdue === 'number' && daysOverdue > 0
+          ? ` The payment is now ${daysOverdue} day${daysOverdue === 1 ? '' : 's'} past due.`
+          : ''
+      }`
+    : `Please find your invoice for relief veterinary coverage at ${facilityName}.`
 
   return (
     <Html lang="en" dir="ltr">
@@ -57,7 +66,7 @@ export const InvoiceSendEmail = ({
       <Preview>{previewText}</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Heading style={h1}>Invoice {invoiceNumber}</Heading>
+          <Heading style={h1}>{senderBusinessName}</Heading>
 
           {customBody ? (
             <Text style={text}>
@@ -69,14 +78,7 @@ export const InvoiceSendEmail = ({
               ))}
             </Text>
           ) : (
-            <Text style={text}>
-              Hi {facilityName} team,
-              <br />
-              <br />
-              Please find invoice <strong>{invoiceNumber}</strong> attached below for
-              services provided. You can review the details and download a PDF copy
-              using the links below.
-            </Text>
+            <Text style={text}>{defaultBody}</Text>
           )}
 
           <Section style={summaryCard}>
@@ -85,24 +87,15 @@ export const InvoiceSendEmail = ({
               <strong>{invoiceNumber}</strong>
             </Text>
             <Text style={summaryRow}>
-              <span style={summaryLabel}>Amount due:</span>{' '}
-              <strong>${totalAmount}</strong>
+              <span style={summaryLabel}>Date:</span> {invoiceDate}
             </Text>
-            {invoiceDate && (
-              <Text style={summaryRow}>
-                <span style={summaryLabel}>Invoice date:</span> {invoiceDate}
-              </Text>
-            )}
-            {dueDate && (
-              <Text style={summaryRow}>
-                <span style={summaryLabel}>Due date:</span> <strong>{dueDate}</strong>
-              </Text>
-            )}
-            {shiftDates && (
-              <Text style={summaryRow}>
-                <span style={summaryLabel}>Service period:</span> {shiftDates}
-              </Text>
-            )}
+            <Text style={summaryAmountRow}>
+              <span style={summaryLabel}>Amount Due:</span>{' '}
+              <strong style={amountStrong}>${totalAmount}</strong>
+            </Text>
+            <Text style={summaryRow}>
+              <span style={summaryLabel}>Due Date:</span> <strong>{dueDate}</strong>
+            </Text>
           </Section>
 
           <Section style={{ textAlign: 'center', margin: '28px 0 12px' }}>
@@ -112,15 +105,15 @@ export const InvoiceSendEmail = ({
           </Section>
 
           <Text style={pdfLinkText}>
-            Or <Link href={downloadPdfUrl} style={link}>download a PDF copy</Link>.
+            <Link href={downloadPdfUrl} style={link}>
+              Download PDF
+            </Link>
           </Text>
 
           <Hr style={hr} />
 
           <Text style={signature}>
-            Thank you,
-            <br />
-            <strong>{senderName}</strong>
+            {senderName}
             {senderBusinessName && senderBusinessName !== senderName ? (
               <>
                 <br />
@@ -128,6 +121,7 @@ export const InvoiceSendEmail = ({
               </>
             ) : null}
             <br />
+            Reply to:{' '}
             <Link href={`mailto:${senderEmail}`} style={link}>
               {senderEmail}
             </Link>
@@ -139,8 +133,11 @@ export const InvoiceSendEmail = ({
             ) : null}
           </Text>
 
-          <Text style={replyNote}>
-            Reply directly to this email to reach {senderName} at {senderEmail}.
+          <Text style={footer}>
+            Sent via LocumOps ·{' '}
+            <Link href="https://locum-ops.com" style={footerLink}>
+              locum-ops.com
+            </Link>
           </Text>
         </Container>
       </Body>
@@ -180,10 +177,20 @@ const summaryRow = {
   margin: '4px 0',
   lineHeight: '1.5',
 }
+const summaryAmountRow = {
+  fontSize: '14px',
+  color: 'hsl(215, 13%, 25%)',
+  margin: '8px 0',
+  lineHeight: '1.5',
+}
 const summaryLabel = {
   color: 'hsl(215, 13%, 50%)',
   display: 'inline-block',
   minWidth: '110px',
+}
+const amountStrong = {
+  fontSize: '18px',
+  color: 'hsl(215, 25%, 15%)',
 }
 const button = {
   backgroundColor: 'hsl(173, 58%, 39%)',
@@ -215,9 +222,13 @@ const signature = {
   lineHeight: '1.6',
   margin: '0 0 20px',
 }
-const replyNote = {
+const footer = {
   fontSize: '12px',
   color: 'hsl(215, 13%, 55%)',
-  fontStyle: 'italic' as const,
+  textAlign: 'center' as const,
   margin: '20px 0 0',
+}
+const footerLink = {
+  color: 'hsl(215, 13%, 55%)',
+  textDecoration: 'underline',
 }
