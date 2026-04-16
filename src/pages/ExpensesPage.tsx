@@ -9,7 +9,7 @@ import { useTaxIntelligence } from '@/hooks/useTaxIntelligence';
 
 export default function ExpensesPage() {
   const expenseData = useExpenses();
-  const { taxProfile } = useTaxIntelligence();
+  const { profile: taxProfile } = useTaxIntelligence();
   const draftCount = expenseData.draftMileageExpenses.length;
 
   return (

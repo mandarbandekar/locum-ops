@@ -15,8 +15,18 @@ import { ExpenseOnboarding } from './ExpenseOnboarding';
 import type { Expense } from '@/hooks/useExpenses';
 import type { TaxIntelligenceProfile } from '@/hooks/useTaxIntelligence';
 import { getCombinedMarginalRate, getAnnualizedIncome } from '@/lib/taxStrategies';
-import { getStateTaxRate } from '@/lib/stateTaxData';
+import { STATE_TAX_DATA } from '@/lib/stateTaxData';
 import type { FilingStatus } from '@/lib/taxConstants2026';
+
+function getStateTaxRate(stateCode: string): number {
+  const entry = STATE_TAX_DATA[stateCode];
+  if (!entry || entry.type === 'none') return 0;
+  if (entry.type === 'flat') return (entry.flatRate ?? 0) / 100;
+  // Progressive: use top bracket as approximation
+  const brackets = entry.brackets?.single;
+  if (brackets && brackets.length > 0) return brackets[brackets.length - 1].rate / 100;
+  return 0.05;
+}
 
 interface Props {
   expenses: Expense[];
