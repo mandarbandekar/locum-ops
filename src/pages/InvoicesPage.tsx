@@ -347,7 +347,7 @@ export default function InvoicesPage() {
 
         <div>
           <InvoiceStatusGroup
-            title="Upcoming"
+            title="Auto Generated Upcoming Invoices"
             icon={<Clock className="h-4 w-4 text-muted-foreground" />}
             invoices={upcoming}
             selected={selected}
