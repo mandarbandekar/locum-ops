@@ -157,14 +157,39 @@ export function InvoiceSentPanel({ invoice, items, invoicePayments, facility, bi
       <Card>
         <CardHeader className="pb-1.5 pt-3 px-3"><CardTitle className="text-xs text-muted-foreground uppercase tracking-wider">Send & Share</CardTitle></CardHeader>
         <CardContent className="space-y-2 px-3 pb-3">
-          <Button className="w-full h-auto py-2.5 px-4 text-sm justify-center text-center whitespace-normal" onClick={() => setComposeOpen(true)}>
-            <Send className="mr-2 h-4 w-4 shrink-0" />
-            <span>
-              {overdue
-                ? `Send follow-up to ${billingNameTo || 'Billing Contact'}`
-                : `Send invoice to ${billingNameTo || 'Billing Contact'} at ${facility?.name || 'Facility'} via email`}
-            </span>
-          </Button>
+          {invoice.sent_at && !overdue ? (
+            <>
+              <div className="flex items-start gap-2 p-2.5 rounded-md bg-primary/10 text-sm">
+                <CheckCircle className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-foreground">
+                    Sent to {billingNameTo || 'billing contact'}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {format(new Date(invoice.sent_at), "MMM d, yyyy 'at' h:mm a")}
+                    {billingEmailTo ? ` · ${billingEmailTo}` : ''}
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                className="w-full h-auto py-2 px-3 text-sm justify-center text-center whitespace-normal"
+                onClick={() => setComposeOpen(true)}
+              >
+                <Send className="mr-2 h-4 w-4 shrink-0" />
+                Resend invoice email
+              </Button>
+            </>
+          ) : (
+            <Button className="w-full h-auto py-2.5 px-4 text-sm justify-center text-center whitespace-normal" onClick={() => setComposeOpen(true)}>
+              <Send className="mr-2 h-4 w-4 shrink-0" />
+              <span>
+                {overdue
+                  ? `Send follow-up to ${billingNameTo || 'Billing Contact'}`
+                  : `Send invoice to ${billingNameTo || 'Billing Contact'} at ${facility?.name || 'Facility'} via email`}
+              </span>
+            </Button>
+          )}
           <Button variant="outline" className="w-full text-sm" onClick={handleDownloadPdf} disabled={pdfLoading}>
             {pdfLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
             {pdfLoading ? 'Generating…' : 'Download PDF'}
