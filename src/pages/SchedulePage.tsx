@@ -3,7 +3,7 @@ import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { StatusBadge } from '@/components/StatusBadge';
-import { Plus, ChevronLeft, ChevronRight, List, CalendarDays, Trash2, Calendar as CalendarIcon, CheckSquare, RefreshCw, AlertTriangle, Ban } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, List, CalendarDays, Trash2, Calendar as CalendarIcon, CheckSquare, RefreshCw, AlertTriangle, Ban, Layers } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, getDay, startOfWeek, endOfWeek, addWeeks, subWeeks, differenceInMilliseconds, differenceInHours } from 'date-fns';
 import { CalendarPlus, Clock, DollarSign, TrendingUp } from 'lucide-react';
@@ -26,7 +26,7 @@ import { ShiftTaxNudge, ShiftTaxSummaryFooter } from '@/components/schedule/Shif
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { SpotlightTour, TourStep } from '@/components/SpotlightTour';
 import { useSpotlightTour } from '@/hooks/useSpotlightTour';
-import { Compass } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 const STORAGE_KEY = 'schedule-view-pref';
 
@@ -117,6 +117,8 @@ export default function SchedulePage() {
   const toggleFilter = (key: keyof CalendarLayerFilters) => {
     setCalendarFilters(prev => ({ ...prev, [key]: !prev[key] }));
   };
+
+  const hasNonDefaultLayers = calendarFilters.credentials || calendarFilters.subscriptions;
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, view);
@@ -331,229 +333,250 @@ export default function SchedulePage() {
 
   const isCalendarView = view === 'month' || view === 'week' || view === 'list';
 
+  const viewButtons = [
+    { key: 'month' as const, icon: CalendarDays, label: 'Month' },
+    { key: 'week' as const, icon: CalendarIcon, label: 'Week' },
+    { key: 'list' as const, icon: List, label: 'List' },
+    { key: 'confirmations' as const, icon: CheckSquare, label: 'Confirm', tourAttr: 'schedule-confirmations', fullLabel: 'Clinic Confirm' },
+    { key: 'sync' as const, icon: RefreshCw, label: 'Sync', tourAttr: 'schedule-sync' },
+  ];
+
   return (
-    <div>
-      <div className="page-header flex-col gap-3">
-        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-          <h1 className="page-title">Schedule</h1>
+    <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden">
+      {/* Row 1: Title | View Switcher | Actions */}
+      <div className="flex-none border-b border-border bg-card/50 px-4 py-2.5">
+        <div className="flex items-center gap-3">
+          <h1 className="text-lg font-semibold tracking-tight shrink-0">Schedule</h1>
+
+          <div className="flex items-center gap-0.5 rounded-lg bg-muted p-0.5 mx-auto" data-tour="schedule-view-switcher">
+            {viewButtons.map(({ key, icon: Icon, label, tourAttr, fullLabel }) => (
+              <button
+                key={key}
+                data-tour={tourAttr}
+                onClick={() => setView(key)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                  view === key
+                    ? 'bg-card text-foreground shadow-soft'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
+                }`}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">{fullLabel || label}</span>
+              </button>
+            ))}
+          </div>
+
           {isCalendarView && (
-            <div className="flex items-center gap-1.5 sm:gap-2" data-tour="schedule-add-shift">
-              <Button size="sm" onClick={() => setShowAdd(true)} className="h-8 text-[11px] sm:text-[13px] px-2.5 sm:px-4">
-                <Plus className="mr-1 h-3.5 w-3.5" /> <span className="hidden xs:inline">Add </span>Shift
+            <div className="flex items-center gap-1.5 shrink-0" data-tour="schedule-add-shift">
+              <Button size="sm" onClick={() => setShowAdd(true)} className="h-8 text-xs px-3">
+                <Plus className="mr-1 h-3.5 w-3.5" /> Shift
               </Button>
-              <Button size="sm" variant="outline" onClick={() => { setBlockTimeDefaultDate(undefined); setShowBlockTime(true); }} className="h-8 text-[11px] sm:text-[13px] px-2.5 sm:px-4">
+              <Button size="sm" variant="outline" onClick={() => { setBlockTimeDefaultDate(undefined); setShowBlockTime(true); }} className="h-8 text-xs px-3">
                 <Ban className="mr-1 h-3.5 w-3.5" /> Block
               </Button>
             </div>
           )}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={scheduleTour.startTour}
-            className="ml-auto gap-1.5 text-xs text-primary hover:bg-primary/10"
-          >
-            <Compass className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Tour</span>
-          </Button>
-        </div>
-        <div className="flex gap-1 sm:gap-2 flex-wrap overflow-x-auto" data-tour="schedule-view-switcher">
-          <Button size="sm" variant={view === 'month' ? 'default' : 'outline'} onClick={() => setView('month')} className="h-8 text-[12px] sm:text-[13px] px-2.5 sm:px-4">
-            <CalendarDays className="mr-1 sm:mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" /> Month
-          </Button>
-          <Button size="sm" variant={view === 'week' ? 'default' : 'outline'} onClick={() => setView('week')} className="h-8 text-[12px] sm:text-[13px] px-2.5 sm:px-4">
-            <CalendarIcon className="mr-1 sm:mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" /> Week
-          </Button>
-          <Button size="sm" variant={view === 'list' ? 'default' : 'outline'} onClick={() => setView('list')} className="h-8 text-[12px] sm:text-[13px] px-2.5 sm:px-4">
-            <List className="mr-1 sm:mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" /> List
-          </Button>
-          <Button data-tour="schedule-confirmations" size="sm" variant={view === 'confirmations' ? 'default' : 'outline'} onClick={() => setView('confirmations')} className="h-8 text-[12px] sm:text-[13px] px-2.5 sm:px-4">
-            <CheckSquare className="mr-1 sm:mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" /> <span className="hidden sm:inline">Clinic </span>Confirm
-          </Button>
-          <Button data-tour="schedule-sync" size="sm" variant={view === 'sync' ? 'default' : 'outline'} onClick={() => setView('sync')} className="h-8 text-[12px] sm:text-[13px] px-2.5 sm:px-4">
-            <RefreshCw className="mr-1 sm:mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" /> Sync
-          </Button>
         </div>
       </div>
 
-      {view === 'sync' ? (
-        <CalendarSyncPanel />
-      ) : view === 'confirmations' ? (
-        <ClinicConfirmationsTab />
-      ) : (
-        <>
-          <div className="flex items-center justify-between mb-4" data-tour="schedule-calendar">
-            <Button variant="ghost" size="icon" onClick={navigateBack}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <div className="flex items-center gap-2">
-              <h2 className="text-xl font-bold tracking-tight">{headerLabel}</h2>
-              <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => setCurrentDate(new Date())}>
+      {/* Row 2: Date Nav | Stats | Layers (calendar views only) */}
+      {isCalendarView && (
+        <div className="flex-none border-b border-border px-4 py-1.5">
+          <div className="flex items-center justify-between gap-3" data-tour="schedule-calendar">
+            <div className="flex items-center gap-1.5">
+              <Button variant="ghost" size="icon" onClick={navigateBack} className="h-7 w-7">
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-sm font-semibold min-w-[140px] text-center">{headerLabel}</span>
+              <Button variant="ghost" size="icon" onClick={navigateForward} className="h-7 w-7">
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="sm" className="text-[11px] h-6 px-2 ml-1" onClick={() => setCurrentDate(new Date())}>
                 Today
               </Button>
             </div>
-            <Button variant="ghost" size="icon" onClick={navigateForward}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
 
-          {totalShiftsInRange > 0 && (
-            <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-4 px-1 text-xs sm:text-sm text-muted-foreground">
-              <span className="flex items-center gap-1.5"><CalendarDays className="h-3.5 w-3.5" /> <span className="font-medium text-foreground">{totalShiftsInRange}</span> shifts</span>
-              <span className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /> <span className="font-medium text-foreground">{totalHoursInRange}</span> hours</span>
-              <span className="flex items-center gap-1.5"><DollarSign className="h-3.5 w-3.5" /> <span className="font-medium text-foreground">${totalRevenueInRange.toLocaleString()}</span> expected</span>
-            </div>
-          )}
-
-          <div className="mb-4">
-            <CalendarFilters filters={calendarFilters} onToggle={toggleFilter} />
-          </div>
-
-          {view === 'month' ? (
-            <>
-              <div className="rounded-lg border bg-card overflow-x-auto -mx-3 sm:mx-0">
-                <div className="min-w-[420px]">
-                  <div className="grid grid-cols-7 bg-muted/50">
-                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-                      <div key={d} className="p-1.5 sm:p-2 text-center text-[10px] sm:text-xs font-medium text-muted-foreground">{d}</div>
-                    ))}
-                  </div>
-                  <div className="grid grid-cols-7">
-                    {Array.from({ length: startDow }).map((_, i) => (
-                      <div key={`empty-${i}`} className="min-h-[60px] sm:min-h-[80px] border-t border-r bg-muted/20" />
-                    ))}
-                    {monthDays.map(day => renderDayCell(day, 'min-h-[60px] sm:min-h-[80px]'))}
-                  </div>
-                </div>
+            {totalShiftsInRange > 0 && (
+              <div className="hidden md:flex items-center gap-4 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" /> <span className="font-medium text-foreground">{totalShiftsInRange}</span> shifts</span>
+                <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> <span className="font-medium text-foreground">{totalHoursInRange}</span>h</span>
+                <span className="flex items-center gap-1"><DollarSign className="h-3 w-3" /> <span className="font-medium text-foreground">${totalRevenueInRange.toLocaleString()}</span></span>
               </div>
-              {totalShiftsInRange === 0 && (
-                <div className="flex flex-col items-center justify-center py-16 text-center">
-                  <CalendarPlus className="h-12 w-12 text-muted-foreground/40 mb-4" />
-                  <h3 className="text-lg font-semibold mb-1">No shifts this month</h3>
-                  <p className="text-sm text-muted-foreground max-w-xs mb-4">Add shifts to track your schedule, auto-generate invoices, and sync to your calendar.</p>
-                  <Button onClick={() => setShowAdd(true)}><Plus className="mr-1.5 h-4 w-4" /> Add Your First Shift</Button>
+            )}
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-7 text-xs px-2 gap-1.5 relative">
+                  <Layers className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Layers</span>
+                  {hasNonDefaultLayers && (
+                    <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-primary" />
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-auto p-3">
+                <CalendarFilters filters={calendarFilters} onToggle={toggleFilter} />
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
+      )}
+
+      {/* Content area - fills remaining space */}
+      <div className="flex-1 overflow-auto px-4 py-3">
+        {view === 'sync' ? (
+          <CalendarSyncPanel />
+        ) : view === 'confirmations' ? (
+          <ClinicConfirmationsTab />
+        ) : (
+          <>
+            {view === 'month' ? (
+              <>
+                <div className="rounded-lg border bg-card overflow-x-auto -mx-1 sm:mx-0">
+                  <div className="min-w-[420px]">
+                    <div className="grid grid-cols-7 bg-muted/50">
+                      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+                        <div key={d} className="p-1.5 sm:p-2 text-center text-[10px] sm:text-xs font-medium text-muted-foreground">{d}</div>
+                      ))}
+                    </div>
+                    <div className="grid grid-cols-7">
+                      {Array.from({ length: startDow }).map((_, i) => (
+                        <div key={`empty-${i}`} className="min-h-[60px] sm:min-h-[80px] border-t border-r bg-muted/20" />
+                      ))}
+                      {monthDays.map(day => renderDayCell(day, 'min-h-[60px] sm:min-h-[80px]'))}
+                    </div>
+                  </div>
                 </div>
-              )}
-            </>
-          ) : view === 'week' ? (
-            <>
-              <WeekTimeGrid
-                weekDays={weekDays}
-                shifts={calendarFilters.shifts ? shifts : []}
-                getFacilityName={getFacilityName}
-                onEditShift={setEditShift}
-                onDropOnTime={handleDropOnTime}
-                onCellClick={openAddShiftAt}
-                calendarFilters={{ credentials: calendarFilters.credentials, subscriptions: calendarFilters.subscriptions }}
-                getEventsForDay={getEventsForDay}
-                timeBlocks={timeBlocks}
-                onEditBlock={setEditBlock}
-              />
-              {totalShiftsInRange === 0 && (
-                <div className="flex flex-col items-center justify-center py-16 text-center">
-                  <CalendarPlus className="h-12 w-12 text-muted-foreground/40 mb-4" />
-                  <h3 className="text-lg font-semibold mb-1">No shifts this week</h3>
-                  <p className="text-sm text-muted-foreground max-w-xs mb-4">Add shifts to track your schedule, auto-generate invoices, and sync to your calendar.</p>
-                  <Button onClick={() => setShowAdd(true)}><Plus className="mr-1.5 h-4 w-4" /> Add Your First Shift</Button>
-                </div>
-              )}
-            </>
-          ) : (
-            <TooltipProvider>
-            <div className="rounded-lg border bg-card overflow-x-auto -mx-3 sm:mx-0">
-              <table className="w-full text-sm min-w-[500px] sm:min-w-0">
-                <thead><tr className="border-b bg-muted/50">
-                  <th className="text-left p-3 font-medium text-muted-foreground">Date</th>
-                  <th className="text-left p-3 font-medium text-muted-foreground">Facility</th>
-                  <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Time</th>
-                  <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Hours</th>
-                  <th className="text-left p-3 font-medium text-muted-foreground">Earnings</th>
-                  <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
-                  <th className="w-10" />
-                </tr></thead>
-                <tbody>
-                  {rangeShifts.map(s => {
-                    const hrs = Math.max(0, differenceInHours(new Date(s.end_datetime), new Date(s.start_datetime)));
-                    const isPaid = paidShiftIds.has(s.id);
-                    return (
-                      <React.Fragment key={s.id}>
-                        <tr className="border-b last:border-0 hover:bg-muted/30 cursor-pointer" onClick={() => setEditShift(s.id)}>
-                          <td className="p-3">{format(new Date(s.start_datetime), 'EEE, MMM d')}</td>
-                          <td className="p-3 font-medium">{getFacilityName(s.facility_id)}</td>
-                          <td className="p-3 text-muted-foreground hidden md:table-cell">{format(new Date(s.start_datetime), 'h:mm a')} – {format(new Date(s.end_datetime), 'h:mm a')}</td>
-                          <td className="p-3 text-muted-foreground hidden md:table-cell">{hrs}h</td>
-                          <td className="p-3 font-medium">${s.rate_applied}</td>
-                          <td className="p-3" onClick={e => e.stopPropagation()}>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive">
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete this shift?</AlertDialogTitle>
-                                  <AlertDialogDescription>{getFacilityName(s.facility_id)} — {format(new Date(s.start_datetime), 'MMM d, yyyy')}</AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => { deleteShift(s.id); toast.success('Shift deleted'); }}>Delete</AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </td>
-                        </tr>
-                        {isPaid && (s.rate_applied || 0) > 0 && (
-                          <tr className="border-b last:border-0">
-                            <td colSpan={7} className="px-3 pb-2 pt-0">
-                              <ShiftTaxNudge
-                                shiftIncome={s.rate_applied || 0}
-                                taxProfile={taxProfile}
-                                hasProfile={hasTaxProfile}
-                                isPaid={isPaid}
-                                effectiveRate={effectiveRate}
-                              />
+                {totalShiftsInRange === 0 && (
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <CalendarPlus className="h-12 w-12 text-muted-foreground/40 mb-4" />
+                    <h3 className="text-lg font-semibold mb-1">No shifts this month</h3>
+                    <p className="text-sm text-muted-foreground max-w-xs mb-4">Add shifts to track your schedule, auto-generate invoices, and sync to your calendar.</p>
+                    <Button onClick={() => setShowAdd(true)}><Plus className="mr-1.5 h-4 w-4" /> Add Your First Shift</Button>
+                  </div>
+                )}
+              </>
+            ) : view === 'week' ? (
+              <>
+                <WeekTimeGrid
+                  weekDays={weekDays}
+                  shifts={calendarFilters.shifts ? shifts : []}
+                  getFacilityName={getFacilityName}
+                  onEditShift={setEditShift}
+                  onDropOnTime={handleDropOnTime}
+                  onCellClick={openAddShiftAt}
+                  calendarFilters={{ credentials: calendarFilters.credentials, subscriptions: calendarFilters.subscriptions }}
+                  getEventsForDay={getEventsForDay}
+                  timeBlocks={timeBlocks}
+                  onEditBlock={setEditBlock}
+                />
+                {totalShiftsInRange === 0 && (
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <CalendarPlus className="h-12 w-12 text-muted-foreground/40 mb-4" />
+                    <h3 className="text-lg font-semibold mb-1">No shifts this week</h3>
+                    <p className="text-sm text-muted-foreground max-w-xs mb-4">Add shifts to track your schedule, auto-generate invoices, and sync to your calendar.</p>
+                    <Button onClick={() => setShowAdd(true)}><Plus className="mr-1.5 h-4 w-4" /> Add Your First Shift</Button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <TooltipProvider>
+              <div className="rounded-lg border bg-card overflow-x-auto -mx-1 sm:mx-0">
+                <table className="w-full text-sm min-w-[500px] sm:min-w-0">
+                  <thead><tr className="border-b bg-muted/50">
+                    <th className="text-left p-3 font-medium text-muted-foreground">Date</th>
+                    <th className="text-left p-3 font-medium text-muted-foreground">Facility</th>
+                    <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Time</th>
+                    <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Hours</th>
+                    <th className="text-left p-3 font-medium text-muted-foreground">Earnings</th>
+                    <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
+                    <th className="w-10" />
+                  </tr></thead>
+                  <tbody>
+                    {rangeShifts.map(s => {
+                      const hrs = Math.max(0, differenceInHours(new Date(s.end_datetime), new Date(s.start_datetime)));
+                      const isPaid = paidShiftIds.has(s.id);
+                      return (
+                        <React.Fragment key={s.id}>
+                          <tr className="border-b last:border-0 hover:bg-muted/30 cursor-pointer" onClick={() => setEditShift(s.id)}>
+                            <td className="p-3">{format(new Date(s.start_datetime), 'EEE, MMM d')}</td>
+                            <td className="p-3 font-medium">{getFacilityName(s.facility_id)}</td>
+                            <td className="p-3 text-muted-foreground hidden md:table-cell">{format(new Date(s.start_datetime), 'h:mm a')} – {format(new Date(s.end_datetime), 'h:mm a')}</td>
+                            <td className="p-3 text-muted-foreground hidden md:table-cell">{hrs}h</td>
+                            <td className="p-3 font-medium">${s.rate_applied}</td>
+                            <td className="p-3" onClick={e => e.stopPropagation()}>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive">
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete this shift?</AlertDialogTitle>
+                                    <AlertDialogDescription>{getFacilityName(s.facility_id)} — {format(new Date(s.start_datetime), 'MMM d, yyyy')}</AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => { deleteShift(s.id); toast.success('Shift deleted'); }}>Delete</AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             </td>
                           </tr>
-                        )}
-                      </React.Fragment>
-                    );
-                  })}
-                  {rangeShifts.length === 0 && (
-                    <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">
-                      <div className="flex flex-col items-center py-8">
-                        <CalendarPlus className="h-10 w-10 text-muted-foreground/40 mb-3" />
-                        <p className="mb-3">No shifts to display</p>
-                        <Button size="sm" onClick={() => setShowAdd(true)}><Plus className="mr-1.5 h-3.5 w-3.5" /> Add Shift</Button>
-                      </div>
-                    </td></tr>
-                  )}
-                </tbody>
-                {rangeShifts.length > 0 && (
-                  <tfoot>
-                    <tr className="border-t bg-muted/30 font-medium text-sm">
-                      <td className="p-3">{totalShiftsInRange} shifts</td>
-                      <td className="p-3" />
-                      <td className="p-3 hidden md:table-cell" />
-                      <td className="p-3 hidden md:table-cell">{totalHoursInRange}h</td>
-                      <td className="p-3">${totalRevenueInRange.toLocaleString()}</td>
-                      <td className="p-3" />
-                      <td />
-                    </tr>
-                    {ytdPaidIncome > 0 && (
-                      <tr className="border-t">
-                        <td colSpan={7}>
-                          <ShiftTaxSummaryFooter ytdPaid={ytdPaidIncome} effectiveRate={effectiveRate} hasProfile={hasTaxProfile} />
-                        </td>
-                      </tr>
+                          {isPaid && (s.rate_applied || 0) > 0 && (
+                            <tr className="border-b last:border-0">
+                              <td colSpan={7} className="px-3 pb-2 pt-0">
+                                <ShiftTaxNudge
+                                  shiftIncome={s.rate_applied || 0}
+                                  taxProfile={taxProfile}
+                                  hasProfile={hasTaxProfile}
+                                  isPaid={isPaid}
+                                  effectiveRate={effectiveRate}
+                                />
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
+                    {rangeShifts.length === 0 && (
+                      <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">
+                        <div className="flex flex-col items-center py-8">
+                          <CalendarPlus className="h-10 w-10 text-muted-foreground/40 mb-3" />
+                          <p className="mb-3">No shifts to display</p>
+                          <Button size="sm" onClick={() => setShowAdd(true)}><Plus className="mr-1.5 h-3.5 w-3.5" /> Add Shift</Button>
+                        </div>
+                      </td></tr>
                     )}
-                  </tfoot>
-                )}
-              </table>
-            </div>
-            </TooltipProvider>
-          )}
-        </>
-      )}
+                  </tbody>
+                  {rangeShifts.length > 0 && (
+                    <tfoot>
+                      <tr className="border-t bg-muted/30 font-medium text-sm">
+                        <td className="p-3">{totalShiftsInRange} shifts</td>
+                        <td className="p-3" />
+                        <td className="p-3 hidden md:table-cell" />
+                        <td className="p-3 hidden md:table-cell">{totalHoursInRange}h</td>
+                        <td className="p-3">${totalRevenueInRange.toLocaleString()}</td>
+                        <td className="p-3" />
+                        <td />
+                      </tr>
+                      {ytdPaidIncome > 0 && (
+                        <tr className="border-t">
+                          <td colSpan={7}>
+                            <ShiftTaxSummaryFooter ytdPaid={ytdPaidIncome} effectiveRate={effectiveRate} hasProfile={hasTaxProfile} />
+                          </td>
+                        </tr>
+                      )}
+                    </tfoot>
+                  )}
+                </table>
+              </div>
+              </TooltipProvider>
+            )}
+          </>
+        )}
+      </div>
 
       <ShiftFormDialog
         open={showAdd}
