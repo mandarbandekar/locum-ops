@@ -9,7 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Trash2, AlertTriangle, Layers, Undo2, ArrowRight, Mail, FileText, Eye, Loader2 } from 'lucide-react';
+import { ArrowLeft, Trash2, AlertTriangle, Layers, Mail, FileText, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
 import { toast } from 'sonner';
@@ -31,6 +31,10 @@ import {
 } from '@/components/ui/dialog';
 import { AutoInvoiceDeleteDialog } from '@/components/invoice/AutoInvoiceDeleteDialog';
 import { InvoiceComposeDialog } from '@/components/invoice/InvoiceComposeDialog';
+
+// Status configs are kept inline; STATUS_CONFIG below.
+// Removed: STEP_ORDER + handleStepClick + move dialog (status changes now go through InvoiceActionBar).
+
 
 const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
   draft: { label: 'Draft', variant: 'secondary' },

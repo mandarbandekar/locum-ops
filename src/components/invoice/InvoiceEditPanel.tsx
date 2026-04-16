@@ -298,34 +298,6 @@ export function InvoiceEditPanel({
         </div>
       )}
 
-      {/* Balance Due card — shown when not draft */}
-      {readOnly && (
-        <Card className={isPaid ? 'border-primary/30 bg-primary/5' : computedStatus === 'overdue' ? 'border-destructive/30 bg-destructive/5' : ''}>
-          <CardContent className="pt-4 pb-4 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Balance Due</span>
-              <span className={`font-bold text-2xl ${computedStatus === 'overdue' ? 'text-destructive' : computedStatus === 'paid' ? 'text-primary' : 'text-foreground'}`}>
-                ${(invoice.balance_due ?? 0).toLocaleString()}
-              </span>
-            </div>
-            <div className="grid grid-cols-3 gap-3 pt-2 border-t text-xs">
-              <div>
-                <p className="text-muted-foreground mb-0.5">Invoice Date</p>
-                <p className="font-medium">{format(new Date(invoice.invoice_date), 'MMM d, yyyy')}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground mb-0.5">Due Date</p>
-                <p className="font-medium">{invoice.due_date ? format(new Date(invoice.due_date), 'MMM d, yyyy') : '—'}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground mb-0.5">Sent</p>
-                <p className="font-medium">{invoice.sent_at ? format(new Date(invoice.sent_at), 'MMM d, yyyy') : '—'}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* From + Bill To compact */}
       <div className="grid grid-cols-2 gap-3">
         <Card>
@@ -497,15 +469,6 @@ export function InvoiceEditPanel({
             </CollapsibleContent>
           </Card>
         </Collapsible>
-      )}
-
-      {/* Revert to draft — shown in read-only mode */}
-      {readOnly && !isPaid && onRevertToDraft && (
-        <div className="pt-1">
-          <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground" onClick={onRevertToDraft}>
-            Need to edit? Revert to Draft
-          </Button>
-        </div>
       )}
 
       {/* Record Payment Dialog */}
