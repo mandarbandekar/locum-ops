@@ -76,7 +76,7 @@ interface DataContextType {
   addTimeBlock: (block: Omit<TimeBlock, 'id'>) => Promise<void>;
   updateTimeBlock: (block: TimeBlock) => Promise<void>;
   deleteTimeBlock: (id: string) => Promise<void>;
-  getComputedInvoiceStatus: (invoice: Invoice) => Invoice['status'];
+  getComputedInvoiceStatus: (invoice: Invoice) => Invoice['status'] | 'overdue';
   suppressInvoicePeriod: (facilityId: string, periodStart: string, periodEnd: string) => Promise<void>;
   suppressedPeriods: SuppressedPeriod[];
 }

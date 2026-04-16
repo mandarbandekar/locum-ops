@@ -105,7 +105,7 @@ export default function BusinessPage() {
     // Check if any facility has 3+ overdue
     const facilityOverdue: Record<string, number> = {};
     invoices.forEach(inv => {
-      if (inv.status === 'overdue' || (inv.due_date && !inv.paid_at && new Date() > new Date(inv.due_date) && inv.status === 'sent')) {
+      if (computeInvoiceStatus(inv) === 'overdue') {
         facilityOverdue[inv.facility_id] = (facilityOverdue[inv.facility_id] || 0) + 1;
       }
     });

@@ -76,7 +76,7 @@ export function useCPAPrepData() {
     const paidInvoices = invoices.filter(i => i.status === 'paid' && i.paid_at && new Date(i.paid_at).getFullYear() === currentYear);
     const paidCents = Math.round(paidInvoices.reduce((s, i) => s + i.total_amount, 0) * 100);
 
-    const outstanding = invoices.filter(i => (i.status === 'sent' || i.status === 'overdue' || i.status === 'partial'));
+    const outstanding = invoices.filter(i => (i.status === 'sent' || i.status === 'partial'));
     const outstandingCents = Math.round(outstanding.reduce((s, i) => s + i.balance_due, 0) * 100);
 
     // Find uninvoiced YTD shifts (not linked to any line item)
@@ -169,7 +169,7 @@ export function useCPAPrepData() {
     const now = new Date();
     const draft = invoices.filter(i => i.status === 'draft');
     const sent = invoices.filter(i => i.status === 'sent');
-    const overdue = invoices.filter(i => i.status === 'overdue' || (i.status === 'sent' && i.due_date && new Date(i.due_date) < now));
+    const overdue = invoices.filter(i => (i.status === 'sent' || i.status === 'partial') && i.due_date && new Date(i.due_date) < now && i.balance_due > 0);
     const paid = invoices.filter(i => i.status === 'paid' && i.paid_at && new Date(i.paid_at).getFullYear() === currentYear);
     const sumCents = (arr: Invoice[]) => Math.round(arr.reduce((s, i) => s + (i.balance_due ?? i.total_amount), 0) * 100);
     const sumTotalCents = (arr: Invoice[]) => Math.round(arr.reduce((s, i) => s + i.total_amount, 0) * 100);
@@ -248,7 +248,7 @@ export function useCPAPrepData() {
       ? { label: `${missingReceipts.length} expenses over $75 missing receipts`, status: 'warning', count: missingReceipts.length, link: '/expenses' }
       : { label: 'Receipts complete for expenses over $75', status: 'ok' });
 
-    const unpaidCount = invoices.filter(i => i.status === 'sent' || i.status === 'overdue' || i.status === 'partial').length;
+    const unpaidCount = invoices.filter(i => i.status === 'sent' || i.status === 'partial').length;
     items.push(unpaidCount > 0
       ? { label: `${unpaidCount} unpaid invoices to review`, status: 'warning', count: unpaidCount, link: '/invoices' }
       : { label: 'All invoices settled', status: 'ok' });
