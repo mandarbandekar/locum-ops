@@ -18,10 +18,11 @@ import { getCombinedMarginalRate, getAnnualizedIncome } from '@/lib/taxStrategie
 import { STATE_TAX_DATA } from '@/lib/stateTaxData';
 import type { FilingStatus } from '@/lib/taxConstants2026';
 
-function getStateTaxRate(stateCode: string): number {
+function getStateTaxRate(stateCode: string | undefined): number {
+  if (!stateCode) return 0.05;
   const entry = STATE_TAX_DATA[stateCode];
+  if (!entry) return 0.05;
   if (entry.type === 'flat') return (entry.rate ?? 0);
-  // Progressive: use top bracket as approximation
   const brackets = entry.brackets?.single;
   if (brackets && brackets.length > 0) return brackets[brackets.length - 1].rate / 100;
   return 0.05;
