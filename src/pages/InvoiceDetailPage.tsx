@@ -469,6 +469,7 @@ export default function InvoiceDetailPage() {
         onUpdateInvoice={updateInvoice}
         onAddActivity={addActivity}
         onRecordPayment={() => setPaymentDialogOpen(true)}
+        onOpenCompose={() => setComposeOpen(true)}
       />
 
       {/* Move Status Dialog — only for backward moves */}

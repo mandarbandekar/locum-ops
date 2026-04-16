@@ -5,6 +5,16 @@ import { toast } from 'sonner';
 import { buildChecklistItems } from '@/components/invoice/ReadyToSendChecklist';
 import { supabase } from '@/integrations/supabase/client';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 async function downloadInvoicePdf(invoiceId: string, invoiceNumber: string) {
   const { data: { session } } = await supabase.auth.getSession();
@@ -36,14 +46,16 @@ interface InvoiceActionBarProps {
   onAddActivity: (activity: any) => Promise<void>;
   onRecordPayment?: () => void;
   userId?: string;
+  onOpenCompose?: () => void;
 }
 
-export function InvoiceActionBar({ invoice, items, facility, profile, dueDate, billingNameTo, onSave, onUpdateInvoice, onAddActivity, onRecordPayment, userId }: InvoiceActionBarProps) {
+export function InvoiceActionBar({ invoice, items, facility, profile, dueDate, billingNameTo, onSave, onUpdateInvoice, onAddActivity, onRecordPayment, userId, onOpenCompose }: InvoiceActionBarProps) {
   const [saving, setSaving] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [shareLoading, setShareLoading] = useState(false);
   const [emailSending, setEmailSending] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const isDraft = invoice.status === 'draft';
   const computedStatus = computeInvoiceStatus(invoice);
@@ -74,9 +86,9 @@ export function InvoiceActionBar({ invoice, items, facility, profile, dueDate, b
       status: 'sent',
       sent_at: new Date().toISOString(),
     });
-    await onAddActivity({ invoice_id: invoice.id, action: 'marked_sent', description: 'Invoice marked as sent' });
+    await onAddActivity({ invoice_id: invoice.id, action: 'marked_sent_manually', description: 'Invoice marked as sent manually (sent outside Locum Ops)' });
     setSending(false);
-    toast.success('Invoice marked as sent');
+    toast.success('Invoice marked as sent manually');
   };
 
   const handleDownloadPdf = async () => {
@@ -131,8 +143,14 @@ export function InvoiceActionBar({ invoice, items, facility, profile, dueDate, b
               <Save className="mr-1 h-3.5 w-3.5" />
               <span className="hidden sm:inline">{saving ? 'Saving…' : 'Save'}</span>
             </Button>
-            <Button size="sm" onClick={handleProceedToSend} disabled={sending} className="shrink-0">
-              {sending ? 'Processing…' : <><span className="hidden sm:inline">Mark as Sent</span><span className="sm:hidden">Send</span> <ArrowRight className="ml-1 h-3.5 w-3.5" /></>}
+            <Button variant="outline" size="sm" onClick={() => setConfirmOpen(true)} disabled={sending} className="shrink-0">
+              <span className="hidden sm:inline">I already sent this</span>
+              <span className="sm:hidden">Already Sent</span>
+            </Button>
+            <Button size="sm" onClick={onOpenCompose} className="shrink-0">
+              <Send className="mr-1 h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Send to Clinic</span>
+              <span className="sm:hidden">Send</span>
             </Button>
           </>
         )}
@@ -176,6 +194,23 @@ export function InvoiceActionBar({ invoice, items, facility, profile, dueDate, b
           </>
         )}
       </div>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Use this only if you've already sent this invoice from your own email. The invoice will move to "Sent & Awaiting Payment" without sending any email from Locum Ops.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={async () => { setConfirmOpen(false); await handleProceedToSend(); }}>
+              Yes, mark as sent
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
