@@ -60,6 +60,7 @@ export default function InvoiceDetailPage() {
   const [moveTarget, setMoveTarget] = useState<string | null>(null);
   const [billingDialogOpen, setBillingDialogOpen] = useState(false);
   const [sendingReminder, setSendingReminder] = useState(false);
+  const [composeOpen, setComposeOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState<string>('details');
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
