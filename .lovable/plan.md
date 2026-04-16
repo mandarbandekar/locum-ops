@@ -1,31 +1,26 @@
+## Plan: Replace "What If" Slider with Schedule Impact Selector
 
+### What changes
 
-## Plan: Add "Mark as Paid" Quick Action to Invoice Dashboard
+Replace the "What if I add more shifts this quarter?" income slider with the existing **schedule selector** component that shows how changing shifts-per-week impacts quarterly income, taxes, and take-home. The set-aside nudge stays.
 
-### What it does
-Adds a "Mark as Paid" button to each invoice row in the "Sent & Awaiting Payment" and "Overdue" sections of the Invoices page. Tapping it opens the existing `RecordPaymentDialog` pre-filled with the balance due. After recording, the invoice status updates to `paid` and moves to the Paid section.
+### How it works
 
-### Changes
-
-**1. `src/components/invoice/InvoiceStatusGroup.tsx`**
-- Add an optional `onMarkAsPaid` callback prop: `(invoice: InvoiceWithStatus) => void`
-- In `InvoiceTable`, add a new action column button (DollarSign icon, "Mark as Paid") next to the delete button for invoices where `computedStatus` is `sent`, `partial`, or `overdue`
-- Pass `onMarkAsPaid` through to `InvoiceTable` and `FacilitySubGroup`
-
-**2. `src/pages/InvoicesPage.tsx`**
-- Import `RecordPaymentDialog` from `@/components/invoice/RecordPaymentDialog`
-- Add state: `markAsPaidTarget` (the invoice being paid) and `paymentDialogOpen`
-- Create `handleMarkAsPaid(invoice)` that sets the target and opens the dialog
-- Create `handleRecordPayment(payment)` that:
-  1. Calls `addPayment({ invoice_id, ...payment })`
-  2. Computes new balance (`balance_due - payment.amount`)
-  3. Calls `updateInvoice()` with `balance_due`, `status: 'paid'` (if full payment) or `status: 'partial'`, and `paid_at`
-  4. Calls `addActivity()` to log the payment
-  5. Shows toast confirmation
-- Pass `onMarkAsPaid` to the Overdue and Sent & Awaiting `InvoiceStatusGroup` components
-- Render `RecordPaymentDialog` at the bottom of the page
+1. **Remove** `WhatIfSlider` from `TaxDashboard.tsx` (and its import, plus the `whatIfCalculator` callback)
+2. **Add** `TaxProjectionDisplay` in its place, wired to the user's actual day rate and tax profile state
+3. **Persist** the schedule selection to the tax profile's `typical_days_per_week` field (same pattern used in `TaxEstimateTab`)
+4. **Pass** the user's `stateCode` from their profile so it uses real state data instead of timezone inference
 
 ### Files modified
-- `src/components/invoice/InvoiceStatusGroup.tsx` — add Mark as Paid button per row
-- `src/pages/InvoicesPage.tsx` — wire up dialog and payment logic
 
+- `**src/components/tax-intelligence/TaxDashboard.tsx**`
+  - Remove `WhatIfSlider` import and `whatIfCalculator`
+  - Import `TaxProjectionDisplay`, `daysPerWeekToIndex`, `indexToDaysPerWeek`
+  - Add schedule index state synced from profile's `typical_days_per_week`
+  - Derive `dayRate` from profile's `annual_relief_income` and schedule
+  - Render `TaxProjectionDisplay` where `WhatIfSlider` was, with `variant="page"` and the user's `stateCode`
+  - Accept a new `onSaveProfile` prop to persist schedule changes
+- `**src/components/business/TaxEstimateTab.tsx**` — pass `saveProfile` through to `TaxDashboard` as `onSaveProfile`
+- `**src/pages/TaxEstimatePage.tsx**` — no changes needed (already passes through)
+
+The set-aside alert ("Set aside X% of each payment…") remains untouched directly below.
