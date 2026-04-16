@@ -4,7 +4,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, ChevronRight, Trash2, Zap, CheckCircle2, PartyPopper, DollarSign } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ChevronDown, ChevronRight, Trash2, Zap, CheckCircle2, PartyPopper, DollarSign, Mail } from 'lucide-react';
 import { differenceInCalendarDays } from 'date-fns';
 
 /** Format a date string to 'MMM d, yyyy' without timezone shift. */
@@ -40,6 +41,7 @@ interface Props {
   headerRight?: React.ReactNode;
   alertBanner?: React.ReactNode;
   onMarkAsPaid?: (invoice: InvoiceWithStatus) => void;
+  onSendFollowup?: (invoice: InvoiceWithStatus) => void;
 }
 
 const statusStyles: Record<string, string> = {
@@ -77,7 +79,7 @@ function getDueBadge(dueDate: string | null, status: string) {
   return <span className="text-[11px] text-muted-foreground">Due in {days}d</span>;
 }
 
-function InvoiceTable({ invoices, selected, onToggleSelect, onDelete, getFacilityName, navigate, showFacility = true, onMarkAsPaid }: {
+function InvoiceTable({ invoices, selected, onToggleSelect, onDelete, getFacilityName, navigate, showFacility = true, onMarkAsPaid, onSendFollowup }: {
   invoices: InvoiceWithStatus[];
   selected: Set<string>;
   onToggleSelect: (id: string, e: React.MouseEvent) => void;
@@ -86,6 +88,7 @@ function InvoiceTable({ invoices, selected, onToggleSelect, onDelete, getFacilit
   navigate: (path: string) => void;
   showFacility?: boolean;
   onMarkAsPaid?: (invoice: InvoiceWithStatus) => void;
+  onSendFollowup?: (invoice: InvoiceWithStatus) => void;
 }) {
   return (
     <table className="w-full text-[13px] min-w-[600px] sm:min-w-0">
@@ -152,22 +155,44 @@ function InvoiceTable({ invoices, selected, onToggleSelect, onDelete, getFacilit
               </Badge>
             </td>
             <td className="p-3" onClick={e => e.stopPropagation()}>
-              <div className="flex items-center gap-0.5">
-                {onMarkAsPaid && ['sent', 'partial', 'overdue'].includes(inv.computedStatus) && (
-                  <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-primary"
-                    title="Mark as Paid"
-                    onClick={() => onMarkAsPaid(inv)}>
-                    <DollarSign className="h-3.5 w-3.5" />
-                  </Button>
-                )}
-                <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                  onClick={async () => {
-                    await onDelete(inv.id);
-                    toast.success('Invoice deleted');
-                  }}>
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              </div>
+              <TooltipProvider delayDuration={200}>
+                <div className="flex items-center gap-0.5">
+                  {onMarkAsPaid && ['sent', 'partial', 'overdue'].includes(inv.computedStatus) && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-primary"
+                          onClick={() => onMarkAsPaid(inv)}>
+                          <DollarSign className="h-3.5 w-3.5" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Mark as Paid</TooltipContent>
+                    </Tooltip>
+                  )}
+                  {onSendFollowup && inv.computedStatus === 'overdue' && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                          onClick={() => onSendFollowup(inv)}>
+                          <Mail className="h-3.5 w-3.5" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Send follow-up email</TooltipContent>
+                    </Tooltip>
+                  )}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                        onClick={async () => {
+                          await onDelete(inv.id);
+                          toast.success('Invoice deleted');
+                        }}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Delete</TooltipContent>
+                  </Tooltip>
+                </div>
+              </TooltipProvider>
             </td>
           </tr>
         ))}
@@ -179,7 +204,7 @@ function InvoiceTable({ invoices, selected, onToggleSelect, onDelete, getFacilit
 export function InvoiceStatusGroup({
   title, icon, invoices, selected, onToggleSelect, onDelete,
   getFacilityName, emptyMessage, defaultOpen = true, groupByFacility = false,
-  headerRight, alertBanner, onMarkAsPaid,
+  headerRight, alertBanner, onMarkAsPaid, onSendFollowup,
 }: Props & { groupByFacility?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
   const navigate = useNavigate();
@@ -232,6 +257,7 @@ export function InvoiceStatusGroup({
                 getFacilityName={getFacilityName}
                 navigate={navigate}
                 onMarkAsPaid={onMarkAsPaid}
+                onSendFollowup={onSendFollowup}
               />
             ))}
           </div>
@@ -245,6 +271,7 @@ export function InvoiceStatusGroup({
               getFacilityName={getFacilityName}
               navigate={navigate}
               onMarkAsPaid={onMarkAsPaid}
+              onSendFollowup={onSendFollowup}
             />
           </div>
         )}
@@ -253,7 +280,7 @@ export function InvoiceStatusGroup({
   );
 }
 
-function FacilitySubGroup({ name, invoices, selected, onToggleSelect, onDelete, getFacilityName, navigate, onMarkAsPaid }: {
+function FacilitySubGroup({ name, invoices, selected, onToggleSelect, onDelete, getFacilityName, navigate, onMarkAsPaid, onSendFollowup }: {
   name: string;
   invoices: InvoiceWithStatus[];
   selected: Set<string>;
@@ -262,6 +289,7 @@ function FacilitySubGroup({ name, invoices, selected, onToggleSelect, onDelete, 
   getFacilityName: (id: string) => string;
   navigate: (path: string) => void;
   onMarkAsPaid?: (invoice: InvoiceWithStatus) => void;
+  onSendFollowup?: (invoice: InvoiceWithStatus) => void;
 }) {
   const [subOpen, setSubOpen] = useState(true);
   const total = invoices.reduce((s, i) => s + (i.total_amount ?? 0), 0);
@@ -287,6 +315,7 @@ function FacilitySubGroup({ name, invoices, selected, onToggleSelect, onDelete, 
             navigate={navigate}
             showFacility={false}
             onMarkAsPaid={onMarkAsPaid}
+            onSendFollowup={onSendFollowup}
           />
         </div>
       </CollapsibleContent>

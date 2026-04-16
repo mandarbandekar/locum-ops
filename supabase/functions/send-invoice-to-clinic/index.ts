@@ -52,6 +52,7 @@ Deno.serve(async (req) => {
     custom_subject?: string
     custom_body?: string
     cc_sender?: boolean
+    mode?: 'initial' | 'followup'
   }
   try {
     body = await req.json()
@@ -62,7 +63,8 @@ Deno.serve(async (req) => {
     })
   }
 
-  const { invoice_id, user_id, custom_subject, custom_body, cc_sender } = body
+  const { invoice_id, user_id, custom_subject, custom_body, cc_sender, mode } = body
+  const isFollowup = mode === 'followup'
 
   if (!invoice_id || !user_id) {
     return new Response(
@@ -284,14 +286,16 @@ Deno.serve(async (req) => {
     await supabase.from('invoice_activity').insert({
       invoice_id: invoice.id,
       user_id,
-      action: 'invoice_sent',
-      description: `Invoice sent to ${recipientEmail}`,
+      action: isFollowup ? 'followup_sent' : 'invoice_sent',
+      description: isFollowup
+        ? `Follow-up sent to ${recipientEmail}`
+        : `Invoice sent to ${recipientEmail}`,
     })
 
     await supabase.from('email_logs').insert({
       user_id,
       facility_id: invoice.facility_id,
-      type: 'invoice',
+      type: isFollowup ? 'invoice_followup' : 'invoice',
       subject,
       body: text,
       recipients: recipientEmail,

@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { DollarSign, CheckCircle, Download, Link2, Copy, RefreshCw, Loader2, Undo2, Send, PiggyBank } from 'lucide-react';
 import { format } from 'date-fns';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
+import { isInvoiceOverdue } from '@/lib/invoiceHelpers';
 import { toast } from 'sonner';
 import { RecordPaymentDialog } from '@/components/invoice/RecordPaymentDialog';
 import { InvoiceComposeDialog } from '@/components/invoice/InvoiceComposeDialog';
@@ -147,6 +148,9 @@ export function InvoiceSentPanel({ invoice, items, invoicePayments, facility, bi
     toast.success('Invoice moved to Draft — you can now edit it');
   };
 
+  const overdue = isInvoiceOverdue(invoice);
+  const composeMode: 'initial' | 'followup' = overdue ? 'followup' : 'initial';
+
   return (
     <div className="space-y-3">
       {/* Send & Share — shown first */}
@@ -155,7 +159,11 @@ export function InvoiceSentPanel({ invoice, items, invoicePayments, facility, bi
         <CardContent className="space-y-2 px-3 pb-3">
           <Button className="w-full h-auto py-2.5 px-4 text-sm justify-center text-center whitespace-normal" onClick={() => setComposeOpen(true)}>
             <Send className="mr-2 h-4 w-4 shrink-0" />
-            <span>Send invoice to {billingNameTo || 'Billing Contact'} at {facility?.name || 'Facility'} via email</span>
+            <span>
+              {overdue
+                ? `Send follow-up to ${billingNameTo || 'Billing Contact'}`
+                : `Send invoice to ${billingNameTo || 'Billing Contact'} at ${facility?.name || 'Facility'} via email`}
+            </span>
           </Button>
           <Button variant="outline" className="w-full text-sm" onClick={handleDownloadPdf} disabled={pdfLoading}>
             {pdfLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
@@ -305,6 +313,7 @@ export function InvoiceSentPanel({ invoice, items, invoicePayments, facility, bi
         userEmail={user?.email || ''}
         billingNameTo={billingNameTo}
         billingEmailTo={billingEmailTo}
+        mode={composeMode}
         onSent={async () => {
           await onUpdateInvoice({
             ...invoice,
