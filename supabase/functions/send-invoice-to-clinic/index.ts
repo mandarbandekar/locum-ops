@@ -172,19 +172,29 @@ Deno.serve(async (req) => {
     const downloadPdfUrl = `${supabaseUrl}/functions/v1/generate-invoice-pdf?token=${shareToken}`
 
     // ── 10. Render template ──
+    let daysOverdue: number | undefined
+    if (isFollowup && invoice.due_date) {
+      const due = new Date(invoice.due_date).getTime()
+      const now = Date.now()
+      const diff = Math.floor((now - due) / (1000 * 60 * 60 * 24))
+      daysOverdue = diff > 0 ? diff : undefined
+    }
+
     const templateProps = {
       senderName: fullName,
       senderBusinessName,
+      senderEmail: userAuthEmail,
+      senderPhone: profile?.invoice_phone || undefined,
       facilityName: facility.name,
       invoiceNumber: invoice.invoice_number,
       totalAmount: fmtMoney(invoice.balance_due ?? invoice.total_amount),
-      dueDate: fmtDate(invoice.due_date),
-      invoiceDate: fmtDate(invoice.invoice_date),
+      dueDate: fmtDate(invoice.due_date) ?? '',
+      invoiceDate: fmtDate(invoice.invoice_date) ?? '',
       viewInvoiceUrl,
       downloadPdfUrl,
       customBody: custom_body,
-      senderEmail: userAuthEmail,
-      senderPhone: profile?.invoice_phone || undefined,
+      isFollowUp: isFollowup,
+      daysOverdue,
     }
 
     const html = await renderAsync(React.createElement(InvoiceSendEmail, templateProps))
