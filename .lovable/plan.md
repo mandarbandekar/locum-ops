@@ -1,99 +1,86 @@
 
 
-## The problem
+## Goal
 
-The invoice detail screen today juggles three overlapping UIs that duplicate the same actions:
+User opens an auto-generated draft → quickly verifies preview matches reality → fixes dates or line items inline → sends. Right now the editor is noisy and the line item table is unreadable (8 wrapped lines per row in the screenshot).
 
-1. **`InvoiceEditPanel`** (left column) — From, Bill To, fields, line items, balance card.
-2. **`InvoicePreview`** (right column, sticky) — visual preview.
-3. **`InvoiceSentPanel`** — a parallel "Send & Share" view used elsewhere with its own send/resend/share/balance/line-items cards.
-4. **`InvoiceActionBar`** (fixed bottom) — duplicates Save / Send / PDF / Record Payment / Share.
-5. **Inline Send button** under the preview — *another* send CTA.
-6. **`InvoiceStepper`** — clickable Draft → Sent → Paid header with a confirmation dialog for backward moves.
-7. **"Revert to Draft"** card — yet another way to change state.
+## Diagnosis from the screenshot
 
-The user lands on a "post-send" view that still loudly says "Send invoice to..." again, because we re-render the same compose CTA in three places without distinguishing pre-send vs post-send context. Status changes happen in 4 different spots (stepper, action bar, sent panel, edit panel). It's confusing because it's actually four UIs stacked on one route.
+1. **From / Bill To cards** duplicate the preview — wasted space.
+2. **Line items table is unusable** in the 2-column layout. "Apr 16, 2026 — Relief coverage (8:00 AM – 6:00 PM)" wraps to 7 lines, columns crush together. Rate "$1600" is missing the comma.
+3. **No visual link** between the auto-generated banner ("2 shifts") and the line items it produced.
+4. **Dates section is a separate card** with no context — users don't know *why* those dates were chosen (last shift + facility net terms).
+5. The preview on the right is the source of truth, but the left is fighting it instead of supporting it.
 
-## Proposed UX: one screen, one action zone, status-aware
+## Proposed UX
 
-**Principle:** Same screen for the entire lifecycle. The *content* (line items, dates, preview) stays put. Only one **Action Zone** changes based on status. Eliminate `InvoiceSentPanel` as a separate panel — fold its logic into the unified screen.
+**Principle:** Left panel = "verify & adjust the inputs". Right panel = "see the output". Strip everything that isn't an input.
 
-### New layout (desktop, single screen)
+### Layout (desktop, draft state only)
 
 ```text
-┌─────────────────────────────────────────────────────────────┐
-│ ← INV-0042 · Greenfield Medical Center      [Status pill]   │
-├─────────────────────────────────────────────────────────────┤
-│ Status strip:  ●━━━━━━○─────○   Draft → Sent → Paid         │
-│                  (read-only progress, no clicks)            │
-├──────────────────────────────┬──────────────────────────────┤
-│  EDITOR (left, 2/5)          │  PREVIEW (right, 3/5 sticky) │
-│  • From / Bill to            │  Live invoice preview        │
-│  • Invoice # / dates         │  (always visible, always     │
-│  • Line items (editable in   │   reflects current state)    │
-│    Draft, read-only after)   │                              │
-│  • Notes                     │                              │
-│  • Activity (collapsible)    │                              │
-└──────────────────────────────┴──────────────────────────────┘
-┌─────────────────────────────────────────────────────────────┐
-│  ACTION ZONE (sticky bottom — single source of truth)        │
-│                                                              │
-│  DRAFT:    [Total $X]  [PDF] [I already sent it] [Send →]   │
-│  SENT:     [Bal $X · Sent Apr 12]  [PDF] [Resend] [Record   │
-│            Payment]                                          │
-│  OVERDUE:  [Bal $X · 12d overdue]  [PDF] [Send follow-up]   │
-│            [Record Payment]                                  │
-│  PARTIAL:  [Bal $X · partially paid]  [PDF] [Send follow-up]│
-│            [Record Payment]                                  │
-│  PAID:     [Paid in full · Apr 18]  [PDF] [Share link]      │
-└─────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│ [Auto-generated banner] · 2 shifts · MedVet Campbell     │
+├─────────────────────────────┬────────────────────────────┤
+│ EDITOR (2/5)                │ LIVE PREVIEW (3/5, sticky) │
+│                             │                            │
+│ ┌─ Dates ──────────────┐    │  [Full invoice preview]    │
+│ │ Invoice #  MC-2026-2 │    │                            │
+│ │ Issued     Apr 16 ▾  │    │                            │
+│ │ Due        May 1 ▾   │    │                            │
+│ │  ↳ "Net 15 from last │    │                            │
+│ │      shift"          │    │                            │
+│ └──────────────────────┘    │                            │
+│                             │                            │
+│ ┌─ Shifts on this invoice ─ │                            │
+│ │ ✓ Apr 16 · 8a–6p  $1,600  │                            │
+│ │ ✓ Apr 15 · 8a–6p  $1,600  │                            │
+│ │ + Add custom line item    │                            │
+│ │                           │                            │
+│ │ Subtotal         $3,200   │                            │
+│ └──────────────────────┘    │                            │
+│                             │                            │
+│ Notes (collapsed by default)│                            │
+│ Bill-to contact (link only) │                            │
+└─────────────────────────────┴────────────────────────────┘
 ```
 
-Mobile collapses to a Tabs (Edit | Preview) — same as today — with the same single Action Zone pinned to the bottom.
+### Specific changes
 
-### What gets removed
+**1. Remove the From / Bill To cards from the editor.** They're already in the preview. Replace with a single one-line link: "Billing to: Manny at MedVet Campbell · *Edit*" — opens the existing billing dialog.
 
-1. **`InvoiceSentPanel.tsx`** — delete. Its responsibilities (send confirmation, resend, share link, balance card, payment history, revert) merge into the unified screen.
-2. **Inline "Send Invoice to..." CTA below the preview** — gone. The bottom Action Zone is the only send entry point.
-3. **Clickable `InvoiceStepper`** — becomes a passive progress indicator. No more "Move to" confirmation dialog (`moveDialogOpen`). Backward moves only happen via the explicit "Revert to Draft" button in an overflow menu.
-4. **"I already sent this" duplication** — only in the Action Zone (Draft state).
-5. **Floating bottom `InvoiceActionBar`** + inline preview Send button + "Revert to Draft" card — consolidated into one bottom bar.
+**2. Rewrite line items as a vertical card list (not a table) in the 2-col layout.** Each row:
+```
+[shift icon] Apr 16, 2026 · 8:00 AM – 6:00 PM       $1,600
+             Relief coverage · 1 × $1,600           [✏] [🗑]
+```
+Single line per shift, hover reveals edit/delete. Clicking opens an inline editor. Custom (non-shift) lines look the same with a different icon. This fixes the unreadable wrapped table.
 
-### Post-send clarity (the user's complaint)
+**3. Reframe the Dates card with context.** Add a one-line helper under the dates explaining the auto-derivation:
+- Issue date: "Set to last shift date (Apr 16)"
+- Due date: "Net 15 from issue date · *Change in facility settings*"
 
-Once `sent_at` is set:
-- The hero of the bottom bar becomes **"Sent to {name} · Apr 12 at 4:12 PM"** with a subtle ✓.
-- Primary CTA flips to **"Record Payment"** (the next logical action).
-- Send becomes a quiet **"Resend"** secondary button, not a screaming primary CTA.
-- Balance Due is shown inline in the bar, not in a separate card.
-- Share link, PDF download move into a small **⋯ More** menu to declutter.
+This tells the user *why* the dates are what they are, so they trust them or know how to change them.
 
-This solves the screenshot issue: after sending, the user sees a confirmation (not "Send invoice to..." again), and the next step (Record Payment) is the obvious primary action.
+**4. Add a subtotal row at the bottom of the line items card.** Mirrors the preview, gives a single number to verify against the right side without scanning.
 
-### Compose dialog (unchanged)
+**5. Move Notes into a collapsed section.** Most auto-invoices don't need notes; collapse by default with "+ Add notes" trigger.
 
-Stays the same component. Opens in `'initial'` mode for never-sent invoices, `'followup'` mode when `isInvoiceOverdue` is true. Triggered only from the Action Zone.
+**6. Fix number formatting in line items** (`$1,600` not `$1600`) — affects both editor row and add-line input.
 
-### State changes
+**7. Tighten the auto-generated banner**: make it the page header (replace the current location) with the shift count clickable to scroll/highlight the shifts list. Reinforces "these 2 shifts → these 2 line items".
 
-- Remove `moveDialogOpen`, `moveTarget`, `handleStatusTransition`, `handleStepClick` from `InvoiceDetailPage`.
-- Remove the `Revert to Draft` card from `InvoiceEditPanel` (the action moves into a "⋯ More" menu in the Action Zone, available from any post-Draft status).
-- `InvoiceActionBar` is rewritten to be *the* status-aware control center.
+**8. Read-only "Verify" hints** (subtle, only for auto-drafts on first view): a soft check-mark next to each shift line item indicating it pulled from a real shift, vs. a "manual" tag for custom lines. Helps the user mentally tick off "yes this matches reality."
 
 ### Files to change
 
-1. **`src/pages/InvoiceDetailPage.tsx`** — remove dual Send CTAs, remove stepper click handlers + Move dialog, delete the extra inline Send under preview, simplify layout.
-2. **`src/components/invoice/InvoiceActionBar.tsx`** — rewrite as the single status-aware bar (Draft/Sent/Overdue/Partial/Paid branches, with sent confirmation chip, balance, primary next-action, "⋯ More" menu containing PDF, Share link, Resend, Revert to Draft).
-3. **`src/components/invoice/InvoiceStepper.tsx`** — remove click handlers/tooltips, make it a passive indicator.
-4. **`src/components/invoice/InvoiceEditPanel.tsx`** — remove the "Balance Due" card (now in Action Zone), remove the "Revert to Draft" card, keep only From/BillTo/Fields/LineItems/Notes/Payment history.
-5. **`src/components/invoice/InvoiceSentPanel.tsx`** — **delete** (and remove its imports from `InvoicesPage` if any — check).
-6. Tests: `src/test/invoiceOnboarding.test.ts` — verify nothing references removed components.
+1. `src/components/invoice/InvoiceEditPanel.tsx` — remove From/Bill To cards, rewrite line items as card-list (drop the table for the 2-col view), add subtotal row, add date-context helper text, collapse notes, single-line bill-to link, fix `toLocaleString` on rates.
+2. `src/pages/InvoiceDetailPage.tsx` — move the auto-generated banner to be the primary page header subtitle (replacing the redundant facility name in the top row), make shift count clickable.
+3. No changes to `InvoicePreview.tsx`, `InvoiceActionBar.tsx`, or the data layer.
 
-### Behavioral guarantees
+### Out of scope
 
-- Auto-save on Draft fields stays (debounced 800ms).
-- "Ready to Send" checklist stays in the alerts strip above the layout (Draft only).
-- Overdue alert banner stays (Overdue only).
-- Compose dialog deep-link `?action=followup` continues to work.
-- All status transitions remain reversible via "Revert to Draft" in the More menu.
+- Mobile layout keeps the existing tab toggle (Edit | Preview) — the new card-list works there too without changes.
+- Sent/Paid read-only states keep their current compact layout.
+- No changes to auto-generation logic, suppression, or the compose flow.
 
