@@ -64,6 +64,12 @@ interface Props {
   onScheduleChange: (index: number) => void;
   defaultExpanded?: boolean;
   variant?: 'onboarding' | 'page';
+  entityType?: '1099' | 'scorp';
+  scorpSalary?: number;
+  filingStatus?: string;
+  spouseW2Income?: number;
+  retirementContributions?: number;
+  annualBusinessExpenses?: number;
 }
 
 export default function TaxProjectionDisplay({
@@ -74,6 +80,12 @@ export default function TaxProjectionDisplay({
   onScheduleChange,
   defaultExpanded = false,
   variant = 'onboarding',
+  entityType = '1099',
+  scorpSalary,
+  filingStatus,
+  spouseW2Income,
+  retirementContributions,
+  annualBusinessExpenses,
 }: Props) {
   const [waterfallOpen, setWaterfallOpen] = useState(defaultExpanded);
 
