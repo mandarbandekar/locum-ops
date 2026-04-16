@@ -296,6 +296,7 @@ export default function InvoicesPage() {
               </div>
             ) : undefined}
             onMarkAsPaid={handleMarkAsPaid}
+            onSendFollowup={(inv) => navigate(`/invoices/${inv.id}?action=followup`)}
           />
         </div>
 

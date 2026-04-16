@@ -204,7 +204,7 @@ function InvoiceTable({ invoices, selected, onToggleSelect, onDelete, getFacilit
 export function InvoiceStatusGroup({
   title, icon, invoices, selected, onToggleSelect, onDelete,
   getFacilityName, emptyMessage, defaultOpen = true, groupByFacility = false,
-  headerRight, alertBanner, onMarkAsPaid,
+  headerRight, alertBanner, onMarkAsPaid, onSendFollowup,
 }: Props & { groupByFacility?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
   const navigate = useNavigate();
@@ -257,6 +257,7 @@ export function InvoiceStatusGroup({
                 getFacilityName={getFacilityName}
                 navigate={navigate}
                 onMarkAsPaid={onMarkAsPaid}
+                onSendFollowup={onSendFollowup}
               />
             ))}
           </div>
@@ -270,6 +271,7 @@ export function InvoiceStatusGroup({
               getFacilityName={getFacilityName}
               navigate={navigate}
               onMarkAsPaid={onMarkAsPaid}
+              onSendFollowup={onSendFollowup}
             />
           </div>
         )}
@@ -278,7 +280,7 @@ export function InvoiceStatusGroup({
   );
 }
 
-function FacilitySubGroup({ name, invoices, selected, onToggleSelect, onDelete, getFacilityName, navigate, onMarkAsPaid }: {
+function FacilitySubGroup({ name, invoices, selected, onToggleSelect, onDelete, getFacilityName, navigate, onMarkAsPaid, onSendFollowup }: {
   name: string;
   invoices: InvoiceWithStatus[];
   selected: Set<string>;
@@ -287,6 +289,7 @@ function FacilitySubGroup({ name, invoices, selected, onToggleSelect, onDelete, 
   getFacilityName: (id: string) => string;
   navigate: (path: string) => void;
   onMarkAsPaid?: (invoice: InvoiceWithStatus) => void;
+  onSendFollowup?: (invoice: InvoiceWithStatus) => void;
 }) {
   const [subOpen, setSubOpen] = useState(true);
   const total = invoices.reduce((s, i) => s + (i.total_amount ?? 0), 0);
@@ -312,6 +315,7 @@ function FacilitySubGroup({ name, invoices, selected, onToggleSelect, onDelete, 
             navigate={navigate}
             showFacility={false}
             onMarkAsPaid={onMarkAsPaid}
+            onSendFollowup={onSendFollowup}
           />
         </div>
       </CollapsibleContent>
