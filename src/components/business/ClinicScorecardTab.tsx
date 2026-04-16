@@ -4,6 +4,7 @@ import { useData } from '@/contexts/DataContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Building2, TrendingUp, Clock, AlertTriangle, CalendarDays, DollarSign, FileText } from 'lucide-react';
+import { isInvoiceOverdue } from '@/lib/invoiceHelpers';
 
 type Range = '3' | '6' | '12';
 
@@ -39,7 +40,7 @@ export default function ClinicScorecardTab() {
           }, 0) / paidInvoices.length
         : null;
 
-      const overdueCount = fInvoices.filter(i => i.status === 'overdue' || (i.due_date && !i.paid_at && new Date() > new Date(i.due_date) && i.status === 'sent')).length;
+      const overdueCount = fInvoices.filter(i => isInvoiceOverdue(i)).length;
 
       let repeatFreq: string | null = null;
       if (fShifts.length >= 2) {

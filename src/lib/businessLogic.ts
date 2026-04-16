@@ -1,4 +1,5 @@
-import { Shift, Invoice } from '@/types';
+import { Shift, Invoice, InvoiceStatus } from '@/types';
+import { isInvoiceOverdue } from './invoiceHelpers';
 
 /**
  * Normalize a datetime string to { dateKey, minutes-since-midnight } so that
@@ -32,11 +33,9 @@ export function detectShiftConflicts(shifts: Shift[], newShift: { start_datetime
   });
 }
 
-export function computeInvoiceStatus(invoice: Invoice): Invoice['status'] {
+export function computeInvoiceStatus(invoice: Invoice): InvoiceStatus | 'overdue' {
   if (invoice.status === 'paid' || invoice.status === 'draft') return invoice.status;
-  if (invoice.status === 'sent' && invoice.due_date && !invoice.paid_at) {
-    if (new Date() > new Date(invoice.due_date)) return 'overdue';
-  }
+  if (isInvoiceOverdue(invoice)) return 'overdue';
   return invoice.status;
 }
 

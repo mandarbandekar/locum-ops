@@ -81,7 +81,7 @@ export interface Shift {
   color: ShiftColor;
 }
 
-export type InvoiceStatus = 'draft' | 'sent' | 'partial' | 'paid' | 'overdue';
+export type InvoiceStatus = 'draft' | 'sent' | 'partial' | 'paid';
 export type InvoiceType = 'single' | 'bulk';
 export type InvoiceGenerationType = 'manual' | 'automatic';
 export interface Invoice {
