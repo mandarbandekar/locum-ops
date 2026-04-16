@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Plus, Trash2, AlertTriangle, Send, FileEdit, CheckCircle, Clock } from 'lucide-react';
 import { startOfMonth, isAfter, isBefore, startOfDay } from 'date-fns';
 import { computeInvoiceStatus, generateInvoiceNumber } from '@/lib/businessLogic';
+import { isInvoiceOverdue } from '@/lib/invoiceHelpers';
 import { toast } from 'sonner';
 import { BulkInvoiceDialog } from '@/components/invoice/BulkInvoiceDialog';
 import { InvoiceEmptyState } from '@/components/invoice/InvoiceEmptyState';
@@ -172,9 +173,9 @@ export default function InvoicesPage() {
   };
 
   // Group by status in priority order
-  const overdue = allInvoices.filter(i => i.computedStatus === 'overdue');
-  const sent = allInvoices.filter(i => i.computedStatus === 'sent');
-  const partial = allInvoices.filter(i => i.computedStatus === 'partial');
+  const overdue = allInvoices.filter(i => isInvoiceOverdue(i));
+  const sent = allInvoices.filter(i => i.computedStatus === 'sent' && !isInvoiceOverdue(i));
+  const partial = allInvoices.filter(i => i.computedStatus === 'partial' && !isInvoiceOverdue(i));
   const allDrafts = allInvoices
     .filter(i => i.computedStatus === 'draft')
     .sort((a, b) => new Date(a.invoice_date || a.period_end).getTime() - new Date(b.invoice_date || b.period_end).getTime());
