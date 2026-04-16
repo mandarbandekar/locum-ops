@@ -85,7 +85,22 @@ export default {
           700: "#2A4A42",
           800: "#1E352F",
         },
+        /* Keep teal alias for shift color pickers */
+        teal: {
+          50: "#EFF3F0",
+          100: "#D6E5DA",
+          200: "#A3C5AD",
+          400: "#4A7C6F",
+          500: "#4A7C6F",
+          600: "#3A6358",
+          700: "#2A4A42",
+          800: "#1E352F",
+        },
         gold: {
+          DEFAULT: "#C49A3C",
+          500: "#C49A3C",
+        },
+        coral: {
           DEFAULT: "#C49A3C",
           500: "#C49A3C",
         },
