@@ -27,6 +27,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { SpotlightTour, TourStep } from '@/components/SpotlightTour';
 import { useSpotlightTour } from '@/hooks/useSpotlightTour';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const STORAGE_KEY = 'schedule-view-pref';
 
@@ -343,71 +344,72 @@ export default function SchedulePage() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden">
-      {/* Row 1: Title | View Switcher | Actions */}
-      <div className="flex-none border-b border-border bg-card/50 px-4 py-2.5">
-        <div className="flex items-center gap-3">
-          <h1 className="text-lg font-semibold tracking-tight shrink-0">Schedule</h1>
-
-          <div className="flex items-center gap-0.5 rounded-lg bg-muted p-0.5 mx-auto" data-tour="schedule-view-switcher">
-            {viewButtons.map(({ key, icon: Icon, label, tourAttr, fullLabel }) => (
-              <button
-                key={key}
-                data-tour={tourAttr}
-                onClick={() => setView(key)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                  view === key
-                    ? 'bg-card text-foreground shadow-soft'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
-                }`}
-              >
-                <Icon className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">{fullLabel || label}</span>
-              </button>
-            ))}
+      {/* Row 1: Title + Subtitle | View Switcher | Actions */}
+      <div className="flex-none px-4 sm:px-6 pt-4 sm:pt-6 pb-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <CalendarDays className="h-7 w-7 text-primary shrink-0" />
+            <div className="min-w-0">
+              <h1 className="page-title">Schedule</h1>
+              <p className="page-subtitle">Plan shifts, block time, and keep clinics in sync.</p>
+            </div>
           </div>
 
-          {isCalendarView && (
-            <div className="flex items-center gap-1.5 shrink-0" data-tour="schedule-add-shift">
-              <Button size="sm" onClick={() => setShowAdd(true)} className="h-8 text-xs px-3">
-                <Plus className="mr-1 h-3.5 w-3.5" /> Shift
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => { setBlockTimeDefaultDate(undefined); setShowBlockTime(true); }} className="h-8 text-xs px-3">
-                <Ban className="mr-1 h-3.5 w-3.5" /> Block
-              </Button>
-            </div>
-          )}
+          <div className="flex items-center gap-2 flex-wrap">
+            <Tabs value={view} onValueChange={(v) => setView(v as typeof view)} data-tour="schedule-view-switcher">
+              <TabsList>
+                {viewButtons.map(({ key, icon: Icon, label, tourAttr, fullLabel }) => (
+                  <TabsTrigger key={key} value={key} data-tour={tourAttr} className="gap-1.5">
+                    <Icon className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">{fullLabel || label}</span>
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+
+            {isCalendarView && (
+              <div className="flex items-center gap-2 shrink-0" data-tour="schedule-add-shift">
+                <Button size="sm" onClick={() => setShowAdd(true)}>
+                  <Plus className="mr-1 h-4 w-4" /> Shift
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => { setBlockTimeDefaultDate(undefined); setShowBlockTime(true); }}>
+                  <Ban className="mr-1 h-4 w-4" /> Block
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Row 2: Date Nav | Stats | Layers (calendar views only) */}
       {isCalendarView && (
-        <div className="flex-none border-b border-border px-4 py-1.5">
+        <div className="flex-none border-y border-border/60 px-4 sm:px-6 py-2 bg-muted/20">
           <div className="flex items-center justify-between gap-3" data-tour="schedule-calendar">
             <div className="flex items-center gap-1.5">
-              <Button variant="ghost" size="icon" onClick={navigateBack} className="h-7 w-7">
+              <Button variant="ghost" size="icon" onClick={navigateBack} className="h-8 w-8">
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <span className="text-sm font-semibold min-w-[140px] text-center">{headerLabel}</span>
-              <Button variant="ghost" size="icon" onClick={navigateForward} className="h-7 w-7">
+              <span className="text-sm font-semibold min-w-[150px] text-center">{headerLabel}</span>
+              <Button variant="ghost" size="icon" onClick={navigateForward} className="h-8 w-8">
                 <ChevronRight className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="sm" className="text-[11px] h-6 px-2 ml-1" onClick={() => setCurrentDate(new Date())}>
+              <Button variant="outline" size="sm" className="ml-1" onClick={() => setCurrentDate(new Date())}>
                 Today
               </Button>
             </div>
 
             {totalShiftsInRange > 0 && (
               <div className="hidden md:flex items-center gap-4 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" /> <span className="font-medium text-foreground">{totalShiftsInRange}</span> shifts</span>
-                <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> <span className="font-medium text-foreground">{totalHoursInRange}</span>h</span>
-                <span className="flex items-center gap-1"><DollarSign className="h-3 w-3" /> <span className="font-medium text-foreground">${totalRevenueInRange.toLocaleString()}</span></span>
+                <span className="flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" /> <span className="font-medium text-foreground">{totalShiftsInRange}</span> shifts</span>
+                <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> <span className="font-medium text-foreground">{totalHoursInRange}</span>h</span>
+                <span className="flex items-center gap-1"><DollarSign className="h-3.5 w-3.5" /> <span className="font-medium text-foreground">${totalRevenueInRange.toLocaleString()}</span></span>
               </div>
             )}
 
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-7 text-xs px-2 gap-1.5 relative">
-                  <Layers className="h-3.5 w-3.5" />
+                <Button variant="ghost" size="sm" className="gap-1.5 relative">
+                  <Layers className="h-4 w-4" />
                   <span className="hidden sm:inline">Layers</span>
                   {hasNonDefaultLayers && (
                     <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-primary" />
