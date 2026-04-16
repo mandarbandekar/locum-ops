@@ -86,9 +86,9 @@ export function InvoiceActionBar({ invoice, items, facility, profile, dueDate, b
       status: 'sent',
       sent_at: new Date().toISOString(),
     });
-    await onAddActivity({ invoice_id: invoice.id, action: 'marked_sent', description: 'Invoice marked as sent' });
+    await onAddActivity({ invoice_id: invoice.id, action: 'marked_sent_manually', description: 'Invoice marked as sent manually (sent outside Locum Ops)' });
     setSending(false);
-    toast.success('Invoice marked as sent');
+    toast.success('Invoice marked as sent manually');
   };
 
   const handleDownloadPdf = async () => {
