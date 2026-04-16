@@ -64,6 +64,12 @@ interface Props {
   onScheduleChange: (index: number) => void;
   defaultExpanded?: boolean;
   variant?: 'onboarding' | 'page';
+  entityType?: '1099' | 'scorp';
+  scorpSalary?: number;
+  filingStatus?: string;
+  spouseW2Income?: number;
+  retirementContributions?: number;
+  annualBusinessExpenses?: number;
 }
 
 export default function TaxProjectionDisplay({
@@ -74,6 +80,12 @@ export default function TaxProjectionDisplay({
   onScheduleChange,
   defaultExpanded = false,
   variant = 'onboarding',
+  entityType = '1099',
+  scorpSalary,
+  filingStatus,
+  spouseW2Income,
+  retirementContributions,
+  annualBusinessExpenses,
 }: Props) {
   const [waterfallOpen, setWaterfallOpen] = useState(defaultExpanded);
 
@@ -85,20 +97,26 @@ export default function TaxProjectionDisplay({
   const daysPerYear = schedule.daysPerYear;
   const daysPerQuarter = Math.round(daysPerYear / 4);
 
-  const { taxResult, scorpSavings } = useMemo(() => {
+  const { taxResult, scorpSavings, isScorp } = useMemo(() => {
     const annualIncome = dayRate * daysPerYear;
     const profile: TaxProfileV1 = {
-      entityType: '1099',
+      entityType: entityType,
       annualReliefIncome: annualIncome,
-      scorpSalary: 0,
+      scorpSalary: entityType === 'scorp' ? (scorpSalary || Math.round(annualIncome * 0.4)) : 0,
       extraWithholding: 0,
       payPeriodsPerYear: 24,
-      filingStatus: 'single',
-      spouseW2Income: 0,
-      retirementContributions: 0,
-      annualBusinessExpenses: 0,
+      filingStatus: filingStatus || 'single',
+      spouseW2Income: spouseW2Income || 0,
+      retirementContributions: retirementContributions || 0,
+      annualBusinessExpenses: annualBusinessExpenses || 0,
       stateKey: stateCode,
     };
+
+    if (entityType === 'scorp') {
+      const scorpResult = calculateSCorpTax(profile);
+      return { taxResult: scorpResult as any, scorpSavings: 0, isScorp: true };
+    }
+
     const result = calculate1099Tax(profile);
 
     // S-Corp savings estimate
@@ -112,14 +130,29 @@ export default function TaxProjectionDisplay({
     const scorpAnnual = scorpResult.annualEstimatedTaxDue + scorpResult.totalAlreadyWithheld;
     const savings = Math.max(0, Math.round((sole1099Annual - scorpAnnual) / 4));
 
-    return { taxResult: result, scorpSavings: savings };
-  }, [dayRate, daysPerYear, stateCode]);
+    return { taxResult: result, scorpSavings: savings, isScorp: false };
+  }, [dayRate, daysPerYear, stateCode, entityType, scorpSalary, filingStatus, spouseW2Income, retirementContributions, annualBusinessExpenses]);
 
+  // Derive quarterly numbers based on entity type
   const quarterlyIncome = Math.round((dayRate * daysPerYear) / 4);
-  const quarterlyFederal = Math.round(taxResult.vetFederalShare / 4);
-  const quarterlySE = Math.round(taxResult.totalSeTax / 4);
-  const quarterlyState = Math.round(taxResult.stateTax / 4);
-  const quarterlyTax = quarterlyFederal + quarterlySE + quarterlyState;
+  let quarterlyFederal: number;
+  let quarterlySE: number;
+  let quarterlyState: number;
+  let quarterlyEmployerFica: number = 0;
+
+  if (isScorp) {
+    const sr = taxResult as any;
+    quarterlyFederal = Math.round((sr.totalFederalTax || 0) / 4);
+    quarterlySE = 0;
+    quarterlyEmployerFica = Math.round((sr.employerFica || 0) / 4);
+    quarterlyState = Math.round((sr.stateTax || 0) / 4);
+  } else {
+    const r = taxResult as Tax1099Result;
+    quarterlyFederal = Math.round(r.vetFederalShare / 4);
+    quarterlySE = Math.round(r.totalSeTax / 4);
+    quarterlyState = Math.round(r.stateTax / 4);
+  }
+  const quarterlyTax = quarterlyFederal + quarterlySE + quarterlyState + quarterlyEmployerFica;
   const quarterlyTakeHome = quarterlyIncome - quarterlyTax;
 
   const showTimezoneNote = !stateCodeProp;
@@ -208,12 +241,21 @@ export default function TaxProjectionDisplay({
             negative
             tip="Calculated using 2025 federal progressive brackets on your projected annual taxable income."
           />
-          <WaterfallRow
-            label="− Self-employment tax"
-            value={`−$${fmt(quarterlySE)}`}
-            negative
-            tip="15.3% on 92.35% of net income — covers Social Security (12.4%) and Medicare (2.9%)."
-          />
+          {isScorp ? (
+            <WaterfallRow
+              label="− Payroll taxes (employer FICA)"
+              value={`−$${fmt(quarterlyEmployerFica)}`}
+              negative
+              tip="As an S-Corp, you pay employer-side FICA (7.65%) on your reasonable salary instead of full 15.3% SE tax on all net income."
+            />
+          ) : (
+            <WaterfallRow
+              label="− Self-employment tax"
+              value={`−$${fmt(quarterlySE)}`}
+              negative
+              tip="15.3% on 92.35% of net income — covers Social Security (12.4%) and Medicare (2.9%)."
+            />
+          )}
           {quarterlyState > 0 && (
             <WaterfallRow
               label={`− ${stateName} state tax`}
@@ -242,8 +284,8 @@ export default function TaxProjectionDisplay({
         </CollapsibleContent>
       </Collapsible>
 
-      {/* ═══ SECTION 4: S-CORP CALLOUT ═══ */}
-      {scorpSavings > 0 && (
+      {/* ═══ SECTION 4: S-CORP CALLOUT (only for 1099 users) ═══ */}
+      {!isScorp && scorpSavings > 0 && (
         <div className="flex items-start gap-3 rounded-[14px] border border-border bg-card px-4 py-3">
           <Lightbulb className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
           <div>
