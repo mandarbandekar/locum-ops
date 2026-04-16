@@ -153,7 +153,7 @@ export function InvoiceSentPanel({ invoice, items, invoicePayments, facility, bi
       <Card>
         <CardHeader className="pb-1.5 pt-3 px-3"><CardTitle className="text-xs text-muted-foreground uppercase tracking-wider">Send & Share</CardTitle></CardHeader>
         <CardContent className="space-y-2 px-3 pb-3">
-          <Button className="w-full h-auto py-2.5 px-4 text-sm justify-center text-center whitespace-normal" onClick={() => toast.info('Email sending coming soon!')}>
+          <Button className="w-full h-auto py-2.5 px-4 text-sm justify-center text-center whitespace-normal" onClick={() => setComposeOpen(true)}>
             <Send className="mr-2 h-4 w-4 shrink-0" />
             <span>Send invoice to {billingNameTo || 'Billing Contact'} at {facility?.name || 'Facility'} via email</span>
           </Button>
