@@ -375,28 +375,16 @@ export default function InvoiceDetailPage() {
                   <Button
                     size="lg"
                     className="w-full gap-2 text-base"
-                    disabled={sendingReminder || !billingEmailTo}
-                    onClick={async () => {
+                    disabled={!billingEmailTo}
+                    onClick={() => {
                       if (!billingEmailTo) {
                         toast.error('No billing email set — add one in facility settings');
                         return;
                       }
-                      setSendingReminder(true);
-                      try {
-                        const { supabase } = await import('@/integrations/supabase/client');
-                        await supabase.functions.invoke('send-reminder-emails', {
-                          body: { mode: 'payment_reminder', invoice_id: invoice.id, user_id: user?.id },
-                        });
-                        await addActivity({ invoice_id: invoice.id, action: 'payment_reminder_sent', description: `Invoice sent to ${billingEmailTo}` });
-                        toast.success(`Invoice sent to ${billingEmailTo}`);
-                      } catch {
-                        toast.error('Failed to send invoice');
-                      } finally {
-                        setSendingReminder(false);
-                      }
+                      setComposeOpen(true);
                     }}
                   >
-                    {sendingReminder ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                    <Mail className="h-4 w-4" />
                     Send Invoice to {billingNameTo || 'Billing Contact'} at {facility?.name || 'Clinic'}
                   </Button>
                   <p className="text-[11px] text-muted-foreground text-center mt-1.5">
