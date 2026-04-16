@@ -1,5 +1,5 @@
-import { useState, useRef, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
@@ -50,6 +50,7 @@ function getStepOrder(status: string): number {
 export default function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const isMobile = useIsMobile();
   const { invoices, lineItems, facilities, contacts, payments, activities, updateInvoice, deleteInvoice, suppressInvoicePeriod, addLineItem, updateLineItem, deleteLineItem, addPayment, addActivity, updateFacility } = useData();
   const { profile } = useUserProfile();
@@ -61,9 +62,20 @@ export default function InvoiceDetailPage() {
   const [billingDialogOpen, setBillingDialogOpen] = useState(false);
   const [sendingReminder, setSendingReminder] = useState(false);
   const [composeOpen, setComposeOpen] = useState(false);
+  const [composeMode, setComposeMode] = useState<'initial' | 'followup'>('initial');
   const [mobileTab, setMobileTab] = useState<string>('details');
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+
+  // Auto-open compose dialog in followup mode if ?action=followup
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('action') === 'followup' && invoices.length > 0) {
+      setComposeMode('followup');
+      setComposeOpen(true);
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location.search, location.pathname, invoices.length, navigate]);
 
   // Live preview fields from edit panel
   const [liveFields, setLiveFields] = useState<{ invoiceNumber: string; invoiceDate: string; dueDate: string; notes: string; total: number } | null>(null);
@@ -508,13 +520,17 @@ export default function InvoiceDetailPage() {
       {/* Compose & Send Invoice Dialog */}
       <InvoiceComposeDialog
         open={composeOpen}
-        onOpenChange={setComposeOpen}
+        onOpenChange={(open) => {
+          setComposeOpen(open);
+          if (!open) setComposeMode('initial');
+        }}
         invoice={invoice}
         facility={facility}
         profile={profile}
         userEmail={user?.email || ''}
         billingNameTo={billingNameTo}
         billingEmailTo={billingEmailTo}
+        mode={composeMode}
         onSent={async () => {
           // Reflect new sent_at / status set by the edge function
           await updateInvoice({
