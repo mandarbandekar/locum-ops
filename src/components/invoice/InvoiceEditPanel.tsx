@@ -369,7 +369,9 @@ export function InvoiceEditPanel({
 
       {/* Line Items as card list */}
       <Card data-line-items-section>
-
+        <CardHeader className="pb-1.5 pt-3 px-3 flex flex-row items-center justify-between">
+          <CardTitle className="text-xs text-muted-foreground uppercase tracking-wider">
+            {readOnly ? 'Line Items' : 'Shifts on this invoice'} ({items.length})
           </CardTitle>
           {!readOnly && (
             <Button variant="ghost" size="sm" onClick={() => setShowAddLine(true)} className="h-6 text-xs">
