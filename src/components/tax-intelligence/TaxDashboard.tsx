@@ -277,7 +277,7 @@ export default function TaxDashboard({ profile, onEditProfile, onSaveProfile }: 
         scorpSalary={profile.scorp_salary || undefined}
         filingStatus={profile.filing_status || undefined}
         spouseW2Income={profile.spouse_w2_income || undefined}
-        retirementContributions={profile.retirement_contributions || undefined}
+        retirementContributions={profile.retirement_contribution || undefined}
         annualBusinessExpenses={profile.annual_business_expenses || undefined}
       />
 
