@@ -35,6 +35,35 @@ function fmtDate(d: string | null | undefined): string | undefined {
   }
 }
 
+// Sanitize a single recipient email — strip whitespace and stray separators
+// (commas/semicolons) that creep in from copy-paste in clinic billing fields.
+function sanitizeEmail(raw: string | null | undefined): string {
+  if (!raw) return ''
+  // Take the first address if multiple are pasted in, then strip junk.
+  const first = raw.split(/[,;]/)[0] || ''
+  return first.trim().replace(/^[<"']+|[>"']+$/g, '')
+}
+
+// Get-or-create one unsubscribe token per email address. The Lovable Email
+// API requires this for every transactional send.
+async function getOrCreateUnsubscribeToken(
+  supabase: ReturnType<typeof createClient>,
+  email: string,
+): Promise<string> {
+  const { data: existing } = await supabase
+    .from('email_unsubscribe_tokens')
+    .select('token')
+    .eq('email', email)
+    .is('used_at', null)
+    .maybeSingle()
+
+  if (existing?.token) return existing.token as string
+
+  const token = crypto.randomUUID()
+  await supabase.from('email_unsubscribe_tokens').insert({ email, token })
+  return token
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -114,8 +143,8 @@ Deno.serve(async (req) => {
 
     // ── 3. Determine recipient email ──
     const recipientEmail =
-      (invoice.billing_email_to && invoice.billing_email_to.trim()) ||
-      (facility.invoice_email_to && facility.invoice_email_to.trim()) ||
+      sanitizeEmail(invoice.billing_email_to) ||
+      sanitizeEmail(facility.invoice_email_to) ||
       ''
 
     if (!recipientEmail) {
@@ -134,7 +163,9 @@ Deno.serve(async (req) => {
 
     // ── 5. Fetch auth email ──
     const { data: authData } = await supabase.auth.admin.getUserById(user_id)
-    const userAuthEmail = authData?.user?.email || profile?.invoice_email || ''
+    const userAuthEmail = sanitizeEmail(
+      authData?.user?.email || profile?.invoice_email || '',
+    )
 
     // ── 6. Build sender display ──
     const fullName =
@@ -220,6 +251,12 @@ Deno.serve(async (req) => {
       status: 'pending',
     })
 
+    // Required by Lovable Email API for transactional sends.
+    const recipientUnsubToken = await getOrCreateUnsubscribeToken(
+      supabase,
+      recipientEmail,
+    )
+
     const { error: enqueueError } = await supabase.rpc('enqueue_email', {
       queue_name: 'transactional_emails',
       payload: {
@@ -235,6 +272,7 @@ Deno.serve(async (req) => {
         idempotency_key: `invoice-send-${invoice.id}-${messageId}`,
         reply_to: userAuthEmail || undefined,
         queued_at: new Date().toISOString(),
+        unsubscribe_token: recipientUnsubToken,
       },
     })
 
@@ -262,6 +300,10 @@ Deno.serve(async (req) => {
         recipient_email: userAuthEmail,
         status: 'pending',
       })
+      const senderUnsubToken = await getOrCreateUnsubscribeToken(
+        supabase,
+        userAuthEmail,
+      )
       await supabase.rpc('enqueue_email', {
         queue_name: 'transactional_emails',
         payload: {
@@ -276,6 +318,7 @@ Deno.serve(async (req) => {
           label: 'invoice_send_copy',
           idempotency_key: `invoice-send-copy-${invoice.id}-${copyId}`,
           queued_at: new Date().toISOString(),
+          unsubscribe_token: senderUnsubToken,
         },
       })
     }
