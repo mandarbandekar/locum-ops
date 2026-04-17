@@ -58,7 +58,11 @@ export const InvoiceSendEmail = ({
       }`
     : `Please find your invoice for relief veterinary coverage at ${facilityName}.`
 
-  const bodyContent = customBody && customBody.trim() ? customBody : defaultBody
+  // When the sender supplies their own composed message (greeting + body +
+  // sign-off), render it verbatim and skip the duplicate heading/summary/
+  // signature chrome — otherwise the recipient sees the same info twice.
+  const usingCustomBody = !!(customBody && customBody.trim())
+  const bodyContent = usingCustomBody ? customBody! : defaultBody
   const bodyLines = bodyContent.split(/\r?\n/)
 
   return (
@@ -67,7 +71,9 @@ export const InvoiceSendEmail = ({
       <Preview>{previewText}</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Heading style={h1}>{senderBusinessName}</Heading>
+          {!usingCustomBody ? (
+            <Heading style={h1}>{senderBusinessName}</Heading>
+          ) : null}
 
           {bodyLines.map((line, i) => (
             <Text key={i} style={text}>
@@ -104,19 +110,22 @@ export const InvoiceSendEmail = ({
             </Link>
           </Text>
 
-          <Hr style={hr} />
-
-          <Text style={signature}>{senderName}</Text>
-          {senderBusinessName && senderBusinessName !== senderName ? (
-            <Text style={signature}>{senderBusinessName}</Text>
+          {!usingCustomBody ? (
+            <>
+              <Hr style={hr} />
+              <Text style={signature}>{senderName}</Text>
+              {senderBusinessName && senderBusinessName !== senderName ? (
+                <Text style={signature}>{senderBusinessName}</Text>
+              ) : null}
+              <Text style={signature}>
+                Reply to:{' '}
+                <Link href={`mailto:${senderEmail}`} style={link}>
+                  {senderEmail}
+                </Link>
+              </Text>
+              {senderPhone ? <Text style={signature}>{senderPhone}</Text> : null}
+            </>
           ) : null}
-          <Text style={signature}>
-            Reply to:{' '}
-            <Link href={`mailto:${senderEmail}`} style={link}>
-              {senderEmail}
-            </Link>
-          </Text>
-          {senderPhone ? <Text style={signature}>{senderPhone}</Text> : null}
 
           <Text style={footer}>
             Sent via LocumOps ·{' '}
