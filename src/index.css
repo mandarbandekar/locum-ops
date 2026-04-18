@@ -135,7 +135,7 @@
     --accent: 188 32% 93%;               /* #E8F3F5 primary-50 hover */
     --accent-foreground: 38 44% 43%;     /* #A07D3E ochre */
 
-    --destructive: 14 70% 50%;
+    --destructive: 38 44% 43%;           /* #A07D3E ochre — replaces red */
     --destructive-foreground: 0 0% 100%;
 
     --success: 146 41% 30%;              /* #2D6B4A kelp-600 */
