@@ -65,8 +65,9 @@ Deno.serve(async (req) => {
 
   let totalProcessed = 0
 
-  // 2. Process auth_emails first (priority), then transactional_emails
-  for (const queue of ['auth_emails', 'transactional_emails']) {
+  // 2. Process auth_emails only — transactional/app emails are paused.
+  // To re-enable app emails, add 'transactional_emails' back to this list.
+  for (const queue of ['auth_emails']) {
     const dlq = `${queue}_dlq`
     const { data: messages, error: readError } = await supabase.rpc('read_email_batch', {
       queue_name: queue,
