@@ -175,16 +175,17 @@
     --tab-active-text: 0 0% 100%;
 
     /* Pill tag tokens – light (preserve semantic differentiation) */
-    --pill-paid-bg: 146 35% 87%;
-    --pill-paid-text: 146 41% 18%;
-    --pill-pending-bg: 40 80% 88%;
-    --pill-pending-text: 40 75% 25%;
-    --pill-overdue-bg: 14 60% 90%;
-    --pill-overdue-text: 14 70% 30%;
-    --pill-sent-bg: 188 32% 93%;
-    --pill-sent-text: 192 66% 16%;
-    --pill-draft-bg: 42 17% 89%;
-    --pill-draft-text: 210 11% 25%;
+    /* Pill tag tokens – light (Monterey Bay) */
+    --pill-paid-bg: 146 35% 92%;         /* success-50 */
+    --pill-paid-text: 146 41% 30%;       /* success-600 */
+    --pill-pending-bg: 40 86% 95%;       /* pending-50 */
+    --pill-pending-text: 40 75% 45%;     /* pending-400 (readable on light) */
+    --pill-overdue-bg: 36 47% 92%;       /* accent-50 */
+    --pill-overdue-text: 38 47% 33%;     /* accent-800 burnt ochre */
+    --pill-sent-bg: 188 32% 93%;         /* primary-50 */
+    --pill-sent-text: 190 60% 26%;       /* primary-700 */
+    --pill-draft-bg: 42 17% 89%;         /* neutral-200 */
+    --pill-draft-text: 40 6% 35%;        /* neutral-600 */
 
     /* Soft border */
     --border-soft: 42 17% 89%;           /* #E9E5DC border-subtle */
