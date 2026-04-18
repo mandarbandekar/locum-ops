@@ -241,8 +241,8 @@
     --accent: 213 16% 17%;
     --accent-foreground: 38 50% 67%;     /* #D4BA82 ochre dark */
 
-    --destructive: 14 65% 55%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 38 50% 67%;           /* #D4BA82 ochre dark */
+    --destructive-foreground: 213 17% 9%;
 
     --success: 142 36% 64%;              /* #82C89E kelp-600 dark */
     --success-foreground: 213 17% 9%;
