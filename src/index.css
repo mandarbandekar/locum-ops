@@ -7,7 +7,7 @@
 @layer base {
   :root {
     /* Light mode */
-    --background: 140 14% 97%;           /* #F9FBF9 page */
+    --background: 40 33% 92%;            /* #EFE7D6 sand page */
     --foreground: 60 4% 17%;             /* #2C2C2A text-primary */
 
     --card: 0 0% 100%;                   /* #FFFFFF */
