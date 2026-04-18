@@ -27,11 +27,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="h-14 flex items-center border-b border-border bg-card/80 backdrop-blur-sm px-4 sm:px-5 shrink-0 sticky top-0 z-30">
+          <header className="h-14 flex items-center border-b border-border bg-card px-4 sm:px-5 shrink-0 sticky top-0 z-30">
             <SidebarTrigger className="mr-3" />
-            <span className="text-[15px] font-semibold text-primary tracking-tight truncate">LocumOps</span>
+            <span className="text-[15px] font-medium text-primary-800 dark:text-primary-600 tracking-tight truncate">LocumOps</span>
             {company && (
-              <span className="ml-2.5 text-sm text-muted-foreground truncate hidden sm:inline">
+              <span className="ml-2.5 text-sm text-foreground-muted truncate hidden sm:inline">
                 — {company}
               </span>
             )}
@@ -40,7 +40,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 variant="outline"
                 size="sm"
                 onClick={handleStartTour}
-                className="gap-1.5 text-xs border-primary/30 text-primary hover:bg-primary/10"
+                className="gap-1.5 text-xs"
               >
                 <Compass className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Take a Tour</span>
