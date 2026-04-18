@@ -133,7 +133,7 @@ export function AppSidebar() {
                     className="sidebar-nav-item group/navitem"
                     activeClassName="sidebar-nav-item--active"
                   >
-                    <LayoutDashboard className="mr-3 h-[18px] w-[18px] transition-all duration-150 text-[hsl(var(--sidebar-icon-inactive))] group-[.sidebar-nav-item--active]/navitem:text-white" />
+                    <LayoutDashboard className="mr-3 h-[18px] w-[18px] transition-all duration-150 text-[hsl(var(--sidebar-icon-inactive))] group-[.sidebar-nav-item--active]/navitem:text-primary-700" />
                     {!collapsed && <span className="flex-1 truncate">Dashboard</span>}
                   </NavLink>
                 </SidebarMenuButton>
@@ -172,7 +172,7 @@ export function AppSidebar() {
                             className="sidebar-nav-item group/navitem"
                             activeClassName="sidebar-nav-item--active"
                           >
-                            <item.icon className="mr-3 h-[18px] w-[18px] transition-all duration-150 text-[hsl(var(--sidebar-icon-inactive))] group-[.sidebar-nav-item--active]/navitem:text-white" />
+                            <item.icon className="mr-3 h-[18px] w-[18px] transition-all duration-150 text-[hsl(var(--sidebar-icon-inactive))] group-[.sidebar-nav-item--active]/navitem:text-primary-700" />
                             {!collapsed && (
                               <>
                                 <span className="flex-1 truncate">{item.title}</span>
@@ -208,7 +208,7 @@ export function AppSidebar() {
                 className="sidebar-nav-item sidebar-settings-item group/navitem"
                 activeClassName="sidebar-nav-item--active"
               >
-                <Settings className="mr-3 h-[18px] w-[18px] transition-all duration-150 text-[hsl(var(--sidebar-icon-inactive))] group-[.sidebar-nav-item--active]/navitem:text-white" />
+                <Settings className="mr-3 h-[18px] w-[18px] transition-all duration-150 text-[hsl(var(--sidebar-icon-inactive))] group-[.sidebar-nav-item--active]/navitem:text-primary-700" />
                 {!collapsed && <span>Settings</span>}
               </NavLink>
             </SidebarMenuButton>
