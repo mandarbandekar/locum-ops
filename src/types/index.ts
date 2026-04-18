@@ -62,14 +62,14 @@ export interface TermsSnapshot {
 
 export type ShiftColor = 'blue' | 'green' | 'red' | 'orange' | 'purple' | 'pink' | 'teal' | 'yellow';
 export const SHIFT_COLORS: { value: ShiftColor; label: string; bg: string; text: string }[] = [
-  { value: 'blue', label: 'Blue', bg: 'bg-blue-500/15', text: 'text-blue-700 dark:text-blue-400' },
-  { value: 'green', label: 'Green', bg: 'bg-green-500/15', text: 'text-green-700 dark:text-green-400' },
-  { value: 'red', label: 'Red', bg: 'bg-red-500/15', text: 'text-red-700 dark:text-red-400' },
-  { value: 'orange', label: 'Orange', bg: 'bg-orange-500/15', text: 'text-orange-700 dark:text-orange-400' },
-  { value: 'purple', label: 'Purple', bg: 'bg-purple-500/15', text: 'text-purple-700 dark:text-purple-400' },
-  { value: 'pink', label: 'Pink', bg: 'bg-pink-500/15', text: 'text-pink-700 dark:text-pink-400' },
-  { value: 'teal', label: 'Teal', bg: 'bg-teal-500/15', text: 'text-teal-700 dark:text-teal-400' },
-  { value: 'yellow', label: 'Yellow', bg: 'bg-yellow-500/15', text: 'text-yellow-700 dark:text-yellow-400' },
+  { value: 'blue', label: 'Pacific', bg: 'bg-[#E8F3F5] dark:bg-[#1A3840]', text: 'text-[#0E3A44] dark:text-[#B0DDE5]' },
+  { value: 'green', label: 'Kelp', bg: 'bg-[#EBF3EE] dark:bg-[#1A2E22]', text: 'text-[#17382A] dark:text-[#A3D6B5]' },
+  { value: 'red', label: 'Ochre', bg: 'bg-[#F4EDE2] dark:bg-[#332818]', text: 'text-[#54401C] dark:text-[#EBD9C2]' },
+  { value: 'orange', label: 'Sandstone', bg: 'bg-[#F5E8D6] dark:bg-[#3A2D1A]', text: 'text-[#6B4A1F] dark:text-[#E8C898]' },
+  { value: 'purple', label: 'Driftwood', bg: 'bg-[#EFE9E2] dark:bg-[#2E2820]', text: 'text-[#4A3E32] dark:text-[#D4C4B0]' },
+  { value: 'pink', label: 'Coral Mist', bg: 'bg-[#F2E4DE] dark:bg-[#3A2620]', text: 'text-[#6B3D2E] dark:text-[#E5B8A5]' },
+  { value: 'teal', label: 'Tidepool', bg: 'bg-[#DDEDEA] dark:bg-[#1A3530]', text: 'text-[#1F4F47] dark:text-[#9FCDC0]' },
+  { value: 'yellow', label: 'Sandy Amber', bg: 'bg-[#FDF5E6] dark:bg-[#3A2E14]', text: 'text-[#7A5A14] dark:text-[#E8C66B]' },
 ];
 export interface Shift {
   id: string;
@@ -144,10 +144,10 @@ export const BLOCK_TYPES: { value: BlockType; label: string; icon: string }[] = 
   { value: 'other', label: 'Other', icon: '🔒' },
 ];
 export const BLOCK_COLORS: { value: string; label: string; bg: string; text: string }[] = [
-  { value: 'gray', label: 'Gray', bg: 'bg-gray-500/15', text: 'text-gray-700 dark:text-gray-400' },
-  { value: 'purple', label: 'Purple', bg: 'bg-purple-500/15', text: 'text-purple-700 dark:text-purple-400' },
-  { value: 'teal', label: 'Teal', bg: 'bg-teal-500/15', text: 'text-teal-700 dark:text-teal-400' },
-  { value: 'pink', label: 'Pink', bg: 'bg-pink-500/15', text: 'text-pink-700 dark:text-pink-400' },
+  { value: 'gray', label: 'Fog', bg: 'bg-[#E9E5DC] dark:bg-[#2A2D32]', text: 'text-[#5C5850] dark:text-[#B0B5BA]' },
+  { value: 'purple', label: 'Driftwood', bg: 'bg-[#EFE9E2] dark:bg-[#2E2820]', text: 'text-[#4A3E32] dark:text-[#D4C4B0]' },
+  { value: 'teal', label: 'Pacific', bg: 'bg-[#E8F3F5] dark:bg-[#1A3840]', text: 'text-[#0E3A44] dark:text-[#B0DDE5]' },
+  { value: 'pink', label: 'Coral Mist', bg: 'bg-[#F2E4DE] dark:bg-[#3A2620]', text: 'text-[#6B3D2E] dark:text-[#E5B8A5]' },
 ];
 export interface TimeBlock {
   id: string;

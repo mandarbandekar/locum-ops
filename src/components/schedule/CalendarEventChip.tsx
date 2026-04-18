@@ -3,16 +3,16 @@ import { useNavigate } from 'react-router-dom';
 
 const STATUS_STYLES: Record<string, { credential: string; subscription: string }> = {
   active: {
-    credential: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20',
-    subscription: 'bg-violet-500/10 text-violet-700 dark:text-violet-400 border-violet-500/20',
+    credential: 'bg-[#EBF3EE] dark:bg-[#1A2E22] text-[#17382A] dark:text-[#A3D6B5] border-[#C8DDD0] dark:border-[#2D5A3F]',
+    subscription: 'bg-[#E8F3F5] dark:bg-[#1A3840] text-[#0E3A44] dark:text-[#B0DDE5] border-[#C5DDE3] dark:border-[#2D5560]',
   },
   due_soon: {
-    credential: 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30',
-    subscription: 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30',
+    credential: 'bg-[#FDF5E6] dark:bg-[#3A2E14] text-[#7A5A14] dark:text-[#E8C66B] border-[#E8D8B0] dark:border-[#5C4820]',
+    subscription: 'bg-[#FDF5E6] dark:bg-[#3A2E14] text-[#7A5A14] dark:text-[#E8C66B] border-[#E8D8B0] dark:border-[#5C4820]',
   },
   expired: {
-    credential: 'bg-destructive/10 text-destructive border-destructive/20',
-    subscription: 'bg-destructive/10 text-destructive border-destructive/20',
+    credential: 'bg-[#F4EDE2] dark:bg-[#332818] text-[#54401C] dark:text-[#EBD9C2] border-[#E0D0B0] dark:border-[#5C4820]',
+    subscription: 'bg-[#F4EDE2] dark:bg-[#332818] text-[#54401C] dark:text-[#EBD9C2] border-[#E0D0B0] dark:border-[#5C4820]',
   },
 };
 

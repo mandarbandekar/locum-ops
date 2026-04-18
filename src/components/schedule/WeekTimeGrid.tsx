@@ -90,7 +90,7 @@ export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, o
                 {format(d, 'EEE')}
                 {isConflict && (
                   <span title="Overlapping shifts">
-                    <AlertTriangle className="h-3 w-3 text-amber-500" />
+                    <AlertTriangle className="h-3 w-3 text-accent" />
                   </span>
                 )}
               </div>
