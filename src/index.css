@@ -279,15 +279,15 @@
     --tab-active-text: 213 17% 9%;
 
     /* Pill tag tokens – dark */
-    --pill-paid-bg: 146 35% 25% / 0.4;
+    --pill-paid-bg: 146 35% 25% / 0.4;   /* success kelp */
     --pill-paid-text: 142 36% 70%;
-    --pill-pending-bg: 42 60% 30% / 0.4;
+    --pill-pending-bg: 40 60% 18% / 0.5; /* pending sandy */
     --pill-pending-text: 42 67% 70%;
-    --pill-overdue-bg: 14 60% 35% / 0.35;
-    --pill-overdue-text: 14 75% 75%;
-    --pill-sent-bg: 190 55% 25% / 0.4;
+    --pill-overdue-bg: 36 25% 14% / 0.6; /* accent ochre */
+    --pill-overdue-text: 38 60% 80%;     /* accent-800 dark */
+    --pill-sent-bg: 190 55% 16% / 0.7;   /* primary-50 dark */
     --pill-sent-text: 188 47% 78%;
-    --pill-draft-bg: 213 13% 25% / 0.5;
+    --pill-draft-bg: 213 13% 25% / 0.5;  /* neutral fog */
     --pill-draft-text: 213 8% 70%;
 
     --border-soft: 213 16% 17%;          /* #252B33 border-subtle */
