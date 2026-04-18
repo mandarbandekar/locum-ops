@@ -113,209 +113,210 @@
 
 @layer base {
   :root {
-    /* Light mode */
-    --background: 40 33% 92%;            /* #EFE7D6 sand page */
-    --foreground: 60 4% 17%;             /* #2C2C2A text-primary */
+    /* Light mode — Monterey Bay chrome remapping */
+    --background: 40 22% 95%;            /* #F6F4EF neutral-100 page */
+    --foreground: 210 11% 20%;           /* #2C3338 */
 
-    --card: 0 0% 100%;                   /* #FFFFFF */
-    --card-foreground: 60 4% 17%;
+    --card: 40 33% 98%;                  /* #FDFCF9 background-card */
+    --card-foreground: 210 11% 20%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 60 4% 17%;
+    --popover: 40 33% 98%;
+    --popover-foreground: 210 11% 20%;
 
-    --primary: 155 69% 37%;              /* #1D9E75 */
+    --primary: 190 60% 26%;              /* #1A5C6B Pacific Depth 700 */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 40 22% 93%;             /* #F1EFE8 surface */
-    --secondary-foreground: 60 2% 36%;   /* #5F5E5A text-secondary */
+    --secondary: 188 32% 93%;            /* #E8F3F5 primary-50 */
+    --secondary-foreground: 192 66% 16%; /* #0E3A44 primary-800 */
 
-    --muted: 40 22% 93%;
-    --muted-foreground: 48 2% 52%;       /* #888780 text-muted */
+    --muted: 42 17% 89%;                 /* #E9E5DC border-subtle */
+    --muted-foreground: 40 5% 51%;       /* #8A857B */
 
-    --accent: 40 22% 93%;
-    --accent-foreground: 16 65% 52%;     /* coral #D85A30 */
+    --accent: 188 32% 93%;               /* #E8F3F5 primary-50 hover */
+    --accent-foreground: 38 44% 43%;     /* #A07D3E ochre */
 
-    --destructive: 0 45% 62%;
+    --destructive: 14 70% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 142 36% 47%;
+    --success: 146 41% 30%;              /* #2D6B4A kelp-600 */
     --success-foreground: 0 0% 100%;
 
-    --warning: 37 57% 56%;
+    --warning: 40 75% 45%;               /* #C9941E sandy-amber */
     --warning-foreground: 0 0% 100%;
 
-    --info: 208 30% 54%;
+    --info: 190 60% 26%;
     --info-foreground: 0 0% 100%;
 
-    --border: 44 6% 68%;                /* #B4B2A9 border-default */
-    --input: 44 6% 68%;
-    --ring: 155 69% 37%;
+    --border: 40 14% 80%;                /* #D4CFC4 border-default */
+    --input: 40 14% 80%;
+    --ring: 190 60% 26%;
 
-    --radius: 1rem;
+    --radius: 0.5rem;                    /* 8px rounded-lg buttons */
 
-    /* Sidebar – light: soft mint */
-    --sidebar-background: 150 30% 96%;   /* #F4F9F6 */
-    --sidebar-foreground: 160 82% 17%;   /* #085041 */
-    --sidebar-primary: 0 0% 100%;        /* white active text */
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 160 75% 25%;       /* #0F6E56 active bg */
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 152 38% 88%;       /* #D6EDE2 */
-    --sidebar-ring: 155 69% 37%;
-    --sidebar-icon-inactive: 155 50% 58%;/* #5DCAA5 */
-    --sidebar-group-label: 155 69% 37%;  /* #1D9E75 */
-    --sidebar-hover: 155 55% 92%;        /* #E1F5EE */
-    --sidebar-settings-text: 155 50% 58%;/* #5DCAA5 */
-    --sidebar-logo-text: 160 82% 17%;   /* #085041 */
+    /* Sidebar – light: warm card surface */
+    --sidebar-background: 40 33% 98%;    /* #FDFCF9 background-card */
+    --sidebar-foreground: 40 5% 51%;     /* #8A857B foreground-muted */
+    --sidebar-primary: 190 60% 26%;      /* primary-700 active text */
+    --sidebar-primary-foreground: 190 60% 26%;
+    --sidebar-accent: 188 32% 93%;       /* #E8F3F5 primary-50 active bg */
+    --sidebar-accent-foreground: 190 60% 26%;
+    --sidebar-border: 40 14% 80%;        /* #D4CFC4 */
+    --sidebar-ring: 190 60% 26%;
+    --sidebar-icon-inactive: 40 5% 51%;  /* foreground-muted */
+    --sidebar-group-label: 40 5% 51%;    /* foreground-muted */
+    --sidebar-hover: 188 32% 93%;        /* primary-50 */
+    --sidebar-settings-text: 40 5% 51%;
+    --sidebar-logo-text: 192 66% 16%;    /* primary-800 */
 
     /* Tab tokens – light */
-    --tab-container-bg: 40 22% 93%;      /* #F1EFE8 */
-    --tab-inactive-text: 60 2% 36%;      /* #5F5E5A */
-    --tab-active-bg: 160 75% 25%;        /* #0F6E56 */
+    --tab-container-bg: 42 17% 89%;
+    --tab-inactive-text: 40 5% 51%;
+    --tab-active-bg: 190 60% 26%;        /* primary-700 */
     --tab-active-text: 0 0% 100%;
 
-    /* Pill tag tokens – light */
-    --pill-paid-bg: 86 40% 72%;          /* #EAF3DE */
-    --pill-paid-text: 100 76% 17%;       /* #27500A */
-    --pill-pending-bg: 35 81% 73%;       /* #FAEEDA */
-    --pill-pending-text: 28 90% 21%;     /* #633806 */
-    --pill-overdue-bg: 14 77% 94%;       /* #FAECE7 */
-    --pill-overdue-text: 16 70% 26%;     /* #712B13 */
-    --pill-sent-bg: 155 55% 92%;         /* #E1F5EE */
-    --pill-sent-text: 160 82% 17%;       /* #085041 */
-    --pill-draft-bg: 40 22% 93%;         /* #F1EFE8 */
-    --pill-draft-text: 50 2% 26%;        /* #444441 */
+    /* Pill tag tokens – light (preserve semantic differentiation) */
+    --pill-paid-bg: 146 35% 87%;
+    --pill-paid-text: 146 41% 18%;
+    --pill-pending-bg: 40 80% 88%;
+    --pill-pending-text: 40 75% 25%;
+    --pill-overdue-bg: 14 60% 90%;
+    --pill-overdue-text: 14 70% 30%;
+    --pill-sent-bg: 188 32% 93%;
+    --pill-sent-text: 192 66% 16%;
+    --pill-draft-bg: 42 17% 89%;
+    --pill-draft-text: 210 11% 25%;
 
     /* Soft border */
-    --border-soft: 45 10% 81%;          /* #D3D1C7 border-subtle */
+    --border-soft: 42 17% 89%;           /* #E9E5DC border-subtle */
 
     /* Card tokens – light */
-    --card-border: 155 55% 92%;         /* #E1F5EE */
-    --stat-card-bg: 155 55% 92%;        /* #E1F5EE */
-    --stat-card-value: 160 82% 17%;     /* #085041 */
-    --stat-card-label: 160 75% 25%;     /* #0F6E56 */
+    --card-border: 42 17% 89%;           /* border-subtle */
+    --stat-card-bg: 188 32% 93%;         /* primary-50 */
+    --stat-card-value: 192 66% 16%;      /* primary-800 */
+    --stat-card-label: 190 60% 26%;      /* primary-700 */
     --dialog-overlay: 0 0% 0% / 0.5;
 
     /* Button tokens – light */
-    --btn-primary-bg: 160 75% 25%;      /* #0F6E56 */
+    --btn-primary-bg: 190 60% 26%;       /* #1A5C6B primary-700 */
     --btn-primary-text: 0 0% 100%;
-    --btn-secondary-bg: 155 55% 92%;    /* #E1F5EE */
-    --btn-secondary-text: 160 82% 17%;  /* #085041 */
-    --btn-secondary-border: 155 52% 75%;/* #9FE1CB */
-    --btn-ghost-text: 160 75% 25%;      /* #0F6E56 */
-    --btn-ghost-border: 155 50% 58%;    /* #5DCAA5 */
-    --btn-accent-bg: 16 65% 52%;        /* #D85A30 */
+    --btn-secondary-bg: 188 32% 93%;     /* primary-50 */
+    --btn-secondary-text: 192 66% 16%;   /* primary-800 */
+    --btn-secondary-border: 40 14% 80%;  /* border-default */
+    --btn-ghost-text: 190 60% 26%;       /* primary-700 */
+    --btn-ghost-border: 40 14% 80%;      /* border-default */
+    --btn-accent-bg: 38 44% 43%;         /* #A07D3E ochre */
     --btn-accent-text: 0 0% 100%;
 
     /* Form field tokens – light */
     --input-bg: 0 0% 100%;
-    --input-border: 44 6% 68%;           /* #B4B2A9 */
-    --input-text: 60 4% 17%;             /* #2C2C2A */
-    --input-placeholder: 44 6% 68%;      /* #B4B2A9 */
-    --input-focus-border: 160 75% 25%;   /* #0F6E56 */
-    --input-focus-ring: 160 75% 25% / 0.12;
-    --label-color: 60 2% 36%;            /* #5F5E5A */
+    --input-border: 40 14% 80%;
+    --input-text: 210 11% 20%;
+    --input-placeholder: 40 5% 51%;
+    --input-focus-border: 190 60% 26%;
+    --input-focus-ring: 190 60% 26% / 0.15;
+    --label-color: 40 5% 51%;
   }
 
   .dark {
-    --background: 0 0% 10%;              /* #1A1A1A page */
-    --foreground: 40 22% 93%;            /* #F1EFE8 text-primary */
+    /* Dark mode — Monterey Bay deep ocean */
+    --background: 213 17% 9%;            /* #13171B */
+    --foreground: 45 13% 88%;            /* #E4E2DD */
 
-    --card: 0 0% 15%;                    /* #262626 */
-    --card-foreground: 40 22% 93%;
+    --card: 213 18% 13%;                 /* #1A1F25 background-card */
+    --card-foreground: 45 13% 88%;
 
-    --popover: 0 0% 15%;
-    --popover-foreground: 40 22% 93%;
+    --popover: 213 16% 17%;              /* #252B33 elevated */
+    --popover-foreground: 45 13% 88%;
 
-    --primary: 155 50% 58%;              /* #5DCAA5 primary-200 */
-    --primary-foreground: 0 0% 100%;
+    --primary: 188 47% 70%;              /* #8DCAD5 primary-600 dark */
+    --primary-foreground: 213 17% 9%;
 
-    --secondary: 50 3% 18%;              /* #2F2F2D surface */
-    --secondary-foreground: 44 6% 68%;   /* #B4B2A9 text-secondary */
+    --secondary: 213 16% 17%;            /* #252B33 */
+    --secondary-foreground: 45 13% 88%;
 
-    --muted: 50 3% 18%;
-    --muted-foreground: 48 2% 52%;       /* #888780 text-muted */
+    --muted: 213 13% 21%;                /* #2E353D border */
+    --muted-foreground: 213 5% 50%;      /* #7A7E85 */
 
-    --accent: 50 3% 18%;
-    --accent-foreground: 16 55% 60%;     /* lighter coral */
+    --accent: 213 16% 17%;
+    --accent-foreground: 38 50% 67%;     /* #D4BA82 ochre dark */
 
-    --destructive: 0 45% 62%;
+    --destructive: 14 65% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 142 36% 47%;
-    --success-foreground: 0 0% 100%;
+    --success: 142 36% 64%;              /* #82C89E kelp-600 dark */
+    --success-foreground: 213 17% 9%;
 
-    --warning: 37 57% 56%;
-    --warning-foreground: 0 0% 100%;
+    --warning: 42 67% 60%;               /* #E0B854 pending dark */
+    --warning-foreground: 213 17% 9%;
 
-    --info: 208 30% 54%;
-    --info-foreground: 0 0% 100%;
+    --info: 188 47% 70%;
+    --info-foreground: 213 17% 9%;
 
-    --border: 50 2% 26%;                /* #444441 border-default */
-    --input: 50 2% 26%;
-    --ring: 155 50% 58%;
+    --border: 213 13% 21%;               /* #2E353D */
+    --input: 213 13% 21%;
+    --ring: 188 47% 70%;
 
-    /* Sidebar – dark: neutral charcoal */
-    --sidebar-background: 0 0% 12%;      /* #1E1E1E */
-    --sidebar-foreground: 0 0% 63%;      /* #A0A0A0 */
-    --sidebar-primary: 0 0% 100%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 160 75% 25%;       /* #0F6E56 active bg */
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 0 0% 18%;          /* #2E2E2E */
-    --sidebar-ring: 155 50% 58%;
-    --sidebar-icon-inactive: 0 0% 40%;   /* #666666 */
-    --sidebar-group-label: 0 0% 40%;     /* #666666 */
-    --sidebar-hover: 0 0% 16%;           /* #2A2A2A */
-    --sidebar-settings-text: 0 0% 40%;   /* #666666 */
-    --sidebar-logo-text: 0 0% 88%;      /* #E0E0E0 */
+    /* Sidebar – dark: card surface */
+    --sidebar-background: 213 18% 13%;   /* #1A1F25 */
+    --sidebar-foreground: 213 5% 50%;    /* #7A7E85 */
+    --sidebar-primary: 188 47% 70%;
+    --sidebar-primary-foreground: 188 47% 70%;
+    --sidebar-accent: 190 55% 16%;       /* #122A30 primary-50 dark */
+    --sidebar-accent-foreground: 188 47% 70%;
+    --sidebar-border: 213 13% 21%;
+    --sidebar-ring: 188 47% 70%;
+    --sidebar-icon-inactive: 213 5% 50%;
+    --sidebar-group-label: 213 5% 50%;
+    --sidebar-hover: 213 16% 17%;
+    --sidebar-settings-text: 213 5% 50%;
+    --sidebar-logo-text: 188 47% 70%;    /* primary-600 dark */
 
     /* Tab tokens – dark */
-    --tab-container-bg: 50 3% 18%;       /* #2F2F2D */
-    --tab-inactive-text: 48 2% 52%;      /* #888780 */
-    --tab-active-bg: 155 69% 37%;        /* #1D9E75 */
-    --tab-active-text: 0 0% 100%;
+    --tab-container-bg: 213 16% 17%;
+    --tab-inactive-text: 213 5% 50%;
+    --tab-active-bg: 188 47% 70%;
+    --tab-active-text: 213 17% 9%;
 
     /* Pill tag tokens – dark */
-    --pill-paid-bg: 100 53% 37% / 0.15;
-    --pill-paid-text: 90 40% 73%;        /* #C0DD97 */
-    --pill-pending-bg: 37 78% 41% / 0.15;
-    --pill-pending-text: 40 93% 72%;     /* #FAC775 */
-    --pill-overdue-bg: 16 65% 52% / 0.15;
-    --pill-overdue-text: 16 80% 83%;     /* #F5C4B3 */
-    --pill-sent-bg: 155 69% 37% / 0.15;
-    --pill-sent-text: 155 52% 75%;       /* #9FE1CB */
-    --pill-draft-bg: 48 2% 52% / 0.12;
-    --pill-draft-text: 44 6% 68%;        /* #B4B2A9 */
+    --pill-paid-bg: 146 35% 25% / 0.4;
+    --pill-paid-text: 142 36% 70%;
+    --pill-pending-bg: 42 60% 30% / 0.4;
+    --pill-pending-text: 42 67% 70%;
+    --pill-overdue-bg: 14 60% 35% / 0.35;
+    --pill-overdue-text: 14 75% 75%;
+    --pill-sent-bg: 190 55% 25% / 0.4;
+    --pill-sent-text: 188 47% 78%;
+    --pill-draft-bg: 213 13% 25% / 0.5;
+    --pill-draft-text: 213 8% 70%;
 
-    --border-soft: 50 3% 22%;           /* #3A3A38 border-subtle */
+    --border-soft: 213 16% 17%;          /* #252B33 border-subtle */
 
     /* Card tokens – dark */
-    --card-border: 50 3% 22%;           /* #3A3A38 */
-    --stat-card-bg: 155 69% 37% / 0.12;
-    --stat-card-value: 155 52% 75%;     /* #9FE1CB */
-    --stat-card-label: 155 50% 58%;     /* #5DCAA5 */
+    --card-border: 213 16% 17%;
+    --stat-card-bg: 190 55% 16%;         /* primary-50 dark */
+    --stat-card-value: 190 51% 79%;      /* primary-800 dark */
+    --stat-card-label: 188 47% 70%;
     --dialog-overlay: 0 0% 0% / 0.7;
 
     /* Button tokens – dark */
-    --btn-primary-bg: 155 69% 37%;      /* #1D9E75 */
-    --btn-primary-text: 0 0% 100%;
-    --btn-secondary-bg: 155 69% 37% / 0.15;
-    --btn-secondary-text: 155 52% 75%;  /* #9FE1CB */
-    --btn-secondary-border: 155 50% 58% / 0.3;
-    --btn-ghost-text: 155 52% 75%;      /* #9FE1CB */
-    --btn-ghost-border: 155 50% 58% / 0.3;
-    --btn-accent-bg: 16 65% 52%;        /* #D85A30 */
-    --btn-accent-text: 0 0% 100%;
+    --btn-primary-bg: 188 47% 70%;       /* primary-600 dark */
+    --btn-primary-text: 213 17% 9%;
+    --btn-secondary-bg: 190 55% 16%;     /* primary-50 dark */
+    --btn-secondary-text: 188 47% 78%;
+    --btn-secondary-border: 213 13% 21%;
+    --btn-ghost-text: 188 47% 70%;
+    --btn-ghost-border: 213 13% 21%;
+    --btn-accent-bg: 38 50% 67%;         /* #D4BA82 ochre dark */
+    --btn-accent-text: 213 17% 9%;
 
     /* Form field tokens – dark */
-    --input-bg: 50 3% 18%;              /* #2F2F2D */
-    --input-border: 50 2% 26%;          /* #444441 */
-    --input-text: 40 22% 93%;           /* #F1EFE8 */
-    --input-placeholder: 60 2% 36%;     /* #5F5E5A */
-    --input-focus-border: 155 69% 37%;  /* #1D9E75 */
-    --input-focus-ring: 155 69% 37% / 0.15;
-    --label-color: 44 6% 68%;           /* #B4B2A9 */
+    --input-bg: 213 16% 17%;
+    --input-border: 213 13% 21%;
+    --input-text: 45 13% 88%;
+    --input-placeholder: 213 5% 50%;
+    --input-focus-border: 188 47% 70%;
+    --input-focus-ring: 188 47% 70% / 0.2;
+    --label-color: 213 5% 50%;
   }
 }
 
