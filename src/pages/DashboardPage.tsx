@@ -36,6 +36,7 @@ import {
 import { BriefingBanner } from '@/components/dashboard/BriefingBanner';
 import { MoneyPipeline, PipelineStage } from '@/components/dashboard/MoneyPipeline';
 import { AttentionGroupedList } from '@/components/dashboard/AttentionGroupedList';
+import { generateDashboardBriefing, getNextQuarterlyDeadline, BriefingInput } from '@/lib/dashboardBriefing';
 
 const TOUR_STEPS: TourStep[] = [
   {
@@ -143,26 +144,43 @@ export default function DashboardPage() {
 
   const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
 
-  // ── Briefing data ──
-  const briefingData = useMemo(() => {
+  // ── Briefing data (Slot 1 + 2 inputs computed here; credential inputs added below) ──
+  const briefingShared = useMemo(() => {
     const weekEnd = addDays(now, 7);
-    const upcomingShifts = shifts.filter(s => {
-      const d = parseISO(s.start_datetime);
-      return d >= now && d <= weekEnd;
-    });
-    const shiftTotal = upcomingShifts.reduce((sum, s) => sum + (s.rate_applied || 0), 0);
 
-    const lastMonthStart = startOfMonth(subMonths(now, 1));
-    const lastMonthEnd = endOfMonth(subMonths(now, 1));
-    const lastMonthShifts = shifts.filter(s => {
+    // Upcoming shifts (next 7 days, not started)
+    const upcomingShifts = shifts
+      .filter(s => {
+        const d = parseISO(s.start_datetime);
+        return d >= now && d <= weekEnd;
+      })
+      .sort((a, b) => parseISO(a.start_datetime).getTime() - parseISO(b.start_datetime).getTime());
+    const projectedWeekEarnings = upcomingShifts.reduce((sum, s) => sum + (s.rate_applied || 0), 0);
+    const uniqueClinicsNext7 = new Set(upcomingShifts.map(s => s.facility_id)).size;
+    const nextShift = upcomingShifts[0] ?? null;
+
+    // 3-month rolling average
+    const threeMonthsAgo = startOfMonth(subMonths(now, 3));
+    const recentShifts = shifts.filter(s => {
       const d = parseISO(s.end_datetime);
-      return d >= lastMonthStart && d <= lastMonthEnd && d < now;
+      return d >= threeMonthsAgo && d < now;
     });
-    const lastMonthTotal = lastMonthShifts.reduce((sum, s) => sum + (s.rate_applied || 0), 0);
+    const recentEarnings = recentShifts.reduce((sum, s) => sum + (s.rate_applied || 0), 0);
+    const avgMonthlyEarnings = recentEarnings / 3;
+    const avgShiftsPerMonth = recentShifts.length / 3;
 
+    // Overdue
     const overdueInvs = invoices.filter(i => computeInvoiceStatus(i) === 'overdue');
     const overdueTotal = overdueInvs.reduce((s, i) => s + i.balance_due, 0);
+    const oldestOverdue = [...overdueInvs]
+      .filter(i => i.due_date)
+      .sort((a, b) => parseISO(a.due_date!).getTime() - parseISO(b.due_date!).getTime())[0];
+    const oldestOverdueClinicName = oldestOverdue ? getFacilityName(oldestOverdue.facility_id) : null;
+    const daysSinceOldestDue = oldestOverdue?.due_date
+      ? differenceInDays(now, parseISO(oldestOverdue.due_date))
+      : null;
 
+    // Due soon (next 7 days)
     const dueSoonInvs = invoices.filter(i => {
       const status = computeInvoiceStatus(i);
       if (status !== 'sent' && status !== 'partial') return false;
@@ -172,17 +190,100 @@ export default function DashboardPage() {
     });
     const dueSoonTotal = dueSoonInvs.reduce((s, i) => s + i.balance_due, 0);
 
+    // Uninvoiced completed shifts
+    const invoicedShiftIds = new Set(lineItems.filter(li => li.shift_id).map(li => li.shift_id!));
+    const uninvoicedShifts = shifts.filter(s => parseISO(s.end_datetime) < now && !invoicedShiftIds.has(s.id));
+    const uninvoicedTotal = uninvoicedShifts.reduce((sum, s) => sum + (s.rate_applied || 0), 0);
+
+    // Collected this month vs last month at same point (day-of-month)
+    const monthStart = startOfMonth(now);
+    const monthEnd = endOfMonth(now);
+    const collectedThisMonth = payments
+      .filter(p => {
+        const d = parseISO(p.payment_date);
+        return d >= monthStart && d <= monthEnd;
+      })
+      .reduce((s, p) => s + p.amount, 0);
+
+    const lastMonthStart = startOfMonth(subMonths(now, 1));
+    const sameDayLastMonthCutoff = addDays(lastMonthStart, now.getDate() - 1);
+    const collectedLastMonthAtSamePoint = payments
+      .filter(p => {
+        const d = parseISO(p.payment_date);
+        return d >= lastMonthStart && d <= sameDayLastMonthCutoff;
+      })
+      .reduce((s, p) => s + p.amount, 0);
+
+    // Quarter scope
+    const month = now.getMonth();
+    const quarter = Math.floor(month / 3) + 1;
+    const qStart = new Date(now.getFullYear(), (quarter - 1) * 3, 1);
+    const qEnd = new Date(now.getFullYear(), quarter * 3, 0, 23, 59, 59);
+
+    const invoicesSentThisQuarter = invoices.filter(i => {
+      if (!i.sent_at) return false;
+      const d = parseISO(i.sent_at);
+      return d >= qStart && d <= qEnd;
+    });
+    const invoicedThisQuarter = invoicesSentThisQuarter.reduce((s, i) => s + i.total_amount, 0);
+    const collectedThisQuarter = invoices
+      .filter(i => i.paid_at && parseISO(i.paid_at) >= qStart && parseISO(i.paid_at) <= qEnd)
+      .reduce((s, i) => s + i.total_amount, 0);
+    const earnedThisQuarter = collectedThisQuarter; // earned = paid in quarter
+    const shiftsThisQuarterCount = shifts.filter(s => {
+      const d = parseISO(s.end_datetime);
+      return d >= qStart && d <= qEnd && d < now;
+    }).length;
+
+    // Next quarterly tax deadline
+    const { quarter: nextTaxQ, deadline: nextTaxDeadline } = getNextQuarterlyDeadline(now);
+    const daysUntilNextTax = differenceInDays(nextTaxDeadline, now);
+
+    // Estimated quarterly tax — prefer DB value for that quarter, else 25% of this-quarter earnings
+    const dbQuarter = taxQuarters.find(q => q.quarter === nextTaxQ && q.status !== 'paid');
+    const estimatedQuarterlyTax = dbQuarter
+      ? Math.round(earnedThisQuarter * 0.25) // fallback heuristic — DB row exists but no amount field
+      : Math.round(earnedThisQuarter * 0.25);
+
+    // Stale draft invoices (>3 days old)
+    const staleDraftCount = invoices.filter(i => {
+      if (i.status !== 'draft') return false;
+      // use invoice_date or created_at proxy
+      const ref = i.invoice_date ? parseISO(i.invoice_date) : null;
+      if (!ref) return false;
+      return differenceInDays(now, ref) > 3;
+    }).length;
+
     return {
-      shiftCount: upcomingShifts.length,
-      shiftTotal,
-      lastMonthShiftCount: lastMonthShifts.length,
-      lastMonthTotal,
+      shiftsNext7Count: upcomingShifts.length,
+      uniqueClinicsNext7Count: uniqueClinicsNext7,
+      projectedWeekEarnings,
+      nextShiftDate: nextShift ? parseISO(nextShift.start_datetime) : null,
+      nextShiftClinicName: nextShift ? getFacilityName(nextShift.facility_id) : null,
+      avgMonthlyEarnings,
+      avgShiftsPerMonth,
       overdueCount: overdueInvs.length,
       overdueTotal,
+      oldestOverdueClinicName,
+      daysSinceOldestDue,
       dueSoonCount: dueSoonInvs.length,
       dueSoonTotal,
+      uninvoicedCount: uninvoicedShifts.length,
+      uninvoicedTotal,
+      collectedThisMonth,
+      collectedLastMonthAtSamePoint,
+      invoicesSentThisQuarterCount: invoicesSentThisQuarter.length,
+      invoicedThisQuarter,
+      collectedThisQuarter,
+      earnedThisQuarter,
+      shiftsThisQuarterCount,
+      nextTaxQuarter: nextTaxQ,
+      nextTaxDeadline,
+      daysUntilNextTax,
+      estimatedQuarterlyTax,
+      staleDraftCount,
     };
-  }, [shifts, invoices, now]);
+  }, [shifts, invoices, lineItems, payments, facilities, taxQuarters, now]);
 
   // ── Money Pipeline stages ──
   const pipeline = useMemo(() => {
@@ -302,19 +403,72 @@ export default function DashboardPage() {
     return { draftInvoices };
   }, [invoices]);
 
-  // Next credential expiring (for briefing line 3)
-  const nextCredential = useMemo(() => {
-    if (!credentialsList) return { name: null as string | null, days: null as number | null };
-    const upcoming = credentialsList
+  // Credential buckets for briefing Slot 3
+  const credentialBuckets = useMemo(() => {
+    const empty = {
+      urgentName: null as string | null, urgentDays: null as number | null,
+      upcomingName: null as string | null, upcomingDays: null as number | null,
+    };
+    if (!credentialsList) return empty;
+    const sorted = credentialsList
       .filter((c: any) => c.expiration_date)
       .map((c: any) => ({
         name: c.custom_title || 'credential',
         days: differenceInDays(parseISO(c.expiration_date), now),
       }))
-      .filter(c => c.days >= 0 && c.days <= 30)
+      .filter(c => c.days >= 0)
       .sort((a, b) => a.days - b.days);
-    return upcoming[0] ?? { name: null, days: null };
+    const urgent = sorted.find(c => c.days <= 14);
+    const upcoming = sorted.find(c => c.days > 14 && c.days <= 30);
+    return {
+      urgentName: urgent?.name ?? null,
+      urgentDays: urgent?.days ?? null,
+      upcomingName: upcoming?.name ?? null,
+      upcomingDays: upcoming?.days ?? null,
+    };
   }, [credentialsList, now]);
+
+  // Final briefing output
+  const briefing = useMemo(() => {
+    const isBrandNewAccount =
+      shifts.length === 0 && invoices.length === 0 && (credentialsList?.length ?? 0) === 0;
+    const input: BriefingInput = {
+      firstName: profile?.first_name || 'there',
+      isBrandNewAccount,
+      overdueCount: briefingShared.overdueCount,
+      overdueTotal: briefingShared.overdueTotal,
+      oldestOverdueClinicName: briefingShared.oldestOverdueClinicName,
+      daysSinceOldestDue: briefingShared.daysSinceOldestDue,
+      nextQuarterlyDeadline: briefingShared.nextTaxDeadline,
+      nextQuarterlyQuarter: briefingShared.nextTaxQuarter,
+      daysUntilNextQuarterlyDeadline: briefingShared.daysUntilNextTax,
+      estimatedQuarterlyTax: briefingShared.estimatedQuarterlyTax,
+      shiftsNext7Count: briefingShared.shiftsNext7Count,
+      uniqueClinicsNext7Count: briefingShared.uniqueClinicsNext7Count,
+      projectedWeekEarnings: briefingShared.projectedWeekEarnings,
+      nextShiftDate: briefingShared.nextShiftDate,
+      nextShiftClinicName: briefingShared.nextShiftClinicName,
+      avgMonthlyEarnings: briefingShared.avgMonthlyEarnings,
+      avgShiftsPerMonth: briefingShared.avgShiftsPerMonth,
+      collectedThisMonth: briefingShared.collectedThisMonth,
+      collectedLastMonthAtSamePoint: briefingShared.collectedLastMonthAtSamePoint,
+      dueSoonCount: briefingShared.dueSoonCount,
+      dueSoonTotal: briefingShared.dueSoonTotal,
+      uninvoicedCount: briefingShared.uninvoicedCount,
+      uninvoicedTotal: briefingShared.uninvoicedTotal,
+      invoicesSentThisQuarterCount: briefingShared.invoicesSentThisQuarterCount,
+      collectedThisQuarter: briefingShared.collectedThisQuarter,
+      invoicedThisQuarter: briefingShared.invoicedThisQuarter,
+      earnedThisQuarter: briefingShared.earnedThisQuarter,
+      shiftsThisQuarter: briefingShared.shiftsThisQuarterCount,
+      urgentCredentialName: credentialBuckets.urgentName,
+      urgentCredentialDays: credentialBuckets.urgentDays,
+      upcomingCredentialName: credentialBuckets.upcomingName,
+      upcomingCredentialDays: credentialBuckets.upcomingDays,
+      staleDraftInvoiceCount: briefingShared.staleDraftCount,
+    };
+    return generateDashboardBriefing(input);
+  }, [briefingShared, credentialBuckets, profile?.first_name, shifts.length, invoices.length, credentialsList?.length]);
 
   const attentionItems = useMemo(() => {
     const items: AttentionItem[] = [];
@@ -496,17 +650,8 @@ export default function DashboardPage() {
       <div className="mt-4 space-y-5">
         <div data-tour="briefing">
           <BriefingBanner
-            firstName={profile?.first_name || 'there'}
-            shiftCount={briefingData.shiftCount}
-            shiftTotal={briefingData.shiftTotal}
-            lastMonthShiftCount={briefingData.lastMonthShiftCount}
-            lastMonthTotal={briefingData.lastMonthTotal}
-            overdueCount={briefingData.overdueCount}
-            overdueTotal={briefingData.overdueTotal}
-            dueSoonCount={briefingData.dueSoonCount}
-            dueSoonTotal={briefingData.dueSoonTotal}
-            nextCredentialName={nextCredential.name}
-            nextCredentialDays={nextCredential.days}
+            sentences={briefing.sentences}
+            hasUrgentItem={briefing.hasUrgentItem}
           />
         </div>
 
