@@ -3178,6 +3178,8 @@ export type Database = {
           created_at: string
           currency: string
           current_tools: Json
+          dashboard_intro_dismissed: boolean
+          dashboard_levelup_shown: boolean
           dismissed_prompts: Json
           email_tone: string
           facilities_count_band: string
@@ -3206,6 +3208,8 @@ export type Database = {
           created_at?: string
           currency?: string
           current_tools?: Json
+          dashboard_intro_dismissed?: boolean
+          dashboard_levelup_shown?: boolean
           dismissed_prompts?: Json
           email_tone?: string
           facilities_count_band?: string
@@ -3234,6 +3238,8 @@ export type Database = {
           created_at?: string
           currency?: string
           current_tools?: Json
+          dashboard_intro_dismissed?: boolean
+          dashboard_levelup_shown?: boolean
           dismissed_prompts?: Json
           email_tone?: string
           facilities_count_band?: string

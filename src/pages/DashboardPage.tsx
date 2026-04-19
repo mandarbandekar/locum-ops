@@ -39,6 +39,7 @@ import { AttentionGroupedList } from '@/components/dashboard/AttentionGroupedLis
 import { UpcomingShiftsStrip, UpcomingShiftItem } from '@/components/dashboard/UpcomingShiftsStrip';
 import { EmptyDashboardPrompt } from '@/components/dashboard/EmptyDashboardPrompt';
 import { QuarterlyTaxCallout } from '@/components/dashboard/QuarterlyTaxCallout';
+import { FirstTimeDashboard } from '@/components/dashboard/FirstTimeDashboard';
 import { generateDashboardBriefing, getNextQuarterlyDeadline, BriefingInput } from '@/lib/dashboardBriefing';
 
 const TOUR_STEPS: TourStep[] = [
@@ -133,15 +134,18 @@ export default function DashboardPage() {
 
   const [taxQuarters, setTaxQuarters] = useState<{ quarter: number; due_date: string; status: string }[]>([]);
   const [subscriptions, setSubscriptions] = useState<{ name: string; renewal_date: string | null; status: string; archived_at: string | null }[]>([]);
+  const [hasCalendarSync, setHasCalendarSync] = useState(false);
 
   useEffect(() => {
     if (isDemo || !user) return;
     Promise.all([
       dashDb('tax_quarter_statuses').select('quarter,due_date,status').eq('tax_year', now.getFullYear()).order('quarter'),
       dashDb('required_subscriptions').select('name,renewal_date,status,archived_at').is('archived_at', null),
-    ]).then(([qsRes, subRes]) => {
+      dashDb('calendar_connections').select('id,status').eq('user_id', user.id).eq('status', 'active').limit(1),
+    ]).then(([qsRes, subRes, calRes]) => {
       if (qsRes.data) setTaxQuarters(qsRes.data as any[]);
       if (subRes.data) setSubscriptions(subRes.data as any[]);
+      if (calRes.data) setHasCalendarSync((calRes.data as any[]).length > 0);
     });
   }, [user?.id, isDemo]);
 
@@ -386,6 +390,60 @@ export default function DashboardPage() {
     const avg = shiftsCompleted > 0 ? earnings / shiftsCompleted : 0;
     return { quarter, earnings, shiftsCompleted, avg };
   }, [invoices, shifts, now]);
+
+  // ── First-time dashboard experience gating ──
+  // Show first-time layout when: real user (not demo), has 1+ clinic, has 1+ shift, fewer than 5 shifts,
+  // and intro hasn't been dismissed.
+  const showFirstTimeDashboard =
+    !isDemo &&
+    !!profile &&
+    !profile.dashboard_intro_dismissed &&
+    facilities.length >= 1 &&
+    shifts.length >= 1 &&
+    shifts.length < 5;
+
+  // Show one-time level-up banner when user crosses the 5-shift threshold for the first time.
+  const [levelUpVisible, setLevelUpVisible] = useState(false);
+  useEffect(() => {
+    if (isDemo || !profile) return;
+    if (
+      shifts.length >= 5 &&
+      !profile.dashboard_intro_dismissed &&
+      !profile.dashboard_levelup_shown
+    ) {
+      setLevelUpVisible(true);
+      // Persist both flags so the banner only ever shows once.
+      updateProfile({ dashboard_intro_dismissed: true, dashboard_levelup_shown: true });
+      const t = setTimeout(() => setLevelUpVisible(false), 10000);
+      return () => clearTimeout(t);
+    }
+  }, [shifts.length, isDemo, profile?.dashboard_intro_dismissed, profile?.dashboard_levelup_shown]);
+
+  const dismissIntro = useCallback(() => {
+    if (profile && !profile.dashboard_intro_dismissed) {
+      updateProfile({ dashboard_intro_dismissed: true });
+    }
+  }, [profile, updateProfile]);
+
+  // Estimated quarterly tax + per-shift set-aside for the first-time tax variant
+  const projectedQuarterEarnings = useMemo(() => {
+    const month = now.getMonth();
+    const quarter = Math.floor(month / 3) + 1;
+    const qStart = new Date(now.getFullYear(), (quarter - 1) * 3, 1);
+    const qEnd = new Date(now.getFullYear(), quarter * 3, 0, 23, 59, 59);
+    return shifts
+      .filter(s => {
+        const d = parseISO(s.start_datetime);
+        return d >= qStart && d <= qEnd;
+      })
+      .reduce((sum, s) => sum + (s.rate_applied || 0), 0);
+  }, [shifts, now]);
+
+  const perShiftSetAside = useMemo(() => {
+    if (shifts.length === 0) return 0;
+    const totalEarnings = shifts.reduce((s, sh) => s + (sh.rate_applied || 0), 0);
+    return Math.round((totalEarnings * 0.25) / shifts.length);
+  }, [shifts]);
 
   // ── Upcoming shifts strip (next 5 by date asc, future only) ──
   const upcomingShiftsForStrip = useMemo<UpcomingShiftItem[]>(() => {
@@ -672,10 +730,53 @@ export default function DashboardPage() {
         />
       )}
 
-      {/* ZONE 1: Empty state OR Briefing + Pipeline + Upcoming Shifts */}
+      {/* Level-up banner (one-time) */}
+      {levelUpVisible && (
+        <div className="mt-3 relative bg-card rounded-lg shadow-sm overflow-hidden">
+          <div className="absolute left-0 top-0 bottom-0 w-1" style={{ backgroundColor: '#1A5C6B' }} />
+          <div className="flex items-center gap-3 px-4 py-3 pl-5">
+            <p className="text-[14px] text-foreground flex-1">
+              Your dashboard has leveled up! With {shifts.length} shifts logged, you now have a full business view.
+            </p>
+            <button type="button" onClick={() => setLevelUpVisible(false)} className="text-muted-foreground hover:text-foreground shrink-0">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ZONE 1: Empty state OR First-time experience OR Standard layout */}
       {facilities.length === 0 && shifts.length === 0 ? (
         <div className="mt-4 animate-in fade-in duration-200">
           <EmptyDashboardPrompt onAddClinic={() => setAddClinicOpen(true)} />
+        </div>
+      ) : showFirstTimeDashboard ? (
+        <div className="mt-4">
+          <FirstTimeDashboard
+            firstName={profile?.first_name || 'there'}
+            shifts={shifts}
+            facilities={facilities}
+            invoices={invoices}
+            pipelineStages={pipeline.stages}
+            quarter={quarterStats.quarter}
+            quarterEarnings={quarterStats.earnings}
+            shiftsThisQuarter={quarterStats.shiftsCompleted}
+            avgPerShift={quarterStats.avg}
+            hasTaxProfile={hasTaxProfile}
+            hasCredentials={(credentialsList?.length ?? 0) > 0}
+            hasCalendarSync={hasCalendarSync}
+            estimatedQuarterlyTax={briefingShared.estimatedQuarterlyTax}
+            perShiftSetAside={perShiftSetAside}
+            projectedQuarterEarnings={projectedQuarterEarnings}
+            onSkip={dismissIntro}
+            onStageClick={(key) => {
+              if (key === 'completed') navigate('/schedule?filter=completed');
+              else if (key === 'invoiced') navigate('/invoices?filter=sent');
+              else if (key === 'due_soon') navigate('/invoices?filter=due_soon');
+              else if (key === 'overdue') navigate('/invoices?filter=overdue');
+              else if (key === 'collected') navigate('/invoices?filter=paid_this_month');
+            }}
+          />
         </div>
       ) : (
         <div className="mt-4 space-y-5 animate-in fade-in duration-200">
