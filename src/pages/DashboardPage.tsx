@@ -730,10 +730,53 @@ export default function DashboardPage() {
         />
       )}
 
-      {/* ZONE 1: Empty state OR Briefing + Pipeline + Upcoming Shifts */}
+      {/* Level-up banner (one-time) */}
+      {levelUpVisible && (
+        <div className="mt-3 relative bg-card rounded-lg shadow-sm overflow-hidden">
+          <div className="absolute left-0 top-0 bottom-0 w-1" style={{ backgroundColor: '#1A5C6B' }} />
+          <div className="flex items-center gap-3 px-4 py-3 pl-5">
+            <p className="text-[14px] text-foreground flex-1">
+              Your dashboard has leveled up! With {shifts.length} shifts logged, you now have a full business view.
+            </p>
+            <button type="button" onClick={() => setLevelUpVisible(false)} className="text-muted-foreground hover:text-foreground shrink-0">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ZONE 1: Empty state OR First-time experience OR Standard layout */}
       {facilities.length === 0 && shifts.length === 0 ? (
         <div className="mt-4 animate-in fade-in duration-200">
           <EmptyDashboardPrompt onAddClinic={() => setAddClinicOpen(true)} />
+        </div>
+      ) : showFirstTimeDashboard ? (
+        <div className="mt-4">
+          <FirstTimeDashboard
+            firstName={profile?.first_name || 'there'}
+            shifts={shifts}
+            facilities={facilities}
+            invoices={invoices}
+            pipelineStages={pipeline.stages}
+            quarter={quarterStats.quarter}
+            quarterEarnings={quarterStats.earnings}
+            shiftsThisQuarter={quarterStats.shiftsCompleted}
+            avgPerShift={quarterStats.avg}
+            hasTaxProfile={hasTaxProfile}
+            hasCredentials={(credentialsList?.length ?? 0) > 0}
+            hasCalendarSync={hasCalendarSync}
+            estimatedQuarterlyTax={briefingShared.estimatedQuarterlyTax}
+            perShiftSetAside={perShiftSetAside}
+            projectedQuarterEarnings={projectedQuarterEarnings}
+            onSkip={dismissIntro}
+            onStageClick={(key) => {
+              if (key === 'completed') navigate('/schedule?filter=completed');
+              else if (key === 'invoiced') navigate('/invoices?filter=sent');
+              else if (key === 'due_soon') navigate('/invoices?filter=due_soon');
+              else if (key === 'overdue') navigate('/invoices?filter=overdue');
+              else if (key === 'collected') navigate('/invoices?filter=paid_this_month');
+            }}
+          />
         </div>
       ) : (
         <div className="mt-4 space-y-5 animate-in fade-in duration-200">
