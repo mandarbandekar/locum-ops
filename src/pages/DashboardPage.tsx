@@ -386,6 +386,21 @@ export default function DashboardPage() {
     return { quarter, earnings, shiftsCompleted, avg };
   }, [invoices, shifts, now]);
 
+  // ── Upcoming shifts strip (next 5 by date asc, future only) ──
+  const upcomingShiftsForStrip = useMemo<UpcomingShiftItem[]>(() => {
+    return shifts
+      .filter(s => parseISO(s.start_datetime) >= now)
+      .sort((a, b) => parseISO(a.start_datetime).getTime() - parseISO(b.start_datetime).getTime())
+      .slice(0, 5)
+      .map(s => ({
+        id: s.id,
+        date: parseISO(s.start_datetime),
+        clinicName: getFacilityName(s.facility_id),
+        startTime: format(parseISO(s.start_datetime), 'h:mm a'),
+        endTime: format(parseISO(s.end_datetime), 'h:mm a'),
+      }));
+  }, [shifts, facilities, now]);
+
   // ── Attention items (existing logic preserved) ──
   const { credentials: credentialsList } = useCredentials();
   const { getMonthQueue } = useClinicConfirmations();
