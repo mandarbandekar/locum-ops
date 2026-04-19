@@ -36,6 +36,8 @@ import {
 import { BriefingBanner } from '@/components/dashboard/BriefingBanner';
 import { MoneyPipeline, PipelineStage } from '@/components/dashboard/MoneyPipeline';
 import { AttentionGroupedList } from '@/components/dashboard/AttentionGroupedList';
+import { UpcomingShiftsStrip, UpcomingShiftItem } from '@/components/dashboard/UpcomingShiftsStrip';
+import { EmptyDashboardPrompt } from '@/components/dashboard/EmptyDashboardPrompt';
 import { generateDashboardBriefing, getNextQuarterlyDeadline, BriefingInput } from '@/lib/dashboardBriefing';
 
 const TOUR_STEPS: TourStep[] = [
@@ -646,25 +648,40 @@ export default function DashboardPage() {
         />
       )}
 
-      {/* ZONE 1: Briefing + Pipeline */}
-      <div className="mt-4 space-y-5">
-        <div data-tour="briefing">
-          <BriefingBanner
-            sentences={briefing.sentences}
-            hasUrgentItem={briefing.hasUrgentItem}
-          />
+      {/* ZONE 1: Empty state OR Briefing + Pipeline + Upcoming Shifts */}
+      {facilities.length === 0 && shifts.length === 0 ? (
+        <div className="mt-4 animate-in fade-in duration-200">
+          <EmptyDashboardPrompt onAddClinic={() => setAddClinicOpen(true)} />
         </div>
+      ) : (
+        <div className="mt-4 space-y-5 animate-in fade-in duration-200">
+          <div data-tour="briefing">
+            <BriefingBanner
+              sentences={briefing.sentences}
+              hasUrgentItem={briefing.hasUrgentItem}
+            />
+          </div>
 
-        <div data-tour="pipeline">
-          <MoneyPipeline
-            stages={pipeline.stages}
-            quarter={quarterStats.quarter}
-            quarterEarnings={quarterStats.earnings}
-            shiftsThisQuarter={quarterStats.shiftsCompleted}
-            avgPerShift={quarterStats.avg}
-          />
+          <div data-tour="pipeline">
+            <MoneyPipeline
+              stages={pipeline.stages}
+              quarter={quarterStats.quarter}
+              quarterEarnings={quarterStats.earnings}
+              shiftsThisQuarter={quarterStats.shiftsCompleted}
+              avgPerShift={quarterStats.avg}
+              onStageClick={(key) => {
+                if (key === 'completed') navigate('/schedule?filter=completed');
+                else if (key === 'invoiced') navigate('/invoices?filter=sent');
+                else if (key === 'due_soon') navigate('/invoices?filter=due_soon');
+                else if (key === 'overdue') navigate('/invoices?filter=overdue');
+                else if (key === 'collected') navigate('/invoices?filter=paid_this_month');
+              }}
+            />
+          </div>
+
+          <UpcomingShiftsStrip shifts={upcomingShiftsForStrip} />
         </div>
-      </div>
+      )}
 
       {/* ZONE 2: Action Items (only when items exist) */}
       {attentionItems.length > 0 && (
