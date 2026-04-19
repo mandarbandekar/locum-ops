@@ -114,7 +114,9 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
            home_address: '1234 Elm Street\nPortland, OR 97201',
            has_seen_welcome: true,
            dismissed_prompts: {},
-        }
+           dashboard_intro_dismissed: true,
+           dashboard_levelup_shown: true,
+         }
       : null
   );
   const [profileLoading, setProfileLoading] = useState(!isDemo);
