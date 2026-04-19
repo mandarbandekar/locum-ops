@@ -1,38 +1,34 @@
 
-The user wants the top header bar improved: remove "LocumOps" branding, emphasize the greeting/business name, and fix the briefing banner appearance in dark mode.
+The user wants the invoice page sections to reorder dynamically based on which have data, while keeping a base priority order. Paid stays at the bottom always.
 
-Looking at the screenshot and code:
-- `Layout.tsx` header currently shows: `LocumOps — {company}` (small, 15px)
-- The greeting "Good morning, Sarah" lives in the briefing banner (`BriefingBanner.tsx`) as part of a paragraph
-- `BriefingBanner.tsx` hardcodes `color: '#374151'` which renders dark gray text in dark mode (poor contrast on dark card)
+## Current order (static)
+1. Overdue
+2. Sent & Awaiting Payment
+3. Ready to Review
+4. Auto Generated Upcoming
+5. Paid
 
-## Plan
+## New behavior
+**Base priority** (when populated): Overdue → Ready to Review → Sent & Awaiting Payment → Auto Generated Upcoming
+**Always last**: Paid
 
-**1. Update `src/components/Layout.tsx` header**
-- Remove "LocumOps" wordmark and the em-dash separator
-- Display the business/company name prominently on the left:
-  - Larger font (~18px), semibold, Manrope, foreground color
-  - Truncate gracefully on small screens
-- If no company name, fall back to a clean "Dashboard" label or just empty (keep sidebar trigger + actions)
-- Keep `SidebarTrigger`, Take a Tour, Demo Guide, ThemeToggle on the right unchanged
+Sections **with data** float to the top in priority order. Sections **without data** drop below the populated ones (but still above Paid), keeping their relative priority order so the page never looks empty.
 
-**2. Refresh `src/components/dashboard/BriefingBanner.tsx`**
-- Pull the greeting "Good morning, {firstName}" out as a standalone, prominent line:
-  - 20–22px, Manrope semibold, full foreground color
-- Render the rest of the briefing sentences below as supporting text (15px, relaxed line height)
-- Replace hardcoded `color: '#374151'` with theme tokens (`text-foreground` / `text-muted-foreground`) so dark mode renders properly
-- Keep the left accent bar (teal / ochre based on urgency) and icon
-- Slightly increase padding and use `bg-card` with `border-border` for cleaner contrast in both themes
+Example outcomes:
+- Has Ready-to-Review only → Ready to Review (top), then empty Overdue, Awaiting, Upcoming, then Paid
+- Has Overdue + Awaiting → Overdue, Awaiting, then empty Ready/Upcoming, then Paid
+- Has nothing but Paid → empty sections in default priority, Paid at bottom
 
-**3. Wire greeting into the banner**
-- `DashboardPage.tsx` currently composes the greeting inside `briefingShared.sentences`. Split it: pass `greeting` (e.g. "Good morning, Sarah.") as a separate prop to `BriefingBanner`, and keep the remaining sentences as the body paragraph.
-- Update `dashboardBriefing.ts` if needed to return greeting separately, OR simply slice the first sentence in `DashboardPage.tsx` before passing to the banner (lighter touch — preferred).
+## Implementation
+**File: `src/pages/InvoicesPage.tsx`**
 
-## Visual result
-- Top bar: clean, just the business name in bold on the left + actions on the right
-- Briefing banner: large greeting headline, supporting insight paragraph beneath, fully theme-aware in light & dark mode
+1. Define each non-paid section as a config object with: `key`, `priority` (1=Overdue, 2=Ready, 3=Awaiting, 4=Upcoming), `hasData` flag, and a render function (the existing `<InvoiceStatusGroup>` JSX block, including its `ref` and `data-tour` wrapper).
+2. Sort the array: `hasData` sections first (ordered by priority), then empty sections (ordered by priority).
+3. Render the sorted list inside the existing `space-y-4` wrapper, then render the Paid section last (unchanged).
+4. Keep the "Ready to Review" amber callout banner above the sections (logic unchanged).
+5. Keep `scrollTo` refs working — they remain attached to each section wrapper regardless of position.
 
-## Files to edit
-- `src/components/Layout.tsx`
-- `src/components/dashboard/BriefingBanner.tsx`
-- `src/pages/DashboardPage.tsx` (split greeting from body sentences when calling `<BriefingBanner />`)
+No changes needed to `InvoiceStatusGroup`, summary strip, or any other component. Pure reordering inside `InvoicesPage.tsx`.
+
+## Result
+The most urgent populated section is always first. Empty sections still appear (so the user sees the structure) but sink below populated ones. Paid is pinned to the bottom.
