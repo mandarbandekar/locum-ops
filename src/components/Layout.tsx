@@ -29,12 +29,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className="flex-1 flex flex-col min-w-0">
           <header className="h-14 flex items-center border-b border-border bg-card px-4 sm:px-5 shrink-0 sticky top-0 z-30">
             <SidebarTrigger className="mr-3" />
-            <span className="text-[15px] font-medium text-primary-800 dark:text-primary-600 tracking-tight truncate">LocumOps</span>
-            {company && (
-              <span className="ml-2.5 text-sm text-foreground-muted truncate hidden sm:inline">
-                — {company}
-              </span>
-            )}
+            <span
+              className="text-[17px] sm:text-[18px] font-semibold text-foreground tracking-tight truncate"
+              style={{ fontFamily: '"Manrope", system-ui, sans-serif' }}
+            >
+              {company || 'Dashboard'}
+            </span>
             <div className="ml-auto flex items-center gap-2">
               <Button
                 variant="outline"
