@@ -36,6 +36,7 @@ import {
 import { BriefingBanner } from '@/components/dashboard/BriefingBanner';
 import { MoneyPipeline, PipelineStage } from '@/components/dashboard/MoneyPipeline';
 import { AttentionGroupedList } from '@/components/dashboard/AttentionGroupedList';
+import { generateDashboardBriefing, getNextQuarterlyDeadline, BriefingInput } from '@/lib/dashboardBriefing';
 
 const TOUR_STEPS: TourStep[] = [
   {
