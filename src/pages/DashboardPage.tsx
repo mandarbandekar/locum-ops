@@ -557,15 +557,7 @@ export default function DashboardPage() {
   const attentionItems = useMemo(() => {
     const items: AttentionItem[] = [];
 
-    if (summary.draftInvoices.length > 0) {
-      items.push({
-        title: `${summary.draftInvoices.length} draft invoice${summary.draftInvoices.length > 1 ? 's' : ''}`,
-        context: 'Ready to review and send',
-        link: '/invoices', icon: FileText, urgency: 2,
-        amount: `$${summary.draftInvoices.reduce((s, i) => s + i.total_amount, 0).toLocaleString()}`,
-        module: 'invoices',
-      });
-    }
+    // Draft invoices intentionally excluded from "Needs your attention"
 
     const overdueInvoices = invoices.filter(i => computeInvoiceStatus(i) === 'overdue');
     if (overdueInvoices.length > 0) {
