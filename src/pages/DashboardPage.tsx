@@ -777,6 +777,7 @@ export default function DashboardPage() {
         <div className="mt-4 space-y-5 animate-in fade-in duration-200">
           <div data-tour="briefing">
             <BriefingBanner
+              greeting={`${greeting}, ${profile?.first_name || 'there'}`}
               sentences={briefing.sentences}
               hasUrgentItem={briefing.hasUrgentItem}
             />
