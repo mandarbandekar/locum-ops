@@ -269,4 +269,6 @@ export const seedUserProfile: UserProfile = {
   completed_tours: [],
   has_seen_welcome: true,
   dismissed_prompts: {},
+  dashboard_intro_dismissed: true,
+  dashboard_levelup_shown: true,
 };
