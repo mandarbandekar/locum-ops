@@ -446,6 +446,13 @@ export default function DashboardPage() {
     };
   }, [credentialsList, now]);
 
+  // Show the quarterly tax callout card during the 30-day pre-deadline window
+  // (or up to 7 days past due). When visible, suppress the briefing's P2 lead.
+  const showTaxCallout = useMemo(() => {
+    const d = briefingShared.daysUntilNextTax;
+    return d <= 30 && d >= -7;
+  }, [briefingShared.daysUntilNextTax]);
+
   // Final briefing output
   const briefing = useMemo(() => {
     const isBrandNewAccount =
@@ -461,6 +468,7 @@ export default function DashboardPage() {
       nextQuarterlyQuarter: briefingShared.nextTaxQuarter,
       daysUntilNextQuarterlyDeadline: briefingShared.daysUntilNextTax,
       estimatedQuarterlyTax: briefingShared.estimatedQuarterlyTax,
+      suppressQuarterlyTaxLead: showTaxCallout,
       shiftsNext7Count: briefingShared.shiftsNext7Count,
       uniqueClinicsNext7Count: briefingShared.uniqueClinicsNext7Count,
       projectedWeekEarnings: briefingShared.projectedWeekEarnings,
@@ -486,7 +494,7 @@ export default function DashboardPage() {
       staleDraftInvoiceCount: briefingShared.staleDraftCount,
     };
     return generateDashboardBriefing(input);
-  }, [briefingShared, credentialBuckets, profile?.first_name, shifts.length, invoices.length, credentialsList?.length]);
+  }, [briefingShared, credentialBuckets, profile?.first_name, shifts.length, invoices.length, credentialsList?.length, showTaxCallout]);
 
   const attentionItems = useMemo(() => {
     const items: AttentionItem[] = [];
@@ -694,6 +702,17 @@ export default function DashboardPage() {
               }}
             />
           </div>
+
+          {showTaxCallout && (
+            <QuarterlyTaxCallout
+              quarter={briefingShared.nextTaxQuarter}
+              deadline={briefingShared.nextTaxDeadline}
+              daysUntilDeadline={briefingShared.daysUntilNextTax}
+              quarterEarnings={briefingShared.earnedThisQuarter}
+              estimatedTax={briefingShared.estimatedQuarterlyTax}
+              hasTaxProfile={hasTaxProfile}
+            />
+          )}
 
           <UpcomingShiftsStrip shifts={upcomingShiftsForStrip} />
         </div>
