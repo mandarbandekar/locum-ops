@@ -26,10 +26,10 @@ export function QuarterlyTaxCallout({
   const isPastDue = daysUntilDeadline < 0;
   const daysPast = Math.abs(daysUntilDeadline);
 
-  // Don't render if past due by more than 7 days
-  if (isPastDue && daysPast > 7) return null;
+  // Don't render if past due
+  if (isPastDue) return null;
   // Don't render if more than 30 days away
-  if (!isPastDue && daysUntilDeadline > 30) return null;
+  if (daysUntilDeadline > 30) return null;
 
   // Urgency styling
   let borderColor = SANDY;
