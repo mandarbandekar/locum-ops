@@ -1,23 +1,38 @@
 
-The user is asking whether the colors used inside the Schedule (shift color chips, time-block colors, calendar event chips) can be brought in line with the Monterey Bay tonal system instead of the current generic bright Tailwind colors.
+The user wants the top header bar improved: remove "LocumOps" branding, emphasize the greeting/business name, and fix the briefing banner appearance in dark mode.
 
-Let me check what's currently used:
+Looking at the screenshot and code:
+- `Layout.tsx` header currently shows: `LocumOps — {company}` (small, 15px)
+- The greeting "Good morning, Sarah" lives in the briefing banner (`BriefingBanner.tsx`) as part of a paragraph
+- `BriefingBanner.tsx` hardcodes `color: '#374151'` which renders dark gray text in dark mode (poor contrast on dark card)
 
-From `src/types/index.ts` (summary): `SHIFT_COLORS` has 8 values: blue, green, red, orange, purple, pink, teal, yellow. These are likely raw Tailwind brights. `BLOCK_COLORS` similar.
+## Plan
 
-From `CalendarEventChip.tsx` (in context): uses emerald, violet, amber, destructive — a mix.
+**1. Update `src/components/Layout.tsx` header**
+- Remove "LocumOps" wordmark and the em-dash separator
+- Display the business/company name prominently on the left:
+  - Larger font (~18px), semibold, Manrope, foreground color
+  - Truncate gracefully on small screens
+- If no company name, fall back to a clean "Dashboard" label or just empty (keep sidebar trigger + actions)
+- Keep `SidebarTrigger`, Take a Tour, Demo Guide, ThemeToggle on the right unchanged
 
-From `WeekTimeGrid.tsx`: uses SHIFT_COLORS bg/text, BLOCK_COLORS bg/text, plus amber-500 for AlertTriangle.
+**2. Refresh `src/components/dashboard/BriefingBanner.tsx`**
+- Pull the greeting "Good morning, {firstName}" out as a standalone, prominent line:
+  - 20–22px, Manrope semibold, full foreground color
+- Render the rest of the briefing sentences below as supporting text (15px, relaxed line height)
+- Replace hardcoded `color: '#374151'` with theme tokens (`text-foreground` / `text-muted-foreground`) so dark mode renders properly
+- Keep the left accent bar (teal / ochre based on urgency) and icon
+- Slightly increase padding and use `bg-card` with `border-border` for cleaner contrast in both themes
 
-I should view types/index.ts to confirm the exact bg/text classes, then propose a Monterey Bay-aligned palette. Let me read it.
+**3. Wire greeting into the banner**
+- `DashboardPage.tsx` currently composes the greeting inside `briefingShared.sentences`. Split it: pass `greeting` (e.g. "Good morning, Sarah.") as a separate prop to `BriefingBanner`, and keep the remaining sentences as the body paragraph.
+- Update `dashboardBriefing.ts` if needed to return greeting separately, OR simply slice the first sentence in `DashboardPage.tsx` before passing to the banner (lighter touch — preferred).
 
-Actually I have enough from context to plan. The key insight:
-- 8 shift colors are needed (users pick per-shift / per-clinic) — must stay visually distinct
-- Time block colors similar
-- Calendar event chips (credentials/subscriptions) use semantic status (active/due_soon/expired)
+## Visual result
+- Top bar: clean, just the business name in bold on the left + actions on the right
+- Briefing banner: large greeting headline, supporting insight paragraph beneath, fully theme-aware in light & dark mode
 
-Monterey Bay only has ~4 brand families (teal, kelp, ochre, amber/sandy). To get 8 distinct shift colors, I need to extend with tonal variants — desaturated, coastal-feeling versions of additional hues (slate-blue, dusty rose, sage, sand, plum) that feel like they belong to the same family.
-
-Plan: present the proposed tonal palette as a table the user can react to, then offer to apply.
-
-Keep this concise — it's a design proposal, not a build.
+## Files to edit
+- `src/components/Layout.tsx`
+- `src/components/dashboard/BriefingBanner.tsx`
+- `src/pages/DashboardPage.tsx` (split greeting from body sentences when calling `<BriefingBanner />`)
