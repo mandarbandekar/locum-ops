@@ -403,19 +403,72 @@ export default function DashboardPage() {
     return { draftInvoices };
   }, [invoices]);
 
-  // Next credential expiring (for briefing line 3)
-  const nextCredential = useMemo(() => {
-    if (!credentialsList) return { name: null as string | null, days: null as number | null };
-    const upcoming = credentialsList
+  // Credential buckets for briefing Slot 3
+  const credentialBuckets = useMemo(() => {
+    const empty = {
+      urgentName: null as string | null, urgentDays: null as number | null,
+      upcomingName: null as string | null, upcomingDays: null as number | null,
+    };
+    if (!credentialsList) return empty;
+    const sorted = credentialsList
       .filter((c: any) => c.expiration_date)
       .map((c: any) => ({
         name: c.custom_title || 'credential',
         days: differenceInDays(parseISO(c.expiration_date), now),
       }))
-      .filter(c => c.days >= 0 && c.days <= 30)
+      .filter(c => c.days >= 0)
       .sort((a, b) => a.days - b.days);
-    return upcoming[0] ?? { name: null, days: null };
+    const urgent = sorted.find(c => c.days <= 14);
+    const upcoming = sorted.find(c => c.days > 14 && c.days <= 30);
+    return {
+      urgentName: urgent?.name ?? null,
+      urgentDays: urgent?.days ?? null,
+      upcomingName: upcoming?.name ?? null,
+      upcomingDays: upcoming?.days ?? null,
+    };
   }, [credentialsList, now]);
+
+  // Final briefing output
+  const briefing = useMemo(() => {
+    const isBrandNewAccount =
+      shifts.length === 0 && invoices.length === 0 && (credentialsList?.length ?? 0) === 0;
+    const input: BriefingInput = {
+      firstName: profile?.first_name || 'there',
+      isBrandNewAccount,
+      overdueCount: briefingShared.overdueCount,
+      overdueTotal: briefingShared.overdueTotal,
+      oldestOverdueClinicName: briefingShared.oldestOverdueClinicName,
+      daysSinceOldestDue: briefingShared.daysSinceOldestDue,
+      nextQuarterlyDeadline: briefingShared.nextTaxDeadline,
+      nextQuarterlyQuarter: briefingShared.nextTaxQuarter,
+      daysUntilNextQuarterlyDeadline: briefingShared.daysUntilNextTax,
+      estimatedQuarterlyTax: briefingShared.estimatedQuarterlyTax,
+      shiftsNext7Count: briefingShared.shiftsNext7Count,
+      uniqueClinicsNext7Count: briefingShared.uniqueClinicsNext7Count,
+      projectedWeekEarnings: briefingShared.projectedWeekEarnings,
+      nextShiftDate: briefingShared.nextShiftDate,
+      nextShiftClinicName: briefingShared.nextShiftClinicName,
+      avgMonthlyEarnings: briefingShared.avgMonthlyEarnings,
+      avgShiftsPerMonth: briefingShared.avgShiftsPerMonth,
+      collectedThisMonth: briefingShared.collectedThisMonth,
+      collectedLastMonthAtSamePoint: briefingShared.collectedLastMonthAtSamePoint,
+      dueSoonCount: briefingShared.dueSoonCount,
+      dueSoonTotal: briefingShared.dueSoonTotal,
+      uninvoicedCount: briefingShared.uninvoicedCount,
+      uninvoicedTotal: briefingShared.uninvoicedTotal,
+      invoicesSentThisQuarterCount: briefingShared.invoicesSentThisQuarterCount,
+      collectedThisQuarter: briefingShared.collectedThisQuarter,
+      invoicedThisQuarter: briefingShared.invoicedThisQuarter,
+      earnedThisQuarter: briefingShared.earnedThisQuarter,
+      shiftsThisQuarter: briefingShared.shiftsThisQuarterCount,
+      urgentCredentialName: credentialBuckets.urgentName,
+      urgentCredentialDays: credentialBuckets.urgentDays,
+      upcomingCredentialName: credentialBuckets.upcomingName,
+      upcomingCredentialDays: credentialBuckets.upcomingDays,
+      staleDraftInvoiceCount: briefingShared.staleDraftCount,
+    };
+    return generateDashboardBriefing(input);
+  }, [briefingShared, credentialBuckets, profile?.first_name, shifts.length, invoices.length, credentialsList?.length]);
 
   const attentionItems = useMemo(() => {
     const items: AttentionItem[] = [];
@@ -597,17 +650,8 @@ export default function DashboardPage() {
       <div className="mt-4 space-y-5">
         <div data-tour="briefing">
           <BriefingBanner
-            firstName={profile?.first_name || 'there'}
-            shiftCount={briefingData.shiftCount}
-            shiftTotal={briefingData.shiftTotal}
-            lastMonthShiftCount={briefingData.lastMonthShiftCount}
-            lastMonthTotal={briefingData.lastMonthTotal}
-            overdueCount={briefingData.overdueCount}
-            overdueTotal={briefingData.overdueTotal}
-            dueSoonCount={briefingData.dueSoonCount}
-            dueSoonTotal={briefingData.dueSoonTotal}
-            nextCredentialName={nextCredential.name}
-            nextCredentialDays={nextCredential.days}
+            sentences={briefing.sentences}
+            hasUrgentItem={briefing.hasUrgentItem}
           />
         </div>
 
