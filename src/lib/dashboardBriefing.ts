@@ -76,8 +76,10 @@ export function getNextQuarterlyDeadline(now: Date): { quarter: number; deadline
     // include prior-year Q4 in case we're in early Jan
     { quarter: 4, deadline: new Date(y, 0, 15) },
   ];
+  // Include deadlines up to 7 days in the past so the past-due callout window works.
+  const cutoff = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const future = candidates
-    .filter(c => c.deadline >= now)
+    .filter(c => c.deadline >= cutoff)
     .sort((a, b) => a.deadline.getTime() - b.deadline.getTime());
   return future[0];
 }
