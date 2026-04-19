@@ -273,102 +273,138 @@ export default function InvoicesPage() {
       )}
 
       <div className="space-y-4">
-        <div ref={overdueRef} data-tour="invoice-overdue">
-          <InvoiceStatusGroup
-            title="Overdue"
-            icon={<AlertTriangle className="h-4 w-4 text-destructive" />}
-            invoices={overdue}
-            selected={selected}
-            onToggleSelect={toggleSelect}
-            onDelete={handleSingleDelete}
-            getFacilityName={getFacilityName}
-            emptyMessage="No overdue invoices — you're all caught up!"
-            defaultOpen={true}
-            headerRight={overdue.length > 0 ? (
-              <span className="text-sm font-bold text-destructive bg-destructive/10 px-2 py-0.5 rounded-md">
-                ${sumBalance(overdue).toLocaleString()} overdue
-              </span>
-            ) : undefined}
-            alertBanner={overdue.length > 0 ? (
-              <div className="flex items-center gap-2 px-5 py-3 text-sm text-destructive bg-destructive/5 border-t border-destructive/10">
-                <AlertTriangle className="h-4 w-4 shrink-0" />
-                You have ${sumBalance(overdue).toLocaleString()} overdue across {overdue.length} invoice{overdue.length !== 1 ? 's' : ''}. Follow up with facilities to collect payment.
-              </div>
-            ) : undefined}
-            onMarkAsPaid={handleMarkAsPaid}
-            onSendFollowup={(inv) => navigate(`/invoices/${inv.id}?action=followup`)}
-          />
-        </div>
+        {(() => {
+          const sections = [
+            {
+              key: 'overdue',
+              priority: 1,
+              hasData: overdue.length > 0,
+              node: (
+                <div ref={overdueRef} data-tour="invoice-overdue">
+                  <InvoiceStatusGroup
+                    title="Overdue"
+                    icon={<AlertTriangle className="h-4 w-4 text-destructive" />}
+                    invoices={overdue}
+                    selected={selected}
+                    onToggleSelect={toggleSelect}
+                    onDelete={handleSingleDelete}
+                    getFacilityName={getFacilityName}
+                    emptyMessage="No overdue invoices — you're all caught up!"
+                    defaultOpen={true}
+                    headerRight={overdue.length > 0 ? (
+                      <span className="text-sm font-bold text-destructive bg-destructive/10 px-2 py-0.5 rounded-md">
+                        ${sumBalance(overdue).toLocaleString()} overdue
+                      </span>
+                    ) : undefined}
+                    alertBanner={overdue.length > 0 ? (
+                      <div className="flex items-center gap-2 px-5 py-3 text-sm text-destructive bg-destructive/5 border-t border-destructive/10">
+                        <AlertTriangle className="h-4 w-4 shrink-0" />
+                        You have ${sumBalance(overdue).toLocaleString()} overdue across {overdue.length} invoice{overdue.length !== 1 ? 's' : ''}. Follow up with facilities to collect payment.
+                      </div>
+                    ) : undefined}
+                    onMarkAsPaid={handleMarkAsPaid}
+                    onSendFollowup={(inv) => navigate(`/invoices/${inv.id}?action=followup`)}
+                  />
+                </div>
+              ),
+            },
+            {
+              key: 'ready',
+              priority: 2,
+              hasData: readyToReview.length > 0,
+              node: (
+                <div ref={draftsRef} data-tour="invoice-ready">
+                  <InvoiceStatusGroup
+                    title="Ready to Review"
+                    icon={<FileEdit className="h-4 w-4 text-amber-500" />}
+                    invoices={readyToReview}
+                    selected={selected}
+                    onToggleSelect={toggleSelect}
+                    onDelete={handleSingleDelete}
+                    getFacilityName={getFacilityName}
+                    emptyMessage="Invoices are auto-generated from your shifts — no need to create them manually. They'll appear here once shifts are completed."
+                    defaultOpen={true}
+                    groupByFacility={true}
+                    headerRight={readyToReview.length > 0 ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-amber-700 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md">
+                          ${sumTotal(readyToReview).toLocaleString()}
+                        </span>
+                        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => navigate(`/invoices/${readyToReview[0].id}`)}>
+                          Review & Send
+                        </Button>
+                      </div>
+                    ) : undefined}
+                  />
+                </div>
+              ),
+            },
+            {
+              key: 'awaiting',
+              priority: 3,
+              hasData: [...sent, ...partial].length > 0,
+              node: (
+                <div ref={awaitingRef}>
+                  <InvoiceStatusGroup
+                    title="Sent & Awaiting Payment"
+                    icon={<Send className="h-4 w-4 text-blue-500" />}
+                    invoices={[...sent, ...partial]}
+                    selected={selected}
+                    onToggleSelect={toggleSelect}
+                    onDelete={handleSingleDelete}
+                    getFacilityName={getFacilityName}
+                    emptyMessage="No invoices awaiting payment right now."
+                    defaultOpen={true}
+                    headerRight={[...sent, ...partial].length > 0 ? (
+                      <span className="text-sm font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-md">
+                        ${sumBalance([...sent, ...partial]).toLocaleString()} outstanding
+                      </span>
+                    ) : undefined}
+                    onMarkAsPaid={handleMarkAsPaid}
+                  />
+                </div>
+              ),
+            },
+            {
+              key: 'upcoming',
+              priority: 4,
+              hasData: upcoming.length > 0,
+              node: (
+                <div>
+                  <InvoiceStatusGroup
+                    title="Auto Generated Upcoming Invoices"
+                    icon={<Clock className="h-4 w-4 text-muted-foreground" />}
+                    invoices={upcoming}
+                    selected={selected}
+                    onToggleSelect={toggleSelect}
+                    onDelete={handleSingleDelete}
+                    getFacilityName={getFacilityName}
+                    emptyMessage="No upcoming invoices."
+                    defaultOpen={false}
+                    headerRight={upcoming.length > 0 ? (
+                      <span className="text-sm font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-md">
+                        ${sumTotal(upcoming).toLocaleString()} upcoming
+                      </span>
+                    ) : undefined}
+                    alertBanner={upcoming.length > 0 ? (
+                      <div className="flex items-center gap-2 px-5 py-2.5 text-xs text-muted-foreground bg-muted/30 border-t">
+                        <Clock className="h-3.5 w-3.5 shrink-0" />
+                        These invoices will be ready to review after the shifts are completed.
+                      </div>
+                    ) : undefined}
+                  />
+                </div>
+              ),
+            },
+          ];
 
-        <div ref={awaitingRef}>
-          <InvoiceStatusGroup
-            title="Sent & Awaiting Payment"
-            icon={<Send className="h-4 w-4 text-blue-500" />}
-            invoices={[...sent, ...partial]}
-            selected={selected}
-            onToggleSelect={toggleSelect}
-            onDelete={handleSingleDelete}
-            getFacilityName={getFacilityName}
-            emptyMessage="No invoices awaiting payment right now."
-            defaultOpen={true}
-            headerRight={[...sent, ...partial].length > 0 ? (
-              <span className="text-sm font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-md">
-                ${sumBalance([...sent, ...partial]).toLocaleString()} outstanding
-              </span>
-            ) : undefined}
-            onMarkAsPaid={handleMarkAsPaid}
-          />
-        </div>
+          const sorted = [...sections].sort((a, b) => {
+            if (a.hasData !== b.hasData) return a.hasData ? -1 : 1;
+            return a.priority - b.priority;
+          });
 
-        <div ref={draftsRef} data-tour="invoice-ready">
-          <InvoiceStatusGroup
-            title="Ready to Review"
-            icon={<FileEdit className="h-4 w-4 text-amber-500" />}
-            invoices={readyToReview}
-            selected={selected}
-            onToggleSelect={toggleSelect}
-            onDelete={handleSingleDelete}
-            getFacilityName={getFacilityName}
-            emptyMessage="Invoices are auto-generated from your shifts — no need to create them manually. They'll appear here once shifts are completed."
-            defaultOpen={true}
-            groupByFacility={true}
-            headerRight={readyToReview.length > 0 ? (
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-amber-700 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md">
-                  ${sumTotal(readyToReview).toLocaleString()}
-                </span>
-                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => navigate(`/invoices/${readyToReview[0].id}`)}>
-                  Review & Send
-                </Button>
-              </div>
-            ) : undefined}
-          />
-        </div>
-
-        <div>
-          <InvoiceStatusGroup
-            title="Auto Generated Upcoming Invoices"
-            icon={<Clock className="h-4 w-4 text-muted-foreground" />}
-            invoices={upcoming}
-            selected={selected}
-            onToggleSelect={toggleSelect}
-            onDelete={handleSingleDelete}
-            getFacilityName={getFacilityName}
-            emptyMessage="No upcoming invoices."
-            defaultOpen={false}
-            headerRight={upcoming.length > 0 ? (
-              <span className="text-sm font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-md">
-                ${sumTotal(upcoming).toLocaleString()} upcoming
-              </span>
-            ) : undefined}
-            alertBanner={upcoming.length > 0 ? (
-              <div className="flex items-center gap-2 px-5 py-2.5 text-xs text-muted-foreground bg-muted/30 border-t">
-                <Clock className="h-3.5 w-3.5 shrink-0" />
-                These invoices will be ready to review after the shifts are completed.
-              </div>
-            ) : undefined}
-          />
-        </div>
+          return sorted.map((s) => <div key={s.key}>{s.node}</div>);
+        })()}
 
         <div ref={paidRef} data-tour="invoice-paid">
           <InvoiceStatusGroup
