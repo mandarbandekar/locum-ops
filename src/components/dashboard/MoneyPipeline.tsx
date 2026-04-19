@@ -18,12 +18,13 @@ interface MoneyPipelineProps {
   quarterEarnings: number;
   shiftsThisQuarter: number;
   avgPerShift: number;
+  onStageClick?: (key: string) => void;
 }
 
 const fmt = (n: number) => `$${Math.round(n).toLocaleString()}`;
 
 export function MoneyPipeline({
-  stages, quarter, quarterEarnings, shiftsThisQuarter, avgPerShift,
+  stages, quarter, quarterEarnings, shiftsThisQuarter, avgPerShift, onStageClick,
 }: MoneyPipelineProps) {
   return (
     <section>
@@ -47,7 +48,11 @@ export function MoneyPipeline({
           return (
             <div key={s.key} className="contents">
               <div
-                className="snap-start shrink-0 md:shrink min-w-[160px] md:min-w-0 bg-card rounded-lg shadow-sm border-t-4 p-5 flex flex-col"
+                role={onStageClick ? 'button' : undefined}
+                tabIndex={onStageClick ? 0 : undefined}
+                onClick={onStageClick ? () => onStageClick(s.key) : undefined}
+                onKeyDown={onStageClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onStageClick(s.key); } } : undefined}
+                className={`snap-start shrink-0 md:shrink min-w-[160px] md:min-w-0 bg-card rounded-lg shadow-sm border-t-4 p-5 flex flex-col transition-all duration-150 ${onStageClick ? 'cursor-pointer hover:shadow-md md:hover:scale-[1.02]' : ''}`}
                 style={{
                   borderTopColor: s.topBorderColor,
                   backgroundColor: s.tintBg && s.amount > 0 ? `${s.tintColor}0D` : undefined,
