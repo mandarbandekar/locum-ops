@@ -42,6 +42,9 @@ export interface BriefingInput {
   earnedThisQuarter: number;
   shiftsThisQuarter: number;
 
+  // Suppress Slot 1 P2 (quarterly tax) when the dedicated callout card is rendered
+  suppressQuarterlyTaxLead?: boolean;
+
   // Slot 3 — Credential / housekeeping
   urgentCredentialName: string | null;
   urgentCredentialDays: number | null; // <= 14
@@ -102,6 +105,7 @@ export function generateDashboardBriefing(d: BriefingInput): BriefingOutput {
       `${d.overdueCount} invoice${d.overdueCount === 1 ? '' : 's'} totaling ${fmtCurrency(d.overdueTotal)} ${d.overdueCount === 1 ? 'is' : 'are'} overdue. The oldest is from ${oldest}, ${days} day${days === 1 ? '' : 's'} past due.`
     );
   } else if (
+    !d.suppressQuarterlyTaxLead &&
     d.nextQuarterlyDeadline &&
     d.daysUntilNextQuarterlyDeadline !== null &&
     d.daysUntilNextQuarterlyDeadline >= 0 &&

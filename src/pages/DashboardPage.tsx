@@ -38,6 +38,7 @@ import { MoneyPipeline, PipelineStage } from '@/components/dashboard/MoneyPipeli
 import { AttentionGroupedList } from '@/components/dashboard/AttentionGroupedList';
 import { UpcomingShiftsStrip, UpcomingShiftItem } from '@/components/dashboard/UpcomingShiftsStrip';
 import { EmptyDashboardPrompt } from '@/components/dashboard/EmptyDashboardPrompt';
+import { QuarterlyTaxCallout } from '@/components/dashboard/QuarterlyTaxCallout';
 import { generateDashboardBriefing, getNextQuarterlyDeadline, BriefingInput } from '@/lib/dashboardBriefing';
 
 const TOUR_STEPS: TourStep[] = [
