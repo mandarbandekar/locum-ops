@@ -39,6 +39,7 @@ import { AttentionGroupedList } from '@/components/dashboard/AttentionGroupedLis
 import { UpcomingShiftsStrip, UpcomingShiftItem } from '@/components/dashboard/UpcomingShiftsStrip';
 import { EmptyDashboardPrompt } from '@/components/dashboard/EmptyDashboardPrompt';
 import { QuarterlyTaxCallout } from '@/components/dashboard/QuarterlyTaxCallout';
+import { FirstTimeDashboard } from '@/components/dashboard/FirstTimeDashboard';
 import { generateDashboardBriefing, getNextQuarterlyDeadline, BriefingInput } from '@/lib/dashboardBriefing';
 
 const TOUR_STEPS: TourStep[] = [
