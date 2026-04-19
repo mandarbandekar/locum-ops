@@ -25,38 +25,6 @@ export function generateInvoiceReminders(
 ): GeneratedReminder[] {
   const items: GeneratedReminder[] = [];
 
-  // Draft invoices not sent — only "ready to review" (invoice_date <= today)
-  const now = new Date();
-  const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-  const drafts = invoices.filter(i => {
-    if (i.status !== 'draft') return false;
-    const refDate = (i as any).invoice_date || (i as any).period_end;
-    if (!refDate) return true;
-    return new Date(refDate) <= todayEnd;
-  });
-  if (drafts.length === 1) {
-    const inv = drafts[0];
-    items.push({
-      module: 'invoices',
-      reminder_type: 'invoice_draft_unsent',
-      title: `Send invoice draft ${inv.invoice_number}`,
-      body: `$${inv.total_amount.toLocaleString()} ready to bill · ${getFacilityName(inv.facility_id)}`,
-      link: `/invoices/${inv.id}`,
-      urgency: 2,
-      related_entity_type: 'invoice',
-      related_entity_id: inv.id,
-    });
-  } else if (drafts.length > 1) {
-    items.push({
-      module: 'invoices',
-      reminder_type: 'invoice_draft_unsent',
-      title: `You have ${drafts.length} invoice drafts ready to review and send`,
-      body: `$${drafts.reduce((s, i) => s + i.total_amount, 0).toLocaleString()} total`,
-      link: '/invoices',
-      urgency: 2,
-    });
-  }
-
   // Overdue invoices
   invoices.filter(i => computeInvoiceStatus(i) === 'overdue').forEach(inv => {
     items.push({
