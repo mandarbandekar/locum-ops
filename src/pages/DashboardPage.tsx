@@ -134,15 +134,18 @@ export default function DashboardPage() {
 
   const [taxQuarters, setTaxQuarters] = useState<{ quarter: number; due_date: string; status: string }[]>([]);
   const [subscriptions, setSubscriptions] = useState<{ name: string; renewal_date: string | null; status: string; archived_at: string | null }[]>([]);
+  const [hasCalendarSync, setHasCalendarSync] = useState(false);
 
   useEffect(() => {
     if (isDemo || !user) return;
     Promise.all([
       dashDb('tax_quarter_statuses').select('quarter,due_date,status').eq('tax_year', now.getFullYear()).order('quarter'),
       dashDb('required_subscriptions').select('name,renewal_date,status,archived_at').is('archived_at', null),
-    ]).then(([qsRes, subRes]) => {
+      dashDb('calendar_connections').select('id,status').eq('user_id', user.id).eq('status', 'active').limit(1),
+    ]).then(([qsRes, subRes, calRes]) => {
       if (qsRes.data) setTaxQuarters(qsRes.data as any[]);
       if (subRes.data) setSubscriptions(subRes.data as any[]);
+      if (calRes.data) setHasCalendarSync((calRes.data as any[]).length > 0);
     });
   }, [user?.id, isDemo]);
 
