@@ -703,13 +703,8 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Top compact greeting bar */}
-      <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/5 border border-primary/10 shrink-0">
-        <Zap className="h-3.5 w-3.5 text-primary shrink-0" />
-        <p className="text-[12px] sm:text-[13px] font-medium text-foreground truncate">
-          {greeting}, {profile?.first_name || 'there'}{topBriefing ? ` · ${topBriefing}` : ''}
-        </p>
-      </div>
+      {/* Greeting moved into BriefingBanner */}
+
 
       {/* Getting Started */}
       {showGettingStarted && (
