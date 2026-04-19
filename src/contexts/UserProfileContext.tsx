@@ -42,6 +42,8 @@ export interface UserProfile {
   completed_tours: string[];
   has_seen_welcome: boolean;
   dismissed_prompts: Record<string, boolean>;
+  dashboard_intro_dismissed: boolean;
+  dashboard_levelup_shown: boolean;
 }
 
 const DEFAULT_TERMS_FIELDS: TermsFieldsEnabled = {
@@ -76,6 +78,8 @@ export const DEFAULT_PROFILE: Omit<UserProfile, 'id' | 'user_id'> = {
   completed_tours: [],
   has_seen_welcome: false,
   dismissed_prompts: {},
+  dashboard_intro_dismissed: false,
+  dashboard_levelup_shown: false,
 };
 
 interface UserProfileContextType {
@@ -187,6 +191,8 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
           completed_tours: (d.completed_tours as string[]) || [],
           has_seen_welcome: !!d.has_seen_welcome,
           dismissed_prompts: (d.dismissed_prompts as Record<string, boolean>) || {},
+          dashboard_intro_dismissed: !!d.dashboard_intro_dismissed,
+          dashboard_levelup_shown: !!d.dashboard_levelup_shown,
         });
       } else {
         // Pull signup metadata from auth user to pre-populate profile
@@ -241,6 +247,8 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
             completed_tours: [],
             has_seen_welcome: false,
             dismissed_prompts: {},
+            dashboard_intro_dismissed: false,
+            dashboard_levelup_shown: false,
           });
         }
       }
