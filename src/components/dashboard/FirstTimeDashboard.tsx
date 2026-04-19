@@ -289,6 +289,7 @@ export function FirstTimeDashboard(props: FirstTimeDashboardProps) {
             shiftsThisQuarter={shiftsThisQuarter}
             avgPerShift={avgPerShift}
             onStageClick={onStageClick}
+            hideHeader
             highlightStageKey={highlightStageKey ?? undefined}
             zeroSuffix="so far"
             stageFootnoteKey={highlightStageKey ?? undefined}
