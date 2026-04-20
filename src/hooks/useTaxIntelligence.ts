@@ -65,6 +65,7 @@ const DEMO_PROFILE: TaxIntelligenceProfile = {
   pay_periods_per_year: 24,
   annual_business_expenses: 9500,
   typical_days_per_week: 3,
+  work_states: [],
 };
 
 export function useTaxIntelligence() {
