@@ -292,6 +292,7 @@ export function calculate1099Tax(profile: TaxProfileV1): Tax1099Result {
     spouseFederalTax,
     spouseWithholdingEstimate,
     stateTax,
+    stateBreakdown: stateResult.breakdown,
     annualObligation: Math.round(annualObligation),
     annualEstimatedTaxDue,
     quarterlyPayment,
