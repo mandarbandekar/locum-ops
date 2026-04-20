@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { getShiftTaxNudge } from '@/lib/taxNudge';
 import type { TaxIntelligenceProfile } from '@/hooks/useTaxIntelligence';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { STATE_TAX_DATA } from '@/lib/stateTaxData';
 
 interface Props {
   shiftIncome: number;
@@ -11,6 +12,20 @@ interface Props {
   isPaid: boolean;
   effectiveRate: number;
   breakdown?: { federal: number; state: number; se: number };
+}
+
+function formatStateAllocation(profile: TaxIntelligenceProfile): string | null {
+  const work = (profile.work_states || []).filter(w => w.income_pct > 0);
+  if (work.length === 0) return null;
+  const residentPct = Math.max(0, 100 - work.reduce((s, w) => s + w.income_pct, 0));
+  const residentName = STATE_TAX_DATA[profile.state_code]?.name || profile.state_code;
+  const parts: string[] = [];
+  if (residentPct > 0) parts.push(`${residentName} ${Math.round(residentPct)}%`);
+  for (const w of work) {
+    const name = STATE_TAX_DATA[w.state_code]?.name || w.state_code;
+    parts.push(`${name} ${Math.round(w.income_pct)}%`);
+  }
+  return parts.join(' · ');
 }
 
 export function ShiftTaxNudge({ shiftIncome, taxProfile, hasProfile, isPaid, effectiveRate, breakdown }: Props) {
@@ -34,12 +49,14 @@ export function ShiftTaxNudge({ shiftIncome, taxProfile, hasProfile, isPaid, eff
   const isScorp = taxProfile.entity_type === 'scorp';
   const nudge = getShiftTaxNudge(shiftIncome, effectiveRate, breakdown);
   const bd = nudge.breakdown;
+  const stateAllocation = formatStateAllocation(taxProfile);
 
   const tooltipLines: string[] = [];
   if (bd.federal > 0) tooltipLines.push(`Federal income tax (${Math.round(bd.federal * 100)}% marginal): $${Math.round(shiftIncome * bd.federal).toLocaleString()}`);
-  if (bd.state > 0) tooltipLines.push(`State tax (${(bd.state * 100).toFixed(1)}%): $${Math.round(shiftIncome * bd.state).toLocaleString()}`);
+  if (bd.state > 0) tooltipLines.push(`State tax (${(bd.state * 100).toFixed(1)}% blended): $${Math.round(shiftIncome * bd.state).toLocaleString()}`);
   if (bd.se > 0) tooltipLines.push(`SE tax (${(bd.se * 100).toFixed(1)}%): $${Math.round(shiftIncome * bd.se).toLocaleString()}`);
   tooltipLines.push(`Total set aside (${nudge.effectiveRatePct}% effective): $${nudge.setAsideAmount.toLocaleString()}`);
+  if (stateAllocation) tooltipLines.push(`Income split: ${stateAllocation}`);
   if (isScorp) tooltipLines.push('Payroll taxes on your salary are handled through your payroll provider.');
 
   return (
@@ -53,6 +70,12 @@ export function ShiftTaxNudge({ shiftIncome, taxProfile, hasProfile, isPaid, eff
             </span>
             <span className="text-muted-foreground mx-1">·</span>
             <span className="text-foreground">Keep ${nudge.netAfterSetAside.toLocaleString()} — that's yours</span>
+            {stateAllocation && (
+              <>
+                <span className="text-muted-foreground mx-1">·</span>
+                <span className="text-muted-foreground text-[12px]">multi-state</span>
+              </>
+            )}
           </span>
         </TooltipTrigger>
         <TooltipContent side="top" className="text-xs max-w-xs whitespace-pre-line">

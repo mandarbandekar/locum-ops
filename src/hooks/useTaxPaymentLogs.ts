@@ -2,18 +2,46 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
+/**
+ * Payment type taxonomy.
+ * - `federal_estimate` — IRS 1040-ES quarterly
+ * - `federal_se` — Self-employment tax portion (paid via 1040-ES)
+ * - `state_estimate` — Generic resident-state estimated payment (legacy / single-state users)
+ * - `state_personal_{XX}` — Per-state personal income tax estimated payment, where {XX} is the
+ *   2-letter state code (e.g. `state_personal_CA`, `state_personal_OR`). Used by the multi-state
+ *   Tax Payment Hub to track payments to each state independently.
+ * - `state_pte_{XX}` — Per-state pass-through entity election payment.
+ */
+export type TaxPaymentType =
+  | 'federal_estimate'
+  | 'federal_se'
+  | 'state_estimate'
+  | `state_personal_${string}`
+  | `state_pte_${string}`
+  | (string & {}); // allow extension while keeping autocomplete on known values
+
 export interface TaxPaymentLog {
   id: string;
   user_id: string;
   tax_year: number;
   quarter: string;
-  payment_type: string;
+  payment_type: TaxPaymentType;
   state_key: string | null;
   amount: number;
   date_paid: string;
   paid_from: string;
   confirmed_by_user: boolean;
   created_at: string;
+}
+
+/** Build a per-state payment_type code from a 2-letter state key. */
+export function statePersonalPaymentType(stateKey: string): TaxPaymentType {
+  return `state_personal_${stateKey.toUpperCase()}` as TaxPaymentType;
+}
+
+/** Build a per-state PTE payment_type code from a 2-letter state key. */
+export function statePtePaymentType(stateKey: string): TaxPaymentType {
+  return `state_pte_${stateKey.toUpperCase()}` as TaxPaymentType;
 }
 
 const db = (table: string) => supabase.from(table as any);
@@ -50,7 +78,7 @@ export function useTaxPaymentLogs(taxYear = currentYear) {
 
   const logPayment = useCallback(async (data: {
     quarter: string;
-    payment_type: string;
+    payment_type: TaxPaymentType;
     amount: number;
     paid_from: string;
     state_key?: string;
@@ -101,7 +129,7 @@ export function useTaxPaymentLogs(taxYear = currentYear) {
     return payments.filter(p => p.quarter === quarter);
   }, [payments]);
 
-  const getQuarterTotal = useCallback((quarter: string, paymentType?: string) => {
+  const getQuarterTotal = useCallback((quarter: string, paymentType?: TaxPaymentType) => {
     return payments
       .filter(p => p.quarter === quarter && (!paymentType || p.payment_type === paymentType))
       .reduce((sum, p) => sum + p.amount, 0);
