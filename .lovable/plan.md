@@ -1,34 +1,30 @@
 
-The user wants the invoice page sections to reorder dynamically based on which have data, while keeping a base priority order. Paid stays at the bottom always.
+## Goal
+Replace the inline "Send Reminder" button (in the overdue alert banner near the top of the invoice detail page) so it triggers the same editable compose dialog as the "Send follow-up" button in the bottom action bar — but keep its current location and label.
 
-## Current order (static)
-1. Overdue
-2. Sent & Awaiting Payment
-3. Ready to Review
-4. Auto Generated Upcoming
-5. Paid
+## Why
+The two buttons currently do contradictory things: the top one fires an email immediately with no preview, while the bottom one opens an editable compose dialog. The user prefers the compose-dialog behavior but wants to keep the convenient top placement.
 
-## New behavior
-**Base priority** (when populated): Overdue → Ready to Review → Sent & Awaiting Payment → Auto Generated Upcoming
-**Always last**: Paid
+## Change
 
-Sections **with data** float to the top in priority order. Sections **without data** drop below the populated ones (but still above Paid), keeping their relative priority order so the page never looks empty.
+**File: `src/pages/InvoiceDetailPage.tsx`** (the overdue alert block, ~lines 240–280)
 
-Example outcomes:
-- Has Ready-to-Review only → Ready to Review (top), then empty Overdue, Awaiting, Upcoming, then Paid
-- Has Overdue + Awaiting → Overdue, Awaiting, then empty Ready/Upcoming, then Paid
-- Has nothing but Paid → empty sections in default priority, Paid at bottom
+Replace the `onClick` handler that:
+- imports supabase
+- calls `supabase.functions.invoke('send-reminder-emails', ...)`
+- writes an activity log
+- shows a toast
 
-## Implementation
-**File: `src/pages/InvoicesPage.tsx`**
+…with a simple handler that opens the existing compose dialog in followup mode:
+```ts
+setComposeMode('followup');
+setComposeOpen(true);
+```
 
-1. Define each non-paid section as a config object with: `key`, `priority` (1=Overdue, 2=Ready, 3=Awaiting, 4=Upcoming), `hasData` flag, and a render function (the existing `<InvoiceStatusGroup>` JSX block, including its `ref` and `data-tour` wrapper).
-2. Sort the array: `hasData` sections first (ordered by priority), then empty sections (ordered by priority).
-3. Render the sorted list inside the existing `space-y-4` wrapper, then render the Paid section last (unchanged).
-4. Keep the "Ready to Review" amber callout banner above the sections (logic unchanged).
-5. Keep `scrollTo` refs working — they remain attached to each section wrapper regardless of position.
-
-No changes needed to `InvoiceStatusGroup`, summary strip, or any other component. Pure reordering inside `InvoicesPage.tsx`.
+Also:
+- Remove the now-unused `sendingReminder` state and the `disabled={sendingReminder}` prop.
+- Keep the button's location, label ("Send Reminder"), icon (`Mail`), and destructive styling unchanged.
+- The existing `<InvoiceComposeDialog>` at the bottom of the page already handles the followup flow (editable subject/body, send via `send-invoice-to-clinic`, activity logging, toast) — no changes needed there.
 
 ## Result
-The most urgent populated section is always first. Empty sections still appear (so the user sees the structure) but sink below populated ones. Paid is pinned to the bottom.
+Clicking "Send Reminder" in the overdue banner now opens the same editable email composer as "Send follow-up" — consistent behavior, same location the user likes.
