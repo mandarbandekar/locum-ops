@@ -28,6 +28,13 @@ export interface TaxIntelligenceProfile {
   pay_periods_per_year: number;
   annual_business_expenses: number;
   typical_days_per_week: number;
+  // Multi-state
+  work_states: WorkStateAllocation[];
+}
+
+export interface WorkStateAllocation {
+  state_code: string;
+  income_pct: number;
 }
 
 const db = (table: string) => supabase.from(table as any);
