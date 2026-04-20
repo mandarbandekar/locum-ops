@@ -240,6 +240,7 @@ export function calculate1099Tax(profile: TaxProfileV1): Tax1099Result {
     - (retirementContributions || 0)
     + (spouseW2Income || 0)
   );
+  // Federal already-paid component (spouse withholding)
   const stdDed = C.standardDeduction[fs] || C.standardDeduction.single;
   const federalTaxableIncome = Math.max(0, agi - stdDed);
 
