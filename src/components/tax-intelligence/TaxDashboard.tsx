@@ -168,14 +168,24 @@ export default function TaxDashboard({ profile, onEditProfile, onSaveProfile }: 
                   {nextDue.daysUntil} days
                 </Badge>
               </div>
-              <div className="flex gap-2 justify-center mt-3">
+              <div className="flex gap-2 justify-center mt-3 flex-wrap">
                 <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setPaymentDialogOpen(true)}>
                   <CreditCard className="h-3.5 w-3.5" /> Pay federal →
                 </Button>
-                {profile.state_code && TAX_CONSTANTS.states[profile.state_code]?.type !== 'none' && (
-                  <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setPaymentDialogOpen(true)}>
-                    Pay {profile.state_code} →
-                  </Button>
+                {taxResult.stateBreakdown && taxResult.stateBreakdown.length > 1 ? (
+                  taxResult.stateBreakdown
+                    .filter(s => s.taxOwed > 0)
+                    .map(s => (
+                      <Button key={s.stateKey} size="sm" variant="outline" className="gap-1.5" onClick={() => setPaymentDialogOpen(true)}>
+                        Pay {s.stateKey} →
+                      </Button>
+                    ))
+                ) : (
+                  profile.state_code && TAX_CONSTANTS.states[profile.state_code]?.type !== 'none' && (
+                    <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setPaymentDialogOpen(true)}>
+                      Pay {profile.state_code} →
+                    </Button>
+                  )
                 )}
               </div>
             </div>
