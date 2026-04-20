@@ -51,7 +51,7 @@ export default function InvoiceDetailPage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [autoDeleteOpen, setAutoDeleteOpen] = useState(false);
   const [billingDialogOpen, setBillingDialogOpen] = useState(false);
-  const [sendingReminder, setSendingReminder] = useState(false);
+  
   const [composeOpen, setComposeOpen] = useState(false);
   const [composeMode, setComposeMode] = useState<'initial' | 'followup'>('initial');
   const [mobileTab, setMobileTab] = useState<string>('details');
