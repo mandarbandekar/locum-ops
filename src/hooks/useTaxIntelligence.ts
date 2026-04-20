@@ -99,6 +99,11 @@ export function useTaxIntelligence() {
     pay_periods_per_year: Number(d.pay_periods_per_year ?? 24),
     annual_business_expenses: Number(d.annual_business_expenses ?? 0),
     typical_days_per_week: Number(d.typical_days_per_week ?? 3),
+    work_states: Array.isArray(d.work_states)
+      ? d.work_states
+          .filter((w: any) => w && typeof w.state_code === 'string')
+          .map((w: any) => ({ state_code: String(w.state_code), income_pct: Number(w.income_pct) || 0 }))
+      : [],
   });
 
   const load = useCallback(async () => {
