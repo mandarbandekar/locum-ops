@@ -347,9 +347,10 @@ export function calculateSCorpTax(profile: TaxProfileV1): TaxSCorpResult {
   const totalFederalTax = calculateFederalBrackets(federalTaxableIncome, fs);
   const marginalRate = getV1MarginalRate(federalTaxableIncome, fs);
 
-  // Step 5 — State tax on salary + distribution
+  // Step 5 — State tax on salary + distribution (multi-state aware)
   const personalStateIncome = salary + distribution;
-  const stateTax = calculateStateTax(personalStateIncome, fs, stateKey);
+  const stateResult = calculateMultiStateTax(personalStateIncome, fs, stateKey, profile.workStates);
+  const stateTax = stateResult.totalStateTax;
 
   // Step 6 — What's already covered by withholding
   const salaryFederalWithheld = Math.round(salary * marginalRate);
@@ -394,6 +395,7 @@ export function calculateSCorpTax(profile: TaxProfileV1): TaxSCorpResult {
     totalFederalTax,
     marginalRate,
     stateTax,
+    stateBreakdown: stateResult.breakdown,
     salaryFederalWithheld,
     salaryStateWithheld,
     extraWithholdingAnnual,
