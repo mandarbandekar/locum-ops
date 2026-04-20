@@ -5,12 +5,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { CheckCircle2, Info, ArrowLeft, ArrowRight, Sparkles } from 'lucide-react';
+import { CheckCircle2, Info, ArrowLeft, ArrowRight, Sparkles, Plus, X } from 'lucide-react';
 import { TAX_CONSTANTS, V1_US_STATES, V1_FILING_STATUS_LABELS, type V1FilingStatus } from '@/lib/taxConstantsV1';
 import { getV1MarginalRate } from '@/lib/taxCalculatorV1';
-import type { TaxIntelligenceProfile } from '@/hooks/useTaxIntelligence';
+import type { TaxIntelligenceProfile, WorkStateAllocation } from '@/hooks/useTaxIntelligence';
 import { toast } from 'sonner';
 import TaxTerm from './TaxTerm';
 
@@ -41,6 +42,8 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
   const [retirementContributions, setRetirementContributions] = useState(existingProfile?.retirement_contribution ?? 0);
   const [skipRetirement, setSkipRetirement] = useState(false);
   const [stateCode, setStateCode] = useState(existingProfile?.state_code || '');
+  const [workStates, setWorkStates] = useState<WorkStateAllocation[]>(existingProfile?.work_states || []);
+  const [multiStateOn, setMultiStateOn] = useState((existingProfile?.work_states?.length || 0) > 0);
   const [extraWithholding, setExtraWithholding] = useState(existingProfile?.extra_withholding ?? 0);
   const [payPeriodsPerYear, setPayPeriodsPerYear] = useState(existingProfile?.pay_periods_per_year ?? 24);
   const [hasExtraWithholding, setHasExtraWithholding] = useState((existingProfile?.extra_withholding ?? 0) > 0);
