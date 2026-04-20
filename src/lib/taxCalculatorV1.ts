@@ -55,6 +55,11 @@ function calculateFederalBrackets(taxableIncome: number, filingStatus: string): 
 // PROFILE INTERFACE
 // ─────────────────────────────────────
 
+export interface WorkStateAlloc {
+  stateKey: string;
+  incomePct: number; // 0-100, percent of relief income earned in this non-resident state
+}
+
 export interface TaxProfileV1 {
   entityType: '1099' | 'scorp' | string;
   annualReliefIncome: number;
@@ -66,6 +71,74 @@ export interface TaxProfileV1 {
   retirementContributions: number;
   annualBusinessExpenses: number;
   stateKey: string;
+  workStates?: WorkStateAlloc[]; // non-resident states only
+}
+
+/**
+ * Multi-state state-tax helper.
+ * Calculates resident state tax + non-resident state tax with the standard
+ * "credit for taxes paid to other states" applied at the resident level.
+ *
+ * Returns total state tax plus a per-state breakdown for display.
+ */
+export interface StateTaxBreakdownEntry {
+  stateKey: string;
+  incomeAllocated: number;
+  taxOwed: number;
+  isResident: boolean;
+}
+
+export function calculateMultiStateTax(
+  totalStateIncome: number,
+  filingStatus: string,
+  residentStateKey: string,
+  workStates: WorkStateAlloc[] = [],
+): { totalStateTax: number; breakdown: StateTaxBreakdownEntry[]; residentCreditApplied: number } {
+  const breakdown: StateTaxBreakdownEntry[] = [];
+
+  // Sanitize allocations: clamp percentages, drop the resident state if mistakenly listed,
+  // cap total non-resident allocation at 100%.
+  const cleaned = (workStates || [])
+    .filter(w => w && w.stateKey && w.stateKey !== residentStateKey)
+    .map(w => ({ stateKey: w.stateKey, incomePct: Math.max(0, Math.min(100, Number(w.incomePct) || 0)) }));
+
+  const sumPct = cleaned.reduce((s, w) => s + w.incomePct, 0);
+  const scale = sumPct > 100 ? 100 / sumPct : 1;
+
+  // Non-resident state tax
+  let nonResidentTotal = 0;
+  let totalNonResidentIncome = 0;
+  for (const w of cleaned) {
+    const allocPct = w.incomePct * scale;
+    const allocIncome = Math.round(totalStateIncome * (allocPct / 100));
+    if (allocIncome <= 0) continue;
+    const tax = calculateStateTax(allocIncome, filingStatus, w.stateKey);
+    totalNonResidentIncome += allocIncome;
+    nonResidentTotal += tax;
+    breakdown.push({ stateKey: w.stateKey, incomeAllocated: allocIncome, taxOwed: tax, isResident: false });
+  }
+
+  // Resident state taxes ALL income, then receives credit for taxes paid to non-residents,
+  // capped at what the resident state would have charged on that same non-resident income.
+  const residentTaxOnAll = calculateStateTax(totalStateIncome, filingStatus, residentStateKey);
+  const residentTaxOnNonResIncome = totalNonResidentIncome > 0
+    ? calculateStateTax(totalNonResidentIncome, filingStatus, residentStateKey)
+    : 0;
+  const credit = Math.min(nonResidentTotal, residentTaxOnNonResIncome);
+  const residentTaxAfterCredit = Math.max(0, residentTaxOnAll - credit);
+
+  breakdown.unshift({
+    stateKey: residentStateKey,
+    incomeAllocated: totalStateIncome,
+    taxOwed: residentTaxAfterCredit,
+    isResident: true,
+  });
+
+  return {
+    totalStateTax: residentTaxAfterCredit + nonResidentTotal,
+    breakdown,
+    residentCreditApplied: credit,
+  };
 }
 
 // ─────────────────────────────────────
