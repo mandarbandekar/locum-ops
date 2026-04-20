@@ -163,6 +163,7 @@ export interface Tax1099Result {
   spouseFederalTax: number;
   spouseWithholdingEstimate: number;
   stateTax: number;
+  stateBreakdown: StateTaxBreakdownEntry[];
   annualObligation: number;
   annualEstimatedTaxDue: number;
   quarterlyPayment: number;
@@ -183,6 +184,7 @@ export interface TaxSCorpResult {
   totalFederalTax: number;
   marginalRate: number;
   stateTax: number;
+  stateBreakdown: StateTaxBreakdownEntry[];
   salaryFederalWithheld: number;
   salaryStateWithheld: number;
   extraWithholdingAnnual: number;
@@ -252,8 +254,9 @@ export function calculate1099Tax(profile: TaxProfileV1): Tax1099Result {
   const spouseFederalTax = calculateFederalBrackets(Math.max(0, spouseAgi), fs);
   const vetFederalShare = Math.max(0, totalFederalTax - spouseFederalTax);
 
-  // Step 6 — State tax on net business income
-  const stateTax = calculateStateTax(netIncome, fs, stateKey);
+  // Step 6 — State tax on net business income (multi-state aware)
+  const stateResult = calculateMultiStateTax(netIncome, fs, stateKey, profile.workStates);
+  const stateTax = stateResult.totalStateTax;
 
   // Step 7 — Marginal rate
   const marginalRate = getV1MarginalRate(federalTaxableIncome, fs);
