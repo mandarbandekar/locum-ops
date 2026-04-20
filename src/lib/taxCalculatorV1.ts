@@ -55,6 +55,11 @@ function calculateFederalBrackets(taxableIncome: number, filingStatus: string): 
 // PROFILE INTERFACE
 // ─────────────────────────────────────
 
+export interface WorkStateAlloc {
+  stateKey: string;
+  incomePct: number; // 0-100, percent of relief income earned in this non-resident state
+}
+
 export interface TaxProfileV1 {
   entityType: '1099' | 'scorp' | string;
   annualReliefIncome: number;
@@ -66,6 +71,74 @@ export interface TaxProfileV1 {
   retirementContributions: number;
   annualBusinessExpenses: number;
   stateKey: string;
+  workStates?: WorkStateAlloc[]; // non-resident states only
+}
+
+/**
+ * Multi-state state-tax helper.
+ * Calculates resident state tax + non-resident state tax with the standard
+ * "credit for taxes paid to other states" applied at the resident level.
+ *
+ * Returns total state tax plus a per-state breakdown for display.
+ */
+export interface StateTaxBreakdownEntry {
+  stateKey: string;
+  incomeAllocated: number;
+  taxOwed: number;
+  isResident: boolean;
+}
+
+export function calculateMultiStateTax(
+  totalStateIncome: number,
+  filingStatus: string,
+  residentStateKey: string,
+  workStates: WorkStateAlloc[] = [],
+): { totalStateTax: number; breakdown: StateTaxBreakdownEntry[]; residentCreditApplied: number } {
+  const breakdown: StateTaxBreakdownEntry[] = [];
+
+  // Sanitize allocations: clamp percentages, drop the resident state if mistakenly listed,
+  // cap total non-resident allocation at 100%.
+  const cleaned = (workStates || [])
+    .filter(w => w && w.stateKey && w.stateKey !== residentStateKey)
+    .map(w => ({ stateKey: w.stateKey, incomePct: Math.max(0, Math.min(100, Number(w.incomePct) || 0)) }));
+
+  const sumPct = cleaned.reduce((s, w) => s + w.incomePct, 0);
+  const scale = sumPct > 100 ? 100 / sumPct : 1;
+
+  // Non-resident state tax
+  let nonResidentTotal = 0;
+  let totalNonResidentIncome = 0;
+  for (const w of cleaned) {
+    const allocPct = w.incomePct * scale;
+    const allocIncome = Math.round(totalStateIncome * (allocPct / 100));
+    if (allocIncome <= 0) continue;
+    const tax = calculateStateTax(allocIncome, filingStatus, w.stateKey);
+    totalNonResidentIncome += allocIncome;
+    nonResidentTotal += tax;
+    breakdown.push({ stateKey: w.stateKey, incomeAllocated: allocIncome, taxOwed: tax, isResident: false });
+  }
+
+  // Resident state taxes ALL income, then receives credit for taxes paid to non-residents,
+  // capped at what the resident state would have charged on that same non-resident income.
+  const residentTaxOnAll = calculateStateTax(totalStateIncome, filingStatus, residentStateKey);
+  const residentTaxOnNonResIncome = totalNonResidentIncome > 0
+    ? calculateStateTax(totalNonResidentIncome, filingStatus, residentStateKey)
+    : 0;
+  const credit = Math.min(nonResidentTotal, residentTaxOnNonResIncome);
+  const residentTaxAfterCredit = Math.max(0, residentTaxOnAll - credit);
+
+  breakdown.unshift({
+    stateKey: residentStateKey,
+    incomeAllocated: totalStateIncome,
+    taxOwed: residentTaxAfterCredit,
+    isResident: true,
+  });
+
+  return {
+    totalStateTax: residentTaxAfterCredit + nonResidentTotal,
+    breakdown,
+    residentCreditApplied: credit,
+  };
 }
 
 // ─────────────────────────────────────
@@ -90,6 +163,7 @@ export interface Tax1099Result {
   spouseFederalTax: number;
   spouseWithholdingEstimate: number;
   stateTax: number;
+  stateBreakdown: StateTaxBreakdownEntry[];
   annualObligation: number;
   annualEstimatedTaxDue: number;
   quarterlyPayment: number;
@@ -110,6 +184,7 @@ export interface TaxSCorpResult {
   totalFederalTax: number;
   marginalRate: number;
   stateTax: number;
+  stateBreakdown: StateTaxBreakdownEntry[];
   salaryFederalWithheld: number;
   salaryStateWithheld: number;
   extraWithholdingAnnual: number;
@@ -167,6 +242,7 @@ export function calculate1099Tax(profile: TaxProfileV1): Tax1099Result {
     - (retirementContributions || 0)
     + (spouseW2Income || 0)
   );
+  // Federal already-paid component (spouse withholding)
   const stdDed = C.standardDeduction[fs] || C.standardDeduction.single;
   const federalTaxableIncome = Math.max(0, agi - stdDed);
 
@@ -178,8 +254,9 @@ export function calculate1099Tax(profile: TaxProfileV1): Tax1099Result {
   const spouseFederalTax = calculateFederalBrackets(Math.max(0, spouseAgi), fs);
   const vetFederalShare = Math.max(0, totalFederalTax - spouseFederalTax);
 
-  // Step 6 — State tax on net business income
-  const stateTax = calculateStateTax(netIncome, fs, stateKey);
+  // Step 6 — State tax on net business income (multi-state aware)
+  const stateResult = calculateMultiStateTax(netIncome, fs, stateKey, profile.workStates);
+  const stateTax = stateResult.totalStateTax;
 
   // Step 7 — Marginal rate
   const marginalRate = getV1MarginalRate(federalTaxableIncome, fs);
@@ -215,6 +292,7 @@ export function calculate1099Tax(profile: TaxProfileV1): Tax1099Result {
     spouseFederalTax,
     spouseWithholdingEstimate,
     stateTax,
+    stateBreakdown: stateResult.breakdown,
     annualObligation: Math.round(annualObligation),
     annualEstimatedTaxDue,
     quarterlyPayment,
@@ -269,9 +347,10 @@ export function calculateSCorpTax(profile: TaxProfileV1): TaxSCorpResult {
   const totalFederalTax = calculateFederalBrackets(federalTaxableIncome, fs);
   const marginalRate = getV1MarginalRate(federalTaxableIncome, fs);
 
-  // Step 5 — State tax on salary + distribution
+  // Step 5 — State tax on salary + distribution (multi-state aware)
   const personalStateIncome = salary + distribution;
-  const stateTax = calculateStateTax(personalStateIncome, fs, stateKey);
+  const stateResult = calculateMultiStateTax(personalStateIncome, fs, stateKey, profile.workStates);
+  const stateTax = stateResult.totalStateTax;
 
   // Step 6 — What's already covered by withholding
   const salaryFederalWithheld = Math.round(salary * marginalRate);
@@ -316,6 +395,7 @@ export function calculateSCorpTax(profile: TaxProfileV1): TaxSCorpResult {
     totalFederalTax,
     marginalRate,
     stateTax,
+    stateBreakdown: stateResult.breakdown,
     salaryFederalWithheld,
     salaryStateWithheld,
     extraWithholdingAnnual,
@@ -358,6 +438,7 @@ export function mapDbProfileToV1(p: {
   retirement_contribution: number;
   annual_business_expenses: number;
   state_code: string;
+  work_states?: { state_code: string; income_pct: number }[];
 }): TaxProfileV1 {
   return {
     entityType: p.entity_type === 'sole_prop' ? '1099' : p.entity_type,
@@ -372,5 +453,10 @@ export function mapDbProfileToV1(p: {
     retirementContributions: p.retirement_contribution || 0,
     annualBusinessExpenses: p.annual_business_expenses || 0,
     stateKey: p.state_code || '',
+    workStates: Array.isArray(p.work_states)
+      ? p.work_states
+          .filter(w => w && typeof w.state_code === 'string')
+          .map(w => ({ stateKey: w.state_code, incomePct: Number(w.income_pct) || 0 }))
+      : [],
   };
 }

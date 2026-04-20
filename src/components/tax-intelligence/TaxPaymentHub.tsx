@@ -203,6 +203,47 @@ export default function TaxPaymentHub({ profile, taxResult, nextDue, paymentLogs
           </div>
         )}
 
+        {/* ── Non-resident state payments ── */}
+        {taxResult.stateBreakdown && taxResult.stateBreakdown
+          .filter(s => !s.isResident && s.taxOwed > 0)
+          .map(s => {
+            const link = STATE_PAYMENT_LINKS[s.stateKey];
+            if (!link?.url) return null;
+            const quarterly = Math.round(s.taxOwed / 4);
+            const paid = paymentLogs.getQuarterTotal(quarterLabel, `state_personal_${s.stateKey}`);
+            return (
+              <div key={s.stateKey} className="rounded-lg border p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-semibold">{link.name} <span className="text-xs font-normal text-muted-foreground">(non-resident)</span></h4>
+                  <span className="text-xs text-muted-foreground">{quarterLabel} due {quarterDue}</span>
+                </div>
+                {paid >= quarterly ? (
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle2 className="h-4 w-4 text-[hsl(var(--success))]" />
+                    <span className="font-medium text-[hsl(var(--success))]">Paid ${fmt(paid)}</span>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-2xl font-bold">${fmt(quarterly)}</p>
+                    <p className="text-xs text-muted-foreground">{link.label}</p>
+                    <Button
+                      size="sm"
+                      className="gap-1.5"
+                      onClick={() => handlePayClick(link.url!, {
+                        type: `state_personal_${s.stateKey}`,
+                        amount: quarterly,
+                        paidFrom: 'personal',
+                        stateKey: s.stateKey,
+                      })}
+                    >
+                      Pay {s.stateKey} via {link.label} <ExternalLink className="h-3.5 w-3.5" />
+                    </Button>
+                  </>
+                )}
+              </div>
+            );
+          })}
+
         {/* ── Row 2b: PTE Row (S-Corp only) ── */}
         {hasPTE && hasStateTax && (
           <div className="rounded-lg border p-4 space-y-3">

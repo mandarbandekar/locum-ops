@@ -168,14 +168,24 @@ export default function TaxDashboard({ profile, onEditProfile, onSaveProfile }: 
                   {nextDue.daysUntil} days
                 </Badge>
               </div>
-              <div className="flex gap-2 justify-center mt-3">
+              <div className="flex gap-2 justify-center mt-3 flex-wrap">
                 <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setPaymentDialogOpen(true)}>
                   <CreditCard className="h-3.5 w-3.5" /> Pay federal →
                 </Button>
-                {profile.state_code && TAX_CONSTANTS.states[profile.state_code]?.type !== 'none' && (
-                  <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setPaymentDialogOpen(true)}>
-                    Pay {profile.state_code} →
-                  </Button>
+                {taxResult.stateBreakdown && taxResult.stateBreakdown.length > 1 ? (
+                  taxResult.stateBreakdown
+                    .filter(s => s.taxOwed > 0)
+                    .map(s => (
+                      <Button key={s.stateKey} size="sm" variant="outline" className="gap-1.5" onClick={() => setPaymentDialogOpen(true)}>
+                        Pay {s.stateKey} →
+                      </Button>
+                    ))
+                ) : (
+                  profile.state_code && TAX_CONSTANTS.states[profile.state_code]?.type !== 'none' && (
+                    <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setPaymentDialogOpen(true)}>
+                      Pay {profile.state_code} →
+                    </Button>
+                  )
                 )}
               </div>
             </div>
@@ -331,7 +341,22 @@ function render1099Breakdown(r: Tax1099Result) {
       {r.spouseWithholdingEstimate > 0 && <Row label="Less: spouse withholding" value={-r.spouseWithholdingEstimate} sub="covered by her employer" term="spouse_withholding" />}
       <Row label="Your federal share" value={r.vetFederalShare} bold />
       <div className="border-t my-2" />
-      <Row label="State tax" value={r.stateTax} />
+      {r.stateBreakdown && r.stateBreakdown.length > 1 ? (
+        <>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">State tax (multi-state)</p>
+          {r.stateBreakdown.map((s) => (
+            <Row
+              key={s.stateKey}
+              label={`${s.stateKey}${s.isResident ? ' (resident, after credit)' : ' (non-resident)'}`}
+              value={s.taxOwed}
+              sub={`Allocated income: $${s.incomeAllocated.toLocaleString()}`}
+            />
+          ))}
+          <Row label="Total state tax" value={r.stateTax} bold />
+        </>
+      ) : (
+        <Row label="State tax" value={r.stateTax} />
+      )}
       <div className="border-t my-2" />
       <Row label="Annual tax due via 1040-ES" value={r.annualEstimatedTaxDue} bold term="1040es" />
       <Row label="Quarterly payment" value={r.quarterlyPayment} bold term="quarterly_payment" />
@@ -378,7 +403,22 @@ function renderSCorpBreakdown(r: TaxSCorpResult, profile: TaxIntelligenceProfile
       </div>
 
       <Row label={`Federal on K-1 (at ${Math.round(r.marginalRate * 100)}% marginal)`} value={r.federalOnDistribution} term="marginal_rate" />
-      <Row label={`State on K-1 (${profile.state_code || 'N/A'})`} value={r.stateOnDistribution} />
+      {r.stateBreakdown && r.stateBreakdown.length > 1 ? (
+        <>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mt-2">State tax (multi-state)</p>
+          {r.stateBreakdown.map((s) => (
+            <Row
+              key={s.stateKey}
+              label={`${s.stateKey}${s.isResident ? ' (resident, after credit)' : ' (non-resident)'}`}
+              value={s.taxOwed}
+              sub={`Allocated income: $${s.incomeAllocated.toLocaleString()}`}
+            />
+          ))}
+          <Row label="Total state tax" value={r.stateTax} bold />
+        </>
+      ) : (
+        <Row label={`State on K-1 (${profile.state_code || 'N/A'})`} value={r.stateOnDistribution} />
+      )}
       {r.extraWithholdingAnnual > 0 && <Row label="Extra withholding credit" value={-r.extraWithholdingAnnual} term="extra_withholding" />}
       <div className="border-t my-2" />
       <Row label="Annual 1040-ES obligation" value={r.annualEstimatedTaxDue} bold term="1040es" />

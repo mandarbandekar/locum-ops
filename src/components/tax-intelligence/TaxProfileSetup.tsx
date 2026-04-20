@@ -5,12 +5,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { CheckCircle2, Info, ArrowLeft, ArrowRight, Sparkles } from 'lucide-react';
+import { CheckCircle2, Info, ArrowLeft, ArrowRight, Sparkles, Plus, X } from 'lucide-react';
 import { TAX_CONSTANTS, V1_US_STATES, V1_FILING_STATUS_LABELS, type V1FilingStatus } from '@/lib/taxConstantsV1';
 import { getV1MarginalRate } from '@/lib/taxCalculatorV1';
-import type { TaxIntelligenceProfile } from '@/hooks/useTaxIntelligence';
+import type { TaxIntelligenceProfile, WorkStateAllocation } from '@/hooks/useTaxIntelligence';
 import { toast } from 'sonner';
 import TaxTerm from './TaxTerm';
 
@@ -41,6 +42,8 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
   const [retirementContributions, setRetirementContributions] = useState(existingProfile?.retirement_contribution ?? 0);
   const [skipRetirement, setSkipRetirement] = useState(false);
   const [stateCode, setStateCode] = useState(existingProfile?.state_code || '');
+  const [workStates, setWorkStates] = useState<WorkStateAllocation[]>(existingProfile?.work_states || []);
+  const [multiStateOn, setMultiStateOn] = useState((existingProfile?.work_states?.length || 0) > 0);
   const [extraWithholding, setExtraWithholding] = useState(existingProfile?.extra_withholding ?? 0);
   const [payPeriodsPerYear, setPayPeriodsPerYear] = useState(existingProfile?.pay_periods_per_year ?? 24);
   const [hasExtraWithholding, setHasExtraWithholding] = useState((existingProfile?.extra_withholding ?? 0) > 0);
@@ -299,12 +302,29 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
     );
   }
 
+  const totalNonResidentPct = workStates.reduce((s, w) => s + (Number(w.income_pct) || 0), 0);
+  const allocationOver100 = totalNonResidentPct > 100;
+
+  function updateWorkState(idx: number, patch: Partial<WorkStateAllocation>) {
+    setWorkStates(prev => prev.map((w, i) => i === idx ? { ...w, ...patch } : w));
+  }
+  function addWorkState() {
+    if (workStates.length >= 4) return;
+    setWorkStates(prev => [...prev, { state_code: '', income_pct: 0 }]);
+  }
+  function removeWorkState(idx: number) {
+    setWorkStates(prev => prev.filter((_, i) => i !== idx));
+  }
+
   function renderStateStep() {
     return (
       <div className="space-y-4">
-        <Label className="text-base font-medium">Which state do you file in?</Label>
+        <div className="space-y-1">
+          <Label className="text-base font-medium">Where do you file taxes?</Label>
+          <p className="text-xs text-muted-foreground">Your resident state — where you live and file your primary return.</p>
+        </div>
         <Select value={stateCode} onValueChange={setStateCode}>
-          <SelectTrigger><SelectValue placeholder="Select a state…" /></SelectTrigger>
+          <SelectTrigger><SelectValue placeholder="Select your resident state…" /></SelectTrigger>
           <SelectContent className="max-h-64">
             {V1_US_STATES.map(s => <SelectItem key={s.code} value={s.code}>{s.name}</SelectItem>)}
           </SelectContent>
@@ -322,6 +342,79 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
             )}
           </div>
         )}
+
+        {/* ── Multi-state toggle ── */}
+        <div className="rounded-lg border p-3 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <Label className="text-sm font-medium">I also work in other states</Label>
+              <p className="text-xs text-muted-foreground">Add states where you do relief shifts but don't live.</p>
+            </div>
+            <Switch
+              checked={multiStateOn}
+              onCheckedChange={(v) => {
+                setMultiStateOn(v);
+                if (!v) setWorkStates([]);
+                else if (workStates.length === 0) addWorkState();
+              }}
+            />
+          </div>
+
+          {multiStateOn && (
+            <div className="space-y-2 pt-1">
+              {workStates.map((w, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <Select value={w.state_code} onValueChange={(v) => updateWorkState(idx, { state_code: v })}>
+                    <SelectTrigger className="flex-1"><SelectValue placeholder="State…" /></SelectTrigger>
+                    <SelectContent className="max-h-64">
+                      {V1_US_STATES.filter(s => s.code !== stateCode).map(s => (
+                        <SelectItem key={s.code} value={s.code}>{s.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <div className="relative w-32">
+                    <Input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={w.income_pct || ''}
+                      onChange={(e) => updateWorkState(idx, { income_pct: Number(e.target.value) })}
+                      placeholder="% income"
+                      className="pr-7"
+                    />
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={() => removeWorkState(idx)} className="h-9 w-9 shrink-0">
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+
+              {workStates.length < 4 && (
+                <Button variant="outline" size="sm" onClick={addWorkState} className="gap-1.5">
+                  <Plus className="h-3.5 w-3.5" /> Add another state
+                </Button>
+              )}
+
+              <div className="flex items-center justify-between text-xs pt-1">
+                <span className="text-muted-foreground">
+                  Non-resident allocation: <strong className={allocationOver100 ? 'text-destructive' : 'text-foreground'}>{totalNonResidentPct}%</strong>
+                  {' '}· Resident ({stateCode || '—'}): <strong className="text-foreground">{Math.max(0, 100 - totalNonResidentPct)}%</strong>
+                </span>
+              </div>
+              {allocationOver100 && (
+                <p className="text-xs text-destructive">Total non-resident percentage can't exceed 100%.</p>
+              )}
+
+              <Alert className="border-muted bg-muted/30">
+                <Info className="h-4 w-4 text-muted-foreground" />
+                <AlertDescription className="text-xs text-muted-foreground">
+                  Multi-state estimates use the income split you provide. Your resident state taxes all income but credits taxes paid to non-resident states. For complex situations (residency changes, reciprocal states), confirm with your CPA.
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
@@ -396,13 +489,14 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
 
   const canProceed = () => {
     if (currentStepName === 'income') return (annualReliefIncome || 0) > 0;
-    if (currentStepName === 'state') return stateCode !== '';
-    if (currentStepName === 'filing') {
-      if (filingStatus === 'mfj' && spouseW2Income === 0 && !document.querySelector('input[type="number"]:focus')) {
-        // Allow 0 but require explicit entry — we'll validate on next
-      }
+    if (currentStepName === 'state') {
+      if (stateCode === '') return false;
+      if (allocationOver100) return false;
+      // Every added work-state row must have a state selected (no duplicates handled by filter)
+      if (multiStateOn && workStates.some(w => !w.state_code)) return false;
       return true;
     }
+    if (currentStepName === 'filing') return true;
     return true;
   };
 
@@ -423,6 +517,12 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
 
   async function handleComplete() {
     setSaving(true);
+    // Sanitize work_states: drop empties / resident duplicates / zero%
+    const cleanWorkStates = multiStateOn
+      ? workStates
+          .filter(w => w.state_code && w.state_code !== stateCode && (Number(w.income_pct) || 0) > 0)
+          .map(w => ({ state_code: w.state_code, income_pct: Math.max(0, Math.min(100, Number(w.income_pct) || 0)) }))
+      : [];
     await onSave({
       entity_type: entityType,
       filing_status: dbFilingStatus,
@@ -434,8 +534,9 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
       annual_business_expenses: annualBusinessExpenses,
       extra_withholding: isScorp ? extraWithholding : 0,
       pay_periods_per_year: isScorp ? payPeriodsPerYear : 24,
+      work_states: cleanWorkStates,
       setup_completed_at: new Date().toISOString(),
-    });
+    } as any);
     setSaving(false);
     toast.success(existingProfile ? 'Tax profile updated' : 'Tax profile created');
     onOpenChange(false);

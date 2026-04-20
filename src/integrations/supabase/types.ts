@@ -2744,6 +2744,7 @@ export type Database = {
           typical_days_per_week: number
           updated_at: string
           user_id: string
+          work_states: Json
           ytd_expenses_estimate: number
         }
         Insert: {
@@ -2774,6 +2775,7 @@ export type Database = {
           typical_days_per_week?: number
           updated_at?: string
           user_id?: string
+          work_states?: Json
           ytd_expenses_estimate?: number
         }
         Update: {
@@ -2804,6 +2806,7 @@ export type Database = {
           typical_days_per_week?: number
           updated_at?: string
           user_id?: string
+          work_states?: Json
           ytd_expenses_estimate?: number
         }
         Relationships: []
