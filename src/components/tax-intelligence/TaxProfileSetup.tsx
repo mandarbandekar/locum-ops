@@ -489,13 +489,14 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
 
   const canProceed = () => {
     if (currentStepName === 'income') return (annualReliefIncome || 0) > 0;
-    if (currentStepName === 'state') return stateCode !== '';
-    if (currentStepName === 'filing') {
-      if (filingStatus === 'mfj' && spouseW2Income === 0 && !document.querySelector('input[type="number"]:focus')) {
-        // Allow 0 but require explicit entry — we'll validate on next
-      }
+    if (currentStepName === 'state') {
+      if (stateCode === '') return false;
+      if (allocationOver100) return false;
+      // Every added work-state row must have a state selected (no duplicates handled by filter)
+      if (multiStateOn && workStates.some(w => !w.state_code)) return false;
       return true;
     }
+    if (currentStepName === 'filing') return true;
     return true;
   };
 
@@ -516,6 +517,12 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
 
   async function handleComplete() {
     setSaving(true);
+    // Sanitize work_states: drop empties / resident duplicates / zero%
+    const cleanWorkStates = multiStateOn
+      ? workStates
+          .filter(w => w.state_code && w.state_code !== stateCode && (Number(w.income_pct) || 0) > 0)
+          .map(w => ({ state_code: w.state_code, income_pct: Math.max(0, Math.min(100, Number(w.income_pct) || 0)) }))
+      : [];
     await onSave({
       entity_type: entityType,
       filing_status: dbFilingStatus,
@@ -527,8 +534,9 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
       annual_business_expenses: annualBusinessExpenses,
       extra_withholding: isScorp ? extraWithholding : 0,
       pay_periods_per_year: isScorp ? payPeriodsPerYear : 24,
+      work_states: cleanWorkStates,
       setup_completed_at: new Date().toISOString(),
-    });
+    } as any);
     setSaving(false);
     toast.success(existingProfile ? 'Tax profile updated' : 'Tax profile created');
     onOpenChange(false);
