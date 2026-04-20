@@ -438,6 +438,7 @@ export function mapDbProfileToV1(p: {
   retirement_contribution: number;
   annual_business_expenses: number;
   state_code: string;
+  work_states?: { state_code: string; income_pct: number }[];
 }): TaxProfileV1 {
   return {
     entityType: p.entity_type === 'sole_prop' ? '1099' : p.entity_type,
@@ -452,5 +453,10 @@ export function mapDbProfileToV1(p: {
     retirementContributions: p.retirement_contribution || 0,
     annualBusinessExpenses: p.annual_business_expenses || 0,
     stateKey: p.state_code || '',
+    workStates: Array.isArray(p.work_states)
+      ? p.work_states
+          .filter(w => w && typeof w.state_code === 'string')
+          .map(w => ({ stateKey: w.state_code, incomePct: Number(w.income_pct) || 0 }))
+      : [],
   };
 }
