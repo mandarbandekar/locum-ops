@@ -156,7 +156,7 @@ export default function SettingsProfilePage() {
                 </label>
               </div>
               {sameAsCompany && !companyAddress.trim() && (
-                <p className="text-xs text-amber-600 dark:text-amber-500 mt-1">Enter a company address first.</p>
+                <p className="text-xs text-destructive mt-1">Enter a company address first.</p>
               )}
               <p className="text-xs text-muted-foreground mt-1">Used to calculate driving distance to clinics. Not shared.</p>
             </div>
