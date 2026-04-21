@@ -112,6 +112,9 @@ function OverviewTab({ facility, shifts, contacts, onUpdate, onAddContact, onUpd
   const [editing, setEditing] = useState(false);
   const [notes, setNotes] = useState(facility.notes);
   const [status, setStatus] = useState(facility.status);
+  const [engagementType, setEngagementType] = useState<EngagementType>((facility.engagement_type || 'direct') as EngagementType);
+  const [sourceName, setSourceName] = useState<string>(facility.source_name || '');
+  const [taxFormType, setTaxFormType] = useState<TaxFormType>((facility.tax_form_type as TaxFormType) || '1099');
   const [rates, setRates] = useState<RateEntry[]>(termsToRates(facilityTerms || {}));
 
   // Contact add/edit state
@@ -122,7 +125,17 @@ function OverviewTab({ facility, shifts, contacts, onUpdate, onAddContact, onUpd
   const upcoming = shifts.filter(s => new Date(s.start_datetime) > new Date() && s.status !== 'canceled').slice(0, 5);
 
   const handleSave = () => {
-    onUpdate({ ...facility, notes, status });
+    const isDirect = engagementType === 'direct';
+    const effectiveTaxForm = engagementType === 'w2' ? 'w2' : engagementType === 'third_party' ? taxFormType : null;
+    onUpdate({
+      ...facility,
+      notes,
+      status,
+      engagement_type: engagementType,
+      source_name: isDirect ? null : (sourceName.trim() || null),
+      tax_form_type: effectiveTaxForm,
+      auto_generate_invoices: isDirect ? facility.auto_generate_invoices : false,
+    });
     setEditing(false);
     toast.success('Practice facility updated');
   };
