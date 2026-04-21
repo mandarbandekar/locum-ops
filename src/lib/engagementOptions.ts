@@ -1,4 +1,4 @@
-import type { Facility } from '@/types';
+import type { Facility, Shift } from '@/types';
 
 export type EngagementType = 'direct' | 'third_party' | 'w2';
 export type TaxFormType = '1099' | 'w2';
@@ -61,4 +61,44 @@ export function getEngagementPill(facility: Pick<Facility, 'engagement_type' | '
     className:
       'bg-purple-100 text-purple-800 dark:bg-purple-950/50 dark:text-purple-300 border border-purple-200/60 dark:border-purple-900/60',
   };
+}
+
+/**
+ * Compute the effective engagement for a shift, applying any per-shift
+ * overrides on top of the facility default.
+ */
+export function getEffectiveEngagement(
+  shift: Pick<Shift, 'engagement_type_override' | 'source_name_override'>,
+  facility: Pick<Facility, 'engagement_type' | 'source_name' | 'tax_form_type'>,
+): { engagement_type: EngagementType; source_name: string | null; tax_form_type: TaxFormType | null } {
+  const engagement_type = (shift.engagement_type_override || facility.engagement_type || 'direct') as EngagementType;
+  const source_name = shift.engagement_type_override
+    ? (shift.source_name_override ?? null)
+    : (facility.source_name ?? null);
+  return {
+    engagement_type,
+    source_name,
+    tax_form_type: (facility.tax_form_type ?? null) as TaxFormType | null,
+  };
+}
+
+/**
+ * Build the helper-line copy shown in the shift form, driven by the
+ * facility's engagement_type and tax_form_type.
+ */
+export function getShiftEngagementHelperText(
+  facility: Pick<Facility, 'engagement_type' | 'source_name' | 'tax_form_type'>,
+): string {
+  const type = (facility.engagement_type || 'direct') as EngagementType;
+  const source = (facility.source_name || '').trim() || 'this platform';
+  if (type === 'direct') {
+    return 'Direct booking — an invoice will be created after this shift.';
+  }
+  if (type === 'third_party') {
+    if (facility.tax_form_type === 'w2') {
+      return `Booked via ${source} — no invoice will be generated. This income will appear on your W-2 from ${source}.`;
+    }
+    return `Booked via ${source} — no invoice will be generated. A 1099 is expected from ${source} at year-end.`;
+  }
+  return `W-2 shift with ${source} — tracked separately from 1099 income.`;
 }

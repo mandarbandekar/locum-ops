@@ -82,6 +82,8 @@ export interface Shift {
   rate_applied: number;
   notes: string;
   color: ShiftColor;
+  engagement_type_override?: 'direct' | 'third_party' | 'w2' | null;
+  source_name_override?: string | null;
 }
 
 export type InvoiceStatus = 'draft' | 'sent' | 'partial' | 'paid';

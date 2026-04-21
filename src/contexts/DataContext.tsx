@@ -359,6 +359,12 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     try {
       const facility = facilities.find(f => f.id === shift.facility_id);
       if (facility) {
+        // Gate by effective engagement: only 'direct' shifts generate invoices.
+        // Per-shift overrides take precedence over the facility default.
+        const effectiveEngagement = (shift.engagement_type_override || facility.engagement_type || 'direct');
+        if (effectiveEngagement !== 'direct') {
+          return shift;
+        }
         const cadence = facility.billing_cadence as BillingCadence;
         const shiftStart = new Date(shift.start_datetime);
         const period = getBillingPeriod(

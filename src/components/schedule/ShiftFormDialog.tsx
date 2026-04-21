@@ -19,6 +19,13 @@ import { useData } from '@/contexts/DataContext';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
+import {
+  ENGAGEMENT_LABELS,
+  THIRD_PARTY_PRESETS,
+  W2_EMPLOYER_PRESETS,
+  getShiftEngagementHelperText,
+  type EngagementType,
+} from '@/lib/engagementOptions';
 
 interface ShiftFormDialogProps {
   open: boolean;
@@ -112,6 +119,18 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   const { updateTerms, timeBlocks } = useData();
   const isMultiMode = !existing;
 
+  // Engagement override state (per-shift)
+  const facilityForEngagement = facilities.find(f => f.id === facilityId);
+  const facilityDefaultEngagement: EngagementType = (facilityForEngagement?.engagement_type || 'direct') as EngagementType;
+  const facilityDefaultSource: string | null = facilityForEngagement?.source_name ?? null;
+  const [showEngagementOverride, setShowEngagementOverride] = useState(false);
+  const [engagementOverride, setEngagementOverride] = useState<EngagementType>(
+    (existing?.engagement_type_override as EngagementType) || facilityDefaultEngagement,
+  );
+  const [sourceOverride, setSourceOverride] = useState<string>(
+    existing?.source_name_override ?? facilityDefaultSource ?? '',
+  );
+
   // Reset all form state when dialog opens, so stale values from a previous
   // session don't leak into a new shift entry (or a different shift edit).
   useEffect(() => {
@@ -125,6 +144,12 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
       setNotes(existing.notes || '');
       setColor(existing.color || 'blue');
       setShowNotes(!!existing.notes);
+      setShowEngagementOverride(!!existing.engagement_type_override);
+      const fac = facilities.find(f => f.id === existing.facility_id);
+      setEngagementOverride(
+        (existing.engagement_type_override as EngagementType) || (fac?.engagement_type as EngagementType) || 'direct',
+      );
+      setSourceOverride(existing.source_name_override ?? fac?.source_name ?? '');
     } else {
       setFacilityId(facilities[0]?.id || '');
       setSelectedDates(defaultDate ? [defaultDate] : []);
@@ -138,6 +163,10 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
       setNotes('');
       setColor('blue');
       setShowNotes(false);
+      const fac = facilities.find(f => f.id === (facilities[0]?.id || ''));
+      setShowEngagementOverride(false);
+      setEngagementOverride((fac?.engagement_type as EngagementType) || 'direct');
+      setSourceOverride(fac?.source_name ?? '');
     }
     setSelectedRateKey('');
     setIsCustomRate(false);
@@ -211,6 +240,32 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
       setRate(newOptions[0].amount.toString());
       setSelectedRateKey('rate-0');
     }
+    // Reset engagement override when facility changes — defaults inherit from new facility
+    const newFac = facilities.find(f => f.id === newFacilityId);
+    setShowEngagementOverride(false);
+    setEngagementOverride((newFac?.engagement_type as EngagementType) || 'direct');
+    setSourceOverride(newFac?.source_name ?? '');
+  };
+
+  // Compute payload override values: only set if user picked something different
+  // from the facility default. Otherwise clear so future facility changes propagate.
+  const computeOverridePayload = () => {
+    const fac = facilities.find(f => f.id === facilityId);
+    const facType = (fac?.engagement_type as EngagementType) || 'direct';
+    const facSource = fac?.source_name ?? null;
+    if (!showEngagementOverride) {
+      return { engagement_type_override: null, source_name_override: null };
+    }
+    const sameType = engagementOverride === facType;
+    const trimmedSource = engagementOverride === 'direct' ? null : (sourceOverride.trim() || null);
+    const sameSource = (trimmedSource ?? null) === (facSource ?? null);
+    if (sameType && sameSource) {
+      return { engagement_type_override: null, source_name_override: null };
+    }
+    return {
+      engagement_type_override: engagementOverride,
+      source_name_override: trimmedSource,
+    };
   };
 
   const conflicts = useMemo(() => {
@@ -251,6 +306,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     setIsSubmitting(true);
     try {
       await saveCustomRateToTerms();
+      const overridePayload = computeOverridePayload();
       if (existing) {
         const date = format(selectedDates[0] || new Date(), 'yyyy-MM-dd');
         await onSave({
@@ -259,6 +315,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
           start_datetime: new Date(`${date}T${startTime}:00`).toISOString(),
           end_datetime: new Date(`${date}T${endTime}:00`).toISOString(),
           rate_applied: Number(rate), notes, color,
+          ...overridePayload,
         });
       } else {
         const orderedDates = [...selectedDates].sort((a, b) => a.getTime() - b.getTime());
@@ -269,6 +326,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
             start_datetime: new Date(`${date}T${startTime}:00`).toISOString(),
             end_datetime: new Date(`${date}T${endTime}:00`).toISOString(),
             rate_applied: Number(rate), notes, color,
+            ...overridePayload,
           });
         }
       }
@@ -281,6 +339,94 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   };
 
   const facilityName = facilities.find(f => f.id === facilityId)?.name || '';
+
+  /* ─── Engagement helper line + per-shift override ─── */
+  const renderEngagementHelper = () => {
+    const fac = facilities.find(f => f.id === facilityId);
+    if (!fac) return null;
+    const helper = getShiftEngagementHelperText({
+      engagement_type: (fac.engagement_type || 'direct') as EngagementType,
+      source_name: fac.source_name ?? null,
+      tax_form_type: (fac.tax_form_type ?? null) as 'w2' | '1099' | null,
+    });
+    const presets =
+      engagementOverride === 'third_party'
+        ? THIRD_PARTY_PRESETS
+        : engagementOverride === 'w2'
+        ? W2_EMPLOYER_PRESETS
+        : [];
+    const isOtherSource =
+      engagementOverride !== 'direct' &&
+      sourceOverride !== '' &&
+      !(presets as readonly string[]).includes(sourceOverride);
+    return (
+      <div className="rounded-md bg-muted/50 border border-border px-3 py-2 text-[11px] leading-snug">
+        <div className="flex items-start justify-between gap-2">
+          <p className="text-muted-foreground flex-1">{helper}</p>
+          <button
+            type="button"
+            onClick={() => setShowEngagementOverride(s => !s)}
+            className="text-primary hover:underline font-medium shrink-0"
+          >
+            {showEngagementOverride ? 'Hide' : 'Change for this shift only'}
+          </button>
+        </div>
+        {showEngagementOverride && (
+          <div className="mt-2 space-y-2 pt-2 border-t border-border/60">
+            <div className="grid grid-cols-3 gap-1.5">
+              {(['direct', 'third_party', 'w2'] as EngagementType[]).map(t => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => {
+                    setEngagementOverride(t);
+                    if (t === 'direct') setSourceOverride('');
+                  }}
+                  className={cn(
+                    'rounded-md border px-2 py-1.5 text-[11px] font-medium transition-colors text-center',
+                    engagementOverride === t
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-background text-foreground border-border hover:bg-muted',
+                  )}
+                >
+                  {ENGAGEMENT_LABELS[t]}
+                </button>
+              ))}
+            </div>
+            {engagementOverride !== 'direct' && (
+              <div className="space-y-1.5">
+                <Select
+                  value={isOtherSource ? '__other__' : (sourceOverride || '')}
+                  onValueChange={v => {
+                    if (v === '__other__') setSourceOverride(' ');
+                    else setSourceOverride(v);
+                  }}
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder={engagementOverride === 'w2' ? 'Employer name' : 'Platform / agency'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {presets.map(p => (
+                      <SelectItem key={p} value={p}>{p}</SelectItem>
+                    ))}
+                    <SelectItem value="__other__">Other…</SelectItem>
+                  </SelectContent>
+                </Select>
+                {isOtherSource && (
+                  <Input
+                    value={sourceOverride}
+                    onChange={e => setSourceOverride(e.target.value)}
+                    placeholder={engagementOverride === 'w2' ? 'Employer name' : 'Platform / agency name'}
+                    className="h-8 text-xs"
+                  />
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   /* ─── Step 1: Facility ─── */
   const renderStep1 = () => (
@@ -318,6 +464,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
           onCreated={(newId) => handleFacilityChange(newId)}
         />
       </div>
+      {renderEngagementHelper()}
       <div className="flex justify-end pt-2">
         <Button type="button" onClick={() => setStep(2)} disabled={!facilityId} className="h-10 min-w-[120px]">
           Next <ChevronRight className="h-4 w-4 ml-1" />
@@ -644,6 +791,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
               </SelectContent>
             </Select>
             <AddFacilityDialog open={showAddFacility} onOpenChange={setShowAddFacility} onCreated={(newId) => handleFacilityChange(newId)} />
+            {renderEngagementHelper()}
           </div>
 
           <div>
