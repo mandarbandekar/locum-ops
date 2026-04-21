@@ -216,10 +216,36 @@ function OverviewTab({ facility, shifts, contacts, onUpdate, onAddContact, onUpd
                 <p className="text-sm">{facility.notes || 'No notes'}</p>
               )}
             </div>
+            <div className="border-t border-border pt-3">
+              {editing ? (
+                <EngagementSelector
+                  engagementType={engagementType}
+                  onEngagementTypeChange={setEngagementType}
+                  sourceName={sourceName}
+                  onSourceNameChange={setSourceName}
+                  taxFormType={taxFormType}
+                  onTaxFormTypeChange={setTaxFormType}
+                  compact
+                />
+              ) : (
+                <>
+                  <Label className="text-xs text-muted-foreground">Engagement</Label>
+                  <p className="text-sm">
+                    {facility.engagement_type === 'w2'
+                      ? `W-2 — ${facility.source_name || 'Employer'}`
+                      : facility.engagement_type === 'third_party'
+                      ? `Platform / Agency — ${facility.source_name || 'Source'}${facility.tax_form_type ? ` (${facility.tax_form_type === 'w2' ? 'W-2' : '1099'})` : ''}`
+                      : 'Direct / Independent'}
+                  </p>
+                </>
+              )}
+            </div>
           </CardContent>
         </Card>
 
-        <RatesEditor rates={rates} onChange={setRates} onSave={onSaveRates} />
+        {engagementType !== 'w2' && (
+          <RatesEditor rates={rates} onChange={setRates} onSave={onSaveRates} />
+        )}
 
         <ClinicNotesCard facility={facility} onUpdate={onUpdate} />
 
@@ -227,13 +253,29 @@ function OverviewTab({ facility, shifts, contacts, onUpdate, onAddContact, onUpd
       </div>
 
       <div className="space-y-4">
-        <InvoicingPreferencesCard facility={facility} onUpdate={onUpdate} />
+        {engagementType === 'direct' && (
+          <>
+            <InvoicingPreferencesCard facility={facility} onUpdate={onUpdate} />
 
-        <FacilityConfirmationSettingsCard
-          facilityId={facilityId}
-          settings={confirmationSettings}
-          onSave={onSaveConfirmationSettings}
-        />
+            <FacilityConfirmationSettingsCard
+              facilityId={facilityId}
+              settings={confirmationSettings}
+              onSave={onSaveConfirmationSettings}
+            />
+          </>
+        )}
+
+        {engagementType !== 'direct' && (
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-sm text-muted-foreground">
+                {engagementType === 'w2'
+                  ? `W-2 income from ${facility.source_name || 'this employer'} is tracked separately for tax purposes. Invoicing and confirmations don't apply.`
+                  : `${facility.source_name || 'This platform'} handles billing for these shifts, so invoicing settings and clinic confirmations don't apply here.`}
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader><CardTitle className="text-base">Upcoming Shifts</CardTitle></CardHeader>
