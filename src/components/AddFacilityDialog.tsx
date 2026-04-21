@@ -433,7 +433,23 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
                   <div className="space-y-2">
                     <Label>Name <span className="text-destructive">*</span></Label>
                     <Input value={name} onChange={e => setName(e.target.value)} placeholder="Practice facility name" autoFocus={manualEntry} />
+                    {engagementType === 'third_party' && (
+                      <p className="text-xs text-muted-foreground">
+                        You can track each physical clinic separately, or log all your {sourceName.trim() || 'platform'} shifts under one facility — whatever works for you.
+                      </p>
+                    )}
                   </div>
+
+                  <EngagementSelector
+                    engagementType={engagementType}
+                    onEngagementTypeChange={setEngagementType}
+                    sourceName={sourceName}
+                    onSourceNameChange={setSourceName}
+                    taxFormType={taxFormType}
+                    onTaxFormTypeChange={setTaxFormType}
+                    compact
+                  />
+
                   <div className="space-y-2">
                     <Label>Address</Label>
                     <GooglePlacesAutocomplete value={address} onChange={setAddress} placeholder="Full address" />
@@ -441,19 +457,22 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
                 </>
               )}
 
-              <div className="space-y-2 pt-1">
-                <div className="flex items-center gap-2">
-                  <DollarSign className="h-4 w-4 text-primary" />
-                  <Label>Shift Rates</Label>
+              {/* Rates: hidden for W-2 employer (no billing tracked) */}
+              {engagementType !== 'w2' && (
+                <div className="space-y-2 pt-1">
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-primary" />
+                    <Label>Shift Rates</Label>
+                  </div>
+                  <RatesEditor
+                    rates={rates}
+                    onChange={setRates}
+                    showCard={false}
+                    compact
+                  />
+                  <p className="text-xs text-muted-foreground">The rates you set become the defaults for new shifts at this clinic — one less thing to enter each time.</p>
                 </div>
-                <RatesEditor
-                  rates={rates}
-                  onChange={setRates}
-                  showCard={false}
-                  compact
-                />
-                <p className="text-xs text-muted-foreground">The rates you set become the defaults for new shifts at this clinic — one less thing to enter each time.</p>
-              </div>
+              )}
             </>
           )}
 
