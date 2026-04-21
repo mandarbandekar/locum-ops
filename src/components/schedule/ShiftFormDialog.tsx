@@ -344,8 +344,28 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
             selected={selectedDates}
             onSelect={(dates) => setSelectedDates(dates || [])}
             defaultMonth={defaultMonth ?? selectedDates[0] ?? defaultDate ?? new Date()}
-            modifiers={{ booked: bookedDateObjects }}
-            modifiersClassNames={{ booked: "bg-red-100 text-red-700 font-semibold hover:bg-red-200 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-900/50 aria-selected:!bg-primary aria-selected:!text-primary-foreground" }}
+            modifiers={{ booked: bookedDateObjects, blocked: blockedDateObjects }}
+            modifiersClassNames={{
+              booked: "bg-red-100 text-red-700 font-semibold hover:bg-red-200 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-900/50 aria-selected:!bg-primary aria-selected:!text-primary-foreground",
+              blocked: "bg-amber-50 dark:bg-amber-950/30 aria-selected:!bg-primary aria-selected:!text-primary-foreground",
+            }}
+            components={{
+              DayContent: ({ date }) => {
+                const key = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+                const blockType = blockedDateIconMap.get(key);
+                if (blockType) {
+                  return (
+                    <span className="relative flex items-center justify-center w-full h-full">
+                      <span>{date.getDate()}</span>
+                      <span className="absolute -top-0.5 -right-0.5 text-[9px] leading-none pointer-events-none">
+                        {blockTypeIconLookup[blockType]}
+                      </span>
+                    </span>
+                  );
+                }
+                return <>{date.getDate()}</>;
+              },
+            }}
             className={cn("p-1 pointer-events-auto")}
           />
         </div>
@@ -363,6 +383,16 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
           <div className="flex items-center gap-1.5 mt-0.5">
             <span className="inline-block h-2.5 w-2.5 rounded-full bg-red-200 border border-red-300 dark:bg-red-900/60 dark:border-red-700" />
             <span className="text-[11px] text-muted-foreground">Already has a shift</span>
+          </div>
+        )}
+        {usedBlockTypes.length > 0 && (
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 mt-0.5">
+            {usedBlockTypes.map(b => (
+              <span key={b.value} className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                <span className="text-sm leading-none">{b.icon}</span>
+                {b.label}
+              </span>
+            ))}
           </div>
         )}
       </div>
