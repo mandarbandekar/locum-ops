@@ -11,6 +11,8 @@ import { Plus, Search, Trash2, MapPin, AlertTriangle, LayoutGrid, List, Mail, Ca
 import { AddFacilityDialog } from '@/components/AddFacilityDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
+import { getEngagementPill } from '@/lib/engagementOptions';
+import { cn } from '@/lib/utils';
 import type { Facility } from '@/types';
 
 export default function FacilitiesPage() {
