@@ -111,11 +111,41 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   const { updateTerms } = useData();
   const isMultiMode = !existing;
 
-  // Reset step when dialog opens for new shift
+  // Reset all form state when dialog opens, so stale values from a previous
+  // session don't leak into a new shift entry (or a different shift edit).
   useEffect(() => {
-    if (open && !existing) {
-      setStep(1);
+    if (!open) return;
+    if (existing) {
+      setFacilityId(existing.facility_id || facilities[0]?.id || '');
+      setSelectedDates([new Date(existing.start_datetime)]);
+      setStartTime(format(new Date(existing.start_datetime), 'HH:mm'));
+      setEndTime(format(new Date(existing.end_datetime), 'HH:mm'));
+      setRate(existing.rate_applied?.toString() || '');
+      setNotes(existing.notes || '');
+      setColor(existing.color || 'blue');
+      setShowNotes(!!existing.notes);
+    } else {
+      setFacilityId(facilities[0]?.id || '');
+      setSelectedDates(defaultDate ? [defaultDate] : []);
+      setStartTime(defaultStartTime || '08:00');
+      setEndTime(
+        defaultStartTime
+          ? format(new Date(2026, 0, 1, parseInt(defaultStartTime.split(':')[0]) + 1, parseInt(defaultStartTime.split(':')[1] || '0')), 'HH:mm')
+          : '18:00'
+      );
+      setRate('');
+      setNotes('');
+      setColor('blue');
+      setShowNotes(false);
     }
+    setSelectedRateKey('');
+    setIsCustomRate(false);
+    setCustomRateLabel('');
+    setSaveCustomRate(true);
+    setShowAddFacility(false);
+    setIsSubmitting(false);
+    setStep(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, existing]);
 
   const rateOptions = useMemo(() => buildRateOptions(terms, facilityId), [terms, facilityId]);
