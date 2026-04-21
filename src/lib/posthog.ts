@@ -12,6 +12,8 @@ export function initPostHog() {
     person_profiles: 'identified_only',
     capture_pageview: false, // we capture manually on route changes
     capture_pageleave: true,
+    autocapture: false,
+    disable_session_recording: true,
   });
   initialized = true;
 }
