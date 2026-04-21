@@ -1,27 +1,30 @@
 
 
-## Bug: Add Shift calendar always opens on today's month
+## Bug: Clicked date cell isn't pre-selected in Add Shift dialog
 
-When you've navigated the schedule to (say) February but tap **Add Shift** from the header, the dialog's calendar opens on the current real-world month instead of February. You then have to page back to find your dates.
+When you click a specific day cell on the month calendar to add a shift, the dialog opens but that date isn't pre-selected — you have to click it again inside the dialog's calendar.
 
 ## Root cause
-`SchedulePage` tracks the viewed month in `currentDate`, but it doesn't pass that to `ShiftFormDialog`. The dialog's `<Calendar mode="multiple">` falls back to react-day-picker's default, which is today.
+`SchedulePage` opens the shift dialog on cell click but only passes `defaultMonth` (or nothing useful for `defaultDate`). The dialog's reset effect initializes `selectedDates` from `defaultDate ? [defaultDate] : []`, so when `defaultDate` is missing the multi-date calendar starts empty.
 
 ## Fix
 
-### `src/components/schedule/ShiftFormDialog.tsx`
-- Add an optional `defaultMonth?: Date` prop.
-- Pass `defaultMonth={defaultMonth ?? selectedDates[0] ?? defaultDate ?? new Date()}` to both `<Calendar>` instances (the multi-date calendar in step 2 and the single-date popover calendar in edit mode).
-
 ### `src/pages/SchedulePage.tsx`
-- Pass `defaultMonth={currentDate}` to the Add Shift `<ShiftFormDialog>` (the one bound to `showAdd`). Edit-mode dialog can keep its existing behavior since it centers on the shift's date.
+- Track the clicked cell date in a new state (e.g. `addShiftDate: Date | undefined`).
+- In the month/week/day cell click handlers that currently open the Add Shift dialog, set `addShiftDate` to the clicked date before opening.
+- Pass `defaultDate={addShiftDate}` to the Add Shift `<ShiftFormDialog>` (alongside the existing `defaultMonth`).
+- Clear `addShiftDate` when the dialog closes so the next header-triggered "Add Shift" opens clean.
+
+### `src/components/schedule/ShiftFormDialog.tsx`
+- No structural change needed — the existing reset-on-open effect already seeds `selectedDates` from `defaultDate`. Verify it runs when `defaultDate` changes between opens (add `defaultDate` to the effect's dependency array if missing).
 
 ## What this does NOT change
-- Day-cell click behavior (still passes `defaultDate` for that specific day).
-- Selected dates / form state reset behavior from the recent fix.
+- Header "Add Shift" button still opens with no preselected date (just the viewed month).
+- Edit mode behavior unchanged.
+- Conflict detection, rates, form reset logic all unchanged.
 - No DB or API changes.
 
 ## Files touched
-- `src/components/schedule/ShiftFormDialog.tsx`
 - `src/pages/SchedulePage.tsx`
+- `src/components/schedule/ShiftFormDialog.tsx` (dependency-array tweak only, if needed)
 
