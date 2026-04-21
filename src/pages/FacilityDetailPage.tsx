@@ -22,6 +22,8 @@ import { FacilityConfirmationSettingsCard } from '@/components/schedule/Facility
 import { useClinicConfirmations } from '@/hooks/useClinicConfirmations';
 import { InvoicingPreferencesCard } from '@/components/facilities/InvoicingPreferencesCard';
 import { ClinicNotesCard } from '@/components/facilities/ClinicNotesCard';
+import { EngagementSelector } from '@/components/facilities/EngagementSelector';
+import type { EngagementType, TaxFormType } from '@/lib/engagementOptions';
 
 export default function FacilityDetailPage() {
   const { id } = useParams<{ id: string }>();

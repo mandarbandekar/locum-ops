@@ -34,6 +34,9 @@ export interface ManualFacilityInput {
   billing_week_end_day?: string;
   billing_anchor_date?: string;
   auto_generate_invoices?: boolean;
+  engagement_type?: 'direct' | 'third_party' | 'w2';
+  source_name?: string | null;
+  tax_form_type?: '1099' | 'w2' | null;
 }
 
 export interface ManualShiftInput {
@@ -56,6 +59,8 @@ export function useManualSetup() {
     setSaving(true);
     try {
       const prefix = (input.name || 'FAC').substring(0, 3).toUpperCase();
+      const engagementType = input.engagement_type ?? 'direct';
+      const isDirect = engagementType === 'direct';
       const { data, error } = await db('facilities').insert({
         user_id: user.id,
         name: input.name,
@@ -79,7 +84,10 @@ export function useManualSetup() {
         billing_cadence: input.billing_cadence || 'monthly',
         billing_cycle_anchor_date: input.billing_anchor_date || null,
         billing_week_end_day: input.billing_week_end_day || 'saturday',
-        auto_generate_invoices: input.auto_generate_invoices ?? true,
+        auto_generate_invoices: isDirect ? (input.auto_generate_invoices ?? true) : false,
+        engagement_type: engagementType,
+        source_name: input.source_name ?? null,
+        tax_form_type: input.tax_form_type ?? null,
       }).select().single();
 
       if (error) { console.error(error); toast.error(friendlyDbError(error)); return null; }
