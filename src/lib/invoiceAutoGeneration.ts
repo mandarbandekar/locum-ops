@@ -244,6 +244,121 @@ export function buildAutoInvoiceDraft(
 }
 
 /**
+ * Re-group automatic draft invoices for a facility under a new billing cadence.
+ *
+ * - Identifies the facility's automatic draft invoices and the shifts attached to them
+ * - Marks all those drafts for deletion (line items cascade)
+ * - Re-buckets the released shifts into new periods using `newCadence`
+ * - Skips any new period that's already on the suppressed-periods list
+ * - Returns the deletes/creates so the caller can apply them transactionally
+ *
+ * Sent / partial / paid / manual invoices are never touched.
+ */
+export function regroupDraftsForCadenceChange(
+  facility: Facility,
+  allShifts: Shift[],
+  existingInvoices: Invoice[],
+  existingLineItems: InvoiceLineItem[],
+  newCadence: BillingCadence,
+  suppressedPeriods: { facility_id: string; period_start: string; period_end: string }[] = [],
+  invoiceNumberFactory: (existing: Invoice[], prefix?: string) => string = (() => `${facility.invoice_prefix || 'INV'}-${Date.now()}`),
+): {
+  draftsToDelete: string[];
+  draftsToCreate: {
+    invoice: Omit<Invoice, 'id'>;
+    lineItems: Omit<InvoiceLineItem, 'id' | 'invoice_id'>[];
+  }[];
+} {
+  // Auto-drafts for this facility
+  const autoDrafts = existingInvoices.filter(inv =>
+    inv.facility_id === facility.id &&
+    inv.status === 'draft' &&
+    inv.generation_type === 'automatic'
+  );
+
+  if (autoDrafts.length === 0) {
+    return { draftsToDelete: [], draftsToCreate: [] };
+  }
+
+  const autoDraftIds = new Set(autoDrafts.map(d => d.id));
+
+  // Released shift IDs = shifts currently on those auto-drafts
+  const releasedShiftIds = new Set<string>();
+  for (const li of existingLineItems) {
+    if (li.shift_id && autoDraftIds.has(li.invoice_id)) {
+      releasedShiftIds.add(li.shift_id);
+    }
+  }
+
+  // Resolve to actual shift objects
+  const releasedShifts = allShifts.filter(s => releasedShiftIds.has(s.id));
+
+  // Group released shifts into new-cadence periods (keyed by period start ISO date)
+  type Bucket = { start: Date; end: Date; shifts: Shift[] };
+  const buckets = new Map<string, Bucket>();
+  for (const shift of releasedShifts) {
+    const period = getBillingPeriod(
+      newCadence,
+      new Date(shift.start_datetime),
+      facility.billing_week_end_day,
+      facility.billing_cycle_anchor_date,
+    );
+    const key = period.start.toISOString().slice(0, 10) + '|' + period.end.toISOString().slice(0, 10);
+    const existing = buckets.get(key);
+    if (existing) {
+      existing.shifts.push(shift);
+    } else {
+      buckets.set(key, { start: period.start, end: period.end, shifts: [shift] });
+    }
+  }
+
+  // Build draft objects, skipping suppressed periods
+  const draftsToCreate: { invoice: Omit<Invoice, 'id'>; lineItems: Omit<InvoiceLineItem, 'id' | 'invoice_id'>[] }[] = [];
+  // Simulate growing invoice list for unique numbering
+  const simulatedInvoices: Invoice[] = existingInvoices.filter(inv => !autoDraftIds.has(inv.id));
+
+  // Stable iteration order: by period start
+  const orderedBuckets = Array.from(buckets.values()).sort(
+    (a, b) => a.start.getTime() - b.start.getTime()
+  );
+
+  for (const bucket of orderedBuckets) {
+    const periodStartStr = bucket.start.toISOString().slice(0, 10);
+    const periodEndStr = bucket.end.toISOString().slice(0, 10);
+
+    const isSuppressed = suppressedPeriods.some(sp => {
+      if (sp.facility_id !== facility.id) return false;
+      const spStart = new Date(sp.period_start).toISOString().slice(0, 10);
+      const spEnd = new Date(sp.period_end).toISOString().slice(0, 10);
+      if (spStart !== periodStartStr) return false;
+      if (spEnd === periodEndStr) return true;
+      const diff = Math.abs(new Date(spEnd).getTime() - new Date(periodEndStr).getTime());
+      return diff <= 86400000;
+    });
+    if (isSuppressed) continue;
+
+    // Sort shifts inside the bucket
+    const sortedShifts = [...bucket.shifts].sort(
+      (a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime()
+    );
+
+    const invoiceNumber = invoiceNumberFactory(simulatedInvoices, facility.invoice_prefix);
+    const built = buildAutoInvoiceDraft(facility, sortedShifts, bucket.start, bucket.end, invoiceNumber);
+    // Force-mark cadence on the new invoice
+    built.invoice.billing_cadence = newCadence;
+    draftsToCreate.push(built);
+
+    // Add a placeholder so subsequent invoiceNumberFactory calls produce a fresh number
+    simulatedInvoices.push({ ...(built.invoice as Invoice), id: `pending-${simulatedInvoices.length}` });
+  }
+
+  return {
+    draftsToDelete: autoDrafts.map(d => d.id),
+    draftsToCreate,
+  };
+}
+
+/**
  * Check if a draft invoice can be sent.
  * Missing billing contact = warning only (draft still generated).
  * Missing sender details = blocks sending.
