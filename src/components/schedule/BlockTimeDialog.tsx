@@ -144,7 +144,7 @@ export function BlockTimeDialog({ open, onOpenChange, onSave, onDelete, existing
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar mode="single" selected={startDate} onSelect={d => { if (d) { setStartDate(d); if (d > endDate) setEndDate(d); } }} className="p-3 pointer-events-auto" />
+                  <Calendar mode="single" selected={startDate} onSelect={d => { if (d) { setStartDate(d); if (d > endDate) setEndDate(d); } }} modifiers={{ booked: bookedDateObjects }} modifiersClassNames={{ booked: BOOKED_CLASS }} className="p-3 pointer-events-auto" />
                 </PopoverContent>
               </Popover>
             </div>
@@ -158,11 +158,18 @@ export function BlockTimeDialog({ open, onOpenChange, onSave, onDelete, existing
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar mode="single" selected={endDate} onSelect={d => { if (d) setEndDate(d); }} disabled={d => d < startDate} className="p-3 pointer-events-auto" />
+                  <Calendar mode="single" selected={endDate} onSelect={d => { if (d) setEndDate(d); }} disabled={d => d < startDate} modifiers={{ booked: bookedDateObjects }} modifiersClassNames={{ booked: BOOKED_CLASS }} className="p-3 pointer-events-auto" />
                 </PopoverContent>
               </Popover>
             </div>
           </div>
+
+          {bookedDateObjects.length > 0 && (
+            <div className="flex items-center gap-2 -mt-2 text-xs text-muted-foreground">
+              <span className="inline-block h-2.5 w-2.5 rounded-full bg-red-200 dark:bg-red-900/60 ring-1 ring-red-400/60" />
+              <span>Has a scheduled shift — shown on both date pickers</span>
+            </div>
+          )}
 
           {!allDay && (
             <div className="grid grid-cols-2 gap-4">
