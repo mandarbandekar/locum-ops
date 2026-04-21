@@ -12,6 +12,7 @@ import {
   getSentInvoiceShiftIds,
   buildAutoInvoiceDraft,
   shouldGenerateDraftOnShiftAdd,
+  regroupDraftsForCadenceChange,
 } from '@/lib/invoiceAutoGeneration';
 import type { BillingCadence } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -195,12 +196,75 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
   }, [isDemo, user]);
 
   const updateFacility = useCallback(async (c: Facility) => {
-    if (isDemo) { setFacilities(prev => prev.map(x => x.id === c.id ? c : x)); return; }
+    const previous = facilities.find(f => f.id === c.id);
+    const cadenceChanged = !!previous && previous.billing_cadence !== c.billing_cadence;
+
+    if (isDemo) {
+      setFacilities(prev => prev.map(x => x.id === c.id ? c : x));
+      if (cadenceChanged) {
+        const { draftsToDelete, draftsToCreate } = regroupDraftsForCadenceChange(
+          c, shifts, invoices, lineItems, c.billing_cadence as BillingCadence,
+          suppressedPeriods, generateInvoiceNumber,
+        );
+        if (draftsToDelete.length > 0 || draftsToCreate.length > 0) {
+          const created = draftsToCreate.map(d => ({ ...d.invoice, id: generateId() } as Invoice));
+          const newLis: InvoiceLineItem[] = [];
+          created.forEach((inv, idx) => {
+            draftsToCreate[idx].lineItems.forEach(li => {
+              newLis.push({ ...li, id: generateId(), invoice_id: inv.id } as InvoiceLineItem);
+            });
+          });
+          setInvoices(prev => [...prev.filter(inv => !draftsToDelete.includes(inv.id)), ...created]);
+          setLineItems(prev => [...prev.filter(li => !draftsToDelete.includes(li.invoice_id)), ...newLis]);
+          toast.success(`Drafts reorganized: ${draftsToDelete.length} removed, ${created.length} created.`);
+        }
+      }
+      return;
+    }
     const { id, ...rest } = c;
     const { error } = await db('facilities').update(rest).eq('id', id);
     if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
     setFacilities(prev => prev.map(x => x.id === c.id ? c : x));
-  }, [isDemo]);
+
+    if (cadenceChanged) {
+      try {
+        const { draftsToDelete, draftsToCreate } = regroupDraftsForCadenceChange(
+          c, shifts, invoices, lineItems, c.billing_cadence as BillingCadence,
+          suppressedPeriods, generateInvoiceNumber,
+        );
+
+        if (draftsToDelete.length > 0) {
+          const { error: delErr } = await db('invoices').delete().in('id', draftsToDelete);
+          if (delErr) throw delErr;
+          setInvoices(prev => prev.filter(inv => !draftsToDelete.includes(inv.id)));
+          setLineItems(prev => prev.filter(li => !draftsToDelete.includes(li.invoice_id)));
+        }
+
+        let created = 0;
+        for (const draft of draftsToCreate) {
+          const { data: invRow, error: invErr } = await db('invoices')
+            .insert({ user_id: user!.id, ...draft.invoice }).select().single();
+          if (invErr) throw invErr;
+          const invoice = stripDbFields(invRow) as Invoice;
+          setInvoices(prev => [...prev, invoice]);
+          if (draft.lineItems.length > 0) {
+            const toInsert = draft.lineItems.map(item => ({ user_id: user!.id, invoice_id: invoice.id, ...item }));
+            const { data: liData, error: liErr } = await db('invoice_line_items').insert(toInsert).select();
+            if (liErr) throw liErr;
+            if (liData) setLineItems(prev => [...prev, ...(liData).map(stripDbFields) as InvoiceLineItem[]]);
+          }
+          created++;
+        }
+
+        if (draftsToDelete.length > 0 || created > 0) {
+          toast.success(`Drafts reorganized: ${draftsToDelete.length} removed, ${created} created under ${c.billing_cadence} cadence.`);
+        }
+      } catch (regroupErr) {
+        console.error('Cadence regroup failed:', regroupErr);
+        toast.error('Cadence saved, but reorganizing drafts failed. Please refresh.');
+      }
+    }
+  }, [isDemo, user, facilities, shifts, invoices, lineItems, suppressedPeriods]);
 
   const deleteFacility = useCallback(async (id: string) => {
     if (isDemo) {
