@@ -589,6 +589,7 @@ export default function SchedulePage() {
         onSave={handleSaveShift}
         defaultDate={addShiftDefaults.date}
         defaultStartTime={addShiftDefaults.startTime}
+        defaultMonth={currentDate}
       />
 
       {editShift && (
