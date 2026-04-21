@@ -68,10 +68,17 @@ export function OnboardingClinicForm({ onSaved }: Props) {
       toast.error('Please enter a clinic name');
       return;
     }
+    if (engagementType !== 'direct' && !sourceName.trim()) {
+      toast.error(engagementType === 'w2' ? 'Please select your employer' : 'Please select the platform or agency');
+      return;
+    }
     setSaving(true);
     try {
+      const isDirect = engagementType === 'direct';
       const prefix = getInitials(name);
       const rateFields = ratesToTermsFields(rates);
+      const effectiveTaxForm: TaxFormType | null =
+        engagementType === 'w2' ? 'w2' : engagementType === 'third_party' ? taxFormType : null;
 
       const facility = await addFacility({
         name: name.trim(),
@@ -86,8 +93,8 @@ export function OnboardingClinicForm({ onSaved }: Props) {
         clinic_access_info: '',
         invoice_prefix: prefix,
         invoice_due_days: invoiceDueDays,
-        invoice_name_to: effectiveBillingName.trim(),
-        invoice_email_to: effectiveBillingEmail.trim(),
+        invoice_name_to: isDirect ? effectiveBillingName.trim() : '',
+        invoice_email_to: isDirect ? effectiveBillingEmail.trim() : '',
         invoice_name_cc: '',
         invoice_email_cc: '',
         invoice_name_bcc: '',
@@ -95,10 +102,13 @@ export function OnboardingClinicForm({ onSaved }: Props) {
         billing_cadence: billingCadence,
         billing_cycle_anchor_date: null,
         billing_week_end_day: 'saturday',
-        auto_generate_invoices: true,
+        auto_generate_invoices: isDirect,
+        engagement_type: engagementType,
+        source_name: isDirect ? null : sourceName.trim() || null,
+        tax_form_type: effectiveTaxForm,
       });
 
-      if (rates.length > 0) {
+      if (engagementType !== 'w2' && rates.length > 0) {
         await updateTerms({
           id: generateId(),
           facility_id: facility.id,
@@ -110,20 +120,22 @@ export function OnboardingClinicForm({ onSaved }: Props) {
         });
       }
 
-      await saveConfirmationSettings({
-        id: '',
-        facility_id: facility.id,
-        primary_contact_name: schedulingContactName.trim(),
-        primary_contact_email: schedulingContactEmail.trim(),
-        secondary_contact_email: '',
-        monthly_enabled: true,
-        monthly_send_offset_days: 7,
-        preshift_enabled: false,
-        preshift_send_offset_days: 3,
-        auto_send_enabled: false,
-        auto_send_monthly: false,
-        auto_send_preshift: false,
-      });
+      if (isDirect) {
+        await saveConfirmationSettings({
+          id: '',
+          facility_id: facility.id,
+          primary_contact_name: schedulingContactName.trim(),
+          primary_contact_email: schedulingContactEmail.trim(),
+          secondary_contact_email: '',
+          monthly_enabled: true,
+          monthly_send_offset_days: 7,
+          preshift_enabled: false,
+          preshift_send_offset_days: 3,
+          auto_send_enabled: false,
+          auto_send_monthly: false,
+          auto_send_preshift: false,
+        });
+      }
 
       toast.success(`${name} added!`);
       onSaved();
