@@ -25,6 +25,8 @@ import type { PlaceSelection } from '@/components/GooglePlacesAutocomplete';
 import type { BillingCadence } from '@/lib/invoiceBillingDefaults';
 import { RatesEditor, type RateEntry } from '@/components/facilities/RatesEditor';
 import { ratesToTermsFields } from '@/components/facilities/RatesEditor';
+import { EngagementSelector } from '@/components/facilities/EngagementSelector';
+import type { EngagementType, TaxFormType } from '@/lib/engagementOptions';
 import { supabase } from '@/integrations/supabase/client';
 
 const STEP_META = [
