@@ -127,68 +127,85 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
           </>
         )}
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <Label>Billing contact name</Label>
-            <Input
-              value={billingNameTo}
-              onChange={e => setBillingNameTo(e.target.value)}
-              placeholder="e.g. Billing Dept"
-            />
-          </div>
-          <div>
-            <Label>Billing email</Label>
-            <Input
-              type="email"
-              value={billingEmail}
-              onChange={e => setBillingEmail(e.target.value)}
-              placeholder="billing@clinic.com"
-            />
-          </div>
+        {/* Engagement type selector */}
+        <div className="border-t border-border pt-4">
+          <EngagementSelector
+            engagementType={engagementType}
+            onEngagementTypeChange={setEngagementType}
+            sourceName={sourceName}
+            onSourceNameChange={setSourceName}
+            taxFormType={taxFormType}
+            onTaxFormTypeChange={setTaxFormType}
+            compact
+          />
         </div>
 
-        <div>
-          <Label>Default day rate</Label>
-          <div className="relative">
-            <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input
-              type="number"
-              value={weekdayRate}
-              onChange={e => setWeekdayRate(e.target.value)}
-              placeholder="e.g. 800"
-              className="pl-7"
-              min={0}
-              step={50}
-            />
+        {engagementType === 'direct' && (
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Billing contact name</Label>
+              <Input
+                value={billingNameTo}
+                onChange={e => setBillingNameTo(e.target.value)}
+                placeholder="e.g. Billing Dept"
+              />
+            </div>
+            <div>
+              <Label>Billing email</Label>
+              <Input
+                type="email"
+                value={billingEmail}
+                onChange={e => setBillingEmail(e.target.value)}
+                placeholder="billing@clinic.com"
+              />
+            </div>
           </div>
-          <p className="text-xs text-muted-foreground mt-1">You can add more rate types later in facility settings.</p>
-        </div>
+        )}
 
-        {/* Invoicing Preferences */}
-        <div className="border-t border-border pt-4 space-y-3">
-          <p className="text-sm font-medium text-foreground">Invoicing preferences</p>
+        {engagementType !== 'w2' && (
           <div>
-            <Label>Billing cadence</Label>
-            <Select value={billingCadence} onValueChange={(v: BillingCadence) => setBillingCadence(v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="daily">Daily</SelectItem>
-                <SelectItem value="weekly">Weekly (Mon–Sun)</SelectItem>
-                <SelectItem value="monthly">Monthly</SelectItem>
-              </SelectContent>
-            </Select>
-            {billingCadence === 'weekly' && (
-              <p className="text-xs text-muted-foreground mt-1">Billing week runs Monday through Sunday. Draft generates on the morning of your last scheduled shift that week.</p>
-            )}
-            {billingCadence === 'monthly' && (
-              <p className="text-xs text-muted-foreground mt-1">Draft generates on the morning of your last scheduled shift of the month.</p>
-            )}
-            {billingCadence === 'daily' && (
-              <p className="text-xs text-muted-foreground mt-1">A draft invoice is generated each morning you have a scheduled shift.</p>
-            )}
+            <Label>Default day rate</Label>
+            <div className="relative">
+              <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                type="number"
+                value={weekdayRate}
+                onChange={e => setWeekdayRate(e.target.value)}
+                placeholder="e.g. 800"
+                className="pl-7"
+                min={0}
+                step={50}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">You can add more rate types later in facility settings.</p>
           </div>
+        )}
 
-        </div>
+        {engagementType === 'direct' && (
+          <div className="border-t border-border pt-4 space-y-3">
+            <p className="text-sm font-medium text-foreground">Invoicing preferences</p>
+            <div>
+              <Label>Billing cadence</Label>
+              <Select value={billingCadence} onValueChange={(v: BillingCadence) => setBillingCadence(v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="daily">Daily</SelectItem>
+                  <SelectItem value="weekly">Weekly (Mon–Sun)</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                </SelectContent>
+              </Select>
+              {billingCadence === 'weekly' && (
+                <p className="text-xs text-muted-foreground mt-1">Billing week runs Monday through Sunday. Draft generates on the morning of your last scheduled shift that week.</p>
+              )}
+              {billingCadence === 'monthly' && (
+                <p className="text-xs text-muted-foreground mt-1">Draft generates on the morning of your last scheduled shift of the month.</p>
+              )}
+              {billingCadence === 'daily' && (
+                <p className="text-xs text-muted-foreground mt-1">A draft invoice is generated each morning you have a scheduled shift.</p>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       <Button onClick={handleSubmit} disabled={!name.trim() || saving} className="w-full" size="lg">
