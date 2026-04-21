@@ -19,6 +19,13 @@ import { useData } from '@/contexts/DataContext';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
+import {
+  ENGAGEMENT_LABELS,
+  THIRD_PARTY_PRESETS,
+  W2_EMPLOYER_PRESETS,
+  getShiftEngagementHelperText,
+  type EngagementType,
+} from '@/lib/engagementOptions';
 
 interface ShiftFormDialogProps {
   open: boolean;
