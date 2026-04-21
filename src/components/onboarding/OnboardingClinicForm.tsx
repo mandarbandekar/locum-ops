@@ -289,8 +289,10 @@ export function OnboardingClinicForm({ onSaved }: Props) {
 
           <p className="text-xs text-muted-foreground">You can add or update contacts anytime from the clinic detail page.</p>
         </div>
+        )}
 
-        {/* ── SECTION: Billing Preferences ── */}
+        {/* ── SECTION: Billing Preferences (direct only) ── */}
+        {engagementType === 'direct' && (
         <div className="space-y-4 border-t border-border pt-4">
           <div className="flex items-center gap-2">
             <Settings2 className="h-4 w-4 text-primary" />
@@ -362,6 +364,7 @@ export function OnboardingClinicForm({ onSaved }: Props) {
             </div>
           </div>
         </div>
+        )}
       </div>
 
       {/* Hidden button for parent to trigger save */}
