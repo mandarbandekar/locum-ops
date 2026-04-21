@@ -44,6 +44,7 @@ export interface UserProfile {
   dismissed_prompts: Record<string, boolean>;
   dashboard_intro_dismissed: boolean;
   dashboard_levelup_shown: boolean;
+  engagement_announcement_dismissed_at: string | null;
 }
 
 const DEFAULT_TERMS_FIELDS: TermsFieldsEnabled = {
@@ -80,6 +81,7 @@ export const DEFAULT_PROFILE: Omit<UserProfile, 'id' | 'user_id'> = {
   dismissed_prompts: {},
   dashboard_intro_dismissed: false,
   dashboard_levelup_shown: false,
+  engagement_announcement_dismissed_at: null,
 };
 
 interface UserProfileContextType {
@@ -195,6 +197,7 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
           dismissed_prompts: (d.dismissed_prompts as Record<string, boolean>) || {},
           dashboard_intro_dismissed: !!d.dashboard_intro_dismissed,
           dashboard_levelup_shown: !!d.dashboard_levelup_shown,
+          engagement_announcement_dismissed_at: d.engagement_announcement_dismissed_at ?? null,
         });
       } else {
         // Pull signup metadata from auth user to pre-populate profile
@@ -251,6 +254,7 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
             dismissed_prompts: {},
             dashboard_intro_dismissed: false,
             dashboard_levelup_shown: false,
+            engagement_announcement_dismissed_at: null,
           });
         }
       }
