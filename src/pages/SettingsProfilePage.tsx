@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SettingsNav } from '@/components/SettingsNav';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,8 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useUserProfile, type Profession } from '@/contexts/UserProfileContext';
 import { GooglePlacesAutocomplete } from '@/components/GooglePlacesAutocomplete';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { Save } from 'lucide-react';
+import { Save, MapPin } from 'lucide-react';
 
 const PROFESSIONS: { value: Profession; label: string }[] = [
   { value: 'vet', label: 'Veterinarian' },
@@ -34,6 +35,14 @@ export default function SettingsProfilePage() {
   const [timezone, setTimezone] = useState(profile?.timezone || '');
   const [currency, setCurrency] = useState(profile?.currency || 'USD');
   const [profession, setProfession] = useState<Profession>(profile?.profession || 'other');
+
+  const initialSame = !!(profile?.home_address && profile?.company_address &&
+    profile.home_address.trim() === profile.company_address.trim());
+  const [sameAsCompany, setSameAsCompany] = useState(initialSame);
+
+  useEffect(() => {
+    if (sameAsCompany) setHomeAddress(companyAddress);
+  }, [sameAsCompany, companyAddress]);
   
   const [saving, setSaving] = useState(false);
 
@@ -111,12 +120,45 @@ export default function SettingsProfilePage() {
             </div>
             <div>
               <Label>Home address (for mileage)</Label>
-              <GooglePlacesAutocomplete
-                value={homeAddress}
-                onChange={setHomeAddress}
-                placeholder="742 Evergreen Terrace, Portland, OR 97201"
-                helperText="Used to calculate driving distance to clinics. Not shared."
-              />
+              {sameAsCompany ? (
+                <div className="relative">
+                  <MapPin className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none z-10" />
+                  <Input
+                    value={companyAddress}
+                    disabled
+                    className="pl-8 text-muted-foreground"
+                    placeholder="742 Evergreen Terrace, Portland, OR 97201"
+                  />
+                </div>
+              ) : (
+                <GooglePlacesAutocomplete
+                  value={homeAddress}
+                  onChange={setHomeAddress}
+                  placeholder="742 Evergreen Terrace, Portland, OR 97201"
+                />
+              )}
+              <div className="flex items-center gap-2 mt-2">
+                <Checkbox
+                  id="same-as-company"
+                  checked={sameAsCompany}
+                  onCheckedChange={(checked) => {
+                    const next = checked === true;
+                    setSameAsCompany(next);
+                    if (next) {
+                      setHomeAddress(companyAddress);
+                    } else {
+                      setHomeAddress('');
+                    }
+                  }}
+                />
+                <label htmlFor="same-as-company" className="text-sm cursor-pointer select-none">
+                  Same as company address
+                </label>
+              </div>
+              {sameAsCompany && !companyAddress.trim() && (
+                <p className="text-xs text-destructive mt-1">Enter a company address first.</p>
+              )}
+              <p className="text-xs text-muted-foreground mt-1">Used to calculate driving distance to clinics. Not shared.</p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
