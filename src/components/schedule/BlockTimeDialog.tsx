@@ -40,7 +40,7 @@ export function BlockTimeDialog({ open, onOpenChange, onSave, onDelete, existing
   const bookedDateObjects = useMemo(() => {
     const seen = new Map<string, Date>();
     for (const s of shifts || []) {
-      const d = new Date(s.date);
+      const d = new Date(s.start_datetime);
       if (isNaN(d.getTime())) continue;
       const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
       if (!seen.has(key)) seen.set(key, new Date(d.getFullYear(), d.getMonth(), d.getDate()));
