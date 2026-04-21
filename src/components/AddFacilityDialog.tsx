@@ -719,7 +719,7 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
                   </Button>
                 )}
                 <Button type="button" size="sm" onClick={handleNext}>
-                  {step === coreSteps - 1 ? 'Add Facility' : (
+                  {(step === coreSteps - 1 || (engagementType !== 'direct' && step === 1)) ? 'Add Facility' : (
                     <>Next <ArrowRight className="ml-1 h-4 w-4" /></>
                   )}
                 </Button>
