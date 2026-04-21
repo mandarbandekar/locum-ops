@@ -193,7 +193,19 @@ export default function FacilitiesPage() {
                 >
                   <td className="p-3 font-medium">{c.name}</td>
                   <td className="p-3 text-muted-foreground hidden md:table-cell">{c.address}</td>
-                  <td className="p-3"><StatusBadge status={c.status} /></td>
+                  <td className="p-3">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <StatusBadge status={c.status} />
+                      {(() => {
+                        const pill = getEngagementPill(c);
+                        return (
+                          <span className={cn('inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium max-w-[120px] truncate', pill.className)}>
+                            {pill.label}
+                          </span>
+                        );
+                      })()}
+                    </div>
+                  </td>
                   <td className="p-3 hidden lg:table-cell">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <Badge variant="outline" className="text-[10px] px-1.5 py-0 capitalize">{c.billing_cadence || 'monthly'}</Badge>
