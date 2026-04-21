@@ -55,6 +55,9 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
   const [sameAsScheduling, setSameAsScheduling] = useState(false);
   const [billingCadence, setBillingCadence] = useState<BillingCadence>('monthly');
   const [invoiceDueDays, setInvoiceDueDays] = useState(15);
+  const [engagementType, setEngagementType] = useState<EngagementType>('direct');
+  const [sourceName, setSourceName] = useState('');
+  const [taxFormType, setTaxFormType] = useState<TaxFormType>('1099');
 
   // Step 4 enrichment state
   const [enrichRates, setEnrichRates] = useState<RateEntry[]>([]);
@@ -82,6 +85,7 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
     setInvoiceNameTo(''); setInvoiceEmailTo('');
     setSameAsScheduling(false);
     setBillingCadence('monthly'); setInvoiceDueDays(15);
+    setEngagementType('direct'); setSourceName(''); setTaxFormType('1099');
     
     setTechComputer(''); setTechWifi(''); setTechPims(''); setClinicAccess('');
     createdFacilityIdRef.current = null;
