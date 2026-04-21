@@ -44,6 +44,7 @@ import SettingsAccountPage from "@/pages/SettingsAccountPage";
 import PublicInvoicePage from "@/pages/PublicInvoicePage";
 import PublicConfirmationPage from "@/pages/PublicConfirmationPage";
 import NotFound from "./pages/NotFound";
+import { PostHogPageTracker } from "@/components/PostHogPageTracker";
 
 const queryClient = new QueryClient();
 
@@ -180,6 +181,7 @@ const App = () => (
         <Sonner />
         <AuthProvider>
           <BrowserRouter>
+            <PostHogPageTracker />
             <AuthGate />
           </BrowserRouter>
         </AuthProvider>
