@@ -32,6 +32,7 @@ interface ShiftFormDialogProps {
   embedded?: boolean;
   defaultDate?: Date;
   defaultStartTime?: string;
+  defaultMonth?: Date;
 }
 
 function buildRateOptions(terms: TermsSnapshot[], facilityId: string): RateEntry[] {
@@ -88,7 +89,7 @@ function StepIndicator({ step, isMobile }: { step: number; isMobile: boolean }) 
   );
 }
 
-export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms, existing, onSave, onDelete, embedded, defaultDate, defaultStartTime }: ShiftFormDialogProps) {
+export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms, existing, onSave, onDelete, embedded, defaultDate, defaultStartTime, defaultMonth }: ShiftFormDialogProps) {
   const [facilityId, setFacilityId] = useState(existing?.facility_id || facilities[0]?.id || '');
   const [selectedDates, setSelectedDates] = useState<Date[]>(
     existing ? [new Date(existing.start_datetime)] : defaultDate ? [defaultDate] : []
@@ -306,6 +307,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
             mode="multiple"
             selected={selectedDates}
             onSelect={(dates) => setSelectedDates(dates || [])}
+            defaultMonth={defaultMonth ?? selectedDates[0] ?? defaultDate ?? new Date()}
             modifiers={{ booked: bookedDateObjects }}
             modifiersClassNames={{ booked: "bg-destructive/20 text-destructive font-semibold" }}
             className={cn("p-1 pointer-events-auto")}
@@ -525,6 +527,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
                 mode="single"
                 selected={selectedDates[0]}
                 onSelect={(date) => date && setSelectedDates([date])}
+                defaultMonth={selectedDates[0] ?? defaultMonth ?? defaultDate ?? new Date()}
                 initialFocus
                 modifiers={{ booked: bookedDateObjects }}
                 modifiersClassNames={{ booked: "bg-destructive/20 text-destructive font-semibold" }}
