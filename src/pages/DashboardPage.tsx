@@ -709,7 +709,45 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Greeting moved into BriefingBanner */}
+      {/* Engagement-type announcement (one-time, pre-existing users with facilities) */}
+      {showEngagementAnnouncement && (
+        <div className="flex items-start gap-3 px-4 py-3 rounded-lg bg-primary/10 border border-primary/20 shrink-0 mb-2">
+          <Zap className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-[13px] font-semibold text-foreground mb-0.5">
+              New: track Roo, IndeVets, and W-2 shifts
+            </p>
+            <p className="text-[12.5px] text-muted-foreground leading-relaxed">
+              You can now log shifts from platforms like Roo and W-2 employers like Banfield alongside your direct relief work. Your existing facilities are marked as Direct — update any facility if you also work with it through a platform or employer.
+            </p>
+            <div className="flex items-center gap-2 mt-2">
+              <button
+                type="button"
+                onClick={() => navigate('/facilities')}
+                className="text-[12px] font-semibold text-primary hover:underline"
+              >
+                Update a facility →
+              </button>
+              <button
+                type="button"
+                onClick={dismissEngagementAnnouncement}
+                className="text-[12px] text-muted-foreground hover:text-foreground ml-2"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={dismissEngagementAnnouncement}
+            className="text-muted-foreground hover:text-foreground shrink-0"
+            aria-label="Dismiss"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
 
 
       {/* Getting Started */}
