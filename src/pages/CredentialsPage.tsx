@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { Compass, ShieldCheck, FileText, Award, RotateCcw, BookOpen, FolderOpen } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 
 import { ComplianceOverview } from '@/components/compliance/ComplianceOverview';
 import CredentialsList from '@/components/credentials/CredentialsList';
@@ -15,8 +14,6 @@ import { ComplianceOnboardingFlow } from '@/components/compliance/onboarding/Com
 import { useComplianceOnboarding } from '@/hooks/useComplianceOnboarding';
 import { useCredentials } from '@/hooks/useCredentials';
 import { useAuth } from '@/contexts/AuthContext';
-import { SpotlightTour, TourStep } from '@/components/SpotlightTour';
-import { useSpotlightTour } from '@/hooks/useSpotlightTour';
 
 type PrimaryTab = 'overview' | 'credentials' | 'renewals' | 'ce-tracker' | 'documents' | 'requirements';
 
@@ -28,53 +25,6 @@ const TABS: { value: PrimaryTab; label: string }[] = [
   { value: 'documents', label: 'Documents' },
   { value: 'requirements', label: 'Requirements' },
 ];
-
-const CREDENTIALS_TOUR_STEPS: TourStep[] = [
-  {
-    targetSelector: '[data-tour="cred-overview"]',
-    title: 'Compliance Dashboard',
-    description: 'Your compliance dashboard: see expiring credentials, CE progress, and renewal deadlines at a glance.',
-    placement: 'bottom',
-    icon: ShieldCheck,
-  },
-  {
-    targetSelector: '[data-tour="cred-credentials"]',
-    title: 'Credentials',
-    description: 'Track every license, DEA registration, USDA accreditation, and insurance policy. Get alerts before anything expires.',
-    placement: 'bottom',
-    icon: Award,
-  },
-  {
-    targetSelector: '[data-tour="cred-renewals"]',
-    title: 'Renewals',
-    description: 'Upcoming renewal deadlines sorted by urgency. Direct links to renewal portals so you can renew without searching.',
-    placement: 'bottom',
-    icon: RotateCcw,
-  },
-  {
-    targetSelector: '[data-tour="cred-ce"]',
-    title: 'CE Hub',
-    description: 'Log continuing education hours, track progress toward requirements, and store certificates. Never lose a CE record again.',
-    placement: 'bottom',
-    icon: BookOpen,
-  },
-  {
-    targetSelector: '[data-tour="cred-documents"]',
-    title: 'Document Vault',
-    description: 'Your digital credential vault. Upload and organize copies of licenses, certificates, and insurance docs — always accessible.',
-    placement: 'bottom',
-    icon: FolderOpen,
-  },
-];
-
-const TAB_TOUR_ATTR: Record<PrimaryTab, string> = {
-  overview: 'cred-overview',
-  credentials: 'cred-credentials',
-  renewals: 'cred-renewals',
-  'ce-tracker': 'cred-ce',
-  documents: 'cred-documents',
-  requirements: '',
-};
 
 export default function CredentialsPage() {
   const [activeTab, setActiveTab] = useState<PrimaryTab>('overview');
