@@ -38,14 +38,21 @@ export function InvoicingPreferencesCard({ facility, onUpdate }: InvoicingPrefer
   const [emailCc, setEmailCc] = useState(facility.invoice_email_cc || '');
   const [nameBcc, setNameBcc] = useState(facility.invoice_name_bcc || '');
   const [emailBcc, setEmailBcc] = useState(facility.invoice_email_bcc || '');
+  const [showCadenceConfirm, setShowCadenceConfirm] = useState(false);
+
+  const { invoices } = useData();
 
   const hasBillingContact = !!(facility.invoice_name_to?.trim() && facility.invoice_email_to?.trim());
   const editingHasBillingContact = !!(nameTo.trim() && emailTo.trim());
 
-  const handleSave = () => {
-    // Block auto-generate if no billing contact
-    
+  // Count automatic drafts that would be regrouped
+  const autoDraftCount = invoices.filter(
+    (inv) => inv.facility_id === facility.id && inv.status === 'draft' && inv.generation_type === 'automatic'
+  ).length;
 
+  const cadenceChanged = billingCadence !== (facility.billing_cadence || 'monthly');
+
+  const persistChanges = () => {
     onUpdate({
       ...facility,
       billing_cadence: billingCadence,
@@ -63,6 +70,19 @@ export function InvoicingPreferencesCard({ facility, onUpdate }: InvoicingPrefer
     });
     setEditing(false);
     toast.success('Invoicing preferences saved');
+  };
+
+  const handleSave = () => {
+    if (cadenceChanged && autoDraftCount > 0) {
+      setShowCadenceConfirm(true);
+      return;
+    }
+    persistChanges();
+  };
+
+  const confirmCadenceChange = () => {
+    setShowCadenceConfirm(false);
+    persistChanges();
   };
 
   const handleCancel = () => {
