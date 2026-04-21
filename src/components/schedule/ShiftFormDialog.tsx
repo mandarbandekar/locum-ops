@@ -306,6 +306,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     setIsSubmitting(true);
     try {
       await saveCustomRateToTerms();
+      const overridePayload = computeOverridePayload();
       if (existing) {
         const date = format(selectedDates[0] || new Date(), 'yyyy-MM-dd');
         await onSave({
@@ -314,6 +315,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
           start_datetime: new Date(`${date}T${startTime}:00`).toISOString(),
           end_datetime: new Date(`${date}T${endTime}:00`).toISOString(),
           rate_applied: Number(rate), notes, color,
+          ...overridePayload,
         });
       } else {
         const orderedDates = [...selectedDates].sort((a, b) => a.getTime() - b.getTime());
@@ -324,6 +326,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
             start_datetime: new Date(`${date}T${startTime}:00`).toISOString(),
             end_datetime: new Date(`${date}T${endTime}:00`).toISOString(),
             rate_applied: Number(rate), notes, color,
+            ...overridePayload,
           });
         }
       }
