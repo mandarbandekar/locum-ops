@@ -117,6 +117,20 @@ export default function DashboardPage() {
     });
   }, [profile, updateProfile]);
 
+  // Engagement-type announcement banner — show once to pre-existing users with at least one facility
+  const showEngagementAnnouncement = useMemo(() => {
+    if (isDemo || !profile || !user?.created_at) return false;
+    if (profile.engagement_announcement_dismissed_at) return false;
+    if (facilities.length === 0) return false;
+    const createdAt = parseISO(user.created_at);
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return createdAt < startOfToday;
+  }, [isDemo, profile, user?.created_at, facilities.length, now]);
+
+  const dismissEngagementAnnouncement = useCallback(async () => {
+    await updateProfile({ engagement_announcement_dismissed_at: new Date().toISOString() });
+  }, [updateProfile]);
+
   const showGettingStarted = !profile?.dismissed_prompts?.getting_started && (facilities.length === 0 || shifts.length === 0);
 
   useEffect(() => {
