@@ -340,6 +340,94 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
 
   const facilityName = facilities.find(f => f.id === facilityId)?.name || '';
 
+  /* ─── Engagement helper line + per-shift override ─── */
+  const renderEngagementHelper = () => {
+    const fac = facilities.find(f => f.id === facilityId);
+    if (!fac) return null;
+    const helper = getShiftEngagementHelperText({
+      engagement_type: (fac.engagement_type || 'direct') as EngagementType,
+      source_name: fac.source_name ?? null,
+      tax_form_type: (fac.tax_form_type ?? null) as 'w2' | '1099' | null,
+    });
+    const presets =
+      engagementOverride === 'third_party'
+        ? THIRD_PARTY_PRESETS
+        : engagementOverride === 'w2'
+        ? W2_EMPLOYER_PRESETS
+        : [];
+    const isOtherSource =
+      engagementOverride !== 'direct' &&
+      sourceOverride !== '' &&
+      !(presets as readonly string[]).includes(sourceOverride);
+    return (
+      <div className="rounded-md bg-muted/50 border border-border px-3 py-2 text-[11px] leading-snug">
+        <div className="flex items-start justify-between gap-2">
+          <p className="text-muted-foreground flex-1">{helper}</p>
+          <button
+            type="button"
+            onClick={() => setShowEngagementOverride(s => !s)}
+            className="text-primary hover:underline font-medium shrink-0"
+          >
+            {showEngagementOverride ? 'Hide' : 'Change for this shift only'}
+          </button>
+        </div>
+        {showEngagementOverride && (
+          <div className="mt-2 space-y-2 pt-2 border-t border-border/60">
+            <div className="grid grid-cols-3 gap-1.5">
+              {(['direct', 'third_party', 'w2'] as EngagementType[]).map(t => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => {
+                    setEngagementOverride(t);
+                    if (t === 'direct') setSourceOverride('');
+                  }}
+                  className={cn(
+                    'rounded-md border px-2 py-1.5 text-[11px] font-medium transition-colors text-center',
+                    engagementOverride === t
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-background text-foreground border-border hover:bg-muted',
+                  )}
+                >
+                  {ENGAGEMENT_LABELS[t]}
+                </button>
+              ))}
+            </div>
+            {engagementOverride !== 'direct' && (
+              <div className="space-y-1.5">
+                <Select
+                  value={isOtherSource ? '__other__' : (sourceOverride || '')}
+                  onValueChange={v => {
+                    if (v === '__other__') setSourceOverride(' ');
+                    else setSourceOverride(v);
+                  }}
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder={engagementOverride === 'w2' ? 'Employer name' : 'Platform / agency'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {presets.map(p => (
+                      <SelectItem key={p} value={p}>{p}</SelectItem>
+                    ))}
+                    <SelectItem value="__other__">Other…</SelectItem>
+                  </SelectContent>
+                </Select>
+                {isOtherSource && (
+                  <Input
+                    value={sourceOverride}
+                    onChange={e => setSourceOverride(e.target.value)}
+                    placeholder={engagementOverride === 'w2' ? 'Employer name' : 'Platform / agency name'}
+                    className="h-8 text-xs"
+                  />
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   /* ─── Step 1: Facility ─── */
   const renderStep1 = () => (
     <div className="flex flex-col gap-3">
