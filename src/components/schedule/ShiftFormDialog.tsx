@@ -464,6 +464,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
           onCreated={(newId) => handleFacilityChange(newId)}
         />
       </div>
+      {renderEngagementHelper()}
       <div className="flex justify-end pt-2">
         <Button type="button" onClick={() => setStep(2)} disabled={!facilityId} className="h-10 min-w-[120px]">
           Next <ChevronRight className="h-4 w-4 ml-1" />
@@ -790,6 +791,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
               </SelectContent>
             </Select>
             <AddFacilityDialog open={showAddFacility} onOpenChange={setShowAddFacility} onCreated={(newId) => handleFacilityChange(newId)} />
+            {renderEngagementHelper()}
           </div>
 
           <div>
