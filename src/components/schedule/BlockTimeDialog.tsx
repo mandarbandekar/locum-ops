@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,9 @@ import { CalendarIcon, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { TimeBlock, BLOCK_TYPES, BLOCK_COLORS, BlockType } from '@/types';
+import { useData } from '@/contexts/DataContext';
+
+const BOOKED_CLASS = "bg-red-100 text-red-700 font-semibold hover:bg-red-200 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-900/50 aria-selected:!bg-primary aria-selected:!text-primary-foreground";
 
 interface BlockTimeDialogProps {
   open: boolean;
@@ -23,6 +26,7 @@ interface BlockTimeDialogProps {
 }
 
 export function BlockTimeDialog({ open, onOpenChange, onSave, onDelete, existing, defaultDate }: BlockTimeDialogProps) {
+  const { shifts } = useData();
   const [title, setTitle] = useState('');
   const [blockType, setBlockType] = useState<BlockType>('vacation');
   const [startDate, setStartDate] = useState<Date>(new Date());
@@ -32,6 +36,17 @@ export function BlockTimeDialog({ open, onOpenChange, onSave, onDelete, existing
   const [endTime, setEndTime] = useState('17:00');
   const [notes, setNotes] = useState('');
   const [color, setColor] = useState('gray');
+
+  const bookedDateObjects = useMemo(() => {
+    const seen = new Map<string, Date>();
+    for (const s of shifts || []) {
+      const d = new Date(s.start_datetime);
+      if (isNaN(d.getTime())) continue;
+      const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+      if (!seen.has(key)) seen.set(key, new Date(d.getFullYear(), d.getMonth(), d.getDate()));
+    }
+    return Array.from(seen.values());
+  }, [shifts]);
 
   useEffect(() => {
     if (existing) {
@@ -129,7 +144,7 @@ export function BlockTimeDialog({ open, onOpenChange, onSave, onDelete, existing
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar mode="single" selected={startDate} onSelect={d => { if (d) { setStartDate(d); if (d > endDate) setEndDate(d); } }} className="p-3 pointer-events-auto" />
+                  <Calendar mode="single" selected={startDate} onSelect={d => { if (d) { setStartDate(d); if (d > endDate) setEndDate(d); } }} modifiers={{ booked: bookedDateObjects }} modifiersClassNames={{ booked: BOOKED_CLASS }} className="p-3 pointer-events-auto" />
                 </PopoverContent>
               </Popover>
             </div>
@@ -143,11 +158,18 @@ export function BlockTimeDialog({ open, onOpenChange, onSave, onDelete, existing
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar mode="single" selected={endDate} onSelect={d => { if (d) setEndDate(d); }} disabled={d => d < startDate} className="p-3 pointer-events-auto" />
+                  <Calendar mode="single" selected={endDate} onSelect={d => { if (d) setEndDate(d); }} disabled={d => d < startDate} modifiers={{ booked: bookedDateObjects }} modifiersClassNames={{ booked: BOOKED_CLASS }} className="p-3 pointer-events-auto" />
                 </PopoverContent>
               </Popover>
             </div>
           </div>
+
+          {bookedDateObjects.length > 0 && (
+            <div className="flex items-center gap-2 -mt-2 text-xs text-muted-foreground">
+              <span className="inline-block h-2.5 w-2.5 rounded-full bg-red-200 dark:bg-red-900/60 ring-1 ring-red-400/60" />
+              <span>Has a scheduled shift — shown on both date pickers</span>
+            </div>
+          )}
 
           {!allDay && (
             <div className="grid grid-cols-2 gap-4">
