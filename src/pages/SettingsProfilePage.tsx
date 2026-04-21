@@ -35,6 +35,14 @@ export default function SettingsProfilePage() {
   const [timezone, setTimezone] = useState(profile?.timezone || '');
   const [currency, setCurrency] = useState(profile?.currency || 'USD');
   const [profession, setProfession] = useState<Profession>(profile?.profession || 'other');
+
+  const initialSame = !!(profile?.home_address && profile?.company_address &&
+    profile.home_address.trim() === profile.company_address.trim());
+  const [sameAsCompany, setSameAsCompany] = useState(initialSame);
+
+  useEffect(() => {
+    if (sameAsCompany) setHomeAddress(companyAddress);
+  }, [sameAsCompany, companyAddress]);
   
   const [saving, setSaving] = useState(false);
 
