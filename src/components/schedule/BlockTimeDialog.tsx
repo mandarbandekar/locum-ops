@@ -26,6 +26,7 @@ interface BlockTimeDialogProps {
 }
 
 export function BlockTimeDialog({ open, onOpenChange, onSave, onDelete, existing, defaultDate }: BlockTimeDialogProps) {
+  const { shifts } = useData();
   const [title, setTitle] = useState('');
   const [blockType, setBlockType] = useState<BlockType>('vacation');
   const [startDate, setStartDate] = useState<Date>(new Date());
@@ -35,6 +36,17 @@ export function BlockTimeDialog({ open, onOpenChange, onSave, onDelete, existing
   const [endTime, setEndTime] = useState('17:00');
   const [notes, setNotes] = useState('');
   const [color, setColor] = useState('gray');
+
+  const bookedDateObjects = useMemo(() => {
+    const seen = new Map<string, Date>();
+    for (const s of shifts || []) {
+      const d = new Date(s.date);
+      if (isNaN(d.getTime())) continue;
+      const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+      if (!seen.has(key)) seen.set(key, new Date(d.getFullYear(), d.getMonth(), d.getDate()));
+    }
+    return Array.from(seen.values());
+  }, [shifts]);
 
   useEffect(() => {
     if (existing) {
