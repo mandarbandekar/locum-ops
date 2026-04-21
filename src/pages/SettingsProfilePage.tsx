@@ -7,8 +7,11 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useUserProfile, type Profession } from '@/contexts/UserProfileContext';
 import { GooglePlacesAutocomplete } from '@/components/GooglePlacesAutocomplete';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { Save } from 'lucide-react';
+import { Save, MapPin } from 'lucide-react';
+import { useEffect } from 'react';
 
 const PROFESSIONS: { value: Profession; label: string }[] = [
   { value: 'vet', label: 'Veterinarian' },
