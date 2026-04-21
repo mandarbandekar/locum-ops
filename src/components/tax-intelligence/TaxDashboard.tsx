@@ -228,8 +228,6 @@ export default function TaxDashboard({ profile, onEditProfile, onSaveProfile }: 
         </CollapsibleContent>
       </Collapsible>
 
-      {/* ═══ ENTITY COMPARISON — only for non-S-Corp users ═══ */}
-      {!isScorp && <EntityComparisonCard profile={profile} />}
 
       {/* ═══ QUARTERLY TIMELINE ═══ */}
       <div>
