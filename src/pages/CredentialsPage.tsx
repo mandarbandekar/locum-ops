@@ -30,7 +30,7 @@ export default function CredentialsPage() {
   const [activeTab, setActiveTab] = useState<PrimaryTab>('overview');
   const [dialogOpen, setDialogOpen] = useState(false);
   const { isDemo } = useAuth();
-  const credTour = useSpotlightTour('locumops_tour_credentials');
+  
 
   const {
     showWelcome,
