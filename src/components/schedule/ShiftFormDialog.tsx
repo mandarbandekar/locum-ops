@@ -119,6 +119,18 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   const { updateTerms, timeBlocks } = useData();
   const isMultiMode = !existing;
 
+  // Engagement override state (per-shift)
+  const facilityForEngagement = facilities.find(f => f.id === facilityId);
+  const facilityDefaultEngagement: EngagementType = (facilityForEngagement?.engagement_type || 'direct') as EngagementType;
+  const facilityDefaultSource: string | null = facilityForEngagement?.source_name ?? null;
+  const [showEngagementOverride, setShowEngagementOverride] = useState(false);
+  const [engagementOverride, setEngagementOverride] = useState<EngagementType>(
+    (existing?.engagement_type_override as EngagementType) || facilityDefaultEngagement,
+  );
+  const [sourceOverride, setSourceOverride] = useState<string>(
+    existing?.source_name_override ?? facilityDefaultSource ?? '',
+  );
+
   // Reset all form state when dialog opens, so stale values from a previous
   // session don't leak into a new shift entry (or a different shift edit).
   useEffect(() => {
@@ -132,6 +144,12 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
       setNotes(existing.notes || '');
       setColor(existing.color || 'blue');
       setShowNotes(!!existing.notes);
+      setShowEngagementOverride(!!existing.engagement_type_override);
+      const fac = facilities.find(f => f.id === existing.facility_id);
+      setEngagementOverride(
+        (existing.engagement_type_override as EngagementType) || (fac?.engagement_type as EngagementType) || 'direct',
+      );
+      setSourceOverride(existing.source_name_override ?? fac?.source_name ?? '');
     } else {
       setFacilityId(facilities[0]?.id || '');
       setSelectedDates(defaultDate ? [defaultDate] : []);
@@ -145,6 +163,10 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
       setNotes('');
       setColor('blue');
       setShowNotes(false);
+      const fac = facilities.find(f => f.id === (facilities[0]?.id || ''));
+      setShowEngagementOverride(false);
+      setEngagementOverride((fac?.engagement_type as EngagementType) || 'direct');
+      setSourceOverride(fac?.source_name ?? '');
     }
     setSelectedRateKey('');
     setIsCustomRate(false);
