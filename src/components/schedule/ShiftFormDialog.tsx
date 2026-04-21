@@ -11,7 +11,7 @@ import { AlertTriangle, Trash2, CalendarDays, DollarSign, Clock, Building2, Stic
 import { AddFacilityDialog } from '@/components/AddFacilityDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
-import { SHIFT_COLORS, ShiftColor, TermsSnapshot, Shift } from '@/types';
+import { SHIFT_COLORS, ShiftColor, TermsSnapshot, Shift, BLOCK_TYPES, BlockType } from '@/types';
 import { detectShiftConflicts } from '@/lib/businessLogic';
 import { cn } from '@/lib/utils';
 import { termsToRates, RateEntry } from '@/components/facilities/RatesEditor';
@@ -109,7 +109,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   const [step, setStep] = useState(1);
 
   const isMobile = useIsMobile();
-  const { updateTerms } = useData();
+  const { updateTerms, timeBlocks } = useData();
   const isMultiMode = !existing;
 
   // Reset all form state when dialog opens, so stale values from a previous
@@ -165,6 +165,42 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
       return new Date(d.getFullYear(), d.getMonth(), d.getDate());
     }),
   [shifts]);
+
+  // Map of YYYY-MM-DD → block type for time-blocked days (vacation, family, etc.)
+  const blockedDateIconMap = useMemo(() => {
+    const map = new Map<string, BlockType>();
+    (timeBlocks || []).forEach(tb => {
+      const start = new Date(tb.start_datetime);
+      const end = new Date(tb.end_datetime);
+      const cur = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+      const last = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+      while (cur.getTime() <= last.getTime()) {
+        const key = `${cur.getFullYear()}-${cur.getMonth()}-${cur.getDate()}`;
+        if (!map.has(key)) map.set(key, tb.block_type);
+        cur.setDate(cur.getDate() + 1);
+      }
+    });
+    return map;
+  }, [timeBlocks]);
+
+  const blockedDateObjects = useMemo(() => {
+    return Array.from(blockedDateIconMap.keys()).map(k => {
+      const [y, m, d] = k.split('-').map(Number);
+      return new Date(y, m, d);
+    });
+  }, [blockedDateIconMap]);
+
+  const blockTypeIconLookup = useMemo(() => {
+    const m: Record<string, string> = {};
+    BLOCK_TYPES.forEach(b => { m[b.value] = b.icon; });
+    return m;
+  }, []);
+
+  const usedBlockTypes = useMemo(() => {
+    const set = new Set<BlockType>();
+    blockedDateIconMap.forEach(v => set.add(v));
+    return BLOCK_TYPES.filter(b => set.has(b.value));
+  }, [blockedDateIconMap]);
 
   const handleFacilityChange = (newFacilityId: string) => {
     setFacilityId(newFacilityId);
@@ -308,8 +344,28 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
             selected={selectedDates}
             onSelect={(dates) => setSelectedDates(dates || [])}
             defaultMonth={defaultMonth ?? selectedDates[0] ?? defaultDate ?? new Date()}
-            modifiers={{ booked: bookedDateObjects }}
-            modifiersClassNames={{ booked: "bg-red-100 text-red-700 font-semibold hover:bg-red-200 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-900/50 aria-selected:!bg-primary aria-selected:!text-primary-foreground" }}
+            modifiers={{ booked: bookedDateObjects, blocked: blockedDateObjects }}
+            modifiersClassNames={{
+              booked: "bg-red-100 text-red-700 font-semibold hover:bg-red-200 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-900/50 aria-selected:!bg-primary aria-selected:!text-primary-foreground",
+              blocked: "bg-amber-50 dark:bg-amber-950/30 aria-selected:!bg-primary aria-selected:!text-primary-foreground",
+            }}
+            components={{
+              DayContent: ({ date }) => {
+                const key = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+                const blockType = blockedDateIconMap.get(key);
+                if (blockType) {
+                  return (
+                    <span className="relative flex items-center justify-center w-full h-full">
+                      <span>{date.getDate()}</span>
+                      <span className="absolute -top-0.5 -right-0.5 text-[9px] leading-none pointer-events-none">
+                        {blockTypeIconLookup[blockType]}
+                      </span>
+                    </span>
+                  );
+                }
+                return <>{date.getDate()}</>;
+              },
+            }}
             className={cn("p-1 pointer-events-auto")}
           />
         </div>
@@ -327,6 +383,16 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
           <div className="flex items-center gap-1.5 mt-0.5">
             <span className="inline-block h-2.5 w-2.5 rounded-full bg-red-200 border border-red-300 dark:bg-red-900/60 dark:border-red-700" />
             <span className="text-[11px] text-muted-foreground">Already has a shift</span>
+          </div>
+        )}
+        {usedBlockTypes.length > 0 && (
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 mt-0.5">
+            {usedBlockTypes.map(b => (
+              <span key={b.value} className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                <span className="text-sm leading-none">{b.icon}</span>
+                {b.label}
+              </span>
+            ))}
           </div>
         )}
       </div>
