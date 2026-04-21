@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SettingsNav } from '@/components/SettingsNav';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,7 +10,6 @@ import { GooglePlacesAutocomplete } from '@/components/GooglePlacesAutocomplete'
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { Save, MapPin } from 'lucide-react';
-import { useEffect } from 'react';
 
 const PROFESSIONS: { value: Profession; label: string }[] = [
   { value: 'vet', label: 'Veterinarian' },
