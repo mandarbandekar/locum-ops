@@ -25,6 +25,8 @@ import type { PlaceSelection } from '@/components/GooglePlacesAutocomplete';
 import type { BillingCadence } from '@/lib/invoiceBillingDefaults';
 import { RatesEditor, type RateEntry } from '@/components/facilities/RatesEditor';
 import { ratesToTermsFields } from '@/components/facilities/RatesEditor';
+import { EngagementSelector } from '@/components/facilities/EngagementSelector';
+import type { EngagementType, TaxFormType } from '@/lib/engagementOptions';
 import { supabase } from '@/integrations/supabase/client';
 
 const STEP_META = [
@@ -53,6 +55,9 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
   const [sameAsScheduling, setSameAsScheduling] = useState(false);
   const [billingCadence, setBillingCadence] = useState<BillingCadence>('monthly');
   const [invoiceDueDays, setInvoiceDueDays] = useState(15);
+  const [engagementType, setEngagementType] = useState<EngagementType>('direct');
+  const [sourceName, setSourceName] = useState('');
+  const [taxFormType, setTaxFormType] = useState<TaxFormType>('1099');
 
   // Step 4 enrichment state
   const [enrichRates, setEnrichRates] = useState<RateEntry[]>([]);
@@ -80,6 +85,7 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
     setInvoiceNameTo(''); setInvoiceEmailTo('');
     setSameAsScheduling(false);
     setBillingCadence('monthly'); setInvoiceDueDays(15);
+    setEngagementType('direct'); setSourceName(''); setTaxFormType('1099');
     
     setTechComputer(''); setTechWifi(''); setTechPims(''); setClinicAccess('');
     createdFacilityIdRef.current = null;
@@ -96,13 +102,26 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
   const effectiveBillingEmail = sameAsScheduling ? schedulingContactEmail : invoiceEmailTo;
 
   const handleCreateFacility = async (): Promise<boolean> => {
-    for (const s of [1, 2]) {
+    const isDirect = engagementType === 'direct';
+    // Validate engagement source for non-direct
+    if (!isDirect && !sourceName.trim()) {
+      toast.error(engagementType === 'w2' ? 'Please select your employer' : 'Please select the platform or agency');
+      setStep(1);
+      return false;
+    }
+
+    // Validate name; only validate contacts/billing for direct engagements
+    const stepsToValidate = isDirect ? [1, 2] : [1];
+    for (const s of stepsToValidate) {
       const err = validateStep(s);
       if (err) { toast.error(err); setStep(s); return false; }
     }
 
     const prefix = getInitials(name);
     const rateFields = ratesToTermsFields(rates);
+    const effectiveTaxForm: TaxFormType | null =
+      engagementType === 'w2' ? 'w2' : engagementType === 'third_party' ? taxFormType : null;
+    const skipBilling = !isDirect;
 
     try {
       const facility = await addFacility({
@@ -114,8 +133,8 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
         clinic_access_info: '',
         invoice_prefix: prefix,
         invoice_due_days: invoiceDueDays,
-        invoice_name_to: effectiveBillingName.trim(),
-        invoice_email_to: effectiveBillingEmail.trim(),
+        invoice_name_to: skipBilling ? '' : effectiveBillingName.trim(),
+        invoice_email_to: skipBilling ? '' : effectiveBillingEmail.trim(),
         invoice_name_cc: '',
         invoice_email_cc: '',
         invoice_name_bcc: '',
@@ -123,12 +142,16 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
         billing_cadence: billingCadence,
         billing_cycle_anchor_date: null,
         billing_week_end_day: 'saturday',
-        auto_generate_invoices: true,
+        auto_generate_invoices: isDirect,
+        engagement_type: engagementType,
+        source_name: isDirect ? null : sourceName.trim() || null,
+        tax_form_type: effectiveTaxForm,
       });
 
       createdFacilityIdRef.current = facility.id;
 
-      if (rates.length > 0) {
+      // Save rates for direct + third_party (kept). Skip for w2.
+      if (engagementType !== 'w2' && rates.length > 0) {
         await updateTerms({
           id: generateId(),
           facility_id: facility.id,
@@ -140,20 +163,23 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
         });
       }
 
-      await saveConfirmationSettings({
-        id: '',
-        facility_id: facility.id,
-        primary_contact_name: schedulingContactName.trim(),
-        primary_contact_email: schedulingContactEmail.trim(),
-        secondary_contact_email: '',
-        monthly_enabled: true,
-        monthly_send_offset_days: 7,
-        preshift_enabled: false,
-        preshift_send_offset_days: 3,
-        auto_send_enabled: false,
-        auto_send_monthly: false,
-        auto_send_preshift: false,
-      });
+      // Confirmation settings only for direct (where we email the clinic).
+      if (isDirect) {
+        await saveConfirmationSettings({
+          id: '',
+          facility_id: facility.id,
+          primary_contact_name: schedulingContactName.trim(),
+          primary_contact_email: schedulingContactEmail.trim(),
+          secondary_contact_email: '',
+          monthly_enabled: true,
+          monthly_send_offset_days: 7,
+          preshift_enabled: false,
+          preshift_send_offset_days: 3,
+          auto_send_enabled: false,
+          auto_send_monthly: false,
+          auto_send_preshift: false,
+        });
+      }
 
       return true;
     } catch {
@@ -219,6 +245,17 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
   const handleNext = async () => {
     const err = validateStep(step);
     if (err) { toast.error(err); return; }
+
+    // Non-direct engagements skip Contacts (2) and Billing (3); create after step 1.
+    if (engagementType !== 'direct' && step === 1) {
+      if (!sourceName.trim()) {
+        toast.error(engagementType === 'w2' ? 'Please select your employer' : 'Please select the platform or agency');
+        return;
+      }
+      const success = await handleCreateFacility();
+      if (success) setStep(coreSteps);
+      return;
+    }
 
     // At step 3 (Billing Setup), create the facility then advance to enrichment
     if (step === coreSteps - 1) {
@@ -396,7 +433,23 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
                   <div className="space-y-2">
                     <Label>Name <span className="text-destructive">*</span></Label>
                     <Input value={name} onChange={e => setName(e.target.value)} placeholder="Practice facility name" autoFocus={manualEntry} />
+                    {engagementType === 'third_party' && (
+                      <p className="text-xs text-muted-foreground">
+                        You can track each physical clinic separately, or log all your {sourceName.trim() || 'platform'} shifts under one facility — whatever works for you.
+                      </p>
+                    )}
                   </div>
+
+                  <EngagementSelector
+                    engagementType={engagementType}
+                    onEngagementTypeChange={setEngagementType}
+                    sourceName={sourceName}
+                    onSourceNameChange={setSourceName}
+                    taxFormType={taxFormType}
+                    onTaxFormTypeChange={setTaxFormType}
+                    compact
+                  />
+
                   <div className="space-y-2">
                     <Label>Address</Label>
                     <GooglePlacesAutocomplete value={address} onChange={setAddress} placeholder="Full address" />
@@ -404,19 +457,22 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
                 </>
               )}
 
-              <div className="space-y-2 pt-1">
-                <div className="flex items-center gap-2">
-                  <DollarSign className="h-4 w-4 text-primary" />
-                  <Label>Shift Rates</Label>
+              {/* Rates: hidden for W-2 employer (no billing tracked) */}
+              {engagementType !== 'w2' && (
+                <div className="space-y-2 pt-1">
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-primary" />
+                    <Label>Shift Rates</Label>
+                  </div>
+                  <RatesEditor
+                    rates={rates}
+                    onChange={setRates}
+                    showCard={false}
+                    compact
+                  />
+                  <p className="text-xs text-muted-foreground">The rates you set become the defaults for new shifts at this clinic — one less thing to enter each time.</p>
                 </div>
-                <RatesEditor
-                  rates={rates}
-                  onChange={setRates}
-                  showCard={false}
-                  compact
-                />
-                <p className="text-xs text-muted-foreground">The rates you set become the defaults for new shifts at this clinic — one less thing to enter each time.</p>
-              </div>
+              )}
             </>
           )}
 
@@ -663,7 +719,7 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
                   </Button>
                 )}
                 <Button type="button" size="sm" onClick={handleNext}>
-                  {step === coreSteps - 1 ? 'Add Facility' : (
+                  {(step === coreSteps - 1 || (engagementType !== 'direct' && step === 1)) ? 'Add Facility' : (
                     <>Next <ArrowRight className="ml-1 h-4 w-4" /></>
                   )}
                 </Button>

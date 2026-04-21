@@ -11,6 +11,8 @@ import { Plus, Search, Trash2, MapPin, AlertTriangle, LayoutGrid, List, Mail, Ca
 import { AddFacilityDialog } from '@/components/AddFacilityDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
+import { getEngagementPill } from '@/lib/engagementOptions';
+import { cn } from '@/lib/utils';
 import type { Facility } from '@/types';
 
 export default function FacilitiesPage() {
@@ -103,7 +105,17 @@ export default function FacilitiesPage() {
                       </p>
                     )}
                   </div>
-                  <StatusBadge status={c.status} />
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <StatusBadge status={c.status} />
+                    {(() => {
+                      const pill = getEngagementPill(c);
+                      return (
+                        <span className={cn('inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium max-w-[140px] truncate', pill.className)}>
+                          {pill.label}
+                        </span>
+                      );
+                    })()}
+                  </div>
                 </div>
 
                 <div className="space-y-2 text-xs">
@@ -181,7 +193,19 @@ export default function FacilitiesPage() {
                 >
                   <td className="p-3 font-medium">{c.name}</td>
                   <td className="p-3 text-muted-foreground hidden md:table-cell">{c.address}</td>
-                  <td className="p-3"><StatusBadge status={c.status} /></td>
+                  <td className="p-3">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <StatusBadge status={c.status} />
+                      {(() => {
+                        const pill = getEngagementPill(c);
+                        return (
+                          <span className={cn('inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium max-w-[120px] truncate', pill.className)}>
+                            {pill.label}
+                          </span>
+                        );
+                      })()}
+                    </div>
+                  </td>
                   <td className="p-3 hidden lg:table-cell">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <Badge variant="outline" className="text-[10px] px-1.5 py-0 capitalize">{c.billing_cadence || 'monthly'}</Badge>
