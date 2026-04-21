@@ -109,7 +109,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   const [step, setStep] = useState(1);
 
   const isMobile = useIsMobile();
-  const { updateTerms } = useData();
+  const { updateTerms, timeBlocks } = useData();
   const isMultiMode = !existing;
 
   // Reset all form state when dialog opens, so stale values from a previous
@@ -165,6 +165,42 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
       return new Date(d.getFullYear(), d.getMonth(), d.getDate());
     }),
   [shifts]);
+
+  // Map of YYYY-MM-DD → block type for time-blocked days (vacation, family, etc.)
+  const blockedDateIconMap = useMemo(() => {
+    const map = new Map<string, BlockType>();
+    (timeBlocks || []).forEach(tb => {
+      const start = new Date(tb.start_datetime);
+      const end = new Date(tb.end_datetime);
+      const cur = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+      const last = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+      while (cur.getTime() <= last.getTime()) {
+        const key = `${cur.getFullYear()}-${cur.getMonth()}-${cur.getDate()}`;
+        if (!map.has(key)) map.set(key, tb.block_type);
+        cur.setDate(cur.getDate() + 1);
+      }
+    });
+    return map;
+  }, [timeBlocks]);
+
+  const blockedDateObjects = useMemo(() => {
+    return Array.from(blockedDateIconMap.keys()).map(k => {
+      const [y, m, d] = k.split('-').map(Number);
+      return new Date(y, m, d);
+    });
+  }, [blockedDateIconMap]);
+
+  const blockTypeIconLookup = useMemo(() => {
+    const m: Record<string, string> = {};
+    BLOCK_TYPES.forEach(b => { m[b.value] = b.icon; });
+    return m;
+  }, []);
+
+  const usedBlockTypes = useMemo(() => {
+    const set = new Set<BlockType>();
+    blockedDateIconMap.forEach(v => set.add(v));
+    return BLOCK_TYPES.filter(b => set.has(b.value));
+  }, [blockedDateIconMap]);
 
   const handleFacilityChange = (newFacilityId: string) => {
     setFacilityId(newFacilityId);
