@@ -1,80 +1,31 @@
 
 
-## Goal
-When a clinic's billing cadence changes (e.g., daily → weekly, monthly → daily), automatically re-group existing **draft** invoices for that facility under the new cadence. Sent/partial/paid invoices are never touched.
+## Bug: Shift dialog state persists across opens
 
-## Why this matters
-Today, `updateFacility` just saves the new cadence — but existing draft invoices keep their old period boundaries. If a user switches a clinic from daily to weekly, they're left with seven daily drafts plus a stale weekly one going forward. The drafts no longer match how the clinic is being billed.
+### Root cause
+`ShiftFormDialog` lives permanently mounted in `SchedulePage` (and similar pages) — only its `open` prop toggles. React state initializers only run once on mount, so every field (`selectedDates`, `facilityId`, `startTime`, `endTime`, `rate`, `notes`, `color`, `step`, custom-rate flags) keeps its previous value the next time the dialog opens.
 
-## Behavior
+That's why your screenshot shows 10 dates pre-selected from a prior session and conflict warnings against a clinic you weren't even editing — the calendar still held the previous facility's selections, and the conflict detector (correctly) flags time overlaps with shifts at *any* clinic on the same day.
 
-### What gets re-grouped
-- **Only `draft` + `automatic`-generation invoices** for the affected facility
-- All shifts currently on those drafts get released and re-bucketed using the **new** cadence
-- New draft invoices are created per the new period boundaries (daily → 1 per day, weekly → 1 per Mon–Sun week, monthly → 1 per month)
+### Fix
+Add a single `useEffect` in `ShiftFormDialog` that runs whenever `open` transitions to `true` for a **new shift** (i.e., `existing` is undefined). It resets every form field back to the same defaults the `useState` initializers use today:
 
-### What is preserved
-- **Sent / partial / paid** invoices: untouched. Shifts already billed stay billed.
-- **Manual** drafts (user-created via Bulk Invoice flow): untouched.
-- **Suppressed periods**: still respected — no draft created for a suppressed period under the new cadence.
-- **Invoice numbers**: existing draft numbers reused where periods overlap; new ones generated as needed.
+- `facilityId` → `existing?.facility_id` || first facility id || `''`
+- `selectedDates` → `defaultDate ? [defaultDate] : []`
+- `startTime` / `endTime` → `defaultStartTime`-derived defaults or `'08:00'` / `'18:00'`
+- `rate` → `''`, `selectedRateKey` → `''`, `isCustomRate` → `false`, `customRateLabel` → `''`, `saveCustomRate` → `true`
+- `notes` → `''`, `showNotes` → `false`
+- `color` → `'blue'`
+- `step` → `1` (already handled — fold the existing effect into the new one)
+- `isSubmitting` → `false`
 
-### Edge cases
-- **Shift already on a sent invoice** stays there. Only un-billed shifts (or shifts on auto-drafts) get re-bucketed.
-- **No change** if the new cadence equals the old one — skip silently.
-- **Confirmation prompt** before re-grouping: a small dialog explains "This will reorganize 3 draft invoice(s) into [weekly] periods. Sent invoices won't change." with Cancel / Re-group buttons.
-- After re-group, show a toast: *"Drafts reorganized: 3 daily drafts merged into 1 weekly draft."*
+For edit mode (`existing` is defined), reset to the values derived from `existing` so reopening the editor on a different shift shows that shift's data — `FacilityDetailPage` already passes `key={editShift.id}` for this; `SchedulePage` doesn't, so add `key={editShift.id}` there too as a belt-and-suspenders safeguard.
 
-## UX flow
-1. User edits cadence in **Invoicing Preferences** card on facility detail page (`InvoicingPreferencesCard.tsx`) and clicks **Save**.
-2. If the new cadence differs from the saved one **and** the facility has at least one automatic draft invoice, show a `<Dialog>` confirming the re-group.
-3. On confirm: facility cadence is updated, then the re-group routine runs.
-4. On cancel: the cadence change is **not saved** (user can either cancel entirely or save with no re-group, but to keep things consistent we treat cadence change as inseparable from re-group).
+### Files touched
+- `src/components/schedule/ShiftFormDialog.tsx` — replace the small "reset step" effect with a comprehensive reset-on-open effect covering all form state.
+- `src/pages/SchedulePage.tsx` — add `key={editShift.id}` to the edit-mode `<ShiftFormDialog>` for parity with `FacilityDetailPage`.
 
-## Technical changes
-
-### `src/lib/invoiceAutoGeneration.ts`
-Add a new pure helper:
-```ts
-regroupDraftsForCadenceChange(
-  facility, allShifts, existingInvoices, existingLineItems, newCadence
-): {
-  draftsToDelete: string[];      // draft invoice IDs to remove
-  draftsToCreate: { invoice, lineItems }[];  // new drafts under new cadence
-}
-```
-Logic:
-- Collect facility's automatic drafts and their line items
-- Collect all shift IDs currently on those drafts (these are "free to re-bucket")
-- Mark all current automatic drafts for deletion
-- Group released shifts into new periods using `getBillingPeriod(newCadence, shift.start)`
-- For each new period, build a draft via `buildAutoInvoiceDraft`
-- Skip periods covered by suppressed-periods list
-
-### `src/contexts/DataContext.tsx`
-- Extract a new exported method: `regroupFacilityDrafts(facilityId, newCadence): Promise<{ removed: number; created: number }>`
-- Inside `updateFacility`: detect cadence change → call `regroupFacilityDrafts` after the DB update
-- Removes old drafts (cascades line items via existing logic), inserts new drafts + line items, updates local state, returns counts for the toast
-
-### `src/components/facilities/InvoicingPreferencesCard.tsx`
-- In `handleSave`, detect if `billingCadence !== facility.billing_cadence`
-- If yes and facility has automatic drafts, open a `<AlertDialog>` showing the count and new cadence
-- On confirm → call `onUpdate(...)` (which triggers the context re-group)
-- Show resulting toast message from the returned counts
-
-### `src/test/invoiceAutoGeneration.test.ts`
-Add tests:
-- Daily → weekly: 5 daily drafts in one week become 1 weekly draft
-- Weekly → monthly: 4 weekly drafts in one month become 1 monthly draft
-- Monthly → daily: 1 monthly draft with 3 shifts becomes 3 daily drafts
-- Sent invoice with shifts is never touched; its shifts not re-bucketed
-- Suppressed period under new cadence is skipped
-
-## Files touched
-- `src/lib/invoiceAutoGeneration.ts` (new helper function)
-- `src/contexts/DataContext.tsx` (re-group method + cadence-change detection in `updateFacility`)
-- `src/components/facilities/InvoicingPreferencesCard.tsx` (confirmation dialog before saving cadence change)
-- `src/test/invoiceAutoGeneration.test.ts` (new test cases)
-
-No DB migration required. No edge function changes required (the nightly `generate-auto-invoices` function continues to work on the new cadence going forward).
+### What this does NOT change
+- Conflict detection logic stays as-is (it's correct: you can't be at two clinics simultaneously). Once stale dates are gone, real conflicts will only show when they're real.
+- No DB changes, no API changes.
 
