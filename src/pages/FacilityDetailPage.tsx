@@ -22,6 +22,8 @@ import { FacilityConfirmationSettingsCard } from '@/components/schedule/Facility
 import { useClinicConfirmations } from '@/hooks/useClinicConfirmations';
 import { InvoicingPreferencesCard } from '@/components/facilities/InvoicingPreferencesCard';
 import { ClinicNotesCard } from '@/components/facilities/ClinicNotesCard';
+import { EngagementSelector } from '@/components/facilities/EngagementSelector';
+import type { EngagementType, TaxFormType } from '@/lib/engagementOptions';
 
 export default function FacilityDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -110,6 +112,9 @@ function OverviewTab({ facility, shifts, contacts, onUpdate, onAddContact, onUpd
   const [editing, setEditing] = useState(false);
   const [notes, setNotes] = useState(facility.notes);
   const [status, setStatus] = useState(facility.status);
+  const [engagementType, setEngagementType] = useState<EngagementType>((facility.engagement_type || 'direct') as EngagementType);
+  const [sourceName, setSourceName] = useState<string>(facility.source_name || '');
+  const [taxFormType, setTaxFormType] = useState<TaxFormType>((facility.tax_form_type as TaxFormType) || '1099');
   const [rates, setRates] = useState<RateEntry[]>(termsToRates(facilityTerms || {}));
 
   // Contact add/edit state
@@ -120,7 +125,17 @@ function OverviewTab({ facility, shifts, contacts, onUpdate, onAddContact, onUpd
   const upcoming = shifts.filter(s => new Date(s.start_datetime) > new Date() && s.status !== 'canceled').slice(0, 5);
 
   const handleSave = () => {
-    onUpdate({ ...facility, notes, status });
+    const isDirect = engagementType === 'direct';
+    const effectiveTaxForm = engagementType === 'w2' ? 'w2' : engagementType === 'third_party' ? taxFormType : null;
+    onUpdate({
+      ...facility,
+      notes,
+      status,
+      engagement_type: engagementType,
+      source_name: isDirect ? null : (sourceName.trim() || null),
+      tax_form_type: effectiveTaxForm,
+      auto_generate_invoices: isDirect ? facility.auto_generate_invoices : false,
+    });
     setEditing(false);
     toast.success('Practice facility updated');
   };
@@ -201,10 +216,36 @@ function OverviewTab({ facility, shifts, contacts, onUpdate, onAddContact, onUpd
                 <p className="text-sm">{facility.notes || 'No notes'}</p>
               )}
             </div>
+            <div className="border-t border-border pt-3">
+              {editing ? (
+                <EngagementSelector
+                  engagementType={engagementType}
+                  onEngagementTypeChange={setEngagementType}
+                  sourceName={sourceName}
+                  onSourceNameChange={setSourceName}
+                  taxFormType={taxFormType}
+                  onTaxFormTypeChange={setTaxFormType}
+                  compact
+                />
+              ) : (
+                <>
+                  <Label className="text-xs text-muted-foreground">Engagement</Label>
+                  <p className="text-sm">
+                    {facility.engagement_type === 'w2'
+                      ? `W-2 — ${facility.source_name || 'Employer'}`
+                      : facility.engagement_type === 'third_party'
+                      ? `Platform / Agency — ${facility.source_name || 'Source'}${facility.tax_form_type ? ` (${facility.tax_form_type === 'w2' ? 'W-2' : '1099'})` : ''}`
+                      : 'Direct / Independent'}
+                  </p>
+                </>
+              )}
+            </div>
           </CardContent>
         </Card>
 
-        <RatesEditor rates={rates} onChange={setRates} onSave={onSaveRates} />
+        {engagementType !== 'w2' && (
+          <RatesEditor rates={rates} onChange={setRates} onSave={onSaveRates} />
+        )}
 
         <ClinicNotesCard facility={facility} onUpdate={onUpdate} />
 
@@ -212,13 +253,29 @@ function OverviewTab({ facility, shifts, contacts, onUpdate, onAddContact, onUpd
       </div>
 
       <div className="space-y-4">
-        <InvoicingPreferencesCard facility={facility} onUpdate={onUpdate} />
+        {engagementType === 'direct' && (
+          <>
+            <InvoicingPreferencesCard facility={facility} onUpdate={onUpdate} />
 
-        <FacilityConfirmationSettingsCard
-          facilityId={facilityId}
-          settings={confirmationSettings}
-          onSave={onSaveConfirmationSettings}
-        />
+            <FacilityConfirmationSettingsCard
+              facilityId={facilityId}
+              settings={confirmationSettings}
+              onSave={onSaveConfirmationSettings}
+            />
+          </>
+        )}
+
+        {engagementType !== 'direct' && (
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-sm text-muted-foreground">
+                {engagementType === 'w2'
+                  ? `W-2 income from ${facility.source_name || 'this employer'} is tracked separately for tax purposes. Invoicing and confirmations don't apply.`
+                  : `${facility.source_name || 'This platform'} handles billing for these shifts, so invoicing settings and clinic confirmations don't apply here.`}
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader><CardTitle className="text-base">Upcoming Shifts</CardTitle></CardHeader>

@@ -9,6 +9,9 @@ import { GooglePlacesAutocomplete } from '@/components/GooglePlacesAutocomplete'
 import type { PlaceSelection } from '@/components/GooglePlacesAutocomplete';
 import type { ManualFacilityInput } from '@/hooks/useManualSetup';
 import type { BillingCadence } from '@/lib/invoiceBillingDefaults';
+import { EngagementSelector } from '@/components/facilities/EngagementSelector';
+import type { EngagementType, TaxFormType } from '@/lib/engagementOptions';
+import { toast } from 'sonner';
 
 interface Props {
   onSave: (input: ManualFacilityInput) => Promise<any>;
@@ -22,7 +25,10 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
   const [address, setAddress] = useState('');
   const [weekdayRate, setWeekdayRate] = useState('');
   const [billingCadence, setBillingCadence] = useState<BillingCadence>('monthly');
-  
+  const [engagementType, setEngagementType] = useState<EngagementType>('direct');
+  const [sourceName, setSourceName] = useState('');
+  const [taxFormType, setTaxFormType] = useState<TaxFormType>('1099');
+
   const [clinicSearchValue, setClinicSearchValue] = useState('');
   const [manualEntry, setManualEntry] = useState(false);
   const [clinicSelected, setClinicSelected] = useState(false);
@@ -36,16 +42,26 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
 
   const handleSubmit = async () => {
     if (!name.trim()) return;
+    if (engagementType !== 'direct' && !sourceName.trim()) {
+      toast.error(engagementType === 'w2' ? 'Please select your employer' : 'Please select the platform or agency');
+      return;
+    }
+    const isDirect = engagementType === 'direct';
+    const effectiveTaxForm: TaxFormType | null =
+      engagementType === 'w2' ? 'w2' : engagementType === 'third_party' ? taxFormType : null;
     await onSave({
       name: name.trim(),
-      billing_name_to: billingNameTo.trim() || undefined,
-      billing_email: billingEmail.trim() || undefined,
+      billing_name_to: isDirect ? (billingNameTo.trim() || undefined) : undefined,
+      billing_email: isDirect ? (billingEmail.trim() || undefined) : undefined,
       address: address.trim() || undefined,
-      weekday_rate: weekdayRate ? parseFloat(weekdayRate) : undefined,
-      billing_cadence: billingCadence,
+      weekday_rate: engagementType !== 'w2' && weekdayRate ? parseFloat(weekdayRate) : undefined,
+      billing_cadence: isDirect ? billingCadence : undefined,
       billing_week_end_day: undefined,
       billing_anchor_date: undefined,
-      auto_generate_invoices: true,
+      auto_generate_invoices: isDirect,
+      engagement_type: engagementType,
+      source_name: isDirect ? null : sourceName.trim() || null,
+      tax_form_type: effectiveTaxForm,
     });
   };
 
@@ -111,68 +127,85 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
           </>
         )}
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <Label>Billing contact name</Label>
-            <Input
-              value={billingNameTo}
-              onChange={e => setBillingNameTo(e.target.value)}
-              placeholder="e.g. Billing Dept"
-            />
-          </div>
-          <div>
-            <Label>Billing email</Label>
-            <Input
-              type="email"
-              value={billingEmail}
-              onChange={e => setBillingEmail(e.target.value)}
-              placeholder="billing@clinic.com"
-            />
-          </div>
+        {/* Engagement type selector */}
+        <div className="border-t border-border pt-4">
+          <EngagementSelector
+            engagementType={engagementType}
+            onEngagementTypeChange={setEngagementType}
+            sourceName={sourceName}
+            onSourceNameChange={setSourceName}
+            taxFormType={taxFormType}
+            onTaxFormTypeChange={setTaxFormType}
+            compact
+          />
         </div>
 
-        <div>
-          <Label>Default day rate</Label>
-          <div className="relative">
-            <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input
-              type="number"
-              value={weekdayRate}
-              onChange={e => setWeekdayRate(e.target.value)}
-              placeholder="e.g. 800"
-              className="pl-7"
-              min={0}
-              step={50}
-            />
+        {engagementType === 'direct' && (
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Billing contact name</Label>
+              <Input
+                value={billingNameTo}
+                onChange={e => setBillingNameTo(e.target.value)}
+                placeholder="e.g. Billing Dept"
+              />
+            </div>
+            <div>
+              <Label>Billing email</Label>
+              <Input
+                type="email"
+                value={billingEmail}
+                onChange={e => setBillingEmail(e.target.value)}
+                placeholder="billing@clinic.com"
+              />
+            </div>
           </div>
-          <p className="text-xs text-muted-foreground mt-1">You can add more rate types later in facility settings.</p>
-        </div>
+        )}
 
-        {/* Invoicing Preferences */}
-        <div className="border-t border-border pt-4 space-y-3">
-          <p className="text-sm font-medium text-foreground">Invoicing preferences</p>
+        {engagementType !== 'w2' && (
           <div>
-            <Label>Billing cadence</Label>
-            <Select value={billingCadence} onValueChange={(v: BillingCadence) => setBillingCadence(v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="daily">Daily</SelectItem>
-                <SelectItem value="weekly">Weekly (Mon–Sun)</SelectItem>
-                <SelectItem value="monthly">Monthly</SelectItem>
-              </SelectContent>
-            </Select>
-            {billingCadence === 'weekly' && (
-              <p className="text-xs text-muted-foreground mt-1">Billing week runs Monday through Sunday. Draft generates on the morning of your last scheduled shift that week.</p>
-            )}
-            {billingCadence === 'monthly' && (
-              <p className="text-xs text-muted-foreground mt-1">Draft generates on the morning of your last scheduled shift of the month.</p>
-            )}
-            {billingCadence === 'daily' && (
-              <p className="text-xs text-muted-foreground mt-1">A draft invoice is generated each morning you have a scheduled shift.</p>
-            )}
+            <Label>Default day rate</Label>
+            <div className="relative">
+              <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                type="number"
+                value={weekdayRate}
+                onChange={e => setWeekdayRate(e.target.value)}
+                placeholder="e.g. 800"
+                className="pl-7"
+                min={0}
+                step={50}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">You can add more rate types later in facility settings.</p>
           </div>
+        )}
 
-        </div>
+        {engagementType === 'direct' && (
+          <div className="border-t border-border pt-4 space-y-3">
+            <p className="text-sm font-medium text-foreground">Invoicing preferences</p>
+            <div>
+              <Label>Billing cadence</Label>
+              <Select value={billingCadence} onValueChange={(v: BillingCadence) => setBillingCadence(v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="daily">Daily</SelectItem>
+                  <SelectItem value="weekly">Weekly (Mon–Sun)</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                </SelectContent>
+              </Select>
+              {billingCadence === 'weekly' && (
+                <p className="text-xs text-muted-foreground mt-1">Billing week runs Monday through Sunday. Draft generates on the morning of your last scheduled shift that week.</p>
+              )}
+              {billingCadence === 'monthly' && (
+                <p className="text-xs text-muted-foreground mt-1">Draft generates on the morning of your last scheduled shift of the month.</p>
+              )}
+              {billingCadence === 'daily' && (
+                <p className="text-xs text-muted-foreground mt-1">A draft invoice is generated each morning you have a scheduled shift.</p>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       <Button onClick={handleSubmit} disabled={!name.trim() || saving} className="w-full" size="lg">
