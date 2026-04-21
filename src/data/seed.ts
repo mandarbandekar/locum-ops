@@ -271,4 +271,5 @@ export const seedUserProfile: UserProfile = {
   dismissed_prompts: {},
   dashboard_intro_dismissed: true,
   dashboard_levelup_shown: true,
+  engagement_announcement_dismissed_at: new Date().toISOString(),
 };
