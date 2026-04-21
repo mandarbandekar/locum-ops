@@ -593,6 +593,7 @@ export default function SchedulePage() {
 
       {editShift && (
         <ShiftFormDialog
+          key={editShift}
           open={!!editShift}
           onOpenChange={() => setEditShift(null)}
           facilities={facilities}
