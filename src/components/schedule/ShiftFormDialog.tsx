@@ -240,6 +240,32 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
       setRate(newOptions[0].amount.toString());
       setSelectedRateKey('rate-0');
     }
+    // Reset engagement override when facility changes — defaults inherit from new facility
+    const newFac = facilities.find(f => f.id === newFacilityId);
+    setShowEngagementOverride(false);
+    setEngagementOverride((newFac?.engagement_type as EngagementType) || 'direct');
+    setSourceOverride(newFac?.source_name ?? '');
+  };
+
+  // Compute payload override values: only set if user picked something different
+  // from the facility default. Otherwise clear so future facility changes propagate.
+  const computeOverridePayload = () => {
+    const fac = facilities.find(f => f.id === facilityId);
+    const facType = (fac?.engagement_type as EngagementType) || 'direct';
+    const facSource = fac?.source_name ?? null;
+    if (!showEngagementOverride) {
+      return { engagement_type_override: null, source_name_override: null };
+    }
+    const sameType = engagementOverride === facType;
+    const trimmedSource = engagementOverride === 'direct' ? null : (sourceOverride.trim() || null);
+    const sameSource = (trimmedSource ?? null) === (facSource ?? null);
+    if (sameType && sameSource) {
+      return { engagement_type_override: null, source_name_override: null };
+    }
+    return {
+      engagement_type_override: engagementOverride,
+      source_name_override: trimmedSource,
+    };
   };
 
   const conflicts = useMemo(() => {
