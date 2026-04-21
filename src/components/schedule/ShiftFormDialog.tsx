@@ -147,7 +147,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     setIsSubmitting(false);
     setStep(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, existing]);
+  }, [open, existing, defaultDate, defaultStartTime]);
 
   const rateOptions = useMemo(() => buildRateOptions(terms, facilityId), [terms, facilityId]);
 
