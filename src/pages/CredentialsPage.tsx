@@ -123,7 +123,7 @@ export default function CredentialsPage() {
             <TabsTrigger
               key={tab.value}
               value={tab.value}
-              data-tour={TAB_TOUR_ATTR[tab.value] || undefined}
+              data-tour={undefined}
               className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-3 text-[13px] font-semibold"
             >
               {tab.label}
@@ -185,7 +185,7 @@ export default function CredentialsPage() {
         onMarkCEAdded={markCEAdded}
       />
 
-      <SpotlightTour steps={CREDENTIALS_TOUR_STEPS} isOpen={credTour.isOpen} onClose={credTour.closeTour} />
+      
     </div>
   );
 }
