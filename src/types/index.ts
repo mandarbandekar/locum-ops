@@ -32,6 +32,9 @@ export interface Facility {
   billing_cycle_anchor_date: string | null;
   billing_week_end_day: string;
   auto_generate_invoices: boolean;
+  engagement_type?: 'direct' | 'third_party' | 'w2';
+  source_name?: string | null;
+  tax_form_type?: '1099' | 'w2' | null;
 }
 
 export type ContactRole = string;
