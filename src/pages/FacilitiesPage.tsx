@@ -105,7 +105,17 @@ export default function FacilitiesPage() {
                       </p>
                     )}
                   </div>
-                  <StatusBadge status={c.status} />
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <StatusBadge status={c.status} />
+                    {(() => {
+                      const pill = getEngagementPill(c);
+                      return (
+                        <span className={cn('inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium max-w-[140px] truncate', pill.className)}>
+                          {pill.label}
+                        </span>
+                      );
+                    })()}
+                  </div>
                 </div>
 
                 <div className="space-y-2 text-xs">
