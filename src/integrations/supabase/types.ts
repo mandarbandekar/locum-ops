@@ -549,6 +549,13 @@ export type Database = {
             foreignKeyName: "confirmation_emails_shift_id_fkey"
             columns: ["shift_id"]
             isOneToOne: false
+            referencedRelation: "shift_effective_engagement"
+            referencedColumns: ["shift_id"]
+          },
+          {
+            foreignKeyName: "confirmation_emails_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
             referencedRelation: "shifts"
             referencedColumns: ["id"]
           },
@@ -645,6 +652,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "confirmation_records"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "confirmation_shift_links_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "shift_effective_engagement"
+            referencedColumns: ["shift_id"]
           },
           {
             foreignKeyName: "confirmation_shift_links_shift_id_fkey"
@@ -1557,6 +1571,13 @@ export type Database = {
             foreignKeyName: "expenses_shift_id_fkey"
             columns: ["shift_id"]
             isOneToOne: false
+            referencedRelation: "shift_effective_engagement"
+            referencedColumns: ["shift_id"]
+          },
+          {
+            foreignKeyName: "expenses_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
             referencedRelation: "shifts"
             referencedColumns: ["id"]
           },
@@ -1571,6 +1592,7 @@ export type Database = {
           billing_week_end_day: string
           clinic_access_info: string
           created_at: string
+          engagement_type: string
           facility_coordinates: Json | null
           id: string
           invoice_due_days: number
@@ -1585,7 +1607,9 @@ export type Database = {
           name: string
           notes: string
           outreach_last_sent_at: string | null
+          source_name: string | null
           status: string
+          tax_form_type: string | null
           tech_computer_info: string
           tech_pims_info: string
           tech_wifi_info: string
@@ -1601,6 +1625,7 @@ export type Database = {
           billing_week_end_day?: string
           clinic_access_info?: string
           created_at?: string
+          engagement_type?: string
           facility_coordinates?: Json | null
           id?: string
           invoice_due_days?: number
@@ -1615,7 +1640,9 @@ export type Database = {
           name: string
           notes?: string
           outreach_last_sent_at?: string | null
+          source_name?: string | null
           status?: string
+          tax_form_type?: string | null
           tech_computer_info?: string
           tech_pims_info?: string
           tech_wifi_info?: string
@@ -1631,6 +1658,7 @@ export type Database = {
           billing_week_end_day?: string
           clinic_access_info?: string
           created_at?: string
+          engagement_type?: string
           facility_coordinates?: Json | null
           id?: string
           invoice_due_days?: number
@@ -1645,7 +1673,9 @@ export type Database = {
           name?: string
           notes?: string
           outreach_last_sent_at?: string | null
+          source_name?: string | null
           status?: string
+          tax_form_type?: string | null
           tech_computer_info?: string
           tech_pims_info?: string
           tech_wifi_info?: string
@@ -1955,6 +1985,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "invoices"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "shift_effective_engagement"
+            referencedColumns: ["shift_id"]
           },
           {
             foreignKeyName: "invoice_line_items_shift_id_fkey"
@@ -2498,6 +2535,13 @@ export type Database = {
             foreignKeyName: "shift_calendar_sync_shift_id_fkey"
             columns: ["shift_id"]
             isOneToOne: false
+            referencedRelation: "shift_effective_engagement"
+            referencedColumns: ["shift_id"]
+          },
+          {
+            foreignKeyName: "shift_calendar_sync_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
             referencedRelation: "shifts"
             referencedColumns: ["id"]
           },
@@ -2508,10 +2552,12 @@ export type Database = {
           color: string
           created_at: string
           end_datetime: string
+          engagement_type_override: string | null
           facility_id: string
           id: string
           notes: string
           rate_applied: number
+          source_name_override: string | null
           start_datetime: string
           status: string
           updated_at: string
@@ -2521,10 +2567,12 @@ export type Database = {
           color?: string
           created_at?: string
           end_datetime: string
+          engagement_type_override?: string | null
           facility_id: string
           id?: string
           notes?: string
           rate_applied?: number
+          source_name_override?: string | null
           start_datetime: string
           status?: string
           updated_at?: string
@@ -2534,10 +2582,12 @@ export type Database = {
           color?: string
           created_at?: string
           end_datetime?: string
+          engagement_type_override?: string | null
           facility_id?: string
           id?: string
           notes?: string
           rate_applied?: number
+          source_name_override?: string | null
           start_datetime?: string
           status?: string
           updated_at?: string
@@ -3319,7 +3369,25 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      shift_effective_engagement: {
+        Row: {
+          effective_engagement_type: string | null
+          effective_source_name: string | null
+          facility_id: string | null
+          shift_id: string | null
+          tax_form_type: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shifts_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       delete_email: {
@@ -3329,6 +3397,14 @@ export type Database = {
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
+      }
+      get_shift_effective_engagement: {
+        Args: { _shift_id: string }
+        Returns: {
+          effective_engagement_type: string
+          effective_source_name: string
+          tax_form_type: string
+        }[]
       }
       move_to_dlq: {
         Args: {
