@@ -9,6 +9,9 @@ import { GooglePlacesAutocomplete } from '@/components/GooglePlacesAutocomplete'
 import type { PlaceSelection } from '@/components/GooglePlacesAutocomplete';
 import type { ManualFacilityInput } from '@/hooks/useManualSetup';
 import type { BillingCadence } from '@/lib/invoiceBillingDefaults';
+import { EngagementSelector } from '@/components/facilities/EngagementSelector';
+import type { EngagementType, TaxFormType } from '@/lib/engagementOptions';
+import { toast } from 'sonner';
 
 interface Props {
   onSave: (input: ManualFacilityInput) => Promise<any>;
@@ -22,7 +25,10 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
   const [address, setAddress] = useState('');
   const [weekdayRate, setWeekdayRate] = useState('');
   const [billingCadence, setBillingCadence] = useState<BillingCadence>('monthly');
-  
+  const [engagementType, setEngagementType] = useState<EngagementType>('direct');
+  const [sourceName, setSourceName] = useState('');
+  const [taxFormType, setTaxFormType] = useState<TaxFormType>('1099');
+
   const [clinicSearchValue, setClinicSearchValue] = useState('');
   const [manualEntry, setManualEntry] = useState(false);
   const [clinicSelected, setClinicSelected] = useState(false);
@@ -36,16 +42,26 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
 
   const handleSubmit = async () => {
     if (!name.trim()) return;
+    if (engagementType !== 'direct' && !sourceName.trim()) {
+      toast.error(engagementType === 'w2' ? 'Please select your employer' : 'Please select the platform or agency');
+      return;
+    }
+    const isDirect = engagementType === 'direct';
+    const effectiveTaxForm: TaxFormType | null =
+      engagementType === 'w2' ? 'w2' : engagementType === 'third_party' ? taxFormType : null;
     await onSave({
       name: name.trim(),
-      billing_name_to: billingNameTo.trim() || undefined,
-      billing_email: billingEmail.trim() || undefined,
+      billing_name_to: isDirect ? (billingNameTo.trim() || undefined) : undefined,
+      billing_email: isDirect ? (billingEmail.trim() || undefined) : undefined,
       address: address.trim() || undefined,
-      weekday_rate: weekdayRate ? parseFloat(weekdayRate) : undefined,
-      billing_cadence: billingCadence,
+      weekday_rate: engagementType !== 'w2' && weekdayRate ? parseFloat(weekdayRate) : undefined,
+      billing_cadence: isDirect ? billingCadence : undefined,
       billing_week_end_day: undefined,
       billing_anchor_date: undefined,
-      auto_generate_invoices: true,
+      auto_generate_invoices: isDirect,
+      engagement_type: engagementType,
+      source_name: isDirect ? null : sourceName.trim() || null,
+      tax_form_type: effectiveTaxForm,
     });
   };
 
