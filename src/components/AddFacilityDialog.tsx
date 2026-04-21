@@ -102,13 +102,26 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
   const effectiveBillingEmail = sameAsScheduling ? schedulingContactEmail : invoiceEmailTo;
 
   const handleCreateFacility = async (): Promise<boolean> => {
-    for (const s of [1, 2]) {
+    const isDirect = engagementType === 'direct';
+    // Validate engagement source for non-direct
+    if (!isDirect && !sourceName.trim()) {
+      toast.error(engagementType === 'w2' ? 'Please select your employer' : 'Please select the platform or agency');
+      setStep(1);
+      return false;
+    }
+
+    // Validate name; only validate contacts/billing for direct engagements
+    const stepsToValidate = isDirect ? [1, 2] : [1];
+    for (const s of stepsToValidate) {
       const err = validateStep(s);
       if (err) { toast.error(err); setStep(s); return false; }
     }
 
     const prefix = getInitials(name);
     const rateFields = ratesToTermsFields(rates);
+    const effectiveTaxForm: TaxFormType | null =
+      engagementType === 'w2' ? 'w2' : engagementType === 'third_party' ? taxFormType : null;
+    const skipBilling = !isDirect;
 
     try {
       const facility = await addFacility({
@@ -120,8 +133,8 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
         clinic_access_info: '',
         invoice_prefix: prefix,
         invoice_due_days: invoiceDueDays,
-        invoice_name_to: effectiveBillingName.trim(),
-        invoice_email_to: effectiveBillingEmail.trim(),
+        invoice_name_to: skipBilling ? '' : effectiveBillingName.trim(),
+        invoice_email_to: skipBilling ? '' : effectiveBillingEmail.trim(),
         invoice_name_cc: '',
         invoice_email_cc: '',
         invoice_name_bcc: '',
@@ -129,12 +142,16 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
         billing_cadence: billingCadence,
         billing_cycle_anchor_date: null,
         billing_week_end_day: 'saturday',
-        auto_generate_invoices: true,
+        auto_generate_invoices: isDirect,
+        engagement_type: engagementType,
+        source_name: isDirect ? null : sourceName.trim() || null,
+        tax_form_type: effectiveTaxForm,
       });
 
       createdFacilityIdRef.current = facility.id;
 
-      if (rates.length > 0) {
+      // Save rates for direct + third_party (kept). Skip for w2.
+      if (engagementType !== 'w2' && rates.length > 0) {
         await updateTerms({
           id: generateId(),
           facility_id: facility.id,
@@ -146,20 +163,23 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
         });
       }
 
-      await saveConfirmationSettings({
-        id: '',
-        facility_id: facility.id,
-        primary_contact_name: schedulingContactName.trim(),
-        primary_contact_email: schedulingContactEmail.trim(),
-        secondary_contact_email: '',
-        monthly_enabled: true,
-        monthly_send_offset_days: 7,
-        preshift_enabled: false,
-        preshift_send_offset_days: 3,
-        auto_send_enabled: false,
-        auto_send_monthly: false,
-        auto_send_preshift: false,
-      });
+      // Confirmation settings only for direct (where we email the clinic).
+      if (isDirect) {
+        await saveConfirmationSettings({
+          id: '',
+          facility_id: facility.id,
+          primary_contact_name: schedulingContactName.trim(),
+          primary_contact_email: schedulingContactEmail.trim(),
+          secondary_contact_email: '',
+          monthly_enabled: true,
+          monthly_send_offset_days: 7,
+          preshift_enabled: false,
+          preshift_send_offset_days: 3,
+          auto_send_enabled: false,
+          auto_send_monthly: false,
+          auto_send_preshift: false,
+        });
+      }
 
       return true;
     } catch {
