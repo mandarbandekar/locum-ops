@@ -291,6 +291,24 @@ export function InvoicingPreferencesCard({ facility, onUpdate }: InvoicingPrefer
           </div>
         </div>
       </CardContent>
+
+      <AlertDialog open={showCadenceConfirm} onOpenChange={setShowCadenceConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reorganize draft invoices?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Changing the billing cadence to <strong>{billingCadence}</strong> will reorganize{' '}
+              <strong>{autoDraftCount}</strong> draft invoice{autoDraftCount === 1 ? '' : 's'} for{' '}
+              <strong>{facility.name}</strong> into new {billingCadence} period{billingCadence === 'daily' ? 's' : ''}.
+              Sent, partially paid, and paid invoices won't change.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmCadenceChange}>Re-group drafts</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
