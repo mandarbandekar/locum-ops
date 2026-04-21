@@ -1,25 +1,23 @@
 
 
 ## Goal
-On the Add Shift calendar, render dates that already have a shift in a clearly **light-red** (caution) style so the user sees at a glance which dates are taken before tapping. Today they render with `bg-destructive/20 text-destructive`, which on the sage/gold theme can look muted; the cue is also undocumented to the user.
+In the **Block Time** dialog, highlight dates that already have a shift in light-red on both the Start Date and End Date calendars, so users can see when they're already booked before blocking time off. Today these calendars give no indication of existing shifts.
 
 ## Changes
 
-### `src/components/schedule/ShiftFormDialog.tsx` — Step 2 calendar
-- Update the `booked` modifier styling on the multi-date `<Calendar>`:
-  - Replace `"bg-destructive/20 text-destructive font-semibold"` with a light-red token combo: `"bg-red-100 text-red-700 font-semibold hover:bg-red-200 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-900/50"`.
-  - When a booked date is also selected (user chose to double-up despite caution), keep the primary selection ring visible — react-day-picker stacks classNames, but to ensure the selected styling wins visually, add `aria-selected:bg-primary aria-selected:text-primary-foreground` to the booked classes.
-- Add a small inline legend directly under the calendar (next to the existing "Tap dates to select" / selected-count line) so the color has meaning:
-  - A red dot swatch + caption: `Already has a shift`.
-  - Only render when `bookedDateObjects.length > 0`.
-- No change to behavior — booked dates remain selectable (matches existing conflict-warning flow). The existing red conflict banner under the time row still appears if the user picks one and times overlap.
+### `src/components/schedule/BlockTimeDialog.tsx`
+- Pull existing shifts from the data context: `const { shifts } = useData()`.
+- Compute `bookedDateObjects: Date[]` via `useMemo` — one `Date` per unique calendar day that has a shift (use local-day key `YYYY-M-D` to dedupe and avoid timezone drift, matching the pattern already used in `ShiftFormDialog`).
+- Pass `modifiers={{ booked: bookedDateObjects }}` and `modifiersClassNames={{ booked: "bg-red-100 text-red-700 font-semibold hover:bg-red-200 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-900/50 aria-selected:!bg-primary aria-selected:!text-primary-foreground" }}` to **both** the Start Date and End Date `<Calendar>` components inside the popovers.
+- Add a tiny inline legend directly under the Start/End Date row (only when `bookedDateObjects.length > 0`):
+  - Red dot swatch + caption: `Has a scheduled shift`.
+  - Small muted helper text so users understand the cue applies to both date pickers.
 
 ## What this does NOT change
-- Conflict detection logic, banner, or save flow.
-- Edit-mode single-date popover calendar (no booked highlighting there — editing one shift).
-- Month/week schedule grid styling.
-- No DB, API, or prop changes.
+- Block-time save/delete logic, validation, or date constraints (End Date still disabled before Start Date).
+- Booked dates remain selectable — users can still block time on a day that has a shift; the cue is informational.
+- No changes to `ShiftFormDialog`, the schedule grid, or any DB/API.
 
 ## Files touched
-- `src/components/schedule/ShiftFormDialog.tsx`
+- `src/components/schedule/BlockTimeDialog.tsx`
 
