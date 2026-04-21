@@ -200,22 +200,38 @@ export function OnboardingClinicForm({ onSaved }: Props) {
             </>
           )}
 
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-primary" />
-              <Label>Shift Rates</Label>
-            </div>
-            <RatesEditor
-              rates={rates}
-              onChange={setRates}
-              showCard={false}
+          {/* Engagement type selector */}
+          <div className="border-t border-border pt-4">
+            <EngagementSelector
+              engagementType={engagementType}
+              onEngagementTypeChange={setEngagementType}
+              sourceName={sourceName}
+              onSourceNameChange={setSourceName}
+              taxFormType={taxFormType}
+              onTaxFormTypeChange={setTaxFormType}
               compact
             />
-            <p className="text-xs text-muted-foreground">The rates you set become the defaults for new shifts at this clinic — one less thing to enter each time.</p>
           </div>
+
+          {engagementType !== 'w2' && (
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-4 w-4 text-primary" />
+                <Label>Shift Rates</Label>
+              </div>
+              <RatesEditor
+                rates={rates}
+                onChange={setRates}
+                showCard={false}
+                compact
+              />
+              <p className="text-xs text-muted-foreground">The rates you set become the defaults for new shifts at this clinic — one less thing to enter each time.</p>
+            </div>
+          )}
         </div>
 
-        {/* ── SECTION: Contacts ── */}
+        {/* ── SECTION: Contacts (direct only) ── */}
+        {engagementType === 'direct' && (
         <div className="space-y-4 border-t border-border pt-4">
           <div className="flex items-center gap-2">
             <UserCheck className="h-4 w-4 text-primary" />
