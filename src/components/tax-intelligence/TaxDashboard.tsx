@@ -14,7 +14,7 @@ import {
   Clock, CheckCircle2, Info, CreditCard, TrendingUp, AlertTriangle,
 } from 'lucide-react';
 import TaxProjectionDisplay, { daysPerWeekToIndex, indexToDaysPerWeek, SCHEDULE_OPTIONS } from './TaxProjectionDisplay';
-import EntityComparisonCard from './EntityComparisonCard';
+
 import TaxTerm from './TaxTerm';
 import type { TaxIntelligenceProfile } from '@/hooks/useTaxIntelligence';
 import { TAX_CONSTANTS, V1_FILING_STATUS_LABELS, V1_DISCLAIMER, getV1QuarterlyDueDates, type V1FilingStatus } from '@/lib/taxConstantsV1';
