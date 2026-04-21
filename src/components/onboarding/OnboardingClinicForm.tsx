@@ -16,6 +16,8 @@ import { GooglePlacesAutocomplete } from '@/components/GooglePlacesAutocomplete'
 import type { PlaceSelection } from '@/components/GooglePlacesAutocomplete';
 import type { BillingCadence } from '@/lib/invoiceBillingDefaults';
 import { RatesEditor, ratesToTermsFields, type RateEntry } from '@/components/facilities/RatesEditor';
+import { EngagementSelector } from '@/components/facilities/EngagementSelector';
+import type { EngagementType, TaxFormType } from '@/lib/engagementOptions';
 
 interface Props {
   onSaved: () => void;
@@ -40,6 +42,9 @@ export function OnboardingClinicForm({ onSaved }: Props) {
   const [sameAsScheduling, setSameAsScheduling] = useState(false);
   const [billingCadence, setBillingCadence] = useState<BillingCadence>('monthly');
   const [invoiceDueDays, setInvoiceDueDays] = useState(15);
+  const [engagementType, setEngagementType] = useState<EngagementType>('direct');
+  const [sourceName, setSourceName] = useState('');
+  const [taxFormType, setTaxFormType] = useState<TaxFormType>('1099');
   const [saving, setSaving] = useState(false);
 
   const formRef = useRef<HTMLDivElement>(null);
