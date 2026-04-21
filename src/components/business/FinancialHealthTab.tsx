@@ -11,6 +11,7 @@ import { Sparkles, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { format, parseISO, startOfMonth, eachMonthOfInterval, subMonths, endOfMonth, isWithinInterval, addMonths } from 'date-fns';
 import { toast } from 'sonner';
+import IncomeBySource from './IncomeBySource';
 
 const fmtAmount = (n: number) => `$${n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
@@ -240,6 +241,9 @@ export default function FinancialHealthTab() {
           )}
         </CardContent>
       </Card>
+
+      {/* Income by Source (engagement type) */}
+      <IncomeBySource rangeStart={months[0]} rangeEnd={endOfMonth(months[months.length - 1])} />
 
       {/* Revenue by Facility */}
       <Card>
