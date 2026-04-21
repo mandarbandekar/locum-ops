@@ -246,6 +246,17 @@ export function AddFacilityDialog({ open, onOpenChange, onCreated }: { open: boo
     const err = validateStep(step);
     if (err) { toast.error(err); return; }
 
+    // Non-direct engagements skip Contacts (2) and Billing (3); create after step 1.
+    if (engagementType !== 'direct' && step === 1) {
+      if (!sourceName.trim()) {
+        toast.error(engagementType === 'w2' ? 'Please select your employer' : 'Please select the platform or agency');
+        return;
+      }
+      const success = await handleCreateFacility();
+      if (success) setStep(coreSteps);
+      return;
+    }
+
     // At step 3 (Billing Setup), create the facility then advance to enrichment
     if (step === coreSteps - 1) {
       const success = await handleCreateFacility();
