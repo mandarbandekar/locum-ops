@@ -309,7 +309,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
             onSelect={(dates) => setSelectedDates(dates || [])}
             defaultMonth={defaultMonth ?? selectedDates[0] ?? defaultDate ?? new Date()}
             modifiers={{ booked: bookedDateObjects }}
-            modifiersClassNames={{ booked: "bg-destructive/20 text-destructive font-semibold" }}
+            modifiersClassNames={{ booked: "bg-red-100 text-red-700 font-semibold hover:bg-red-200 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-900/50 aria-selected:!bg-primary aria-selected:!text-primary-foreground" }}
             className={cn("p-1 pointer-events-auto")}
           />
         </div>
@@ -322,6 +322,12 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
           </div>
         ) : (
           <p className="text-xs text-amber-600 dark:text-amber-400">Tap dates to select</p>
+        )}
+        {bookedDateObjects.length > 0 && (
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <span className="inline-block h-2.5 w-2.5 rounded-full bg-red-200 border border-red-300 dark:bg-red-900/60 dark:border-red-700" />
+            <span className="text-[11px] text-muted-foreground">Already has a shift</span>
+          </div>
         )}
       </div>
 
