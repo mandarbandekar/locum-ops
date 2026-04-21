@@ -4,10 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Receipt, Edit2, Save, X, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useData } from '@/contexts/DataContext';
 import type { Facility, BillingCadence } from '@/types';
 
 interface InvoicingPreferencesCardProps {
@@ -34,14 +38,21 @@ export function InvoicingPreferencesCard({ facility, onUpdate }: InvoicingPrefer
   const [emailCc, setEmailCc] = useState(facility.invoice_email_cc || '');
   const [nameBcc, setNameBcc] = useState(facility.invoice_name_bcc || '');
   const [emailBcc, setEmailBcc] = useState(facility.invoice_email_bcc || '');
+  const [showCadenceConfirm, setShowCadenceConfirm] = useState(false);
+
+  const { invoices } = useData();
 
   const hasBillingContact = !!(facility.invoice_name_to?.trim() && facility.invoice_email_to?.trim());
   const editingHasBillingContact = !!(nameTo.trim() && emailTo.trim());
 
-  const handleSave = () => {
-    // Block auto-generate if no billing contact
-    
+  // Count automatic drafts that would be regrouped
+  const autoDraftCount = invoices.filter(
+    (inv) => inv.facility_id === facility.id && inv.status === 'draft' && inv.generation_type === 'automatic'
+  ).length;
 
+  const cadenceChanged = billingCadence !== (facility.billing_cadence || 'monthly');
+
+  const persistChanges = () => {
     onUpdate({
       ...facility,
       billing_cadence: billingCadence,
@@ -59,6 +70,19 @@ export function InvoicingPreferencesCard({ facility, onUpdate }: InvoicingPrefer
     });
     setEditing(false);
     toast.success('Invoicing preferences saved');
+  };
+
+  const handleSave = () => {
+    if (cadenceChanged && autoDraftCount > 0) {
+      setShowCadenceConfirm(true);
+      return;
+    }
+    persistChanges();
+  };
+
+  const confirmCadenceChange = () => {
+    setShowCadenceConfirm(false);
+    persistChanges();
   };
 
   const handleCancel = () => {
@@ -267,6 +291,24 @@ export function InvoicingPreferencesCard({ facility, onUpdate }: InvoicingPrefer
           </div>
         </div>
       </CardContent>
+
+      <AlertDialog open={showCadenceConfirm} onOpenChange={setShowCadenceConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reorganize draft invoices?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Changing the billing cadence to <strong>{billingCadence}</strong> will reorganize{' '}
+              <strong>{autoDraftCount}</strong> draft invoice{autoDraftCount === 1 ? '' : 's'} for{' '}
+              <strong>{facility.name}</strong> into new {billingCadence} period{billingCadence === 'daily' ? 's' : ''}.
+              Sent, partially paid, and paid invoices won't change.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmCadenceChange}>Re-group drafts</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

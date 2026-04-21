@@ -10,6 +10,7 @@ import {
   shouldGenerateDraftOnShiftAdd,
   getSentInvoiceShiftIds,
   canSendInvoice,
+  regroupDraftsForCadenceChange,
 } from '@/lib/invoiceAutoGeneration';
 import { SYSTEM_RUN_HOUR } from '@/lib/invoiceAutoGeneration';
 import { getDefaultBillingConfig, DEFAULT_BILLING_WEEK_END_DAY, validateSenderProfile, hasBillingContact } from '@/lib/invoiceBillingDefaults';
@@ -299,6 +300,111 @@ describe('Invoice Auto-Generation (New Rules)', () => {
       const shifts = [makeShift('s1', 'f1', 'booked', '2026-03-11')];
       const period = getBillingPeriod('weekly', today);
       expect(shouldGenerateDraftOnShiftAdd(shifts, 'weekly', period.start, period.end, today)).toBe(true);
+    });
+  });
+
+  describe('regroupDraftsForCadenceChange', () => {
+    const makeInvoice = (id: string, facilityId: string, periodStart: Date, periodEnd: Date, status: Invoice['status'] = 'draft', generationType: Invoice['generation_type'] = 'automatic'): Invoice => ({
+      id, facility_id: facilityId, invoice_number: `INV-${id}`,
+      invoice_date: periodEnd.toISOString(),
+      period_start: periodStart.toISOString(),
+      period_end: periodEnd.toISOString(),
+      total_amount: 0, balance_due: 0, status,
+      sent_at: null, paid_at: null, due_date: periodEnd.toISOString(),
+      notes: '', share_token: null, share_token_created_at: null, share_token_revoked_at: null,
+      invoice_type: 'bulk', generation_type: generationType, billing_cadence: 'daily',
+    });
+    const makeLi = (id: string, invoiceId: string, shiftId: string): InvoiceLineItem => ({
+      id, invoice_id: invoiceId, shift_id: shiftId,
+      description: '', service_date: '2026-03-10', qty: 1, unit_rate: 850, line_total: 850,
+    });
+
+    it('merges 5 daily drafts within one week into 1 weekly draft', () => {
+      const facility = makeFacility({ billing_cadence: 'weekly' });
+      const days = ['2026-03-09','2026-03-10','2026-03-11','2026-03-12','2026-03-13']; // Mon–Fri
+      const shifts = days.map((d, i) => makeShift(`s${i}`, 'f1', 'booked', d));
+      const invoices: Invoice[] = days.map((d, i) => {
+        const p = getBillingPeriod('daily', new Date(d));
+        return makeInvoice(`inv${i}`, 'f1', p.start, p.end);
+      });
+      const lineItems: InvoiceLineItem[] = invoices.map((inv, i) => makeLi(`li${i}`, inv.id, `s${i}`));
+
+      const result = regroupDraftsForCadenceChange(facility, shifts, invoices, lineItems, 'weekly');
+      expect(result.draftsToDelete).toHaveLength(5);
+      expect(result.draftsToCreate).toHaveLength(1);
+      expect(result.draftsToCreate[0].lineItems).toHaveLength(5);
+      expect(result.draftsToCreate[0].invoice.billing_cadence).toBe('weekly');
+    });
+
+    it('splits 1 monthly draft with 3 shifts into 3 daily drafts', () => {
+      const facility = makeFacility({ billing_cadence: 'daily' });
+      const shifts = [
+        makeShift('s1', 'f1', 'booked', '2026-03-05'),
+        makeShift('s2', 'f1', 'booked', '2026-03-15'),
+        makeShift('s3', 'f1', 'booked', '2026-03-25'),
+      ];
+      const monthly = getBillingPeriod('monthly', new Date('2026-03-01'));
+      const invoices: Invoice[] = [makeInvoice('inv1', 'f1', monthly.start, monthly.end)];
+      const lineItems: InvoiceLineItem[] = [
+        makeLi('li1', 'inv1', 's1'),
+        makeLi('li2', 'inv1', 's2'),
+        makeLi('li3', 'inv1', 's3'),
+      ];
+
+      const result = regroupDraftsForCadenceChange(facility, shifts, invoices, lineItems, 'daily');
+      expect(result.draftsToDelete).toEqual(['inv1']);
+      expect(result.draftsToCreate).toHaveLength(3);
+      result.draftsToCreate.forEach(d => expect(d.lineItems).toHaveLength(1));
+    });
+
+    it('does not touch sent invoices or their shifts', () => {
+      const facility = makeFacility({ billing_cadence: 'weekly' });
+      const shifts = [
+        makeShift('s1', 'f1', 'booked', '2026-03-09'),
+        makeShift('s2', 'f1', 'booked', '2026-03-10'),
+      ];
+      const p1 = getBillingPeriod('daily', new Date('2026-03-09'));
+      const p2 = getBillingPeriod('daily', new Date('2026-03-10'));
+      const invoices: Invoice[] = [
+        makeInvoice('inv-sent', 'f1', p1.start, p1.end, 'sent'),
+        makeInvoice('inv-draft', 'f1', p2.start, p2.end, 'draft'),
+      ];
+      const lineItems: InvoiceLineItem[] = [
+        makeLi('li1', 'inv-sent', 's1'),
+        makeLi('li2', 'inv-draft', 's2'),
+      ];
+
+      const result = regroupDraftsForCadenceChange(facility, shifts, invoices, lineItems, 'weekly');
+      expect(result.draftsToDelete).toEqual(['inv-draft']); // sent untouched
+      // Only s2 is re-bucketed; s1 stays on the sent invoice
+      const totalShifts = result.draftsToCreate.reduce((sum, d) => sum + d.lineItems.length, 0);
+      expect(totalShifts).toBe(1);
+    });
+
+    it('skips suppressed periods under the new cadence', () => {
+      const facility = makeFacility({ billing_cadence: 'weekly' });
+      const shifts = [makeShift('s1', 'f1', 'booked', '2026-03-09')];
+      const p = getBillingPeriod('daily', new Date('2026-03-09'));
+      const invoices: Invoice[] = [makeInvoice('inv1', 'f1', p.start, p.end)];
+      const lineItems: InvoiceLineItem[] = [makeLi('li1', 'inv1', 's1')];
+
+      const weekly = getBillingPeriod('weekly', new Date('2026-03-09'));
+      const suppressed = [{
+        facility_id: 'f1',
+        period_start: weekly.start.toISOString(),
+        period_end: weekly.end.toISOString(),
+      }];
+
+      const result = regroupDraftsForCadenceChange(facility, shifts, invoices, lineItems, 'weekly', suppressed);
+      expect(result.draftsToDelete).toEqual(['inv1']);
+      expect(result.draftsToCreate).toHaveLength(0);
+    });
+
+    it('returns empty when there are no automatic drafts', () => {
+      const facility = makeFacility({ billing_cadence: 'monthly' });
+      const result = regroupDraftsForCadenceChange(facility, [], [], [], 'weekly');
+      expect(result.draftsToDelete).toEqual([]);
+      expect(result.draftsToCreate).toEqual([]);
     });
   });
 });
