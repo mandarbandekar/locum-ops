@@ -3235,6 +3235,7 @@ export type Database = {
           dashboard_levelup_shown: boolean
           dismissed_prompts: Json
           email_tone: string
+          engagement_announcement_dismissed_at: string | null
           facilities_count_band: string
           first_name: string
           has_seen_welcome: boolean
@@ -3265,6 +3266,7 @@ export type Database = {
           dashboard_levelup_shown?: boolean
           dismissed_prompts?: Json
           email_tone?: string
+          engagement_announcement_dismissed_at?: string | null
           facilities_count_band?: string
           first_name?: string
           has_seen_welcome?: boolean
@@ -3295,6 +3297,7 @@ export type Database = {
           dashboard_levelup_shown?: boolean
           dismissed_prompts?: Json
           email_tone?: string
+          engagement_announcement_dismissed_at?: string | null
           facilities_count_band?: string
           first_name?: string
           has_seen_welcome?: boolean
