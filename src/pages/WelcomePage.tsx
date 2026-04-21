@@ -1,105 +1,142 @@
-import { useNavigate } from 'react-router-dom';
-import { useUserProfile } from '@/contexts/UserProfileContext';
-import { Building2, CalendarClock, DollarSign, ArrowRight, Clock } from 'lucide-react';
+import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-
-const steps = [
-  {
-    icon: Building2,
-    title: 'Add your clinics',
-    description: 'The hospitals and practices you work with.',
-    time: '~2 min',
-  },
-  {
-    icon: CalendarClock,
-    title: 'Log a few shifts',
-    description: "Past or upcoming — we'll use these to generate invoices.",
-    time: '~3 min',
-  },
-  {
-    icon: DollarSign,
-    title: 'See your tax estimate',
-    description: 'Your projected quarterly self-employment tax, instantly.',
-    time: '~1 min',
-  },
-];
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Loader2, MailCheck } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function WelcomePage() {
   const navigate = useNavigate();
-  const { updateProfile, completeOnboarding } = useUserProfile();
+  const { signUp } = useAuth();
 
-  const handleGetStarted = async () => {
-    await updateProfile({ has_seen_welcome: true } as any);
-    navigate('/onboarding', { replace: true });
-  };
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
 
-  const handleSkip = async () => {
-    await updateProfile({ has_seen_welcome: true } as any);
-    await completeOnboarding();
-    navigate('/', { replace: true });
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!firstName.trim() || !lastName.trim() || !email.trim()) {
+      toast.error('Please fill in all fields.');
+      return;
+    }
+    if (password.length < 6) {
+      toast.error('Password must be at least 6 characters.');
+      return;
+    }
+    setSubmitting(true);
+    const { error } = await signUp(email.trim(), password, {
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      company: '',
+      profession: 'vet',
+    });
+    setSubmitting(false);
+    if (error) {
+      toast.error(error);
+      return;
+    }
+    setSuccess(true);
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-md flex flex-col items-center gap-8">
+    <div className="min-h-screen bg-foreground/40 flex items-center justify-center p-4">
+      <div className="w-full max-w-md rounded-2xl bg-card border border-[hsl(var(--card-border))] p-8 sm:p-10">
         {/* Logo */}
-        <div className="flex items-center gap-2.5">
-          <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-lg">L</span>
+        <div className="flex flex-col items-center gap-3 mb-8">
+          <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center">
+            <span className="text-primary-foreground font-bold text-xl">L</span>
           </div>
-          <span className="text-xl font-semibold text-foreground tracking-tight">Locum Ops</span>
+          <span className="text-base font-semibold text-foreground tracking-tight">Locum Ops</span>
         </div>
 
-        {/* Headline */}
-        <div className="text-center space-y-2">
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Welcome to Locum Ops</h1>
-          <p className="text-muted-foreground text-base">The business command center for relief vets.</p>
-        </div>
+        {success ? (
+          <div className="flex flex-col items-center text-center gap-4 py-4">
+            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+              <MailCheck className="h-6 w-6" />
+            </div>
+            <h1 className="text-xl font-bold text-foreground">Check your email</h1>
+            <p className="text-sm text-muted-foreground">
+              We sent a confirmation link to <span className="font-medium text-foreground">{email}</span>. Click it to activate your account.
+            </p>
+            <Button onClick={() => navigate('/login')} className="w-full mt-2" size="lg">
+              Go to login
+            </Button>
+          </div>
+        ) : (
+          <>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground text-center mb-7 leading-tight">
+              Create your Locum Ops account
+            </h1>
 
-        {/* Value proposition */}
-        <div className="w-full rounded-xl bg-primary/10 border border-primary/20 px-5 py-4 text-sm text-foreground leading-relaxed text-center">
-          We'll help you track shifts, generate invoices, and estimate your quarterly taxes — all in one place. No spreadsheets, no guesswork.
-        </div>
-
-        {/* Steps */}
-        <div className="w-full space-y-3">
-          <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Here's what we'll set up</p>
-          <div className="space-y-3">
-            {steps.map((step, i) => (
-              <div key={i} className="flex items-start gap-4 rounded-xl border border-border bg-card p-4">
-                <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                  <step.icon className="h-5 w-5" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="font-medium text-foreground text-sm">{step.title}</p>
-                    <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full whitespace-nowrap">{step.time}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">{step.description}</p>
-                </div>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="firstName">First name</Label>
+                <Input
+                  id="firstName"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  autoComplete="given-name"
+                  required
+                />
               </div>
-            ))}
-          </div>
-        </div>
+              <div>
+                <Label htmlFor="lastName">Last name</Label>
+                <Input
+                  id="lastName"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  autoComplete="family-name"
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="new-password"
+                  minLength={6}
+                  required
+                />
+              </div>
 
-        {/* Total time */}
-        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-          <Clock className="h-4 w-4" />
-          <span>Total setup time: about 5 minutes</span>
-        </div>
+              <Button type="submit" className="w-full uppercase tracking-wide" size="lg" disabled={submitting}>
+                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Sign up'}
+              </Button>
+            </form>
 
-        {/* CTAs */}
-        <div className="w-full space-y-3">
-          <Button onClick={handleGetStarted} className="w-full" size="lg">
-            Let's Get Started <ArrowRight className="h-4 w-4 ml-1" />
-          </Button>
-          <button
-            onClick={handleSkip}
-            className="w-full text-center text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
-          >
-            I'll explore on my own
-          </button>
-        </div>
+            <p className="text-xs text-muted-foreground text-center mt-5 leading-relaxed">
+              By signing up, you agree to our{' '}
+              <a href="#" className="underline hover:text-foreground">Terms of Service</a> and{' '}
+              <a href="#" className="underline hover:text-foreground">Privacy Policy</a>.
+            </p>
+
+            <div className="mt-6 pt-5 border-t border-[hsl(var(--card-border))] text-center text-sm text-muted-foreground">
+              Already have an account?{' '}
+              <Link to="/login" className="font-medium text-primary hover:underline">
+                Log in
+              </Link>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
