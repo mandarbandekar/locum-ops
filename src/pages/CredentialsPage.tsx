@@ -114,15 +114,6 @@ export default function CredentialsPage() {
             <h1 className="page-title">Credential Management</h1>
             <p className="page-subtitle">Manage licenses, CE, renewals, insurance, documents, and compliance tasks in one place</p>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={credTour.startTour}
-            className="ml-auto gap-1.5 text-xs text-primary hover:bg-primary/10"
-          >
-            <Compass className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Tour</span>
-          </Button>
         </div>
       </div>
 
