@@ -1,60 +1,40 @@
 
 
-## Goal
-Capture **engagement type** when creating or editing a facility, and surface it on the facilities list. The schema is already in place (`engagement_type`, `source_name`, `tax_form_type`); this work is UI-only.
+## Block Time: Range Selection + Shift Conflict Warning
 
-## Engagement selector (top of form, after Name)
-Render as a 3-option radio-card group titled **"How do you work with this facility?"** (required):
+Two improvements to `BlockTimeDialog`:
 
-1. **Direct / Independent** → `engagement_type = 'direct'` (default)
-2. **Via Platform or Agency** (Roo, IndeVets, staffing firm) → `'third_party'`
-3. **W-2 Employer** (VCA, Banfield, etc.) → `'w2'`
+### 1. Drag-to-select date range
 
-Below the selector, render conditional helper text per branch (see below).
+Replace the two separate single-date pickers (Start Date / End Date) with a **single range calendar** so the user clicks a start date and drags (or clicks an end date) to fill the range automatically.
 
-## Conditional fields per branch
+- Use shadcn `Calendar` in `mode="range"` instead of two `mode="single"` popovers.
+- One trigger button labeled with the selected range, e.g. `Mar 10 – Mar 14, 2026` (or `Pick a date range` when empty).
+- `selected={{ from: startDate, to: endDate }}` → on change, set both `startDate` and `endDate` from the returned range. If the user only clicks one day, `to` falls back to `from` so a single-day block still works.
+- Keep all-day toggle and time inputs unchanged. Times still apply to the chosen `from` / `to` dates.
+- Keep the existing red "booked" highlight (`modifiers={{ booked: bookedDateObjects }}`) so shift days remain visually flagged in the picker itself.
 
-### Direct (default)
-Form renders unchanged: billing cadence, net terms, invoice contacts (to/cc/bcc), rates, contacts, notes.
+### 2. Conflict warning when block overlaps a scheduled shift
 
-### Third-party (platform / agency)
-- **Source dropdown** "Platform or agency name" — presets: Roo, IndeVets, Serenity Vet, Evette, VetNow, **Other** (Other reveals a free-text input). Saved to `source_name`.
-- **Tax form radio** "How does {source_name} pay you?" → `1099` (default) | `W-2`. Saved to `tax_form_type`.
-- **Helper text** under selector: *"We won't generate invoices for these shifts — {source_name} handles billing. We'll still track your earnings and taxes."*
-- **Tip under facility name**: *"You can track each physical clinic separately, or log all your {source_name} shifts under one facility — whatever works for you."*
-- **HIDE**: billing cadence, net terms, invoice prefix, invoice contacts (to/cc/bcc).
-- **KEEP**: facility name, address, rates, contacts, notes.
-- Force `auto_generate_invoices = false` on save (no invoices for third-party).
+Add a real-time conflict check inside the dialog (mirrors how `ShiftFormDialog` warns on double-booking):
 
-### W-2 Employer
-- **Employer dropdown** — presets: VCA, Banfield, BluePearl, MedVet, Ethos, Pathway, NVA, **Other** (free-text). Saved to `source_name`.
-- Auto-set `tax_form_type = 'w2'`.
-- **Helper text**: *"W-2 income is tracked separately from 1099 income for tax purposes."*
-- **HIDE**: billing cadence, net terms, invoice contacts, **rates**.
-- **KEEP**: facility name, address, contacts, notes.
-- Force `auto_generate_invoices = false` on save.
+- Compute `conflictingShifts` via `useMemo` over `shifts` from `useData()`. A shift conflicts if its start/end interval overlaps the block's effective interval (respecting all-day vs timed).
+- When `conflictingShifts.length > 0`, render an inline `Alert` (amber/warning variant, matching the app's status-pill system) directly under the date range picker:
+  - Title: `Heads up — this overlaps a scheduled shift`
+  - Body lists each conflicting shift: facility name + date + time range (e.g., `Greenfield Medical Center · Mar 12, 8:00 AM – 6:00 PM`).
+  - Helper line: `You can still save this block — shifts won't be removed. Edit or delete the shift first if this was a mistake.`
+- Pass `facilities` (or a `getFacilityName` helper) into the dialog from `SchedulePage` so the alert can show readable names. `useData()` already exposes facilities, so we can pull them in directly inside `BlockTimeDialog` instead of plumbing props.
+- Saving is **not blocked** — the warning is informational, consistent with the existing shift-conflict behavior. The Save button stays enabled.
 
-## Facilities list — engagement pill
-On each card and list-row in `FacilitiesPage.tsx`, render a small pill next to the status badge:
-- `direct` → green pill: **"Direct"**
-- `third_party` → blue pill: **"{source_name}"** (fallback: "Platform")
-- `w2` → purple pill: **"W-2: {source_name}"** (fallback: "W-2")
+### Files to change
 
-Use Tailwind tokens consistent with the existing pill system (light bg + darker text, dark-mode aware).
+- `src/components/schedule/BlockTimeDialog.tsx` — swap dual single-date pickers for one range picker, add conflict memo + Alert, pull facilities from `useData()` for names.
 
-## Files touched
-1. **`src/components/AddFacilityDialog.tsx`** — add engagement selector at top of step 1 (Clinic Details, right after Name); branch the rest of the wizard:
-   - Direct: existing 4-step flow unchanged.
-   - Third-party / W-2: collapse to a single review step; skip the billing-defaults step entirely; on save apply forced fields above.
-2. **`src/components/onboarding/OnboardingClinicForm.tsx`** — add the same engagement selector after the name field; conditionally hide billing-cadence / invoice-contact / rates sections per branch; persist new fields via `addFacility`.
-3. **`src/components/onboarding/ManualFacilityForm.tsx`** — same selector + branching for the onboarding manual path.
-4. **`src/pages/FacilityDetailPage.tsx`** (Edit Facility / Overview tab) — add the engagement selector to the editable overview area; conditionally hide `RatesEditor`, `InvoicingPreferencesCard`, and confirmation-settings section based on engagement type; persist via existing `updateFacility`.
-5. **`src/pages/FacilitiesPage.tsx`** — render the engagement pill on both the card view and list view, beside the existing `<StatusBadge>`.
-6. **`src/components/AddFacilityDialog.tsx`** save logic — when engagement is non-direct, set `auto_generate_invoices: false` and skip `updateTerms`/confirmation-settings calls.
-7. **New small helper** `src/lib/engagementOptions.ts` — exports preset arrays (`THIRD_PARTY_PRESETS`, `W2_EMPLOYER_PRESETS`), label/color maps, and a `getEngagementPill(facility)` helper used by the list page.
+No changes to `SchedulePage`, `WeekTimeGrid`, the time_blocks schema, or shift logic.
 
-## Out of scope (explicitly unchanged)
-- Shift form, invoice auto-generation pipeline, tax estimator, CPA prep, dashboard cards, scheduling.
-- DB schema (already done).
-- Any read paths beyond the facilities list pill.
+### Out of scope
+
+- No drag-to-select directly on the month grid (only inside the dialog's calendar).
+- No automatic block/shift resolution — purely an informational warning.
+- No changes to all-day toggle, color picker, type picker, notes, or delete flow.
 
