@@ -833,7 +833,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
         <Button type="button" variant="outline" onClick={() => setStep(2)} className="h-11 min-w-[100px]">
           <ChevronLeft className="h-4 w-4 mr-1" /> Back
         </Button>
-        <Button type="submit" className="flex-1 h-11" disabled={selectedDates.length === 0}>
+        <Button type="submit" className="flex-1 h-11" disabled={selectedDates.length === 0 || !!hoursInvalidReason}>
           {isSubmitting ? 'Saving...' : selectedDates.length > 1 ? `Add ${selectedDates.length} Shifts` : 'Add Shift'}
         </Button>
       </div>
