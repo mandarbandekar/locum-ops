@@ -38,7 +38,17 @@ function parseShiftMeta(item: any): { dateStr: string | null; timeStr: string | 
   return { dateStr: null, timeStr: null, label: desc };
 }
 
-function ShiftLineItemCard({ item, readOnly, onUpdate, onDelete }: { item: any; readOnly?: boolean; onUpdate?: (u: any) => Promise<void>; onDelete?: () => Promise<void> }) {
+function ShiftLineItemCard({
+  item, readOnly, onUpdate, onDelete, onAddOvertime, showSyncHint, canAddOvertime,
+}: {
+  item: any;
+  readOnly?: boolean;
+  onUpdate?: (u: any) => Promise<void>;
+  onDelete?: () => Promise<void>;
+  onAddOvertime?: () => Promise<void>;
+  showSyncHint?: boolean;
+  canAddOvertime?: boolean;
+}) {
   const [editing, setEditing] = useState(false);
   const [desc, setDesc] = useState(item.description);
   const [date, setDate] = useState(item.service_date || '');
@@ -71,14 +81,17 @@ function ShiftLineItemCard({ item, readOnly, onUpdate, onDelete }: { item: any; 
             <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="h-8 text-sm" />
           </div>
           <div>
-            <Label className="text-[10px] text-muted-foreground uppercase">Qty</Label>
-            <Input type="number" value={qty} onChange={e => setQty(Number(e.target.value))} className="h-8 text-sm" min={1} />
+            <Label className="text-[10px] text-muted-foreground uppercase">Qty{(item.line_kind === 'overtime' || item.line_kind === 'regular') ? ' (hrs)' : ''}</Label>
+            <Input type="number" value={qty} onChange={e => setQty(Number(e.target.value))} className="h-8 text-sm" min={0} step="0.25" autoFocus={item.line_kind === 'overtime' && Number(item.qty) === 0} />
           </div>
           <div>
             <Label className="text-[10px] text-muted-foreground uppercase">Rate</Label>
             <Input type="number" value={rate} onChange={e => setRate(Number(e.target.value))} className="h-8 text-sm" min={0} step="0.01" />
           </div>
         </div>
+        {showSyncHint && (
+          <p className="text-[11px] text-muted-foreground italic">Editing this updates the shift on your schedule.</p>
+        )}
         <div className="flex justify-between items-center pt-1">
           <span className="text-sm text-muted-foreground">Line total: <span className="font-semibold text-foreground">{fmtMoney(qty * rate)}</span></span>
           <div className="flex gap-1">
@@ -148,6 +161,19 @@ function ShiftLineItemCard({ item, readOnly, onUpdate, onDelete }: { item: any; 
               </div>
             )}
           </div>
+          {showSyncHint && !readOnly && (
+            <p className="text-[10.5px] text-muted-foreground/80 italic mt-1.5">Editing this updates the shift on your schedule.</p>
+          )}
+          {!readOnly && canAddOvertime && onAddOvertime && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 mt-1.5 -ml-1 text-xs text-primary hover:text-primary hover:bg-primary/10"
+              onClick={e => { e.stopPropagation(); onAddOvertime(); }}
+            >
+              <Plus className="h-3 w-3 mr-1" /> Add overtime
+            </Button>
+          )}
         </div>
       </div>
     </div>
