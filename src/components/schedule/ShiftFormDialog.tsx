@@ -597,7 +597,12 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
           <div className="flex items-center gap-1.5 mt-0.5">
             <span className="inline-block h-2.5 w-2.5 rounded-full bg-red-200 border border-red-300 dark:bg-red-900/60 dark:border-red-700" />
             <span className="text-[11px] text-muted-foreground">Already has a shift</span>
-          </div>
+        </div>
+        {activeRateKind === 'hourly' && hoursInvalidReason && (
+          <p className="mt-1.5 text-[11px] text-destructive flex items-center gap-1">
+            <AlertTriangle className="h-3 w-3" /> {hoursInvalidReason}
+          </p>
+        )}
         )}
         {usedBlockTypes.length > 0 && (
           <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 mt-0.5">
