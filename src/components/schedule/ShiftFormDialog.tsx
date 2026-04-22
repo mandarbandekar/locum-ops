@@ -361,6 +361,10 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (hoursInvalidReason) {
+      toast.error(hoursInvalidReason);
+      return;
+    }
     setIsSubmitting(true);
     try {
       await saveCustomRateToTerms();
