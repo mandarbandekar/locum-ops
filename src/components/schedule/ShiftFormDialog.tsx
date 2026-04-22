@@ -895,7 +895,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
                 <SelectTrigger className="h-10"><SelectValue placeholder="Select rate" /></SelectTrigger>
                 <SelectContent>
                   {rateOptions.map((opt, i) => (
-                    <SelectItem key={`rate-${i}`} value={`rate-${i}`}>{opt.label} — ${opt.amount.toLocaleString()}</SelectItem>
+                    <SelectItem key={`rate-${i}`} value={`rate-${i}`}>{opt.label} — ${opt.amount.toLocaleString()}{opt.kind === 'hourly' ? '/hr' : '/day'}</SelectItem>
                   ))}
                   <SelectItem value="custom">Custom</SelectItem>
                 </SelectContent>
