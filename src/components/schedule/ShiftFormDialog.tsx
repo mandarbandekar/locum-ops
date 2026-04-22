@@ -17,6 +17,8 @@ import { cn } from '@/lib/utils';
 import { termsToRates, RateEntry } from '@/components/facilities/RatesEditor';
 import { computeShiftTotal, isOvertimePolicyActive } from '@/lib/overtime';
 import { useData } from '@/contexts/DataContext';
+import { getBillingPeriod } from '@/lib/invoiceAutoGeneration';
+import type { BillingCadence } from '@/lib/invoiceBillingDefaults';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -555,6 +557,24 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
           onCreated={(newId) => handleFacilityChange(newId)}
         />
       </div>
+      {/* Clinic defaults chip */}
+      {(() => {
+        const fac = facilities.find(f => f.id === facilityId);
+        if (!fac) return null;
+        const cadenceLabel = ({ daily: 'Daily', weekly: 'Weekly', biweekly: 'Biweekly', monthly: 'Monthly' } as Record<string, string>)[fac.billing_cadence] || 'Monthly';
+        const firstRate = rateOptions[0];
+        const ot = firstRate?.overtime;
+        const parts = [
+          `${cadenceLabel} billing`,
+          firstRate ? `${firstRate.label} $${firstRate.amount.toLocaleString()}${firstRate.kind === 'hourly' ? '/hr' : '/day'}` : null,
+          ot && isOvertimePolicyActive(ot) ? `OT after ${ot.threshold_hours}h` : null,
+        ].filter(Boolean);
+        return (
+          <p className="text-[11px] text-muted-foreground -mt-1">
+            <span className="text-foreground font-medium">Defaults · </span>{parts.join(' · ')}
+          </p>
+        );
+      })()}
       {renderEngagementHelper()}
       <div className="flex justify-end pt-2">
         <Button type="button" onClick={() => setStep(2)} disabled={!facilityId} className="h-10 min-w-[120px]">

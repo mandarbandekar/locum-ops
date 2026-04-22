@@ -72,6 +72,14 @@ export default function OnboardingPage() {
   const [lastShiftRate, setLastShiftRate] = useState<number | null>(null);
   const [showClinicForm, setShowClinicForm] = useState(false);
   const [shiftSubmitted, setShiftSubmitted] = useState(false);
+  // Tick so the sticky footer re-renders when stepper internal state changes.
+  const [, setFooterTick] = useState(0);
+  useEffect(() => {
+    if (phase !== 'manual_facility') return;
+    const id = window.setInterval(() => setFooterTick(t => t + 1), 200);
+    return () => window.clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
 
   const firstName = profile?.first_name || user?.user_metadata?.first_name || '';
 
@@ -141,26 +149,51 @@ export default function OnboardingPage() {
             </>
           );
         }
-        // Showing clinic form — Save Clinic CTA
+        // Showing clinic form — drive the stepper's hidden Next/Back/Skip CTAs.
+        const saveBtn = document.getElementById('onboarding-clinic-save') as HTMLButtonElement | null;
+        const backBtn = document.getElementById('onboarding-clinic-back') as HTMLButtonElement | null;
+        const skipBtn = document.getElementById('onboarding-clinic-skip') as HTMLButtonElement | null;
+        const isLast = saveBtn?.dataset.isLast === 'true';
+        const canBack = backBtn?.dataset.canBack === 'true';
+        const canSkip = skipBtn?.dataset.canSkip === 'true';
+        const primaryLabel = isLast ? 'Save Clinic' : 'Continue';
         return (
           <>
             <Button
               className="w-full h-12"
               size="lg"
-              onClick={() => {
-                const btn = document.getElementById('onboarding-clinic-save') as HTMLButtonElement;
-                btn?.click();
-              }}
+              onClick={() => saveBtn?.click()}
             >
-              Save Clinic & Continue <ArrowRight className="ml-2 h-4 w-4" />
+              {primaryLabel} <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
-            <button
-              type="button"
-              onClick={() => setPhase('finish')}
-              className="w-full text-sm text-muted-foreground hover:text-foreground py-1 text-center"
-            >
-              Skip — I'll add clinics later
-            </button>
+            <div className="flex items-center justify-between text-sm">
+              {canBack ? (
+                <button
+                  type="button"
+                  onClick={() => backBtn?.click()}
+                  className="text-muted-foreground hover:text-foreground py-1"
+                >
+                  ← Back
+                </button>
+              ) : <span />}
+              {canSkip ? (
+                <button
+                  type="button"
+                  onClick={() => skipBtn?.click()}
+                  className="text-primary hover:underline py-1"
+                >
+                  Skip — I'll add this later
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setPhase('finish')}
+                  className="text-muted-foreground hover:text-foreground py-1"
+                >
+                  Skip — I'll add clinics later
+                </button>
+              )}
+            </div>
           </>
         );
       }
