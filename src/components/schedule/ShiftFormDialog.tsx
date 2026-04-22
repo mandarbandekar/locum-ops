@@ -325,14 +325,14 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     const facilityTerms = terms.find(t => t.facility_id === facilityId);
     if (facilityTerms) {
       const existingCustom = facilityTerms.custom_rates || [];
-      if (existingCustom.some(cr => cr.amount === Number(rate) && cr.label === label)) return;
+      if (existingCustom.some(cr => cr.amount === Number(rate) && cr.label === label && (cr.kind || 'flat') === customRateKind)) return;
       await updateTerms({
         ...facilityTerms,
-        custom_rates: [...existingCustom, { label, amount: Number(rate) }],
+        custom_rates: [...existingCustom, { label, amount: Number(rate), kind: customRateKind }],
       });
       toast.success(`Custom rate "${label}" saved to facility`);
     }
-  }, [isCustomRate, saveCustomRate, rate, customRateLabel, facilityId, terms, updateTerms]);
+  }, [isCustomRate, saveCustomRate, rate, customRateLabel, customRateKind, facilityId, terms, updateTerms]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -340,6 +340,9 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     try {
       await saveCustomRateToTerms();
       const overridePayload = computeOverridePayload();
+      const ratePayload = activeRateKind === 'hourly'
+        ? { rate_kind: 'hourly' as const, hourly_rate: Number(rate) || 0, rate_applied: computedRateApplied }
+        : { rate_kind: 'flat' as const, hourly_rate: null, rate_applied: Number(rate) };
       if (existing) {
         const date = format(selectedDates[0] || new Date(), 'yyyy-MM-dd');
         await onSave({
@@ -347,7 +350,8 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
           facility_id: facilityId,
           start_datetime: new Date(`${date}T${startTime}:00`).toISOString(),
           end_datetime: new Date(`${date}T${endTime}:00`).toISOString(),
-          rate_applied: Number(rate), notes, color,
+          ...ratePayload,
+          notes, color,
           ...overridePayload,
         });
       } else {
@@ -358,7 +362,8 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
             facility_id: facilityId,
             start_datetime: new Date(`${date}T${startTime}:00`).toISOString(),
             end_datetime: new Date(`${date}T${endTime}:00`).toISOString(),
-            rate_applied: Number(rate), notes, color,
+            ...ratePayload,
+            notes, color,
             ...overridePayload,
           });
         }
