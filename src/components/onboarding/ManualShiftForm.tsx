@@ -19,7 +19,7 @@ export function ManualShiftForm({ facilities, defaultFacilityId, defaultRate, on
   const [facilityId, setFacilityId] = useState(defaultFacilityId || facilities[0]?.id || '');
   const [date, setDate] = useState('');
   const [startTime, setStartTime] = useState('08:00');
-  const [endTime, setEndTime] = useState('18:00');
+  const [endTime, setEndTime] = useState('16:00');
   const [rate, setRate] = useState(defaultRate?.toString() || '');
   const [notes, setNotes] = useState('');
 
