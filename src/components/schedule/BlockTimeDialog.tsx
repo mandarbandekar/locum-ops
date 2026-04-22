@@ -31,8 +31,8 @@ export function BlockTimeDialog({ open, onOpenChange, onSave, onDelete, existing
   const { shifts, facilities } = useData();
   const [title, setTitle] = useState('');
   const [blockType, setBlockType] = useState<BlockType>('vacation');
-  const [startDate, setStartDate] = useState<Date>(new Date());
-  const [endDate, setEndDate] = useState<Date>(new Date());
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [allDay, setAllDay] = useState(true);
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('17:00');
