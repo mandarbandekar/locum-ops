@@ -204,22 +204,47 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   }, [step, rate, rateOptions]);
 
   // Calculated hours from current start/end times (for hourly preview).
-  const calculatedHours = useMemo(() => {
-    if (!startTime || !endTime) return 0;
+  // Rounding rule: nearest quarter hour (0.25), the standard payroll convention.
+  // Returns null when inputs are missing/invalid so callers can distinguish
+  // "not entered yet" from "0 hours".
+  const calculatedHours = useMemo<number | null>(() => {
+    if (!startTime || !endTime) return null;
     const [sh, sm] = startTime.split(':').map(Number);
     const [eh, em] = endTime.split(':').map(Number);
-    if ([sh, sm, eh, em].some(n => Number.isNaN(n))) return 0;
+    if ([sh, sm, eh, em].some(n => Number.isNaN(n))) return null;
     let mins = (eh * 60 + em) - (sh * 60 + sm);
     if (mins < 0) mins += 24 * 60; // overnight
-    return mins / 60;
+    const rawHours = mins / 60;
+    // Round to nearest quarter hour
+    return Math.round(rawHours * 4) / 4;
   }, [startTime, endTime]);
 
-  // For hourly rates: rate_applied = hours × hourly_rate. For flat: rate is the total.
+  // Validation: hourly shifts require a usable duration (>0, ≤24, valid times).
+  const hoursInvalidReason = useMemo<string | null>(() => {
+    if (activeRateKind !== 'hourly') return null;
+    if (calculatedHours === null) return 'Enter a valid start and end time.';
+    if (calculatedHours <= 0) return 'End time must be after start time.';
+    if (calculatedHours > 24) return 'Shift cannot exceed 24 hours.';
+    return null;
+  }, [activeRateKind, calculatedHours]);
+  const isHoursValid = hoursInvalidReason === null;
+
+  // For hourly rates: rate_applied = hours × hourly_rate (rounded to cents).
+  // For flat: rate is the total.
   const computedRateApplied = useMemo(() => {
     const rateNum = Number(rate) || 0;
-    if (activeRateKind === 'hourly') return Math.round(rateNum * calculatedHours * 100) / 100;
+    if (activeRateKind === 'hourly') {
+      const hrs = calculatedHours ?? 0;
+      return Math.round(rateNum * hrs * 100) / 100;
+    }
     return rateNum;
   }, [rate, activeRateKind, calculatedHours]);
+
+  // Display helper: format hours dropping trailing zeros (e.g. 8 / 8.5 / 8.25).
+  const formatHours = (h: number | null) => {
+    if (h === null) return '—';
+    return h % 1 === 0 ? h.toFixed(0) : h.toString();
+  };
 
   const bookedDateObjects = useMemo(() =>
     shifts.map(s => {
