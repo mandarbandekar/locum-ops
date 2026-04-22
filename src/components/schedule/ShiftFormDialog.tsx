@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { AlertTriangle, Trash2, CalendarDays, DollarSign, Clock, Building2, StickyNote, Palette, Plus, ChevronRight, ChevronLeft, Check } from 'lucide-react';
+import { GuidedStep } from '@/components/onboarding/GuidedStep';
 import { AddFacilityDialog } from '@/components/AddFacilityDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
@@ -62,42 +63,6 @@ const COLOR_MAP: Record<ShiftColor, string> = {
   yellow: 'bg-yellow-500',
 };
 
-const STEP_LABELS = ['Facility', 'Schedule', 'Details'] as const;
-
-/* ─── Step Indicator ─── */
-function StepIndicator({ step, isMobile }: { step: number; isMobile: boolean }) {
-  return (
-    <div className="flex items-center justify-center gap-2 mb-3">
-      {STEP_LABELS.map((label, i) => {
-        const num = i + 1;
-        const isActive = num === step;
-        const isDone = num < step;
-        return (
-          <div key={label} className="flex items-center gap-2">
-            {i > 0 && <div className={cn("h-px w-5 sm:w-8", isDone ? 'bg-primary' : 'bg-border')} />}
-            <div className="flex items-center gap-1.5">
-              <div className={cn(
-                "flex items-center justify-center rounded-full text-xs font-semibold transition-colors shrink-0",
-                "h-6 w-6",
-                isDone && 'bg-primary text-primary-foreground',
-                isActive && 'bg-primary text-primary-foreground ring-2 ring-primary/30 ring-offset-1 ring-offset-background',
-                !isActive && !isDone && 'bg-muted text-muted-foreground',
-              )}>
-                {isDone ? <Check className="h-3 w-3" /> : num}
-              </div>
-              {!isMobile && (
-                <span className={cn(
-                  "text-xs font-medium",
-                  isActive ? 'text-foreground' : 'text-muted-foreground',
-                )}>{label}</span>
-              )}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
 
 export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms, existing, onSave, onDelete, embedded, defaultDate, defaultStartTime, defaultMonth }: ShiftFormDialogProps) {
   const [facilityId, setFacilityId] = useState(existing?.facility_id || facilities[0]?.id || '');
@@ -523,15 +488,12 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
 
   /* ─── Step 1: Facility ─── */
   const renderStep1 = () => (
-    <div className="flex flex-col gap-3">
-      <div className="text-center mb-1">
-        <p className="text-sm text-muted-foreground">Which facility is this shift at?</p>
-      </div>
+    <GuidedStep
+      title="Which clinic?"
+      subtitle="Pick the practice this shift is for. Add a new one if it's missing."
+      icon={Building2}
+    >
       <div>
-        <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-          <Building2 className="h-3.5 w-3.5" />
-          Facility
-        </Label>
         <Select value={facilityId} onValueChange={(v) => {
           if (v === '__add_new__') {
             setShowAddFacility(true);
@@ -570,7 +532,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
           ot && isOvertimePolicyActive(ot) ? `OT after ${ot.threshold_hours}h` : null,
         ].filter(Boolean);
         return (
-          <p className="text-[11px] text-muted-foreground -mt-1">
+          <p className="text-[11px] text-muted-foreground">
             <span className="text-foreground font-medium">Defaults · </span>{parts.join(' · ')}
           </p>
         );
@@ -581,19 +543,16 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
           Next <ChevronRight className="h-4 w-4 ml-1" />
         </Button>
       </div>
-    </div>
+    </GuidedStep>
   );
 
   /* ─── Step 2: Schedule ─── */
   const renderStep2 = () => (
-    <div className="flex flex-col gap-3">
-      <div className="text-center">
-        <p className="text-sm text-muted-foreground">
-          Select dates for <span className="font-medium text-foreground">{facilityName}</span>
-        </p>
-        <p className="text-[11px] text-muted-foreground/70 mt-0.5">Tap multiple dates to batch-schedule shifts</p>
-      </div>
-
+    <GuidedStep
+      title="When are you working?"
+      subtitle={`Tap one or more dates for ${facilityName || 'this clinic'}, then set your start and end time.`}
+      icon={CalendarDays}
+    >
       {/* Calendar with selected count */}
       <div className="flex flex-col items-center gap-1.5">
         <div className="border border-border rounded-xl overflow-hidden">
@@ -657,10 +616,6 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
 
       {/* Time row */}
       <div>
-        <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-          <Clock className="h-3.5 w-3.5" />
-          Time
-        </Label>
         <div className="grid grid-cols-2 gap-3">
           <div>
             <span className="text-[10px] text-muted-foreground">Start</span>
@@ -702,18 +657,34 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
           Next <ChevronRight className="h-4 w-4 ml-1" />
         </Button>
       </div>
-    </div>
+    </GuidedStep>
   );
 
   /* ─── Step 3: Details + Review ─── */
+  const reviewPreview = (
+    <>
+      <p className="text-xs font-medium text-foreground">
+        {selectedDates.length} shift{selectedDates.length !== 1 ? 's' : ''} at{' '}
+        <span className="text-primary">{facilityName}</span>
+      </p>
+      <p className="text-[11px] text-muted-foreground mt-0.5">
+        {[...selectedDates].sort((a, b) => a.getTime() - b.getTime()).map(d => format(d, 'MMM d')).join(', ')}
+        {' · '}
+        {startTime}–{endTime}
+        {rate ? ` · $${computedRateApplied.toLocaleString(undefined, { maximumFractionDigits: 2 })}${activeRateKind === 'hourly' && isHoursValid ? ` (${formatHours(calculatedHours)} hrs × $${Number(rate)}/hr)` : ''}` : ''}
+      </p>
+    </>
+  );
+
   const renderStep3 = () => (
-    <div className="flex flex-col gap-3">
+    <GuidedStep
+      title="Rate & details"
+      subtitle="Confirm your rate, pick a color, and add notes if needed."
+      icon={DollarSign}
+      preview={reviewPreview}
+    >
       {/* Rate */}
       <div>
-        <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-          <DollarSign className="h-3.5 w-3.5" />
-          Rate
-        </Label>
         {rateOptions.length > 0 && !isCustomRate ? (
           <div className="space-y-2">
             <Select
@@ -851,10 +822,6 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
 
       {/* Color row */}
       <div>
-        <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
-          <Palette className="h-3.5 w-3.5" />
-          Color
-        </Label>
         <div className="flex items-center gap-2">
           <div className="flex gap-2 flex-wrap">
             {SHIFT_COLORS.map(c => (
@@ -884,20 +851,6 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
         <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Shift notes..." className="resize-none text-sm" />
       )}
 
-      {/* Review summary */}
-      <div className="rounded-lg bg-muted/60 border border-border p-3">
-        <p className="text-xs font-medium text-foreground">
-          {selectedDates.length} shift{selectedDates.length !== 1 ? 's' : ''} at{' '}
-          <span className="text-primary">{facilityName}</span>
-        </p>
-        <p className="text-[11px] text-muted-foreground mt-0.5">
-          {[...selectedDates].sort((a, b) => a.getTime() - b.getTime()).map(d => format(d, 'MMM d')).join(', ')}
-          {' · '}
-          {startTime}–{endTime}
-          {rate ? ` · $${computedRateApplied.toLocaleString(undefined, { maximumFractionDigits: 2 })}${activeRateKind === 'hourly' && isHoursValid ? ` (${formatHours(calculatedHours)} hrs × $${Number(rate)}/hr)` : ''}` : ''}
-        </p>
-      </div>
-
       {/* Navigation */}
       <div className="flex gap-2">
         <Button type="button" variant="outline" onClick={() => setStep(2)} className="h-11 min-w-[100px]">
@@ -907,7 +860,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
           {isSubmitting ? 'Saving...' : selectedDates.length > 1 ? `Add ${selectedDates.length} Shifts` : 'Add Shift'}
         </Button>
       </div>
-    </div>
+    </GuidedStep>
   );
 
   /* ─── Edit mode: flat layout (unchanged) ─── */
@@ -1125,9 +1078,25 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   );
 
   /* ─── New shift: guided stepper ─── */
+  const totalSteps = 3;
   const renderGuidedForm = () => (
-    <form onSubmit={handleSubmit} className="flex flex-col">
-      <StepIndicator step={step} isMobile={isMobile} />
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+      <div className="flex items-center justify-between">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Step {step} of {totalSteps}
+        </p>
+        <div className="flex gap-1">
+          {Array.from({ length: totalSteps }).map((_, i) => (
+            <div
+              key={i}
+              className={cn(
+                'h-1 w-8 rounded-full transition-colors',
+                i + 1 <= step ? 'bg-primary' : 'bg-muted',
+              )}
+            />
+          ))}
+        </div>
+      </div>
       {step === 1 && renderStep1()}
       {step === 2 && renderStep2()}
       {step === 3 && renderStep3()}
