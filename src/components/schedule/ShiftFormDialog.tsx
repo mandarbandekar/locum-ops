@@ -182,6 +182,19 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
 
   const rateOptions = useMemo(() => buildRateOptions(terms, facilityId), [terms, facilityId]);
 
+  // Currently selected rate's kind. For preset rates, derived from the selected option.
+  // For custom rates, derived from `customRateKind`. Defaults to 'flat' when no rate yet.
+  const selectedRateOption: RateEntry | null = useMemo(() => {
+    if (isCustomRate) return null;
+    if (!selectedRateKey?.startsWith('rate-')) return null;
+    const idx = parseInt(selectedRateKey.replace('rate-', ''), 10);
+    return rateOptions[idx] || null;
+  }, [isCustomRate, selectedRateKey, rateOptions]);
+
+  const activeRateKind: RateKind = isCustomRate
+    ? customRateKind
+    : (selectedRateOption?.kind || 'flat');
+
   // Auto-select first rate when entering step 3 if no rate set
   useEffect(() => {
     if (step === 3 && !rate && rateOptions.length > 0) {
@@ -189,6 +202,24 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
       setSelectedRateKey('rate-0');
     }
   }, [step, rate, rateOptions]);
+
+  // Calculated hours from current start/end times (for hourly preview).
+  const calculatedHours = useMemo(() => {
+    if (!startTime || !endTime) return 0;
+    const [sh, sm] = startTime.split(':').map(Number);
+    const [eh, em] = endTime.split(':').map(Number);
+    if ([sh, sm, eh, em].some(n => Number.isNaN(n))) return 0;
+    let mins = (eh * 60 + em) - (sh * 60 + sm);
+    if (mins < 0) mins += 24 * 60; // overnight
+    return mins / 60;
+  }, [startTime, endTime]);
+
+  // For hourly rates: rate_applied = hours × hourly_rate. For flat: rate is the total.
+  const computedRateApplied = useMemo(() => {
+    const rateNum = Number(rate) || 0;
+    if (activeRateKind === 'hourly') return Math.round(rateNum * calculatedHours * 100) / 100;
+    return rateNum;
+  }, [rate, activeRateKind, calculatedHours]);
 
   const bookedDateObjects = useMemo(() =>
     shifts.map(s => {
