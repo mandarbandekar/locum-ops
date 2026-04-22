@@ -227,7 +227,7 @@ export function InvoiceEditPanel({
   const [notesOpen, setNotesOpen] = useState(!!(invoice.notes && invoice.notes.length > 0));
 
   const { profile: taxProfile, hasProfile: hasTaxProfile } = useTaxIntelligence();
-  const { invoices: allInvoices, shifts } = useData();
+  const { invoices: allInvoices, shifts, terms, updateShift } = useData();
 
   const total = items.reduce((s: number, li: any) => s + li.line_total, 0);
   const isPaid = invoice.status === 'paid';
