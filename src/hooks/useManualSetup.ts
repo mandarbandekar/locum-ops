@@ -24,11 +24,12 @@ export interface ManualFacilityInput {
   billing_email_bcc?: string;
   address?: string;
   weekday_rate?: number;
+  weekday_rate_kind?: 'flat' | 'hourly';
   weekend_rate?: number;
   partial_day_rate?: number;
   holiday_rate?: number;
   telemedicine_rate?: number;
-  custom_rates?: Array<{ label: string; amount: number }>;
+  custom_rates?: Array<{ label: string; amount: number; kind?: 'flat' | 'hourly' }>;
   notes?: string;
   billing_cadence?: string;
   billing_week_end_day?: string;
@@ -110,6 +111,10 @@ export function useManualSetup() {
       // Create terms if any rate provided
       const hasRates = input.weekday_rate || input.weekend_rate || input.partial_day_rate || input.holiday_rate || input.telemedicine_rate || (input.custom_rates && input.custom_rates.length > 0);
       if (hasRates) {
+        const rateKinds: Record<string, 'flat' | 'hourly'> = {};
+        if (input.weekday_rate_kind && input.weekday_rate_kind !== 'flat') {
+          rateKinds.weekday = input.weekday_rate_kind;
+        }
         await db('terms_snapshots').insert({
           user_id: user.id,
           facility_id: facility.id,
@@ -123,6 +128,7 @@ export function useManualSetup() {
           late_payment_policy_text: '',
           special_notes: '',
           custom_rates: input.custom_rates || [],
+          rate_kinds: rateKinds,
         } as any);
       }
 

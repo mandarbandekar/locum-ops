@@ -11,6 +11,8 @@ import type { ManualFacilityInput } from '@/hooks/useManualSetup';
 import type { BillingCadence } from '@/lib/invoiceBillingDefaults';
 import { EngagementSelector } from '@/components/facilities/EngagementSelector';
 import type { EngagementType, TaxFormType } from '@/lib/engagementOptions';
+import type { RateKind } from '@/types';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 interface Props {
@@ -24,6 +26,7 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
   const [billingEmail, setBillingEmail] = useState('');
   const [address, setAddress] = useState('');
   const [weekdayRate, setWeekdayRate] = useState('');
+  const [weekdayRateKind, setWeekdayRateKind] = useState<RateKind>('flat');
   const [billingCadence, setBillingCadence] = useState<BillingCadence>('monthly');
   const [engagementType, setEngagementType] = useState<EngagementType>('direct');
   const [sourceName, setSourceName] = useState('');
@@ -55,6 +58,7 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
       billing_email: isDirect ? (billingEmail.trim() || undefined) : undefined,
       address: address.trim() || undefined,
       weekday_rate: engagementType !== 'w2' && weekdayRate ? parseFloat(weekdayRate) : undefined,
+      weekday_rate_kind: engagementType !== 'w2' && weekdayRate ? weekdayRateKind : undefined,
       billing_cadence: isDirect ? billingCadence : undefined,
       billing_week_end_day: undefined,
       billing_anchor_date: undefined,
@@ -164,20 +168,44 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
 
         {engagementType !== 'w2' && (
           <div>
-            <Label>Default day rate</Label>
-            <div className="relative">
-              <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input
-                type="number"
-                value={weekdayRate}
-                onChange={e => setWeekdayRate(e.target.value)}
-                placeholder="e.g. 800"
-                className="pl-7"
-                min={0}
-                step={50}
-              />
+            <Label>Default rate</Label>
+            <div className="flex items-center gap-2 mt-1">
+              <div className="inline-flex rounded-md border border-border overflow-hidden h-10" role="group">
+                {(['flat', 'hourly'] as RateKind[]).map(k => (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => setWeekdayRateKind(k)}
+                    className={cn(
+                      'px-3 text-xs font-medium transition-colors',
+                      weekdayRateKind === k
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-background text-muted-foreground hover:bg-muted',
+                    )}
+                  >
+                    {k === 'flat' ? 'Flat' : 'Hourly'}
+                  </button>
+                ))}
+              </div>
+              <div className="relative flex-1">
+                <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  type="number"
+                  value={weekdayRate}
+                  onChange={e => setWeekdayRate(e.target.value)}
+                  placeholder={weekdayRateKind === 'hourly' ? 'e.g. 95' : 'e.g. 800'}
+                  className="pl-7 pr-10"
+                  min={0}
+                  step={weekdayRateKind === 'hourly' ? 5 : 50}
+                />
+                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground pointer-events-none">
+                  {weekdayRateKind === 'hourly' ? '/hr' : '/day'}
+                </span>
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">You can add more rate types later in facility settings.</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Most relief shifts are flat day rates — switch to hourly if you bill by the hour. You can add more rate types later in facility settings.
+            </p>
           </div>
         )}
 
