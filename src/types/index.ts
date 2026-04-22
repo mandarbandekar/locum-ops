@@ -49,6 +49,15 @@ export interface FacilityContact {
 }
 
 export type RateKind = 'flat' | 'hourly';
+
+/** Per-rate overtime configuration (applies to hourly rates only). */
+export interface OvertimePolicy {
+  threshold_hours: number;
+  ot_rate: number;
+}
+
+export type PredefinedRateKey = 'weekday' | 'weekend' | 'partial_day' | 'holiday' | 'telemedicine';
+
 export interface TermsSnapshot {
   id: string;
   facility_id: string;
@@ -61,8 +70,16 @@ export interface TermsSnapshot {
   overtime_policy_text: string;
   late_payment_policy_text: string;
   special_notes: string;
-  custom_rates?: Array<{ label: string; amount: number; kind?: RateKind }>;
-  rate_kinds?: Partial<Record<'weekday' | 'weekend' | 'partial_day' | 'holiday' | 'telemedicine', RateKind>>;
+  custom_rates?: Array<{
+    label: string;
+    amount: number;
+    kind?: RateKind;
+    overtime_threshold_hours?: number | null;
+    overtime_rate?: number | null;
+  }>;
+  rate_kinds?: Partial<Record<PredefinedRateKey, RateKind>>;
+  /** Structured OT per predefined rate, e.g. `{ weekday: { threshold_hours: 8, ot_rate: 142.5 } }` */
+  overtime_config?: Partial<Record<PredefinedRateKey, OvertimePolicy>>;
 }
 
 export type ShiftColor = 'blue' | 'green' | 'red' | 'orange' | 'purple' | 'pink' | 'teal' | 'yellow';
@@ -88,6 +105,12 @@ export interface Shift {
   hourly_rate?: number | null;
   engagement_type_override?: 'direct' | 'third_party' | 'w2' | null;
   source_name_override?: string | null;
+  /** Hours billed at the base hourly_rate (null when not hourly). */
+  regular_hours?: number | null;
+  /** Hours billed at overtime_rate (0 when no OT). */
+  overtime_hours?: number;
+  /** Snapshot of OT $/hr at the time the shift was saved. */
+  overtime_rate?: number | null;
 }
 
 export type InvoiceStatus = 'draft' | 'sent' | 'partial' | 'paid';
@@ -115,6 +138,7 @@ export interface Invoice {
   billing_cadence: BillingCadence | null;
 }
 
+export type InvoiceLineKind = 'regular' | 'overtime' | 'flat';
 export interface InvoiceLineItem {
   id: string;
   invoice_id: string;
@@ -124,6 +148,8 @@ export interface InvoiceLineItem {
   qty: number;
   unit_rate: number;
   line_total: number;
+  /** Distinguishes regular hours, overtime hours, or flat day-rate lines. */
+  line_kind?: InvoiceLineKind;
 }
 
 export interface InvoicePayment {
