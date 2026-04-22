@@ -1947,6 +1947,7 @@ export type Database = {
           description: string
           id: string
           invoice_id: string
+          line_kind: string
           line_total: number
           qty: number
           service_date: string | null
@@ -1959,6 +1960,7 @@ export type Database = {
           description?: string
           id?: string
           invoice_id: string
+          line_kind?: string
           line_total?: number
           qty?: number
           service_date?: string | null
@@ -1971,6 +1973,7 @@ export type Database = {
           description?: string
           id?: string
           invoice_id?: string
+          line_kind?: string
           line_total?: number
           qty?: number
           service_date?: string | null
@@ -2557,8 +2560,11 @@ export type Database = {
           hourly_rate: number | null
           id: string
           notes: string
+          overtime_hours: number
+          overtime_rate: number | null
           rate_applied: number
           rate_kind: string
+          regular_hours: number | null
           source_name_override: string | null
           start_datetime: string
           status: string
@@ -2574,8 +2580,11 @@ export type Database = {
           hourly_rate?: number | null
           id?: string
           notes?: string
+          overtime_hours?: number
+          overtime_rate?: number | null
           rate_applied?: number
           rate_kind?: string
+          regular_hours?: number | null
           source_name_override?: string | null
           start_datetime: string
           status?: string
@@ -2591,8 +2600,11 @@ export type Database = {
           hourly_rate?: number | null
           id?: string
           notes?: string
+          overtime_hours?: number
+          overtime_rate?: number | null
           rate_applied?: number
           rate_kind?: string
+          regular_hours?: number | null
           source_name_override?: string | null
           start_datetime?: string
           status?: string
@@ -3134,6 +3146,7 @@ export type Database = {
           holiday_rate: number
           id: string
           late_payment_policy_text: string
+          overtime_config: Json
           overtime_policy_text: string
           partial_day_rate: number
           rate_kinds: Json
@@ -3152,6 +3165,7 @@ export type Database = {
           holiday_rate?: number
           id?: string
           late_payment_policy_text?: string
+          overtime_config?: Json
           overtime_policy_text?: string
           partial_day_rate?: number
           rate_kinds?: Json
@@ -3170,6 +3184,7 @@ export type Database = {
           holiday_rate?: number
           id?: string
           late_payment_policy_text?: string
+          overtime_config?: Json
           overtime_policy_text?: string
           partial_day_rate?: number
           rate_kinds?: Json
