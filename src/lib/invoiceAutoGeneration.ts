@@ -200,7 +200,7 @@ export function buildAutoInvoiceDraft(
   invoice: Omit<Invoice, 'id'>;
   lineItems: Omit<InvoiceLineItem, 'id' | 'invoice_id'>[];
 } {
-  const lineItems = eligibleShifts.flatMap(s => {
+  const lineItems: Omit<InvoiceLineItem, 'id' | 'invoice_id'>[] = eligibleShifts.flatMap(s => {
     const isHourly = s.rate_kind === 'hourly' && s.hourly_rate != null && s.hourly_rate > 0;
     const dateLabel = format(new Date(s.start_datetime), 'MMM d, yyyy');
     const timeLabel = `${format(new Date(s.start_datetime), 'h:mm a')} – ${format(new Date(s.end_datetime), 'h:mm a')}`;
