@@ -31,8 +31,8 @@ export function BlockTimeDialog({ open, onOpenChange, onSave, onDelete, existing
   const { shifts, facilities } = useData();
   const [title, setTitle] = useState('');
   const [blockType, setBlockType] = useState<BlockType>('vacation');
-  const [startDate, setStartDate] = useState<Date>(new Date());
-  const [endDate, setEndDate] = useState<Date>(new Date());
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [allDay, setAllDay] = useState(true);
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('17:00');
@@ -62,11 +62,10 @@ export function BlockTimeDialog({ open, onOpenChange, onSave, onDelete, existing
       setNotes(existing.notes);
       setColor(existing.color);
     } else {
-      const d = defaultDate || new Date();
       setTitle('');
       setBlockType('vacation');
-      setStartDate(d);
-      setEndDate(d);
+      setStartDate(defaultDate);
+      setEndDate(defaultDate);
       setAllDay(true);
       setStartTime('09:00');
       setEndTime('17:00');
@@ -77,6 +76,7 @@ export function BlockTimeDialog({ open, onOpenChange, onSave, onDelete, existing
 
   // Compute the effective block interval for conflict-checking
   const blockInterval = useMemo(() => {
+    if (!startDate || !endDate) return null;
     const s = new Date(startDate);
     const e = new Date(endDate);
     if (allDay) {
@@ -92,6 +92,7 @@ export function BlockTimeDialog({ open, onOpenChange, onSave, onDelete, existing
   }, [startDate, endDate, allDay, startTime, endTime]);
 
   const conflictingShifts = useMemo(() => {
+    if (!blockInterval) return [];
     const { start, end } = blockInterval;
     return (shifts || []).filter(s => {
       const ss = new Date(s.start_datetime);
@@ -104,7 +105,7 @@ export function BlockTimeDialog({ open, onOpenChange, onSave, onDelete, existing
   const getFacilityName = (id: string) => facilities?.find(f => f.id === id)?.name || 'Unknown facility';
 
   const handleSave = () => {
-    if (!title.trim()) return;
+    if (!title.trim() || !blockInterval) return;
     const { start: s, end: e } = blockInterval;
     const block = {
       ...(existing ? { id: existing.id } : {}),
@@ -120,7 +121,7 @@ export function BlockTimeDialog({ open, onOpenChange, onSave, onDelete, existing
     onOpenChange(false);
   };
 
-  const range: DateRange = { from: startDate, to: endDate };
+  const range: DateRange | undefined = startDate ? { from: startDate, to: endDate } : undefined;
   const rangeLabel = startDate && endDate
     ? (startDate.getTime() === endDate.getTime()
         ? format(startDate, 'MMM d, yyyy')
@@ -172,12 +173,12 @@ export function BlockTimeDialog({ open, onOpenChange, onSave, onDelete, existing
                   mode="range"
                   selected={range}
                   onSelect={(r) => {
-                    if (!r) return;
-                    if (r.from) setStartDate(r.from);
-                    setEndDate(r.to ?? r.from ?? startDate);
+                    if (!r) { setStartDate(undefined); setEndDate(undefined); return; }
+                    setStartDate(r.from);
+                    setEndDate(r.to ?? r.from);
                   }}
                   numberOfMonths={2}
-                  defaultMonth={startDate}
+                  defaultMonth={startDate ?? defaultDate ?? new Date()}
                   modifiers={{ booked: bookedDateObjects }}
                   modifiersClassNames={{ booked: BOOKED_CLASS }}
                   className="p-3 pointer-events-auto"
@@ -263,7 +264,7 @@ export function BlockTimeDialog({ open, onOpenChange, onSave, onDelete, existing
           )}
           <div className="flex gap-2 ml-auto">
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button onClick={handleSave} disabled={!title.trim()}>
+            <Button onClick={handleSave} disabled={!title.trim() || !startDate || !endDate}>
               {existing ? 'Update' : 'Block Time'}
             </Button>
           </div>
