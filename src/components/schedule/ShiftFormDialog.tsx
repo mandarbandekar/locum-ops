@@ -172,6 +172,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     setSelectedRateKey('');
     setIsCustomRate(false);
     setCustomRateLabel('');
+    setCustomRateKind(existing?.rate_kind === 'hourly' ? 'hourly' : 'flat');
     setSaveCustomRate(true);
     setShowAddFacility(false);
     setIsSubmitting(false);
