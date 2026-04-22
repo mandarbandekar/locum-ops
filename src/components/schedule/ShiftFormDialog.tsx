@@ -918,6 +918,11 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
               <Input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="h-10" />
               <Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="h-10" />
             </div>
+            {activeRateKind === 'hourly' && hoursInvalidReason && (
+              <p className="mt-1.5 text-[11px] text-destructive flex items-center gap-1">
+                <AlertTriangle className="h-3 w-3" /> {hoursInvalidReason}
+              </p>
+            )}
           </div>
 
           <div>
