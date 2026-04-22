@@ -13,7 +13,7 @@ import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks, sub
 import { generateInvoiceNumber } from '@/lib/businessLogic';
 import { getEligibleShiftsForBulkInvoice } from '@/lib/bulkInvoiceHelpers';
 import { toast } from 'sonner';
-import type { Shift } from '@/types';
+import type { Shift, InvoiceLineItem } from '@/types';
 
 type PeriodPreset = 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'custom';
 
