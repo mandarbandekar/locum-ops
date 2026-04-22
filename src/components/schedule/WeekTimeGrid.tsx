@@ -211,7 +211,12 @@ export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, o
                     </div>
                   )}
                   {height >= 60 && (
-                    <div className="opacity-70 truncate text-[10px] mt-0.5">${s.rate_applied?.toLocaleString?.() ?? s.rate_applied}</div>
+                    <div className="opacity-70 truncate text-[10px] mt-0.5">
+                      ${s.rate_applied?.toLocaleString?.() ?? s.rate_applied}
+                      {s.rate_kind === 'hourly' && s.hourly_rate ? (
+                        <span className="ml-1 opacity-80">(${s.hourly_rate}/hr)</span>
+                      ) : null}
+                    </div>
                   )}
                 </div>
               );

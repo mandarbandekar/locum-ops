@@ -109,8 +109,20 @@ function ShiftLineItemCard({ item, readOnly, onUpdate, onDelete }: { item: any; 
             {!meta.dateStr && item.qty > 1 ? null : null}
           </p>
           <div className="flex items-center justify-between mt-1">
-            <p className="text-[11px] text-muted-foreground">
-              {item.qty} × {fmtMoney(item.unit_rate)}
+            <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
+              {isShift && item.qty !== 1 ? (
+                <>
+                  <span>{item.qty}h × {fmtMoney(item.unit_rate)}/hr</span>
+                  <span className="inline-flex items-center rounded-full bg-primary/10 text-primary text-[10px] font-medium px-1.5 py-0.5">Hourly</span>
+                </>
+              ) : (
+                <>
+                  <span>{item.qty} × {fmtMoney(item.unit_rate)}</span>
+                  {isShift && (
+                    <span className="inline-flex items-center rounded-full bg-muted text-muted-foreground text-[10px] font-medium px-1.5 py-0.5">Flat</span>
+                  )}
+                </>
+              )}
               {isShift && <span className="ml-1.5 text-primary">· from shift ✓</span>}
             </p>
             {!readOnly && (

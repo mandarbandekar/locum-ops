@@ -323,7 +323,11 @@ export default function SchedulePage() {
             >
               <div className="font-semibold truncate leading-tight">{getFacilityName(s.facility_id)}</div>
               <div className="truncate opacity-80">{format(start, 'h:mma').toLowerCase()}–{format(end, 'h:mma').toLowerCase()}</div>
-              <div className="truncate opacity-70">${s.rate_applied} · {hrs}h</div>
+              <div className="truncate opacity-70">
+                {s.rate_kind === 'hourly' && s.hourly_rate
+                  ? <>${s.hourly_rate}/hr · {hrs}h = ${s.rate_applied}</>
+                  : <>${s.rate_applied} · {hrs}h</>}
+              </div>
             </div>
           );
         })}
@@ -505,7 +509,20 @@ export default function SchedulePage() {
                             <td className="p-3 font-medium">{getFacilityName(s.facility_id)}</td>
                             <td className="p-3 text-muted-foreground hidden md:table-cell">{format(new Date(s.start_datetime), 'h:mm a')} – {format(new Date(s.end_datetime), 'h:mm a')}</td>
                             <td className="p-3 text-muted-foreground hidden md:table-cell">{hrs}h</td>
-                            <td className="p-3 font-medium">${s.rate_applied}</td>
+                            <td className="p-3 font-medium">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span>${s.rate_applied}</span>
+                                {s.rate_kind === 'hourly' && s.hourly_rate ? (
+                                  <span className="inline-flex items-center rounded-full bg-primary/10 text-primary text-[10px] font-medium px-1.5 py-0.5">
+                                    ${s.hourly_rate}/hr × {hrs}h
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center rounded-full bg-muted text-muted-foreground text-[10px] font-medium px-1.5 py-0.5">
+                                    Flat
+                                  </span>
+                                )}
+                              </div>
+                            </td>
                             <td className="p-3" onClick={e => e.stopPropagation()}>
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
