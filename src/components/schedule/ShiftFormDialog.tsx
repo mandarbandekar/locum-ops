@@ -584,14 +584,11 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
 
   /* ─── Step 2: Schedule ─── */
   const renderStep2 = () => (
-    <div className="flex flex-col gap-3">
-      <div className="text-center">
-        <p className="text-sm text-muted-foreground">
-          Select dates for <span className="font-medium text-foreground">{facilityName}</span>
-        </p>
-        <p className="text-[11px] text-muted-foreground/70 mt-0.5">Tap multiple dates to batch-schedule shifts</p>
-      </div>
-
+    <GuidedStep
+      title="When are you working?"
+      subtitle={`Tap one or more dates for ${facilityName || 'this clinic'}, then set your start and end time.`}
+      icon={CalendarDays}
+    >
       {/* Calendar with selected count */}
       <div className="flex flex-col items-center gap-1.5">
         <div className="border border-border rounded-xl overflow-hidden">
@@ -655,10 +652,6 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
 
       {/* Time row */}
       <div>
-        <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-          <Clock className="h-3.5 w-3.5" />
-          Time
-        </Label>
         <div className="grid grid-cols-2 gap-3">
           <div>
             <span className="text-[10px] text-muted-foreground">Start</span>
@@ -700,7 +693,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
           Next <ChevronRight className="h-4 w-4 ml-1" />
         </Button>
       </div>
-    </div>
+    </GuidedStep>
   );
 
   /* ─── Step 3: Details + Review ─── */
