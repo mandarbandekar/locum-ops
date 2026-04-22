@@ -76,6 +76,7 @@ export function BlockTimeDialog({ open, onOpenChange, onSave, onDelete, existing
 
   // Compute the effective block interval for conflict-checking
   const blockInterval = useMemo(() => {
+    if (!startDate || !endDate) return null;
     const s = new Date(startDate);
     const e = new Date(endDate);
     if (allDay) {
@@ -91,6 +92,7 @@ export function BlockTimeDialog({ open, onOpenChange, onSave, onDelete, existing
   }, [startDate, endDate, allDay, startTime, endTime]);
 
   const conflictingShifts = useMemo(() => {
+    if (!blockInterval) return [];
     const { start, end } = blockInterval;
     return (shifts || []).filter(s => {
       const ss = new Date(s.start_datetime);
