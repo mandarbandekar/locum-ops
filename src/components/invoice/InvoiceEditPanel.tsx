@@ -433,25 +433,95 @@ export function InvoiceEditPanel({
           {items.length === 0 ? (
             <p className="py-3 text-center text-muted-foreground text-xs">No line items yet</p>
           ) : (
-            items.map((li: any) => (
-              <ShiftLineItemCard
-                key={li.id}
-                item={li}
-                readOnly={readOnly}
-                onUpdate={async (updated) => {
-                  if (!onUpdateLineItem) return;
-                  await onUpdateLineItem(updated);
-                  const newTotal = items.reduce((s: number, x: any) => s + (x.id === updated.id ? updated.line_total : x.line_total), 0);
-                  await onUpdateInvoice({ ...invoice, total_amount: newTotal, balance_due: newTotal });
-                }}
-                onDelete={async () => {
-                  if (!onDeleteLineItem) return;
-                  await onDeleteLineItem(li.id);
-                  const newTotal = total - li.line_total;
-                  await onUpdateInvoice({ ...invoice, total_amount: newTotal, balance_due: newTotal });
-                }}
-              />
-            ))
+            items.map((li: any) => {
+              const shift = li.shift_id ? shifts.find(s => s.id === li.shift_id) : null;
+              const syncEligible = canSyncShiftForLine(invoice.status, li.line_kind, li.shift_id);
+              const isHourlyRegular = shift?.rate_kind === 'hourly' && li.line_kind === 'regular';
+              const hasOvertimeSibling = !!li.shift_id && items.some((x: any) => x.shift_id === li.shift_id && x.line_kind === 'overtime');
+              const canAddOT = !readOnly && invoice.status === 'draft' && isHourlyRegular && !hasOvertimeSibling;
+
+              const handleAddOvertime = async () => {
+                if (!onAddLineItem || !shift || !facility) return;
+                // Look up OT rate from facility's terms snapshot
+                const facilityTerms = terms.find(t => t.facility_id === facility.id);
+                let otRate = (shift.hourly_rate || li.unit_rate || 0) * 1.5;
+                if (facilityTerms) {
+                  const rates = termsToRates(facilityTerms as any);
+                  // Match the rate the shift was billed at
+                  const match = rates.find(r => r.kind === 'hourly' && Math.abs((r.amount || 0) - (shift.hourly_rate || 0)) < 0.01);
+                  if (match?.overtime?.ot_rate) otRate = match.overtime.ot_rate;
+                }
+                const dateLabel = li.service_date
+                  ? format(new Date(li.service_date + 'T00:00:00'), 'MMM d, yyyy')
+                  : '';
+                await onAddLineItem({
+                  invoice_id: invoice.id,
+                  shift_id: shift.id,
+                  description: `${facility.name} — Overtime${dateLabel ? ` (${dateLabel})` : ''}`,
+                  service_date: li.service_date || null,
+                  qty: 0,
+                  unit_rate: Math.round(otRate * 100) / 100,
+                  line_total: 0,
+                  line_kind: 'overtime',
+                });
+                await onAddActivity({
+                  invoice_id: invoice.id,
+                  action: 'overtime_added',
+                  description: `Added overtime line to shift on ${dateLabel || 'shift'}`,
+                });
+                toast.success('Overtime line added — set the hours');
+              };
+
+              return (
+                <ShiftLineItemCard
+                  key={li.id}
+                  item={li}
+                  readOnly={readOnly}
+                  showSyncHint={syncEligible}
+                  canAddOvertime={canAddOT}
+                  onAddOvertime={handleAddOvertime}
+                  onUpdate={async (updated) => {
+                    if (!onUpdateLineItem) return;
+                    await onUpdateLineItem(updated);
+                    const nextItems = items.map((x: any) => x.id === updated.id ? updated : x);
+                    const newTotal = nextItems.reduce((s: number, x: any) => s + (x.line_total || 0), 0);
+                    await onUpdateInvoice({ ...invoice, total_amount: newTotal, balance_due: newTotal });
+
+                    // Sync underlying shift if eligible
+                    if (syncEligible && shift) {
+                      const result = syncShiftFromLineItems(shift, nextItems);
+                      if (result) {
+                        await updateShift({ ...shift, ...result.patch });
+                        await onAddActivity({
+                          invoice_id: invoice.id,
+                          action: 'shift_synced',
+                          description: result.summary,
+                        });
+                      }
+                    }
+                  }}
+                  onDelete={async () => {
+                    if (!onDeleteLineItem) return;
+                    await onDeleteLineItem(li.id);
+                    const nextItems = items.filter((x: any) => x.id !== li.id);
+                    const newTotal = nextItems.reduce((s: number, x: any) => s + (x.line_total || 0), 0);
+                    await onUpdateInvoice({ ...invoice, total_amount: newTotal, balance_due: newTotal });
+
+                    if (syncEligible && shift) {
+                      const result = syncShiftFromLineItems(shift, nextItems);
+                      if (result) {
+                        await updateShift({ ...shift, ...result.patch });
+                        await onAddActivity({
+                          invoice_id: invoice.id,
+                          action: 'shift_synced',
+                          description: result.summary,
+                        });
+                      }
+                    }
+                  }}
+                />
+              );
+            })
           )}
 
           {!readOnly && showAddLine && (
