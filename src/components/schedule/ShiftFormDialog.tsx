@@ -697,10 +697,15 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
                 <SelectItem value="custom">Custom</SelectItem>
               </SelectContent>
             </Select>
-            {activeRateKind === 'hourly' && Number(rate) > 0 && (
+            {activeRateKind === 'hourly' && Number(rate) > 0 && isHoursValid && (
               <p className="text-[11px] text-muted-foreground">
-                {calculatedHours.toFixed(calculatedHours % 1 === 0 ? 0 : 1)} hrs × ${Number(rate).toLocaleString()}/hr ={' '}
+                {formatHours(calculatedHours)} hrs × ${Number(rate).toLocaleString()}/hr ={' '}
                 <span className="font-semibold text-foreground">${computedRateApplied.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </p>
+            )}
+            {activeRateKind === 'hourly' && hoursInvalidReason && (
+              <p className="text-[11px] text-destructive flex items-center gap-1">
+                <AlertTriangle className="h-3 w-3" /> {hoursInvalidReason}
               </p>
             )}
           </div>
