@@ -697,14 +697,30 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   );
 
   /* ─── Step 3: Details + Review ─── */
+  const reviewPreview = (
+    <>
+      <p className="text-xs font-medium text-foreground">
+        {selectedDates.length} shift{selectedDates.length !== 1 ? 's' : ''} at{' '}
+        <span className="text-primary">{facilityName}</span>
+      </p>
+      <p className="text-[11px] text-muted-foreground mt-0.5">
+        {[...selectedDates].sort((a, b) => a.getTime() - b.getTime()).map(d => format(d, 'MMM d')).join(', ')}
+        {' · '}
+        {startTime}–{endTime}
+        {rate ? ` · $${computedRateApplied.toLocaleString(undefined, { maximumFractionDigits: 2 })}${activeRateKind === 'hourly' && isHoursValid ? ` (${formatHours(calculatedHours)} hrs × $${Number(rate)}/hr)` : ''}` : ''}
+      </p>
+    </>
+  );
+
   const renderStep3 = () => (
-    <div className="flex flex-col gap-3">
+    <GuidedStep
+      title="Rate & details"
+      subtitle="Confirm your rate, pick a color, and add notes if needed."
+      icon={DollarSign}
+      preview={reviewPreview}
+    >
       {/* Rate */}
       <div>
-        <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-          <DollarSign className="h-3.5 w-3.5" />
-          Rate
-        </Label>
         {rateOptions.length > 0 && !isCustomRate ? (
           <div className="space-y-2">
             <Select
@@ -842,10 +858,6 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
 
       {/* Color row */}
       <div>
-        <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
-          <Palette className="h-3.5 w-3.5" />
-          Color
-        </Label>
         <div className="flex items-center gap-2">
           <div className="flex gap-2 flex-wrap">
             {SHIFT_COLORS.map(c => (
@@ -875,20 +887,6 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
         <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Shift notes..." className="resize-none text-sm" />
       )}
 
-      {/* Review summary */}
-      <div className="rounded-lg bg-muted/60 border border-border p-3">
-        <p className="text-xs font-medium text-foreground">
-          {selectedDates.length} shift{selectedDates.length !== 1 ? 's' : ''} at{' '}
-          <span className="text-primary">{facilityName}</span>
-        </p>
-        <p className="text-[11px] text-muted-foreground mt-0.5">
-          {[...selectedDates].sort((a, b) => a.getTime() - b.getTime()).map(d => format(d, 'MMM d')).join(', ')}
-          {' · '}
-          {startTime}–{endTime}
-          {rate ? ` · $${computedRateApplied.toLocaleString(undefined, { maximumFractionDigits: 2 })}${activeRateKind === 'hourly' && isHoursValid ? ` (${formatHours(calculatedHours)} hrs × $${Number(rate)}/hr)` : ''}` : ''}
-        </p>
-      </div>
-
       {/* Navigation */}
       <div className="flex gap-2">
         <Button type="button" variant="outline" onClick={() => setStep(2)} className="h-11 min-w-[100px]">
@@ -898,7 +896,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
           {isSubmitting ? 'Saving...' : selectedDates.length > 1 ? `Add ${selectedDates.length} Shifts` : 'Add Shift'}
         </Button>
       </div>
-    </div>
+    </GuidedStep>
   );
 
   /* ─── Edit mode: flat layout (unchanged) ─── */
