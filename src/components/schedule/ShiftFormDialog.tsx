@@ -107,6 +107,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   const [selectedRateKey, setSelectedRateKey] = useState<string>('');
   const [isCustomRate, setIsCustomRate] = useState(false);
   const [customRateLabel, setCustomRateLabel] = useState('');
+  const [customRateKind, setCustomRateKind] = useState<RateKind>(existing?.rate_kind === 'hourly' ? 'hourly' : 'flat');
   const [saveCustomRate, setSaveCustomRate] = useState(true);
   const [notes, setNotes] = useState(existing?.notes || '');
   const [color, setColor] = useState<ShiftColor>(existing?.color || 'blue');
