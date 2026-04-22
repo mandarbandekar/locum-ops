@@ -298,7 +298,6 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
           title="Clinic Identity"
           subtitle="Start with the basics — name and address."
           icon={Building2}
-          whyWeAsk="This is how the clinic appears across your schedule, invoices, and reports."
         >
           {!manualEntry && !clinicSelected ? (
             <div className="space-y-2">
@@ -349,12 +348,6 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
           title="How You Work With Them"
           subtitle="Tell us how this clinic pays you so we set up the right workflow."
           icon={UserCheck}
-          whyWeAsk={
-            <>
-              Direct clinics get auto-generated invoices from LocumOps. Platform / agency work skips invoicing
-              because the platform pays you.
-            </>
-          }
           preview={
             isDirect ? (
               <p className="text-[12px] text-foreground">
@@ -389,12 +382,6 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
           title="Your Rates"
           subtitle="Save the rates you charge here so logging shifts is a click, not a calculation."
           icon={DollarSign}
-          whyWeAsk={
-            <>
-              Rates you save become defaults when you log a shift here, so you're not re-entering numbers every time.
-              Add as many as apply (Weekday, Weekend, Holiday, etc.).
-            </>
-          }
         >
           <div className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-[12px] text-muted-foreground">
             <span className="font-medium text-foreground">Tip · </span>
@@ -424,11 +411,6 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
           title="Billing & Contacts"
           subtitle="How often we draft invoices, when payment is due, and who receives them."
           icon={CalendarClock}
-          whyWeAsk={
-            <>
-              LocumOps bundles your shifts into draft invoices on this schedule. You always review before sending.
-            </>
-          }
           preview={
             <div className="space-y-1">
               <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Sample invoice header</p>
