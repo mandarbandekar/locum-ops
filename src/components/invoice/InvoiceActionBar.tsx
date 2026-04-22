@@ -60,6 +60,7 @@ export function InvoiceActionBar({
   const [shareLoading, setShareLoading] = useState(false);
   const [confirmAlreadySentOpen, setConfirmAlreadySentOpen] = useState(false);
   const [confirmRevertOpen, setConfirmRevertOpen] = useState(false);
+  const [comingSoonOpen, setComingSoonOpen] = useState(false);
 
   const computedStatus = computeInvoiceStatus(invoice);
   const isDraft = invoice.status === 'draft';
