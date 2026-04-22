@@ -1022,10 +1022,43 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
             ) : (
               <div className="space-y-2">
                 <Input type="text" value={customRateLabel} onChange={e => setCustomRateLabel(e.target.value)} placeholder="Rate label" className="h-9 text-sm" />
-                <div className="relative">
-                  <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                  <Input type="number" value={rate} onChange={e => setRate(e.target.value)} placeholder="0" min={0} className="pl-7 h-10" />
+                <div className="flex items-center gap-2">
+                  <div className="inline-flex rounded-md border border-border overflow-hidden h-10" role="group">
+                    {(['flat', 'hourly'] as RateKind[]).map(k => (
+                      <button
+                        key={k}
+                        type="button"
+                        onClick={() => setCustomRateKind(k)}
+                        className={cn(
+                          'px-3 text-xs font-medium transition-colors',
+                          customRateKind === k
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-background text-muted-foreground hover:bg-muted',
+                        )}
+                      >
+                        {k === 'flat' ? 'Flat' : 'Hourly'}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="relative flex-1">
+                    <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                    <Input type="number" value={rate} onChange={e => setRate(e.target.value)} placeholder="0" min={0} className="pl-7 pr-10 h-10" />
+                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground pointer-events-none">
+                      {customRateKind === 'hourly' ? '/hr' : '/day'}
+                    </span>
+                  </div>
                 </div>
+                {customRateKind === 'hourly' && Number(rate) > 0 && isHoursValid && (
+                  <p className="text-[11px] text-muted-foreground">
+                    {formatHours(calculatedHours)} hrs × ${Number(rate).toLocaleString()}/hr ={' '}
+                    <span className="font-semibold text-foreground">${computedRateApplied.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </p>
+                )}
+                {customRateKind === 'hourly' && hoursInvalidReason && (
+                  <p className="text-[11px] text-destructive flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3" /> {hoursInvalidReason}
+                  </p>
+                )}
                 <div className="flex items-center gap-2">
                   <Checkbox id="save-custom-rate-edit" checked={saveCustomRate} onCheckedChange={(v) => setSaveCustomRate(!!v)} />
                   <label htmlFor="save-custom-rate-edit" className="text-xs text-muted-foreground cursor-pointer">Save to facility rates</label>

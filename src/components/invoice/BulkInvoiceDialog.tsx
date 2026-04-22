@@ -13,7 +13,7 @@ import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks, sub
 import { generateInvoiceNumber } from '@/lib/businessLogic';
 import { getEligibleShiftsForBulkInvoice } from '@/lib/bulkInvoiceHelpers';
 import { toast } from 'sonner';
-import type { Shift } from '@/types';
+import type { Shift, InvoiceLineItem } from '@/types';
 
 type PeriodPreset = 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'custom';
 
@@ -85,19 +85,62 @@ export function BulkInvoiceDialog({ open, onOpenChange, preselectedFacilityId }:
     setStep(s => s + 1);
   };
 
+  type LineDraft = Omit<InvoiceLineItem, 'id' | 'invoice_id'>;
+  const buildLineItemsForShift = (s: Shift): LineDraft[] => {
+    const dateLabel = format(new Date(s.start_datetime), 'MMM d, yyyy');
+    const timeLabel = `${format(new Date(s.start_datetime), 'h:mm a')} – ${format(new Date(s.end_datetime), 'h:mm a')}`;
+    const isHourly = s.rate_kind === 'hourly' && s.hourly_rate != null && s.hourly_rate > 0;
+
+    if (!isHourly) {
+      return [{
+        shift_id: s.id,
+        description: `${dateLabel} — Relief coverage (${timeLabel})`,
+        service_date: new Date(s.start_datetime).toISOString().split('T')[0],
+        qty: 1,
+        unit_rate: s.rate_applied,
+        line_total: s.rate_applied,
+        line_kind: 'flat' as const,
+      }];
+    }
+
+    const totalHours = Math.round(((new Date(s.end_datetime).getTime() - new Date(s.start_datetime).getTime()) / 3600000) * 100) / 100;
+    const hourlyRate = Number(s.hourly_rate);
+    const overtimeHours = Number(s.overtime_hours || 0);
+    const regularHours = s.regular_hours != null
+      ? Number(s.regular_hours)
+      : Math.max(0, totalHours - overtimeHours);
+    const overtimeRate = s.overtime_rate != null ? Number(s.overtime_rate) : 0;
+
+    const regularLine = {
+      shift_id: s.id,
+      description: `${dateLabel} — Relief coverage (${timeLabel})`,
+      service_date: new Date(s.start_datetime).toISOString().split('T')[0],
+      qty: regularHours,
+      unit_rate: hourlyRate,
+      line_total: Math.round(regularHours * hourlyRate * 100) / 100,
+      line_kind: 'regular' as const,
+    };
+
+    if (overtimeHours <= 0 || overtimeRate <= 0) return [regularLine];
+
+    return [regularLine, {
+      shift_id: s.id,
+      description: `${dateLabel} — Overtime (after ${regularHours} hrs)`,
+      service_date: new Date(s.start_datetime).toISOString().split('T')[0],
+      qty: overtimeHours,
+      unit_rate: overtimeRate,
+      line_total: Math.round(overtimeHours * overtimeRate * 100) / 100,
+      line_kind: 'overtime' as const,
+    }];
+  };
+
   const handleCreate = async () => {
     if (selectedShiftIds.size === 0 || !facility) return;
     setCreating(true);
     try {
       const dueDays = facility.invoice_due_days || 15;
-      const lineItemsData = selectedShifts.map(s => ({
-        shift_id: s.id,
-        description: `${format(new Date(s.start_datetime), 'MMM d, yyyy')} — Relief coverage (${format(new Date(s.start_datetime), 'h:mm a')} – ${format(new Date(s.end_datetime), 'h:mm a')})`,
-        service_date: new Date(s.start_datetime).toISOString().split('T')[0],
-        qty: 1,
-        unit_rate: s.rate_applied,
-        line_total: s.rate_applied,
-      }));
+      const lineItemsData = selectedShifts.flatMap(buildLineItemsForShift);
+      const computedTotal = lineItemsData.reduce((sum, li) => sum + li.line_total, 0);
 
       const invoice = await addInvoice(
         {
@@ -106,8 +149,8 @@ export function BulkInvoiceDialog({ open, onOpenChange, preselectedFacilityId }:
           invoice_date: new Date().toISOString(),
           period_start: period.start.toISOString(),
           period_end: period.end.toISOString(),
-          total_amount: selectedTotal,
-          balance_due: selectedTotal,
+          total_amount: computedTotal,
+          balance_due: computedTotal,
           status: 'draft',
           sent_at: null,
           paid_at: null,
@@ -257,19 +300,27 @@ export function BulkInvoiceDialog({ open, onOpenChange, preselectedFacilityId }:
                   </Badge>
                 </div>
                 <div className="max-h-60 overflow-y-auto border rounded-md divide-y">
-                  {eligible.map(s => (
-                    <label key={s.id} className="flex items-center gap-3 px-3 py-2 hover:bg-muted/30 cursor-pointer text-sm">
-                      <Checkbox checked={selectedShiftIds.has(s.id)} onCheckedChange={() => toggleShift(s.id)} />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium">{format(new Date(s.start_datetime), 'MMM d, yyyy')}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {format(new Date(s.start_datetime), 'h:mm a')} – {format(new Date(s.end_datetime), 'h:mm a')}
-                          {s.notes && <span className="ml-2">· {s.notes}</span>}
+                  {eligible.map(s => {
+                    const isHourly = s.rate_kind === 'hourly' && s.hourly_rate != null && s.hourly_rate > 0;
+                    const totalHours = (new Date(s.end_datetime).getTime() - new Date(s.start_datetime).getTime()) / 3600000;
+                    const hoursLabel = totalHours % 1 === 0 ? totalHours.toFixed(0) : totalHours.toFixed(2).replace(/\.?0+$/, '');
+                    return (
+                      <label key={s.id} className="flex items-center gap-3 px-3 py-2 hover:bg-muted/30 cursor-pointer text-sm">
+                        <Checkbox checked={selectedShiftIds.has(s.id)} onCheckedChange={() => toggleShift(s.id)} />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium">{format(new Date(s.start_datetime), 'MMM d, yyyy')}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {format(new Date(s.start_datetime), 'h:mm a')} – {format(new Date(s.end_datetime), 'h:mm a')}
+                            {isHourly && (
+                              <span className="ml-2">· {hoursLabel}h × ${Number(s.hourly_rate).toLocaleString()}/hr</span>
+                            )}
+                            {s.notes && <span className="ml-2">· {s.notes}</span>}
+                          </div>
                         </div>
-                      </div>
-                      <span className="font-medium">${s.rate_applied.toLocaleString()}</span>
-                    </label>
-                  ))}
+                        <span className="font-medium">${s.rate_applied.toLocaleString()}</span>
+                      </label>
+                    );
+                  })}
                 </div>
               </>
             )}
