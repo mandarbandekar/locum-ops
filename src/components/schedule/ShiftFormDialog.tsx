@@ -204,22 +204,47 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   }, [step, rate, rateOptions]);
 
   // Calculated hours from current start/end times (for hourly preview).
-  const calculatedHours = useMemo(() => {
-    if (!startTime || !endTime) return 0;
+  // Rounding rule: nearest quarter hour (0.25), the standard payroll convention.
+  // Returns null when inputs are missing/invalid so callers can distinguish
+  // "not entered yet" from "0 hours".
+  const calculatedHours = useMemo<number | null>(() => {
+    if (!startTime || !endTime) return null;
     const [sh, sm] = startTime.split(':').map(Number);
     const [eh, em] = endTime.split(':').map(Number);
-    if ([sh, sm, eh, em].some(n => Number.isNaN(n))) return 0;
+    if ([sh, sm, eh, em].some(n => Number.isNaN(n))) return null;
     let mins = (eh * 60 + em) - (sh * 60 + sm);
     if (mins < 0) mins += 24 * 60; // overnight
-    return mins / 60;
+    const rawHours = mins / 60;
+    // Round to nearest quarter hour
+    return Math.round(rawHours * 4) / 4;
   }, [startTime, endTime]);
 
-  // For hourly rates: rate_applied = hours × hourly_rate. For flat: rate is the total.
+  // Validation: hourly shifts require a usable duration (>0, ≤24, valid times).
+  const hoursInvalidReason = useMemo<string | null>(() => {
+    if (activeRateKind !== 'hourly') return null;
+    if (calculatedHours === null) return 'Enter a valid start and end time.';
+    if (calculatedHours <= 0) return 'End time must be after start time.';
+    if (calculatedHours > 24) return 'Shift cannot exceed 24 hours.';
+    return null;
+  }, [activeRateKind, calculatedHours]);
+  const isHoursValid = hoursInvalidReason === null;
+
+  // For hourly rates: rate_applied = hours × hourly_rate (rounded to cents).
+  // For flat: rate is the total.
   const computedRateApplied = useMemo(() => {
     const rateNum = Number(rate) || 0;
-    if (activeRateKind === 'hourly') return Math.round(rateNum * calculatedHours * 100) / 100;
+    if (activeRateKind === 'hourly') {
+      const hrs = calculatedHours ?? 0;
+      return Math.round(rateNum * hrs * 100) / 100;
+    }
     return rateNum;
   }, [rate, activeRateKind, calculatedHours]);
+
+  // Display helper: format hours dropping trailing zeros (e.g. 8 / 8.5 / 8.25).
+  const formatHours = (h: number | null) => {
+    if (h === null) return '—';
+    return h % 1 === 0 ? h.toFixed(0) : h.toString();
+  };
 
   const bookedDateObjects = useMemo(() =>
     shifts.map(s => {
@@ -336,6 +361,10 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (hoursInvalidReason) {
+      toast.error(hoursInvalidReason);
+      return;
+    }
     setIsSubmitting(true);
     try {
       await saveCustomRateToTerms();
@@ -598,6 +627,11 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
             <Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="h-10" />
           </div>
         </div>
+        {activeRateKind === 'hourly' && hoursInvalidReason && (
+          <p className="mt-1.5 text-[11px] text-destructive flex items-center gap-1">
+            <AlertTriangle className="h-3 w-3" /> {hoursInvalidReason}
+          </p>
+        )}
       </div>
 
       {/* Conflict warnings */}
@@ -620,7 +654,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
         <Button type="button" variant="outline" onClick={() => setStep(1)} className="h-10 min-w-[100px]">
           <ChevronLeft className="h-4 w-4 mr-1" /> Back
         </Button>
-        <Button type="button" onClick={() => setStep(3)} disabled={selectedDates.length === 0} className="flex-1 h-10">
+        <Button type="button" onClick={() => setStep(3)} disabled={selectedDates.length === 0 || !!hoursInvalidReason} className="flex-1 h-10">
           Next <ChevronRight className="h-4 w-4 ml-1" />
         </Button>
       </div>
@@ -668,10 +702,15 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
                 <SelectItem value="custom">Custom</SelectItem>
               </SelectContent>
             </Select>
-            {activeRateKind === 'hourly' && Number(rate) > 0 && (
+            {activeRateKind === 'hourly' && Number(rate) > 0 && isHoursValid && (
               <p className="text-[11px] text-muted-foreground">
-                {calculatedHours.toFixed(calculatedHours % 1 === 0 ? 0 : 1)} hrs × ${Number(rate).toLocaleString()}/hr ={' '}
+                {formatHours(calculatedHours)} hrs × ${Number(rate).toLocaleString()}/hr ={' '}
                 <span className="font-semibold text-foreground">${computedRateApplied.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </p>
+            )}
+            {activeRateKind === 'hourly' && hoursInvalidReason && (
+              <p className="text-[11px] text-destructive flex items-center gap-1">
+                <AlertTriangle className="h-3 w-3" /> {hoursInvalidReason}
               </p>
             )}
           </div>
@@ -710,10 +749,15 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
                 </span>
               </div>
             </div>
-            {customRateKind === 'hourly' && Number(rate) > 0 && (
+            {customRateKind === 'hourly' && Number(rate) > 0 && isHoursValid && (
               <p className="text-[11px] text-muted-foreground">
-                {calculatedHours.toFixed(calculatedHours % 1 === 0 ? 0 : 1)} hrs × ${Number(rate).toLocaleString()}/hr ={' '}
+                {formatHours(calculatedHours)} hrs × ${Number(rate).toLocaleString()}/hr ={' '}
                 <span className="font-semibold text-foreground">${computedRateApplied.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </p>
+            )}
+            {customRateKind === 'hourly' && hoursInvalidReason && (
+              <p className="text-[11px] text-destructive flex items-center gap-1">
+                <AlertTriangle className="h-3 w-3" /> {hoursInvalidReason}
               </p>
             )}
             <div className="flex items-center gap-2">
@@ -780,7 +824,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
           {[...selectedDates].sort((a, b) => a.getTime() - b.getTime()).map(d => format(d, 'MMM d')).join(', ')}
           {' · '}
           {startTime}–{endTime}
-          {rate ? ` · $${computedRateApplied.toLocaleString(undefined, { maximumFractionDigits: 2 })}${activeRateKind === 'hourly' ? ` (${calculatedHours.toFixed(calculatedHours % 1 === 0 ? 0 : 1)} hrs × $${Number(rate)}/hr)` : ''}` : ''}
+          {rate ? ` · $${computedRateApplied.toLocaleString(undefined, { maximumFractionDigits: 2 })}${activeRateKind === 'hourly' && isHoursValid ? ` (${formatHours(calculatedHours)} hrs × $${Number(rate)}/hr)` : ''}` : ''}
         </p>
       </div>
 
@@ -789,7 +833,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
         <Button type="button" variant="outline" onClick={() => setStep(2)} className="h-11 min-w-[100px]">
           <ChevronLeft className="h-4 w-4 mr-1" /> Back
         </Button>
-        <Button type="submit" className="flex-1 h-11" disabled={selectedDates.length === 0}>
+        <Button type="submit" className="flex-1 h-11" disabled={selectedDates.length === 0 || !!hoursInvalidReason}>
           {isSubmitting ? 'Saving...' : selectedDates.length > 1 ? `Add ${selectedDates.length} Shifts` : 'Add Shift'}
         </Button>
       </div>
@@ -874,6 +918,11 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
               <Input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="h-10" />
               <Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="h-10" />
             </div>
+            {activeRateKind === 'hourly' && hoursInvalidReason && (
+              <p className="mt-1.5 text-[11px] text-destructive flex items-center gap-1">
+                <AlertTriangle className="h-3 w-3" /> {hoursInvalidReason}
+              </p>
+            )}
           </div>
 
           <div>
@@ -948,7 +997,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
       </div>
 
       <div className="flex gap-2">
-        <Button type="submit" className="flex-1 h-11" disabled={selectedDates.length === 0}>
+        <Button type="submit" className="flex-1 h-11" disabled={selectedDates.length === 0 || !!hoursInvalidReason}>
           {isSubmitting ? 'Saving...' : 'Update Shift'}
         </Button>
         {onDelete && (
