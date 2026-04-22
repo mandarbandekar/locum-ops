@@ -59,35 +59,12 @@ export function useManualSetup() {
     if (!user) return null;
     setSaving(true);
     try {
-      const trimmedName = (input.name || '').trim();
-      if (!trimmedName) {
-        toast.error('Please enter a facility name.');
-        return null;
-      }
-
-      // Duplicate check (case-insensitive) against this user's facilities
-      const { data: existing, error: dupErr } = await db('facilities')
-        .select('id, name')
-        .eq('user_id', user.id)
-        .ilike('name', trimmedName)
-        .maybeSingle();
-
-      if (dupErr && dupErr.code !== 'PGRST116') {
-        console.error(dupErr);
-        toast.error(friendlyDbError(dupErr));
-        return null;
-      }
-      if (existing) {
-        toast.error(`A facility named "${(existing as any).name}" already exists.`);
-        return null;
-      }
-
-      const prefix = (trimmedName || 'FAC').substring(0, 3).toUpperCase();
+      const prefix = (input.name || 'FAC').substring(0, 3).toUpperCase();
       const engagementType = input.engagement_type ?? 'direct';
       const isDirect = engagementType === 'direct';
       const { data, error } = await db('facilities').insert({
         user_id: user.id,
-        name: trimmedName,
+        name: input.name,
         status: 'active',
         address: input.address || '',
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
