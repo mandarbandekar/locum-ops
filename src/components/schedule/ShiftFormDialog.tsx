@@ -63,42 +63,6 @@ const COLOR_MAP: Record<ShiftColor, string> = {
   yellow: 'bg-yellow-500',
 };
 
-const STEP_LABELS = ['Facility', 'Schedule', 'Details'] as const;
-
-/* ─── Step Indicator ─── */
-function StepIndicator({ step, isMobile }: { step: number; isMobile: boolean }) {
-  return (
-    <div className="flex items-center justify-center gap-2 mb-3">
-      {STEP_LABELS.map((label, i) => {
-        const num = i + 1;
-        const isActive = num === step;
-        const isDone = num < step;
-        return (
-          <div key={label} className="flex items-center gap-2">
-            {i > 0 && <div className={cn("h-px w-5 sm:w-8", isDone ? 'bg-primary' : 'bg-border')} />}
-            <div className="flex items-center gap-1.5">
-              <div className={cn(
-                "flex items-center justify-center rounded-full text-xs font-semibold transition-colors shrink-0",
-                "h-6 w-6",
-                isDone && 'bg-primary text-primary-foreground',
-                isActive && 'bg-primary text-primary-foreground ring-2 ring-primary/30 ring-offset-1 ring-offset-background',
-                !isActive && !isDone && 'bg-muted text-muted-foreground',
-              )}>
-                {isDone ? <Check className="h-3 w-3" /> : num}
-              </div>
-              {!isMobile && (
-                <span className={cn(
-                  "text-xs font-medium",
-                  isActive ? 'text-foreground' : 'text-muted-foreground',
-                )}>{label}</span>
-              )}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
 
 export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms, existing, onSave, onDelete, embedded, defaultDate, defaultStartTime, defaultMonth }: ShiftFormDialogProps) {
   const [facilityId, setFacilityId] = useState(existing?.facility_id || facilities[0]?.id || '');
