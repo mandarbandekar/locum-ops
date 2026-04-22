@@ -1,4 +1,4 @@
-import type { Facility, Shift, Invoice, InvoiceLineItem, BillingCadence } from '@/types';
+import type { Facility, Shift, Invoice, InvoiceLineItem, BillingCadence, InvoiceLineKind } from '@/types';
 import { format, startOfDay, endOfDay, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, setHours } from 'date-fns';
 
 /**
@@ -200,7 +200,8 @@ export function buildAutoInvoiceDraft(
   invoice: Omit<Invoice, 'id'>;
   lineItems: Omit<InvoiceLineItem, 'id' | 'invoice_id'>[];
 } {
-  const lineItems: Omit<InvoiceLineItem, 'id' | 'invoice_id'>[] = eligibleShifts.flatMap(s => {
+  type LineDraft = Omit<InvoiceLineItem, 'id' | 'invoice_id'>;
+  const lineItems: LineDraft[] = eligibleShifts.flatMap((s): LineDraft[] => {
     const isHourly = s.rate_kind === 'hourly' && s.hourly_rate != null && s.hourly_rate > 0;
     const dateLabel = format(new Date(s.start_datetime), 'MMM d, yyyy');
     const timeLabel = `${format(new Date(s.start_datetime), 'h:mm a')} – ${format(new Date(s.end_datetime), 'h:mm a')}`;
