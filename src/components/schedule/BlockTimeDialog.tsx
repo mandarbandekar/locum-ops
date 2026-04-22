@@ -62,11 +62,10 @@ export function BlockTimeDialog({ open, onOpenChange, onSave, onDelete, existing
       setNotes(existing.notes);
       setColor(existing.color);
     } else {
-      const d = defaultDate || new Date();
       setTitle('');
       setBlockType('vacation');
-      setStartDate(d);
-      setEndDate(d);
+      setStartDate(defaultDate);
+      setEndDate(defaultDate);
       setAllDay(true);
       setStartTime('09:00');
       setEndTime('17:00');
