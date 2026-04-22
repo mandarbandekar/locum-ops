@@ -524,15 +524,12 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
 
   /* ─── Step 1: Facility ─── */
   const renderStep1 = () => (
-    <div className="flex flex-col gap-3">
-      <div className="text-center mb-1">
-        <p className="text-sm text-muted-foreground">Which facility is this shift at?</p>
-      </div>
+    <GuidedStep
+      title="Which clinic?"
+      subtitle="Pick the practice this shift is for. Add a new one if it's missing."
+      icon={Building2}
+    >
       <div>
-        <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-          <Building2 className="h-3.5 w-3.5" />
-          Facility
-        </Label>
         <Select value={facilityId} onValueChange={(v) => {
           if (v === '__add_new__') {
             setShowAddFacility(true);
@@ -571,7 +568,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
           ot && isOvertimePolicyActive(ot) ? `OT after ${ot.threshold_hours}h` : null,
         ].filter(Boolean);
         return (
-          <p className="text-[11px] text-muted-foreground -mt-1">
+          <p className="text-[11px] text-muted-foreground">
             <span className="text-foreground font-medium">Defaults · </span>{parts.join(' · ')}
           </p>
         );
@@ -582,7 +579,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
           Next <ChevronRight className="h-4 w-4 ml-1" />
         </Button>
       </div>
-    </div>
+    </GuidedStep>
   );
 
   /* ─── Step 2: Schedule ─── */
