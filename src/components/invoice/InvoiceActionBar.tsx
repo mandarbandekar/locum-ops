@@ -223,7 +223,7 @@ export function InvoiceActionBar({
           <>
             <Button variant="outline" size="sm" onClick={handleDownloadPdf} disabled={pdfLoading} className="shrink-0">
               {pdfLoading ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-1.5 h-3.5 w-3.5" />}
-              <span className="hidden sm:inline">PDF</span>
+              <span className="hidden sm:inline">Download Invoice PDF</span>
             </Button>
             <Button variant="outline" size="sm" onClick={() => setConfirmAlreadySentOpen(true)} disabled={sending} className="shrink-0">
               <span className="hidden sm:inline">I already sent this</span>
@@ -270,7 +270,7 @@ export function InvoiceActionBar({
           <>
             <Button variant="outline" size="sm" onClick={handleDownloadPdf} disabled={pdfLoading} className="shrink-0">
               {pdfLoading ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-1.5 h-3.5 w-3.5" />}
-              <span className="hidden sm:inline">PDF</span>
+              <span className="hidden sm:inline">Download Invoice PDF</span>
             </Button>
             {hasShareLink ? (
               <Button variant="outline" size="sm" onClick={handleCopyShareLink} className="shrink-0">
