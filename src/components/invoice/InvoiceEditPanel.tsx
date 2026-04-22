@@ -12,6 +12,8 @@ import { RecordPaymentDialog } from '@/components/invoice/RecordPaymentDialog';
 import { useTaxIntelligence } from '@/hooks/useTaxIntelligence';
 import { computeEffectiveSetAsideRate, getShiftTaxNudge } from '@/lib/taxNudge';
 import { useData } from '@/contexts/DataContext';
+import { syncShiftFromLineItems, canSyncShiftForLine } from '@/lib/shiftInvoiceSync';
+import { termsToRates } from '@/components/facilities/RatesEditor';
 
 /** Convert any date value to a timezone-safe YYYY-MM-DD string for storage. */
 function toDateOnlyISO(v: string | Date | null | undefined): string {
