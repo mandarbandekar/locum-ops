@@ -173,12 +173,12 @@ export function BlockTimeDialog({ open, onOpenChange, onSave, onDelete, existing
                   mode="range"
                   selected={range}
                   onSelect={(r) => {
-                    if (!r) return;
-                    if (r.from) setStartDate(r.from);
-                    setEndDate(r.to ?? r.from ?? startDate);
+                    if (!r) { setStartDate(undefined); setEndDate(undefined); return; }
+                    setStartDate(r.from);
+                    setEndDate(r.to ?? r.from);
                   }}
                   numberOfMonths={2}
-                  defaultMonth={startDate}
+                  defaultMonth={startDate ?? defaultDate ?? new Date()}
                   modifiers={{ booked: bookedDateObjects }}
                   modifiersClassNames={{ booked: BOOKED_CLASS }}
                   className="p-3 pointer-events-auto"
