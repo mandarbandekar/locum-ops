@@ -158,8 +158,8 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
       setStartTime(defaultStartTime || '08:00');
       setEndTime(
         defaultStartTime
-          ? format(new Date(2026, 0, 1, parseInt(defaultStartTime.split(':')[0]) + 1, parseInt(defaultStartTime.split(':')[1] || '0')), 'HH:mm')
-          : '18:00'
+          ? format(new Date(2026, 0, 1, parseInt(defaultStartTime.split(':')[0]) + 8, parseInt(defaultStartTime.split(':')[1] || '0')), 'HH:mm')
+          : '16:00'
       );
       setRate('');
       setNotes('');
