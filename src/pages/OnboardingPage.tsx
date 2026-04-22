@@ -72,6 +72,14 @@ export default function OnboardingPage() {
   const [lastShiftRate, setLastShiftRate] = useState<number | null>(null);
   const [showClinicForm, setShowClinicForm] = useState(false);
   const [shiftSubmitted, setShiftSubmitted] = useState(false);
+  // Tick so the sticky footer re-renders when stepper internal state changes.
+  const [, setFooterTick] = useState(0);
+  useEffect(() => {
+    if (phase !== 'manual_facility') return;
+    const id = window.setInterval(() => setFooterTick(t => t + 1), 200);
+    return () => window.clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
 
   const firstName = profile?.first_name || user?.user_metadata?.first_name || '';
 
