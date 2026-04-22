@@ -780,7 +780,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
           {[...selectedDates].sort((a, b) => a.getTime() - b.getTime()).map(d => format(d, 'MMM d')).join(', ')}
           {' · '}
           {startTime}–{endTime}
-          {rate ? ` · $${Number(rate).toLocaleString()}/day` : ''}
+          {rate ? ` · $${computedRateApplied.toLocaleString(undefined, { maximumFractionDigits: 2 })}${activeRateKind === 'hourly' ? ` (${calculatedHours.toFixed(calculatedHours % 1 === 0 ? 0 : 1)} hrs × $${Number(rate)}/hr)` : ''}` : ''}
         </p>
       </div>
 
