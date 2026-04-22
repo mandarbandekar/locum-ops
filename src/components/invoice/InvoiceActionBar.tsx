@@ -230,7 +230,7 @@ export function InvoiceActionBar({
               <span className="hidden sm:inline">I already sent this</span>
               <span className="sm:hidden">Sent</span>
             </Button>
-            <Button size="sm" onClick={onOpenCompose} className="shrink-0">
+            <Button size="sm" onClick={() => setComingSoonOpen(true)} className="shrink-0">
               <Send className="mr-1.5 h-3.5 w-3.5" />
               Send to clinic
               <ArrowRight className="ml-1 h-3.5 w-3.5" />
