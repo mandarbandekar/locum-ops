@@ -298,7 +298,6 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
           title="Clinic Identity"
           subtitle="Start with the basics — name and address."
           icon={Building2}
-          whyWeAsk="This is how the clinic appears across your schedule, invoices, and reports."
         >
           {!manualEntry && !clinicSelected ? (
             <div className="space-y-2">
