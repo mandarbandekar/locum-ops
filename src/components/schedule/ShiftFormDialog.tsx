@@ -380,8 +380,22 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
       await saveCustomRateToTerms();
       const overridePayload = computeOverridePayload();
       const ratePayload = activeRateKind === 'hourly'
-        ? { rate_kind: 'hourly' as const, hourly_rate: Number(rate) || 0, rate_applied: computedRateApplied }
-        : { rate_kind: 'flat' as const, hourly_rate: null, rate_applied: Number(rate) };
+        ? {
+            rate_kind: 'hourly' as const,
+            hourly_rate: Number(rate) || 0,
+            rate_applied: computedRateApplied,
+            regular_hours: computedTotals.regular_hours,
+            overtime_hours: computedTotals.overtime_hours,
+            overtime_rate: computedTotals.overtime_rate,
+          }
+        : {
+            rate_kind: 'flat' as const,
+            hourly_rate: null,
+            rate_applied: Number(rate),
+            regular_hours: null,
+            overtime_hours: 0,
+            overtime_rate: null,
+          };
       if (existing) {
         const date = format(selectedDates[0] || new Date(), 'yyyy-MM-dd');
         await onSave({
