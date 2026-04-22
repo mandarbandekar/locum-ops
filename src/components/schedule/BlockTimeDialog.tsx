@@ -264,7 +264,7 @@ export function BlockTimeDialog({ open, onOpenChange, onSave, onDelete, existing
           )}
           <div className="flex gap-2 ml-auto">
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button onClick={handleSave} disabled={!title.trim()}>
+            <Button onClick={handleSave} disabled={!title.trim() || !startDate || !endDate}>
               {existing ? 'Update' : 'Block Time'}
             </Button>
           </div>
