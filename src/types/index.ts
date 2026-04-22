@@ -48,6 +48,7 @@ export interface FacilityContact {
   is_primary: boolean;
 }
 
+export type RateKind = 'flat' | 'hourly';
 export interface TermsSnapshot {
   id: string;
   facility_id: string;
@@ -60,7 +61,8 @@ export interface TermsSnapshot {
   overtime_policy_text: string;
   late_payment_policy_text: string;
   special_notes: string;
-  custom_rates?: Array<{ label: string; amount: number }>;
+  custom_rates?: Array<{ label: string; amount: number; kind?: RateKind }>;
+  rate_kinds?: Partial<Record<'weekday' | 'weekend' | 'partial_day' | 'holiday' | 'telemedicine', RateKind>>;
 }
 
 export type ShiftColor = 'blue' | 'green' | 'red' | 'orange' | 'purple' | 'pink' | 'teal' | 'yellow';
