@@ -1,117 +1,104 @@
 
 
-## Add Overtime Logic to Shifts & Invoices
+## Improve the Add Clinic & Add Shift Flows
 
-### Background
+### Goal
+Right now the Add Clinic flow shows every section at once (clinic details → engagement → rates → contacts → billing) with minimal "why am I doing this" context. The Add Shift flow has a similar issue — fields appear without explaining what they're for or how they affect downstream work (invoices, taxes, OT).
 
-Hourly shifts now compute `total = hours × hourly_rate`. Real locum contracts often pay a higher rate after a daily threshold (commonly 8 hrs/day, sometimes 10 or 12). Today there's no way to capture that — a 12-hour hourly shift bills at straight time even if the contract calls for 1.5× after 8.
+This proposal:
+1. **Restructures Add Clinic into a guided 4-step flow** with one focused decision per step and a clear "what this does for you" explainer at the top of each.
+2. **Creates a parallel guided Add Shift flow** with explicit context about how each input drives invoices, the tax estimate, and overtime.
+3. **Adds smart defaults and inline previews** so the user always sees the impact of their choices before saving.
 
-This adds optional **per-rate overtime** that the user controls manually, applied automatically to hourly shifts and reflected on the invoice as separate line items.
+---
 
-### Recommendation: per-rate overtime on hourly rates only
+### Part A — Add Clinic Flow (4 guided steps)
 
-Overtime is a property of an *hourly* rate definition (it's meaningless on a flat day rate). When the user toggles a rate to **Hourly**, two new optional fields appear:
+Replace the current single-page `OnboardingClinicForm` and the legacy multi-step `AddFacilityDialog` with one shared **stepper component** used in both onboarding and the standalone "Add Practice Facility" dialog. Each step has a header (title + 1-line subtitle), a "**Why we ask**" callout, the inputs, and a sticky footer with `Back / Skip / Next`.
 
-- **Overtime after** (hours/day) — e.g. `8`
-- **Overtime rate** ($/hr) — e.g. `142.50`, with a quick "1.5× base" / "2× base" shortcut button
+**Step 1 — Clinic Identity**
+- Inputs: Google Places search (or manual), clinic name, address.
+- Why we ask: *"This is how the clinic appears across your schedule, invoices, and reports."*
+- Smart default: timezone auto-detected from address.
 
-If left blank, behavior is identical to today (no overtime). This keeps the model fully backwards-compatible and avoids forcing every rate to declare an OT policy.
+**Step 2 — How You Work With Them** (engagement)
+- Inputs: `EngagementSelector` (Direct / Third-party platform / W-2 employer), source name, 1099 vs W-2 form.
+- Why we ask: *"Direct clinics get auto-generated invoices from LocumOps. Platform/agency work skips invoicing because the platform pays you."*
+- Inline preview (small card): *"You'll be billing this clinic directly. We'll generate draft invoices for you."* OR *"VetTriage handles your invoicing — we'll just track shifts and income for taxes."*
+- Branch: if W-2 or third-party, **steps 3 and 4 are skipped** (already the behavior — but now we surface that with: *"Skipping billing setup — your platform handles this."*).
 
-### 1. Data model (one schema migration)
+**Step 3 — Your Rates** (the new "What rates do you want to add?" step)
+- Inputs: `RatesEditor` with prefilled empty Weekday rate row.
+- Why we ask: *"Rates you save become defaults when you log a shift here, so you're not re-entering numbers every time. Add as many as apply (Weekday, Weekend, Holiday, etc.)."*
+- New helper card: *"Tip — most relief vets start with one Weekday day rate (e.g. $850 flat). You can add Weekend, Holiday, or hourly rates later."*
+- Optional callout for hourly rates with OT: *"Hourly rates can include an overtime threshold (e.g. 1.5× after 8 hrs/day)."*
+- **Skip allowed.** If skipped, shifts at this clinic prompt the user to enter a rate inline.
 
-**`terms_snapshots`** — add structured overtime per predefined rate, mirroring `rate_kinds`:
-- New column `overtime_config jsonb default '{}'` storing
-  `{ weekday: { threshold_hours: 8, ot_rate: 142.50 }, weekend: {...} }`.
-- `custom_rates[]` entries gain optional `overtime_threshold_hours` and `overtime_rate` fields.
+**Step 4 — Billing & Contacts** (the new "How often do you want to bill?" step, direct only)
+- Section A — **Billing Cadence**: Daily / Weekly / Monthly with a large radio-card layout. Each card shows a one-line example:
+  - Daily — *"A draft invoice each morning you have a shift."*
+  - Weekly — *"One invoice per week (Mon–Sun), drafted on your last shift."*
+  - Monthly — *"One invoice at month-end. Most common for relief work."* ← default, marked "Recommended"
+- Section B — **Payment Terms** (Net 7/14/15/30/45/60), default Net 15, with helper: *"Industry standard for relief vet work is Net 15 to Net 30."*
+- Section C — **Contacts**: Scheduling contact (used for confirmations) + Billing contact (used for invoices), with the existing "Same as scheduling" checkbox.
+- **Live preview at bottom**: a sample invoice header card showing `INV-{prefix}-001 · Bill to: {billing name} · Due: {due date}` so users see exactly what their first invoice will look like.
 
-**`shifts`** — capture how OT was calculated so totals don't drift if the rate is later edited:
-- `overtime_hours numeric default 0` — hours billed at OT rate for this shift
-- `overtime_rate numeric` — OT $/hr snapshot (null when no OT)
-- `regular_hours numeric` — hours at base rate (derivable but stored for clarity/invoice consistency)
+**Final review screen** (new): one summary card with all 4 sections collapsed, plus an amber CTA: **"Save clinic & log your first shift here →"** which closes the dialog and immediately opens Add Shift pre-filled with this clinic.
 
-`rate_applied` keeps storing the **total** for the shift (`regular_hours × hourly_rate + overtime_hours × overtime_rate`), so all downstream dashboards, tax calc, business insights, and YTD math need zero changes.
+---
 
-### 2. UI changes
+### Part B — Add Shift Flow (separate guided experience)
 
-**RatesEditor (facility setup + facility detail "Shift Rates")**
-- When a rate's kind is **Hourly**, an inline expandable "+ Overtime" link appears under the amount input.
-- Expanded form: `Overtime after [8] hrs/day at [$/hr]`, with a small "1.5× = $X" / "2× = $Y" chip the user can click to auto-fill.
-- Helper line under hourly rates updates to: *"Hours over 8/day will bill at $142.50/hr."* when OT is configured.
+The current 3-step Shift Dialog (Facility → Schedule → Details) is solid but lean on context. We'll keep the 3 steps and **add the same "Why we ask" pattern**, plus inline impact previews so the user sees what each entry produces.
 
-**ShiftFormDialog (Step 3 — Rate)**
-- When user picks an hourly rate (or custom hourly), if that rate has OT configured AND the shift duration exceeds the threshold, the live calculation expands into two lines:
-  ```
-  8 hrs × $95/hr   = $760.00
-  2 hrs × $142.50/hr (OT) = $285.00
-  ─────────────────────────
-  Total            = $1,045.00
-  ```
-- For custom hourly rates entered ad-hoc in the shift form, an optional "Add overtime" disclosure mirrors the RatesEditor controls (so users can apply OT one-off without saving it to facility terms).
-- A subtle amber "Overtime applied" pill appears next to the rate selector when OT is in effect.
-- The existing 0.25-hr rounding rule applies to both regular and OT hour buckets.
+**Step 1 — Pick the Clinic**
+- Why we ask: *"We'll use this clinic's saved rates, billing cadence, and contacts."*
+- Inline chip under the picker showing the clinic's defaults: `Monthly billing · Weekday $850 flat · OT after 8h` so the user knows what's about to be applied.
+- "+ Add new clinic" inline link if missing.
 
-**Existing-shift edits**
-- Editing an hourly shift shows the same OT breakdown; user can override OT hours/rate manually if a one-off shift had a different threshold.
+**Step 2 — When**
+- Why we ask: *"Used for your calendar, mileage tracking, and the billing period this shift falls into."*
+- Inputs: date, start, end, color, optional repeat (already exists).
+- New: live "**This shift will be billed on**" line under the time inputs (e.g. *"…on the April invoice, generated April 30."*) — pulls from the clinic's billing cadence.
 
-### 3. Calculation rule
+**Step 3 — Pay & Notes**
+- Why we ask: *"We'll calculate your total, set aside an estimated tax cushion, and use this on the invoice."*
+- Rate selector shows the clinic's saved rates as one-click chips, plus "Custom rate" for a one-off.
+- Below the rate, three live-preview chips:
+  - **Total**: `$1,045.00`
+  - **OT applied**: `2h × $142.50` *(amber, only if OT triggered)*
+  - **Tax set-aside**: `~$313` *(uses the existing withholding nudge)*
+- Optional: notes, mileage override.
+- New "Why hourly shifts ask for start/end" tooltip already done — keep it.
 
-Standard daily-threshold OT (industry default for relief contracts):
-```
-total_hours = round_to_quarter((end - start) / 60)
-regular_hours = min(total_hours, threshold)
-overtime_hours = max(0, total_hours - threshold)
-rate_applied = regular_hours * hourly_rate + overtime_hours * overtime_rate
-```
-- No weekly OT, no doubletime tier, no 7th-consecutive-day rules in v1 — those add a lot of edge cases and aren't standard for locum vet contracts.
-- No shift spanning midnight gets split into two days for OT purposes — duration is treated per-shift (matches how relief shifts are paid).
+**Final review chip** (existing): keep the green "Shift logged → invoice draft updated" toast, but expand it to a small inline card: *"Added 4/22 at Greenfield. Your April draft invoice is now $4,250 across 5 shifts. View →"*
 
-### 4. Display on shift cards (preserves existing rules)
+---
 
-- Calendar chips, week grid, list view continue to show the **flat dollar total** ($1,045.00) — no `/hr` (memory rule preserved).
-- The new "Hourly" pill we added gains a sibling **"OT" pill** when overtime applied, so users can see at a glance which shifts triggered overtime.
-- Tooltip on hover (or expanded list view) shows the breakdown line.
+### Part C — Shared improvements
 
-### 5. Invoice impact
+- **One reusable `<GuidedStep>` component** (`src/components/onboarding/GuidedStep.tsx`) wrapping each step's title, subtitle, "Why we ask" callout, and content slot. Used by both flows so the visual rhythm is identical.
+- **Calm-colleague tone throughout**: no marketing copy, no "magic AI" language, plain helpful explanations.
+- **No new database fields** — pure UX restructure.
+- **Skip is always visible** for non-required steps with copy: *"Skip — I'll add this later from the clinic page."*
+- All existing data writes (facility creation, terms, confirmation settings, shift creation, OT) stay identical.
 
-Invoice line items split a single OT shift into **two line items** so the PDF and customer-facing invoice show the breakdown explicitly:
-
-```
-Apr 22, 2026 — Relief coverage (8:00 AM – 6:00 PM)         8h × $95.00     $760.00
-Apr 22, 2026 — Overtime (after 8 hrs)                       2h × $142.50    $285.00
-```
-
-Both line items keep `shift_id` pointing to the same shift, with a new `line_kind` column on `invoice_line_items` (`'regular' | 'overtime' | 'flat'`) so the renderer/preview/PDF can label OT lines and bulk-invoice eligibility logic still treats them as one shift (no double-billing protection issues).
-
-### 6. Migration & backwards compatibility
-
-- All existing rows: `overtime_config = {}`, `overtime_hours = 0`, `overtime_rate = null`, `line_kind = 'regular'` for hourly lines / `'flat'` for flat lines (set by migration based on `qty`).
-- Zero behavior change for current users until they explicitly add an OT rate to a facility.
-- `taxCalculations`, `businessLogic`, `invoiceAutoGeneration` totals all still read `rate_applied` and `line_total`.
+---
 
 ### Files to change
 
-- **Migration**: add `overtime_config` jsonb to `terms_snapshots`; add `overtime_hours`, `overtime_rate`, `regular_hours` to `shifts`; add `line_kind` text to `invoice_line_items`.
-- `src/types/index.ts` — extend `TermsSnapshot`, `Shift`, `InvoiceLineItem`; add helper type `OvertimePolicy`.
-- `src/lib/overtime.ts` (new) — single source of truth: `computeShiftTotal({ hours, hourly_rate, overtime_policy })` returning `{ regular_hours, overtime_hours, total }`. Used by ShiftFormDialog preview + invoice generation.
-- `src/components/facilities/RatesEditor.tsx` — overtime disclosure under hourly rates; round-trip OT in `termsToRates` / `ratesToTermsFields`.
-- `src/components/schedule/ShiftFormDialog.tsx` — OT-aware live calculation, OT pill, optional one-off OT disclosure for custom hourly rates, persist `overtime_*` fields and computed `rate_applied`.
-- `src/lib/invoiceAutoGeneration.ts` + `src/lib/bulkInvoiceHelpers.ts` — emit two line items (regular + OT) for shifts with `overtime_hours > 0`; set `line_kind`. Eligibility/protection logic stays per-shift.
-- `src/components/invoice/InvoiceEditPanel.tsx` + `src/components/invoice/InvoicePreview.tsx` — render OT lines with an "Overtime" pill/label; group sibling lines by `shift_id` visually.
-- `src/components/schedule/WeekTimeGrid.tsx` + `SchedulePage.tsx` — append "OT" badge next to the Hourly badge when `overtime_hours > 0`.
+- **New**: `src/components/onboarding/GuidedStep.tsx` — shared step wrapper.
+- **New**: `src/components/facilities/AddClinicStepper.tsx` — the 4-step stepper used by both onboarding and the standalone dialog.
+- **Refactor**: `src/components/onboarding/OnboardingClinicForm.tsx` → renders `AddClinicStepper` (no duplicate form code).
+- **Refactor**: `src/components/AddFacilityDialog.tsx` → wraps `AddClinicStepper` in a Dialog (replaces the current 5-step welcome/enrichment flow). The old Optional Details (tech, wifi, PIMS, access) becomes a post-creation toast: *"Add tech access info →"* link to facility detail.
+- **Edit**: `src/components/schedule/ShiftFormDialog.tsx` — wrap each step's content with `GuidedStep`, add the live "billed on" / total / OT / tax preview chips, add clinic-defaults chip on Step 1.
+- **Edit**: `src/pages/OnboardingPage.tsx` — adjust sticky footer copy to match new step labels.
 
-### Out of scope (intentionally)
+### Out of scope
+- Database/schema changes.
+- Changes to OT logic, invoice generation, or tax calc — purely presentation.
+- Touching the post-onboarding "Log a shift" step in OnboardingPage (already streamlined).
 
-- Weekly overtime thresholds (e.g. 40 hrs/week).
-- Doubletime tier (e.g. 1.5× after 8, 2× after 12).
-- Automatic OT on flat day-rate shifts — flat shifts are by definition a fixed amount.
-- 7th-consecutive-day overtime (CA-style rule).
-- Backfilling OT onto historical shifts — only newly-added or edited shifts pick up OT.
-
-### Open question for you
-
-For the OT trigger, do you want:
-1. **Daily threshold only** (recommended, matches standard relief contracts): "after N hrs in this shift"
-2. **Daily + per-shift override**: same as #1, plus the ability to override OT hours manually on a single shift (useful for "I worked 10 hrs but contract paid OT after 6 today")
-
-My recommendation is #2 — daily threshold as the default from facility terms, with per-shift override available in the Shift dialog for one-off situations. Implementation cost is small since we're already storing `overtime_hours` and `overtime_rate` on the shift row.
+### Open question
+For the **Add Clinic dialog opened from the Facilities page** (not onboarding), should the final "Save clinic & log first shift" CTA stay, or just close the dialog and return to the Facilities list? My recommendation: keep it — it's the natural next action and reinforces the clinic→shift→invoice loop.
 
