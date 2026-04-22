@@ -300,19 +300,27 @@ export function BulkInvoiceDialog({ open, onOpenChange, preselectedFacilityId }:
                   </Badge>
                 </div>
                 <div className="max-h-60 overflow-y-auto border rounded-md divide-y">
-                  {eligible.map(s => (
-                    <label key={s.id} className="flex items-center gap-3 px-3 py-2 hover:bg-muted/30 cursor-pointer text-sm">
-                      <Checkbox checked={selectedShiftIds.has(s.id)} onCheckedChange={() => toggleShift(s.id)} />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium">{format(new Date(s.start_datetime), 'MMM d, yyyy')}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {format(new Date(s.start_datetime), 'h:mm a')} – {format(new Date(s.end_datetime), 'h:mm a')}
-                          {s.notes && <span className="ml-2">· {s.notes}</span>}
+                  {eligible.map(s => {
+                    const isHourly = s.rate_kind === 'hourly' && s.hourly_rate != null && s.hourly_rate > 0;
+                    const totalHours = (new Date(s.end_datetime).getTime() - new Date(s.start_datetime).getTime()) / 3600000;
+                    const hoursLabel = totalHours % 1 === 0 ? totalHours.toFixed(0) : totalHours.toFixed(2).replace(/\.?0+$/, '');
+                    return (
+                      <label key={s.id} className="flex items-center gap-3 px-3 py-2 hover:bg-muted/30 cursor-pointer text-sm">
+                        <Checkbox checked={selectedShiftIds.has(s.id)} onCheckedChange={() => toggleShift(s.id)} />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium">{format(new Date(s.start_datetime), 'MMM d, yyyy')}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {format(new Date(s.start_datetime), 'h:mm a')} – {format(new Date(s.end_datetime), 'h:mm a')}
+                            {isHourly && (
+                              <span className="ml-2">· {hoursLabel}h × ${Number(s.hourly_rate).toLocaleString()}/hr</span>
+                            )}
+                            {s.notes && <span className="ml-2">· {s.notes}</span>}
+                          </div>
                         </div>
-                      </div>
-                      <span className="font-medium">${s.rate_applied.toLocaleString()}</span>
-                    </label>
-                  ))}
+                        <span className="font-medium">${s.rate_applied.toLocaleString()}</span>
+                      </label>
+                    );
+                  })}
                 </div>
               </>
             )}
