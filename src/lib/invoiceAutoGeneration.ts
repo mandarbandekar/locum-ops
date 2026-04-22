@@ -200,14 +200,23 @@ export function buildAutoInvoiceDraft(
   invoice: Omit<Invoice, 'id'>;
   lineItems: Omit<InvoiceLineItem, 'id' | 'invoice_id'>[];
 } {
-  const lineItems = eligibleShifts.map(s => ({
-    shift_id: s.id,
-    description: `${format(new Date(s.start_datetime), 'MMM d, yyyy')} — Relief coverage (${format(new Date(s.start_datetime), 'h:mm a')} – ${format(new Date(s.end_datetime), 'h:mm a')})`,
-    service_date: new Date(s.start_datetime).toISOString().split('T')[0],
-    qty: 1,
-    unit_rate: s.rate_applied,
-    line_total: s.rate_applied,
-  }));
+  const lineItems = eligibleShifts.map(s => {
+    const isHourly = s.rate_kind === 'hourly' && s.hourly_rate != null && s.hourly_rate > 0;
+    const hours = isHourly
+      ? Math.round(((new Date(s.end_datetime).getTime() - new Date(s.start_datetime).getTime()) / 3600000) * 100) / 100
+      : 1;
+    const qty = isHourly ? hours : 1;
+    const unit_rate = isHourly ? Number(s.hourly_rate) : s.rate_applied;
+    const line_total = isHourly ? Math.round(qty * unit_rate * 100) / 100 : s.rate_applied;
+    return {
+      shift_id: s.id,
+      description: `${format(new Date(s.start_datetime), 'MMM d, yyyy')} — Relief coverage (${format(new Date(s.start_datetime), 'h:mm a')} – ${format(new Date(s.end_datetime), 'h:mm a')})${isHourly ? ` — ${hours} hrs` : ''}`,
+      service_date: new Date(s.start_datetime).toISOString().split('T')[0],
+      qty,
+      unit_rate,
+      line_total,
+    };
+  });
 
   const total = lineItems.reduce((sum, li) => sum + li.line_total, 0);
 
