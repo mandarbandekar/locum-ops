@@ -11,7 +11,7 @@ import { AlertTriangle, Trash2, CalendarDays, DollarSign, Clock, Building2, Stic
 import { AddFacilityDialog } from '@/components/AddFacilityDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
-import { SHIFT_COLORS, ShiftColor, TermsSnapshot, Shift, BLOCK_TYPES, BlockType } from '@/types';
+import { SHIFT_COLORS, ShiftColor, TermsSnapshot, Shift, BLOCK_TYPES, BlockType, RateKind } from '@/types';
 import { detectShiftConflicts } from '@/lib/businessLogic';
 import { cn } from '@/lib/utils';
 import { termsToRates, RateEntry } from '@/components/facilities/RatesEditor';
@@ -107,6 +107,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   const [selectedRateKey, setSelectedRateKey] = useState<string>('');
   const [isCustomRate, setIsCustomRate] = useState(false);
   const [customRateLabel, setCustomRateLabel] = useState('');
+  const [customRateKind, setCustomRateKind] = useState<RateKind>(existing?.rate_kind === 'hourly' ? 'hourly' : 'flat');
   const [saveCustomRate, setSaveCustomRate] = useState(true);
   const [notes, setNotes] = useState(existing?.notes || '');
   const [color, setColor] = useState<ShiftColor>(existing?.color || 'blue');
@@ -171,6 +172,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     setSelectedRateKey('');
     setIsCustomRate(false);
     setCustomRateLabel('');
+    setCustomRateKind(existing?.rate_kind === 'hourly' ? 'hourly' : 'flat');
     setSaveCustomRate(true);
     setShowAddFacility(false);
     setIsSubmitting(false);
@@ -180,6 +182,19 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
 
   const rateOptions = useMemo(() => buildRateOptions(terms, facilityId), [terms, facilityId]);
 
+  // Currently selected rate's kind. For preset rates, derived from the selected option.
+  // For custom rates, derived from `customRateKind`. Defaults to 'flat' when no rate yet.
+  const selectedRateOption: RateEntry | null = useMemo(() => {
+    if (isCustomRate) return null;
+    if (!selectedRateKey?.startsWith('rate-')) return null;
+    const idx = parseInt(selectedRateKey.replace('rate-', ''), 10);
+    return rateOptions[idx] || null;
+  }, [isCustomRate, selectedRateKey, rateOptions]);
+
+  const activeRateKind: RateKind = isCustomRate
+    ? customRateKind
+    : (selectedRateOption?.kind || 'flat');
+
   // Auto-select first rate when entering step 3 if no rate set
   useEffect(() => {
     if (step === 3 && !rate && rateOptions.length > 0) {
@@ -187,6 +202,24 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
       setSelectedRateKey('rate-0');
     }
   }, [step, rate, rateOptions]);
+
+  // Calculated hours from current start/end times (for hourly preview).
+  const calculatedHours = useMemo(() => {
+    if (!startTime || !endTime) return 0;
+    const [sh, sm] = startTime.split(':').map(Number);
+    const [eh, em] = endTime.split(':').map(Number);
+    if ([sh, sm, eh, em].some(n => Number.isNaN(n))) return 0;
+    let mins = (eh * 60 + em) - (sh * 60 + sm);
+    if (mins < 0) mins += 24 * 60; // overnight
+    return mins / 60;
+  }, [startTime, endTime]);
+
+  // For hourly rates: rate_applied = hours × hourly_rate. For flat: rate is the total.
+  const computedRateApplied = useMemo(() => {
+    const rateNum = Number(rate) || 0;
+    if (activeRateKind === 'hourly') return Math.round(rateNum * calculatedHours * 100) / 100;
+    return rateNum;
+  }, [rate, activeRateKind, calculatedHours]);
 
   const bookedDateObjects = useMemo(() =>
     shifts.map(s => {
@@ -292,14 +325,14 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     const facilityTerms = terms.find(t => t.facility_id === facilityId);
     if (facilityTerms) {
       const existingCustom = facilityTerms.custom_rates || [];
-      if (existingCustom.some(cr => cr.amount === Number(rate) && cr.label === label)) return;
+      if (existingCustom.some(cr => cr.amount === Number(rate) && cr.label === label && (cr.kind || 'flat') === customRateKind)) return;
       await updateTerms({
         ...facilityTerms,
-        custom_rates: [...existingCustom, { label, amount: Number(rate) }],
+        custom_rates: [...existingCustom, { label, amount: Number(rate), kind: customRateKind }],
       });
       toast.success(`Custom rate "${label}" saved to facility`);
     }
-  }, [isCustomRate, saveCustomRate, rate, customRateLabel, facilityId, terms, updateTerms]);
+  }, [isCustomRate, saveCustomRate, rate, customRateLabel, customRateKind, facilityId, terms, updateTerms]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -307,6 +340,9 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     try {
       await saveCustomRateToTerms();
       const overridePayload = computeOverridePayload();
+      const ratePayload = activeRateKind === 'hourly'
+        ? { rate_kind: 'hourly' as const, hourly_rate: Number(rate) || 0, rate_applied: computedRateApplied }
+        : { rate_kind: 'flat' as const, hourly_rate: null, rate_applied: Number(rate) };
       if (existing) {
         const date = format(selectedDates[0] || new Date(), 'yyyy-MM-dd');
         await onSave({
@@ -314,7 +350,8 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
           facility_id: facilityId,
           start_datetime: new Date(`${date}T${startTime}:00`).toISOString(),
           end_datetime: new Date(`${date}T${endTime}:00`).toISOString(),
-          rate_applied: Number(rate), notes, color,
+          ...ratePayload,
+          notes, color,
           ...overridePayload,
         });
       } else {
@@ -325,7 +362,8 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
             facility_id: facilityId,
             start_datetime: new Date(`${date}T${startTime}:00`).toISOString(),
             end_datetime: new Date(`${date}T${endTime}:00`).toISOString(),
-            rate_applied: Number(rate), notes, color,
+            ...ratePayload,
+            notes, color,
             ...overridePayload,
           });
         }
@@ -624,12 +662,18 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
               <SelectContent>
                 {rateOptions.map((opt, i) => (
                   <SelectItem key={`rate-${i}`} value={`rate-${i}`}>
-                    {opt.label} — ${opt.amount.toLocaleString()}
+                    {opt.label} — ${opt.amount.toLocaleString()}{opt.kind === 'hourly' ? '/hr' : '/day'}
                   </SelectItem>
                 ))}
                 <SelectItem value="custom">Custom</SelectItem>
               </SelectContent>
             </Select>
+            {activeRateKind === 'hourly' && Number(rate) > 0 && (
+              <p className="text-[11px] text-muted-foreground">
+                {calculatedHours.toFixed(calculatedHours % 1 === 0 ? 0 : 1)} hrs × ${Number(rate).toLocaleString()}/hr ={' '}
+                <span className="font-semibold text-foreground">${computedRateApplied.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </p>
+            )}
           </div>
         ) : (
           <div className="space-y-2">
@@ -640,10 +684,38 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
               placeholder="Rate label (e.g. Emergency Rate)"
               className="h-9 text-sm"
             />
-            <div className="relative">
-              <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input type="number" value={rate} onChange={e => setRate(e.target.value)} placeholder="0" min={0} className="pl-7 h-10" />
+            <div className="flex items-center gap-2">
+              <div className="inline-flex rounded-md border border-border overflow-hidden h-9" role="group">
+                {(['flat', 'hourly'] as RateKind[]).map(k => (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => setCustomRateKind(k)}
+                    className={cn(
+                      'px-3 text-xs font-medium transition-colors',
+                      customRateKind === k
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-background text-muted-foreground hover:bg-muted',
+                    )}
+                  >
+                    {k === 'flat' ? 'Flat' : 'Hourly'}
+                  </button>
+                ))}
+              </div>
+              <div className="relative flex-1">
+                <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input type="number" value={rate} onChange={e => setRate(e.target.value)} placeholder="0" min={0} className="pl-7 pr-10 h-10" />
+                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground pointer-events-none">
+                  {customRateKind === 'hourly' ? '/hr' : '/day'}
+                </span>
+              </div>
             </div>
+            {customRateKind === 'hourly' && Number(rate) > 0 && (
+              <p className="text-[11px] text-muted-foreground">
+                {calculatedHours.toFixed(calculatedHours % 1 === 0 ? 0 : 1)} hrs × ${Number(rate).toLocaleString()}/hr ={' '}
+                <span className="font-semibold text-foreground">${computedRateApplied.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </p>
+            )}
             <div className="flex items-center gap-2">
               <Checkbox
                 id="save-custom-rate"
@@ -708,7 +780,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
           {[...selectedDates].sort((a, b) => a.getTime() - b.getTime()).map(d => format(d, 'MMM d')).join(', ')}
           {' · '}
           {startTime}–{endTime}
-          {rate ? ` · $${Number(rate).toLocaleString()}/day` : ''}
+          {rate ? ` · $${computedRateApplied.toLocaleString(undefined, { maximumFractionDigits: 2 })}${activeRateKind === 'hourly' ? ` (${calculatedHours.toFixed(calculatedHours % 1 === 0 ? 0 : 1)} hrs × $${Number(rate)}/hr)` : ''}` : ''}
         </p>
       </div>
 
@@ -823,7 +895,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
                 <SelectTrigger className="h-10"><SelectValue placeholder="Select rate" /></SelectTrigger>
                 <SelectContent>
                   {rateOptions.map((opt, i) => (
-                    <SelectItem key={`rate-${i}`} value={`rate-${i}`}>{opt.label} — ${opt.amount.toLocaleString()}</SelectItem>
+                    <SelectItem key={`rate-${i}`} value={`rate-${i}`}>{opt.label} — ${opt.amount.toLocaleString()}{opt.kind === 'hourly' ? '/hr' : '/day'}</SelectItem>
                   ))}
                   <SelectItem value="custom">Custom</SelectItem>
                 </SelectContent>

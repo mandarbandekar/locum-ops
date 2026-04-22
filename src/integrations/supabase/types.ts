@@ -2554,9 +2554,11 @@ export type Database = {
           end_datetime: string
           engagement_type_override: string | null
           facility_id: string
+          hourly_rate: number | null
           id: string
           notes: string
           rate_applied: number
+          rate_kind: string
           source_name_override: string | null
           start_datetime: string
           status: string
@@ -2569,9 +2571,11 @@ export type Database = {
           end_datetime: string
           engagement_type_override?: string | null
           facility_id: string
+          hourly_rate?: number | null
           id?: string
           notes?: string
           rate_applied?: number
+          rate_kind?: string
           source_name_override?: string | null
           start_datetime: string
           status?: string
@@ -2584,9 +2588,11 @@ export type Database = {
           end_datetime?: string
           engagement_type_override?: string | null
           facility_id?: string
+          hourly_rate?: number | null
           id?: string
           notes?: string
           rate_applied?: number
+          rate_kind?: string
           source_name_override?: string | null
           start_datetime?: string
           status?: string
@@ -3130,6 +3136,7 @@ export type Database = {
           late_payment_policy_text: string
           overtime_policy_text: string
           partial_day_rate: number
+          rate_kinds: Json
           special_notes: string
           telemedicine_rate: number
           updated_at: string
@@ -3147,6 +3154,7 @@ export type Database = {
           late_payment_policy_text?: string
           overtime_policy_text?: string
           partial_day_rate?: number
+          rate_kinds?: Json
           special_notes?: string
           telemedicine_rate?: number
           updated_at?: string
@@ -3164,6 +3172,7 @@ export type Database = {
           late_payment_policy_text?: string
           overtime_policy_text?: string
           partial_day_rate?: number
+          rate_kinds?: Json
           special_notes?: string
           telemedicine_rate?: number
           updated_at?: string
