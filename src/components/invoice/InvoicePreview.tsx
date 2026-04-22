@@ -108,15 +108,20 @@ export function InvoicePreview({ sender, billTo, invoiceNumber, invoiceDate, due
               </tr>
             </thead>
             <tbody>
-              {lineItems.map((li, i) => (
-                <tr key={i} className="border-t">
-                  <td className="p-2.5">{li.description}</td>
-                  <td className="p-2.5 text-muted-foreground">{formatDateShort(li.service_date)}</td>
-                  <td className="p-2.5 text-right">{li.qty}</td>
-                  <td className="p-2.5 text-right">${li.unit_rate.toLocaleString()}</td>
-                  <td className="p-2.5 text-right font-medium">${li.line_total.toLocaleString()}</td>
-                </tr>
-              ))}
+              {lineItems.map((li, i) => {
+                const isHourly = !!li.shift_id && li.qty !== 1;
+                return (
+                  <tr key={i} className="border-t">
+                    <td className="p-2.5">{li.description}</td>
+                    <td className="p-2.5 text-muted-foreground">{formatDateShort(li.service_date)}</td>
+                    <td className="p-2.5 text-right">{isHourly ? `${li.qty}h` : li.qty}</td>
+                    <td className="p-2.5 text-right">
+                      ${li.unit_rate.toLocaleString()}{isHourly ? <span className="text-muted-foreground">/hr</span> : null}
+                    </td>
+                    <td className="p-2.5 text-right font-medium">${li.line_total.toLocaleString()}</td>
+                  </tr>
+                );
+              })}
               {lineItems.length === 0 && (
                 <tr><td colSpan={5} className="p-4 text-center text-muted-foreground">No line items</td></tr>
               )}
