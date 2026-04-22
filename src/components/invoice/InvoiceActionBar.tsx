@@ -60,6 +60,7 @@ export function InvoiceActionBar({
   const [shareLoading, setShareLoading] = useState(false);
   const [confirmAlreadySentOpen, setConfirmAlreadySentOpen] = useState(false);
   const [confirmRevertOpen, setConfirmRevertOpen] = useState(false);
+  const [comingSoonOpen, setComingSoonOpen] = useState(false);
 
   const computedStatus = computeInvoiceStatus(invoice);
   const isDraft = invoice.status === 'draft';
@@ -229,7 +230,7 @@ export function InvoiceActionBar({
               <span className="hidden sm:inline">I already sent this</span>
               <span className="sm:hidden">Sent</span>
             </Button>
-            <Button size="sm" onClick={onOpenCompose} className="shrink-0">
+            <Button size="sm" onClick={() => setComingSoonOpen(true)} className="shrink-0">
               <Send className="mr-1.5 h-3.5 w-3.5" />
               Send to clinic
               <ArrowRight className="ml-1 h-3.5 w-3.5" />
@@ -331,6 +332,21 @@ export function InvoiceActionBar({
             <AlertDialogAction onClick={async () => { setConfirmRevertOpen(false); await handleRevertToDraft(); }}>
               Revert to Draft
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Coming soon dialog for Send to clinic */}
+      <AlertDialog open={comingSoonOpen} onOpenChange={setComingSoonOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Coming soon</AlertDialogTitle>
+            <AlertDialogDescription>
+              Email functionality is coming soon.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setComingSoonOpen(false)}>OK</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
