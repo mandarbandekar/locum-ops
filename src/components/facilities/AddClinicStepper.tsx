@@ -445,7 +445,7 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
         >
           {/* Section A — Cadence */}
           <div className="space-y-2">
-            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Billing cadence</Label>
+            <Label className="text-sm font-semibold text-foreground normal-case tracking-normal">Billing cadence — How often do you want to bill this clinic?</Label>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {BILLING_CADENCES.map(c => {
                 const selected = billingCadence === c.value;
