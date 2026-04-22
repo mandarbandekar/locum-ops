@@ -11,10 +11,11 @@ import { AlertTriangle, Trash2, CalendarDays, DollarSign, Clock, Building2, Stic
 import { AddFacilityDialog } from '@/components/AddFacilityDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
-import { SHIFT_COLORS, ShiftColor, TermsSnapshot, Shift, BLOCK_TYPES, BlockType, RateKind } from '@/types';
+import { SHIFT_COLORS, ShiftColor, TermsSnapshot, Shift, BLOCK_TYPES, BlockType, RateKind, OvertimePolicy } from '@/types';
 import { detectShiftConflicts } from '@/lib/businessLogic';
 import { cn } from '@/lib/utils';
 import { termsToRates, RateEntry } from '@/components/facilities/RatesEditor';
+import { computeShiftTotal, isOvertimePolicyActive } from '@/lib/overtime';
 import { useData } from '@/contexts/DataContext';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
@@ -195,6 +196,15 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     ? customRateKind
     : (selectedRateOption?.kind || 'flat');
 
+  // Active OT policy: from selected facility rate (preset). Custom rates have no OT in v1.
+  const activeOvertimePolicy: OvertimePolicy | null = useMemo(() => {
+    if (activeRateKind !== 'hourly') return null;
+    if (isCustomRate) return null;
+    return selectedRateOption?.overtime && isOvertimePolicyActive(selectedRateOption.overtime)
+      ? selectedRateOption.overtime
+      : null;
+  }, [activeRateKind, isCustomRate, selectedRateOption]);
+
   // Auto-select first rate when entering step 3 if no rate set
   useEffect(() => {
     if (step === 3 && !rate && rateOptions.length > 0) {
@@ -203,23 +213,18 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     }
   }, [step, rate, rateOptions]);
 
-  // Calculated hours from current start/end times (for hourly preview).
-  // Rounding rule: nearest quarter hour (0.25), the standard payroll convention.
-  // Returns null when inputs are missing/invalid so callers can distinguish
-  // "not entered yet" from "0 hours".
+  // Calculated hours (rounded to nearest quarter hour).
   const calculatedHours = useMemo<number | null>(() => {
     if (!startTime || !endTime) return null;
     const [sh, sm] = startTime.split(':').map(Number);
     const [eh, em] = endTime.split(':').map(Number);
     if ([sh, sm, eh, em].some(n => Number.isNaN(n))) return null;
     let mins = (eh * 60 + em) - (sh * 60 + sm);
-    if (mins < 0) mins += 24 * 60; // overnight
+    if (mins < 0) mins += 24 * 60;
     const rawHours = mins / 60;
-    // Round to nearest quarter hour
     return Math.round(rawHours * 4) / 4;
   }, [startTime, endTime]);
 
-  // Validation: hourly shifts require a usable duration (>0, ≤24, valid times).
   const hoursInvalidReason = useMemo<string | null>(() => {
     if (activeRateKind !== 'hourly') return null;
     if (calculatedHours === null) return 'Enter a valid start and end time.';
@@ -229,16 +234,21 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   }, [activeRateKind, calculatedHours]);
   const isHoursValid = hoursInvalidReason === null;
 
-  // For hourly rates: rate_applied = hours × hourly_rate (rounded to cents).
-  // For flat: rate is the total.
-  const computedRateApplied = useMemo(() => {
+  // Compute total + OT split for live preview / save payload.
+  const computedTotals = useMemo(() => {
     const rateNum = Number(rate) || 0;
     if (activeRateKind === 'hourly') {
-      const hrs = calculatedHours ?? 0;
-      return Math.round(rateNum * hrs * 100) / 100;
+      return computeShiftTotal({
+        hours: calculatedHours ?? 0,
+        hourly_rate: rateNum,
+        overtime_policy: activeOvertimePolicy,
+      });
     }
-    return rateNum;
-  }, [rate, activeRateKind, calculatedHours]);
+    return { regular_hours: 0, overtime_hours: 0, overtime_rate: null, total: rateNum };
+  }, [rate, activeRateKind, calculatedHours, activeOvertimePolicy]);
+
+  const computedRateApplied = computedTotals.total;
+  const otApplied = computedTotals.overtime_hours > 0;
 
   // Display helper: format hours dropping trailing zeros (e.g. 8 / 8.5 / 8.25).
   const formatHours = (h: number | null) => {

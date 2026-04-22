@@ -1,4 +1,4 @@
-import type { Facility, Shift, Invoice, InvoiceLineItem, BillingCadence } from '@/types';
+import type { Facility, Shift, Invoice, InvoiceLineItem, BillingCadence, InvoiceLineKind } from '@/types';
 import { format, startOfDay, endOfDay, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, setHours } from 'date-fns';
 
 /**
@@ -200,22 +200,55 @@ export function buildAutoInvoiceDraft(
   invoice: Omit<Invoice, 'id'>;
   lineItems: Omit<InvoiceLineItem, 'id' | 'invoice_id'>[];
 } {
-  const lineItems = eligibleShifts.map(s => {
+  type LineDraft = Omit<InvoiceLineItem, 'id' | 'invoice_id'>;
+  const lineItems: LineDraft[] = eligibleShifts.flatMap((s): LineDraft[] => {
     const isHourly = s.rate_kind === 'hourly' && s.hourly_rate != null && s.hourly_rate > 0;
-    const hours = isHourly
-      ? Math.round(((new Date(s.end_datetime).getTime() - new Date(s.start_datetime).getTime()) / 3600000) * 100) / 100
-      : 1;
-    const qty = isHourly ? hours : 1;
-    const unit_rate = isHourly ? Number(s.hourly_rate) : s.rate_applied;
-    const line_total = isHourly ? Math.round(qty * unit_rate * 100) / 100 : s.rate_applied;
-    return {
+    const dateLabel = format(new Date(s.start_datetime), 'MMM d, yyyy');
+    const timeLabel = `${format(new Date(s.start_datetime), 'h:mm a')} – ${format(new Date(s.end_datetime), 'h:mm a')}`;
+
+    if (!isHourly) {
+      return [{
+        shift_id: s.id,
+        description: `${dateLabel} — Relief coverage (${timeLabel})`,
+        service_date: new Date(s.start_datetime).toISOString().split('T')[0],
+        qty: 1,
+        unit_rate: s.rate_applied,
+        line_total: s.rate_applied,
+        line_kind: 'flat' as const,
+      }];
+    }
+
+    // Hourly: split into regular + (optional) overtime line items.
+    const totalHours = Math.round(((new Date(s.end_datetime).getTime() - new Date(s.start_datetime).getTime()) / 3600000) * 100) / 100;
+    const hourlyRate = Number(s.hourly_rate);
+    const overtimeHours = Number(s.overtime_hours || 0);
+    const regularHours = s.regular_hours != null
+      ? Number(s.regular_hours)
+      : Math.max(0, totalHours - overtimeHours);
+    const overtimeRate = s.overtime_rate != null ? Number(s.overtime_rate) : 0;
+
+    const regularLine = {
       shift_id: s.id,
-      description: `${format(new Date(s.start_datetime), 'MMM d, yyyy')} — Relief coverage (${format(new Date(s.start_datetime), 'h:mm a')} – ${format(new Date(s.end_datetime), 'h:mm a')})${isHourly ? ` — ${hours} hrs` : ''}`,
+      description: `${dateLabel} — Relief coverage (${timeLabel})`,
       service_date: new Date(s.start_datetime).toISOString().split('T')[0],
-      qty,
-      unit_rate,
-      line_total,
+      qty: regularHours,
+      unit_rate: hourlyRate,
+      line_total: Math.round(regularHours * hourlyRate * 100) / 100,
+      line_kind: 'regular' as const,
     };
+
+    if (overtimeHours <= 0 || overtimeRate <= 0) return [regularLine];
+
+    const overtimeLine = {
+      shift_id: s.id,
+      description: `${dateLabel} — Overtime (after ${regularHours} hrs)`,
+      service_date: new Date(s.start_datetime).toISOString().split('T')[0],
+      qty: overtimeHours,
+      unit_rate: overtimeRate,
+      line_total: Math.round(overtimeHours * overtimeRate * 100) / 100,
+      line_kind: 'overtime' as const,
+    };
+    return [regularLine, overtimeLine];
   });
 
   const total = lineItems.reduce((sum, li) => sum + li.line_total, 0);

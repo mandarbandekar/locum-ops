@@ -110,7 +110,17 @@ function ShiftLineItemCard({ item, readOnly, onUpdate, onDelete }: { item: any; 
           </p>
           <div className="flex items-center justify-between mt-1">
             <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
-              {isShift && item.qty !== 1 ? (
+              {item.line_kind === 'overtime' ? (
+                <>
+                  <span>{item.qty}h × {fmtMoney(item.unit_rate)}/hr</span>
+                  <span className="inline-flex items-center rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 text-[10px] font-medium px-1.5 py-0.5">Overtime</span>
+                </>
+              ) : isShift && item.line_kind === 'regular' ? (
+                <>
+                  <span>{item.qty}h × {fmtMoney(item.unit_rate)}/hr</span>
+                  <span className="inline-flex items-center rounded-full bg-primary/10 text-primary text-[10px] font-medium px-1.5 py-0.5">Hourly</span>
+                </>
+              ) : isShift && item.qty !== 1 && !item.line_kind ? (
                 <>
                   <span>{item.qty}h × {fmtMoney(item.unit_rate)}/hr</span>
                   <span className="inline-flex items-center rounded-full bg-primary/10 text-primary text-[10px] font-medium px-1.5 py-0.5">Hourly</span>
