@@ -11,6 +11,8 @@ import type { ManualFacilityInput } from '@/hooks/useManualSetup';
 import type { BillingCadence } from '@/lib/invoiceBillingDefaults';
 import { EngagementSelector } from '@/components/facilities/EngagementSelector';
 import type { EngagementType, TaxFormType } from '@/lib/engagementOptions';
+import type { RateKind } from '@/types';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 interface Props {
@@ -24,6 +26,7 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
   const [billingEmail, setBillingEmail] = useState('');
   const [address, setAddress] = useState('');
   const [weekdayRate, setWeekdayRate] = useState('');
+  const [weekdayRateKind, setWeekdayRateKind] = useState<RateKind>('flat');
   const [billingCadence, setBillingCadence] = useState<BillingCadence>('monthly');
   const [engagementType, setEngagementType] = useState<EngagementType>('direct');
   const [sourceName, setSourceName] = useState('');
@@ -55,6 +58,7 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
       billing_email: isDirect ? (billingEmail.trim() || undefined) : undefined,
       address: address.trim() || undefined,
       weekday_rate: engagementType !== 'w2' && weekdayRate ? parseFloat(weekdayRate) : undefined,
+      weekday_rate_kind: engagementType !== 'w2' && weekdayRate ? weekdayRateKind : undefined,
       billing_cadence: isDirect ? billingCadence : undefined,
       billing_week_end_day: undefined,
       billing_anchor_date: undefined,
