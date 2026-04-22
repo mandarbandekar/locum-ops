@@ -348,12 +348,6 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
           title="How You Work With Them"
           subtitle="Tell us how this clinic pays you so we set up the right workflow."
           icon={UserCheck}
-          whyWeAsk={
-            <>
-              Direct clinics get auto-generated invoices from LocumOps. Platform / agency work skips invoicing
-              because the platform pays you.
-            </>
-          }
           preview={
             isDirect ? (
               <p className="text-[12px] text-foreground">
