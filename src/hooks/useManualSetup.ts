@@ -87,7 +87,7 @@ export function useManualSetup() {
       const isDirect = engagementType === 'direct';
       const { data, error } = await db('facilities').insert({
         user_id: user.id,
-        name: input.name,
+        name: trimmedName,
         status: 'active',
         address: input.address || '',
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
