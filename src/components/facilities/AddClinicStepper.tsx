@@ -478,7 +478,7 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
 
           {/* Section B — Net terms */}
           <div className="space-y-2">
-            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Payment terms</Label>
+            <Label className="text-sm font-semibold text-foreground normal-case tracking-normal">Payment terms — What is the required timeframe for payment?</Label>
             <div className="flex flex-wrap gap-1.5">
               {NET_TERMS.map(d => {
                 const selected = invoiceDueDays === d;
@@ -494,13 +494,13 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
                         : 'border-border bg-background text-muted-foreground hover:bg-muted',
                     )}
                   >
-                    Net {d}
+                    {d} days
                   </button>
                 );
               })}
             </div>
             <p className="text-[11px] text-muted-foreground">
-              Industry standard for relief vet work is Net 15 to Net 30.
+              Most relief vets give clinics 15 to 30 days to pay.
             </p>
           </div>
 
