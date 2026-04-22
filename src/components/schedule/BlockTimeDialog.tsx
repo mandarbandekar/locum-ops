@@ -105,7 +105,7 @@ export function BlockTimeDialog({ open, onOpenChange, onSave, onDelete, existing
   const getFacilityName = (id: string) => facilities?.find(f => f.id === id)?.name || 'Unknown facility';
 
   const handleSave = () => {
-    if (!title.trim()) return;
+    if (!title.trim() || !blockInterval) return;
     const { start: s, end: e } = blockInterval;
     const block = {
       ...(existing ? { id: existing.id } : {}),
@@ -121,7 +121,7 @@ export function BlockTimeDialog({ open, onOpenChange, onSave, onDelete, existing
     onOpenChange(false);
   };
 
-  const range: DateRange = { from: startDate, to: endDate };
+  const range: DateRange | undefined = startDate ? { from: startDate, to: endDate } : undefined;
   const rangeLabel = startDate && endDate
     ? (startDate.getTime() === endDate.getTime()
         ? format(startDate, 'MMM d, yyyy')
