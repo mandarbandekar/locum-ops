@@ -17,6 +17,8 @@ import { cn } from '@/lib/utils';
 import { termsToRates, RateEntry } from '@/components/facilities/RatesEditor';
 import { computeShiftTotal, isOvertimePolicyActive } from '@/lib/overtime';
 import { useData } from '@/contexts/DataContext';
+import { getBillingPeriod } from '@/lib/invoiceAutoGeneration';
+import type { BillingCadence } from '@/lib/invoiceBillingDefaults';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
