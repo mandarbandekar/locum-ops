@@ -662,12 +662,18 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
               <SelectContent>
                 {rateOptions.map((opt, i) => (
                   <SelectItem key={`rate-${i}`} value={`rate-${i}`}>
-                    {opt.label} — ${opt.amount.toLocaleString()}
+                    {opt.label} — ${opt.amount.toLocaleString()}{opt.kind === 'hourly' ? '/hr' : '/day'}
                   </SelectItem>
                 ))}
                 <SelectItem value="custom">Custom</SelectItem>
               </SelectContent>
             </Select>
+            {activeRateKind === 'hourly' && Number(rate) > 0 && (
+              <p className="text-[11px] text-muted-foreground">
+                {calculatedHours.toFixed(calculatedHours % 1 === 0 ? 0 : 1)} hrs × ${Number(rate).toLocaleString()}/hr ={' '}
+                <span className="font-semibold text-foreground">${computedRateApplied.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </p>
+            )}
           </div>
         ) : (
           <div className="space-y-2">
@@ -678,10 +684,38 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
               placeholder="Rate label (e.g. Emergency Rate)"
               className="h-9 text-sm"
             />
-            <div className="relative">
-              <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input type="number" value={rate} onChange={e => setRate(e.target.value)} placeholder="0" min={0} className="pl-7 h-10" />
+            <div className="flex items-center gap-2">
+              <div className="inline-flex rounded-md border border-border overflow-hidden h-9" role="group">
+                {(['flat', 'hourly'] as RateKind[]).map(k => (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => setCustomRateKind(k)}
+                    className={cn(
+                      'px-3 text-xs font-medium transition-colors',
+                      customRateKind === k
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-background text-muted-foreground hover:bg-muted',
+                    )}
+                  >
+                    {k === 'flat' ? 'Flat' : 'Hourly'}
+                  </button>
+                ))}
+              </div>
+              <div className="relative flex-1">
+                <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input type="number" value={rate} onChange={e => setRate(e.target.value)} placeholder="0" min={0} className="pl-7 pr-10 h-10" />
+                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground pointer-events-none">
+                  {customRateKind === 'hourly' ? '/hr' : '/day'}
+                </span>
+              </div>
             </div>
+            {customRateKind === 'hourly' && Number(rate) > 0 && (
+              <p className="text-[11px] text-muted-foreground">
+                {calculatedHours.toFixed(calculatedHours % 1 === 0 ? 0 : 1)} hrs × ${Number(rate).toLocaleString()}/hr ={' '}
+                <span className="font-semibold text-foreground">${computedRateApplied.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </p>
+            )}
             <div className="flex items-center gap-2">
               <Checkbox
                 id="save-custom-rate"
