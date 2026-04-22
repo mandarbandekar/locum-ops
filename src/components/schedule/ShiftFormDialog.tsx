@@ -727,10 +727,36 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
               </SelectContent>
             </Select>
             {activeRateKind === 'hourly' && Number(rate) > 0 && isHoursValid && (
-              <p className="text-[11px] text-muted-foreground">
-                {formatHours(calculatedHours)} hrs × ${Number(rate).toLocaleString()}/hr ={' '}
-                <span className="font-semibold text-foreground">${computedRateApplied.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-              </p>
+              <div className="space-y-1">
+                {otApplied && activeOvertimePolicy ? (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
+                        <AlertTriangle className="h-2.5 w-2.5" /> Overtime applied
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">
+                        after {activeOvertimePolicy.threshold_hours}h/day
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      {formatHours(computedTotals.regular_hours)} hrs × ${Number(rate).toLocaleString()}/hr = ${(computedTotals.regular_hours * Number(rate)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                    <p className="text-[11px] text-amber-700 dark:text-amber-400">
+                      {formatHours(computedTotals.overtime_hours)} hrs × ${activeOvertimePolicy.ot_rate.toLocaleString()}/hr (OT) = ${(computedTotals.overtime_hours * activeOvertimePolicy.ot_rate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                    <div className="border-t border-border/60 pt-1">
+                      <p className="text-[11px]">
+                        Total = <span className="font-semibold text-foreground">${computedRateApplied.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-[11px] text-muted-foreground">
+                    {formatHours(calculatedHours)} hrs × ${Number(rate).toLocaleString()}/hr ={' '}
+                    <span className="font-semibold text-foreground">${computedRateApplied.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </p>
+                )}
+              </div>
             )}
             {activeRateKind === 'hourly' && hoursInvalidReason && (
               <p className="text-[11px] text-destructive flex items-center gap-1">
