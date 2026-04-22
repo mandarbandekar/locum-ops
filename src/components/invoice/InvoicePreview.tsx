@@ -47,7 +47,7 @@ interface PreviewProps {
   invoiceNumber: string;
   invoiceDate: string;
   dueDate: string | null;
-  lineItems: { description: string; service_date: string | null; qty: number; unit_rate: number; line_total: number; shift_id?: string | null }[];
+  lineItems: { description: string; service_date: string | null; qty: number; unit_rate: number; line_total: number; shift_id?: string | null; line_kind?: 'regular' | 'overtime' | 'flat' }[];
   total: number;
   balanceDue: number;
   notes: string;
@@ -109,10 +109,16 @@ export function InvoicePreview({ sender, billTo, invoiceNumber, invoiceDate, due
             </thead>
             <tbody>
               {lineItems.map((li, i) => {
-                const isHourly = !!li.shift_id && li.qty !== 1;
+                const isOvertime = li.line_kind === 'overtime';
+                const isHourly = isOvertime || li.line_kind === 'regular' || (!!li.shift_id && li.qty !== 1 && li.line_kind !== 'flat');
                 return (
                   <tr key={i} className="border-t">
-                    <td className="p-2.5">{li.description}</td>
+                    <td className="p-2.5">
+                      {li.description}
+                      {isOvertime && (
+                        <span className="ml-2 inline-flex items-center rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 text-[10px] font-medium px-1.5 py-0.5 align-middle">OT</span>
+                      )}
+                    </td>
                     <td className="p-2.5 text-muted-foreground">{formatDateShort(li.service_date)}</td>
                     <td className="p-2.5 text-right">{isHourly ? `${li.qty}h` : li.qty}</td>
                     <td className="p-2.5 text-right">

@@ -11,10 +11,11 @@ import { AlertTriangle, Trash2, CalendarDays, DollarSign, Clock, Building2, Stic
 import { AddFacilityDialog } from '@/components/AddFacilityDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
-import { SHIFT_COLORS, ShiftColor, TermsSnapshot, Shift, BLOCK_TYPES, BlockType, RateKind } from '@/types';
+import { SHIFT_COLORS, ShiftColor, TermsSnapshot, Shift, BLOCK_TYPES, BlockType, RateKind, OvertimePolicy } from '@/types';
 import { detectShiftConflicts } from '@/lib/businessLogic';
 import { cn } from '@/lib/utils';
 import { termsToRates, RateEntry } from '@/components/facilities/RatesEditor';
+import { computeShiftTotal, isOvertimePolicyActive } from '@/lib/overtime';
 import { useData } from '@/contexts/DataContext';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
