@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2, MailCheck } from 'lucide-react';
 import { toast } from 'sonner';
+import locumOpsLogo from '@/assets/locumops-logo.png';
 
 export default function WelcomePage() {
   const navigate = useNavigate();
@@ -60,11 +61,14 @@ export default function WelcomePage() {
     <div className="min-h-screen bg-foreground/40 flex items-center justify-center p-4">
       <div className="w-full max-w-md rounded-2xl bg-card border border-[hsl(var(--card-border))] p-8 sm:p-10">
         {/* Logo */}
-        <div className="flex flex-col items-center gap-3 mb-8">
-          <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-xl">L</span>
-          </div>
-          <span className="text-base font-semibold text-foreground tracking-tight">Locum Ops</span>
+        <div className="flex flex-col items-center gap-2 mb-8">
+          <img src={locumOpsLogo} alt="LocumOps" className="h-14 w-14 object-contain" />
+          <span
+            className="text-base font-semibold tracking-tight"
+            style={{ color: 'hsl(var(--sidebar-logo-text))', fontFamily: 'DM Sans, sans-serif' }}
+          >
+            LocumOps
+          </span>
         </div>
 
         {success ? (

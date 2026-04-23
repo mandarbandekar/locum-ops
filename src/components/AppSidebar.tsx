@@ -14,8 +14,8 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { LocumOpsMark } from '@/components/brand/LocumOpsMark';
 import { QuickAddMenu } from '@/components/QuickAddMenu';
+import locumOpsEmblem from '@/assets/locumops-emblem.png';
 
 interface NavItem {
   title: string;
@@ -116,7 +116,7 @@ export function AppSidebar() {
       <SidebarContent className="pt-3 overflow-hidden">
         {/* Brand lockup */}
         <div className={`flex items-center gap-2.5 px-4 py-3 ${collapsed ? 'justify-center px-2' : ''}`}>
-          <LocumOpsMark className="h-7 w-7 shrink-0" />
+          <img src={locumOpsEmblem} alt="" className="h-7 w-7 shrink-0 object-contain" />
           {!collapsed && (
             <span
               className="font-semibold text-[16px] tracking-tight"
