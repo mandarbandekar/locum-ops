@@ -3,11 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+// Select removed: timezone is auto-detected silently
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
-import { ArrowRight, Check, MapPin, Mail, User, Pencil, Plus, LayoutDashboard } from 'lucide-react';
+import { ArrowRight, Check, MapPin, Mail, User, Plus, LayoutDashboard } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
 import { OnboardingClinicForm } from '@/components/onboarding/OnboardingClinicForm';
 import { OnboardingShiftStep } from '@/components/onboarding/OnboardingShiftStep';
@@ -43,18 +44,32 @@ const PHASE_BACK: Record<Phase, Phase | null> = {
   finish: null,
 };
 
-const TIMEZONE_OPTIONS = [
-  { value: 'America/New_York', label: 'Eastern' },
-  { value: 'America/Chicago', label: 'Central' },
-  { value: 'America/Denver', label: 'Mountain' },
-  { value: 'America/Phoenix', label: 'Arizona' },
-  { value: 'America/Los_Angeles', label: 'Pacific' },
-  { value: 'America/Anchorage', label: 'Alaska' },
-  { value: 'Pacific/Honolulu', label: 'Hawaii' },
-];
+const US_TIMEZONES = new Set([
+  'America/New_York',
+  'America/Chicago',
+  'America/Denver',
+  'America/Phoenix',
+  'America/Los_Angeles',
+  'America/Anchorage',
+  'Pacific/Honolulu',
+]);
+
+const TIMEZONE_LABELS: Record<string, string> = {
+  'America/New_York': 'Eastern',
+  'America/Chicago': 'Central',
+  'America/Denver': 'Mountain',
+  'America/Phoenix': 'Arizona',
+  'America/Los_Angeles': 'Pacific',
+  'America/Anchorage': 'Alaska',
+  'Pacific/Honolulu': 'Hawaii',
+};
+
+function normalizeTimezone(tz: string): string {
+  return US_TIMEZONES.has(tz) ? tz : 'America/New_York';
+}
 
 function getTimezoneLabel(tz: string): string {
-  return TIMEZONE_OPTIONS.find(o => o.value === tz)?.label || tz;
+  return TIMEZONE_LABELS[tz] || tz;
 }
 
 export default function OnboardingPage() {
@@ -63,11 +78,10 @@ export default function OnboardingPage() {
   const { facilities, shifts, terms, invoices, lineItems, addShift } = useData();
   const navigate = useNavigate();
 
-  const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const detectedTimezone = normalizeTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);
 
   const [phase, setPhase] = useState<Phase>('manual_facility');
-  const [timezone, setTimezone] = useState(profile?.timezone || detectedTimezone);
-  const [editingTimezone, setEditingTimezone] = useState(false);
+  const timezone = profile?.timezone || detectedTimezone;
   const [taxEnabled, setTaxEnabled] = useState(false);
   const [lastShiftRate, setLastShiftRate] = useState<number | null>(null);
   const [showClinicForm, setShowClinicForm] = useState(false);
@@ -107,12 +121,13 @@ export default function OnboardingPage() {
     }
   }, [shifts, lastShiftRate]);
 
+  // Silently sync detected timezone to profile if missing
   useEffect(() => {
-    if (timezone !== detectedTimezone) {
-      updateProfile({ timezone });
+    if (!profile?.timezone && detectedTimezone) {
+      updateProfile({ timezone: detectedTimezone });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timezone]);
+  }, [profile?.timezone, detectedTimezone]);
 
   // Track shift submission state from child
   useEffect(() => {
@@ -267,34 +282,16 @@ export default function OnboardingPage() {
       case 'manual_facility':
         return (
           <div className="space-y-4">
-            {/* Inline greeting bar */}
-            <div className="flex items-center gap-2 text-sm bg-muted/50 rounded-lg px-3 py-2">
-              <span className="text-foreground">
-                Hi{firstName ? ` ${firstName}` : ''}!
-              </span>
-              <span className="text-muted-foreground">
-                Timezone: {getTimezoneLabel(timezone)}
-              </span>
-              {!editingTimezone ? (
-                <button
-                  type="button"
-                  onClick={() => setEditingTimezone(true)}
-                  className="text-primary hover:underline text-xs flex items-center gap-0.5"
-                >
-                  <Pencil className="h-3 w-3" /> Change
-                </button>
-              ) : (
-                <Select value={timezone} onValueChange={v => { setTimezone(v); setEditingTimezone(false); }}>
-                  <SelectTrigger className="h-7 w-32 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TIMEZONE_OPTIONS.map(o => (
-                      <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
+            {/* Inline greeting */}
+            <div className="text-sm text-foreground">
+              Hi{firstName ? ` ${firstName}` : ''}!
+            </div>
+
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold text-foreground font-[Manrope]">Add a clinic you work with</h2>
+              <p className="text-muted-foreground">
+                Start with one clinic you work with regularly. LocumOps keeps your rates, contacts, and billing terms organized per clinic — so everything's in one place when you need it.
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -350,6 +347,14 @@ export default function OnboardingPage() {
                 onSaved={() => setShowClinicForm(false)}
               />
             )}
+
+            <p className="text-xs text-muted-foreground pt-2">
+              Detected timezone: {getTimezoneLabel(timezone)}. Wrong?{' '}
+              <Link to="/settings/profile" className="text-primary hover:underline">
+                Change in Settings
+              </Link>
+              .
+            </p>
           </div>
         );
 
