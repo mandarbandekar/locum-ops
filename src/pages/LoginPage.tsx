@@ -9,7 +9,6 @@ import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Play } from 'lucide-react';
 import onboardingIllustration from '@/assets/onboarding-illustration.png';
-import locumOpsLogo from '@/assets/locumops-logo.png';
 
 const PROFESSIONS = [
   { value: 'vet', label: 'Veterinarian' },
@@ -89,7 +88,12 @@ export default function LoginPage() {
         <div className="w-full max-w-md mx-auto space-y-6 py-8">
           {/* Logo / brand */}
           <div>
-            <img src={locumOpsLogo} alt="LocumOps" className="h-8 w-auto mb-6" />
+            <div className="flex items-center gap-2 mb-6">
+              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                <span className="text-primary font-bold text-lg">L</span>
+              </div>
+              <span className="font-[Manrope] font-bold text-lg text-foreground">LocumOps</span>
+            </div>
             <h1 className="text-2xl font-bold text-foreground font-[Manrope]">
               {isSignUp ? 'Create your account' : 'Welcome back'}
             </h1>
