@@ -14,7 +14,8 @@ import { OnboardingInvoiceReveal } from '@/components/onboarding/OnboardingInvoi
 import { OnboardingLoopChoice } from '@/components/onboarding/OnboardingLoopChoice';
 import { OnboardingBusinessMap } from '@/components/onboarding/OnboardingBusinessMap';
 import { AddClinicStepper, type AddClinicStepperHandle } from '@/components/facilities/AddClinicStepper';
-import { mapDefaultRatesToRateEntries, type DefaultRate, type BillingPreference } from '@/lib/onboardingRateMapping';
+import { mapDefaultRatesToRateEntries, buildDefaultRatesFromRateEntries, inferBillingPreference, type DefaultRate, type BillingPreference } from '@/lib/onboardingRateMapping';
+import { termsToRates } from '@/components/facilities/RatesEditor';
 import { trackOnboarding, maybeTrackActivation } from '@/lib/onboardingAnalytics';
 import { toast } from 'sonner';
 
@@ -57,7 +58,7 @@ function normalizeTimezone(tz: string): string {
 export default function OnboardingPage() {
   const { profile, updateProfile, completeOnboarding } = useUserProfile();
   const { user } = useAuth();
-  const { facilities, shifts, invoices, lineItems } = useData();
+  const { facilities, shifts, invoices, lineItems, terms } = useData();
   const navigate = useNavigate();
 
   const detectedTimezone = normalizeTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);
@@ -158,6 +159,18 @@ export default function OnboardingPage() {
     () => mapDefaultRatesToRateEntries(defaultRates),
     [defaultRates],
   );
+
+  // ── Existing-user backfill source: aggregate rate entries from all clinic terms ──
+  // Read-only — never mutates clinic terms records.
+  const { existingClinicRates, existingClinicPreference } = useMemo(() => {
+    if (!terms || terms.length === 0) {
+      return { existingClinicRates: [] as DefaultRate[], existingClinicPreference: 'per_day' as BillingPreference };
+    }
+    const allEntries = terms.flatMap(t => termsToRates(t));
+    const derived = buildDefaultRatesFromRateEntries(allEntries);
+    const pref = inferBillingPreference(allEntries);
+    return { existingClinicRates: derived, existingClinicPreference: pref };
+  }, [terms]);
 
   // ── Derived counts for loop_choice + business_map ──
   const onboardingFacilityCount = createdFacilityIds.length || (firstFacilityId ? 1 : 0);
@@ -444,6 +457,14 @@ export default function OnboardingPage() {
           <OnboardingRateCard
             initialRates={defaultRates}
             initialPreference={defaultBillingPreference}
+            existingClinicRates={existingClinicRates}
+            existingClinicPreference={existingClinicPreference}
+            onSkip={() => {
+              // Existing-user shortcut: skip Rate Card entirely.
+              // Clinic-specific rates remain the source of truth.
+              setPhase('add_clinic');
+              persist({ phase: 'add_clinic' });
+            }}
             onChange={(rates, pref) => {
               setDefaultRates(rates);
               setDefaultBillingPreference(pref);

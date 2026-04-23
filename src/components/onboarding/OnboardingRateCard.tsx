@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Trash2, Plus, DollarSign, Clock, Sparkles, HelpCircle } from 'lucide-react';
+import { Trash2, Plus, DollarSign, Clock, Sparkles, HelpCircle, Wand2, SkipForward } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   type DefaultRate,
@@ -18,6 +18,19 @@ interface Props {
   initialRates: DefaultRate[];
   initialPreference: BillingPreference;
   onChange: (rates: DefaultRate[], preference: BillingPreference) => void;
+  /**
+   * Optional: derived from existing clinic rates (read-only).
+   * When present AND the user has no `default_rates` yet, a one-time banner is
+   * shown offering to backfill the Rate Card from existing clinic data, or to
+   * skip setting up a Rate Card now.
+   *
+   * IMPORTANT: backfill never mutates clinic rate records — it only seeds this
+   * editor's state.
+   */
+  existingClinicRates?: DefaultRate[];
+  existingClinicPreference?: BillingPreference;
+  /** Called when user picks "Skip for now" — parent decides how to advance. */
+  onSkip?: () => void;
 }
 
 const PREF_OPTIONS: { value: BillingPreference; label: string; sub: string; icon: typeof DollarSign }[] = [
@@ -27,10 +40,25 @@ const PREF_OPTIONS: { value: BillingPreference; label: string; sub: string; icon
   { value: 'unsure', label: "I'm not sure yet", sub: "We'll start with day rates", icon: HelpCircle },
 ];
 
-export function OnboardingRateCard({ initialRates, initialPreference, onChange }: Props) {
+export function OnboardingRateCard({
+  initialRates,
+  initialPreference,
+  onChange,
+  existingClinicRates,
+  existingClinicPreference,
+  onSkip,
+}: Props) {
   const [preference, setPreference] = useState<BillingPreference>(initialPreference || 'per_day');
   const [rates, setRates] = useState<DefaultRate[]>(initialRates && initialRates.length > 0 ? initialRates : []);
   const [touched, setTouched] = useState(initialRates && initialRates.length > 0);
+
+  // Show the backfill/skip banner only when:
+  //   - user has not yet saved a Rate Card (initialRates empty)
+  //   - we found existing clinic rates we could backfill from
+  //   - user hasn't dismissed/acted on it this session
+  const [bannerActive, setBannerActive] = useState(
+    (initialRates?.length ?? 0) === 0 && (existingClinicRates?.length ?? 0) > 0,
+  );
 
   // Initialize defaults the first time a preference is selected (or if rates are empty).
   useEffect(() => {
@@ -40,6 +68,7 @@ export function OnboardingRateCard({ initialRates, initialPreference, onChange }
     trackOnboarding('onboarding_rate_card_viewed', {
       initial_rate_count: initialRates?.length ?? 0,
       initial_preference: initialPreference || 'per_day',
+      has_existing_clinic_rates: (existingClinicRates?.length ?? 0) > 0,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -49,6 +78,17 @@ export function OnboardingRateCard({ initialRates, initialPreference, onChange }
     onChange(rates, preference);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rates, preference]);
+
+  const handleBackfillFromClinics = () => {
+    if (!existingClinicRates || existingClinicRates.length === 0) return;
+    setRates(existingClinicRates);
+    if (existingClinicPreference) setPreference(existingClinicPreference);
+    setTouched(true);
+    setBannerActive(false);
+    trackOnboarding('onboarding_rate_card_backfilled_from_clinics' as any, {
+      backfilled_rate_count: existingClinicRates.length,
+    });
+  };
 
   const handleSelectPreference = (value: BillingPreference) => {
     setPreference(value);
@@ -100,6 +140,62 @@ export function OnboardingRateCard({ initialRates, initialPreference, onChange }
           customize rates for each clinic later.
         </p>
       </div>
+
+      {/* Existing-user banner: backfill or skip (non-destructive) */}
+      {bannerActive && existingClinicRates && existingClinicRates.length > 0 && (
+        <Card className="border-primary/30 bg-primary/[0.04]">
+          <CardContent className="py-4 px-4 space-y-3">
+            <div className="flex items-start gap-2.5">
+              <div className="h-8 w-8 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
+                <Wand2 className="h-4 w-4 text-primary" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-foreground">
+                  We found {existingClinicRates.length} rate{existingClinicRates.length === 1 ? '' : 's'} on your existing clinics
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Use them to seed your reusable Rate Card — your clinic-specific rates won't change.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleBackfillFromClinics}
+                className="gap-1.5"
+              >
+                <Wand2 className="h-3.5 w-3.5" /> Use my clinic rates
+              </Button>
+              {onSkip && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    trackOnboarding('onboarding_rate_card_skipped' as any, {
+                      had_existing_clinic_rates: true,
+                    });
+                    onSkip();
+                  }}
+                  className="gap-1.5 text-muted-foreground"
+                >
+                  <SkipForward className="h-3.5 w-3.5" /> Skip for now
+                </Button>
+              )}
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() => setBannerActive(false)}
+                className="text-muted-foreground"
+              >
+                No thanks
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Billing preference grid */}
       <div className="grid grid-cols-2 gap-3">
