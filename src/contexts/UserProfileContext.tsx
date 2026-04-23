@@ -8,6 +8,16 @@ export type InvoicesPerMonthBand = 'inv_1_3' | 'inv_4_10' | 'inv_11_plus';
 export type EmailTone = 'friendly' | 'neutral' | 'direct';
 export type CurrentTool = 'sheets_excel' | 'calendar' | 'quickbooks' | 'wave' | 'freshbooks' | 'notes' | 'other';
 
+export type BillingPreference = 'per_day' | 'per_hour' | 'both' | 'unsure';
+export interface DefaultRate {
+  id: string;
+  name: string;
+  amount: number;
+  basis: 'daily' | 'hourly';
+  active: boolean;
+  sort_order: number;
+}
+
 export interface TermsFieldsEnabled {
   weekday_rate: boolean;
   weekend_rate: boolean;
