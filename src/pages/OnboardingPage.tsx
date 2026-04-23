@@ -75,6 +75,7 @@ export default function OnboardingPage() {
   const [createdFacilityIds, setCreatedFacilityIds] = useState<string[]>(initialProgress.created_facility_ids ?? []);
   const [sessionShiftIds, setSessionShiftIds] = useState<string[]>(initialProgress.session_shift_ids ?? []);
   const [invoiceRevealSeen, setInvoiceRevealSeen] = useState<boolean>(!!initialProgress.invoice_reveal_seen);
+  const [rateCardSkipped, setRateCardSkipped] = useState<boolean>(!!initialProgress.rate_card_skipped);
 
   const [editingClinic, setEditingClinic] = useState(false);
   const stepperRef = useRef<AddClinicStepperHandle>(null);
@@ -98,6 +99,7 @@ export default function OnboardingPage() {
     if (p.created_facility_ids) setCreatedFacilityIds(p.created_facility_ids);
     if (p.session_shift_ids) setSessionShiftIds(p.session_shift_ids);
     if (p.invoice_reveal_seen) setInvoiceRevealSeen(true);
+    if (p.rate_card_skipped) setRateCardSkipped(true);
   }, [profile]);
 
   // ── Persist progress (debounced lightly via dependency batching) ──
@@ -109,12 +111,13 @@ export default function OnboardingPage() {
         created_facility_ids: createdFacilityIds,
         session_shift_ids: sessionShiftIds,
         invoice_reveal_seen: invoiceRevealSeen,
+        rate_card_skipped: rateCardSkipped,
         ...next,
         updated_at: new Date().toISOString(),
       };
       updateProfile({ onboarding_progress: merged });
     },
-    [phase, firstFacilityId, createdFacilityIds, sessionShiftIds, invoiceRevealSeen, updateProfile],
+    [phase, firstFacilityId, createdFacilityIds, sessionShiftIds, invoiceRevealSeen, rateCardSkipped, updateProfile],
   );
 
   // Auto-save profile timezone on mount
@@ -130,6 +133,31 @@ export default function OnboardingPage() {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ── Legacy-user safety net ──
+  // If a user has meaningful pre-existing data (clinics + shifts/invoices) but no
+  // `onboarding_completed_at`, treat onboarding as already done. We never want to
+  // force a real working user back through the new flow just because the timestamp
+  // is missing. Mark complete and bounce to the dashboard.
+  const legacyAutoCompleteRef = useRef(false);
+  useEffect(() => {
+    if (legacyAutoCompleteRef.current) return;
+    if (!profile) return;
+    if (profile.onboarding_completed_at) return;
+    const hasMeaningfulData =
+      facilities.length > 0 && (shifts.length > 0 || invoices.length > 0);
+    if (!hasMeaningfulData) return;
+    legacyAutoCompleteRef.current = true;
+    (async () => {
+      try {
+        await completeOnboarding();
+        navigate('/', { replace: true });
+      } catch (e) {
+        console.error('legacy auto-complete failed', e);
+        legacyAutoCompleteRef.current = false;
+      }
+    })();
+  }, [profile, facilities.length, shifts.length, invoices.length, completeOnboarding, navigate]);
 
   useEffect(() => {
     console.log('onboarding_step_view', { phase });
@@ -321,6 +349,7 @@ export default function OnboardingPage() {
   useEffect(() => {
     maybeTrackActivation({
       rateCardCompleted: (profile?.default_rates?.length ?? 0) > 0,
+      rateCardSkipped,
       clinicCount: onboardingFacilityCount,
       shiftCount: onboardingShiftCount,
       invoiceRevealSeen,
@@ -329,6 +358,7 @@ export default function OnboardingPage() {
     });
   }, [
     profile?.default_rates,
+    rateCardSkipped,
     onboardingFacilityCount,
     onboardingShiftCount,
     invoiceRevealSeen,
@@ -462,8 +492,16 @@ export default function OnboardingPage() {
             onSkip={() => {
               // Existing-user shortcut: skip Rate Card entirely.
               // Clinic-specific rates remain the source of truth.
+              setRateCardSkipped(true);
               setPhase('add_clinic');
-              persist({ phase: 'add_clinic' });
+              persist({ phase: 'add_clinic', rate_card_skipped: true });
+              trackOnboarding('onboarding_rate_card_completed', {
+                rate_count: 0,
+                preference: defaultBillingPreference,
+                daily_rate_count: 0,
+                hourly_rate_count: 0,
+                skipped: true,
+              });
             }}
             onChange={(rates, pref) => {
               setDefaultRates(rates);
@@ -552,7 +590,7 @@ export default function OnboardingPage() {
         return (
           <OnboardingBulkShiftCalendar
             facility={activeFacility}
-            defaultRates={defaultRates}
+            defaultRates={defaultRates.length > 0 ? defaultRates : existingClinicRates}
             createdShiftIds={sessionShiftIds}
             onShiftsCreated={handleShiftsCreated}
             onContinue={handleAdvanceToInvoiceReveal}
