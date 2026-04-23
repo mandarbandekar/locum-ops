@@ -1,16 +1,17 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Sparkles, Check } from 'lucide-react';
+import { Sparkles, Check, CalendarDays } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import type { Facility, Shift, ShiftColor, RateKind, TermsSnapshot } from '@/types';
 import { useData } from '@/contexts/DataContext';
 import { termsToRates } from '@/components/facilities/RatesEditor';
 import { buildBulkRateOptions, type DefaultRate, type BulkRateOption } from '@/lib/onboardingRateMapping';
+import { trackOnboarding } from '@/lib/onboardingAnalytics';
 
 interface Props {
   facility: Facility;
