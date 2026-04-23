@@ -40,6 +40,7 @@ import { UpcomingShiftsStrip, UpcomingShiftItem } from '@/components/dashboard/U
 import { EmptyDashboardPrompt } from '@/components/dashboard/EmptyDashboardPrompt';
 import { QuarterlyTaxCallout } from '@/components/dashboard/QuarterlyTaxCallout';
 import { FirstTimeDashboard } from '@/components/dashboard/FirstTimeDashboard';
+import { OnboardingHandoffBanner } from '@/components/dashboard/OnboardingHandoffBanner';
 import { generateDashboardBriefing, getNextQuarterlyDeadline, BriefingInput } from '@/lib/dashboardBriefing';
 
 const TOUR_STEPS: TourStep[] = [
