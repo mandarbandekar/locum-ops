@@ -134,6 +134,31 @@ export default function OnboardingPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ── Legacy-user safety net ──
+  // If a user has meaningful pre-existing data (clinics + shifts/invoices) but no
+  // `onboarding_completed_at`, treat onboarding as already done. We never want to
+  // force a real working user back through the new flow just because the timestamp
+  // is missing. Mark complete and bounce to the dashboard.
+  const legacyAutoCompleteRef = useRef(false);
+  useEffect(() => {
+    if (legacyAutoCompleteRef.current) return;
+    if (!profile) return;
+    if (profile.onboarding_completed_at) return;
+    const hasMeaningfulData =
+      facilities.length > 0 && (shifts.length > 0 || invoices.length > 0);
+    if (!hasMeaningfulData) return;
+    legacyAutoCompleteRef.current = true;
+    (async () => {
+      try {
+        await completeOnboarding();
+        navigate('/', { replace: true });
+      } catch (e) {
+        console.error('legacy auto-complete failed', e);
+        legacyAutoCompleteRef.current = false;
+      }
+    })();
+  }, [profile, facilities.length, shifts.length, invoices.length, completeOnboarding, navigate]);
+
   useEffect(() => {
     console.log('onboarding_step_view', { phase });
     if (phase === 'add_clinic') {
