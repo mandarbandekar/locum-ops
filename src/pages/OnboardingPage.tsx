@@ -135,18 +135,34 @@ export default function OnboardingPage() {
   }, []);
 
   // ── Legacy-user safety net ──
-  // If a user has meaningful pre-existing data (clinics + shifts/invoices) but no
-  // `onboarding_completed_at`, treat onboarding as already done. We never want to
-  // force a real working user back through the new flow just because the timestamp
-  // is missing. Mark complete and bounce to the dashboard.
+  // ONLY fires on initial mount, before the user has interacted with this onboarding
+  // session. If a returning user already has meaningful data (clinics + shifts/invoices)
+  // AND has never started the new onboarding flow (no persisted phase), treat onboarding
+  // as already done. We snapshot the pre-existing state once on mount to prevent this
+  // from triggering mid-flow when the user creates clinics/shifts during onboarding.
   const legacyAutoCompleteRef = useRef(false);
+  const legacyCheckedRef = useRef(false);
   useEffect(() => {
-    if (legacyAutoCompleteRef.current) return;
+    if (legacyCheckedRef.current) return;
     if (!profile) return;
+    // Wait for hydration so we can read persisted onboarding_progress.
+    if (!hydratedRef.current) return;
+    legacyCheckedRef.current = true;
+
     if (profile.onboarding_completed_at) return;
+
+    const persistedProgress = profile.onboarding_progress ?? {};
+    const hasStartedNewFlow =
+      !!persistedProgress.phase ||
+      (persistedProgress.created_facility_ids?.length ?? 0) > 0 ||
+      (persistedProgress.session_shift_ids?.length ?? 0) > 0 ||
+      !!persistedProgress.rate_card_skipped;
+    if (hasStartedNewFlow) return;
+
     const hasMeaningfulData =
       facilities.length > 0 && (shifts.length > 0 || invoices.length > 0);
     if (!hasMeaningfulData) return;
+
     legacyAutoCompleteRef.current = true;
     (async () => {
       try {
@@ -155,6 +171,7 @@ export default function OnboardingPage() {
       } catch (e) {
         console.error('legacy auto-complete failed', e);
         legacyAutoCompleteRef.current = false;
+        legacyCheckedRef.current = false;
       }
     })();
   }, [profile, facilities.length, shifts.length, invoices.length, completeOnboarding, navigate]);
