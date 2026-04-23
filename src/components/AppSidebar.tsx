@@ -99,8 +99,8 @@ export function AppSidebar() {
       items: [
         { title: 'Invoices', url: '/invoices', icon: FileText, badge: totalInvoiceBadge, badgeVariant: invoiceBadgeVariant },
         { title: 'Expenses & Mileage', url: '/expenses', icon: Receipt },
-        { title: 'Profit & Reports', url: '/business', icon: TrendingUp },
-        { title: 'Taxes', url: '/tax-center', icon: Landmark },
+        { title: 'Business Insights', url: '/business', icon: TrendingUp },
+        { title: 'Tax Intelligence', url: '/tax-center', icon: Landmark },
       ],
     },
     {
