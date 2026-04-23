@@ -58,7 +58,7 @@ function normalizeTimezone(tz: string): string {
 export default function OnboardingPage() {
   const { profile, updateProfile, completeOnboarding } = useUserProfile();
   const { user } = useAuth();
-  const { facilities, shifts, invoices, lineItems } = useData();
+  const { facilities, shifts, invoices, lineItems, terms } = useData();
   const navigate = useNavigate();
 
   const detectedTimezone = normalizeTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);
