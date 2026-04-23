@@ -206,6 +206,9 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
         let gFirst = meta.first_name || '';
         let gLast = meta.last_name || '';
         // Google OAuth provides full_name/name instead of first/last
+        const isOAuth =
+          (authUser?.app_metadata?.provider && authUser.app_metadata.provider !== 'email') ||
+          !!(meta.full_name || meta.name || meta.iss);
         if (!gFirst && !gLast && (meta.full_name || meta.name)) {
           const parts = (meta.full_name || meta.name || '').split(' ');
           gFirst = parts[0] || '';
@@ -219,6 +222,7 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
           company_name: meta.company || '',
           profession: meta.profession || 'other',
           invoice_email: authUser?.email || null,
+          has_seen_welcome: isOAuth,
         };
 
         const { data: newData, error: insertErr } = await db('user_profiles')
@@ -250,7 +254,7 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
             invoice_phone: nd.invoice_phone || null,
             home_address: nd.home_address || '',
             completed_tours: [],
-            has_seen_welcome: false,
+            has_seen_welcome: !!nd.has_seen_welcome,
             dismissed_prompts: {},
             dashboard_intro_dismissed: false,
             dashboard_levelup_shown: false,

@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserProfile } from '@/contexts/UserProfileContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,7 +10,8 @@ import { toast } from 'sonner';
 
 export default function WelcomePage() {
   const navigate = useNavigate();
-  const { signUp } = useAuth();
+  const { signUp, user } = useAuth();
+  const { profile, updateProfile } = useUserProfile();
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -17,6 +19,15 @@ export default function WelcomePage() {
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  // Authenticated users (e.g. Google OAuth) should never see the signup form.
+  useEffect(() => {
+    if (!user) return;
+    if (profile && !profile.has_seen_welcome) {
+      updateProfile({ has_seen_welcome: true });
+    }
+    navigate('/onboarding', { replace: true });
+  }, [user, profile, updateProfile, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,6 +53,8 @@ export default function WelcomePage() {
     }
     setSuccess(true);
   };
+
+  if (user) return null;
 
   return (
     <div className="min-h-screen bg-foreground/40 flex items-center justify-center p-4">
