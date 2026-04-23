@@ -281,8 +281,8 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [canSave, step, totalSteps, canBack, canSkip, primaryLabel, name, engagementType, sourceName, rates, billingCadence, invoiceDueDays, schedulingContactName, schedulingContactEmail, invoiceNameTo, invoiceEmailTo, sameAsScheduling, address, taxFormType]);
 
-  // Rendered step number depends on visibility (step 4 hidden when non-direct).
-  const visibleStepNumber = step;
+  // Rendered step number depends on visibility (rates/billing steps may be hidden).
+  const visibleStepNumber = currentVisibleIndex + 1;
 
   return (
     <div className="space-y-5">
@@ -297,9 +297,7 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
                 key={i}
                 className={cn(
                   'h-1 w-8 rounded-full transition-colors',
-                  i + 1 < step ? 'bg-primary' :
-                  i + 1 === step ? 'bg-primary' :
-                  'bg-muted',
+                  i <= currentVisibleIndex ? 'bg-primary' : 'bg-muted',
                 )}
               />
             ))}
