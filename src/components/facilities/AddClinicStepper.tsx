@@ -227,9 +227,9 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
   // Step 1 (identity) is required: name. Step 2 (engagement): required for non-direct (source).
   // Step 3 (rates): skippable. Step 4 (billing): skippable; defaults applied.
   const canSkip = step === 3 || (step === 4 && isDirect);
-  const canBack = step > 1;
+  const canBack = currentVisibleIndex > 0;
 
-  const isLastStep = step === totalSteps;
+  const isLastStep = currentVisibleIndex === visibleSteps.length - 1;
   const primaryLabel = isLastStep ? 'Save Clinic' : 'Continue';
 
   const validateStep = (s: number): string | null => {
@@ -247,12 +247,14 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
       await handleSave();
       return;
     }
-    // If non-direct on step 2, jump to step 3 (rates) — step 4 is hidden.
-    setStep(s => s + 1);
+    // Advance to the next visible step
+    const nextStep = visibleSteps[currentVisibleIndex + 1];
+    if (nextStep) setStep(nextStep);
   };
 
   const back = () => {
-    if (step > 1) setStep(s => s - 1);
+    const prev = visibleSteps[currentVisibleIndex - 1];
+    if (prev) setStep(prev);
   };
 
   const skip = () => {
@@ -261,7 +263,8 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
       handleSave();
       return;
     }
-    setStep(s => s + 1);
+    const nextStep = visibleSteps[currentVisibleIndex + 1];
+    if (nextStep) setStep(nextStep);
   };
 
   useImperativeHandle(ref, () => ({
