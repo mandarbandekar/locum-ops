@@ -64,6 +64,16 @@ export function OnboardingBulkShiftCalendar({
   const [submitting, setSubmitting] = useState(false);
   const [justCreatedCount, setJustCreatedCount] = useState(0);
   const [justCreatedTotal, setJustCreatedTotal] = useState(0);
+  const submitGuardRef = useRef(false);
+
+  // Fire view event once on mount.
+  useEffect(() => {
+    trackOnboarding('onboarding_bulk_shifts_viewed', {
+      facility_id: facility.id,
+      already_in_session: createdShiftIds.length,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Pull terms snapshot for this facility (set by AddClinicStepper save)
   const facilityTerms: TermsSnapshot | undefined = useMemo(
