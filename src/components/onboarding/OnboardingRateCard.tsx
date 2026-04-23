@@ -12,6 +12,7 @@ import {
   buildPresets,
   newBlankRate,
 } from '@/lib/onboardingRateMapping';
+import { trackOnboarding } from '@/lib/onboardingAnalytics';
 
 interface Props {
   initialRates: DefaultRate[];
@@ -36,6 +37,10 @@ export function OnboardingRateCard({ initialRates, initialPreference, onChange }
     if (!touched) {
       setRates(buildPresets(preference));
     }
+    trackOnboarding('onboarding_rate_card_viewed', {
+      initial_rate_count: initialRates?.length ?? 0,
+      initial_preference: initialPreference || 'per_day',
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -50,12 +55,24 @@ export function OnboardingRateCard({ initialRates, initialPreference, onChange }
     // Replace presets only if the user hasn't customized yet OR we're switching preference fresh
     setRates(buildPresets(value));
     setTouched(true);
+    trackOnboarding('onboarding_billing_preference_selected', { preference: value });
   };
 
   const updateRate = (id: string, patch: Partial<DefaultRate>) => {
     setRates(prev => prev.map(r => (r.id === id ? { ...r, ...patch } : r)));
   };
-  const removeRate = (id: string) => setRates(prev => prev.filter(r => r.id !== id));
+  const removeRate = (id: string) => {
+    setRates(prev => {
+      const removed = prev.find(r => r.id === id);
+      if (removed) {
+        trackOnboarding('onboarding_rate_removed', {
+          basis: removed.basis,
+          had_amount: removed.amount > 0,
+        });
+      }
+      return prev.filter(r => r.id !== id);
+    });
+  };
 
   const addRate = (basis: RateBasis) => {
     setRates(prev => {
@@ -63,6 +80,7 @@ export function OnboardingRateCard({ initialRates, initialPreference, onChange }
       const nextOrder = existingInBasis.length;
       return [...prev, newBlankRate(basis, nextOrder)];
     });
+    trackOnboarding('onboarding_rate_added', { basis });
   };
 
   const dailyRates = rates.filter(r => r.basis === 'daily').sort((a, b) => a.sort_order - b.sort_order);

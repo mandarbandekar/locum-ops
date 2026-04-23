@@ -1,10 +1,11 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Sparkles, Mail } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { InvoicePreview } from '@/components/invoice/InvoicePreview';
+import { trackOnboarding } from '@/lib/onboardingAnalytics';
 import type { Facility, Invoice, InvoiceLineItem } from '@/types';
 
 interface Props {
@@ -48,6 +49,15 @@ export function OnboardingInvoiceReveal({ facility, sessionShiftIds }: Props) {
     return derived.slice(0, 3);
   }, [invoices, lineItems, facilities, sessionShiftIds, facility]);
 
+  // Fire viewed event when reveal mounts (or when first cards become available).
+  useEffect(() => {
+    trackOnboarding('onboarding_invoice_reveal_viewed', {
+      preview_count: cards.length,
+      session_shift_count: sessionShiftIds.length,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const statusStyle: Record<DerivedCard['status'], string> = {
     Draft: 'border-amber-300 text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400',
     Upcoming: 'border-blue-300 text-blue-700 bg-blue-50 dark:bg-blue-950/30 dark:text-blue-400',
@@ -78,7 +88,16 @@ export function OnboardingInvoiceReveal({ facility, sessionShiftIds }: Props) {
           {cards.map(card => {
             const fac = card.facility;
             return (
-              <div key={card.invoice.id} className="rounded-lg border border-border bg-card overflow-hidden">
+              <div
+                key={card.invoice.id}
+                className="rounded-lg border border-border bg-card overflow-hidden cursor-pointer"
+                onClick={() =>
+                  trackOnboarding('onboarding_invoice_preview_opened', {
+                    invoice_number: card.invoice.invoice_number,
+                    status: card.status,
+                  })
+                }
+              >
                 {/* Status header strip */}
                 <div className="px-4 py-2.5 border-b border-border/60 bg-muted/30 flex items-center justify-between gap-3">
                   <div className="text-sm font-medium text-foreground truncate">

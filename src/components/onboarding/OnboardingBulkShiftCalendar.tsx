@@ -1,16 +1,17 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Sparkles, Check } from 'lucide-react';
+import { Sparkles, Check, CalendarDays } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import type { Facility, Shift, ShiftColor, RateKind, TermsSnapshot } from '@/types';
 import { useData } from '@/contexts/DataContext';
 import { termsToRates } from '@/components/facilities/RatesEditor';
 import { buildBulkRateOptions, type DefaultRate, type BulkRateOption } from '@/lib/onboardingRateMapping';
+import { trackOnboarding } from '@/lib/onboardingAnalytics';
 
 interface Props {
   facility: Facility;
@@ -63,6 +64,16 @@ export function OnboardingBulkShiftCalendar({
   const [submitting, setSubmitting] = useState(false);
   const [justCreatedCount, setJustCreatedCount] = useState(0);
   const [justCreatedTotal, setJustCreatedTotal] = useState(0);
+  const submitGuardRef = useRef(false);
+
+  // Fire view event once on mount.
+  useEffect(() => {
+    trackOnboarding('onboarding_bulk_shifts_viewed', {
+      facility_id: facility.id,
+      already_in_session: createdShiftIds.length,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Pull terms snapshot for this facility (set by AddClinicStepper save)
   const facilityTerms: TermsSnapshot | undefined = useMemo(
@@ -100,8 +111,29 @@ export function OnboardingBulkShiftCalendar({
       .map(s => new Date(s.start_datetime));
   }, [shifts, createdShiftIds]);
 
+  const handleSelectDates = (d: Date[] | undefined) => {
+    const next = d ?? [];
+    const wentEmpty = selectedDates.length > 0 && next.length === 0;
+    const wentNonEmpty = selectedDates.length === 0 && next.length > 0;
+    setSelectedDates(next);
+    if (wentNonEmpty || (next.length > 0 && next.length !== selectedDates.length)) {
+      // Only fire when a real selection edit happens (not on init).
+      trackOnboarding('onboarding_shift_dates_selected', {
+        selected_dates_count: next.length,
+        rate_basis: selectedRate?.basis ?? null,
+      });
+    }
+    if (wentEmpty) {
+      // No-op event; the inline guidance UI already shows. Keep silent.
+    }
+  };
+
   const handleSubmit = async () => {
-    if (selectedDates.length === 0) return;
+    if (submitGuardRef.current || submitting) return;
+    if (selectedDates.length === 0) {
+      toast.error('Pick at least one date to add shifts');
+      return;
+    }
     if (!selectedRate) {
       toast.error('Please choose a rate');
       return;
@@ -110,6 +142,7 @@ export function OnboardingBulkShiftCalendar({
       toast.error('End time must be after start time');
       return;
     }
+    submitGuardRef.current = true;
     setSubmitting(true);
     const newIds: string[] = [];
     let totalAdded = 0;
@@ -145,11 +178,21 @@ export function OnboardingBulkShiftCalendar({
       onShiftsCreated(newIds);
       setSelectedDates([]);
       toast.success(`${newIds.length} shift${newIds.length === 1 ? '' : 's'} added`);
+      trackOnboarding('onboarding_bulk_shifts_created', {
+        shifts_created: newIds.length,
+        selected_rate_name: selectedRate.label,
+        selected_rate_basis: selectedRate.basis,
+        selected_rate_amount: selectedRate.amount,
+        hours_per_shift: hours,
+        projected_gross: Math.round(totalAdded),
+        facility_id: facility.id,
+      });
     } catch (e) {
       console.error('bulk shift create failed', e);
       toast.error('Failed to add shifts. Please try again.');
     } finally {
       setSubmitting(false);
+      submitGuardRef.current = false;
     }
   };
 
@@ -213,7 +256,7 @@ export function OnboardingBulkShiftCalendar({
               <Calendar
                 mode="multiple"
                 selected={selectedDates}
-                onSelect={(d) => setSelectedDates(d ?? [])}
+                onSelect={handleSelectDates}
                 modifiers={{ created: createdShiftDates }}
                 modifiersClassNames={{
                   created: 'bg-primary/15 text-foreground font-semibold',
@@ -221,12 +264,19 @@ export function OnboardingBulkShiftCalendar({
                 className={cn('p-3 pointer-events-auto rounded-md border-0')}
               />
             </div>
-            <div className="text-center text-sm text-muted-foreground">
-              Selected:{' '}
-              <span className="font-semibold text-foreground">
-                {selectedDates.length} date{selectedDates.length === 1 ? '' : 's'}
-              </span>
-            </div>
+            {selectedDates.length === 0 && !created ? (
+              <div className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-2 flex items-center gap-2 text-sm text-muted-foreground">
+                <CalendarDays className="h-4 w-4 shrink-0" />
+                <span>Tap one or more dates above to add shifts.</span>
+              </div>
+            ) : (
+              <div className="text-center text-sm text-muted-foreground">
+                Selected:{' '}
+                <span className="font-semibold text-foreground">
+                  {selectedDates.length} date{selectedDates.length === 1 ? '' : 's'}
+                </span>
+              </div>
+            )}
           </CardContent>
         </Card>
 

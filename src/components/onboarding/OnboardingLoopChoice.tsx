@@ -1,6 +1,7 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Building2, CalendarPlus, Sparkles, ArrowRight, Check } from 'lucide-react';
+import { trackOnboarding } from '@/lib/onboardingAnalytics';
 
 interface Props {
   facilityCount: number;
@@ -58,19 +59,39 @@ export function OnboardingLoopChoice({
           icon={Building2}
           title="Add another clinic"
           subtitle="Set up a second facility with its own rates and contacts."
-          onClick={onAddAnotherClinic}
+          onClick={() => {
+            trackOnboarding('onboarding_loop_add_clinic_clicked', {
+              clinic_count_so_far: facilityCount,
+              shift_count_so_far: shiftCount,
+            });
+            onAddAnotherClinic();
+          }}
         />
         <ChoiceButton
           icon={CalendarPlus}
           title="Add more shifts here"
           subtitle="Block off more dates at the clinic you just added."
-          onClick={onAddMoreShifts}
+          onClick={() => {
+            trackOnboarding('onboarding_loop_add_shifts_clicked', {
+              clinic_count_so_far: facilityCount,
+              shift_count_so_far: shiftCount,
+            });
+            onAddMoreShifts();
+          }}
         />
         <ChoiceButton
           icon={Sparkles}
           title="I'm done — show me around"
           subtitle="See the full picture of how Locum Ops runs your business."
-          onClick={onDone}
+          onClick={() => {
+            trackOnboarding('onboarding_loop_done_clicked', {
+              clinic_count_so_far: facilityCount,
+              shift_count_so_far: shiftCount,
+              draft_invoice_count: draftInvoiceCount,
+              projected_gross: Math.round(projectedGross),
+            });
+            onDone();
+          }}
           primary
         />
       </div>
