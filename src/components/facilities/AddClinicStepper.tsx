@@ -49,6 +49,10 @@ interface Props {
   onSaved: (facilityId: string, facilityName: string) => void;
   /** Render a compact header inside the stepper (omit if parent renders one). */
   showHeader?: boolean;
+  /** When true, hides the Rates step (used in onboarding when rates come from the user's Rate Card). */
+  hideRatesStep?: boolean;
+  /** Pre-populate the stepper's internal `rates` state — typically from the user's Rate Card. */
+  defaultRates?: RateEntry[];
 }
 
 const BILLING_CADENCES: { value: BillingCadence; label: string; example: string; recommended?: boolean }[] = [
