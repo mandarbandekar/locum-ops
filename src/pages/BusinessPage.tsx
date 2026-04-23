@@ -124,7 +124,7 @@ export default function BusinessPage() {
             <Activity className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="page-title">Relief Business Hub</h1>
+            <h1 className="page-title">Business Insights</h1>
             <p className="page-subtitle">Your relief practice at a glance</p>
           </div>
           <Button
