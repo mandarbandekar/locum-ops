@@ -254,7 +254,7 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
             invoice_phone: nd.invoice_phone || null,
             home_address: nd.home_address || '',
             completed_tours: [],
-            has_seen_welcome: false,
+            has_seen_welcome: !!nd.has_seen_welcome,
             dismissed_prompts: {},
             dashboard_intro_dismissed: false,
             dashboard_levelup_shown: false,
