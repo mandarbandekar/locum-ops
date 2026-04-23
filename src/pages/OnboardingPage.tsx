@@ -14,7 +14,8 @@ import { OnboardingInvoiceReveal } from '@/components/onboarding/OnboardingInvoi
 import { OnboardingLoopChoice } from '@/components/onboarding/OnboardingLoopChoice';
 import { OnboardingBusinessMap } from '@/components/onboarding/OnboardingBusinessMap';
 import { AddClinicStepper, type AddClinicStepperHandle } from '@/components/facilities/AddClinicStepper';
-import { mapDefaultRatesToRateEntries, type DefaultRate, type BillingPreference } from '@/lib/onboardingRateMapping';
+import { mapDefaultRatesToRateEntries, buildDefaultRatesFromRateEntries, inferBillingPreference, type DefaultRate, type BillingPreference } from '@/lib/onboardingRateMapping';
+import { termsToRates } from '@/components/facilities/RatesEditor';
 import { trackOnboarding, maybeTrackActivation } from '@/lib/onboardingAnalytics';
 import { toast } from 'sonner';
 
