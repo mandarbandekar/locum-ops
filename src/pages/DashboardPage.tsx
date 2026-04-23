@@ -718,6 +718,20 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-theme(spacing.14)-theme(spacing.6)-theme(spacing.10))] overflow-auto">
+      {/* First-run onboarding handoff banner */}
+      {showOnboardingHandoff && (
+        <div className="shrink-0 mb-3">
+          <OnboardingHandoffBanner
+            firstName={profile?.first_name || ''}
+            rateCardDone={(profile?.default_rates?.length ?? 0) > 0}
+            facilitiesCount={facilities.length}
+            shiftsCount={shifts.length}
+            invoiceReadyCount={handoffInvoiceCount}
+            onDismiss={dismissOnboardingHandoff}
+          />
+        </div>
+      )}
+
       {/* Welcome banner */}
       {showWelcomeBanner && (
         <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-primary/10 border border-primary/20 shrink-0 mb-2">
