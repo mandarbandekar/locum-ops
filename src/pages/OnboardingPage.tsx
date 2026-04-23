@@ -457,6 +457,14 @@ export default function OnboardingPage() {
           <OnboardingRateCard
             initialRates={defaultRates}
             initialPreference={defaultBillingPreference}
+            existingClinicRates={existingClinicRates}
+            existingClinicPreference={existingClinicPreference}
+            onSkip={() => {
+              // Existing-user shortcut: skip Rate Card entirely.
+              // Clinic-specific rates remain the source of truth.
+              setPhase('add_clinic');
+              persist({ phase: 'add_clinic' });
+            }}
             onChange={(rates, pref) => {
               setDefaultRates(rates);
               setDefaultBillingPreference(pref);
