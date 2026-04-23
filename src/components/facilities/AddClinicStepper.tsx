@@ -439,11 +439,6 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
                   >
                     <div className="flex items-center gap-1.5">
                       <span className="text-sm font-medium">{c.label}</span>
-                      {c.recommended && (
-                        <span className="text-[9px] font-semibold uppercase tracking-wider text-primary bg-primary/10 px-1.5 py-0.5 rounded">
-                          Rec.
-                        </span>
-                      )}
                     </div>
                     <p className="text-[11px] text-muted-foreground mt-1 leading-snug">{c.example}</p>
                   </button>
