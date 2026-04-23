@@ -3262,6 +3262,7 @@ export type Database = {
           invoices_per_month_band: string
           last_name: string
           onboarding_completed_at: string | null
+          onboarding_progress: Json
           profession: string
           terms_fields_enabled: Json
           timezone: string
@@ -3295,6 +3296,7 @@ export type Database = {
           invoices_per_month_band?: string
           last_name?: string
           onboarding_completed_at?: string | null
+          onboarding_progress?: Json
           profession?: string
           terms_fields_enabled?: Json
           timezone?: string
@@ -3328,6 +3330,7 @@ export type Database = {
           invoices_per_month_band?: string
           last_name?: string
           onboarding_completed_at?: string | null
+          onboarding_progress?: Json
           profession?: string
           terms_fields_enabled?: Json
           timezone?: string
