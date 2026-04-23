@@ -272,4 +272,6 @@ export const seedUserProfile: UserProfile = {
   dashboard_intro_dismissed: true,
   dashboard_levelup_shown: true,
   engagement_announcement_dismissed_at: new Date().toISOString(),
+  default_rates: [],
+  default_billing_preference: 'per_day',
 };

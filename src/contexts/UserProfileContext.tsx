@@ -212,6 +212,8 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
           dashboard_intro_dismissed: !!d.dashboard_intro_dismissed,
           dashboard_levelup_shown: !!d.dashboard_levelup_shown,
           engagement_announcement_dismissed_at: d.engagement_announcement_dismissed_at ?? null,
+          default_rates: (d.default_rates as DefaultRate[]) || [],
+          default_billing_preference: (d.default_billing_preference as BillingPreference) || 'per_day',
         });
       } else {
         // Pull signup metadata from auth user to pre-populate profile
@@ -273,6 +275,8 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
             dashboard_intro_dismissed: false,
             dashboard_levelup_shown: false,
             engagement_announcement_dismissed_at: null,
+            default_rates: [],
+            default_billing_preference: 'per_day',
           });
         }
       }
