@@ -105,32 +105,15 @@ export function BulkInvoiceDialog({ open, onOpenChange, preselectedFacilityId }:
 
     const totalHours = Math.round(((new Date(s.end_datetime).getTime() - new Date(s.start_datetime).getTime()) / 3600000) * 100) / 100;
     const hourlyRate = Number(s.hourly_rate);
-    const overtimeHours = Number(s.overtime_hours || 0);
-    const regularHours = s.regular_hours != null
-      ? Number(s.regular_hours)
-      : Math.max(0, totalHours - overtimeHours);
-    const overtimeRate = s.overtime_rate != null ? Number(s.overtime_rate) : 0;
 
-    const regularLine = {
+    return [{
       shift_id: s.id,
       description: `${dateLabel} — Relief coverage (${timeLabel})`,
       service_date: new Date(s.start_datetime).toISOString().split('T')[0],
-      qty: regularHours,
+      qty: totalHours,
       unit_rate: hourlyRate,
-      line_total: Math.round(regularHours * hourlyRate * 100) / 100,
+      line_total: Math.round(totalHours * hourlyRate * 100) / 100,
       line_kind: 'regular' as const,
-    };
-
-    if (overtimeHours <= 0 || overtimeRate <= 0) return [regularLine];
-
-    return [regularLine, {
-      shift_id: s.id,
-      description: `${dateLabel} — Overtime (after ${regularHours} hrs)`,
-      service_date: new Date(s.start_datetime).toISOString().split('T')[0],
-      qty: overtimeHours,
-      unit_rate: overtimeRate,
-      line_total: Math.round(overtimeHours * overtimeRate * 100) / 100,
-      line_kind: 'overtime' as const,
     }];
   };
 
