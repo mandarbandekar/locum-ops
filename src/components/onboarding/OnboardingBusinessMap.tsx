@@ -1,8 +1,10 @@
+import { useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   FileText, Receipt, TrendingUp, Calculator, ClipboardCheck, ShieldCheck,
   type LucideIcon,
 } from 'lucide-react';
+import { trackOnboarding } from '@/lib/onboardingAnalytics';
 
 interface Props {
   facilityCount: number;
@@ -19,6 +21,16 @@ export function OnboardingBusinessMap({
   draftInvoiceCount,
   projectedGross,
 }: Props) {
+  useEffect(() => {
+    trackOnboarding('onboarding_business_map_viewed', {
+      clinic_count: facilityCount,
+      shift_count: shiftCount,
+      draft_invoice_count: draftInvoiceCount,
+      projected_gross: Math.round(projectedGross),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const cards: { icon: LucideIcon; title: string; statement: string; accent?: string }[] = [
     {
       icon: FileText,
