@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Building2, CalendarDays, FileText, ShieldCheck, Settings,
-  Receipt, Landmark, ChevronDown, Activity,
+  Receipt, Landmark, TrendingUp,
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import {
@@ -8,15 +8,14 @@ import {
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarFooter, useSidebar,
 } from '@/components/ui/sidebar';
 import { Badge } from '@/components/ui/badge';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useData } from '@/contexts/DataContext';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
-import locumOpsLogo from '@/assets/locumops-logo.png';
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { cn } from '@/lib/utils';
+import { LocumOpsMark } from '@/components/brand/LocumOpsMark';
+import { QuickAddMenu } from '@/components/QuickAddMenu';
 
 interface NavItem {
   title: string;
@@ -45,7 +44,6 @@ function useBadgeCounts() {
     [invoices],
   );
 
-  // Credentials expiring within 60 days
   const { data: expiringCredentials = 0 } = useQuery({
     queryKey: ['sidebar-expiring-credentials', user?.id],
     queryFn: async () => {
@@ -61,7 +59,7 @@ function useBadgeCounts() {
       return count ?? 0;
     },
     enabled: !!user && !isDemo,
-    staleTime: 5 * 60 * 1000, // 5 min
+    staleTime: 5 * 60 * 1000,
   });
 
   const totalInvoiceBadge = draftInvoices + overdueInvoices;
@@ -87,23 +85,27 @@ export function AppSidebar() {
     credentialBadgeVariant,
   } = useBadgeCounts();
 
-  const dashboardItem: NavItem = { title: 'Dashboard', url: '/', icon: LayoutDashboard };
-
   const groups: NavGroup[] = [
     {
-      label: 'Practice',
+      label: 'Work',
       items: [
-        { title: 'Clinics & Facilities', url: '/facilities', icon: Building2 },
+        { title: 'Today', url: '/', icon: LayoutDashboard },
+        { title: 'Clinics', url: '/facilities', icon: Building2 },
         { title: 'Schedule', url: '/schedule', icon: CalendarDays },
-        { title: 'Invoices & Payments', url: '/invoices', icon: FileText, badge: totalInvoiceBadge, badgeVariant: invoiceBadgeVariant },
       ],
     },
     {
-      label: 'Back Office',
+      label: 'Money',
       items: [
-        { title: 'Relief Business Hub', url: '/business', icon: Activity },
+        { title: 'Invoices', url: '/invoices', icon: FileText, badge: totalInvoiceBadge, badgeVariant: invoiceBadgeVariant },
         { title: 'Expenses & Mileage', url: '/expenses', icon: Receipt },
-        { title: 'Tax Intelligence', url: '/tax-center', icon: Landmark },
+        { title: 'Profit & Reports', url: '/business', icon: TrendingUp },
+        { title: 'Taxes', url: '/tax-center', icon: Landmark },
+      ],
+    },
+    {
+      label: 'Compliance',
+      items: [
         { title: 'Credentials & CE', url: '/credentials', icon: ShieldCheck, badge: expiringCredentials, badgeVariant: credentialBadgeVariant },
       ],
     },
@@ -112,97 +114,77 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarContent className="pt-3 overflow-hidden">
-        {/* Logo */}
-        <div className={`flex items-center gap-3 px-4 py-4 ${collapsed ? 'justify-center' : ''}`}>
-          <img src={locumOpsLogo} alt="LocumOps" className="h-8 w-8 rounded-lg" />
+        {/* Brand lockup */}
+        <div className={`flex items-center gap-2.5 px-4 py-3 ${collapsed ? 'justify-center px-2' : ''}`}>
+          <LocumOpsMark className="h-7 w-7 shrink-0" />
           {!collapsed && (
-            <span className="font-semibold text-[15px] tracking-tight" style={{ color: 'hsl(var(--sidebar-logo-text))' }}>
+            <span
+              className="font-semibold text-[16px] tracking-tight"
+              style={{ color: 'hsl(var(--sidebar-logo-text))', fontFamily: 'DM Sans, sans-serif' }}
+            >
               LocumOps
             </span>
           )}
         </div>
-        {/* Dashboard - standalone item */}
-        <SidebarGroup className="py-1">
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-px px-2">
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild size="lg">
-                  <NavLink
-                    to="/"
-                    end
-                    className="sidebar-nav-item group/navitem"
-                    activeClassName="sidebar-nav-item--active"
-                  >
-                    <LayoutDashboard className="mr-3 h-[18px] w-[18px] transition-all duration-150 text-[hsl(var(--sidebar-icon-inactive))] group-[.sidebar-nav-item--active]/navitem:text-primary-700" />
-                    {!collapsed && <span className="flex-1 truncate">Dashboard</span>}
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
 
+        {/* Quick Add */}
+        <QuickAddMenu />
+
+        {/* Nav groups */}
         {groups.map((group) => (
-          <Collapsible key={group.label} defaultOpen className="group/collapsible">
-            <SidebarGroup className="py-1">
-              {!collapsed && (
-                <CollapsibleTrigger asChild>
-                  <SidebarGroupLabel className="sidebar-group-label cursor-pointer select-none flex items-center justify-between">
-                    {group.label}
-                    <ChevronDown className="h-3.5 w-3.5 opacity-50 transition-transform group-data-[state=closed]/collapsible:rotate-[-90deg]" />
-                  </SidebarGroupLabel>
-                </CollapsibleTrigger>
-              )}
-              <CollapsibleContent>
-                <SidebarGroupContent>
-                  <SidebarMenu className="space-y-px px-2">
-                    {group.items.map((item) => {
-                      const tourId = item.url === '/facilities' ? 'facilities'
-                        : item.url === '/schedule' ? 'schedule'
-                        : item.url === '/invoices' ? 'invoices'
-                        : item.url === '/business' ? 'business'
-                        : item.url === '/tax-center' ? 'tax'
-                        : undefined;
-                      return (
-                      <SidebarMenuItem key={item.title} data-tour={tourId}>
-                        <SidebarMenuButton asChild size="lg">
-                          <NavLink
-                            to={item.url}
-                            end={item.url === '/'}
-                            className="sidebar-nav-item group/navitem"
-                            activeClassName="sidebar-nav-item--active"
-                          >
-                            <item.icon className="mr-3 h-[18px] w-[18px] transition-all duration-150 text-[hsl(var(--sidebar-icon-inactive))] group-[.sidebar-nav-item--active]/navitem:text-primary-700" />
-                            {!collapsed && (
-                              <>
-                                <span className="flex-1 truncate">{item.title}</span>
-                                {!!item.badge && item.badge > 0 && (
-                                  <Badge
-                                    variant={item.badgeVariant || 'secondary'}
-                                    className="sidebar-badge ml-auto"
-                                  >
-                                    {item.badge}
-                                  </Badge>
-                                )}
-                              </>
-                            )}
-                          </NavLink>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                      );
-                    })}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </CollapsibleContent>
-            </SidebarGroup>
-          </Collapsible>
+          <SidebarGroup key={group.label} className="py-1">
+            {!collapsed && (
+              <SidebarGroupLabel className="sidebar-group-label select-none">
+                {group.label}
+              </SidebarGroupLabel>
+            )}
+            <SidebarGroupContent>
+              <SidebarMenu className="space-y-px px-2">
+                {group.items.map((item) => {
+                  const tourId = item.url === '/facilities' ? 'facilities'
+                    : item.url === '/schedule' ? 'schedule'
+                    : item.url === '/invoices' ? 'invoices'
+                    : item.url === '/business' ? 'business'
+                    : item.url === '/tax-center' ? 'tax'
+                    : undefined;
+                  return (
+                    <SidebarMenuItem key={item.title} data-tour={tourId}>
+                      <SidebarMenuButton asChild size="lg" tooltip={collapsed ? item.title : undefined}>
+                        <NavLink
+                          to={item.url}
+                          end={item.url === '/'}
+                          className="sidebar-nav-item group/navitem"
+                          activeClassName="sidebar-nav-item--active"
+                        >
+                          <item.icon className="mr-3 h-[18px] w-[18px] transition-all duration-150 text-[hsl(var(--sidebar-icon-inactive))] group-[.sidebar-nav-item--active]/navitem:text-primary-700" />
+                          {!collapsed && (
+                            <>
+                              <span className="flex-1 truncate">{item.title}</span>
+                              {!!item.badge && item.badge > 0 && (
+                                <Badge
+                                  variant={item.badgeVariant || 'secondary'}
+                                  className="sidebar-badge ml-auto"
+                                >
+                                  {item.badge}
+                                </Badge>
+                              )}
+                            </>
+                          )}
+                        </NavLink>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
         ))}
       </SidebarContent>
 
       <SidebarFooter className="p-3 border-t border-sidebar-border/50">
         <SidebarMenu className="px-2">
           <SidebarMenuItem>
-            <SidebarMenuButton asChild size="lg">
+            <SidebarMenuButton asChild size="lg" tooltip={collapsed ? 'Settings' : undefined}>
               <NavLink
                 to="/settings/profile"
                 className="sidebar-nav-item sidebar-settings-item group/navitem"
