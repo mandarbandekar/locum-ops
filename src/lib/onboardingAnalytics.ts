@@ -75,8 +75,18 @@ export function trackOnboarding(event: OnboardingEvent, props: OnboardingEventPr
  *   - invoice reveal viewed
  */
 let activationFired = false;
+/**
+ * Activation criteria:
+ *   Standard path: rate card completed + ≥1 clinic + ≥2 shifts + invoice reveal viewed.
+ *   Skip path (existing users who chose "Skip for now" on Rate Card):
+ *     same criteria minus rate card completion — they already had clinic-level rates,
+ *     so reaching the invoice reveal with real shifts is still a valid activation.
+ *
+ * `pathway` is included as an event property so funnels can segment skip vs. standard.
+ */
 export function maybeTrackActivation(input: {
   rateCardCompleted: boolean;
+  rateCardSkipped?: boolean;
   clinicCount: number;
   shiftCount: number;
   invoiceRevealSeen: boolean;
@@ -84,11 +94,10 @@ export function maybeTrackActivation(input: {
   projectedGross: number;
 }): void {
   if (activationFired) return;
+  const baseReached =
+    input.clinicCount >= 1 && input.shiftCount >= 2 && input.invoiceRevealSeen;
   const reached =
-    input.rateCardCompleted &&
-    input.clinicCount >= 1 &&
-    input.shiftCount >= 2 &&
-    input.invoiceRevealSeen;
+    baseReached && (input.rateCardCompleted || !!input.rateCardSkipped);
   if (!reached) return;
   activationFired = true;
   trackOnboarding('onboarding_activation_reached', {
@@ -96,6 +105,7 @@ export function maybeTrackActivation(input: {
     shift_count: input.shiftCount,
     draft_invoice_count: input.draftInvoiceCount,
     projected_gross: Math.round(input.projectedGross),
+    pathway: input.rateCardCompleted ? 'standard' : 'skip',
   });
 }
 
