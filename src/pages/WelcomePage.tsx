@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2, MailCheck } from 'lucide-react';
 import { toast } from 'sonner';
+import locumOpsLogo from '@/assets/locumops-logo.png';
 
 export default function WelcomePage() {
   const navigate = useNavigate();
