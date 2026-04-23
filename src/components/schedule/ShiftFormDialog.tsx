@@ -162,23 +162,6 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     ? customRateKind
     : (selectedRateOption?.kind || 'flat');
 
-  // Active OT policy: from selected facility rate (preset). Custom rates have no OT in v1.
-  const activeOvertimePolicy: OvertimePolicy | null = useMemo(() => {
-    if (activeRateKind !== 'hourly') return null;
-    if (isCustomRate) return null;
-    return selectedRateOption?.overtime && isOvertimePolicyActive(selectedRateOption.overtime)
-      ? selectedRateOption.overtime
-      : null;
-  }, [activeRateKind, isCustomRate, selectedRateOption]);
-
-  // Auto-select first rate when entering step 3 if no rate set
-  useEffect(() => {
-    if (step === 3 && !rate && rateOptions.length > 0) {
-      setRate(rateOptions[0].amount.toString());
-      setSelectedRateKey('rate-0');
-    }
-  }, [step, rate, rateOptions]);
-
   // Calculated hours (rounded to nearest quarter hour).
   const calculatedHours = useMemo<number | null>(() => {
     if (!startTime || !endTime) return null;
@@ -200,21 +183,15 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   }, [activeRateKind, calculatedHours]);
   const isHoursValid = hoursInvalidReason === null;
 
-  // Compute total + OT split for live preview / save payload.
-  const computedTotals = useMemo(() => {
+  // Compute total for live preview / save payload.
+  const computedRateApplied = useMemo(() => {
     const rateNum = Number(rate) || 0;
     if (activeRateKind === 'hourly') {
-      return computeShiftTotal({
-        hours: calculatedHours ?? 0,
-        hourly_rate: rateNum,
-        overtime_policy: activeOvertimePolicy,
-      });
+      const hours = Math.max(0, calculatedHours ?? 0);
+      return Math.round(hours * rateNum * 100) / 100;
     }
-    return { regular_hours: 0, overtime_hours: 0, overtime_rate: null, total: rateNum };
-  }, [rate, activeRateKind, calculatedHours, activeOvertimePolicy]);
-
-  const computedRateApplied = computedTotals.total;
-  const otApplied = computedTotals.overtime_hours > 0;
+    return rateNum;
+  }, [rate, activeRateKind, calculatedHours]);
 
   // Display helper: format hours dropping trailing zeros (e.g. 8 / 8.5 / 8.25).
   const formatHours = (h: number | null) => {
