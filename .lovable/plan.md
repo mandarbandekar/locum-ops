@@ -1,44 +1,63 @@
 
 
-## Fix: Google sign-in shouldn't show a second sign-up screen
+## De-emphasize timezone in onboarding Step 1
 
-### The bug
+### What's happening today
 
-After a new user signs in with Google, `AuthenticatedApp` checks `profile?.has_seen_welcome`. Because the profile is freshly created with `has_seen_welcome: false`, the user is routed to `/welcome` — which renders `WelcomePage`, a **full email/password sign-up form** ("Create your Locum Ops account" with first name, last name, email, password fields).
+Timezone is **not** asked at account creation — sign-up only collects name, email, password (and profession). However, on **Step 1 of onboarding** ("Add a clinic you work with") we render a prominent grey banner above the page title:
 
-The OAuth user is already authenticated, so being asked to sign up again is wrong. If they tried to submit, `supabase.auth.signUp()` would fail with "user already registered."
+> *Hi Mandar! Timezone: Eastern · Change*
 
-`WelcomePage` is doing two unrelated jobs:
-1. It's the email/password **sign-up form** (linked to from `LoginPage`).
-2. It's gated as a one-time **welcome screen** for any authenticated user without `has_seen_welcome = true`.
+The timezone is already auto-detected from the browser via `Intl.DateTimeFormat().resolvedOptions().timeZone` and saved to the profile on mount. The banner is purely a "confirm/change" affordance — but it's the very first thing the user reads, before the actual task. That's the friction the screenshot calls out.
 
-Job #1 should never show to an already-authenticated user. Job #2 shouldn't be a sign-up form at all.
+### The change
 
-### The fix
+Auto-detect silently and remove the timezone confirmation from the onboarding header. Move the "Change timezone" control to where it belongs — **Settings → Profile** (where it already exists) — so users who travel or were mis-detected can correct it without it competing with the primary onboarding task.
 
-Two-part:
+**New Step 1 header becomes:**
+```
+Hi Mandar!
 
-**1. Skip the welcome gate for OAuth sign-ups.** In `loadProfile` (`src/contexts/UserProfileContext.tsx`), when we *create* a new profile row and detect the user came from an OAuth provider (auth metadata has `provider`/`iss` of google or apple, or `full_name`/`name` populated by Google), set `has_seen_welcome: true` on the insert. They've already cleared the equivalent of the welcome screen via the OAuth consent flow — there's nothing for them to fill in.
+Add a clinic you work with
+Start with one clinic you work with regularly...
+STEP 1 OF 4
+```
 
-**2. Make `WelcomePage` safe even if it's reached.** Add an early redirect at the top of `WelcomePage`: if `useAuth().user` exists (i.e. the user is already signed in), call `updateProfile({ has_seen_welcome: true })` and `navigate('/onboarding', { replace: true })`. This guarantees no authenticated user ever sees the duplicate sign-up form, even from stale tabs, deep links, or any future regression.
+Just the greeting + the task. Timezone disappears from view.
 
-Net effect for new Google users: Google consent → land directly on `/onboarding` step 1 (Add a clinic). No intermediate dead-end screen.
+### How detection still works
 
-### Untouched
+- On onboarding mount, `OnboardingPage` keeps the existing `updateProfile({ timezone: detectedTimezone })` call. The detected zone is silently saved on first load.
+- For users where `Intl` returns a non-US zone (rare, but possible for VPN users or travelers), we fall back to `America/New_York` since the product is US-only (per the regional-settings constraint).
+- If the user later realizes the zone is wrong (e.g. they travel often or their browser reports the wrong region), they edit it in **Settings → Profile**, where the timezone selector already lives with the full US-only list.
 
-- Email/password sign-up flow from `LoginPage` → still works (those users start unauthenticated, see `WelcomePage` form, submit, get email confirmation).
-- Existing users with `has_seen_welcome: true` → unchanged.
-- `LoginPage` Google button (`lovable.auth.signInWithOAuth`) → no changes needed; the bug is purely in the post-auth gating.
-- `AuthenticatedApp` routing logic → unchanged; we just ensure OAuth users have `has_seen_welcome = true` so the existing branch lets them through to onboarding.
+### Optional safety net
+
+If we want to keep a one-line escape hatch on Step 1 without it dominating the header, we can add a tiny tertiary link at the very bottom of the form area:
+
+> *Detected timezone: Eastern. Wrong? Change in Settings.*
+
+Set in muted-foreground, smaller font, below the primary CTA. This is a single-line nicety, not a UI element competing with the task. **Default plan: include this.** Easy to remove if it feels like clutter.
 
 ### Files
 
-- `src/contexts/UserProfileContext.tsx` — in `loadProfile`'s "no profile row exists" branch, detect OAuth signup via `authUser.app_metadata.provider !== 'email'` (or presence of `meta.full_name`/`meta.name`) and set `has_seen_welcome: true` on insert. Reflect the same value in the local `setProfile` call.
-- `src/pages/WelcomePage.tsx` — add a `useEffect` at top: if `user` is truthy, call `updateProfile({ has_seen_welcome: true })` and `navigate('/onboarding', { replace: true })` immediately. Render `null` while redirecting.
+- `src/pages/OnboardingPage.tsx`
+  - Remove the timezone display block (`Timezone: {getTimezoneLabel(timezone)}` + the inline `Select`/edit button) from the Step 1 header.
+  - Keep the silent `updateProfile({ timezone: detectedTimezone })` on mount and the existing sync `useEffect`.
+  - Remove `editingTimezone` state and the `TIMEZONE_OPTIONS` constant (no longer used here).
+  - Add the small "Detected timezone: X. Change in Settings." footnote at the bottom of the Step 1 view (links to `/settings/profile`).
+  - Keep passing `timezone` into `OnboardingTaxStep` (Step 4 still needs it for projections) — read it from `profile?.timezone` instead of local state.
+
+### Untouched
+
+- Sign-up flow (`WelcomePage`, `LoginPage`, Google OAuth) — never asked for timezone, no change.
+- `Settings → Profile` timezone selector — unchanged, remains the canonical place to edit.
+- Tax projection logic in Step 4 — still uses the (now silently-detected) timezone.
+- US-only timezone constraint — preserved.
 
 ### Verification after fix
 
-- New Google sign-in → straight to `/onboarding` (Add a clinic step), never sees `WelcomePage`.
-- New email sign-up via `LoginPage` → unchanged flow (confirmation email → log in → welcome handled correctly).
-- Existing accounts → no change in behavior.
+- New sign-up → Onboarding Step 1 shows only "Hi Mandar!" + the task title. No timezone chip.
+- Profile in DB has `timezone` set to the browser-detected value (e.g. `America/New_York`) without user interaction.
+- Settings → Profile shows the detected timezone pre-selected; user can change it freely.
 
