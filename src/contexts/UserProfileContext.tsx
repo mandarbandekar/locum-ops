@@ -55,6 +55,8 @@ export interface UserProfile {
   dashboard_intro_dismissed: boolean;
   dashboard_levelup_shown: boolean;
   engagement_announcement_dismissed_at: string | null;
+  default_rates: DefaultRate[];
+  default_billing_preference: BillingPreference;
 }
 
 const DEFAULT_TERMS_FIELDS: TermsFieldsEnabled = {
@@ -92,6 +94,8 @@ export const DEFAULT_PROFILE: Omit<UserProfile, 'id' | 'user_id'> = {
   dashboard_intro_dismissed: false,
   dashboard_levelup_shown: false,
   engagement_announcement_dismissed_at: null,
+  default_rates: [],
+  default_billing_preference: 'per_day',
 };
 
 interface UserProfileContextType {
