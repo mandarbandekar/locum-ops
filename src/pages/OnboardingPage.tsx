@@ -75,6 +75,7 @@ export default function OnboardingPage() {
   const [createdFacilityIds, setCreatedFacilityIds] = useState<string[]>(initialProgress.created_facility_ids ?? []);
   const [sessionShiftIds, setSessionShiftIds] = useState<string[]>(initialProgress.session_shift_ids ?? []);
   const [invoiceRevealSeen, setInvoiceRevealSeen] = useState<boolean>(!!initialProgress.invoice_reveal_seen);
+  const [rateCardSkipped, setRateCardSkipped] = useState<boolean>(!!initialProgress.rate_card_skipped);
 
   const [editingClinic, setEditingClinic] = useState(false);
   const stepperRef = useRef<AddClinicStepperHandle>(null);
