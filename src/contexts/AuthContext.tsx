@@ -22,17 +22,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isDemo, setIsDemo] = useState(false);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // If refresh fails (stale/invalid token), clear it so the app doesn't hang
+      if (event === 'TOKEN_REFRESHED' && !session) {
+        supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+      }
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    supabase.auth.getSession()
+      .then(async ({ data: { session }, error }) => {
+        if (error) {
+          // Stale refresh token (e.g. user deleted, project reset). Purge locally.
+          const msg = (error.message || '').toLowerCase();
+          if (msg.includes('refresh') || msg.includes('token')) {
+            await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+          }
+          setSession(null);
+          setUser(null);
+        } else {
+          setSession(session);
+          setUser(session?.user ?? null);
+        }
+        setLoading(false);
+      })
+      .catch(async () => {
+        await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+        setSession(null);
+        setUser(null);
+        setLoading(false);
+      });
 
     return () => subscription.unsubscribe();
   }, []);
