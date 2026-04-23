@@ -85,10 +85,16 @@ export function OnboardingBulkShiftCalendar({
     [facilityTerms],
   );
 
-  const rateOptions: BulkRateOption[] = useMemo(
-    () => buildBulkRateOptions({ rateEntries, defaultRates }),
-    [rateEntries, defaultRates],
-  );
+  const rateOptions: BulkRateOption[] = useMemo(() => {
+    const opts = buildBulkRateOptions({ rateEntries, defaultRates });
+    if (opts.length > 0) return opts;
+    // Last-resort safety net: never let the dropdown be empty (e.g. user skipped
+    // Rate Card AND created a brand-new clinic with no rates yet). Keeps the
+    // step usable; the user can always edit clinic-specific rates later.
+    return [
+      { id: 'fallback:standard-day:850', label: 'Standard Day — $850 /day', amount: 850, basis: 'daily' as const },
+    ];
+  }, [rateEntries, defaultRates]);
 
   const [selectedRateId, setSelectedRateId] = useState<string>(() => rateOptions[0]?.id ?? '');
   const selectedRate = rateOptions.find(r => r.id === selectedRateId) ?? rateOptions[0];
