@@ -179,7 +179,11 @@ export default function OnboardingPage() {
   }, [shifts, sessionShiftIds]);
 
   // ─────────────────────────── Handlers ───────────────────────────
+  const finishingRef = useRef(false);
+  const rateCardSubmitRef = useRef(false);
+
   const handleRateCardContinue = async () => {
+    if (rateCardSubmitRef.current) return;
     const cleaned = defaultRates
       .filter(r => r.name.trim() && r.amount > 0)
       .map((r, i) => ({ ...r, sort_order: i }));
@@ -187,16 +191,28 @@ export default function OnboardingPage() {
       toast.error('Add at least one rate to continue');
       return;
     }
-    await updateProfile({
-      default_rates: cleaned,
-      default_billing_preference: defaultBillingPreference,
-    });
-    setDefaultRates(cleaned);
-    setPhase('add_clinic');
-    persist({ phase: 'add_clinic' });
+    rateCardSubmitRef.current = true;
+    try {
+      await updateProfile({
+        default_rates: cleaned,
+        default_billing_preference: defaultBillingPreference,
+      });
+      setDefaultRates(cleaned);
+      trackOnboarding('onboarding_rate_card_completed', {
+        rate_count: cleaned.length,
+        preference: defaultBillingPreference,
+        daily_rate_count: cleaned.filter(r => r.basis === 'daily').length,
+        hourly_rate_count: cleaned.filter(r => r.basis === 'hourly').length,
+      });
+      setPhase('add_clinic');
+      persist({ phase: 'add_clinic' });
+    } finally {
+      rateCardSubmitRef.current = false;
+    }
   };
 
   const handleClinicSaved = (facilityId: string) => {
+    const isNew = !createdFacilityIds.includes(facilityId);
     setFirstFacilityId(facilityId);
     setCreatedFacilityIds(prev => (prev.includes(facilityId) ? prev : [...prev, facilityId]));
     setEditingClinic(false);
@@ -208,10 +224,16 @@ export default function OnboardingPage() {
         ? createdFacilityIds
         : [...createdFacilityIds, facilityId],
     });
+    trackOnboarding('onboarding_clinic_completed', {
+      facility_id: facilityId,
+      is_new: isNew,
+      clinic_count_so_far: isNew ? createdFacilityIds.length + 1 : createdFacilityIds.length,
+    });
   };
 
   const handleShiftsCreated = (newIds: string[]) => {
-    const merged = [...sessionShiftIds, ...newIds];
+    // Defensive de-dupe — guards against repeated callbacks delivering same IDs.
+    const merged = Array.from(new Set([...sessionShiftIds, ...newIds]));
     setSessionShiftIds(merged);
     persist({ session_shift_ids: merged });
   };
@@ -225,6 +247,10 @@ export default function OnboardingPage() {
     setInvoiceRevealSeen(true);
     setPhase('loop_choice');
     persist({ phase: 'loop_choice', invoice_reveal_seen: true });
+    trackOnboarding('onboarding_invoice_continue_clicked', {
+      session_shift_count: sessionShiftIds.length,
+      draft_invoice_count: draftInvoiceCount,
+    });
   };
 
   // Loop choice actions
@@ -249,20 +275,54 @@ export default function OnboardingPage() {
   };
 
   const handleFinish = async () => {
-    await updateProfile({
-      onboarding_progress: {
-        phase: 'business_map',
-        first_facility_id: firstFacilityId,
-        created_facility_ids: createdFacilityIds,
-        session_shift_ids: sessionShiftIds,
-        invoice_reveal_seen: true,
-        business_map_seen: true,
-        updated_at: new Date().toISOString(),
-      },
-    });
-    await completeOnboarding();
-    navigate('/');
+    if (finishingRef.current) return;
+    finishingRef.current = true;
+    try {
+      await updateProfile({
+        onboarding_progress: {
+          phase: 'business_map',
+          first_facility_id: firstFacilityId,
+          created_facility_ids: createdFacilityIds,
+          session_shift_ids: sessionShiftIds,
+          invoice_reveal_seen: true,
+          business_map_seen: true,
+          updated_at: new Date().toISOString(),
+        },
+      });
+      await completeOnboarding();
+      trackOnboarding('onboarding_completed', {
+        clinic_count: onboardingFacilityCount,
+        shift_count: onboardingShiftCount,
+        draft_invoice_count: draftInvoiceCount,
+        projected_gross: Math.round(projectedGross),
+      });
+      navigate('/');
+    } catch (e) {
+      finishingRef.current = false;
+      console.error('finish onboarding failed', e);
+      toast.error('Could not finish onboarding. Please try again.');
+    }
   };
+
+  // Activation latch — fires once when criteria are met.
+  useEffect(() => {
+    maybeTrackActivation({
+      rateCardCompleted: (profile?.default_rates?.length ?? 0) > 0,
+      clinicCount: onboardingFacilityCount,
+      shiftCount: onboardingShiftCount,
+      invoiceRevealSeen,
+      draftInvoiceCount,
+      projectedGross,
+    });
+  }, [
+    profile?.default_rates,
+    onboardingFacilityCount,
+    onboardingShiftCount,
+    invoiceRevealSeen,
+    draftInvoiceCount,
+    projectedGross,
+  ]);
+
 
   // ─────────────────────────── Footer renderer ───────────────────────────
   const renderStickyFooter = (): React.ReactNode => {
