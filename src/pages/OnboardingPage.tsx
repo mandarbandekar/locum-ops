@@ -15,6 +15,7 @@ import { OnboardingLoopChoice } from '@/components/onboarding/OnboardingLoopChoi
 import { OnboardingBusinessMap } from '@/components/onboarding/OnboardingBusinessMap';
 import { AddClinicStepper, type AddClinicStepperHandle } from '@/components/facilities/AddClinicStepper';
 import { mapDefaultRatesToRateEntries, type DefaultRate, type BillingPreference } from '@/lib/onboardingRateMapping';
+import { trackOnboarding, maybeTrackActivation } from '@/lib/onboardingAnalytics';
 import { toast } from 'sonner';
 
 type Phase = OnboardingPhase;
