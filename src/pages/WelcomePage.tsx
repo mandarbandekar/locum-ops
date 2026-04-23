@@ -54,6 +54,8 @@ export default function WelcomePage() {
     setSuccess(true);
   };
 
+  if (user) return null;
+
   return (
     <div className="min-h-screen bg-foreground/40 flex items-center justify-center p-4">
       <div className="w-full max-w-md rounded-2xl bg-card border border-[hsl(var(--card-border))] p-8 sm:p-10">
