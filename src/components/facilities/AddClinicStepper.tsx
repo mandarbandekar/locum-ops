@@ -49,6 +49,10 @@ interface Props {
   onSaved: (facilityId: string, facilityName: string) => void;
   /** Render a compact header inside the stepper (omit if parent renders one). */
   showHeader?: boolean;
+  /** When true, hides the Rates step (used in onboarding when rates come from the user's Rate Card). */
+  hideRatesStep?: boolean;
+  /** Pre-populate the stepper's internal `rates` state — typically from the user's Rate Card. */
+  defaultRates?: RateEntry[];
 }
 
 const BILLING_CADENCES: { value: BillingCadence; label: string; example: string; recommended?: boolean }[] = [
@@ -73,7 +77,7 @@ function previewDueDate(cadence: BillingCadence, netDays: number): string {
 }
 
 export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(function AddClinicStepper(
-  { onSaved, showHeader = true },
+  { onSaved, showHeader = true, hideRatesStep = false, defaultRates },
   ref,
 ) {
   const { addFacility, updateTerms } = useData();
@@ -92,7 +96,7 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
   const [taxFormType, setTaxFormType] = useState<TaxFormType>('1099');
 
   // ── Step 3: Rates ──
-  const [rates, setRates] = useState<RateEntry[]>([]);
+  const [rates, setRates] = useState<RateEntry[]>(defaultRates ?? []);
 
   // ── Step 4: Billing & Contacts ──
   const [billingCadence, setBillingCadence] = useState<BillingCadence>('monthly');
@@ -107,8 +111,16 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
   const [saving, setSaving] = useState(false);
 
   const isDirect = engagementType === 'direct';
-  // For non-direct paths, billing/contacts step is skipped → fewer total steps.
-  const totalSteps = isDirect ? 4 : 3;
+  // Visible step list. The Rates step (#3) can be hidden via `hideRatesStep`,
+  // and the Billing step (#4) is direct-only.
+  const visibleSteps: number[] = useMemo(() => {
+    const arr = [1, 2];
+    if (!hideRatesStep) arr.push(3);
+    if (isDirect) arr.push(4);
+    return arr;
+  }, [hideRatesStep, isDirect]);
+  const totalSteps = visibleSteps.length;
+  const currentVisibleIndex = visibleSteps.indexOf(step); // 0-based; -1 if step not visible
 
   const handleClinicPlaceSelect = (selection: PlaceSelection) => {
     setName(selection.name);
@@ -215,9 +227,9 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
   // Step 1 (identity) is required: name. Step 2 (engagement): required for non-direct (source).
   // Step 3 (rates): skippable. Step 4 (billing): skippable; defaults applied.
   const canSkip = step === 3 || (step === 4 && isDirect);
-  const canBack = step > 1;
+  const canBack = currentVisibleIndex > 0;
 
-  const isLastStep = step === totalSteps;
+  const isLastStep = currentVisibleIndex === visibleSteps.length - 1;
   const primaryLabel = isLastStep ? 'Save Clinic' : 'Continue';
 
   const validateStep = (s: number): string | null => {
@@ -235,12 +247,14 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
       await handleSave();
       return;
     }
-    // If non-direct on step 2, jump to step 3 (rates) — step 4 is hidden.
-    setStep(s => s + 1);
+    // Advance to the next visible step
+    const nextStep = visibleSteps[currentVisibleIndex + 1];
+    if (nextStep) setStep(nextStep);
   };
 
   const back = () => {
-    if (step > 1) setStep(s => s - 1);
+    const prev = visibleSteps[currentVisibleIndex - 1];
+    if (prev) setStep(prev);
   };
 
   const skip = () => {
@@ -249,7 +263,8 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
       handleSave();
       return;
     }
-    setStep(s => s + 1);
+    const nextStep = visibleSteps[currentVisibleIndex + 1];
+    if (nextStep) setStep(nextStep);
   };
 
   useImperativeHandle(ref, () => ({
@@ -266,8 +281,8 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [canSave, step, totalSteps, canBack, canSkip, primaryLabel, name, engagementType, sourceName, rates, billingCadence, invoiceDueDays, schedulingContactName, schedulingContactEmail, invoiceNameTo, invoiceEmailTo, sameAsScheduling, address, taxFormType]);
 
-  // Rendered step number depends on visibility (step 4 hidden when non-direct).
-  const visibleStepNumber = step;
+  // Rendered step number depends on visibility (rates/billing steps may be hidden).
+  const visibleStepNumber = currentVisibleIndex + 1;
 
   return (
     <div className="space-y-5">
@@ -282,9 +297,7 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
                 key={i}
                 className={cn(
                   'h-1 w-8 rounded-full transition-colors',
-                  i + 1 < step ? 'bg-primary' :
-                  i + 1 === step ? 'bg-primary' :
-                  'bg-muted',
+                  i <= currentVisibleIndex ? 'bg-primary' : 'bg-muted',
                 )}
               />
             ))}

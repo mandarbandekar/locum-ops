@@ -8,6 +8,16 @@ export type InvoicesPerMonthBand = 'inv_1_3' | 'inv_4_10' | 'inv_11_plus';
 export type EmailTone = 'friendly' | 'neutral' | 'direct';
 export type CurrentTool = 'sheets_excel' | 'calendar' | 'quickbooks' | 'wave' | 'freshbooks' | 'notes' | 'other';
 
+export type BillingPreference = 'per_day' | 'per_hour' | 'both' | 'unsure';
+export interface DefaultRate {
+  id: string;
+  name: string;
+  amount: number;
+  basis: 'daily' | 'hourly';
+  active: boolean;
+  sort_order: number;
+}
+
 export interface TermsFieldsEnabled {
   weekday_rate: boolean;
   weekend_rate: boolean;
@@ -45,6 +55,8 @@ export interface UserProfile {
   dashboard_intro_dismissed: boolean;
   dashboard_levelup_shown: boolean;
   engagement_announcement_dismissed_at: string | null;
+  default_rates: DefaultRate[];
+  default_billing_preference: BillingPreference;
 }
 
 const DEFAULT_TERMS_FIELDS: TermsFieldsEnabled = {
@@ -82,6 +94,8 @@ export const DEFAULT_PROFILE: Omit<UserProfile, 'id' | 'user_id'> = {
   dashboard_intro_dismissed: false,
   dashboard_levelup_shown: false,
   engagement_announcement_dismissed_at: null,
+  default_rates: [],
+  default_billing_preference: 'per_day',
 };
 
 interface UserProfileContextType {
@@ -198,6 +212,8 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
           dashboard_intro_dismissed: !!d.dashboard_intro_dismissed,
           dashboard_levelup_shown: !!d.dashboard_levelup_shown,
           engagement_announcement_dismissed_at: d.engagement_announcement_dismissed_at ?? null,
+          default_rates: (d.default_rates as DefaultRate[]) || [],
+          default_billing_preference: (d.default_billing_preference as BillingPreference) || 'per_day',
         });
       } else {
         // Pull signup metadata from auth user to pre-populate profile
@@ -259,6 +275,8 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
             dashboard_intro_dismissed: false,
             dashboard_levelup_shown: false,
             engagement_announcement_dismissed_at: null,
+            default_rates: [],
+            default_billing_preference: 'per_day',
           });
         }
       }
