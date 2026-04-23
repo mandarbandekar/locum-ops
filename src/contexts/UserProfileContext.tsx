@@ -57,6 +57,25 @@ export interface UserProfile {
   engagement_announcement_dismissed_at: string | null;
   default_rates: DefaultRate[];
   default_billing_preference: BillingPreference;
+  onboarding_progress: OnboardingProgress;
+}
+
+export type OnboardingPhase =
+  | 'rate_card'
+  | 'add_clinic'
+  | 'bulk_shifts'
+  | 'invoice_reveal'
+  | 'loop_choice'
+  | 'business_map';
+
+export interface OnboardingProgress {
+  phase?: OnboardingPhase;
+  first_facility_id?: string | null;
+  created_facility_ids?: string[];
+  session_shift_ids?: string[];
+  invoice_reveal_seen?: boolean;
+  business_map_seen?: boolean;
+  updated_at?: string;
 }
 
 const DEFAULT_TERMS_FIELDS: TermsFieldsEnabled = {
