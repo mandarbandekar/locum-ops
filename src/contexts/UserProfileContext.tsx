@@ -57,6 +57,25 @@ export interface UserProfile {
   engagement_announcement_dismissed_at: string | null;
   default_rates: DefaultRate[];
   default_billing_preference: BillingPreference;
+  onboarding_progress: OnboardingProgress;
+}
+
+export type OnboardingPhase =
+  | 'rate_card'
+  | 'add_clinic'
+  | 'bulk_shifts'
+  | 'invoice_reveal'
+  | 'loop_choice'
+  | 'business_map';
+
+export interface OnboardingProgress {
+  phase?: OnboardingPhase;
+  first_facility_id?: string | null;
+  created_facility_ids?: string[];
+  session_shift_ids?: string[];
+  invoice_reveal_seen?: boolean;
+  business_map_seen?: boolean;
+  updated_at?: string;
 }
 
 const DEFAULT_TERMS_FIELDS: TermsFieldsEnabled = {
@@ -96,6 +115,7 @@ export const DEFAULT_PROFILE: Omit<UserProfile, 'id' | 'user_id'> = {
   engagement_announcement_dismissed_at: null,
   default_rates: [],
   default_billing_preference: 'per_day',
+  onboarding_progress: {},
 };
 
 interface UserProfileContextType {
@@ -214,6 +234,7 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
           engagement_announcement_dismissed_at: d.engagement_announcement_dismissed_at ?? null,
           default_rates: (d.default_rates as DefaultRate[]) || [],
           default_billing_preference: (d.default_billing_preference as BillingPreference) || 'per_day',
+          onboarding_progress: (d.onboarding_progress as OnboardingProgress) || {},
         });
       } else {
         // Pull signup metadata from auth user to pre-populate profile
@@ -277,6 +298,7 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
             engagement_announcement_dismissed_at: null,
             default_rates: [],
             default_billing_preference: 'per_day',
+            onboarding_progress: {},
           });
         }
       }

@@ -40,6 +40,7 @@ import { UpcomingShiftsStrip, UpcomingShiftItem } from '@/components/dashboard/U
 import { EmptyDashboardPrompt } from '@/components/dashboard/EmptyDashboardPrompt';
 import { QuarterlyTaxCallout } from '@/components/dashboard/QuarterlyTaxCallout';
 import { FirstTimeDashboard } from '@/components/dashboard/FirstTimeDashboard';
+import { OnboardingHandoffBanner } from '@/components/dashboard/OnboardingHandoffBanner';
 import { generateDashboardBriefing, getNextQuarterlyDeadline, BriefingInput } from '@/lib/dashboardBriefing';
 
 const TOUR_STEPS: TourStep[] = [
@@ -110,6 +111,26 @@ export default function DashboardPage() {
 
   const skippedOnboarding = profile && !profile.onboarding_completed_at && profile.has_seen_welcome;
   const showWelcomeBanner = skippedOnboarding && !profile?.dismissed_prompts?.welcome_banner && facilities.length === 0 && shifts.length === 0;
+
+  // First-run handoff: completed onboarding via business map, not yet dismissed
+  const showOnboardingHandoff =
+    !!profile?.onboarding_completed_at &&
+    !!profile?.onboarding_progress?.business_map_seen &&
+    !profile?.dismissed_prompts?.onboarding_handoff;
+  const onboardingProgress = profile?.onboarding_progress;
+  const handoffInvoiceCount = useMemo(() => {
+    const ids = onboardingProgress?.session_shift_ids ?? [];
+    if (ids.length === 0) return 0;
+    const set = new Set(ids);
+    return invoices.filter(inv =>
+      lineItems.some(li => li.invoice_id === inv.id && li.shift_id && set.has(li.shift_id))
+    ).length;
+  }, [invoices, lineItems, onboardingProgress?.session_shift_ids]);
+  const dismissOnboardingHandoff = useCallback(async () => {
+    await updateProfile({
+      dismissed_prompts: { ...profile?.dismissed_prompts, onboarding_handoff: true },
+    });
+  }, [profile, updateProfile]);
 
   const dismissWelcomeBanner = useCallback(async () => {
     await updateProfile({
@@ -697,6 +718,20 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-theme(spacing.14)-theme(spacing.6)-theme(spacing.10))] overflow-auto">
+      {/* First-run onboarding handoff banner */}
+      {showOnboardingHandoff && (
+        <div className="shrink-0 mb-3">
+          <OnboardingHandoffBanner
+            firstName={profile?.first_name || ''}
+            rateCardDone={(profile?.default_rates?.length ?? 0) > 0}
+            facilitiesCount={facilities.length}
+            shiftsCount={shifts.length}
+            invoiceReadyCount={handoffInvoiceCount}
+            onDismiss={dismissOnboardingHandoff}
+          />
+        </div>
+      )}
+
       {/* Welcome banner */}
       {showWelcomeBanner && (
         <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-primary/10 border border-primary/20 shrink-0 mb-2">
