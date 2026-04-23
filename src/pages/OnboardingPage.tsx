@@ -347,6 +347,14 @@ export default function OnboardingPage() {
                 onSaved={() => setShowClinicForm(false)}
               />
             )}
+
+            <p className="text-xs text-muted-foreground pt-2">
+              Detected timezone: {getTimezoneLabel(timezone)}. Wrong?{' '}
+              <Link to="/settings/profile" className="text-primary hover:underline">
+                Change in Settings
+              </Link>
+              .
+            </p>
           </div>
         );
 
