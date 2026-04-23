@@ -77,7 +77,7 @@ function previewDueDate(cadence: BillingCadence, netDays: number): string {
 }
 
 export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(function AddClinicStepper(
-  { onSaved, showHeader = true },
+  { onSaved, showHeader = true, hideRatesStep = false, defaultRates },
   ref,
 ) {
   const { addFacility, updateTerms } = useData();
@@ -96,7 +96,7 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
   const [taxFormType, setTaxFormType] = useState<TaxFormType>('1099');
 
   // ── Step 3: Rates ──
-  const [rates, setRates] = useState<RateEntry[]>([]);
+  const [rates, setRates] = useState<RateEntry[]>(defaultRates ?? []);
 
   // ── Step 4: Billing & Contacts ──
   const [billingCadence, setBillingCadence] = useState<BillingCadence>('monthly');
@@ -111,8 +111,16 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
   const [saving, setSaving] = useState(false);
 
   const isDirect = engagementType === 'direct';
-  // For non-direct paths, billing/contacts step is skipped → fewer total steps.
-  const totalSteps = isDirect ? 4 : 3;
+  // Visible step list. The Rates step (#3) can be hidden via `hideRatesStep`,
+  // and the Billing step (#4) is direct-only.
+  const visibleSteps: number[] = useMemo(() => {
+    const arr = [1, 2];
+    if (!hideRatesStep) arr.push(3);
+    if (isDirect) arr.push(4);
+    return arr;
+  }, [hideRatesStep, isDirect]);
+  const totalSteps = visibleSteps.length;
+  const currentVisibleIndex = visibleSteps.indexOf(step); // 0-based; -1 if step not visible
 
   const handleClinicPlaceSelect = (selection: PlaceSelection) => {
     setName(selection.name);
