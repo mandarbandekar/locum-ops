@@ -12,11 +12,10 @@ import { GuidedStep } from '@/components/onboarding/GuidedStep';
 import { AddFacilityDialog } from '@/components/AddFacilityDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
-import { SHIFT_COLORS, ShiftColor, TermsSnapshot, Shift, BLOCK_TYPES, BlockType, RateKind, OvertimePolicy } from '@/types';
+import { SHIFT_COLORS, ShiftColor, TermsSnapshot, Shift, BLOCK_TYPES, BlockType, RateKind } from '@/types';
 import { detectShiftConflicts } from '@/lib/businessLogic';
 import { cn } from '@/lib/utils';
 import { termsToRates, RateEntry } from '@/components/facilities/RatesEditor';
-import { computeShiftTotal, isOvertimePolicyActive } from '@/lib/overtime';
 import { useData } from '@/contexts/DataContext';
 import { getBillingPeriod } from '@/lib/invoiceAutoGeneration';
 import type { BillingCadence } from '@/lib/invoiceBillingDefaults';
@@ -163,23 +162,6 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     ? customRateKind
     : (selectedRateOption?.kind || 'flat');
 
-  // Active OT policy: from selected facility rate (preset). Custom rates have no OT in v1.
-  const activeOvertimePolicy: OvertimePolicy | null = useMemo(() => {
-    if (activeRateKind !== 'hourly') return null;
-    if (isCustomRate) return null;
-    return selectedRateOption?.overtime && isOvertimePolicyActive(selectedRateOption.overtime)
-      ? selectedRateOption.overtime
-      : null;
-  }, [activeRateKind, isCustomRate, selectedRateOption]);
-
-  // Auto-select first rate when entering step 3 if no rate set
-  useEffect(() => {
-    if (step === 3 && !rate && rateOptions.length > 0) {
-      setRate(rateOptions[0].amount.toString());
-      setSelectedRateKey('rate-0');
-    }
-  }, [step, rate, rateOptions]);
-
   // Calculated hours (rounded to nearest quarter hour).
   const calculatedHours = useMemo<number | null>(() => {
     if (!startTime || !endTime) return null;
@@ -201,21 +183,15 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   }, [activeRateKind, calculatedHours]);
   const isHoursValid = hoursInvalidReason === null;
 
-  // Compute total + OT split for live preview / save payload.
-  const computedTotals = useMemo(() => {
+  // Compute total for live preview / save payload.
+  const computedRateApplied = useMemo(() => {
     const rateNum = Number(rate) || 0;
     if (activeRateKind === 'hourly') {
-      return computeShiftTotal({
-        hours: calculatedHours ?? 0,
-        hourly_rate: rateNum,
-        overtime_policy: activeOvertimePolicy,
-      });
+      const hours = Math.max(0, calculatedHours ?? 0);
+      return Math.round(hours * rateNum * 100) / 100;
     }
-    return { regular_hours: 0, overtime_hours: 0, overtime_rate: null, total: rateNum };
-  }, [rate, activeRateKind, calculatedHours, activeOvertimePolicy]);
-
-  const computedRateApplied = computedTotals.total;
-  const otApplied = computedTotals.overtime_hours > 0;
+    return rateNum;
+  }, [rate, activeRateKind, calculatedHours]);
 
   // Display helper: format hours dropping trailing zeros (e.g. 8 / 8.5 / 8.25).
   const formatHours = (h: number | null) => {
@@ -351,17 +327,11 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
             rate_kind: 'hourly' as const,
             hourly_rate: Number(rate) || 0,
             rate_applied: computedRateApplied,
-            regular_hours: computedTotals.regular_hours,
-            overtime_hours: computedTotals.overtime_hours,
-            overtime_rate: computedTotals.overtime_rate,
           }
         : {
             rate_kind: 'flat' as const,
             hourly_rate: null,
             rate_applied: Number(rate),
-            regular_hours: null,
-            overtime_hours: 0,
-            overtime_rate: null,
           };
       if (existing) {
         const date = format(selectedDates[0] || new Date(), 'yyyy-MM-dd');
@@ -525,11 +495,9 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
         if (!fac) return null;
         const cadenceLabel = ({ daily: 'Daily', weekly: 'Weekly', biweekly: 'Biweekly', monthly: 'Monthly' } as Record<string, string>)[fac.billing_cadence] || 'Monthly';
         const firstRate = rateOptions[0];
-        const ot = firstRate?.overtime;
         const parts = [
           `${cadenceLabel} billing`,
           firstRate ? `${firstRate.label} $${firstRate.amount.toLocaleString()}${firstRate.kind === 'hourly' ? '/hr' : '/day'}` : null,
-          ot && isOvertimePolicyActive(ot) ? `OT after ${ot.threshold_hours}h` : null,
         ].filter(Boolean);
         return (
           <p className="text-[11px] text-muted-foreground">
@@ -719,34 +687,10 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
             </Select>
             {activeRateKind === 'hourly' && Number(rate) > 0 && isHoursValid && (
               <div className="space-y-1">
-                {otApplied && activeOvertimePolicy ? (
-                  <>
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
-                        <AlertTriangle className="h-2.5 w-2.5" /> Overtime applied
-                      </span>
-                      <span className="text-[10px] text-muted-foreground">
-                        after {activeOvertimePolicy.threshold_hours}h/day
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-muted-foreground">
-                      {formatHours(computedTotals.regular_hours)} hrs × ${Number(rate).toLocaleString()}/hr = ${(computedTotals.regular_hours * Number(rate)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </p>
-                    <p className="text-[11px] text-amber-700 dark:text-amber-400">
-                      {formatHours(computedTotals.overtime_hours)} hrs × ${activeOvertimePolicy.ot_rate.toLocaleString()}/hr (OT) = ${(computedTotals.overtime_hours * activeOvertimePolicy.ot_rate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </p>
-                    <div className="border-t border-border/60 pt-1">
-                      <p className="text-[11px]">
-                        Total = <span className="font-semibold text-foreground">${computedRateApplied.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                      </p>
-                    </div>
-                  </>
-                ) : (
-                  <p className="text-[11px] text-muted-foreground">
-                    {formatHours(calculatedHours)} hrs × ${Number(rate).toLocaleString()}/hr ={' '}
-                    <span className="font-semibold text-foreground">${computedRateApplied.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  </p>
-                )}
+                <p className="text-[11px] text-muted-foreground">
+                  {formatHours(calculatedHours)} hrs × ${Number(rate).toLocaleString()}/hr ={' '}
+                  <span className="font-semibold text-foreground">${computedRateApplied.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </p>
               </div>
             )}
             {activeRateKind === 'hourly' && hoursInvalidReason && (

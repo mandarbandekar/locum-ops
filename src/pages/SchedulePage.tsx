@@ -521,14 +521,6 @@ export default function SchedulePage() {
                                     Flat
                                   </span>
                                 )}
-                                {(s.overtime_hours || 0) > 0 && (
-                                  <span
-                                    className="inline-flex items-center rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 text-[10px] font-medium px-1.5 py-0.5"
-                                    title={`${s.overtime_hours}h overtime${s.overtime_rate ? ` at $${s.overtime_rate}/hr` : ''}`}
-                                  >
-                                    OT {s.overtime_hours}h
-                                  </span>
-                                )}
                               </div>
                             </td>
                             <td className="p-3" onClick={e => e.stopPropagation()}>
