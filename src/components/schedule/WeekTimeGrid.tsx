@@ -216,9 +216,6 @@ export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, o
                       {s.rate_kind === 'hourly' && s.hourly_rate ? (
                         <span className="opacity-80">(${s.hourly_rate}/hr)</span>
                       ) : null}
-                      {(s.overtime_hours || 0) > 0 && (
-                        <span className="rounded-sm bg-amber-500/20 text-amber-700 dark:text-amber-300 text-[9px] font-semibold px-1 leading-tight">OT</span>
-                      )}
                     </div>
                   )}
                 </div>
