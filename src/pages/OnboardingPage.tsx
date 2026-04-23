@@ -10,31 +10,31 @@ import { ArrowRight, Check, MapPin, LayoutDashboard, Pencil, RefreshCw } from 'l
 import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
 import { OnboardingRateCard } from '@/components/onboarding/OnboardingRateCard';
 import { OnboardingBulkShiftCalendar } from '@/components/onboarding/OnboardingBulkShiftCalendar';
-import { OnboardingInvoiceRevealStub } from '@/components/onboarding/OnboardingInvoiceRevealStub';
+import { OnboardingInvoiceReveal } from '@/components/onboarding/OnboardingInvoiceReveal';
 import { AddClinicStepper, type AddClinicStepperHandle } from '@/components/facilities/AddClinicStepper';
 import { mapDefaultRatesToRateEntries, type DefaultRate, type BillingPreference } from '@/lib/onboardingRateMapping';
 import { toast } from 'sonner';
 
-type Phase = 'rate_card' | 'add_clinic' | 'bulk_shifts' | 'invoice_reveal_placeholder';
+type Phase = 'rate_card' | 'add_clinic' | 'bulk_shifts' | 'invoice_reveal';
 
 const PHASE_STEP: Record<Phase, number> = {
   rate_card: 1,
   add_clinic: 2,
   bulk_shifts: 3,
-  invoice_reveal_placeholder: 4,
+  invoice_reveal: 4,
 };
 const TOTAL_STEPS = 4;
 const PHASE_LABEL: Record<Phase, string> = {
   rate_card: 'Set up your rates',
   add_clinic: 'Add your first clinic',
   bulk_shifts: 'Add your shifts',
-  invoice_reveal_placeholder: 'See your invoices',
+  invoice_reveal: 'See your invoices',
 };
 const PHASE_BACK: Record<Phase, Phase | null> = {
   rate_card: null,
   add_clinic: 'rate_card',
   bulk_shifts: 'add_clinic',
-  invoice_reveal_placeholder: 'bulk_shifts',
+  invoice_reveal: 'bulk_shifts',
 };
 
 const US_TIMEZONES = new Set([
@@ -148,7 +148,7 @@ export default function OnboardingPage() {
   };
 
   const handleAdvanceToInvoiceReveal = () => {
-    setPhase('invoice_reveal_placeholder');
+    setPhase('invoice_reveal');
   };
 
   const handleFinish = async () => {
@@ -225,7 +225,7 @@ export default function OnboardingPage() {
         // Footer is rendered by the OnboardingBulkShiftCalendar via render-prop.
         return null;
 
-      case 'invoice_reveal_placeholder':
+      case 'invoice_reveal':
         return (
           <>
             <Button onClick={handleFinish} className="w-full h-12" size="lg">
@@ -364,9 +364,9 @@ export default function OnboardingPage() {
           />
         );
 
-      case 'invoice_reveal_placeholder':
+      case 'invoice_reveal':
         return (
-          <OnboardingInvoiceRevealStub
+          <OnboardingInvoiceReveal
             facility={activeFacility}
             sessionShiftIds={sessionShiftIds}
           />
