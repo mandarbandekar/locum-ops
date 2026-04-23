@@ -75,6 +75,8 @@ export interface OnboardingProgress {
   session_shift_ids?: string[];
   invoice_reveal_seen?: boolean;
   business_map_seen?: boolean;
+  /** True when an existing user chose "Skip for now" on the Rate Card step. */
+  rate_card_skipped?: boolean;
   updated_at?: string;
 }
 
