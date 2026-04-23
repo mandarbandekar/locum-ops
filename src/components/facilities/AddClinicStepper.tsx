@@ -391,12 +391,6 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
 
           <RatesEditor rates={rates} onChange={setRates} showCard={false} compact />
 
-          {rates.some(r => r.kind === 'hourly') && (
-            <p className="text-[11px] text-muted-foreground">
-              Hourly rates can include an overtime threshold (e.g. 1.5× after 8 hrs/day). Set it on the rate row above.
-            </p>
-          )}
-
           {rates.length === 0 && (
             <p className="text-[11px] text-muted-foreground italic">
               Skip — I'll add rates later from the clinic page.
