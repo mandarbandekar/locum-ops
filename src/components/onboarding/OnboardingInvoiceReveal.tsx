@@ -1,10 +1,11 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Sparkles, Mail } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { InvoicePreview } from '@/components/invoice/InvoicePreview';
+import { trackOnboarding } from '@/lib/onboardingAnalytics';
 import type { Facility, Invoice, InvoiceLineItem } from '@/types';
 
 interface Props {
@@ -47,6 +48,15 @@ export function OnboardingInvoiceReveal({ facility, sessionShiftIds }: Props) {
     derived.sort((a, b) => (b.invoice.invoice_date || '').localeCompare(a.invoice.invoice_date || ''));
     return derived.slice(0, 3);
   }, [invoices, lineItems, facilities, sessionShiftIds, facility]);
+
+  // Fire viewed event when reveal mounts (or when first cards become available).
+  useEffect(() => {
+    trackOnboarding('onboarding_invoice_reveal_viewed', {
+      preview_count: cards.length,
+      session_shift_count: sessionShiftIds.length,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const statusStyle: Record<DerivedCard['status'], string> = {
     Draft: 'border-amber-300 text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400',
