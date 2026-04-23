@@ -111,8 +111,29 @@ export function OnboardingBulkShiftCalendar({
       .map(s => new Date(s.start_datetime));
   }, [shifts, createdShiftIds]);
 
+  const handleSelectDates = (d: Date[] | undefined) => {
+    const next = d ?? [];
+    const wentEmpty = selectedDates.length > 0 && next.length === 0;
+    const wentNonEmpty = selectedDates.length === 0 && next.length > 0;
+    setSelectedDates(next);
+    if (wentNonEmpty || (next.length > 0 && next.length !== selectedDates.length)) {
+      // Only fire when a real selection edit happens (not on init).
+      trackOnboarding('onboarding_shift_dates_selected', {
+        selected_dates_count: next.length,
+        rate_basis: selectedRate?.basis ?? null,
+      });
+    }
+    if (wentEmpty) {
+      // No-op event; the inline guidance UI already shows. Keep silent.
+    }
+  };
+
   const handleSubmit = async () => {
-    if (selectedDates.length === 0) return;
+    if (submitGuardRef.current || submitting) return;
+    if (selectedDates.length === 0) {
+      toast.error('Pick at least one date to add shifts');
+      return;
+    }
     if (!selectedRate) {
       toast.error('Please choose a rate');
       return;
@@ -121,6 +142,7 @@ export function OnboardingBulkShiftCalendar({
       toast.error('End time must be after start time');
       return;
     }
+    submitGuardRef.current = true;
     setSubmitting(true);
     const newIds: string[] = [];
     let totalAdded = 0;
@@ -156,11 +178,21 @@ export function OnboardingBulkShiftCalendar({
       onShiftsCreated(newIds);
       setSelectedDates([]);
       toast.success(`${newIds.length} shift${newIds.length === 1 ? '' : 's'} added`);
+      trackOnboarding('onboarding_bulk_shifts_created', {
+        shifts_created: newIds.length,
+        selected_rate_name: selectedRate.label,
+        selected_rate_basis: selectedRate.basis,
+        selected_rate_amount: selectedRate.amount,
+        hours_per_shift: hours,
+        projected_gross: Math.round(totalAdded),
+        facility_id: facility.id,
+      });
     } catch (e) {
       console.error('bulk shift create failed', e);
       toast.error('Failed to add shifts. Please try again.');
     } finally {
       setSubmitting(false);
+      submitGuardRef.current = false;
     }
   };
 
