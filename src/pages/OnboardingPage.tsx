@@ -160,6 +160,18 @@ export default function OnboardingPage() {
     [defaultRates],
   );
 
+  // ── Existing-user backfill source: aggregate rate entries from all clinic terms ──
+  // Read-only — never mutates clinic terms records.
+  const { existingClinicRates, existingClinicPreference } = useMemo(() => {
+    if (!terms || terms.length === 0) {
+      return { existingClinicRates: [] as DefaultRate[], existingClinicPreference: 'per_day' as BillingPreference };
+    }
+    const allEntries = terms.flatMap(t => termsToRates(t));
+    const derived = buildDefaultRatesFromRateEntries(allEntries);
+    const pref = inferBillingPreference(allEntries);
+    return { existingClinicRates: derived, existingClinicPreference: pref };
+  }, [terms]);
+
   // ── Derived counts for loop_choice + business_map ──
   const onboardingFacilityCount = createdFacilityIds.length || (firstFacilityId ? 1 : 0);
   const onboardingShiftCount = sessionShiftIds.length;
