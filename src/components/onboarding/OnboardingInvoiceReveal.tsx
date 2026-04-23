@@ -88,7 +88,16 @@ export function OnboardingInvoiceReveal({ facility, sessionShiftIds }: Props) {
           {cards.map(card => {
             const fac = card.facility;
             return (
-              <div key={card.invoice.id} className="rounded-lg border border-border bg-card overflow-hidden">
+              <div
+                key={card.invoice.id}
+                className="rounded-lg border border-border bg-card overflow-hidden cursor-pointer"
+                onClick={() =>
+                  trackOnboarding('onboarding_invoice_preview_opened', {
+                    invoice_number: card.invoice.invoice_number,
+                    status: card.status,
+                  })
+                }
+              >
                 {/* Status header strip */}
                 <div className="px-4 py-2.5 border-b border-border/60 bg-muted/30 flex items-center justify-between gap-3">
                   <div className="text-sm font-medium text-foreground truncate">
