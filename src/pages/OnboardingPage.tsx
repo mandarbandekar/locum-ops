@@ -6,48 +6,41 @@ import { Badge } from '@/components/ui/badge';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
-import { ArrowRight, Check, MapPin, Mail, User, Plus, LayoutDashboard } from 'lucide-react';
+import { ArrowRight, Check, MapPin, LayoutDashboard, Pencil, RefreshCw } from 'lucide-react';
 import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
-import { OnboardingClinicForm } from '@/components/onboarding/OnboardingClinicForm';
-import { OnboardingShiftBuilder } from '@/components/onboarding/OnboardingShiftBuilder';
-import { OnboardingInvoiceReveal } from '@/components/onboarding/OnboardingInvoiceReveal';
-import { OnboardingFinancialReveal } from '@/components/onboarding/OnboardingFinancialReveal';
+import { OnboardingRateCard } from '@/components/onboarding/OnboardingRateCard';
+import { OnboardingBulkShiftCalendar } from '@/components/onboarding/OnboardingBulkShiftCalendar';
+import { OnboardingInvoiceRevealStub } from '@/components/onboarding/OnboardingInvoiceRevealStub';
+import { AddClinicStepper, type AddClinicStepperHandle } from '@/components/facilities/AddClinicStepper';
+import { mapDefaultRatesToRateEntries, type DefaultRate, type BillingPreference } from '@/lib/onboardingRateMapping';
+import { toast } from 'sonner';
 
-type Phase = 'add_clinic' | 'log_shifts' | 'invoice_reveal' | 'financial_reveal';
+type Phase = 'rate_card' | 'add_clinic' | 'bulk_shifts' | 'invoice_reveal_placeholder';
 
 const PHASE_STEP: Record<Phase, number> = {
-  add_clinic: 1,
-  log_shifts: 2,
-  invoice_reveal: 3,
-  financial_reveal: 4,
+  rate_card: 1,
+  add_clinic: 2,
+  bulk_shifts: 3,
+  invoice_reveal_placeholder: 4,
 };
-
 const TOTAL_STEPS = 4;
-
 const PHASE_LABEL: Record<Phase, string> = {
-  add_clinic: 'Add a clinic',
-  log_shifts: 'Log your shifts',
-  invoice_reveal: 'Your first invoice',
-  financial_reveal: 'Your financial health',
+  rate_card: 'Set up your rates',
+  add_clinic: 'Add your first clinic',
+  bulk_shifts: 'Add your shifts',
+  invoice_reveal_placeholder: 'See your invoices',
 };
-
 const PHASE_BACK: Record<Phase, Phase | null> = {
-  add_clinic: null,
-  log_shifts: 'add_clinic',
-  invoice_reveal: 'log_shifts',
-  financial_reveal: 'invoice_reveal',
+  rate_card: null,
+  add_clinic: 'rate_card',
+  bulk_shifts: 'add_clinic',
+  invoice_reveal_placeholder: 'bulk_shifts',
 };
 
 const US_TIMEZONES = new Set([
-  'America/New_York',
-  'America/Chicago',
-  'America/Denver',
-  'America/Phoenix',
-  'America/Los_Angeles',
-  'America/Anchorage',
-  'Pacific/Honolulu',
+  'America/New_York', 'America/Chicago', 'America/Denver', 'America/Phoenix',
+  'America/Los_Angeles', 'America/Anchorage', 'Pacific/Honolulu',
 ]);
-
 function normalizeTimezone(tz: string): string {
   return US_TIMEZONES.has(tz) ? tz : 'America/New_York';
 }
@@ -55,24 +48,41 @@ function normalizeTimezone(tz: string): string {
 export default function OnboardingPage() {
   const { profile, updateProfile, completeOnboarding } = useUserProfile();
   const { user } = useAuth();
-  const { facilities, shifts, terms, invoices, lineItems, addShift, deleteShift } = useData();
+  const { facilities, shifts } = useData();
   const navigate = useNavigate();
 
   const detectedTimezone = normalizeTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);
 
-  const [phase, setPhase] = useState<Phase>('add_clinic');
-  const [showClinicForm, setShowClinicForm] = useState(false);
-  // Track shifts created during this onboarding session (so we can show only the user's brand-new data).
-  const [sessionShiftIds, setSessionShiftIds] = useState<string[]>([]);
-  // Tick so the sticky footer re-renders when stepper internal state changes.
+  const [phase, setPhase] = useState<Phase>('rate_card');
+
+  // ── Rate card session state ──
+  const [defaultRates, setDefaultRates] = useState<DefaultRate[]>(profile?.default_rates ?? []);
+  const [defaultBillingPreference, setDefaultBillingPreference] =
+    useState<BillingPreference>(profile?.default_billing_preference ?? 'per_day');
+
+  // Hydrate when profile loads (in case onboarding is resumed)
+  useEffect(() => {
+    if (profile?.default_rates && profile.default_rates.length > 0) {
+      setDefaultRates(profile.default_rates);
+    }
+    if (profile?.default_billing_preference) {
+      setDefaultBillingPreference(profile.default_billing_preference);
+    }
+  }, [profile?.default_rates, profile?.default_billing_preference]);
+
+  // ── Add clinic session state ──
+  const [firstFacilityId, setFirstFacilityId] = useState<string | null>(null);
+  const [editingClinic, setEditingClinic] = useState(false);
+  const stepperRef = useRef<AddClinicStepperHandle>(null);
   const [, setFooterTick] = useState(0);
   useEffect(() => {
-    if (phase !== 'add_clinic' && phase !== 'log_shifts') return;
+    if (phase !== 'add_clinic') return;
     const id = window.setInterval(() => setFooterTick(t => t + 1), 200);
     return () => window.clearInterval(id);
   }, [phase]);
 
-  const firstName = profile?.first_name || user?.user_metadata?.first_name || '';
+  // ── Bulk shifts session state ──
+  const [sessionShiftIds, setSessionShiftIds] = useState<string[]>([]);
 
   // Auto-save profile on mount (silently apply detected timezone)
   const profileSavedRef = useRef(false);
@@ -92,65 +102,98 @@ export default function OnboardingPage() {
     console.log('onboarding_step_view', { phase });
   }, [phase]);
 
-  // Silently sync detected timezone if missing
-  useEffect(() => {
-    if (!profile?.timezone && detectedTimezone) {
-      updateProfile({ timezone: detectedTimezone });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile?.timezone, detectedTimezone]);
-
   const goBack = () => {
     const prev = PHASE_BACK[phase];
     if (prev) setPhase(prev);
   };
 
-  const sessionShiftCount = sessionShiftIds.filter(id => shifts.some(s => s.id === id)).length;
+  // Resolve the active facility (first session-created clinic, fallback to most recent)
+  const activeFacility = useMemo(() => {
+    if (firstFacilityId) return facilities.find(f => f.id === firstFacilityId) ?? null;
+    return facilities[0] ?? null;
+  }, [facilities, firstFacilityId]);
 
-  const primaryFacility = facilities[0];
+  // Map rate card → RateEntry[] for the stepper
+  const stepperDefaultRates = useMemo(
+    () => mapDefaultRatesToRateEntries(defaultRates),
+    [defaultRates],
+  );
 
-  const sender = useMemo(() => ({
-    firstName: profile?.first_name || '',
-    lastName: profile?.last_name || '',
-    company: profile?.company_name || '',
-    address: profile?.company_address || '',
-    email: profile?.invoice_email || user?.email || null,
-    phone: profile?.invoice_phone || null,
-  }), [profile, user]);
+  // ─────────────────────────── Handlers ───────────────────────────
+  const handleRateCardContinue = async () => {
+    // Normalize sort_order and persist
+    const cleaned = defaultRates
+      .filter(r => r.name.trim() && r.amount > 0)
+      .map((r, i) => ({ ...r, sort_order: i }));
+    if (cleaned.length === 0) {
+      toast.error('Add at least one rate to continue');
+      return;
+    }
+    await updateProfile({
+      default_rates: cleaned,
+      default_billing_preference: defaultBillingPreference,
+    });
+    setDefaultRates(cleaned);
+    setPhase('add_clinic');
+  };
 
-  const renderStickyFooter = () => {
+  const handleClinicSaved = (facilityId: string) => {
+    setFirstFacilityId(facilityId);
+    setEditingClinic(false);
+    setPhase('bulk_shifts');
+  };
+
+  const handleShiftsCreated = (newIds: string[]) => {
+    setSessionShiftIds(prev => [...prev, ...newIds]);
+  };
+
+  const handleAdvanceToInvoiceReveal = () => {
+    setPhase('invoice_reveal_placeholder');
+  };
+
+  const handleFinish = async () => {
+    await completeOnboarding();
+    navigate('/');
+  };
+
+  // ─────────────────────────── Footer renderer ───────────────────────────
+  const renderStickyFooter = (): React.ReactNode => {
     switch (phase) {
+      case 'rate_card':
+        return (
+          <Button onClick={handleRateCardContinue} className="w-full h-12" size="lg">
+            Continue <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        );
+
       case 'add_clinic': {
-        if (facilities.length > 0 && !showClinicForm) {
+        // If a facility is already saved this session and we're not in edit mode, show Continue.
+        if (firstFacilityId && !editingClinic) {
           return (
             <>
-              <Button onClick={() => setPhase('log_shifts')} className="w-full h-12" size="lg">
-                Continue → Log shifts at {primaryFacility?.name || 'this clinic'}
-                <ArrowRight className="ml-2 h-4 w-4" />
+              <Button onClick={() => setPhase('bulk_shifts')} className="w-full h-12" size="lg">
+                Continue → Add shifts <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
               <button
                 type="button"
-                onClick={() => setShowClinicForm(true)}
+                onClick={goBack}
                 className="w-full text-sm text-muted-foreground hover:text-foreground py-1 text-center"
               >
-                <Plus className="h-3.5 w-3.5 inline mr-1" />Add another clinic
+                ← Back
               </button>
             </>
           );
         }
-        const saveBtn = document.getElementById('onboarding-clinic-save') as HTMLButtonElement | null;
-        const backBtn = document.getElementById('onboarding-clinic-back') as HTMLButtonElement | null;
-        const skipBtn = document.getElementById('onboarding-clinic-skip') as HTMLButtonElement | null;
-        const isLast = saveBtn?.dataset.isLast === 'true';
-        const canBack = backBtn?.dataset.canBack === 'true';
-        const canSkip = skipBtn?.dataset.canSkip === 'true';
-        const primaryLabel = isLast ? 'Save Clinic' : 'Continue';
+        const handle = stepperRef.current;
+        const primaryLabel = handle?.primaryLabel ?? 'Continue';
+        const canBack = !!handle?.canBack;
         return (
           <>
             <Button
               className="w-full h-12"
               size="lg"
-              onClick={() => saveBtn?.click()}
+              onClick={() => stepperRef.current?.next()}
+              disabled={!handle}
             >
               {primaryLabel} <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
@@ -158,168 +201,173 @@ export default function OnboardingPage() {
               {canBack ? (
                 <button
                   type="button"
-                  onClick={() => backBtn?.click()}
+                  onClick={() => stepperRef.current?.back()}
                   className="text-muted-foreground hover:text-foreground py-1"
                 >
                   ← Back
                 </button>
-              ) : <span />}
-              {canSkip && (
+              ) : (
                 <button
                   type="button"
-                  onClick={() => skipBtn?.click()}
-                  className="text-primary hover:underline py-1"
+                  onClick={goBack}
+                  className="text-muted-foreground hover:text-foreground py-1"
                 >
-                  Skip — I'll add this later
+                  ← Back to rates
                 </button>
               )}
+              <span />
             </div>
           </>
         );
       }
 
-      case 'log_shifts': {
-        const ctaLabel = sessionShiftCount === 0
-          ? 'See my invoice'
-          : `See my invoice (${sessionShiftCount} ${sessionShiftCount === 1 ? 'shift' : 'shifts'} logged)`;
+      case 'bulk_shifts':
+        // Footer is rendered by the OnboardingBulkShiftCalendar via render-prop.
+        return null;
+
+      case 'invoice_reveal_placeholder':
         return (
           <>
-            <Button
-              onClick={() => setPhase('invoice_reveal')}
-              disabled={sessionShiftCount === 0}
-              className="w-full h-12"
-              size="lg"
-            >
-              {ctaLabel} <ArrowRight className="ml-2 h-4 w-4" />
+            <Button onClick={handleFinish} className="w-full h-12" size="lg">
+              <LayoutDashboard className="mr-2 h-5 w-5" /> Take me to my dashboard
             </Button>
             <button
               type="button"
-              onClick={() => setPhase('invoice_reveal')}
-              className="w-full text-sm text-muted-foreground hover:text-foreground py-1 text-center disabled:opacity-50"
-              disabled={sessionShiftCount === 0}
+              onClick={goBack}
+              className="w-full text-sm text-muted-foreground hover:text-foreground py-1 text-center"
             >
-              I'll log the rest later
+              ← Back
             </button>
           </>
-        );
-      }
-
-      case 'invoice_reveal':
-        return (
-          <Button onClick={() => setPhase('financial_reveal')} className="w-full h-12" size="lg">
-            Continue → See your dashboard <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        );
-
-      case 'financial_reveal':
-        return (
-          <Button
-            className="w-full h-12"
-            size="lg"
-            onClick={async () => {
-              await completeOnboarding();
-              navigate('/');
-            }}
-          >
-            <LayoutDashboard className="mr-2 h-5 w-5" /> Take me to my Dashboard
-          </Button>
         );
     }
   };
 
+  // ─────────────────────────── Content renderer ───────────────────────────
   const renderContent = () => {
     switch (phase) {
+      case 'rate_card':
+        return (
+          <OnboardingRateCard
+            initialRates={defaultRates}
+            initialPreference={defaultBillingPreference}
+            onChange={(rates, pref) => {
+              setDefaultRates(rates);
+              setDefaultBillingPreference(pref);
+            }}
+          />
+        );
+
       case 'add_clinic':
         return (
           <div className="space-y-4">
-            <div className="text-sm text-foreground">
-              Hi{firstName ? ` ${firstName}` : ''}!
-            </div>
-
             <div className="space-y-2">
-              <h2 className="text-2xl font-bold text-foreground font-[Manrope]">Add a clinic you work with</h2>
+              <h2 className="text-2xl font-bold text-foreground font-[Manrope]">
+                Add your first clinic
+              </h2>
               <p className="text-muted-foreground">
-                We'll keep all your rates, billing terms, and contacts in one place — so the second time
-                you work here, everything's ready.
+                Just the basics — we'll auto-apply the rates you just set up. You can always
+                edit clinic-specific details later.
               </p>
             </div>
 
-            {facilities.length > 0 && !showClinicForm && (
-              <div className="space-y-3">
-                {facilities.map(f => (
-                  <Card key={f.id} className="border-primary/30 bg-primary/[0.03]">
-                    <CardContent className="py-3 px-4 space-y-2">
-                      <div className="flex items-start justify-between">
-                        <div className="min-w-0 flex-1">
-                          <p className="font-semibold text-foreground text-base">{f.name}</p>
-                          {f.address && (
-                            <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
-                              <MapPin className="h-3.5 w-3.5 shrink-0" /> {f.address}
-                            </p>
-                          )}
-                        </div>
-                        <Badge variant="outline" className="border-primary/30 text-primary shrink-0 ml-2">
-                          <Check className="h-3 w-3 mr-1" /> Added
-                        </Badge>
-                      </div>
-                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                        {f.invoice_name_to && (
-                          <span className="flex items-center gap-1">
-                            <User className="h-3 w-3" /> {f.invoice_name_to}
-                          </span>
-                        )}
-                        {f.invoice_email_to && (
-                          <span className="flex items-center gap-1">
-                            <Mail className="h-3 w-3" /> {f.invoice_email_to}
-                          </span>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-                <p className="text-sm text-muted-foreground">
-                  Next: log shifts you've worked here and watch your first invoice appear.
-                </p>
-              </div>
-            )}
-
-            {(facilities.length === 0 || showClinicForm) && (
-              <OnboardingClinicForm onSaved={() => setShowClinicForm(false)} />
+            {firstFacilityId && !editingClinic && activeFacility ? (
+              <Card className="border-primary/30 bg-primary/[0.04]">
+                <CardContent className="py-4 px-4 space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-foreground text-base">{activeFacility.name}</p>
+                      {activeFacility.address && (
+                        <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
+                          <MapPin className="h-3.5 w-3.5 shrink-0" /> {activeFacility.address}
+                        </p>
+                      )}
+                    </div>
+                    <Badge variant="outline" className="border-primary/40 text-primary shrink-0">
+                      <Check className="h-3 w-3 mr-1" /> Saved
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-2 pt-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditingClinic(true)}
+                      className="gap-1.5"
+                    >
+                      <Pencil className="h-3.5 w-3.5" /> Edit
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setFirstFacilityId(null);
+                        setEditingClinic(false);
+                      }}
+                      className="gap-1.5 text-muted-foreground"
+                    >
+                      <RefreshCw className="h-3.5 w-3.5" /> Replace with a different clinic
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <AddClinicStepper
+                ref={stepperRef}
+                showHeader
+                hideRatesStep
+                defaultRates={stepperDefaultRates}
+                onSaved={handleClinicSaved}
+              />
             )}
           </div>
         );
 
-      case 'log_shifts':
+      case 'bulk_shifts':
+        if (!activeFacility) {
+          return (
+            <div className="space-y-3">
+              <p className="text-muted-foreground">No clinic found. Go back and add one.</p>
+              <Button variant="outline" onClick={() => setPhase('add_clinic')}>
+                ← Back to add clinic
+              </Button>
+            </div>
+          );
+        }
         return (
-          <OnboardingShiftBuilder
-            facilities={facilities}
-            shifts={shifts}
-            terms={terms}
-            addShift={addShift}
-            deleteShift={deleteShift}
-            sessionShiftIds={sessionShiftIds}
-            onShiftAdded={(id) => setSessionShiftIds(prev => [...prev, id])}
+          <OnboardingBulkShiftCalendar
+            facility={activeFacility}
+            defaultRates={defaultRates}
+            createdShiftIds={sessionShiftIds}
+            onShiftsCreated={handleShiftsCreated}
+            onContinue={handleAdvanceToInvoiceReveal}
+            renderFooter={(footer) => (
+              <div className="shrink-0 border-t border-border/50 bg-background px-4 pt-3 pb-4 fixed bottom-0 left-0 right-0">
+                <div className="w-full max-w-[680px] mx-auto space-y-2">
+                  <Button
+                    onClick={footer.onPrimary}
+                    disabled={footer.primaryDisabled}
+                    className="w-full h-12"
+                    size="lg"
+                  >
+                    {footer.primaryLabel} <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={goBack}
+                    className="w-full text-sm text-muted-foreground hover:text-foreground py-1 text-center"
+                  >
+                    ← Back
+                  </button>
+                </div>
+              </div>
+            )}
           />
         );
 
-      case 'invoice_reveal':
+      case 'invoice_reveal_placeholder':
         return (
-          <OnboardingInvoiceReveal
-            facilities={facilities}
-            invoices={invoices}
-            lineItems={lineItems}
-            shifts={shifts}
-            sessionShiftIds={sessionShiftIds}
-            sender={sender}
-          />
-        );
-
-      case 'financial_reveal':
-        return (
-          <OnboardingFinancialReveal
-            facilities={facilities}
-            invoices={invoices}
-            shifts={shifts}
+          <OnboardingInvoiceRevealStub
+            facility={activeFacility}
             sessionShiftIds={sessionShiftIds}
           />
         );
