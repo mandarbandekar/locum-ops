@@ -256,7 +256,7 @@ export function OnboardingBulkShiftCalendar({
               <Calendar
                 mode="multiple"
                 selected={selectedDates}
-                onSelect={(d) => setSelectedDates(d ?? [])}
+                onSelect={handleSelectDates}
                 modifiers={{ created: createdShiftDates }}
                 modifiersClassNames={{
                   created: 'bg-primary/15 text-foreground font-semibold',
@@ -264,12 +264,19 @@ export function OnboardingBulkShiftCalendar({
                 className={cn('p-3 pointer-events-auto rounded-md border-0')}
               />
             </div>
-            <div className="text-center text-sm text-muted-foreground">
-              Selected:{' '}
-              <span className="font-semibold text-foreground">
-                {selectedDates.length} date{selectedDates.length === 1 ? '' : 's'}
-              </span>
-            </div>
+            {selectedDates.length === 0 && !created ? (
+              <div className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-2 flex items-center gap-2 text-sm text-muted-foreground">
+                <CalendarDays className="h-4 w-4 shrink-0" />
+                <span>Tap one or more dates above to add shifts.</span>
+              </div>
+            ) : (
+              <div className="text-center text-sm text-muted-foreground">
+                Selected:{' '}
+                <span className="font-semibold text-foreground">
+                  {selectedDates.length} date{selectedDates.length === 1 ? '' : 's'}
+                </span>
+              </div>
+            )}
           </CardContent>
         </Card>
 
