@@ -340,9 +340,9 @@ export function InvoiceActionBar({
       <AlertDialog open={comingSoonOpen} onOpenChange={setComingSoonOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Coming soon</AlertDialogTitle>
+            <AlertDialogTitle>Email functionality is coming soon</AlertDialogTitle>
             <AlertDialogDescription>
-              Email functionality is coming soon.
+              Please download the invoice and send it manually using your own work email.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
