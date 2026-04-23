@@ -565,7 +565,7 @@ export default function OnboardingPage() {
         return (
           <OnboardingBulkShiftCalendar
             facility={activeFacility}
-            defaultRates={defaultRates}
+            defaultRates={defaultRates.length > 0 ? defaultRates : existingClinicRates}
             createdShiftIds={sessionShiftIds}
             onShiftsCreated={handleShiftsCreated}
             onContinue={handleAdvanceToInvoiceReveal}
