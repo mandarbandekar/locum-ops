@@ -61,11 +61,8 @@ export default function WelcomePage() {
     <div className="min-h-screen bg-foreground/40 flex items-center justify-center p-4">
       <div className="w-full max-w-md rounded-2xl bg-card border border-[hsl(var(--card-border))] p-8 sm:p-10">
         {/* Logo */}
-        <div className="flex flex-col items-center gap-3 mb-8">
-          <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-xl">L</span>
-          </div>
-          <span className="text-base font-semibold text-foreground tracking-tight">Locum Ops</span>
+        <div className="flex justify-center mb-8">
+          <img src={locumOpsLogo} alt="LocumOps" className="h-10 w-auto" />
         </div>
 
         {success ? (
