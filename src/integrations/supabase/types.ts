@@ -3245,6 +3245,8 @@ export type Database = {
           current_tools: Json
           dashboard_intro_dismissed: boolean
           dashboard_levelup_shown: boolean
+          default_billing_preference: string
+          default_rates: Json
           dismissed_prompts: Json
           email_tone: string
           engagement_announcement_dismissed_at: string | null
@@ -3276,6 +3278,8 @@ export type Database = {
           current_tools?: Json
           dashboard_intro_dismissed?: boolean
           dashboard_levelup_shown?: boolean
+          default_billing_preference?: string
+          default_rates?: Json
           dismissed_prompts?: Json
           email_tone?: string
           engagement_announcement_dismissed_at?: string | null
@@ -3307,6 +3311,8 @@ export type Database = {
           current_tools?: Json
           dashboard_intro_dismissed?: boolean
           dashboard_levelup_shown?: boolean
+          default_billing_preference?: string
+          default_rates?: Json
           dismissed_prompts?: Json
           email_tone?: string
           engagement_announcement_dismissed_at?: string | null
