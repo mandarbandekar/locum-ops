@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
-import { ArrowRight, Check, MapPin, Mail, User, Pencil, Plus, LayoutDashboard } from 'lucide-react';
+import { ArrowRight, Check, MapPin, Mail, User, Plus, LayoutDashboard } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
 import { OnboardingClinicForm } from '@/components/onboarding/OnboardingClinicForm';
 import { OnboardingShiftStep } from '@/components/onboarding/OnboardingShiftStep';
@@ -43,18 +44,32 @@ const PHASE_BACK: Record<Phase, Phase | null> = {
   finish: null,
 };
 
-const TIMEZONE_OPTIONS = [
-  { value: 'America/New_York', label: 'Eastern' },
-  { value: 'America/Chicago', label: 'Central' },
-  { value: 'America/Denver', label: 'Mountain' },
-  { value: 'America/Phoenix', label: 'Arizona' },
-  { value: 'America/Los_Angeles', label: 'Pacific' },
-  { value: 'America/Anchorage', label: 'Alaska' },
-  { value: 'Pacific/Honolulu', label: 'Hawaii' },
-];
+const US_TIMEZONES = new Set([
+  'America/New_York',
+  'America/Chicago',
+  'America/Denver',
+  'America/Phoenix',
+  'America/Los_Angeles',
+  'America/Anchorage',
+  'Pacific/Honolulu',
+]);
+
+const TIMEZONE_LABELS: Record<string, string> = {
+  'America/New_York': 'Eastern',
+  'America/Chicago': 'Central',
+  'America/Denver': 'Mountain',
+  'America/Phoenix': 'Arizona',
+  'America/Los_Angeles': 'Pacific',
+  'America/Anchorage': 'Alaska',
+  'Pacific/Honolulu': 'Hawaii',
+};
+
+function normalizeTimezone(tz: string): string {
+  return US_TIMEZONES.has(tz) ? tz : 'America/New_York';
+}
 
 function getTimezoneLabel(tz: string): string {
-  return TIMEZONE_OPTIONS.find(o => o.value === tz)?.label || tz;
+  return TIMEZONE_LABELS[tz] || tz;
 }
 
 export default function OnboardingPage() {
