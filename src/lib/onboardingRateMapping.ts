@@ -74,6 +74,60 @@ export function mapDefaultRatesToRateEntries(defaults: DefaultRate[]): RateEntry
   return out;
 }
 
+/**
+ * Read-only: derive DefaultRate[] from a list of RateEntry[] (typically aggregated
+ * from existing clinic terms). Used to **backfill** the Rate Card without ever
+ * mutating clinic-specific rate records.
+ *
+ * - De-duplicates by (basis,label,amount)
+ * - Preserves source labels
+ * - Marks all entries active
+ * - Sort order: dailies first, then hourlies, in input order
+ */
+export function buildDefaultRatesFromRateEntries(entries: RateEntry[]): DefaultRate[] {
+  const seen = new Set<string>();
+  const dailies: DefaultRate[] = [];
+  const hourlies: DefaultRate[] = [];
+  for (const r of entries) {
+    const label = (r.label || '').trim();
+    if (!label || !r.amount || r.amount <= 0) continue;
+    const basis: RateBasis = r.kind === 'hourly' ? 'hourly' : 'daily';
+    const key = `${basis}:${label.toLowerCase()}:${r.amount}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const rate: DefaultRate = {
+      id: newId(),
+      name: label,
+      amount: r.amount,
+      basis,
+      active: true,
+      sort_order: 0,
+    };
+    (basis === 'daily' ? dailies : hourlies).push(rate);
+  }
+  return [...dailies, ...hourlies].map((r, i) => ({ ...r, sort_order: i }));
+}
+
+/**
+ * Infer a sensible BillingPreference from an existing rate entry list:
+ * - only daily → 'per_day'
+ * - only hourly → 'per_hour'
+ * - mixed → 'both'
+ * - empty → 'per_day' (safe default)
+ */
+export function inferBillingPreference(entries: RateEntry[]): BillingPreference {
+  let hasDaily = false;
+  let hasHourly = false;
+  for (const r of entries) {
+    if (!r.amount || r.amount <= 0) continue;
+    if (r.kind === 'hourly') hasHourly = true;
+    else hasDaily = true;
+  }
+  if (hasDaily && hasHourly) return 'both';
+  if (hasHourly) return 'per_hour';
+  return 'per_day';
+}
+
 export interface BulkRateOption {
   id: string;          // synthetic; tied to source basis+label
   label: string;       // "Standard Day — $850 /day"
