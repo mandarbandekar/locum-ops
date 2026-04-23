@@ -39,15 +39,13 @@ function parseShiftMeta(item: any): { dateStr: string | null; timeStr: string | 
 }
 
 function ShiftLineItemCard({
-  item, readOnly, onUpdate, onDelete, onAddOvertime, showSyncHint, canAddOvertime,
+  item, readOnly, onUpdate, onDelete, showSyncHint,
 }: {
   item: any;
   readOnly?: boolean;
   onUpdate?: (u: any) => Promise<void>;
   onDelete?: () => Promise<void>;
-  onAddOvertime?: () => Promise<void>;
   showSyncHint?: boolean;
-  canAddOvertime?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [desc, setDesc] = useState(item.description);
@@ -81,8 +79,8 @@ function ShiftLineItemCard({
             <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="h-8 text-sm" />
           </div>
           <div>
-            <Label className="text-[10px] text-muted-foreground uppercase">Qty{(item.line_kind === 'overtime' || item.line_kind === 'regular') ? ' (hrs)' : ''}</Label>
-            <Input type="number" value={qty} onChange={e => setQty(Number(e.target.value))} className="h-8 text-sm" min={0} step="0.25" autoFocus={item.line_kind === 'overtime' && Number(item.qty) === 0} />
+            <Label className="text-[10px] text-muted-foreground uppercase">Qty{item.line_kind === 'regular' ? ' (hrs)' : ''}</Label>
+            <Input type="number" value={qty} onChange={e => setQty(Number(e.target.value))} className="h-8 text-sm" min={0} step="0.25" />
           </div>
           <div>
             <Label className="text-[10px] text-muted-foreground uppercase">Rate</Label>
@@ -125,12 +123,7 @@ function ShiftLineItemCard({
           </p>
           <div className="flex items-center justify-between mt-1">
             <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
-              {item.line_kind === 'overtime' ? (
-                <>
-                  <span>{item.qty}h × {fmtMoney(item.unit_rate)}/hr</span>
-                  <span className="inline-flex items-center rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 text-[10px] font-medium px-1.5 py-0.5">Overtime</span>
-                </>
-              ) : isShift && item.line_kind === 'regular' ? (
+              {isShift && item.line_kind === 'regular' ? (
                 <>
                   <span>{item.qty}h × {fmtMoney(item.unit_rate)}/hr</span>
                   <span className="inline-flex items-center rounded-full bg-primary/10 text-primary text-[10px] font-medium px-1.5 py-0.5">Hourly</span>
@@ -163,16 +156,6 @@ function ShiftLineItemCard({
           </div>
           {showSyncHint && !readOnly && (
             <p className="text-[10.5px] text-muted-foreground/80 italic mt-1.5">Editing this updates the shift on your schedule.</p>
-          )}
-          {!readOnly && canAddOvertime && onAddOvertime && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 mt-1.5 -ml-1 text-xs text-primary hover:text-primary hover:bg-primary/10"
-              onClick={e => { e.stopPropagation(); onAddOvertime(); }}
-            >
-              <Plus className="h-3 w-3 mr-1" /> Add overtime
-            </Button>
           )}
         </div>
       </div>
@@ -436,41 +419,6 @@ export function InvoiceEditPanel({
             items.map((li: any) => {
               const shift = li.shift_id ? shifts.find(s => s.id === li.shift_id) : null;
               const syncEligible = canSyncShiftForLine(invoice.status, li.line_kind, li.shift_id);
-              const isHourlyRegular = shift?.rate_kind === 'hourly' && li.line_kind === 'regular';
-              const hasOvertimeSibling = !!li.shift_id && items.some((x: any) => x.shift_id === li.shift_id && x.line_kind === 'overtime');
-              const canAddOT = !readOnly && invoice.status === 'draft' && isHourlyRegular && !hasOvertimeSibling;
-
-              const handleAddOvertime = async () => {
-                if (!onAddLineItem || !shift || !facility) return;
-                // Look up OT rate from facility's terms snapshot
-                const facilityTerms = terms.find(t => t.facility_id === facility.id);
-                let otRate = (shift.hourly_rate || li.unit_rate || 0) * 1.5;
-                if (facilityTerms) {
-                  const rates = termsToRates(facilityTerms as any);
-                  // Match the rate the shift was billed at
-                  const match = rates.find(r => r.kind === 'hourly' && Math.abs((r.amount || 0) - (shift.hourly_rate || 0)) < 0.01);
-                  if (match?.overtime?.ot_rate) otRate = match.overtime.ot_rate;
-                }
-                const dateLabel = li.service_date
-                  ? format(new Date(li.service_date + 'T00:00:00'), 'MMM d, yyyy')
-                  : '';
-                await onAddLineItem({
-                  invoice_id: invoice.id,
-                  shift_id: shift.id,
-                  description: `${facility.name} — Overtime${dateLabel ? ` (${dateLabel})` : ''}`,
-                  service_date: li.service_date || null,
-                  qty: 0,
-                  unit_rate: Math.round(otRate * 100) / 100,
-                  line_total: 0,
-                  line_kind: 'overtime',
-                });
-                await onAddActivity({
-                  invoice_id: invoice.id,
-                  action: 'overtime_added',
-                  description: `Added overtime line to shift on ${dateLabel || 'shift'}`,
-                });
-                toast.success('Overtime line added — set the hours');
-              };
 
               return (
                 <ShiftLineItemCard
@@ -478,8 +426,6 @@ export function InvoiceEditPanel({
                   item={li}
                   readOnly={readOnly}
                   showSyncHint={syncEligible}
-                  canAddOvertime={canAddOT}
-                  onAddOvertime={handleAddOvertime}
                   onUpdate={async (updated) => {
                     if (!onUpdateLineItem) return;
                     await onUpdateLineItem(updated);
