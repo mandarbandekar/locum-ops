@@ -132,6 +132,13 @@ export default function OnboardingPage() {
 
   useEffect(() => {
     console.log('onboarding_step_view', { phase });
+    if (phase === 'add_clinic') {
+      trackOnboarding('onboarding_clinic_viewed', {
+        clinic_count_so_far: createdFacilityIds.length,
+        is_first_clinic: createdFacilityIds.length === 0,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
   const goBack = () => {
