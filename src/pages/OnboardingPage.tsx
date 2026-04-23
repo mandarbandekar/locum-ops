@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useUserProfile } from '@/contexts/UserProfileContext';
+import { useUserProfile, type OnboardingPhase, type OnboardingProgress } from '@/contexts/UserProfileContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
 import { ArrowRight, Check, MapPin, LayoutDashboard, Pencil, RefreshCw } from 'lucide-react';
@@ -11,30 +11,38 @@ import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
 import { OnboardingRateCard } from '@/components/onboarding/OnboardingRateCard';
 import { OnboardingBulkShiftCalendar } from '@/components/onboarding/OnboardingBulkShiftCalendar';
 import { OnboardingInvoiceReveal } from '@/components/onboarding/OnboardingInvoiceReveal';
+import { OnboardingLoopChoice } from '@/components/onboarding/OnboardingLoopChoice';
+import { OnboardingBusinessMap } from '@/components/onboarding/OnboardingBusinessMap';
 import { AddClinicStepper, type AddClinicStepperHandle } from '@/components/facilities/AddClinicStepper';
 import { mapDefaultRatesToRateEntries, type DefaultRate, type BillingPreference } from '@/lib/onboardingRateMapping';
 import { toast } from 'sonner';
 
-type Phase = 'rate_card' | 'add_clinic' | 'bulk_shifts' | 'invoice_reveal';
+type Phase = OnboardingPhase;
 
 const PHASE_STEP: Record<Phase, number> = {
   rate_card: 1,
   add_clinic: 2,
   bulk_shifts: 3,
   invoice_reveal: 4,
+  loop_choice: 5,
+  business_map: 6,
 };
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 6;
 const PHASE_LABEL: Record<Phase, string> = {
   rate_card: 'Set up your rates',
   add_clinic: 'Add your first clinic',
   bulk_shifts: 'Add your shifts',
   invoice_reveal: 'See your invoices',
+  loop_choice: "What's next?",
+  business_map: 'Your business in one place',
 };
 const PHASE_BACK: Record<Phase, Phase | null> = {
   rate_card: null,
   add_clinic: 'rate_card',
   bulk_shifts: 'add_clinic',
   invoice_reveal: 'bulk_shifts',
+  loop_choice: 'invoice_reveal',
+  business_map: 'loop_choice',
 };
 
 const US_TIMEZONES = new Set([
@@ -48,30 +56,24 @@ function normalizeTimezone(tz: string): string {
 export default function OnboardingPage() {
   const { profile, updateProfile, completeOnboarding } = useUserProfile();
   const { user } = useAuth();
-  const { facilities, shifts } = useData();
+  const { facilities, shifts, invoices, lineItems } = useData();
   const navigate = useNavigate();
 
   const detectedTimezone = normalizeTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);
 
-  const [phase, setPhase] = useState<Phase>('rate_card');
+  // ── Hydrate from persisted progress (one-time) ──
+  const initialProgress: OnboardingProgress = profile?.onboarding_progress ?? {};
+  const [phase, setPhase] = useState<Phase>(initialProgress.phase ?? 'rate_card');
 
-  // ── Rate card session state ──
   const [defaultRates, setDefaultRates] = useState<DefaultRate[]>(profile?.default_rates ?? []);
   const [defaultBillingPreference, setDefaultBillingPreference] =
     useState<BillingPreference>(profile?.default_billing_preference ?? 'per_day');
 
-  // Hydrate when profile loads (in case onboarding is resumed)
-  useEffect(() => {
-    if (profile?.default_rates && profile.default_rates.length > 0) {
-      setDefaultRates(profile.default_rates);
-    }
-    if (profile?.default_billing_preference) {
-      setDefaultBillingPreference(profile.default_billing_preference);
-    }
-  }, [profile?.default_rates, profile?.default_billing_preference]);
+  const [firstFacilityId, setFirstFacilityId] = useState<string | null>(initialProgress.first_facility_id ?? null);
+  const [createdFacilityIds, setCreatedFacilityIds] = useState<string[]>(initialProgress.created_facility_ids ?? []);
+  const [sessionShiftIds, setSessionShiftIds] = useState<string[]>(initialProgress.session_shift_ids ?? []);
+  const [invoiceRevealSeen, setInvoiceRevealSeen] = useState<boolean>(!!initialProgress.invoice_reveal_seen);
 
-  // ── Add clinic session state ──
-  const [firstFacilityId, setFirstFacilityId] = useState<string | null>(null);
   const [editingClinic, setEditingClinic] = useState(false);
   const stepperRef = useRef<AddClinicStepperHandle>(null);
   const [, setFooterTick] = useState(0);
@@ -81,10 +83,39 @@ export default function OnboardingPage() {
     return () => window.clearInterval(id);
   }, [phase]);
 
-  // ── Bulk shifts session state ──
-  const [sessionShiftIds, setSessionShiftIds] = useState<string[]>([]);
+  // Re-hydrate when profile arrives later (page first painted before profile loaded)
+  const hydratedRef = useRef(false);
+  useEffect(() => {
+    if (hydratedRef.current || !profile) return;
+    hydratedRef.current = true;
+    const p = profile.onboarding_progress ?? {};
+    if (profile.default_rates?.length) setDefaultRates(profile.default_rates);
+    if (profile.default_billing_preference) setDefaultBillingPreference(profile.default_billing_preference);
+    if (p.phase) setPhase(p.phase);
+    if (p.first_facility_id !== undefined) setFirstFacilityId(p.first_facility_id);
+    if (p.created_facility_ids) setCreatedFacilityIds(p.created_facility_ids);
+    if (p.session_shift_ids) setSessionShiftIds(p.session_shift_ids);
+    if (p.invoice_reveal_seen) setInvoiceRevealSeen(true);
+  }, [profile]);
 
-  // Auto-save profile on mount (silently apply detected timezone)
+  // ── Persist progress (debounced lightly via dependency batching) ──
+  const persist = useCallback(
+    (next: Partial<OnboardingProgress>) => {
+      const merged: OnboardingProgress = {
+        phase,
+        first_facility_id: firstFacilityId,
+        created_facility_ids: createdFacilityIds,
+        session_shift_ids: sessionShiftIds,
+        invoice_reveal_seen: invoiceRevealSeen,
+        ...next,
+        updated_at: new Date().toISOString(),
+      };
+      updateProfile({ onboarding_progress: merged });
+    },
+    [phase, firstFacilityId, createdFacilityIds, sessionShiftIds, invoiceRevealSeen, updateProfile],
+  );
+
+  // Auto-save profile timezone on mount
   const profileSavedRef = useRef(false);
   useEffect(() => {
     if (profileSavedRef.current) return;
@@ -104,24 +135,43 @@ export default function OnboardingPage() {
 
   const goBack = () => {
     const prev = PHASE_BACK[phase];
-    if (prev) setPhase(prev);
+    if (prev) {
+      setPhase(prev);
+      persist({ phase: prev });
+    }
   };
 
-  // Resolve the active facility (first session-created clinic, fallback to most recent)
   const activeFacility = useMemo(() => {
     if (firstFacilityId) return facilities.find(f => f.id === firstFacilityId) ?? null;
     return facilities[0] ?? null;
   }, [facilities, firstFacilityId]);
 
-  // Map rate card → RateEntry[] for the stepper
   const stepperDefaultRates = useMemo(
     () => mapDefaultRatesToRateEntries(defaultRates),
     [defaultRates],
   );
 
+  // ── Derived counts for loop_choice + business_map ──
+  const onboardingFacilityCount = createdFacilityIds.length || (firstFacilityId ? 1 : 0);
+  const onboardingShiftCount = sessionShiftIds.length;
+  const draftInvoiceCount = useMemo(() => {
+    if (sessionShiftIds.length === 0) return 0;
+    const sessionSet = new Set(sessionShiftIds);
+    return invoices.filter(inv => {
+      const items = lineItems.filter(li => li.invoice_id === inv.id);
+      return items.some(li => li.shift_id && sessionSet.has(li.shift_id));
+    }).length;
+  }, [invoices, lineItems, sessionShiftIds]);
+  const projectedGross = useMemo(() => {
+    if (sessionShiftIds.length === 0) return 0;
+    const sessionSet = new Set(sessionShiftIds);
+    return shifts
+      .filter(s => sessionSet.has(s.id))
+      .reduce((sum, s) => sum + (s.rate_applied || 0), 0);
+  }, [shifts, sessionShiftIds]);
+
   // ─────────────────────────── Handlers ───────────────────────────
   const handleRateCardContinue = async () => {
-    // Normalize sort_order and persist
     const cleaned = defaultRates
       .filter(r => r.name.trim() && r.amount > 0)
       .map((r, i) => ({ ...r, sort_order: i }));
@@ -135,23 +185,73 @@ export default function OnboardingPage() {
     });
     setDefaultRates(cleaned);
     setPhase('add_clinic');
+    persist({ phase: 'add_clinic' });
   };
 
   const handleClinicSaved = (facilityId: string) => {
     setFirstFacilityId(facilityId);
+    setCreatedFacilityIds(prev => (prev.includes(facilityId) ? prev : [...prev, facilityId]));
     setEditingClinic(false);
     setPhase('bulk_shifts');
+    persist({
+      phase: 'bulk_shifts',
+      first_facility_id: facilityId,
+      created_facility_ids: createdFacilityIds.includes(facilityId)
+        ? createdFacilityIds
+        : [...createdFacilityIds, facilityId],
+    });
   };
 
   const handleShiftsCreated = (newIds: string[]) => {
-    setSessionShiftIds(prev => [...prev, ...newIds]);
+    const merged = [...sessionShiftIds, ...newIds];
+    setSessionShiftIds(merged);
+    persist({ session_shift_ids: merged });
   };
 
   const handleAdvanceToInvoiceReveal = () => {
     setPhase('invoice_reveal');
+    persist({ phase: 'invoice_reveal' });
+  };
+
+  const handleAdvanceToLoopChoice = () => {
+    setInvoiceRevealSeen(true);
+    setPhase('loop_choice');
+    persist({ phase: 'loop_choice', invoice_reveal_seen: true });
+  };
+
+  // Loop choice actions
+  const handleAddAnotherClinic = () => {
+    setFirstFacilityId(null);
+    setEditingClinic(false);
+    setPhase('add_clinic');
+    persist({ phase: 'add_clinic', first_facility_id: null });
+  };
+  const handleAddMoreShifts = () => {
+    if (!activeFacility) {
+      setPhase('add_clinic');
+      persist({ phase: 'add_clinic' });
+      return;
+    }
+    setPhase('bulk_shifts');
+    persist({ phase: 'bulk_shifts' });
+  };
+  const handleDoneToBusinessMap = () => {
+    setPhase('business_map');
+    persist({ phase: 'business_map' });
   };
 
   const handleFinish = async () => {
+    await updateProfile({
+      onboarding_progress: {
+        phase: 'business_map',
+        first_facility_id: firstFacilityId,
+        created_facility_ids: createdFacilityIds,
+        session_shift_ids: sessionShiftIds,
+        invoice_reveal_seen: true,
+        business_map_seen: true,
+        updated_at: new Date().toISOString(),
+      },
+    });
     await completeOnboarding();
     navigate('/');
   };
@@ -167,11 +267,10 @@ export default function OnboardingPage() {
         );
 
       case 'add_clinic': {
-        // If a facility is already saved this session and we're not in edit mode, show Continue.
         if (firstFacilityId && !editingClinic) {
           return (
             <>
-              <Button onClick={() => setPhase('bulk_shifts')} className="w-full h-12" size="lg">
+              <Button onClick={() => { setPhase('bulk_shifts'); persist({ phase: 'bulk_shifts' }); }} className="w-full h-12" size="lg">
                 Continue → Add shifts <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
               <button
@@ -222,10 +321,36 @@ export default function OnboardingPage() {
       }
 
       case 'bulk_shifts':
-        // Footer is rendered by the OnboardingBulkShiftCalendar via render-prop.
-        return null;
+        return null; // rendered by OnboardingBulkShiftCalendar via render-prop
 
       case 'invoice_reveal':
+        return (
+          <>
+            <Button onClick={handleAdvanceToLoopChoice} className="w-full h-12" size="lg">
+              Continue <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+            <button
+              type="button"
+              onClick={goBack}
+              className="w-full text-sm text-muted-foreground hover:text-foreground py-1 text-center"
+            >
+              ← Back
+            </button>
+          </>
+        );
+
+      case 'loop_choice':
+        return (
+          <button
+            type="button"
+            onClick={goBack}
+            className="w-full text-sm text-muted-foreground hover:text-foreground py-1 text-center"
+          >
+            ← Back to invoices
+          </button>
+        );
+
+      case 'business_map':
         return (
           <>
             <Button onClick={handleFinish} className="w-full h-12" size="lg">
@@ -263,7 +388,9 @@ export default function OnboardingPage() {
           <div className="space-y-4">
             <div className="space-y-2">
               <h2 className="text-2xl font-bold text-foreground font-[Manrope]">
-                Add your first clinic
+                {createdFacilityIds.length > 0 && !firstFacilityId
+                  ? 'Add another clinic'
+                  : 'Add your first clinic'}
               </h2>
               <p className="text-muted-foreground">
                 Just the basics — we'll auto-apply the rates you just set up. You can always
@@ -327,7 +454,7 @@ export default function OnboardingPage() {
           return (
             <div className="space-y-3">
               <p className="text-muted-foreground">No clinic found. Go back and add one.</p>
-              <Button variant="outline" onClick={() => setPhase('add_clinic')}>
+              <Button variant="outline" onClick={() => { setPhase('add_clinic'); persist({ phase: 'add_clinic' }); }}>
                 ← Back to add clinic
               </Button>
             </div>
@@ -369,6 +496,29 @@ export default function OnboardingPage() {
           <OnboardingInvoiceReveal
             facility={activeFacility}
             sessionShiftIds={sessionShiftIds}
+          />
+        );
+
+      case 'loop_choice':
+        return (
+          <OnboardingLoopChoice
+            facilityCount={onboardingFacilityCount}
+            shiftCount={onboardingShiftCount}
+            draftInvoiceCount={draftInvoiceCount}
+            projectedGross={projectedGross}
+            onAddAnotherClinic={handleAddAnotherClinic}
+            onAddMoreShifts={handleAddMoreShifts}
+            onDone={handleDoneToBusinessMap}
+          />
+        );
+
+      case 'business_map':
+        return (
+          <OnboardingBusinessMap
+            facilityCount={onboardingFacilityCount}
+            shiftCount={onboardingShiftCount}
+            draftInvoiceCount={draftInvoiceCount}
+            projectedGross={projectedGross}
           />
         );
     }
