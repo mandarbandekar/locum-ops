@@ -141,6 +141,62 @@ export function OnboardingRateCard({
         </p>
       </div>
 
+      {/* Existing-user banner: backfill or skip (non-destructive) */}
+      {bannerActive && existingClinicRates && existingClinicRates.length > 0 && (
+        <Card className="border-primary/30 bg-primary/[0.04]">
+          <CardContent className="py-4 px-4 space-y-3">
+            <div className="flex items-start gap-2.5">
+              <div className="h-8 w-8 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
+                <Wand2 className="h-4 w-4 text-primary" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-foreground">
+                  We found {existingClinicRates.length} rate{existingClinicRates.length === 1 ? '' : 's'} on your existing clinics
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Use them to seed your reusable Rate Card — your clinic-specific rates won't change.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleBackfillFromClinics}
+                className="gap-1.5"
+              >
+                <Wand2 className="h-3.5 w-3.5" /> Use my clinic rates
+              </Button>
+              {onSkip && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    trackOnboarding('onboarding_rate_card_skipped' as any, {
+                      had_existing_clinic_rates: true,
+                    });
+                    onSkip();
+                  }}
+                  className="gap-1.5 text-muted-foreground"
+                >
+                  <SkipForward className="h-3.5 w-3.5" /> Skip for now
+                </Button>
+              )}
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() => setBannerActive(false)}
+                className="text-muted-foreground"
+              >
+                No thanks
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Billing preference grid */}
       <div className="grid grid-cols-2 gap-3">
         {PREF_OPTIONS.map(opt => {
