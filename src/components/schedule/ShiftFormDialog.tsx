@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { TimePicker } from '@/components/ui/time-picker';
 import { AlertTriangle, Trash2, CalendarDays, DollarSign, Clock, Building2, StickyNote, Palette, Plus, ChevronRight, ChevronLeft, Check } from 'lucide-react';
 import { GuidedStep } from '@/components/onboarding/GuidedStep';
 import { AddFacilityDialog } from '@/components/AddFacilityDialog';
@@ -68,8 +69,8 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   const [selectedDates, setSelectedDates] = useState<Date[]>(
     existing ? [new Date(existing.start_datetime)] : defaultDate ? [defaultDate] : []
   );
-  const [startTime, setStartTime] = useState(existing ? format(new Date(existing.start_datetime), 'HH:mm') : defaultStartTime || '08:00');
-  const [endTime, setEndTime] = useState(existing ? format(new Date(existing.end_datetime), 'HH:mm') : defaultStartTime ? format(new Date(2026, 0, 1, parseInt(defaultStartTime.split(':')[0]) + 8, parseInt(defaultStartTime.split(':')[1] || '0')), 'HH:mm') : '16:00');
+  const [startTime, setStartTime] = useState(existing ? format(new Date(existing.start_datetime), 'HH:mm') : (defaultStartTime || ''));
+  const [endTime, setEndTime] = useState(existing ? format(new Date(existing.end_datetime), 'HH:mm') : '');
   const [rate, setRate] = useState(existing?.rate_applied?.toString() || '');
   const [selectedRateKey, setSelectedRateKey] = useState<string>('');
   const [isCustomRate, setIsCustomRate] = useState(false);
@@ -121,12 +122,8 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     } else {
       setFacilityId(facilities[0]?.id || '');
       setSelectedDates(defaultDate ? [defaultDate] : []);
-      setStartTime(defaultStartTime || '08:00');
-      setEndTime(
-        defaultStartTime
-          ? format(new Date(2026, 0, 1, parseInt(defaultStartTime.split(':')[0]) + 8, parseInt(defaultStartTime.split(':')[1] || '0')), 'HH:mm')
-          : '16:00'
-      );
+      setStartTime(defaultStartTime || '');
+      setEndTime('');
       setRate('');
       setNotes('');
       setColor('blue');
@@ -587,11 +584,11 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
         <div className="grid grid-cols-2 gap-3">
           <div>
             <span className="text-[10px] text-muted-foreground">Start</span>
-            <Input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="h-10" />
+            <TimePicker value={startTime} onChange={setStartTime} placeholder="Select start" label="Start time" />
           </div>
           <div>
             <span className="text-[10px] text-muted-foreground">End</span>
-            <Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="h-10" />
+            <TimePicker value={endTime} onChange={setEndTime} placeholder="Select end" relativeToStart={startTime || undefined} label="End time" />
           </div>
         </div>
         {activeRateKind === 'hourly' && hoursInvalidReason && (
@@ -882,8 +879,8 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
               <Clock className="h-3.5 w-3.5" /> Time
             </Label>
             <div className="grid grid-cols-2 gap-3">
-              <Input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="h-10" />
-              <Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="h-10" />
+              <TimePicker value={startTime} onChange={setStartTime} placeholder="Select start" label="Start time" />
+              <TimePicker value={endTime} onChange={setEndTime} placeholder="Select end" relativeToStart={startTime || undefined} label="End time" />
             </div>
             {activeRateKind === 'hourly' && hoursInvalidReason && (
               <p className="mt-1.5 text-[11px] text-destructive flex items-center gap-1">

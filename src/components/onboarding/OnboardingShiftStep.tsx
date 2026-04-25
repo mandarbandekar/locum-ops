@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { format, subDays } from 'date-fns';
 import type { Facility, Shift, TermsSnapshot, Invoice, InvoiceLineItem } from '@/types';
 import { AddFacilityDialog } from '@/components/AddFacilityDialog';
+import { TimePicker } from '@/components/ui/time-picker';
 
 interface Props {
   facilities: Facility[];
@@ -30,8 +31,8 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
 
   const [selectedFacilityId, setSelectedFacilityId] = useState(defaultFacility?.id || '');
   const [shiftDate, setShiftDate] = useState(format(yesterday, 'yyyy-MM-dd'));
-  const [startTime, setStartTime] = useState('08:00');
-  const [endTime, setEndTime] = useState('18:00');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
   const [rate, setRate] = useState(defaultRate.toString());
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -42,7 +43,7 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
   const selectedFacility = facilities.find(f => f.id === selectedFacilityId) || defaultFacility;
 
   const handleSubmit = async () => {
-    if (!selectedFacility || submitting) return;
+    if (!selectedFacility || submitting || !startTime || !endTime) return;
     setSubmitting(true);
     try {
       const startDt = new Date(`${shiftDate}T${startTime}:00`);
@@ -68,14 +69,14 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
     setSubmitted(false);
     setSavedShift(null);
     setShiftDate(format(yesterday, 'yyyy-MM-dd'));
-    setStartTime('08:00');
-    setEndTime('18:00');
+    setStartTime('');
+    setEndTime('');
     formRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const startDt = new Date(`${shiftDate}T${startTime}:00`);
-  const endDt = new Date(`${shiftDate}T${endTime}:00`);
-  const hours = Math.max(0, (endDt.getTime() - startDt.getTime()) / 3600000);
+  const startDt = startTime ? new Date(`${shiftDate}T${startTime}:00`) : null;
+  const endDt = endTime ? new Date(`${shiftDate}T${endTime}:00`) : null;
+  const hours = startDt && endDt ? Math.max(0, (endDt.getTime() - startDt.getTime()) / 3600000) : 0;
   const shiftRate = parseFloat(rate) || 650;
 
   const latestInvoice = submitted
@@ -145,12 +146,12 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
         {/* Side-by-side: Start + End time */}
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <Label>Start time</Label>
-            <Input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} />
+            <Label>Start time <span className="text-destructive">*</span></Label>
+            <TimePicker value={startTime} onChange={setStartTime} placeholder="Select start" label="Start time" />
           </div>
           <div className="space-y-1.5">
-            <Label>End time</Label>
-            <Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} />
+            <Label>End time <span className="text-destructive">*</span></Label>
+            <TimePicker value={endTime} onChange={setEndTime} placeholder="Select end" relativeToStart={startTime || undefined} label="End time" />
           </div>
         </div>
 
@@ -160,9 +161,9 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
             id="onboarding-shift-save"
             type="button"
             onClick={handleSubmit}
-            disabled={!selectedFacility || submitting}
+            disabled={!selectedFacility || submitting || !startTime || !endTime}
             className="hidden"
-            data-can-save={!!selectedFacility && !submitting}
+            data-can-save={!!selectedFacility && !submitting && !!startTime && !!endTime}
             data-saving={submitting}
           />
         )}

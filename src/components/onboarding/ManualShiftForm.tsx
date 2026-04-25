@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { TimePicker } from '@/components/ui/time-picker';
 import { ArrowRight, DollarSign, Loader2 } from 'lucide-react';
 import type { Facility } from '@/types';
 import type { ManualShiftInput } from '@/hooks/useManualSetup';
@@ -18,8 +19,8 @@ interface Props {
 export function ManualShiftForm({ facilities, defaultFacilityId, defaultRate, onSave, saving }: Props) {
   const [facilityId, setFacilityId] = useState(defaultFacilityId || facilities[0]?.id || '');
   const [date, setDate] = useState('');
-  const [startTime, setStartTime] = useState('08:00');
-  const [endTime, setEndTime] = useState('16:00');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
   const [rate, setRate] = useState(defaultRate?.toString() || '');
   const [notes, setNotes] = useState('');
 
@@ -67,11 +68,11 @@ export function ManualShiftForm({ facilities, defaultFacilityId, defaultRate, on
         <div className="grid grid-cols-2 gap-3">
           <div>
             <Label>Start time <span className="text-destructive">*</span></Label>
-            <Input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} />
+            <TimePicker value={startTime} onChange={setStartTime} placeholder="Select start" label="Start time" />
           </div>
           <div>
             <Label>End time <span className="text-destructive">*</span></Label>
-            <Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} />
+            <TimePicker value={endTime} onChange={setEndTime} placeholder="Select end" relativeToStart={startTime || undefined} label="End time" />
           </div>
         </div>
 
