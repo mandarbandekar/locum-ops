@@ -164,9 +164,9 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
             id="onboarding-shift-save"
             type="button"
             onClick={handleSubmit}
-            disabled={!selectedFacility || submitting || !startTime || !endTime}
+            disabled={!canSave || submitting}
             className="hidden"
-            data-can-save={!!selectedFacility && !submitting && !!startTime && !!endTime}
+            data-can-save={canSave && !submitting}
             data-saving={submitting}
           />
         )}
