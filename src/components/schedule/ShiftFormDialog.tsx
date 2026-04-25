@@ -52,16 +52,6 @@ function buildRateOptions(terms: TermsSnapshot[], facilityId: string): RateEntry
   return termsToRates(facilityTerms).filter(r => r.amount > 0);
 }
 
-const COLOR_MAP: Record<ShiftColor, string> = {
-  blue: 'bg-blue-500',
-  green: 'bg-green-500',
-  red: 'bg-red-500',
-  orange: 'bg-orange-500',
-  purple: 'bg-purple-500',
-  pink: 'bg-pink-500',
-  teal: 'bg-teal-500',
-  yellow: 'bg-yellow-500',
-};
 
 
 export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms, existing, onSave, onDelete, embedded, defaultDate, defaultStartTime, defaultMonth }: ShiftFormDialogProps) {
@@ -788,11 +778,12 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
                 type="button"
                 onClick={() => setColor(c.value)}
                 className={cn(
-                  "w-7 h-7 rounded-full transition-all",
-                  COLOR_MAP[c.value],
-                  color === c.value ? 'ring-2 ring-foreground ring-offset-2 ring-offset-background scale-110' : 'opacity-50 hover:opacity-90 hover:scale-105'
+                  "w-7 h-7 rounded-full border border-border transition-all",
+                  c.bg,
+                  color === c.value ? 'ring-2 ring-foreground ring-offset-2 ring-offset-background scale-110' : 'opacity-70 hover:opacity-100 hover:scale-105'
                 )}
                 title={c.label}
+                aria-label={c.label}
               />
             ))}
           </div>
@@ -837,7 +828,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     const rateUnit = activeRateKind === 'hourly' ? '/hr' : '/day';
     const totalPerShift = computedRateApplied;
     const grandTotal = totalPerShift * Math.max(1, sortedDates.length);
-    const colorClass = COLOR_MAP[color];
+    const colorDef = SHIFT_COLORS.find(c => c.value === color) || SHIFT_COLORS[0];
 
     const Row = ({
       icon: Icon,
@@ -908,8 +899,8 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
           </Row>
           <Row icon={Palette} label="Color" onEdit={() => setStep(3)}>
             <span className="inline-flex items-center gap-2">
-              <span className={cn('h-4 w-4 rounded-full', colorClass)} />
-              <span className="capitalize">{color}</span>
+              <span className={cn('h-4 w-4 rounded-full border border-border', colorDef.bg)} />
+              <span>{colorDef.label}</span>
             </span>
           </Row>
           <Row icon={StickyNote} label="Notes" onEdit={() => { setShowNotes(true); setStep(3); }}>
@@ -1116,9 +1107,9 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
               <div className="flex gap-2 flex-wrap">
                 {SHIFT_COLORS.map(c => (
                   <button key={c.value} type="button" onClick={() => setColor(c.value)}
-                    className={cn("w-7 h-7 rounded-full transition-all", COLOR_MAP[c.value],
-                      color === c.value ? 'ring-2 ring-foreground ring-offset-2 ring-offset-background scale-110' : 'opacity-50 hover:opacity-90 hover:scale-105'
-                    )} title={c.label} />
+                    className={cn("w-7 h-7 rounded-full border border-border transition-all", c.bg,
+                      color === c.value ? 'ring-2 ring-foreground ring-offset-2 ring-offset-background scale-110' : 'opacity-70 hover:opacity-100 hover:scale-105'
+                    )} title={c.label} aria-label={c.label} />
                 ))}
               </div>
               {!showNotes && (
