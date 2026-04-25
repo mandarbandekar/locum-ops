@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { RefreshCw, Crown, ArrowUpDown } from 'lucide-react';
+import { RefreshCw, Crown, ArrowUpDown, BarChart3, ExternalLink } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { isFounderAdmin } from '@/lib/founderAccess';
@@ -148,10 +148,23 @@ export default function FounderDashboardPage() {
             {refreshedAt ? refreshedAt.toLocaleTimeString() : '—'}
           </p>
         </div>
-        <Button onClick={load} disabled={loading} variant="outline" size="sm">
-          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button asChild variant="outline" size="sm">
+            <a
+              href="https://lovable.dev/projects/2263427a-5054-4595-ad6b-d5ed09d0eb59/analytics"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Lovable Analytics
+              <ExternalLink className="h-3 w-3 ml-1.5 opacity-60" />
+            </a>
+          </Button>
+          <Button onClick={load} disabled={loading} variant="outline" size="sm">
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Hero metrics */}
