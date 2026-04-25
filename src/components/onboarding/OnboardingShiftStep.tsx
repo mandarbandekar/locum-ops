@@ -146,12 +146,12 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
         {/* Side-by-side: Start + End time */}
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <Label>Start time</Label>
-            <Input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} />
+            <Label>Start time <span className="text-destructive">*</span></Label>
+            <TimePicker value={startTime} onChange={setStartTime} placeholder="Select start" label="Start time" />
           </div>
           <div className="space-y-1.5">
-            <Label>End time</Label>
-            <Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} />
+            <Label>End time <span className="text-destructive">*</span></Label>
+            <TimePicker value={endTime} onChange={setEndTime} placeholder="Select end" relativeToStart={startTime || undefined} label="End time" />
           </div>
         </div>
 
@@ -161,9 +161,9 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
             id="onboarding-shift-save"
             type="button"
             onClick={handleSubmit}
-            disabled={!selectedFacility || submitting}
+            disabled={!selectedFacility || submitting || !startTime || !endTime}
             className="hidden"
-            data-can-save={!!selectedFacility && !submitting}
+            data-can-save={!!selectedFacility && !submitting && !!startTime && !!endTime}
             data-saving={submitting}
           />
         )}
