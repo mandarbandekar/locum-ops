@@ -41,20 +41,20 @@ function hexDecode(hex: string): Uint8Array {
 async function encrypt(plaintext: string, key: CryptoKey): Promise<string> {
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const ciphertext = await crypto.subtle.encrypt(
-    { name: "AES-GCM", iv },
+    { name: "AES-GCM", iv: iv as BufferSource },
     key,
     new TextEncoder().encode(plaintext)
   );
-  return hexEncode(iv.buffer) + hexEncode(ciphertext);
+  return hexEncode(iv.buffer as ArrayBuffer) + hexEncode(ciphertext);
 }
 
 async function decrypt(blob: string, key: CryptoKey): Promise<string> {
   const iv = hexDecode(blob.slice(0, 24));
   const ciphertext = hexDecode(blob.slice(24));
   const plainBuf = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv },
+    { name: "AES-GCM", iv: iv as BufferSource },
     key,
-    ciphertext
+    ciphertext as BufferSource
   );
   return new TextDecoder().decode(plainBuf);
 }
