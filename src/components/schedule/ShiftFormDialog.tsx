@@ -241,13 +241,10 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
 
   const handleFacilityChange = (newFacilityId: string) => {
     setFacilityId(newFacilityId);
+    // Don't auto-pick a default rate — make the user choose explicitly.
     setSelectedRateKey('');
     setIsCustomRate(false);
-    const newOptions = buildRateOptions(terms, newFacilityId);
-    if (newOptions.length > 0 && !newOptions.some(o => o.amount.toString() === rate)) {
-      setRate(newOptions[0].amount.toString());
-      setSelectedRateKey('rate-0');
-    }
+    setRate('');
     // Reset engagement override when facility changes — defaults inherit from new facility
     const newFac = facilities.find(f => f.id === newFacilityId);
     setShowEngagementOverride(false);
@@ -309,10 +306,25 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     }
   }, [isCustomRate, saveCustomRate, rate, customRateLabel, customRateKind, facilityId, terms, updateTerms]);
 
+  // Combined required-field validation. Note + color are intentionally optional.
+  const rateIsValid = Number(rate) > 0;
+  const timeIsSet = !!startTime && !!endTime;
+  const datesPicked = selectedDates.length > 0;
+  const missingFields: string[] = [];
+  if (!facilityId) missingFields.push('a clinic');
+  if (!datesPicked) missingFields.push('a date');
+  if (!timeIsSet) missingFields.push('a start and end time');
+  if (!rateIsValid) missingFields.push('a rate');
+  const canFinalize = !missingFields.length && !hoursInvalidReason;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (hoursInvalidReason) {
       toast.error(hoursInvalidReason);
+      return;
+    }
+    if (!canFinalize) {
+      toast.error(`Please add ${missingFields.join(', ')} before saving.`);
       return;
     }
     setIsSubmitting(true);
@@ -596,6 +608,11 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
             <AlertTriangle className="h-3 w-3" /> {hoursInvalidReason}
           </p>
         )}
+        {!timeIsSet && !hoursInvalidReason && (
+          <p className="mt-1.5 text-[11px] text-muted-foreground">
+            Set a start and end time to continue.
+          </p>
+        )}
       </div>
 
       {/* Conflict warnings */}
@@ -618,7 +635,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
         <Button type="button" variant="outline" onClick={() => setStep(1)} className="h-10 min-w-[100px]">
           <ChevronLeft className="h-4 w-4 mr-1" /> Back
         </Button>
-        <Button type="button" onClick={() => setStep(3)} disabled={selectedDates.length === 0 || !!hoursInvalidReason} className="flex-1 h-10">
+        <Button type="button" onClick={() => setStep(3)} disabled={!datesPicked || !timeIsSet || !!hoursInvalidReason} className="flex-1 h-10">
           Next <ChevronRight className="h-4 w-4 ml-1" />
         </Button>
       </div>
@@ -792,12 +809,19 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
         <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Shift notes..." className="resize-none text-sm" />
       )}
 
+      {/* Missing-fields helper */}
+      {!canFinalize && (
+        <p className="text-[11px] text-muted-foreground text-center">
+          Add {missingFields.join(', ')} to finalize.
+        </p>
+      )}
+
       {/* Navigation */}
       <div className="flex gap-2">
         <Button type="button" variant="outline" onClick={() => setStep(2)} className="h-11 min-w-[100px]">
           <ChevronLeft className="h-4 w-4 mr-1" /> Back
         </Button>
-        <Button type="submit" className="flex-1 h-11" disabled={selectedDates.length === 0 || !!hoursInvalidReason}>
+        <Button type="submit" className="flex-1 h-11" disabled={!canFinalize || isSubmitting}>
           {isSubmitting ? 'Saving...' : selectedDates.length > 1 ? `Add ${selectedDates.length} Shifts` : 'Add Shift'}
         </Button>
       </div>
@@ -994,7 +1018,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
       </div>
 
       <div className="flex gap-2">
-        <Button type="submit" className="flex-1 h-11" disabled={selectedDates.length === 0 || !!hoursInvalidReason}>
+        <Button type="submit" className="flex-1 h-11" disabled={!canFinalize || isSubmitting}>
           {isSubmitting ? 'Saving...' : 'Update Shift'}
         </Button>
         {onDelete && (

@@ -25,15 +25,12 @@ interface Props {
 export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineItems, addShift, onContinue }: Props) {
   const yesterday = subDays(new Date(), 1);
   const defaultFacility = facilities[0];
-  const defaultRate = defaultFacility
-    ? (terms.find(t => t.facility_id === defaultFacility.id)?.weekday_rate || 650)
-    : 650;
 
   const [selectedFacilityId, setSelectedFacilityId] = useState(defaultFacility?.id || '');
   const [shiftDate, setShiftDate] = useState(format(yesterday, 'yyyy-MM-dd'));
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
-  const [rate, setRate] = useState(defaultRate.toString());
+  const [rate, setRate] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [savedShift, setSavedShift] = useState<Shift | null>(null);
@@ -42,8 +39,12 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
 
   const selectedFacility = facilities.find(f => f.id === selectedFacilityId) || defaultFacility;
 
+  const rateNum = parseFloat(rate);
+  const rateIsValid = !Number.isNaN(rateNum) && rateNum > 0;
+  const canSave = !!selectedFacility && !!startTime && !!endTime && rateIsValid;
+
   const handleSubmit = async () => {
-    if (!selectedFacility || submitting || !startTime || !endTime) return;
+    if (!selectedFacility || submitting || !canSave) return;
     setSubmitting(true);
     try {
       const startDt = new Date(`${shiftDate}T${startTime}:00`);
@@ -52,7 +53,7 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
         facility_id: selectedFacility.id,
         start_datetime: startDt.toISOString(),
         end_datetime: endDt.toISOString(),
-        rate_applied: parseFloat(rate) || 650,
+        rate_applied: rateNum,
         notes: '',
         color: 'blue',
       });
@@ -71,13 +72,14 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
     setShiftDate(format(yesterday, 'yyyy-MM-dd'));
     setStartTime('');
     setEndTime('');
+    setRate('');
     formRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const startDt = startTime ? new Date(`${shiftDate}T${startTime}:00`) : null;
   const endDt = endTime ? new Date(`${shiftDate}T${endTime}:00`) : null;
   const hours = startDt && endDt ? Math.max(0, (endDt.getTime() - startDt.getTime()) / 3600000) : 0;
-  const shiftRate = parseFloat(rate) || 650;
+  const shiftRate = rateIsValid ? rateNum : 0;
 
   const latestInvoice = submitted
     ? invoices.find(inv => inv.facility_id === selectedFacility?.id && inv.status === 'draft')
@@ -133,12 +135,13 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
             <Input type="date" value={shiftDate} onChange={e => setShiftDate(e.target.value)} />
           </div>
           <div className="space-y-1.5">
-            <Label>Day rate ($)</Label>
+            <Label>Day rate ($) <span className="text-destructive">*</span></Label>
             <Input
               type="number"
               value={rate}
               onChange={e => setRate(e.target.value)}
-              placeholder="650"
+              placeholder="e.g. 650"
+              min={0}
             />
           </div>
         </div>
@@ -161,9 +164,9 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
             id="onboarding-shift-save"
             type="button"
             onClick={handleSubmit}
-            disabled={!selectedFacility || submitting || !startTime || !endTime}
+            disabled={!canSave || submitting}
             className="hidden"
-            data-can-save={!!selectedFacility && !submitting && !!startTime && !!endTime}
+            data-can-save={canSave && !submitting}
             data-saving={submitting}
           />
         )}
