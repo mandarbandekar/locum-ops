@@ -2,6 +2,7 @@
 // Server-side enforcement also exists in the get_founder_overview() RPC.
 export const FOUNDER_ADMINS: string[] = [
   'mandar@locum-ops.com',
+  'mr.mandarbandekar@gmail.com',
 ];
 
 export function isFounderAdmin(email?: string | null): boolean {
