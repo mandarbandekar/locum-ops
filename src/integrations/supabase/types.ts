@@ -3422,6 +3422,21 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      get_founder_overview: {
+        Args: never
+        Returns: {
+          activation_status: string
+          clinic_count: number
+          display_name: string
+          email: string
+          invoice_count: number
+          last_activity_at: string
+          last_sign_in_at: string
+          shift_count: number
+          signed_up_at: string
+          user_id: string
+        }[]
+      }
       get_shift_effective_engagement: {
         Args: { _shift_id: string }
         Returns: {

@@ -1,47 +1,73 @@
+# Founder Dashboard Plan
 
+An admin-only page that lets you (Mandar) see, in 30 seconds, how your beta testers are activating: last login, # clinics, # shifts, # invoices per user — plus 4 hero metrics on top.
 
-## Render the real `InvoicePreview` in the onboarding reveal
+## Where it lives
 
-### What changes
+- New route: `/settings/founder`
+- New entry in the Settings tab nav (`SettingsNav.tsx`) labeled **"Founder"** with a Crown/Shield icon — only rendered for emails on the admin allowlist (so beta testers don't see it).
+- Reachable in 2 clicks: Settings (sidebar) → Founder (tab).
 
-Replace the custom compact `InvoicePreviewCard` in `OnboardingInvoiceReveal.tsx` with the **actual `<InvoicePreview />` component** used on the invoice detail page and the public invoice page — so onboarding shows pixel-identical invoices to what users see post-login (matching the screenshot you uploaded).
+## Admin gating
 
-### Behavior
+- Hardcoded allowlist in `src/lib/founderAccess.ts`:
+  ```ts
+  export const FOUNDER_ADMINS = ['mandar@locum-ops.com']; // edit as needed
+  export const isFounderAdmin = (email?: string|null) => !!email && FOUNDER_ADMINS.includes(email.toLowerCase());
+  ```
+- Used in both `SettingsNav` (hide tab) and `FounderDashboardPage` (show "Not authorized" if not admin). Real auth check still happens server-side via the RPC's RLS / `auth.email()`.
 
-- For each invoice generated from the user's onboarding shifts (same scoping logic as today: invoices that contain at least one `sessionShiftId`), render the real `<InvoicePreview />`.
-- Cap at 3, sorted by most recent `invoice_date`.
-- Wrap each preview in a thin status header strip above it: `Invoice WPV-10 · Greenfield Vet` on the left, status badge (`Draft` / `Upcoming` / `Sent` / `Paid`) on the right. This keeps the onboarding context (which invoice is which, what status) without altering the invoice document itself.
-- Drop the custom body (line-item mini-list, totals row, due-date footer) — those are already rendered inside `<InvoicePreview />`.
-- Keep the existing top banner ("Your invoices are already being prepared for you" + sub) and the bottom reminder card unchanged.
+## Backend (one SQL migration)
 
-### Data wiring (real data only — no fabrication)
+Create a `SECURITY DEFINER` RPC `get_founder_overview()` that returns one row per user:
 
-`<InvoicePreview />` requires `sender`, `billTo`, `invoiceNumber`, `invoiceDate`, `dueDate`, `lineItems`, `total`, `balanceDue`, `notes`. Source for each:
+```
+user_id uuid
+email text
+display_name text
+created_at timestamptz       -- signup
+last_sign_in_at timestamptz  -- from auth.users
+clinic_count int             -- count(facilities)
+shift_count int              -- count(shifts)
+invoice_count int            -- count(invoices)
+last_activity_at timestamptz -- greatest of created_ats across clinics/shifts/invoices
+activation_status text       -- 'active' if last_sign_in_at >= now()-7d, else 'dormant' / 'never'
+```
 
-| Field | Source |
-|---|---|
-| `sender.firstName / lastName / company / address / email / phone` | `useUserProfile().profile` (`first_name`, `last_name`, `company_name`, `company_address`, `invoice_email`, `invoice_phone`) — same fields the real detail page uses |
-| `billTo.facilityName / address` | `facilities.find(f => f.id === invoice.facility_id)` |
-| `billTo.contactName / email` | `facility.invoice_name_to` / `facility.invoice_email_to` |
-| `invoiceNumber / invoiceDate / dueDate / notes / total / balanceDue` | Directly from the real `invoice` row |
-| `lineItems` | `lineItems.filter(li => li.invoice_id === invoice.id)` |
+Internal admin check inside the function: `if auth.email() not in (allowlist) then raise exception`. Grant execute to `authenticated`. No new table needed; reads from `auth.users`, `public.facilities`, `public.shifts`, `public.invoices`, `public.profiles`.
 
-If a sender field is empty (new user hasn't filled out invoicing settings yet), `<InvoicePreview />` already handles it gracefully (e.g. shows "Your Company"). No placeholders or fake values added.
+## Frontend
 
-### Files
+**New file:** `src/pages/FounderDashboardPage.tsx`
 
-**Modified:**
-- `src/components/onboarding/OnboardingInvoiceReveal.tsx`
-  - Import `InvoicePreview` from `@/components/invoice/InvoicePreview` and `useUserProfile`.
-  - Remove the local `InvoicePreviewCard` sub-component.
-  - For each derived invoice, render: status header strip → `<InvoicePreview .../>` inside a single bordered card.
-  - Keep banner + summary line + reminder card as-is.
+Single vertically scrolling page (uses existing `SettingsNav` at top so the Settings layout is consistent):
 
-**Untouched:** `InvoicePreview.tsx`, `OnboardingPage.tsx`, all data context logic.
+**Section 1 — Header**
+- Title: "Founder Dashboard"
+- Subtitle: "Beta tester activation — last refreshed {time}"
+- Top-right "Refresh" button (re-runs the RPC, updates timestamp)
 
-### Notes
+**Section 2 — Hero metrics (4 cards, grid `md:grid-cols-4`, stack on mobile)**
+Computed client-side from RPC rows:
+1. **Total testers** — `rows.length`
+2. **Active (7d)** — count where `activation_status === 'active'`, percentage below in muted text
+3. **Activated** — count where `shift_count >= 1`, percentage
+4. **Invoicing** — count where `invoice_count >= 1`, percentage
 
-- The previews will visually match the invoice document the user sees after login (same header, bill-to grid, line-item table, totals block, notes section).
-- Onboarding may render up to 3 full-size invoice previews stacked vertically — the page already scrolls within the onboarding layout, so this is fine.
-- Status determination logic is unchanged.
+Uses existing `Card` / `CardHeader` / `CardContent` components and `text-amber-500` for the big number per the semantic-colors memory.
 
+**Section 3 — Per-user table**
+Columns: Email · Signed up · Last login · Clinics · Shifts · Invoices · Status pill (Active / Dormant / Never logged in). Sortable by clicking column headers (default: last login desc). Uses existing status-pill styling.
+
+**New files:**
+- `src/lib/founderAccess.ts` — admin allowlist helper
+- `src/pages/FounderDashboardPage.tsx` — the page
+- `supabase/migrations/<ts>_founder_overview.sql` — the RPC
+
+**Modified files:**
+- `src/App.tsx` — add `/settings/founder` route
+- `src/components/SettingsNav.tsx` — conditionally render "Founder" tab when `isFounderAdmin(user.email)`
+
+## What I'll need from you
+
+Confirm the admin email(s) to allowlist (default: `mandar@locum-ops.com`). After approval I'll implement the migration + page in one pass and you can test by hitting Settings → Founder.
