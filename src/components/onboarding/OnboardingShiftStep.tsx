@@ -69,8 +69,8 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
     setSubmitted(false);
     setSavedShift(null);
     setShiftDate(format(yesterday, 'yyyy-MM-dd'));
-    setStartTime('08:00');
-    setEndTime('18:00');
+    setStartTime('');
+    setEndTime('');
     formRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
