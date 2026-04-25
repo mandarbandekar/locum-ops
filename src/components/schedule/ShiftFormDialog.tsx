@@ -635,7 +635,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
         <Button type="button" variant="outline" onClick={() => setStep(1)} className="h-10 min-w-[100px]">
           <ChevronLeft className="h-4 w-4 mr-1" /> Back
         </Button>
-        <Button type="button" onClick={() => setStep(3)} disabled={selectedDates.length === 0 || !!hoursInvalidReason} className="flex-1 h-10">
+        <Button type="button" onClick={() => setStep(3)} disabled={!datesPicked || !timeIsSet || !!hoursInvalidReason} className="flex-1 h-10">
           Next <ChevronRight className="h-4 w-4 ml-1" />
         </Button>
       </div>
