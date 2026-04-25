@@ -43,7 +43,7 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
   const selectedFacility = facilities.find(f => f.id === selectedFacilityId) || defaultFacility;
 
   const handleSubmit = async () => {
-    if (!selectedFacility || submitting) return;
+    if (!selectedFacility || submitting || !startTime || !endTime) return;
     setSubmitting(true);
     try {
       const startDt = new Date(`${shiftDate}T${startTime}:00`);
