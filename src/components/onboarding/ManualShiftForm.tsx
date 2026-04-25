@@ -68,11 +68,11 @@ export function ManualShiftForm({ facilities, defaultFacilityId, defaultRate, on
         <div className="grid grid-cols-2 gap-3">
           <div>
             <Label>Start time <span className="text-destructive">*</span></Label>
-            <Input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} />
+            <TimePicker value={startTime} onChange={setStartTime} placeholder="Select start" label="Start time" />
           </div>
           <div>
             <Label>End time <span className="text-destructive">*</span></Label>
-            <Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} />
+            <TimePicker value={endTime} onChange={setEndTime} placeholder="Select end" relativeToStart={startTime || undefined} label="End time" />
           </div>
         </div>
 
