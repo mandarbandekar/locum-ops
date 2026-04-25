@@ -25,15 +25,12 @@ interface Props {
 export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineItems, addShift, onContinue }: Props) {
   const yesterday = subDays(new Date(), 1);
   const defaultFacility = facilities[0];
-  const defaultRate = defaultFacility
-    ? (terms.find(t => t.facility_id === defaultFacility.id)?.weekday_rate || 650)
-    : 650;
 
   const [selectedFacilityId, setSelectedFacilityId] = useState(defaultFacility?.id || '');
   const [shiftDate, setShiftDate] = useState(format(yesterday, 'yyyy-MM-dd'));
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
-  const [rate, setRate] = useState(defaultRate.toString());
+  const [rate, setRate] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [savedShift, setSavedShift] = useState<Shift | null>(null);
