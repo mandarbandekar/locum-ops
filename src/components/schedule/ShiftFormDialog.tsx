@@ -584,11 +584,11 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
         <div className="grid grid-cols-2 gap-3">
           <div>
             <span className="text-[10px] text-muted-foreground">Start</span>
-            <Input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="h-10" />
+            <TimePicker value={startTime} onChange={setStartTime} placeholder="Select start" label="Start time" />
           </div>
           <div>
             <span className="text-[10px] text-muted-foreground">End</span>
-            <Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="h-10" />
+            <TimePicker value={endTime} onChange={setEndTime} placeholder="Select end" relativeToStart={startTime || undefined} label="End time" />
           </div>
         </div>
         {activeRateKind === 'hourly' && hoursInvalidReason && (
