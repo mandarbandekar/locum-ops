@@ -54,7 +54,7 @@ async function decrypt(blob: string, key: CryptoKey): Promise<string> {
   const plainBuf = await crypto.subtle.decrypt(
     { name: "AES-GCM", iv: iv as BufferSource },
     key,
-    ciphertext
+    ciphertext as BufferSource
   );
   return new TextDecoder().decode(plainBuf);
 }
