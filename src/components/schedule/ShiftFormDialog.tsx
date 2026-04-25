@@ -828,7 +828,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     const rateUnit = activeRateKind === 'hourly' ? '/hr' : '/day';
     const totalPerShift = computedRateApplied;
     const grandTotal = totalPerShift * Math.max(1, sortedDates.length);
-    const colorClass = COLOR_MAP[color];
+    const colorDef = SHIFT_COLORS.find(c => c.value === color) || SHIFT_COLORS[0];
 
     const Row = ({
       icon: Icon,
