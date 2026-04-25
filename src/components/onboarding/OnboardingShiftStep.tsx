@@ -31,8 +31,8 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
 
   const [selectedFacilityId, setSelectedFacilityId] = useState(defaultFacility?.id || '');
   const [shiftDate, setShiftDate] = useState(format(yesterday, 'yyyy-MM-dd'));
-  const [startTime, setStartTime] = useState('08:00');
-  const [endTime, setEndTime] = useState('18:00');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
   const [rate, setRate] = useState(defaultRate.toString());
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
