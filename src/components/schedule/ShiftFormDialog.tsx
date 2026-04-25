@@ -306,10 +306,25 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     }
   }, [isCustomRate, saveCustomRate, rate, customRateLabel, customRateKind, facilityId, terms, updateTerms]);
 
+  // Combined required-field validation. Note + color are intentionally optional.
+  const rateIsValid = Number(rate) > 0;
+  const timeIsSet = !!startTime && !!endTime;
+  const datesPicked = selectedDates.length > 0;
+  const missingFields: string[] = [];
+  if (!facilityId) missingFields.push('a clinic');
+  if (!datesPicked) missingFields.push('a date');
+  if (!timeIsSet) missingFields.push('a start and end time');
+  if (!rateIsValid) missingFields.push('a rate');
+  const canFinalize = !missingFields.length && !hoursInvalidReason;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (hoursInvalidReason) {
       toast.error(hoursInvalidReason);
+      return;
+    }
+    if (!canFinalize) {
+      toast.error(`Please add ${missingFields.join(', ')} before saving.`);
       return;
     }
     setIsSubmitting(true);
