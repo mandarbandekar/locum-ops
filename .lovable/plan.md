@@ -1,73 +1,46 @@
-# Founder Dashboard Plan
+# Better Time Selector for Shift Add Flow
 
-An admin-only page that lets you (Mandar) see, in 30 seconds, how your beta testers are activating: last login, # clinics, # shifts, # invoices per user — plus 4 hero metrics on top.
+## What's wrong today
+Across all "Add a shift" surfaces, the start/end times are pre-populated with hardcoded defaults (e.g. `08:00` → `18:00` in onboarding, `08:00` → `16:00` in the main schedule dialog). Users often submit those defaults without realizing it, creating shifts at times they don't actually work. The control itself is also the bare browser-native `<input type="time">`, which looks inconsistent across browsers and doesn't match the rest of the form styling.
 
-## Where it lives
+## Goal
+1. **No assumed default times** — fields start empty and the user must actively choose.
+2. **A purpose-built time picker** that feels like the rest of LocumOps (sage/gold theme, DM Sans, 8px radius), is fast on both desktop and mobile, and helps the user pick common shift times in one tap.
 
-- New route: `/settings/founder`
-- New entry in the Settings tab nav (`SettingsNav.tsx`) labeled **"Founder"** with a Crown/Shield icon — only rendered for emails on the admin allowlist (so beta testers don't see it).
-- Reachable in 2 clicks: Settings (sidebar) → Founder (tab).
+## Surfaces affected
+All three "add shift" entry points get the same new control:
+- `src/components/schedule/ShiftFormDialog.tsx` — main add/edit shift dialog (also used in inline week-grid creation)
+- `src/components/onboarding/OnboardingShiftStep.tsx` — onboarding "Log your first shift"
+- `src/components/onboarding/ManualShiftForm.tsx` — manual setup flow
 
-## Admin gating
+## New component: `TimePicker`
+Location: `src/components/ui/time-picker.tsx`
 
-- Hardcoded allowlist in `src/lib/founderAccess.ts`:
-  ```ts
-  export const FOUNDER_ADMINS = ['mandar@locum-ops.com']; // edit as needed
-  export const isFounderAdmin = (email?: string|null) => !!email && FOUNDER_ADMINS.includes(email.toLowerCase());
-  ```
-- Used in both `SettingsNav` (hide tab) and `FounderDashboardPage` (show "Not authorized" if not admin). Real auth check still happens server-side via the RPC's RLS / `auth.email()`.
+Behavior:
+- Trigger looks like our standard Input (h-10, 8px radius, 14px text). Empty state shows muted placeholder "Select start time" / "Select end time" with a clock icon — never a pre-filled time.
+- Click opens a Popover with `pointer-events-auto`.
+- Inside the popover, two stacked sections:
+  1. **Quick presets** (chip row): `6:00 AM`, `7:00 AM`, `8:00 AM`, `9:00 AM`, `12:00 PM`, `2:00 PM`, `5:00 PM`, `8:00 PM`. Tapping a chip selects and closes.
+  2. **Precise pick**: two scrollable columns — Hours (1–12) and Minutes (00, 15, 30, 45) — plus an AM/PM toggle. Selecting all three confirms via a "Set time" button.
+- Keyboard accessible (arrow keys move within column, Enter confirms, Esc cancels).
+- Returns value in `HH:mm` (24-hour) so the existing data layer is unchanged.
+- Mobile: popover becomes a bottom sheet with the same content.
 
-## Backend (one SQL migration)
+End-time helper: when the start time is set and the end time is still empty, show a thin helper row above the chip presets — "+4h", "+6h", "+8h", "+10h", "+12h" — that pre-computes likely end times relative to the chosen start. Selecting one fills the end time and closes.
 
-Create a `SECURITY DEFINER` RPC `get_founder_overview()` that returns one row per user:
+## Form changes
+For each of the three forms above:
+- Initialize `startTime` and `endTime` to `''` (empty) instead of `'08:00' / '16:00' / '18:00'`.
+- Replace each `<Input type="time" ... />` with `<TimePicker value={...} onChange={...} placeholder="..." />`.
+- Make submit/save button disabled until both times are set (the existing `canSubmit` checks already require truthy values, so they continue to work).
+- In `ShiftFormDialog`, the special-case math that derived end time from `defaultStartTime + 8h` (lines 71–72) is removed; the new `TimePicker`'s "+8h" helper covers that ergonomically without silently filling values.
+- The "reset after add another" handler in `OnboardingShiftStep.handleAddAnotherShift` resets times back to `''` instead of `'08:00' / '18:00'`.
 
-```
-user_id uuid
-email text
-display_name text
-created_at timestamptz       -- signup
-last_sign_in_at timestamptz  -- from auth.users
-clinic_count int             -- count(facilities)
-shift_count int              -- count(shifts)
-invoice_count int            -- count(invoices)
-last_activity_at timestamptz -- greatest of created_ats across clinics/shifts/invoices
-activation_status text       -- 'active' if last_sign_in_at >= now()-7d, else 'dormant' / 'never'
-```
+## Non-goals
+- No change to how shifts are stored or to invoice/rate calculations.
+- No change to date pickers, facility selectors, or the rest of the form layout.
+- The Block Time dialog and other non-shift time inputs are out of scope for this pass.
 
-Internal admin check inside the function: `if auth.email() not in (allowlist) then raise exception`. Grant execute to `authenticated`. No new table needed; reads from `auth.users`, `public.facilities`, `public.shifts`, `public.invoices`, `public.profiles`.
-
-## Frontend
-
-**New file:** `src/pages/FounderDashboardPage.tsx`
-
-Single vertically scrolling page (uses existing `SettingsNav` at top so the Settings layout is consistent):
-
-**Section 1 — Header**
-- Title: "Founder Dashboard"
-- Subtitle: "Beta tester activation — last refreshed {time}"
-- Top-right "Refresh" button (re-runs the RPC, updates timestamp)
-
-**Section 2 — Hero metrics (4 cards, grid `md:grid-cols-4`, stack on mobile)**
-Computed client-side from RPC rows:
-1. **Total testers** — `rows.length`
-2. **Active (7d)** — count where `activation_status === 'active'`, percentage below in muted text
-3. **Activated** — count where `shift_count >= 1`, percentage
-4. **Invoicing** — count where `invoice_count >= 1`, percentage
-
-Uses existing `Card` / `CardHeader` / `CardContent` components and `text-amber-500` for the big number per the semantic-colors memory.
-
-**Section 3 — Per-user table**
-Columns: Email · Signed up · Last login · Clinics · Shifts · Invoices · Status pill (Active / Dormant / Never logged in). Sortable by clicking column headers (default: last login desc). Uses existing status-pill styling.
-
-**New files:**
-- `src/lib/founderAccess.ts` — admin allowlist helper
-- `src/pages/FounderDashboardPage.tsx` — the page
-- `supabase/migrations/<ts>_founder_overview.sql` — the RPC
-
-**Modified files:**
-- `src/App.tsx` — add `/settings/founder` route
-- `src/components/SettingsNav.tsx` — conditionally render "Founder" tab when `isFounderAdmin(user.email)`
-
-## What I'll need from you
-
-Confirm the admin email(s) to allowlist (default: `mandar@locum-ops.com`). After approval I'll implement the migration + page in one pass and you can test by hitting Settings → Founder.
+## Test/QA
+- Unit-test `TimePicker` value formatting (24h output for AM/PM input, "+Nh" math wrapping past midnight stays within the same day with a visible warning).
+- Manually verify in all three flows: empty initial state, preset selection, precise selection, "+Nh" helper, mobile sheet behavior, and that the existing tests in `src/test/onboarding*.test.ts` still pass (they exercise `addShift` shape, not the input control).
