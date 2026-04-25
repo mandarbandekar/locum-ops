@@ -19,8 +19,8 @@ interface Props {
 export function ManualShiftForm({ facilities, defaultFacilityId, defaultRate, onSave, saving }: Props) {
   const [facilityId, setFacilityId] = useState(defaultFacilityId || facilities[0]?.id || '');
   const [date, setDate] = useState('');
-  const [startTime, setStartTime] = useState('08:00');
-  const [endTime, setEndTime] = useState('16:00');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
   const [rate, setRate] = useState(defaultRate?.toString() || '');
   const [notes, setNotes] = useState('');
 
