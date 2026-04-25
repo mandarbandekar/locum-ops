@@ -74,9 +74,9 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
     formRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const startDt = new Date(`${shiftDate}T${startTime}:00`);
-  const endDt = new Date(`${shiftDate}T${endTime}:00`);
-  const hours = Math.max(0, (endDt.getTime() - startDt.getTime()) / 3600000);
+  const startDt = startTime ? new Date(`${shiftDate}T${startTime}:00`) : null;
+  const endDt = endTime ? new Date(`${shiftDate}T${endTime}:00`) : null;
+  const hours = startDt && endDt ? Math.max(0, (endDt.getTime() - startDt.getTime()) / 3600000) : 0;
   const shiftRate = parseFloat(rate) || 650;
 
   const latestInvoice = submitted
