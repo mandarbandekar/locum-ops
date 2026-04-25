@@ -52,16 +52,6 @@ function buildRateOptions(terms: TermsSnapshot[], facilityId: string): RateEntry
   return termsToRates(facilityTerms).filter(r => r.amount > 0);
 }
 
-const COLOR_MAP: Record<ShiftColor, string> = {
-  blue: 'bg-blue-500',
-  green: 'bg-green-500',
-  red: 'bg-red-500',
-  orange: 'bg-orange-500',
-  purple: 'bg-purple-500',
-  pink: 'bg-pink-500',
-  teal: 'bg-teal-500',
-  yellow: 'bg-yellow-500',
-};
 
 
 export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms, existing, onSave, onDelete, embedded, defaultDate, defaultStartTime, defaultMonth }: ShiftFormDialogProps) {
