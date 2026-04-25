@@ -608,6 +608,11 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
             <AlertTriangle className="h-3 w-3" /> {hoursInvalidReason}
           </p>
         )}
+        {!timeIsSet && !hoursInvalidReason && (
+          <p className="mt-1.5 text-[11px] text-muted-foreground">
+            Set a start and end time to continue.
+          </p>
+        )}
       </div>
 
       {/* Conflict warnings */}
