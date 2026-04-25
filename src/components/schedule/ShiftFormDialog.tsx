@@ -809,12 +809,19 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
         <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Shift notes..." className="resize-none text-sm" />
       )}
 
+      {/* Missing-fields helper */}
+      {!canFinalize && (
+        <p className="text-[11px] text-muted-foreground text-center">
+          Add {missingFields.join(', ')} to finalize.
+        </p>
+      )}
+
       {/* Navigation */}
       <div className="flex gap-2">
         <Button type="button" variant="outline" onClick={() => setStep(2)} className="h-11 min-w-[100px]">
           <ChevronLeft className="h-4 w-4 mr-1" /> Back
         </Button>
-        <Button type="submit" className="flex-1 h-11" disabled={selectedDates.length === 0 || !!hoursInvalidReason}>
+        <Button type="submit" className="flex-1 h-11" disabled={!canFinalize || isSubmitting}>
           {isSubmitting ? 'Saving...' : selectedDates.length > 1 ? `Add ${selectedDates.length} Shifts` : 'Add Shift'}
         </Button>
       </div>
