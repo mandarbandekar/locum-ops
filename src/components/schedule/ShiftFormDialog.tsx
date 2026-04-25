@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { TimePicker } from '@/components/ui/time-picker';
-import { AlertTriangle, Trash2, CalendarDays, DollarSign, Clock, Building2, StickyNote, Palette, Plus, ChevronRight, ChevronLeft, Check } from 'lucide-react';
+import { AlertTriangle, Trash2, CalendarDays, DollarSign, Clock, Building2, StickyNote, Palette, Plus, ChevronRight, ChevronLeft, Check, Pencil, Eye } from 'lucide-react';
 import { GuidedStep } from '@/components/onboarding/GuidedStep';
 import { AddFacilityDialog } from '@/components/AddFacilityDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -821,12 +821,130 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
         <Button type="button" variant="outline" onClick={() => setStep(2)} className="h-11 min-w-[100px]">
           <ChevronLeft className="h-4 w-4 mr-1" /> Back
         </Button>
-        <Button type="submit" className="flex-1 h-11" disabled={!canFinalize || isSubmitting}>
-          {isSubmitting ? 'Saving...' : selectedDates.length > 1 ? `Add ${selectedDates.length} Shifts` : 'Add Shift'}
+        <Button type="button" onClick={() => setStep(4)} className="flex-1 h-11" disabled={!canFinalize}>
+          Preview <ChevronRight className="h-4 w-4 ml-1" />
         </Button>
       </div>
     </GuidedStep>
   );
+
+  /* ─── Step 4: Preview & confirm ─── */
+  const renderStep4 = () => {
+    const sortedDates = [...selectedDates].sort((a, b) => a.getTime() - b.getTime());
+    const rateLabel = isCustomRate
+      ? (customRateLabel.trim() || 'Custom rate')
+      : (selectedRateOption?.label || 'Rate');
+    const rateUnit = activeRateKind === 'hourly' ? '/hr' : '/day';
+    const totalPerShift = computedRateApplied;
+    const grandTotal = totalPerShift * Math.max(1, sortedDates.length);
+    const colorClass = COLOR_MAP[color];
+
+    const Row = ({
+      icon: Icon,
+      label,
+      onEdit,
+      children,
+    }: {
+      icon: typeof Building2;
+      label: string;
+      onEdit: () => void;
+      children: React.ReactNode;
+    }) => (
+      <div className="flex items-start gap-3 py-2.5 border-b border-border last:border-b-0">
+        <div className="mt-0.5 h-7 w-7 rounded-md bg-muted flex items-center justify-center shrink-0">
+          <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
+          <div className="text-sm text-foreground mt-0.5 break-words">{children}</div>
+        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={onEdit}
+          className="h-7 px-2 text-[11px] text-primary hover:text-primary shrink-0"
+        >
+          <Pencil className="h-3 w-3 mr-1" /> Edit
+        </Button>
+      </div>
+    );
+
+    return (
+      <GuidedStep
+        title="Review your shift"
+        subtitle="Double-check the details below. Tap Edit on any row to make changes."
+        icon={Eye}
+      >
+        <div className="rounded-lg border border-border bg-muted/20 px-3 py-1">
+          <Row icon={Building2} label="Clinic" onEdit={() => setStep(1)}>
+            {facilityName || <span className="text-muted-foreground">—</span>}
+          </Row>
+          <Row icon={CalendarDays} label={sortedDates.length > 1 ? `Dates (${sortedDates.length})` : 'Date'} onEdit={() => setStep(2)}>
+            {sortedDates.length
+              ? sortedDates.map(d => format(d, 'EEE, MMM d, yyyy')).join(' · ')
+              : <span className="text-muted-foreground">—</span>}
+          </Row>
+          <Row icon={Clock} label="Time" onEdit={() => setStep(2)}>
+            {startTime && endTime ? (
+              <span>
+                {startTime} – {endTime}
+                {activeRateKind === 'hourly' && isHoursValid && (
+                  <span className="text-muted-foreground"> · {formatHours(calculatedHours)} hrs</span>
+                )}
+              </span>
+            ) : <span className="text-muted-foreground">—</span>}
+          </Row>
+          <Row icon={DollarSign} label="Rate" onEdit={() => setStep(3)}>
+            <div>
+              <span>{rateLabel} — ${Number(rate || 0).toLocaleString()}{rateUnit}</span>
+              <div className="text-[11px] text-muted-foreground mt-0.5">
+                ${totalPerShift.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} per shift
+                {sortedDates.length > 1 && (
+                  <> · <span className="text-foreground font-medium">${grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} total</span></>
+                )}
+              </div>
+            </div>
+          </Row>
+          <Row icon={Palette} label="Color" onEdit={() => setStep(3)}>
+            <span className="inline-flex items-center gap-2">
+              <span className={cn('h-4 w-4 rounded-full', colorClass)} />
+              <span className="capitalize">{color}</span>
+            </span>
+          </Row>
+          <Row icon={StickyNote} label="Notes" onEdit={() => { setShowNotes(true); setStep(3); }}>
+            {notes?.trim()
+              ? <span className="whitespace-pre-wrap">{notes}</span>
+              : <span className="text-muted-foreground italic">No notes</span>}
+          </Row>
+        </div>
+
+        {conflicts.length > 0 && (
+          <div className="flex items-start gap-1.5 p-2 rounded-md bg-destructive/10 text-destructive">
+            <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+            <div className="text-[11px] leading-snug">
+              <p className="font-semibold">Heads up — scheduling conflict{conflicts.length > 1 ? 's' : ''}:</p>
+              {conflicts.map(c => (
+                <p key={c.id} className="mt-0.5">
+                  {facilities.find((f: any) => f.id === c.facility_id)?.name || 'Unknown'} — {format(new Date(c.start_datetime), 'MMM d, h:mm a')} to {format(new Date(c.end_datetime), 'h:mm a')}
+                </p>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="flex gap-2">
+          <Button type="button" variant="outline" onClick={() => setStep(3)} className="h-11 min-w-[100px]">
+            <ChevronLeft className="h-4 w-4 mr-1" /> Back
+          </Button>
+          <Button type="submit" className="flex-1 h-11" disabled={!canFinalize || isSubmitting}>
+            <Check className="h-4 w-4 mr-1" />
+            {isSubmitting ? 'Saving...' : sortedDates.length > 1 ? `Confirm & add ${sortedDates.length} shifts` : 'Confirm & add shift'}
+          </Button>
+        </div>
+      </GuidedStep>
+    );
+  };
 
   /* ─── Edit mode: flat layout (unchanged) ─── */
   const renderEditForm = () => (
@@ -1043,7 +1161,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   );
 
   /* ─── New shift: guided stepper ─── */
-  const totalSteps = 3;
+  const totalSteps = 4;
   const renderGuidedForm = () => (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       <div className="flex items-center justify-between">
@@ -1065,6 +1183,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
       {step === 1 && renderStep1()}
       {step === 2 && renderStep2()}
       {step === 3 && renderStep3()}
+      {step === 4 && renderStep4()}
     </form>
   );
 
