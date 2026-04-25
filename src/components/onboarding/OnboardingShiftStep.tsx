@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { format, subDays } from 'date-fns';
 import type { Facility, Shift, TermsSnapshot, Invoice, InvoiceLineItem } from '@/types';
 import { AddFacilityDialog } from '@/components/AddFacilityDialog';
+import { TimePicker } from '@/components/ui/time-picker';
 
 interface Props {
   facilities: Facility[];
