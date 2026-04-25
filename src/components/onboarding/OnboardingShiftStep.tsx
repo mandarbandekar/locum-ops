@@ -135,12 +135,13 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
             <Input type="date" value={shiftDate} onChange={e => setShiftDate(e.target.value)} />
           </div>
           <div className="space-y-1.5">
-            <Label>Day rate ($)</Label>
+            <Label>Day rate ($) <span className="text-destructive">*</span></Label>
             <Input
               type="number"
               value={rate}
               onChange={e => setRate(e.target.value)}
-              placeholder="650"
+              placeholder="e.g. 650"
+              min={0}
             />
           </div>
         </div>
