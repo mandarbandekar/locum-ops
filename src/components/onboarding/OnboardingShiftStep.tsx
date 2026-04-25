@@ -39,8 +39,12 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
 
   const selectedFacility = facilities.find(f => f.id === selectedFacilityId) || defaultFacility;
 
+  const rateNum = parseFloat(rate);
+  const rateIsValid = !Number.isNaN(rateNum) && rateNum > 0;
+  const canSave = !!selectedFacility && !!startTime && !!endTime && rateIsValid;
+
   const handleSubmit = async () => {
-    if (!selectedFacility || submitting || !startTime || !endTime) return;
+    if (!selectedFacility || submitting || !canSave) return;
     setSubmitting(true);
     try {
       const startDt = new Date(`${shiftDate}T${startTime}:00`);
@@ -49,7 +53,7 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
         facility_id: selectedFacility.id,
         start_datetime: startDt.toISOString(),
         end_datetime: endDt.toISOString(),
-        rate_applied: parseFloat(rate) || 650,
+        rate_applied: rateNum,
         notes: '',
         color: 'blue',
       });
@@ -68,13 +72,14 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
     setShiftDate(format(yesterday, 'yyyy-MM-dd'));
     setStartTime('');
     setEndTime('');
+    setRate('');
     formRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const startDt = startTime ? new Date(`${shiftDate}T${startTime}:00`) : null;
   const endDt = endTime ? new Date(`${shiftDate}T${endTime}:00`) : null;
   const hours = startDt && endDt ? Math.max(0, (endDt.getTime() - startDt.getTime()) / 3600000) : 0;
-  const shiftRate = parseFloat(rate) || 650;
+  const shiftRate = rateIsValid ? rateNum : 0;
 
   const latestInvoice = submitted
     ? invoices.find(inv => inv.facility_id === selectedFacility?.id && inv.status === 'draft')
