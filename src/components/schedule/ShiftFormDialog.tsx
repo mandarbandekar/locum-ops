@@ -1161,7 +1161,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   );
 
   /* ─── New shift: guided stepper ─── */
-  const totalSteps = 3;
+  const totalSteps = 4;
   const renderGuidedForm = () => (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       <div className="flex items-center justify-between">
@@ -1183,6 +1183,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
       {step === 1 && renderStep1()}
       {step === 2 && renderStep2()}
       {step === 3 && renderStep3()}
+      {step === 4 && renderStep4()}
     </form>
   );
 
