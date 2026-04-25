@@ -241,13 +241,10 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
 
   const handleFacilityChange = (newFacilityId: string) => {
     setFacilityId(newFacilityId);
+    // Don't auto-pick a default rate — make the user choose explicitly.
     setSelectedRateKey('');
     setIsCustomRate(false);
-    const newOptions = buildRateOptions(terms, newFacilityId);
-    if (newOptions.length > 0 && !newOptions.some(o => o.amount.toString() === rate)) {
-      setRate(newOptions[0].amount.toString());
-      setSelectedRateKey('rate-0');
-    }
+    setRate('');
     // Reset engagement override when facility changes — defaults inherit from new facility
     const newFac = facilities.find(f => f.id === newFacilityId);
     setShowEngagementOverride(false);

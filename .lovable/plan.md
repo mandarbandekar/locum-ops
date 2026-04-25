@@ -1,46 +1,60 @@
-# Better Time Selector for Shift Add Flow
-
-## What's wrong today
-Across all "Add a shift" surfaces, the start/end times are pre-populated with hardcoded defaults (e.g. `08:00` → `18:00` in onboarding, `08:00` → `16:00` in the main schedule dialog). Users often submit those defaults without realizing it, creating shifts at times they don't actually work. The control itself is also the bare browser-native `<input type="time">`, which looks inconsistent across browsers and doesn't match the rest of the form styling.
+# Strict Validation for Shift Add Flow + Remove Default Rates
 
 ## Goal
-1. **No assumed default times** — fields start empty and the user must actively choose.
-2. **A purpose-built time picker** that feels like the rest of LocumOps (sage/gold theme, DM Sans, 8px radius), is fast on both desktop and mobile, and helps the user pick common shift times in one tap.
+1. Block "finalize shift" until **every** required selection is made — only the **note** stays optional.
+2. Stop pre-filling a rate. The rate field starts empty; the user must pick one (preset or custom) before they can save.
 
-## Surfaces affected
-All three "add shift" entry points get the same new control:
-- `src/components/schedule/ShiftFormDialog.tsx` — main add/edit shift dialog (also used in inline week-grid creation)
-- `src/components/onboarding/OnboardingShiftStep.tsx` — onboarding "Log your first shift"
-- `src/components/onboarding/ManualShiftForm.tsx` — manual setup flow
+## Required selections (must all be set)
+Facility · Date(s) · Start time · End time · Rate (preset or custom > 0)
 
-## New component: `TimePicker`
-Location: `src/components/ui/time-picker.tsx`
+Optional: Notes, Color (color keeps its existing 'blue' default — it's a visual tag, not a missing decision).
 
-Behavior:
-- Trigger looks like our standard Input (h-10, 8px radius, 14px text). Empty state shows muted placeholder "Select start time" / "Select end time" with a clock icon — never a pre-filled time.
-- Click opens a Popover with `pointer-events-auto`.
-- Inside the popover, two stacked sections:
-  1. **Quick presets** (chip row): `6:00 AM`, `7:00 AM`, `8:00 AM`, `9:00 AM`, `12:00 PM`, `2:00 PM`, `5:00 PM`, `8:00 PM`. Tapping a chip selects and closes.
-  2. **Precise pick**: two scrollable columns — Hours (1–12) and Minutes (00, 15, 30, 45) — plus an AM/PM toggle. Selecting all three confirms via a "Set time" button.
-- Keyboard accessible (arrow keys move within column, Enter confirms, Esc cancels).
-- Returns value in `HH:mm` (24-hour) so the existing data layer is unchanged.
-- Mobile: popover becomes a bottom sheet with the same content.
+## Files to change
 
-End-time helper: when the start time is set and the end time is still empty, show a thin helper row above the chip presets — "+4h", "+6h", "+8h", "+10h", "+12h" — that pre-computes likely end times relative to the chosen start. Selecting one fills the end time and closes.
+### 1. `src/components/schedule/ShiftFormDialog.tsx`
 
-## Form changes
-For each of the three forms above:
-- Initialize `startTime` and `endTime` to `''` (empty) instead of `'08:00' / '16:00' / '18:00'`.
-- Replace each `<Input type="time" ... />` with `<TimePicker value={...} onChange={...} placeholder="..." />`.
-- Make submit/save button disabled until both times are set (the existing `canSubmit` checks already require truthy values, so they continue to work).
-- In `ShiftFormDialog`, the special-case math that derived end time from `defaultStartTime + 8h` (lines 71–72) is removed; the new `TimePicker`'s "+8h" helper covers that ergonomically without silently filling values.
-- The "reset after add another" handler in `OnboardingShiftStep.handleAddAnotherShift` resets times back to `''` instead of `'08:00' / '18:00'`.
+**Stop auto-defaulting the rate** (`handleFacilityChange`, ~lines 242–256):
+- Remove the block that sets `rate` and `selectedRateKey` to the first preset when the facility changes.
+- Always reset to `rate=''`, `selectedRateKey=''`, `isCustomRate=false` — the user picks from the dropdown.
+
+**Step 2 → Next button gating** (~line 621):
+- Disable until `selectedDates.length > 0 && startTime && endTime && !hoursInvalidReason`.
+- When `startTime` or `endTime` is missing, show a small inline hint under the time row: "Set a start and end time to continue."
+
+**Step 3 → Submit button gating** (~line 800):
+- Disable until all of the above plus a valid rate:
+  - Preset path: `Number(rate) > 0` (i.e., a row was selected)
+  - Custom path: `Number(rate) > 0` (label is still optional; we already fall back to a generated label on save)
+- Add the same combined check for `selectedDates.length === 0 || !startTime || !endTime || !!hoursInvalidReason || !(Number(rate) > 0)`.
+- When disabled, show a tiny muted helper above the button listing what's missing (e.g. "Add a rate to finalize.").
+
+**Edit-mode submit** (~line 997):
+- Same combined check.
+
+**`handleSubmit` guard** (~line 312): early-return with a toast if any required field is missing, as a defensive backstop.
+
+### 2. `src/components/onboarding/OnboardingShiftStep.tsx`
+
+- Remove the `defaultRate` constant and its `|| 650` fallback. Initialize `const [rate, setRate] = useState('')`.
+- The "Day rate ($)" input keeps `placeholder="650"` for guidance only (no value injected).
+- Update `handleSubmit` guard to also require `rate && Number(rate) > 0`.
+- Update the hidden sticky-CTA `disabled` and `data-can-save` to include the rate check.
+- The downstream invoice/earnings preview uses `parseFloat(rate) || 0` instead of falling back to 650, so an unset rate never silently shows fake earnings (the preview only renders after submit, which is now blocked until rate is set, so no visual change in practice).
+
+### 3. `src/components/onboarding/ManualShiftForm.tsx`
+
+- Add `rate` to `canSubmit`: `facilityId && date && startTime && endTime && rate && Number(rate) > 0`.
+- Mark the Rate label with the red asterisk like the time fields.
+- Keep the dollar placeholder ("e.g. 800"), but no pre-filled value beyond what the parent supplies via `defaultRate` — and since the user wants no defaults, we'll also stop passing `defaultRate` from the manual setup screen so the field starts empty. (Quick check of `ManualExpandScreen.tsx` if it passes `defaultRate`; if it does, set it to `undefined`.)
 
 ## Non-goals
-- No change to how shifts are stored or to invoice/rate calculations.
-- No change to date pickers, facility selectors, or the rest of the form layout.
-- The Block Time dialog and other non-shift time inputs are out of scope for this pass.
+- No change to the time picker built in the previous turn.
+- No change to color, notes, engagement override, or conflict warnings.
+- No change to the data layer or invoice generation.
 
-## Test/QA
-- Unit-test `TimePicker` value formatting (24h output for AM/PM input, "+Nh" math wrapping past midnight stays within the same day with a visible warning).
-- Manually verify in all three flows: empty initial state, preset selection, precise selection, "+Nh" helper, mobile sheet behavior, and that the existing tests in `src/test/onboarding*.test.ts` still pass (they exercise `addShift` shape, not the input control).
+## QA
+- Try to advance Step 2 with no times set → button stays disabled, helper visible.
+- Try to submit Step 3 with no rate selected → button stays disabled, helper says "Add a rate".
+- Switch facility on Step 1 → rate dropdown resets to placeholder, not the first preset.
+- Edit existing shift → all fields are pre-populated as before; submit is enabled.
+- Onboarding "Log your first shift" → rate field starts empty, save button stays disabled until filled.
