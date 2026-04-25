@@ -899,8 +899,8 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
           </Row>
           <Row icon={Palette} label="Color" onEdit={() => setStep(3)}>
             <span className="inline-flex items-center gap-2">
-              <span className={cn('h-4 w-4 rounded-full', colorClass)} />
-              <span className="capitalize">{color}</span>
+              <span className={cn('h-4 w-4 rounded-full border border-border', colorDef.bg)} />
+              <span>{colorDef.label}</span>
             </span>
           </Row>
           <Row icon={StickyNote} label="Notes" onEdit={() => { setShowNotes(true); setStep(3); }}>
