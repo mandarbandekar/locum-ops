@@ -21,10 +21,12 @@ export function ManualShiftForm({ facilities, defaultFacilityId, defaultRate, on
   const [date, setDate] = useState('');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
-  const [rate, setRate] = useState(defaultRate?.toString() || '');
+  const [rate, setRate] = useState('');
   const [notes, setNotes] = useState('');
 
-  const canSubmit = facilityId && date && startTime && endTime;
+  const rateNum = parseFloat(rate);
+  const rateIsValid = !Number.isNaN(rateNum) && rateNum > 0;
+  const canSubmit = !!facilityId && !!date && !!startTime && !!endTime && rateIsValid;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -33,7 +35,7 @@ export function ManualShiftForm({ facilities, defaultFacilityId, defaultRate, on
       date,
       start_time: startTime,
       end_time: endTime,
-      rate: rate ? parseFloat(rate) : undefined,
+      rate: rateNum,
       notes: notes.trim() || undefined,
     });
   };
