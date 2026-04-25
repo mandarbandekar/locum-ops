@@ -879,8 +879,8 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
               <Clock className="h-3.5 w-3.5" /> Time
             </Label>
             <div className="grid grid-cols-2 gap-3">
-              <Input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="h-10" />
-              <Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="h-10" />
+              <TimePicker value={startTime} onChange={setStartTime} placeholder="Select start" label="Start time" />
+              <TimePicker value={endTime} onChange={setEndTime} placeholder="Select end" relativeToStart={startTime || undefined} label="End time" />
             </div>
             {activeRateKind === 'hourly' && hoursInvalidReason && (
               <p className="mt-1.5 text-[11px] text-destructive flex items-center gap-1">
