@@ -13,6 +13,7 @@ import { OnboardingBulkShiftCalendar } from '@/components/onboarding/OnboardingB
 import { OnboardingInvoiceReveal } from '@/components/onboarding/OnboardingInvoiceReveal';
 import { OnboardingLoopChoice } from '@/components/onboarding/OnboardingLoopChoice';
 import { OnboardingBusinessMap } from '@/components/onboarding/OnboardingBusinessMap';
+import { OnboardingWelcomeScreen } from '@/components/onboarding/OnboardingWelcomeScreen';
 import { AddClinicStepper, type AddClinicStepperHandle } from '@/components/facilities/AddClinicStepper';
 import { mapDefaultRatesToRateEntries, buildDefaultRatesFromRateEntries, inferBillingPreference, type DefaultRate, type BillingPreference } from '@/lib/onboardingRateMapping';
 import { termsToRates } from '@/components/facilities/RatesEditor';
@@ -22,6 +23,7 @@ import { toast } from 'sonner';
 type Phase = OnboardingPhase;
 
 const PHASE_STEP: Record<Phase, number> = {
+  welcome: 0,
   rate_card: 1,
   add_clinic: 2,
   bulk_shifts: 3,
@@ -31,6 +33,7 @@ const PHASE_STEP: Record<Phase, number> = {
 };
 const TOTAL_STEPS = 6;
 const PHASE_LABEL: Record<Phase, string> = {
+  welcome: 'Welcome',
   rate_card: 'Set up your rates',
   add_clinic: 'Add your first clinic',
   bulk_shifts: 'Add your shifts',
@@ -39,6 +42,7 @@ const PHASE_LABEL: Record<Phase, string> = {
   business_map: 'Your business in one place',
 };
 const PHASE_BACK: Record<Phase, Phase | null> = {
+  welcome: null,
   rate_card: null,
   add_clinic: 'rate_card',
   bulk_shifts: 'add_clinic',
@@ -65,7 +69,10 @@ export default function OnboardingPage() {
 
   // ── Hydrate from persisted progress (one-time) ──
   const initialProgress: OnboardingProgress = profile?.onboarding_progress ?? {};
-  const [phase, setPhase] = useState<Phase>(initialProgress.phase ?? 'rate_card');
+  const [phase, setPhase] = useState<Phase>(
+    initialProgress.phase ?? (initialProgress.welcome_seen ? 'rate_card' : 'welcome'),
+  );
+  const [welcomeSeen, setWelcomeSeen] = useState<boolean>(!!initialProgress.welcome_seen);
 
   const [defaultRates, setDefaultRates] = useState<DefaultRate[]>(profile?.default_rates ?? []);
   const [defaultBillingPreference, setDefaultBillingPreference] =
@@ -95,11 +102,13 @@ export default function OnboardingPage() {
     if (profile.default_rates?.length) setDefaultRates(profile.default_rates);
     if (profile.default_billing_preference) setDefaultBillingPreference(profile.default_billing_preference);
     if (p.phase) setPhase(p.phase);
+    else if (!p.welcome_seen) setPhase('welcome');
     if (p.first_facility_id !== undefined) setFirstFacilityId(p.first_facility_id);
     if (p.created_facility_ids) setCreatedFacilityIds(p.created_facility_ids);
     if (p.session_shift_ids) setSessionShiftIds(p.session_shift_ids);
     if (p.invoice_reveal_seen) setInvoiceRevealSeen(true);
     if (p.rate_card_skipped) setRateCardSkipped(true);
+    if (p.welcome_seen) setWelcomeSeen(true);
   }, [profile]);
 
   // ── Persist progress (debounced lightly via dependency batching) ──
@@ -112,12 +121,13 @@ export default function OnboardingPage() {
         session_shift_ids: sessionShiftIds,
         invoice_reveal_seen: invoiceRevealSeen,
         rate_card_skipped: rateCardSkipped,
+        welcome_seen: welcomeSeen,
         ...next,
         updated_at: new Date().toISOString(),
       };
       updateProfile({ onboarding_progress: merged });
     },
-    [phase, firstFacilityId, createdFacilityIds, sessionShiftIds, invoiceRevealSeen, rateCardSkipped, updateProfile],
+    [phase, firstFacilityId, createdFacilityIds, sessionShiftIds, invoiceRevealSeen, rateCardSkipped, welcomeSeen, updateProfile],
   );
 
   // Auto-save profile timezone on mount
@@ -387,6 +397,9 @@ export default function OnboardingPage() {
   // ─────────────────────────── Footer renderer ───────────────────────────
   const renderStickyFooter = (): React.ReactNode => {
     switch (phase) {
+      case 'welcome':
+        return null;
+
       case 'rate_card':
         return (
           <Button onClick={handleRateCardContinue} className="w-full h-12" size="lg">
@@ -499,6 +512,18 @@ export default function OnboardingPage() {
   // ─────────────────────────── Content renderer ───────────────────────────
   const renderContent = () => {
     switch (phase) {
+      case 'welcome':
+        return (
+          <OnboardingWelcomeScreen
+            firstName={profile?.first_name || user?.user_metadata?.first_name}
+            onContinue={() => {
+              setWelcomeSeen(true);
+              setPhase('rate_card');
+              persist({ phase: 'rate_card', welcome_seen: true });
+            }}
+          />
+        );
+
       case 'rate_card':
         return (
           <OnboardingRateCard
@@ -675,6 +700,7 @@ export default function OnboardingPage() {
       stepLabel={PHASE_LABEL[phase]}
       onBack={PHASE_BACK[phase] ? goBack : undefined}
       stickyFooter={renderStickyFooter()}
+      hideProgress={phase === 'welcome'}
     >
       {renderContent()}
     </OnboardingLayout>
