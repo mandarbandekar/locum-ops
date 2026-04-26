@@ -1,76 +1,60 @@
-## Diagnosis
+## Goal
 
-The password reset flow is broken because the recovery link in the email **does not actually land users on `/reset-password`** — it lands them on the app root (`/`), where the recovery session is silently consumed and the user ends up either on the dashboard or, if they manually navigate to `/reset-password`, on the "Please use the link from your email" fallback screen.
+Insert a visually rich "Welcome / Why LocumOps" screen as the first step of the onboarding flow — shown right before "Set up your rates" (the current Step 1 of 6). It will sell the platform's benefits in a polished, animated way, then drop the user into the existing rate setup.
 
-### Step-by-step trace of what happens today
+## What the user will see
 
-1. User clicks **Forgot Password** → `ForgotPasswordPage.tsx` calls:
-   ```ts
-   supabase.auth.resetPasswordForEmail(email, {
-     redirectTo: `${window.location.origin}/reset-password`,
-   })
-   ```
-   So the *intended* landing URL is correct.
+A full-screen onboarding step (no app chrome, sidebar, or progress bar) themed with our sage/gold palette. Center-stage hero headline + subhead, followed by a grid of 4 animated benefit cards, then a single primary CTA "Let's get set up →".
 
-2. Supabase generates a recovery link of the form:
-   ```
-   https://<project>.supabase.co/auth/v1/verify?token=...&type=recovery&redirect_to=https://app.locum-ops.com/reset-password
-   ```
-   This URL is passed to our `auth-email-hook` edge function as `payload.data.url`, and we render it into the email's "Reset Password" button verbatim. ✅ Email is fine.
+### Benefit cards (4)
+1. **One home for every clinic** — Store contracts, contacts, rates, and notes per facility.
+2. **Shifts → Invoices, automatically** — Log a shift; an invoice drafts itself.
+3. **Never miss a renewal** — License, DEA, and CE tracking with proactive reminders.
+4. **Tax-ready year-round** — Real-time withholding nudges and CPA-ready exports.
 
-3. User clicks the button. Supabase verifies the token server-side. But here's the problem: Supabase's verify endpoint **only honors `redirect_to` when the URL is in the project's allowed Redirect URLs list**. If `https://app.locum-ops.com/reset-password` (and the preview/lovable.app variants) are not whitelisted, Supabase falls back to the configured **Site URL**, which is currently the app root.
+Each card: large icon (lucide), short title, one-line description. Subtle stagger-in animation on mount, gentle hover lift.
 
-4. Even if `/reset-password` *is* whitelisted on the published domain, the link delivered to the user (screenshot shows `app.locum-ops.com`) is going through the same path, and based on the user reports the redirect lands at `/`, not `/reset-password`.
+### Visual treatment
+- Soft gradient background (sage → background) with low-opacity blurred orbs for depth.
+- Animated entrance: hero fades/slides in first, cards stagger 80ms apart.
+- Floating "what you'll do next" footer chip: "Takes about 3 minutes" with a clock icon.
+- Single CTA button (primary sage) — no "skip" (this is purely informational, one screen).
+- Respects light/dark mode and brand tokens from `mem://style/visual-identity`.
 
-5. Either way, when the user lands at `/` with `#access_token=...&type=recovery` in the hash:
-   - `AuthContext` immediately picks up the session and marks them signed-in.
-   - `AuthenticatedApp` renders the dashboard (or onboarding/welcome).
-   - `ResetPasswordPage` never mounts, so its `type=recovery` hash detector never runs.
-   - The recovery hash is silently consumed by Supabase's session handling.
+### Skip-on-return behavior
+Shown only the first time a user lands on onboarding. We persist a `welcome_seen` flag in `onboarding_progress`; returning users (resumed mid-flow) jump straight to their saved phase. Existing users mid-flow are unaffected.
 
-6. If the user then manually navigates to `/reset-password`, the hash is gone, `isRecovery` stays `false`, and they see the "Please use the link from your email to access it" message — exactly the screenshot they shared.
+## Technical Implementation
 
-### Why the previous "fix" didn't work
+### New phase + component
+- Add new phase `welcome` to `OnboardingPhase` in `src/contexts/UserProfileContext.tsx` and to `OnboardingProgress` add `welcome_seen?: boolean`.
+- Update `src/pages/OnboardingPage.tsx`:
+  - Add `welcome` to `PHASE_STEP`, `PHASE_LABEL`, `PHASE_BACK` maps. `welcome` step = 0 (no progress bar shown) and `PHASE_BACK.rate_card = 'welcome'` is intentionally **not** set (welcome is not reachable via Back — it's a one-shot intro).
+  - Bump `TOTAL_STEPS` reference: keep total at 6 (welcome doesn't count toward setup steps); pass a flag to `OnboardingLayout` to hide the progress chrome on welcome.
+  - Initial phase resolution: if no persisted phase AND `!welcome_seen` → start at `welcome`; otherwise honor saved phase.
+  - On CTA click: set `welcome_seen: true`, advance to `rate_card`, persist.
+- Create `src/components/onboarding/OnboardingWelcomeScreen.tsx`:
+  - Receives `onContinue: () => void`.
+  - Uses `Card`, `Button`, lucide icons (`Building2`, `Receipt`, `ShieldCheck`, `Calculator`, `Clock`, `ArrowRight`, `Sparkles`).
+  - Tailwind animation classes for stagger (`animate-in fade-in slide-in-from-bottom-4` with inline `style={{ animationDelay }}`).
+  - Background decorative elements as absolutely-positioned blurred divs.
 
-The previous change added the `/reset-password` route inside `AuthenticatedApp`. That makes the route reachable when signed in, but does nothing about the fact that **the recovery link doesn't navigate there in the first place** — it lands on `/`.
+### OnboardingLayout
+- Add optional `hideProgress?: boolean` prop; when true, render without the "Step X of 6" header/progress bar (welcome screen uses this).
 
-## The Fix
+### Analytics
+- Fire `onboarding_welcome_viewed` on mount and `onboarding_welcome_continued` on CTA via existing `trackOnboarding()` helper.
 
-Two complementary changes — one defensive (handles the link landing anywhere in the app), one corrective (makes the redirect target explicit and reliable).
+## Files to modify
+- `src/contexts/UserProfileContext.tsx` — extend phase + progress types
+- `src/pages/OnboardingPage.tsx` — wire new phase
+- `src/components/onboarding/OnboardingLayout.tsx` — `hideProgress` prop
+- `src/lib/onboardingAnalytics.ts` — add 2 event names
 
-### 1. Global recovery-hash interceptor (primary fix)
+## Files to create
+- `src/components/onboarding/OnboardingWelcomeScreen.tsx`
 
-Add a small effect at the top of `AuthGate` (or a dedicated `<RecoveryRedirect />` component mounted inside `BrowserRouter`) that runs on every load:
-
-- Inspect `window.location.hash` for `type=recovery`.
-- If found AND the current pathname is not already `/reset-password`, immediately `navigate('/reset-password' + window.location.hash, { replace: true })`, **preserving the hash** so `ResetPasswordPage` can detect it.
-- Also listen for `supabase.auth.onAuthStateChange` event `'PASSWORD_RECOVERY'` and do the same redirect — this catches the case where Supabase fires the event slightly later than the initial render.
-
-This guarantees that no matter where the recovery link lands (`/`, `/dashboard`, `/welcome`, `/onboarding`, etc.), the user is forwarded to the reset screen with the recovery hash intact.
-
-### 2. Harden `ResetPasswordPage`
-
-- Remove the strict gate that hides the form when `isRecovery === false`. Instead:
-  - Treat the page as the password-update screen for any authenticated session that arrived via recovery OR has a valid session within ~5 minutes of a `PASSWORD_RECOVERY` event.
-  - If neither hash nor recovery event is present and there's no session, show the "Use the email link" fallback (current behavior, but only as a last resort).
-- Keep the `onAuthStateChange` listener so the form unlocks as soon as Supabase fires `PASSWORD_RECOVERY`.
-
-### 3. Verify Supabase Redirect URLs (configuration check)
-
-Confirm in Lovable Cloud auth settings that the Redirect URL allow-list includes:
-- `https://app.locum-ops.com/reset-password`
-- `https://app.locum-ops.com/**`
-- `https://locum-ops.lovable.app/reset-password`
-- `https://locum-ops.lovable.app/**`
-- (Optional) preview URL `https://*.lovable.app/**`
-
-If any are missing, Supabase will silently drop `redirect_to` and fall back to the Site URL, which is what we believe is happening. I'll surface this as an action for you to verify, since it lives in cloud auth config rather than the codebase.
-
-## Files to change
-
-- `src/App.tsx` — add a `RecoveryRedirect` effect inside `BrowserRouter` that watches `location.hash` and `onAuthStateChange('PASSWORD_RECOVERY')` and force-navigates to `/reset-password` with the hash preserved.
-- `src/pages/ResetPasswordPage.tsx` — relax the `isRecovery` gate so it also accepts an active session right after the recovery event, and show the form whenever the user has a recovery context.
-
-## Why this will resolve the user-reported bug
-
-The interceptor catches the recovery hash regardless of which authenticated route Supabase lands them on, so the user always sees the password form. The page hardening then ensures the form renders even in edge cases where the hash has already been processed by Supabase before the route mounted.
+## Out of scope
+- No video/Lottie assets (kept pure CSS/SVG for fast load and zero new deps).
+- No A/B variants — single welcome screen.
+- No changes to the rate-card screen itself.
