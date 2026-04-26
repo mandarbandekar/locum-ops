@@ -10,6 +10,8 @@ interface OnboardingLayoutProps {
   onBack?: () => void;
   /** Sticky bottom CTA content — rendered in fixed bar at bottom */
   stickyFooter?: React.ReactNode;
+  /** When true, hides the top progress bar + step label (e.g. for the welcome intro). */
+  hideProgress?: boolean;
 }
 
 export function OnboardingLayout({
@@ -19,8 +21,17 @@ export function OnboardingLayout({
   stepLabel,
   onBack,
   stickyFooter,
+  hideProgress,
 }: OnboardingLayoutProps) {
   const progress = (step / totalSteps) * 100;
+
+  if (hideProgress) {
+    return (
+      <div className="h-screen w-screen overflow-y-auto bg-background">
+        {children}
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen w-screen overflow-hidden flex flex-col bg-background">

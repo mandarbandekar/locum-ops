@@ -36,6 +36,8 @@
 import { posthog } from '@/lib/posthog';
 
 export type OnboardingEvent =
+  | 'onboarding_welcome_viewed'
+  | 'onboarding_welcome_continued'
   | 'onboarding_rate_card_viewed'
   | 'onboarding_billing_preference_selected'
   | 'onboarding_rate_added'
