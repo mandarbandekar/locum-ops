@@ -122,6 +122,8 @@ function AuthenticatedApp() {
           <Route path="/import" element={<Navigate to="/" replace />} />
           <Route path="/onboarding" element={<Navigate to="/" replace />} />
           <Route path="/login" element={<Navigate to="/" replace />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/forgot-password" element={<Navigate to="/settings/security" replace />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Layout>
