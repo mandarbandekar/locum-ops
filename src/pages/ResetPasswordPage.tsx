@@ -18,14 +18,28 @@ export default function ResetPasswordPage() {
 
   useEffect(() => {
     const hash = window.location.hash;
-    if (hash.includes('type=recovery')) {
+    const query = window.location.search;
+    // Detect recovery from URL hash (#type=recovery) or query (?type=recovery)
+    if (hash.includes('type=recovery') || query.includes('type=recovery')) {
       setIsRecovery(true);
     }
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    // Also unlock if Supabase fires the recovery event after mount
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
         setIsRecovery(true);
       }
+      // Fallback: if we landed here directly from a recovery link, the
+      // SIGNED_IN event will fire even though the hash may already be cleared.
+      // Treat any active session reaching this page as a recovery context.
+      if (event === 'SIGNED_IN' && session) {
+        setIsRecovery(true);
+      }
+    });
+
+    // Check if there's already a session (recovery link auto-signs the user in)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) setIsRecovery(true);
     });
 
     return () => subscription.unsubscribe();
