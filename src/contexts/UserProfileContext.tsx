@@ -253,6 +253,10 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
           gFirst = parts[0] || '';
           gLast = parts.slice(1).join(' ') || '';
         }
+        // Email signups already collected name/profession on the WelcomePage form
+        // before verification, so skip the welcome screen and drop them straight
+        // into onboarding once they confirm their email.
+        const collectedDuringSignup = !!(gFirst || gLast || meta.profession);
         const insertData: any = {
           user_id: user!.id,
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -261,7 +265,7 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
           company_name: meta.company || '',
           profession: meta.profession || 'other',
           invoice_email: authUser?.email || null,
-          has_seen_welcome: isOAuth,
+          has_seen_welcome: isOAuth || collectedDuringSignup,
         };
 
         const { data: newData, error: insertErr } = await db('user_profiles')
