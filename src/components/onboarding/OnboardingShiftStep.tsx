@@ -154,7 +154,7 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
           </div>
           <div className="space-y-1.5">
             <Label>End time <span className="text-destructive">*</span></Label>
-            <TimePicker value={endTime} onChange={setEndTime} placeholder="Select end" relativeToStart={startTime || undefined} label="End time" />
+            <TimePicker value={endTime} onChange={setEndTime} placeholder="Select end" label="End time" />
           </div>
         </div>
 
