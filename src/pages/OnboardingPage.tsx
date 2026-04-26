@@ -397,6 +397,9 @@ export default function OnboardingPage() {
   // ─────────────────────────── Footer renderer ───────────────────────────
   const renderStickyFooter = (): React.ReactNode => {
     switch (phase) {
+      case 'welcome':
+        return null;
+
       case 'rate_card':
         return (
           <Button onClick={handleRateCardContinue} className="w-full h-12" size="lg">
@@ -509,6 +512,18 @@ export default function OnboardingPage() {
   // ─────────────────────────── Content renderer ───────────────────────────
   const renderContent = () => {
     switch (phase) {
+      case 'welcome':
+        return (
+          <OnboardingWelcomeScreen
+            firstName={profile?.first_name || user?.user_metadata?.first_name}
+            onContinue={() => {
+              setWelcomeSeen(true);
+              setPhase('rate_card');
+              persist({ phase: 'rate_card', welcome_seen: true });
+            }}
+          />
+        );
+
       case 'rate_card':
         return (
           <OnboardingRateCard
