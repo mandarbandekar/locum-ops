@@ -1,85 +1,76 @@
-## Goals
+## Diagnosis
 
-1. Make the time picker dramatically simpler and mobile-friendly.
-2. Properly support overnight shifts (e.g. 8 PM → 6 AM) end-to-end.
-3. Replace the "Monterey Bay" brand palette in the shift color picker with a soft, low-saturation standard palette that doesn't visually shout on the calendar.
+The password reset flow is broken because the recovery link in the email **does not actually land users on `/reset-password`** — it lands them on the app root (`/`), where the recovery session is silently consumed and the user ends up either on the dashboard or, if they manually navigate to `/reset-password`, on the "Please use the link from your email" fallback screen.
 
----
+### Step-by-step trace of what happens today
 
-## 1. New Time Picker (`src/components/ui/time-picker.tsx`)
+1. User clicks **Forgot Password** → `ForgotPasswordPage.tsx` calls:
+   ```ts
+   supabase.auth.resetPasswordForEmail(email, {
+     redirectTo: `${window.location.origin}/reset-password`,
+   })
+   ```
+   So the *intended* landing URL is correct.
 
-Replace the current 3-section panel (relative chips + quick-pick grid + 3 scrolling columns + AM/PM + Set button) with a single, calm interface.
+2. Supabase generates a recovery link of the form:
+   ```
+   https://<project>.supabase.co/auth/v1/verify?token=...&type=recovery&redirect_to=https://app.locum-ops.com/reset-password
+   ```
+   This URL is passed to our `auth-email-hook` edge function as `payload.data.url`, and we render it into the email's "Reset Password" button verbatim. ✅ Email is fine.
 
-**New layout — one panel, top to bottom:**
+3. User clicks the button. Supabase verifies the token server-side. But here's the problem: Supabase's verify endpoint **only honors `redirect_to` when the URL is in the project's allowed Redirect URLs list**. If `https://app.locum-ops.com/reset-password` (and the preview/lovable.app variants) are not whitelisted, Supabase falls back to the configured **Site URL**, which is currently the app root.
 
-- **Big read-out** at the top showing the currently chosen time (e.g. `8:00 AM`), tappable to toggle AM/PM.
-- **One row of common-time chips** (6 total, not 8): `6 AM · 8 AM · 12 PM · 2 PM · 6 PM · 10 PM`. Tapping a chip selects it and closes the picker immediately (today's behavior).
-- **Two compact steppers** side by side: `Hour [− value +]` and `Minute [− value +]`. Minute steps in 15-min increments; hour wraps 1↔12. No scroll wheels, no separate "Hr / Min / AM-PM" columns.
-- **Single AM/PM segmented toggle** (two buttons) under the steppers.
-- Remove the explicit "Set time" button — selection commits on close (chip tap closes; clicking outside or pressing Done closes). Keep one small `Done` button on mobile sheet only, since tapping outside a bottom sheet is less obvious.
-- Remove the "From start (+4h, +6h…)" relative chips — they were the main source of clutter and overlap with the common-time chips.
+4. Even if `/reset-password` *is* whitelisted on the published domain, the link delivered to the user (screenshot shows `app.locum-ops.com`) is going through the same path, and based on the user reports the redirect lands at `/`, not `/reset-password`.
 
-**Mobile behavior:** keep the existing `Sheet` (bottom drawer) wrapper. Because the new panel is shorter, the sheet will fit on small screens without scrolling.
+5. Either way, when the user lands at `/` with `#access_token=...&type=recovery` in the hash:
+   - `AuthContext` immediately picks up the session and marks them signed-in.
+   - `AuthenticatedApp` renders the dashboard (or onboarding/welcome).
+   - `ResetPasswordPage` never mounts, so its `type=recovery` hash detector never runs.
+   - The recovery hash is silently consumed by Supabase's session handling.
 
-**Accessibility:** stepper buttons get `aria-label="Increase hour"` etc.; large 44px touch targets.
+6. If the user then manually navigates to `/reset-password`, the hash is gone, `isRecovery` stays `false`, and they see the "Please use the link from your email to access it" message — exactly the screenshot they shared.
 
-This keeps the public API (`value`, `onChange`, `placeholder`, `label`, `id`, `disabled`, `className`) so all existing call sites (`ShiftFormDialog`, `ManualShiftForm`, etc.) keep working. The unused `relativeToStart` prop is removed.
+### Why the previous "fix" didn't work
 
----
+The previous change added the `/reset-password` route inside `AuthenticatedApp`. That makes the route reachable when signed in, but does nothing about the fact that **the recovery link doesn't navigate there in the first place** — it lands on `/`.
 
-## 2. Overnight Shift Support
+## The Fix
 
-Today the form correctly computes hours across midnight (`if (mins < 0) mins += 24*60`), but `handleSubmit` in `src/components/schedule/ShiftFormDialog.tsx` builds `end_datetime` on the **same date** as start, which silently produces an end time *before* start. That breaks invoicing, conflict detection, and calendar display.
+Two complementary changes — one defensive (handles the link landing anywhere in the app), one corrective (makes the redirect target explicit and reliable).
 
-**Changes in `ShiftFormDialog.tsx`:**
+### 1. Global recovery-hash interceptor (primary fix)
 
-- When building `end_datetime`, detect overnight (end ≤ start) and add 1 day to the end date.
-- Apply the same fix in the multi-date loop (each selected date independently).
-- In the Step 4 "Review your shift" preview, when the shift is overnight:
-  - Show the date as `Mon, Apr 27 → Tue, Apr 28`.
-  - Add a small `Overnight` chip next to the time range.
-  - Make sure calculated hours displayed already reflect the wrap (it does).
-- Update conflict detection input the same way (currently builds same-day end string in the `conflicts` `useMemo`).
+Add a small effect at the top of `AuthGate` (or a dedicated `<RecoveryRedirect />` component mounted inside `BrowserRouter`) that runs on every load:
 
-**Changes in `src/components/onboarding/ManualShiftForm.tsx`:** same overnight end-date adjustment when persisting.
+- Inspect `window.location.hash` for `type=recovery`.
+- If found AND the current pathname is not already `/reset-password`, immediately `navigate('/reset-password' + window.location.hash, { replace: true })`, **preserving the hash** so `ResetPasswordPage` can detect it.
+- Also listen for `supabase.auth.onAuthStateChange` event `'PASSWORD_RECOVERY'` and do the same redirect — this catches the case where Supabase fires the event slightly later than the initial render.
 
-No DB schema change needed — `start_datetime` / `end_datetime` are already full ISO timestamps.
+This guarantees that no matter where the recovery link lands (`/`, `/dashboard`, `/welcome`, `/onboarding`, etc.), the user is forwarded to the reset screen with the recovery hash intact.
 
----
+### 2. Harden `ResetPasswordPage`
 
-## 3. Soft Standard Color Palette
+- Remove the strict gate that hides the form when `isRecovery === false`. Instead:
+  - Treat the page as the password-update screen for any authenticated session that arrived via recovery OR has a valid session within ~5 minutes of a `PASSWORD_RECOVERY` event.
+  - If neither hash nor recovery event is present and there's no session, show the "Use the email link" fallback (current behavior, but only as a last resort).
+- Keep the `onAuthStateChange` listener so the form unlocks as soon as Supabase fires `PASSWORD_RECOVERY`.
 
-Replace the `SHIFT_COLORS` array in `src/types/index.ts` with a softer, standard palette. Keep the same 8 `ShiftColor` enum values (`blue, green, red, orange, purple, pink, teal, yellow`) so no data migration is needed — only the visual tokens and labels change.
+### 3. Verify Supabase Redirect URLs (configuration check)
 
-**New palette (light pastels, low saturation, work in both light & dark mode):**
+Confirm in Lovable Cloud auth settings that the Redirect URL allow-list includes:
+- `https://app.locum-ops.com/reset-password`
+- `https://app.locum-ops.com/**`
+- `https://locum-ops.lovable.app/reset-password`
+- `https://locum-ops.lovable.app/**`
+- (Optional) preview URL `https://*.lovable.app/**`
 
-| value | label | light bg | dark bg |
-|---|---|---|---|
-| blue | Blue | `#DBEAFE` | `#1E3A5F` |
-| green | Green | `#DCFCE7` | `#1E4D2B` |
-| red | Red | `#FEE2E2` | `#5C1E1E` |
-| orange | Orange | `#FFEDD5` | `#5C3A1E` |
-| purple | Purple | `#EDE9FE` | `#3D2E5C` |
-| pink | Pink | `#FCE7F3` | `#5C1E45` |
-| teal | Teal | `#CCFBF1` | `#1E4D47` |
-| yellow | Yellow | `#FEF3C7` | `#5C4A1E` |
+If any are missing, Supabase will silently drop `redirect_to` and fall back to the Site URL, which is what we believe is happening. I'll surface this as an action for you to verify, since it lives in cloud auth config rather than the codebase.
 
-Text colors paired as readable mid-tones (e.g. `#1E3A8A` on blue light bg). Labels become plain color names ("Blue", "Green") instead of "Pacific / Kelp / Ochre".
+## Files to change
 
-Because the calendar and the picker both consume `SHIFT_COLORS`, they will stay in sync automatically (the recent fix from the previous turn).
+- `src/App.tsx` — add a `RecoveryRedirect` effect inside `BrowserRouter` that watches `location.hash` and `onAuthStateChange('PASSWORD_RECOVERY')` and force-navigates to `/reset-password` with the hash preserved.
+- `src/pages/ResetPasswordPage.tsx` — relax the `isRecovery` gate so it also accepts an active session right after the recovery event, and show the form whenever the user has a recovery context.
 
-The Step 4 preview chip in `ShiftFormDialog.tsx` will pick up the new label automatically.
+## Why this will resolve the user-reported bug
 
----
-
-## Files Changed
-
-- `src/components/ui/time-picker.tsx` — full rewrite of the panel (simpler UI, removes relative chips, removes Set-time button on desktop).
-- `src/types/index.ts` — replace `SHIFT_COLORS` palette + labels.
-- `src/components/schedule/ShiftFormDialog.tsx` — overnight end-date fix in submit + conflict detection; "Overnight" chip and date-range display in Step 4 preview.
-- `src/components/onboarding/ManualShiftForm.tsx` — overnight end-date fix on save.
-
-## Out of Scope
-
-- Memory updates for the new palette (will refresh `mem://style/visual-identity` only if the user wants the color change to be a project-wide rule beyond shift chips — confirm after build).
-- Editing individual chip styling on calendar/list views (they already read from `SHIFT_COLORS`, so they update automatically).
+The interceptor catches the recovery hash regardless of which authenticated route Supabase lands them on, so the user always sees the password form. The page hardening then ensures the form renders even in edge cases where the hash has already been processed by Supabase before the route mounted.

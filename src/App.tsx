@@ -2,7 +2,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { UserProfileProvider, useUserProfile } from "@/contexts/UserProfileContext";
 import { DataProvider } from "@/contexts/DataContext";
@@ -179,6 +181,40 @@ function AuthGate() {
 
 import { ThemeProvider } from 'next-themes';
 
+/**
+ * Forwards Supabase password recovery sessions to /reset-password regardless
+ * of where the recovery link initially lands the user. Supabase's verify
+ * endpoint redirects to the project Site URL with `#type=recovery&access_token=...`
+ * in the hash; without this interceptor the user lands on `/`, the hash gets
+ * silently consumed, and they never reach the reset form.
+ */
+function RecoveryRedirect() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const forwardIfRecovery = (hash: string) => {
+      if (!hash || !hash.includes('type=recovery')) return;
+      if (location.pathname === '/reset-password') return;
+      navigate(`/reset-password${hash}`, { replace: true });
+    };
+
+    // Initial check on mount and whenever the route changes
+    forwardIfRecovery(window.location.hash);
+
+    // Catch the case where Supabase fires PASSWORD_RECOVERY after mount
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY' && location.pathname !== '/reset-password') {
+        navigate(`/reset-password${window.location.hash || ''}`, { replace: true });
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [location.pathname, navigate]);
+
+  return null;
+}
+
 const App = () => (
   <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
     <QueryClientProvider client={queryClient}>
@@ -187,6 +223,7 @@ const App = () => (
         <Sonner />
         <AuthProvider>
           <BrowserRouter>
+            <RecoveryRedirect />
             <PostHogPageTracker />
             <AuthGate />
           </BrowserRouter>
