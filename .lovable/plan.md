@@ -1,60 +1,64 @@
 ## Goal
 
-Insert a visually rich "Welcome / Why LocumOps" screen as the first step of the onboarding flow — shown right before "Set up your rates" (the current Step 1 of 6). It will sell the platform's benefits in a polished, animated way, then drop the user into the existing rate setup.
+Polish the onboarding welcome screen so it feels like a true brand moment — richer graphics, clearer hierarchy, no repeated "Welcome" copy. Single file change: `src/components/onboarding/OnboardingWelcomeScreen.tsx`.
 
-## What the user will see
+## What changes for the user
 
-A full-screen onboarding step (no app chrome, sidebar, or progress bar) themed with our sage/gold palette. Center-stage hero headline + subhead, followed by a grid of 4 animated benefit cards, then a single primary CTA "Let's get set up →".
+**Top of screen — fix the redundancy**
+- Remove the eyebrow chip "Welcome to LocumOps" (it duplicates the headline).
+- Replace it with a single elegant brand mark: the `LocumOpsMark` emblem + small "LocumOps" wordmark, centered above the hero. This becomes the only "Welcome to LocumOps" cue.
+- Headline becomes punchier — drop the "Welcome, {firstName}" prefix variant. New copy:
+  - H1: **"Your relief practice, organized end-to-end."**
+  - Optional small greeting line above the H1 (only when firstName is known): *"Hi {firstName} —"* in muted small-caps, so it greets without competing.
+- Subhead unchanged in spirit, slightly tightened.
 
-### Benefit cards (4)
-1. **One home for every clinic** — Store contracts, contacts, rates, and notes per facility.
-2. **Shifts → Invoices, automatically** — Log a shift; an invoice drafts itself.
-3. **Never miss a renewal** — License, DEA, and CE tracking with proactive reminders.
-4. **Tax-ready year-round** — Real-time withholding nudges and CPA-ready exports.
+**Benefit cards — add real graphics, not just an icon**
+Each of the 4 cards gets a small custom illustrated motif rendered as inline SVG (no new assets, no new deps). Motifs use the sage primary + gold accent tokens and pick up on the card's theme:
 
-Each card: large icon (lucide), short title, one-line description. Subtle stagger-in animation on mount, gentle hover lift.
+1. **One home for every clinic** — stacked clinic "buildings" silhouette with a soft pin marker.
+2. **Shifts → invoices, automatically** — a stylized shift card morphing into an invoice (two overlapping rounded rects connected by an arrow).
+3. **Never miss a renewal** — shield with a clock arc + tick.
+4. **Tax-ready year-round** — calendar grid with a highlighted Q-marker and a small upward sparkline.
 
-### Visual treatment
-- Soft gradient background (sage → background) with low-opacity blurred orbs for depth.
-- Animated entrance: hero fades/slides in first, cards stagger 80ms apart.
-- Floating "what you'll do next" footer chip: "Takes about 3 minutes" with a clock icon.
-- Single CTA button (primary sage) — no "skip" (this is purely informational, one screen).
-- Respects light/dark mode and brand tokens from `mem://style/visual-identity`.
+Each motif sits in a 96×96 rounded "tile" with a soft sage→accent gradient background and 1px ring. Lucide icon is removed in favor of these richer SVG vignettes. Card body stays text-light: title + 1 line.
 
-### Skip-on-return behavior
-Shown only the first time a user lands on onboarding. We persist a `welcome_seen` flag in `onboarding_progress`; returning users (resumed mid-flow) jump straight to their saved phase. Existing users mid-flow are unaffected.
+**Layout & rhythm**
+- Cards become a 2×2 grid on desktop, stacked on mobile (unchanged structure, refined spacing).
+- Slightly reduce vertical scroll on tall viewports: tighter top padding, cards `gap-5` instead of `gap-4`.
+- Add a thin animated horizontal accent line (sage→gold gradient, ~120px) above the headline for polish.
+- Keep the existing blurred orbs background but tone down opacity (orbs were competing with the cards).
 
-## Technical Implementation
+**CTA & footer**
+- CTA stays "Let's get set up →".
+- Add a subtle row of 3 small reassurance pills under the timer line:
+  - "No credit card" · "Cancel anytime" · "Your data, encrypted"
+  Rendered as small ghost chips, separated by tiny dots. Keeps the moment trustworthy without sales-y noise.
 
-### New phase + component
-- Add new phase `welcome` to `OnboardingPhase` in `src/contexts/UserProfileContext.tsx` and to `OnboardingProgress` add `welcome_seen?: boolean`.
-- Update `src/pages/OnboardingPage.tsx`:
-  - Add `welcome` to `PHASE_STEP`, `PHASE_LABEL`, `PHASE_BACK` maps. `welcome` step = 0 (no progress bar shown) and `PHASE_BACK.rate_card = 'welcome'` is intentionally **not** set (welcome is not reachable via Back — it's a one-shot intro).
-  - Bump `TOTAL_STEPS` reference: keep total at 6 (welcome doesn't count toward setup steps); pass a flag to `OnboardingLayout` to hide the progress chrome on welcome.
-  - Initial phase resolution: if no persisted phase AND `!welcome_seen` → start at `welcome`; otherwise honor saved phase.
-  - On CTA click: set `welcome_seen: true`, advance to `rate_card`, persist.
-- Create `src/components/onboarding/OnboardingWelcomeScreen.tsx`:
-  - Receives `onContinue: () => void`.
-  - Uses `Card`, `Button`, lucide icons (`Building2`, `Receipt`, `ShieldCheck`, `Calculator`, `Clock`, `ArrowRight`, `Sparkles`).
-  - Tailwind animation classes for stagger (`animate-in fade-in slide-in-from-bottom-4` with inline `style={{ animationDelay }}`).
-  - Background decorative elements as absolutely-positioned blurred divs.
+**Motion**
+- Brand mark fades in first (delay 0).
+- Headline + subhead stagger in (60ms, 160ms).
+- Cards stagger 90ms apart with a gentle slide-from-bottom + fade.
+- Each card's SVG motif animates one internal element on hover (e.g., pin bobs, arrow nudges right, clock hand rotates a hair, sparkline draws). All CSS-only via Tailwind `group-hover:` transforms.
+- Respects `prefers-reduced-motion` automatically (Tailwind `motion-safe:` gating on the hover micro-animations).
 
-### OnboardingLayout
-- Add optional `hideProgress?: boolean` prop; when true, render without the "Step X of 6" header/progress bar (welcome screen uses this).
+## Visual language
 
-### Analytics
-- Fire `onboarding_welcome_viewed` on mount and `onboarding_welcome_continued` on CTA via existing `trackOnboarding()` helper.
+- Stays inside the sage/gold tokens from `mem://style/visual-identity`. No new colors.
+- Card surfaces: `bg-card/80` with `backdrop-blur-sm`, `border-border/60`, hover lifts to `border-primary/40` + shadow.
+- Motif tile gradient: `from-primary/15 via-primary/5 to-accent/15`, ring `ring-primary/15`.
+- Typography unchanged (Manrope display, Inter body).
 
-## Files to modify
-- `src/contexts/UserProfileContext.tsx` — extend phase + progress types
-- `src/pages/OnboardingPage.tsx` — wire new phase
-- `src/components/onboarding/OnboardingLayout.tsx` — `hideProgress` prop
-- `src/lib/onboardingAnalytics.ts` — add 2 event names
+## Technical notes
 
-## Files to create
-- `src/components/onboarding/OnboardingWelcomeScreen.tsx`
+- Single-file edit: `src/components/onboarding/OnboardingWelcomeScreen.tsx`.
+- Define 4 small inline SVG components co-located in the file (`ClinicMotif`, `InvoiceMotif`, `RenewalMotif`, `TaxMotif`) — each ~30–50 lines of SVG using `currentColor` + `text-primary` / `text-accent` for theming, with `group-hover:` classes on inner `<g>` / `<path>` elements for motion.
+- Import `LocumOpsMark` from `@/components/brand/LocumOpsMark` for the top brand cue.
+- Keep `trackOnboarding('onboarding_welcome_viewed')` and `_continued` events as-is.
+- No changes to props, routing, `OnboardingPage.tsx`, layout, or analytics module.
+- No new packages.
 
 ## Out of scope
-- No video/Lottie assets (kept pure CSS/SVG for fast load and zero new deps).
-- No A/B variants — single welcome screen.
-- No changes to the rate-card screen itself.
+
+- No Lottie/video.
+- No copy changes to subsequent onboarding steps.
+- No changes to `welcome_seen` persistence or phase routing.
