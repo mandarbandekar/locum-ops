@@ -75,14 +75,14 @@ export interface TermsSnapshot {
 
 export type ShiftColor = 'blue' | 'green' | 'red' | 'orange' | 'purple' | 'pink' | 'teal' | 'yellow';
 export const SHIFT_COLORS: { value: ShiftColor; label: string; bg: string; text: string }[] = [
-  { value: 'blue', label: 'Pacific', bg: 'bg-[#E8F3F5] dark:bg-[#1A3840]', text: 'text-[#0E3A44] dark:text-[#B0DDE5]' },
-  { value: 'green', label: 'Kelp', bg: 'bg-[#EBF3EE] dark:bg-[#1A2E22]', text: 'text-[#17382A] dark:text-[#A3D6B5]' },
-  { value: 'red', label: 'Ochre', bg: 'bg-[#F4EDE2] dark:bg-[#332818]', text: 'text-[#54401C] dark:text-[#EBD9C2]' },
-  { value: 'orange', label: 'Sandstone', bg: 'bg-[#F5E8D6] dark:bg-[#3A2D1A]', text: 'text-[#6B4A1F] dark:text-[#E8C898]' },
-  { value: 'purple', label: 'Driftwood', bg: 'bg-[#EFE9E2] dark:bg-[#2E2820]', text: 'text-[#4A3E32] dark:text-[#D4C4B0]' },
-  { value: 'pink', label: 'Coral Mist', bg: 'bg-[#F2E4DE] dark:bg-[#3A2620]', text: 'text-[#6B3D2E] dark:text-[#E5B8A5]' },
-  { value: 'teal', label: 'Tidepool', bg: 'bg-[#DDEDEA] dark:bg-[#1A3530]', text: 'text-[#1F4F47] dark:text-[#9FCDC0]' },
-  { value: 'yellow', label: 'Sandy Amber', bg: 'bg-[#FDF5E6] dark:bg-[#3A2E14]', text: 'text-[#7A5A14] dark:text-[#E8C66B]' },
+  { value: 'blue',   label: 'Blue',   bg: 'bg-[#DBEAFE] dark:bg-[#1E3A5F]', text: 'text-[#1E3A8A] dark:text-[#BFDBFE]' },
+  { value: 'green',  label: 'Green',  bg: 'bg-[#DCFCE7] dark:bg-[#1E4D2B]', text: 'text-[#166534] dark:text-[#BBF7D0]' },
+  { value: 'red',    label: 'Red',    bg: 'bg-[#FEE2E2] dark:bg-[#5C1E1E]', text: 'text-[#991B1B] dark:text-[#FECACA]' },
+  { value: 'orange', label: 'Orange', bg: 'bg-[#FFEDD5] dark:bg-[#5C3A1E]', text: 'text-[#9A3412] dark:text-[#FED7AA]' },
+  { value: 'purple', label: 'Purple', bg: 'bg-[#EDE9FE] dark:bg-[#3D2E5C]', text: 'text-[#5B21B6] dark:text-[#DDD6FE]' },
+  { value: 'pink',   label: 'Pink',   bg: 'bg-[#FCE7F3] dark:bg-[#5C1E45]', text: 'text-[#9D174D] dark:text-[#FBCFE8]' },
+  { value: 'teal',   label: 'Teal',   bg: 'bg-[#CCFBF1] dark:bg-[#1E4D47]', text: 'text-[#115E59] dark:text-[#99F6E4]' },
+  { value: 'yellow', label: 'Yellow', bg: 'bg-[#FEF3C7] dark:bg-[#5C4A1E]', text: 'text-[#854D0E] dark:text-[#FDE68A]' },
 ];
 export interface Shift {
   id: string;

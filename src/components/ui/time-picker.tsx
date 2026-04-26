@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
-import { Clock, Check } from 'lucide-react';
+import { Clock, Minus, Plus, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -10,8 +10,6 @@ export interface TimePickerProps {
   value: string; // 'HH:mm' (24h) or '' if unset
   onChange: (value: string) => void;
   placeholder?: string;
-  /** When provided and value is empty, shows "+Nh from start" helper chips. */
-  relativeToStart?: string; // 'HH:mm'
   className?: string;
   id?: string;
   disabled?: boolean;
@@ -19,9 +17,7 @@ export interface TimePickerProps {
   label?: string;
 }
 
-const PRESETS_24H = ['06:00', '07:00', '08:00', '09:00', '12:00', '14:00', '17:00', '20:00'];
-const HOUR_OPTIONS = Array.from({ length: 12 }, (_, i) => i + 1); // 1..12
-const MINUTE_OPTIONS = [0, 15, 30, 45];
+const COMMON_TIMES_24H = ['06:00', '08:00', '12:00', '14:00', '18:00', '22:00'];
 
 function to12h(value: string): { hour: number; minute: number; period: 'AM' | 'PM' } | null {
   if (!value) return null;
@@ -47,22 +43,15 @@ export function formatTimeLabel(value: string): string {
   return `${parts.hour}:${String(parts.minute).padStart(2, '0')} ${parts.period}`;
 }
 
-function addHoursTo(value: string, hoursToAdd: number): string {
-  const [h, m] = value.split(':').map(Number);
-  if (isNaN(h) || isNaN(m)) return '';
-  const total = h * 60 + m + hoursToAdd * 60;
-  // wrap within same day; cap at 23:59
-  const capped = Math.min(total, 23 * 60 + 59);
-  const hh = Math.floor(capped / 60);
-  const mm = capped % 60;
-  return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
-}
-
-interface PanelProps extends Omit<TimePickerProps, 'className' | 'id' | 'disabled' | 'placeholder'> {
+interface PanelProps {
+  value: string;
+  onChange: (v: string) => void;
+  label?: string;
   onClose: () => void;
+  showDoneButton?: boolean;
 }
 
-function TimePickerPanel({ value, onChange, relativeToStart, label, onClose }: PanelProps) {
+function TimePickerPanel({ value, onChange, label, onClose, showDoneButton }: PanelProps) {
   const initial = useMemo(() => to12h(value) || { hour: 8, minute: 0, period: 'AM' as const }, [value]);
   const [hour, setHour] = useState(initial.hour);
   const [minute, setMinute] = useState(initial.minute);
@@ -77,13 +66,42 @@ function TimePickerPanel({ value, onChange, relativeToStart, label, onClose }: P
     }
   }, [value]);
 
-  const commit = (next: string) => {
-    onChange(next);
+  // Live commit on every change so closing (outside click) preserves the selection.
+  useEffect(() => {
+    const next = to24h(hour, minute, period);
+    if (next !== value) onChange(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hour, minute, period]);
+
+  const bumpHour = (delta: number) => {
+    setHour(h => {
+      const n = h + delta;
+      if (n > 12) return 1;
+      if (n < 1) return 12;
+      return n;
+    });
+  };
+
+  const bumpMinute = (delta: number) => {
+    setMinute(m => {
+      const n = m + delta * 15;
+      if (n >= 60) return 0;
+      if (n < 0) return 45;
+      return n;
+    });
+  };
+
+  const commitChip = (preset: string) => {
+    const p = to12h(preset);
+    if (!p) return;
+    setHour(p.hour);
+    setMinute(p.minute);
+    setPeriod(p.period);
+    onChange(preset);
     onClose();
   };
 
-  const showRelative = !value && relativeToStart;
-  const relativeOffsets = [4, 6, 8, 10, 12];
+  const display = `${hour}:${String(minute).padStart(2, '0')}`;
 
   return (
     <div className="space-y-4">
@@ -93,132 +111,116 @@ function TimePickerPanel({ value, onChange, relativeToStart, label, onClose }: P
         </div>
       )}
 
-      {showRelative && (
-        <div className="space-y-1.5">
-          <div className="text-[11px] text-muted-foreground">
-            From start ({formatTimeLabel(relativeToStart!)})
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {relativeOffsets.map(h => {
-              const result = addHoursTo(relativeToStart!, h);
-              return (
-                <button
-                  key={h}
-                  type="button"
-                  onClick={() => commit(result)}
-                  className="px-2.5 py-1.5 rounded-md text-xs font-medium border border-border bg-background hover:bg-accent hover:text-accent-foreground transition-colors"
-                  title={`Ends at ${formatTimeLabel(result)}`}
-                >
-                  +{h}h
-                </button>
-              );
-            })}
+      {/* Big readout */}
+      <div className="text-center">
+        <div className="inline-flex items-baseline gap-2">
+          <span className="text-4xl font-semibold tabular-nums text-foreground">{display}</span>
+          <button
+            type="button"
+            onClick={() => setPeriod(p => (p === 'AM' ? 'PM' : 'AM'))}
+            className="text-lg font-medium text-primary hover:underline"
+            aria-label="Toggle AM/PM"
+          >
+            {period}
+          </button>
+        </div>
+      </div>
+
+      {/* Common time chips */}
+      <div className="flex flex-wrap justify-center gap-1.5">
+        {COMMON_TIMES_24H.map(p => {
+          const isActive = value === p;
+          return (
+            <button
+              key={p}
+              type="button"
+              onClick={() => commitChip(p)}
+              className={cn(
+                'px-2.5 py-1 rounded-full text-xs font-medium border transition-colors',
+                isActive
+                  ? 'border-primary bg-primary text-primary-foreground'
+                  : 'border-border bg-background hover:bg-accent hover:text-accent-foreground',
+              )}
+            >
+              {formatTimeLabel(p)}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Steppers */}
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5 text-center">Hour</div>
+          <div className="flex items-center justify-between rounded-lg border border-border bg-background h-12">
+            <button
+              type="button"
+              onClick={() => bumpHour(-1)}
+              className="h-full w-12 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent rounded-l-lg transition-colors"
+              aria-label="Decrease hour"
+            >
+              <Minus className="h-4 w-4" />
+            </button>
+            <span className="text-lg font-semibold tabular-nums">{hour}</span>
+            <button
+              type="button"
+              onClick={() => bumpHour(1)}
+              className="h-full w-12 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent rounded-r-lg transition-colors"
+              aria-label="Increase hour"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
           </div>
         </div>
+        <div>
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5 text-center">Minute</div>
+          <div className="flex items-center justify-between rounded-lg border border-border bg-background h-12">
+            <button
+              type="button"
+              onClick={() => bumpMinute(-1)}
+              className="h-full w-12 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent rounded-l-lg transition-colors"
+              aria-label="Decrease minute"
+            >
+              <Minus className="h-4 w-4" />
+            </button>
+            <span className="text-lg font-semibold tabular-nums">{String(minute).padStart(2, '0')}</span>
+            <button
+              type="button"
+              onClick={() => bumpMinute(1)}
+              className="h-full w-12 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent rounded-r-lg transition-colors"
+              aria-label="Increase minute"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* AM/PM segmented */}
+      <div className="grid grid-cols-2 gap-1.5">
+        {(['AM', 'PM'] as const).map(p => (
+          <button
+            key={p}
+            type="button"
+            onClick={() => setPeriod(p)}
+            className={cn(
+              'h-10 rounded-md border text-sm font-semibold transition-colors',
+              period === p
+                ? 'border-primary bg-primary text-primary-foreground'
+                : 'border-border bg-background hover:bg-accent hover:text-accent-foreground',
+            )}
+          >
+            {p}
+          </button>
+        ))}
+      </div>
+
+      {showDoneButton && (
+        <Button type="button" size="sm" className="w-full" onClick={onClose}>
+          <Check className="h-4 w-4 mr-1.5" />
+          Done
+        </Button>
       )}
-
-      <div className="space-y-1.5">
-        <div className="text-[11px] text-muted-foreground">Quick pick</div>
-        <div className="grid grid-cols-4 gap-1.5">
-          {PRESETS_24H.map(p => {
-            const isActive = value === p;
-            return (
-              <button
-                key={p}
-                type="button"
-                onClick={() => commit(p)}
-                className={cn(
-                  'px-2 py-1.5 rounded-md text-xs font-medium border transition-colors',
-                  isActive
-                    ? 'border-primary bg-primary text-primary-foreground'
-                    : 'border-border bg-background hover:bg-accent hover:text-accent-foreground'
-                )}
-              >
-                {formatTimeLabel(p)}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="space-y-1.5">
-        <div className="text-[11px] text-muted-foreground">Or set precisely</div>
-        <div className="flex items-stretch gap-2">
-          {/* Hours */}
-          <div className="flex-1">
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 text-center">Hr</div>
-            <div className="h-32 overflow-y-auto rounded-md border border-border bg-background">
-              {HOUR_OPTIONS.map(h => (
-                <button
-                  key={h}
-                  type="button"
-                  onClick={() => setHour(h)}
-                  className={cn(
-                    'w-full px-2 py-1 text-sm transition-colors',
-                    hour === h
-                      ? 'bg-primary text-primary-foreground font-semibold'
-                      : 'hover:bg-accent hover:text-accent-foreground'
-                  )}
-                >
-                  {h}
-                </button>
-              ))}
-            </div>
-          </div>
-          {/* Minutes */}
-          <div className="flex-1">
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 text-center">Min</div>
-            <div className="h-32 overflow-y-auto rounded-md border border-border bg-background">
-              {MINUTE_OPTIONS.map(m => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => setMinute(m)}
-                  className={cn(
-                    'w-full px-2 py-1 text-sm transition-colors',
-                    minute === m
-                      ? 'bg-primary text-primary-foreground font-semibold'
-                      : 'hover:bg-accent hover:text-accent-foreground'
-                  )}
-                >
-                  {String(m).padStart(2, '0')}
-                </button>
-              ))}
-            </div>
-          </div>
-          {/* AM/PM */}
-          <div className="flex-1">
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 text-center">&nbsp;</div>
-            <div className="grid grid-rows-2 gap-1 h-32">
-              {(['AM', 'PM'] as const).map(p => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => setPeriod(p)}
-                  className={cn(
-                    'rounded-md border text-sm font-semibold transition-colors',
-                    period === p
-                      ? 'border-primary bg-primary text-primary-foreground'
-                      : 'border-border bg-background hover:bg-accent hover:text-accent-foreground'
-                  )}
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <Button
-        type="button"
-        size="sm"
-        className="w-full"
-        onClick={() => commit(to24h(hour, minute, period))}
-      >
-        <Check className="h-4 w-4 mr-1.5" />
-        Set time
-      </Button>
     </div>
   );
 }
@@ -227,7 +229,6 @@ export function TimePicker({
   value,
   onChange,
   placeholder = 'Select time',
-  relativeToStart,
   className,
   id,
   disabled,
@@ -269,8 +270,8 @@ export function TimePicker({
             <TimePickerPanel
               value={value}
               onChange={onChange}
-              relativeToStart={relativeToStart}
               onClose={() => setOpen(false)}
+              showDoneButton
             />
           </div>
         </SheetContent>
@@ -289,7 +290,6 @@ export function TimePicker({
         <TimePickerPanel
           value={value}
           onChange={onChange}
-          relativeToStart={relativeToStart}
           label={label}
           onClose={() => setOpen(false)}
         />

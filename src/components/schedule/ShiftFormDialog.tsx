@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { TimePicker } from '@/components/ui/time-picker';
+import { TimePicker, formatTimeLabel } from '@/components/ui/time-picker';
 import { AlertTriangle, Trash2, CalendarDays, DollarSign, Clock, Building2, StickyNote, Palette, Plus, ChevronRight, ChevronLeft, Check, Pencil, Eye } from 'lucide-react';
 import { GuidedStep } from '@/components/onboarding/GuidedStep';
 import { AddFacilityDialog } from '@/components/AddFacilityDialog';
@@ -263,15 +263,32 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     };
   };
 
+  // Build start/end ISO timestamps for a given date, rolling end into the next
+  // day when end time is on/before start time (overnight shift).
+  const buildStartEndIso = useCallback((d: Date) => {
+    const dateStr = format(d, 'yyyy-MM-dd');
+    const start = new Date(`${dateStr}T${startTime}:00`);
+    let end = new Date(`${dateStr}T${endTime}:00`);
+    if (end.getTime() <= start.getTime()) {
+      end = new Date(end.getTime() + 24 * 60 * 60 * 1000);
+    }
+    return { startIso: start.toISOString(), endIso: end.toISOString() };
+  }, [startTime, endTime]);
+
+  const isOvernight = useMemo(() => {
+    if (!startTime || !endTime) return false;
+    const [sh, sm] = startTime.split(':').map(Number);
+    const [eh, em] = endTime.split(':').map(Number);
+    return (eh * 60 + em) <= (sh * 60 + sm);
+  }, [startTime, endTime]);
+
   const conflicts = useMemo(() => {
     if (isSubmitting || selectedDates.length === 0 || !facilityId || !startTime || !endTime) return [];
     const allConflicts: Shift[] = [];
     const seen = new Set<string>();
     for (const d of selectedDates) {
-      const dateStr = format(d, 'yyyy-MM-dd');
-      const startDt = `${dateStr}T${startTime}:00`;
-      const endDt = `${dateStr}T${endTime}:00`;
-      for (const c of detectShiftConflicts(shifts, { start_datetime: startDt, end_datetime: endDt, id: existing?.id })) {
+      const { startIso, endIso } = buildStartEndIso(d);
+      for (const c of detectShiftConflicts(shifts, { start_datetime: startIso, end_datetime: endIso, id: existing?.id })) {
         if (!seen.has(c.id)) {
           seen.add(c.id);
           allConflicts.push(c);
@@ -279,7 +296,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
       }
     }
     return allConflicts;
-  }, [shifts, selectedDates, startTime, endTime, existing?.id, facilityId, isSubmitting]);
+  }, [shifts, selectedDates, startTime, endTime, existing?.id, facilityId, isSubmitting, buildStartEndIso]);
 
   const saveCustomRateToTerms = useCallback(async () => {
     if (!isCustomRate || !saveCustomRate || !rate || Number(rate) <= 0) return;
@@ -333,12 +350,12 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
             rate_applied: Number(rate),
           };
       if (existing) {
-        const date = format(selectedDates[0] || new Date(), 'yyyy-MM-dd');
+        const { startIso, endIso } = buildStartEndIso(selectedDates[0] || new Date());
         await onSave({
           ...existing,
           facility_id: facilityId,
-          start_datetime: new Date(`${date}T${startTime}:00`).toISOString(),
-          end_datetime: new Date(`${date}T${endTime}:00`).toISOString(),
+          start_datetime: startIso,
+          end_datetime: endIso,
           ...ratePayload,
           notes, color,
           ...overridePayload,
@@ -346,11 +363,11 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
       } else {
         const orderedDates = [...selectedDates].sort((a, b) => a.getTime() - b.getTime());
         for (const d of orderedDates) {
-          const date = format(d, 'yyyy-MM-dd');
+          const { startIso, endIso } = buildStartEndIso(d);
           await onSave({
             facility_id: facilityId,
-            start_datetime: new Date(`${date}T${startTime}:00`).toISOString(),
-            end_datetime: new Date(`${date}T${endTime}:00`).toISOString(),
+            start_datetime: startIso,
+            end_datetime: endIso,
             ...ratePayload,
             notes, color,
             ...overridePayload,
@@ -590,7 +607,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
           </div>
           <div>
             <span className="text-[10px] text-muted-foreground">End</span>
-            <TimePicker value={endTime} onChange={setEndTime} placeholder="Select end" relativeToStart={startTime || undefined} label="End time" />
+            <TimePicker value={endTime} onChange={setEndTime} placeholder="Select end" label="End time" />
           </div>
         </div>
         {activeRateKind === 'hourly' && hoursInvalidReason && (
@@ -878,10 +895,15 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
           </Row>
           <Row icon={Clock} label="Time" onEdit={() => setStep(2)}>
             {startTime && endTime ? (
-              <span>
-                {startTime} – {endTime}
+              <span className="inline-flex items-center gap-1.5 flex-wrap">
+                <span>{formatTimeLabel(startTime)} – {formatTimeLabel(endTime)}</span>
+                {isOvernight && (
+                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20">
+                    Overnight
+                  </span>
+                )}
                 {activeRateKind === 'hourly' && isHoursValid && (
-                  <span className="text-muted-foreground"> · {formatHours(calculatedHours)} hrs</span>
+                  <span className="text-muted-foreground">· {formatHours(calculatedHours)} hrs</span>
                 )}
               </span>
             ) : <span className="text-muted-foreground">—</span>}
@@ -1013,7 +1035,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
             </Label>
             <div className="grid grid-cols-2 gap-3">
               <TimePicker value={startTime} onChange={setStartTime} placeholder="Select start" label="Start time" />
-              <TimePicker value={endTime} onChange={setEndTime} placeholder="Select end" relativeToStart={startTime || undefined} label="End time" />
+              <TimePicker value={endTime} onChange={setEndTime} placeholder="Select end" label="End time" />
             </div>
             {activeRateKind === 'hourly' && hoursInvalidReason && (
               <p className="mt-1.5 text-[11px] text-destructive flex items-center gap-1">

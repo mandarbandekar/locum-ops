@@ -74,7 +74,7 @@ export function ManualShiftForm({ facilities, defaultFacilityId, defaultRate, on
           </div>
           <div>
             <Label>End time <span className="text-destructive">*</span></Label>
-            <TimePicker value={endTime} onChange={setEndTime} placeholder="Select end" relativeToStart={startTime || undefined} label="End time" />
+            <TimePicker value={endTime} onChange={setEndTime} placeholder="Select end" label="End time" />
           </div>
         </div>
 
