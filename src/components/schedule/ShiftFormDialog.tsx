@@ -895,10 +895,15 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
           </Row>
           <Row icon={Clock} label="Time" onEdit={() => setStep(2)}>
             {startTime && endTime ? (
-              <span>
-                {startTime} – {endTime}
+              <span className="inline-flex items-center gap-1.5 flex-wrap">
+                <span>{formatTimeLabel(startTime)} – {formatTimeLabel(endTime)}</span>
+                {isOvernight && (
+                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20">
+                    Overnight
+                  </span>
+                )}
                 {activeRateKind === 'hourly' && isHoursValid && (
-                  <span className="text-muted-foreground"> · {formatHours(calculatedHours)} hrs</span>
+                  <span className="text-muted-foreground">· {formatHours(calculatedHours)} hrs</span>
                 )}
               </span>
             ) : <span className="text-muted-foreground">—</span>}
