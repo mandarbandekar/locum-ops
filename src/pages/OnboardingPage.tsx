@@ -22,6 +22,7 @@ import { toast } from 'sonner';
 type Phase = OnboardingPhase;
 
 const PHASE_STEP: Record<Phase, number> = {
+  welcome: 0,
   rate_card: 1,
   add_clinic: 2,
   bulk_shifts: 3,
@@ -31,6 +32,7 @@ const PHASE_STEP: Record<Phase, number> = {
 };
 const TOTAL_STEPS = 6;
 const PHASE_LABEL: Record<Phase, string> = {
+  welcome: 'Welcome',
   rate_card: 'Set up your rates',
   add_clinic: 'Add your first clinic',
   bulk_shifts: 'Add your shifts',
@@ -39,6 +41,7 @@ const PHASE_LABEL: Record<Phase, string> = {
   business_map: 'Your business in one place',
 };
 const PHASE_BACK: Record<Phase, Phase | null> = {
+  welcome: null,
   rate_card: null,
   add_clinic: 'rate_card',
   bulk_shifts: 'add_clinic',
