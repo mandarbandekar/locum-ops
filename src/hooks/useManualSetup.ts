@@ -157,8 +157,8 @@ export function useManualSetup() {
       const { data, error } = await db('shifts').insert({
         user_id: user.id,
         facility_id: input.facility_id,
-        start_datetime: startDt,
-        end_datetime: endDt,
+        start_datetime: startIso,
+        end_datetime: endIso,
         status: 'booked',
         rate_applied: input.rate || 0,
         notes: input.notes || '',
