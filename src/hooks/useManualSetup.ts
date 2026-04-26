@@ -145,8 +145,14 @@ export function useManualSetup() {
     if (!user) return null;
     setSaving(true);
     try {
-      const startDt = `${input.date}T${input.start_time}:00`;
-      const endDt = `${input.date}T${input.end_time}:00`;
+      const startDt = new Date(`${input.date}T${input.start_time}:00`);
+      let endDt = new Date(`${input.date}T${input.end_time}:00`);
+      if (endDt.getTime() <= startDt.getTime()) {
+        // Overnight shift — roll end into next day.
+        endDt = new Date(endDt.getTime() + 24 * 60 * 60 * 1000);
+      }
+      const startIso = startDt.toISOString();
+      const endIso = endDt.toISOString();
 
       const { data, error } = await db('shifts').insert({
         user_id: user.id,
