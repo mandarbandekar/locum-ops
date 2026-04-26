@@ -263,15 +263,32 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     };
   };
 
+  // Build start/end ISO timestamps for a given date, rolling end into the next
+  // day when end time is on/before start time (overnight shift).
+  const buildStartEndIso = useCallback((d: Date) => {
+    const dateStr = format(d, 'yyyy-MM-dd');
+    const start = new Date(`${dateStr}T${startTime}:00`);
+    let end = new Date(`${dateStr}T${endTime}:00`);
+    if (end.getTime() <= start.getTime()) {
+      end = new Date(end.getTime() + 24 * 60 * 60 * 1000);
+    }
+    return { startIso: start.toISOString(), endIso: end.toISOString() };
+  }, [startTime, endTime]);
+
+  const isOvernight = useMemo(() => {
+    if (!startTime || !endTime) return false;
+    const [sh, sm] = startTime.split(':').map(Number);
+    const [eh, em] = endTime.split(':').map(Number);
+    return (eh * 60 + em) <= (sh * 60 + sm);
+  }, [startTime, endTime]);
+
   const conflicts = useMemo(() => {
     if (isSubmitting || selectedDates.length === 0 || !facilityId || !startTime || !endTime) return [];
     const allConflicts: Shift[] = [];
     const seen = new Set<string>();
     for (const d of selectedDates) {
-      const dateStr = format(d, 'yyyy-MM-dd');
-      const startDt = `${dateStr}T${startTime}:00`;
-      const endDt = `${dateStr}T${endTime}:00`;
-      for (const c of detectShiftConflicts(shifts, { start_datetime: startDt, end_datetime: endDt, id: existing?.id })) {
+      const { startIso, endIso } = buildStartEndIso(d);
+      for (const c of detectShiftConflicts(shifts, { start_datetime: startIso, end_datetime: endIso, id: existing?.id })) {
         if (!seen.has(c.id)) {
           seen.add(c.id);
           allConflicts.push(c);
@@ -279,7 +296,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
       }
     }
     return allConflicts;
-  }, [shifts, selectedDates, startTime, endTime, existing?.id, facilityId, isSubmitting]);
+  }, [shifts, selectedDates, startTime, endTime, existing?.id, facilityId, isSubmitting, buildStartEndIso]);
 
   const saveCustomRateToTerms = useCallback(async () => {
     if (!isCustomRate || !saveCustomRate || !rate || Number(rate) <= 0) return;
