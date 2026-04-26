@@ -67,6 +67,7 @@ function AuthenticatedApp() {
       return (
         <DataProvider isDemo={false}>
           <Routes>
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/welcome" element={<WelcomePage />} />
             <Route path="*" element={<Navigate to="/welcome" replace />} />
           </Routes>
@@ -76,6 +77,7 @@ function AuthenticatedApp() {
     return (
       <DataProvider isDemo={false}>
         <Routes>
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/onboarding" element={<OnboardingPage />} />
           <Route path="*" element={<Navigate to="/onboarding" replace />} />
         </Routes>
@@ -122,6 +124,8 @@ function AuthenticatedApp() {
           <Route path="/import" element={<Navigate to="/" replace />} />
           <Route path="/onboarding" element={<Navigate to="/" replace />} />
           <Route path="/login" element={<Navigate to="/" replace />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/forgot-password" element={<Navigate to="/settings/security" replace />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Layout>
