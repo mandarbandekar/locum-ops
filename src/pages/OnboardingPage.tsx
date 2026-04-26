@@ -102,11 +102,13 @@ export default function OnboardingPage() {
     if (profile.default_rates?.length) setDefaultRates(profile.default_rates);
     if (profile.default_billing_preference) setDefaultBillingPreference(profile.default_billing_preference);
     if (p.phase) setPhase(p.phase);
+    else if (!p.welcome_seen) setPhase('welcome');
     if (p.first_facility_id !== undefined) setFirstFacilityId(p.first_facility_id);
     if (p.created_facility_ids) setCreatedFacilityIds(p.created_facility_ids);
     if (p.session_shift_ids) setSessionShiftIds(p.session_shift_ids);
     if (p.invoice_reveal_seen) setInvoiceRevealSeen(true);
     if (p.rate_card_skipped) setRateCardSkipped(true);
+    if (p.welcome_seen) setWelcomeSeen(true);
   }, [profile]);
 
   // ── Persist progress (debounced lightly via dependency batching) ──
@@ -119,12 +121,13 @@ export default function OnboardingPage() {
         session_shift_ids: sessionShiftIds,
         invoice_reveal_seen: invoiceRevealSeen,
         rate_card_skipped: rateCardSkipped,
+        welcome_seen: welcomeSeen,
         ...next,
         updated_at: new Date().toISOString(),
       };
       updateProfile({ onboarding_progress: merged });
     },
-    [phase, firstFacilityId, createdFacilityIds, sessionShiftIds, invoiceRevealSeen, rateCardSkipped, updateProfile],
+    [phase, firstFacilityId, createdFacilityIds, sessionShiftIds, invoiceRevealSeen, rateCardSkipped, welcomeSeen, updateProfile],
   );
 
   // Auto-save profile timezone on mount
