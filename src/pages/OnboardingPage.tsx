@@ -700,6 +700,7 @@ export default function OnboardingPage() {
       stepLabel={PHASE_LABEL[phase]}
       onBack={PHASE_BACK[phase] ? goBack : undefined}
       stickyFooter={renderStickyFooter()}
+      hideProgress={phase === 'welcome'}
     >
       {renderContent()}
     </OnboardingLayout>
