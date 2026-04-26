@@ -13,6 +13,7 @@ import { OnboardingBulkShiftCalendar } from '@/components/onboarding/OnboardingB
 import { OnboardingInvoiceReveal } from '@/components/onboarding/OnboardingInvoiceReveal';
 import { OnboardingLoopChoice } from '@/components/onboarding/OnboardingLoopChoice';
 import { OnboardingBusinessMap } from '@/components/onboarding/OnboardingBusinessMap';
+import { OnboardingWelcomeScreen } from '@/components/onboarding/OnboardingWelcomeScreen';
 import { AddClinicStepper, type AddClinicStepperHandle } from '@/components/facilities/AddClinicStepper';
 import { mapDefaultRatesToRateEntries, buildDefaultRatesFromRateEntries, inferBillingPreference, type DefaultRate, type BillingPreference } from '@/lib/onboardingRateMapping';
 import { termsToRates } from '@/components/facilities/RatesEditor';
