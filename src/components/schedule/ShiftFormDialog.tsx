@@ -350,12 +350,12 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
             rate_applied: Number(rate),
           };
       if (existing) {
-        const date = format(selectedDates[0] || new Date(), 'yyyy-MM-dd');
+        const { startIso, endIso } = buildStartEndIso(selectedDates[0] || new Date());
         await onSave({
           ...existing,
           facility_id: facilityId,
-          start_datetime: new Date(`${date}T${startTime}:00`).toISOString(),
-          end_datetime: new Date(`${date}T${endTime}:00`).toISOString(),
+          start_datetime: startIso,
+          end_datetime: endIso,
           ...ratePayload,
           notes, color,
           ...overridePayload,
@@ -363,11 +363,11 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
       } else {
         const orderedDates = [...selectedDates].sort((a, b) => a.getTime() - b.getTime());
         for (const d of orderedDates) {
-          const date = format(d, 'yyyy-MM-dd');
+          const { startIso, endIso } = buildStartEndIso(d);
           await onSave({
             facility_id: facilityId,
-            start_datetime: new Date(`${date}T${startTime}:00`).toISOString(),
-            end_datetime: new Date(`${date}T${endTime}:00`).toISOString(),
+            start_datetime: startIso,
+            end_datetime: endIso,
             ...ratePayload,
             notes, color,
             ...overridePayload,
