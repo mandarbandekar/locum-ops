@@ -15,7 +15,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { format } from 'date-fns';
 import { SHIFT_COLORS, ShiftColor, TermsSnapshot, Shift, BLOCK_TYPES, BlockType, RateKind } from '@/types';
 import { BreakPolicySelector } from '@/components/facilities/BreakPolicySelector';
-import { getBreakPolicyLabel, formatBillableHours, formatHoursMinutes, getScheduledMinutes } from '@/lib/shiftBreak';
+import { getBreakPolicyLabel, formatBillableHours, formatHoursMinutes, getScheduledMinutes, getBillableMinutes, isBreakFeatureNew } from '@/lib/shiftBreak';
 import { Switch } from '@/components/ui/switch';
 import { detectShiftConflicts } from '@/lib/businessLogic';
 import { cn } from '@/lib/utils';
