@@ -18,17 +18,17 @@ const newId = () =>
     : Math.random().toString(36).slice(2));
 
 export const DAILY_PRESETS: Omit<DefaultRate, 'id'>[] = [
-  { name: 'Standard Day', amount: 850, basis: 'daily', active: true, sort_order: 0 },
-  { name: 'Weekend Day', amount: 950, basis: 'daily', active: true, sort_order: 1 },
-  { name: 'Holiday Day', amount: 1100, basis: 'daily', active: true, sort_order: 2 },
-  { name: 'Emergency / On-call', amount: 1200, basis: 'daily', active: true, sort_order: 3 },
+  { name: 'Standard Day', amount: 0, basis: 'daily', active: true, sort_order: 0 },
+  { name: 'Weekend Day', amount: 0, basis: 'daily', active: true, sort_order: 1 },
+  { name: 'Holiday Day', amount: 0, basis: 'daily', active: true, sort_order: 2 },
+  { name: 'Emergency / On-call', amount: 0, basis: 'daily', active: true, sort_order: 3 },
 ];
 
 export const HOURLY_PRESETS: Omit<DefaultRate, 'id'>[] = [
-  { name: 'Standard Hour', amount: 110, basis: 'hourly', active: true, sort_order: 0 },
-  { name: 'Weekend Hour', amount: 130, basis: 'hourly', active: true, sort_order: 1 },
-  { name: 'Holiday Hour', amount: 160, basis: 'hourly', active: true, sort_order: 2 },
-  { name: 'After-hours', amount: 145, basis: 'hourly', active: true, sort_order: 3 },
+  { name: 'Standard Hour', amount: 0, basis: 'hourly', active: true, sort_order: 0 },
+  { name: 'Weekend Hour', amount: 0, basis: 'hourly', active: true, sort_order: 1 },
+  { name: 'Holiday Hour', amount: 0, basis: 'hourly', active: true, sort_order: 2 },
+  { name: 'After-hours', amount: 0, basis: 'hourly', active: true, sort_order: 3 },
 ];
 
 export function buildPresets(pref: BillingPreference): DefaultRate[] {

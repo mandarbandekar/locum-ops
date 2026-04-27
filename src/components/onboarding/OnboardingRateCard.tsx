@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Trash2, Plus, DollarSign, Clock, Sparkles, HelpCircle, Wand2, SkipForward } from 'lucide-react';
+import { Trash2, Plus, DollarSign, Clock, Wand2, SkipForward } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   type DefaultRate,
@@ -36,9 +36,11 @@ interface Props {
 const PREF_OPTIONS: { value: BillingPreference; label: string; sub: string; icon: typeof DollarSign }[] = [
   { value: 'per_day', label: 'Per Day', sub: 'Flat day rate', icon: DollarSign },
   { value: 'per_hour', label: 'Per Hour', sub: 'Hourly billing', icon: Clock },
-  { value: 'both', label: 'Both', sub: 'Mix of day & hourly', icon: Sparkles },
-  { value: 'unsure', label: "I'm not sure yet", sub: "We'll start with day rates", icon: HelpCircle },
 ];
+
+function coercePreference(p: BillingPreference | undefined): BillingPreference {
+  return p === 'per_hour' ? 'per_hour' : 'per_day';
+}
 
 export function OnboardingRateCard({
   initialRates,
