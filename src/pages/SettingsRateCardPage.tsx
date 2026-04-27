@@ -191,6 +191,48 @@ export default function SettingsRateCardPage() {
     });
   };
 
+  /**
+   * Auto-fill `shift_type` for any rate where the name keyword strongly maps
+   * to a known slug. Only patches untagged rows; never overwrites a user's
+   * choice. The user still has to review and Save.
+   */
+  const suggestTypesForUntagged = () => {
+    let touched = 0;
+    setRates(prev => prev.map(r => {
+      if (r.shift_type) return r;
+      const guess = inferShiftTypeFromName(r.name);
+      if (!guess) return r;
+      touched += 1;
+      return { ...r, shift_type: guess };
+    }));
+    if (touched > 0) {
+      toast.success(`Suggested ${touched} shift type${touched === 1 ? '' : 's'} — review and Save`);
+    } else {
+      toast.message('No clear suggestions — pick a type from the dropdown for each rate');
+    }
+  };
+
+  const runBackfill = async () => {
+    setBackfillRunning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('backfill-shift-types');
+      if (error) throw error;
+      const updated = (data as { updated?: number })?.updated ?? 0;
+      const skipped = (data as { skipped?: number })?.skipped ?? 0;
+      if (updated > 0) {
+        toast.success(`Tagged ${updated} past shift${updated === 1 ? '' : 's'}.${skipped ? ` ${skipped} couldn't be matched.` : ''}`);
+      } else {
+        toast.message(`Couldn't auto-tag past shifts — they'll stay untyped until you edit them.`);
+      }
+      setBackfillOpen(false);
+    } catch (e) {
+      console.error('backfill error', e);
+      toast.error('Could not tag past shifts — please try again');
+    } finally {
+      setBackfillRunning(false);
+    }
+  };
+
   const handleSave = async () => {
     const scoped = rates.filter(r =>
       preference === 'per_day' ? r.basis === 'daily' : r.basis === 'hourly',
@@ -218,6 +260,13 @@ export default function SettingsRateCardPage() {
       });
       setRates(cleaned);
       toast.success('Rate Card saved');
+
+      // If they have untyped past shifts AND at least one rate now has a type,
+      // surface the backfill prompt. They can opt in or ignore.
+      const anyTaggedNow = cleaned.some(r => !!r.shift_type);
+      if (anyTaggedNow && untypedShiftCount > 0) {
+        setBackfillOpen(true);
+      }
     } catch (e) {
       console.error(e);
       toast.error('Could not save Rate Card');
@@ -225,6 +274,11 @@ export default function SettingsRateCardPage() {
       setSaving(false);
     }
   };
+
+  const scopedRates = rates.filter(r =>
+    preference === 'per_day' ? r.basis === 'daily' : r.basis === 'hourly',
+  );
+  const untaggedScopedCount = scopedRates.filter(r => r.name.trim() && !r.shift_type).length;
 
   const showDaily = preference === 'per_day';
   const showHourly = preference === 'per_hour';
