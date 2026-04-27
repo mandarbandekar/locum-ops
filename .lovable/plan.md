@@ -1,44 +1,55 @@
-## Goal
+# Surface Rate Card rates inside the Add Shift flow
 
-Improve visibility of the Shift Type rate-card migration nudge on the Today (Dashboard) screen by promoting it to the top of the page and aligning copy + CTAs to your spec.
+## What you're seeing
 
-## Current state
+When you open the **Add Shift** dialog and pick a clinic, the rate dropdown only shows rates that were saved on **that clinic's terms** (e.g. its Weekday/Weekend rates). The rates you saved in **Settings → Rate Card** (GP Day, ER Day, Surgery, hourly rates, etc.) never appear — unless the clinic has *zero* rates configured.
 
-The `ShiftTypeMigrationBanner` already exists and renders on `DashboardPage.tsx`, but it sits **fourth** in the banner stack — below the onboarding handoff, welcome banner, and the older engagement-type announcement. Easy to miss.
+## Why it happens
 
-Current copy: "Categorize your relief work — You can now tag each rate by shift type… apply the same types to your N past shifts in one click." with a single "Set up shift types →" link.
+In `src/components/schedule/ShiftFormDialog.tsx`, `buildRateOptions()` does this:
 
-## Changes
+```ts
+if (fromFacility.length > 0) return fromFacility;     // ← stops here
+return mapDefaultRatesToRateEntries(defaultRates);    // ← only used if clinic has no rates
+```
 
-### 1. Move the banner to the top of the Today screen
-File: `src/pages/DashboardPage.tsx`
+So the Rate Card is treated as a **fallback**, not a **library**. For any existing user (every clinic already has at least a Weekday rate), the Rate Card is invisible inside Add Shift.
 
-Reorder the banner stack so `ShiftTypeMigrationBanner` renders **first**, above:
-- Onboarding handoff banner
-- Welcome banner
-- Engagement-type announcement
+## How it should work
 
-Rationale: the migration nudge is time-sensitive (only shows for users with untyped shifts) and is the newest feature surface. Other banners are either evergreen (welcome) or already dismissed by most active users.
+The Rate Card is your personal price list. When logging a shift, you should see:
 
-### 2. Refine banner copy and add two distinct CTAs
-File: `src/components/dashboard/ShiftTypeMigrationBanner.tsx`
+1. **Facility-specific rates first** (they're the source of truth for that clinic's contract)
+2. **Then your Rate Card rates** that aren't already represented on the facility — labeled so you know they're coming from your personal library, not the contract.
 
-Update the banner content to match your spec:
+Selecting a Rate Card entry just pre-fills the amount + kind (flat/hourly) + shift_type for the shift. It does NOT silently mutate the facility's terms.
 
-- **Headline:** `New: categorize your rates`
-- **Body:** `Tag each rate with a shift type (GP, ER, Surgery…) so it shows up across your schedule and invoices. We've pre-filled suggestions where we could.`
-- **Primary CTA:** `Review & Save` → navigates to `/settings/rate-card` (same destination, sharper label)
-- **Secondary CTA:** `Skip for now` → dismisses the banner (writes `dismissed_prompts.shift_type_migration = true`)
+## Proposed changes
 
-Visual treatment stays the same: sage primary tint, Tag icon, top-right X for dismissal, flat themed border (no box shadows). The "X past shifts" count is dropped from the body since the new copy emphasizes the pre-filled suggestions instead — simpler and matches your spec exactly.
+### 1. Merge, don't fallback (`ShiftFormDialog.tsx`)
+Rewrite `buildRateOptions()` to always concatenate:
+- All facility rates (existing behavior)
+- Plus Rate Card entries that aren't already represented at the facility (deduped by `label + amount + kind`)
 
-## Out of scope
+### 2. Visual grouping in the rate dropdown
+Inside the rate `<Select>`, render two labeled groups:
+- **From this clinic** — facility terms rates
+- **From your Rate Card** — personal library entries with a small muted "Rate Card" tag
 
-- No changes to the backfill Edge Function, inference utility, or Rate Card page — those already work.
-- No changes to dismissal storage (still `profile.dismissed_prompts.shift_type_migration`).
-- Other Dashboard banners are unchanged; only their relative order shifts.
+If a clinic has no terms yet, only the Rate Card group renders (current fallback behavior preserved).
+
+### 3. Carry shift_type through
+When a Rate Card option is picked, set `shift_type` on the shift from the matched entry — same as today's facility-rate path. This keeps the shift-type categorization initiative working for shifts logged via Rate Card defaults.
+
+### 4. Empty-state hint
+If both facility terms AND Rate Card are empty, show inline copy in the rate field: *"No saved rates yet — type an amount, or set defaults in Settings → Rate Card."* with a link.
 
 ## Files touched
 
-- `src/pages/DashboardPage.tsx` — reorder banner block
-- `src/components/dashboard/ShiftTypeMigrationBanner.tsx` — copy + CTA labels
+- `src/components/schedule/ShiftFormDialog.tsx` — merge logic, grouped Select rendering, shift_type wiring, empty-state hint
+
+## Out of scope
+
+- No DB migrations — Rate Card already lives on `profiles.default_rates`
+- No changes to facility terms persistence — Rate Card stays a personal library, not a clinic contract
+- Bulk Shift Calendar already merges correctly via `buildBulkRateOptions` — no changes needed there
