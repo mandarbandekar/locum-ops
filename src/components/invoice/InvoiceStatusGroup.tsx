@@ -31,8 +31,6 @@ interface Props {
   title: string;
   icon: React.ReactNode;
   invoices: InvoiceWithStatus[];
-  selected: Set<string>;
-  onToggleSelect: (id: string, e: React.MouseEvent) => void;
   onDelete: (id: string) => Promise<void>;
   getFacilityName: (id: string) => string;
   emptyMessage: string;
