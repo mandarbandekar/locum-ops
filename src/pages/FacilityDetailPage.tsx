@@ -23,6 +23,8 @@ import { useClinicConfirmations } from '@/hooks/useClinicConfirmations';
 import { InvoicingPreferencesCard } from '@/components/facilities/InvoicingPreferencesCard';
 import { ClinicNotesCard } from '@/components/facilities/ClinicNotesCard';
 import { EngagementSelector } from '@/components/facilities/EngagementSelector';
+import { BreakPolicySelector } from '@/components/facilities/BreakPolicySelector';
+import { getBreakPolicyLabel } from '@/lib/shiftBreak';
 import type { EngagementType, TaxFormType } from '@/lib/engagementOptions';
 
 export default function FacilityDetailPage() {
