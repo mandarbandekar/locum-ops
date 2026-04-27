@@ -1,85 +1,66 @@
-# Diagnose & Fix: Rate Card Doesn't Autopopulate After Onboarding
+## Add Shift Types to the Rate Card
 
-## What's happening today
+### Goal
+Let users define **named shift types** (e.g. GP Day, ER Weekend, Surgery, Dental, Emergency) directly in the Rate Card, each paired with their own rate. The selected type then flows into the actual shift record so it shows up across the schedule, invoices, and reports.
 
-The user's "Rate Card" (set during onboarding) **does** autopopulate during the onboarding flow itself, but is **silently dropped everywhere else**. Here's the full picture:
+### UX changes — `SettingsRateCardPage`
 
-### Where it works (onboarding only)
-1. Onboarding step 1 saves rates to `user_profiles.default_rates` (via `UserProfileContext`).
-2. `OnboardingPage` reads them, runs `mapDefaultRatesToRateEntries(defaultRates)`, and passes the result as `defaultRates` into `<AddClinicStepper hideRatesStep defaultRates={…}>` — so the first clinic inherits them.
-3. `OnboardingBulkShiftCalendar` also receives `defaultRates` and uses `buildBulkRateOptions` to populate the rate dropdown for the first batch of shifts.
+Each rate row gets a new optional **Shift Type** field, restructured as:
 
-### Where it silently breaks (the rest of the app)
-
-| Surface | File | Bug |
-|---|---|---|
-| "Add Practice Facility" dialog (Facilities page, Dashboard "Add clinic", Schedule "+ New Facility") | `src/components/AddFacilityDialog.tsx` | Mounts `<AddClinicStepper onSaved={…} />` with **no `defaultRates` prop** → the Rates step opens empty every time. |
-| Shift creation / edit dialog | `src/components/schedule/ShiftFormDialog.tsx` (`buildRateOptions`) | Builds the rate dropdown **only from the selected facility's `terms_snapshots`**. Never consults `profile.default_rates`. So if a clinic was added before rates existed, or the user skipped the Rates step, the dropdown is empty and they have to type the amount manually. |
-| Quick "Onboarding shift step" (legacy, still used in some flows) | `src/components/onboarding/OnboardingShiftStep.tsx` | The `rate` field is initialized to `''` regardless of the Rate Card. |
-
-So a new user who carefully fills in their Rate Card sees their rates honored on the *very first* clinic + shift, then never again. From the user's POV the feature looks broken.
-
-A secondary issue: `OnboardingShiftBuilder.tsx` (the smaller "log shifts" widget) hardcodes `defaultRate = 650` if no terms exist, instead of falling back to the user's Rate Card.
-
-## Fix
-
-Make the Rate Card a true global default. Two small wiring changes plus one tiny enhancement.
-
-### 1. `AddFacilityDialog.tsx` — pass the saved Rate Card to the stepper
-
-```ts
-const { profile } = useUserProfile();
-const defaultRates = useMemo(
-  () => mapDefaultRatesToRateEntries(profile?.default_rates ?? []),
-  [profile?.default_rates],
-);
-
-<AddClinicStepper
-  ref={…}
-  onSaved={handleSaved}
-  defaultRates={defaultRates}
-/>
+```text
+[ Shift Type ▾ ]   [ Rate Name (optional) ]   [ $ Amount /day ]   [ 🗑 ]
 ```
-Result: every "Add Clinic" entry point (Facilities, Dashboard, Schedule "+ New Facility") prefills the Rates step with the user's saved card. No new UI.
 
-### 2. `ShiftFormDialog.tsx` — fall back to the Rate Card when the facility has no terms
+- **Shift Type** is a combobox: pick from common presets (GP, ER, Surgery, Dental, Emergency, On-Call, Wellness/Vaccine, Relief — Other) or type a custom value.
+- **Rate Name** stays editable but auto-fills from the shift type + basis (e.g. picking "ER" on a daily row prefills "ER Day"). Users can still override.
+- Existing duplicate/validation logic continues to apply to **rate name** (so "GP Day" can't appear twice).
+- Section copy updated: "Set up a rate for each kind of relief shift you take. We'll suggest these whenever you add a shift or clinic."
 
-In `buildRateOptions`, accept the user's `default_rates` and merge them in when the facility-specific list is empty. Reuse the existing helper:
+Replace the 4 hard-coded presets in `onboardingRateMapping.ts` (`Standard Day / Weekend Day / Holiday Day / Emergency`) with shift-type-flavored seeds: **GP Day, ER Day, Surgery Day, Emergency / On-Call** (daily) and **GP Hour, ER Hour, After-hours** (hourly).
 
+### Data model
+
+**`default_rates` (JSONB on `user_profiles`)** — add one optional field per row:
 ```ts
-import { buildBulkRateOptions } from '@/lib/onboardingRateMapping';
-
-function buildRateOptions(
-  terms: TermsSnapshot[],
-  facilityId: string,
-  defaultRates: DefaultRate[],
-): RateEntry[] {
-  const facilityTerms = terms.find(t => t.facility_id === facilityId);
-  const fromFacility = facilityTerms ? termsToRates(facilityTerms).filter(r => r.amount > 0) : [];
-  if (fromFacility.length > 0) return fromFacility;
-  // Fallback: user's saved Rate Card (mapped to RateEntry shape)
-  return mapDefaultRatesToRateEntries(defaultRates);
+interface DefaultRate {
+  id: string;
+  name: string;
+  amount: number;
+  basis: 'daily' | 'hourly';
+  shift_type?: string;   // NEW — slug like 'gp', 'er', 'surgery', 'dental', 'emergency', 'oncall', 'wellness', 'other', or a custom string
+  active: boolean;
+  sort_order: number;
 }
 ```
+No SQL migration needed for this — `default_rates` is already a free-form JSONB array.
 
-Inside the component, pull `profile.default_rates` from `useUserProfile()` and pass it in. The existing dropdown UI then "just works" — no design changes.
+**`shifts` table — new column** (DB migration):
+```sql
+ALTER TABLE public.shifts ADD COLUMN shift_type text;
+```
+Nullable, no default, no constraint (free-form to allow custom types). Existing shifts stay `NULL`.
 
-Also seed the initial `rate` state from the first option when creating a new shift (currently it stays `''` until the user clicks the dropdown), so the field is pre-filled and the auto-selected option is visible.
+### Auto-population flow
 
-### 3. `OnboardingShiftStep.tsx` & `OnboardingShiftBuilder.tsx` — replace the hardcoded `650`
+1. **Add Clinic / Onboarding rates** (`mapDefaultRatesToRateEntries`): pass `shift_type` through into the `RateEntry` so facility terms snapshots remember which type each rate belongs to.
+2. **Bulk shift dropdown** (`buildBulkRateOptions`): label becomes `GP Day — $850 /day` (uses shift type when present, falls back to current label).
+3. **Shift create/edit** (`ShiftFormDialog`, `OnboardingShiftBuilder`, `ManualShiftForm`): when the user picks a rate, auto-set `shift_type` on the shift from the chosen rate. Also expose a small read-only "Shift type: ER" line under the rate selector so it's visible.
+4. **Shift display**: surface `shift_type` as a small chip on shift cards in the Schedule list/calendar (next to the rate). Non-blocking — if `null`, show nothing.
 
-Use the same fallback chain: facility terms → user's Rate Card → blank (not `650`). This makes onboarding consistent and removes a magic number.
+### Files to touch
 
-## Files modified
+- `src/pages/SettingsRateCardPage.tsx` — add Shift Type combobox per row, auto-fill rate name, update section copy.
+- `src/lib/onboardingRateMapping.ts` — add `shift_type` to `DefaultRate` + `RateEntry`-adjacent flows; refresh seed presets; preserve `shift_type` in `mapDefaultRatesToRateEntries`, `buildDefaultRatesFromRateEntries`, `buildBulkRateOptions`.
+- `src/components/facilities/RatesEditor.tsx` (and its `RateEntry` type) — carry `shift_type` through the snapshot.
+- `src/components/schedule/ShiftFormDialog.tsx`, `src/components/onboarding/OnboardingShiftBuilder.tsx`, `src/components/onboarding/OnboardingShiftStep.tsx`, `src/components/onboarding/ManualShiftForm.tsx` — when a rate is chosen, set `shift_type` on the shift payload.
+- Schedule list/calendar shift card components — render the shift-type chip when present.
+- DB migration — `ALTER TABLE shifts ADD COLUMN shift_type text;`
+- `src/contexts/UserProfileContext.tsx` — `DefaultRate` type addition (mirrors the lib type).
 
-- `src/components/AddFacilityDialog.tsx` — read profile, pass `defaultRates`.
-- `src/components/schedule/ShiftFormDialog.tsx` — extend `buildRateOptions` with Rate Card fallback; seed initial `rate` from the first option.
-- `src/components/onboarding/OnboardingShiftStep.tsx` — initialize `rate` from Rate Card / first facility rate.
-- `src/components/onboarding/OnboardingShiftBuilder.tsx` — replace `650` hardcode with Rate Card lookup.
+### Out of scope (can follow later)
+- Filtering/grouping reports by shift type.
+- A dedicated "Shift Types library" page (deferred — current solution keeps types co-located with rates, which is what users asked for).
+- Backfilling `shift_type` on historical shifts.
 
-## Verification
-
-- New user: fill Rate Card → finish onboarding → click "Add clinic" from Facilities → Rates step is pre-filled with their card.
-- Existing clinic with empty terms → open "New shift" → rate dropdown shows their Rate Card entries instead of being empty.
-- Facility *with* its own terms → unchanged behavior (facility-specific rates still win).
-- No DB schema changes, no new tables, no migrations.
+### Summary for the user
+Each row in the Rate Card will let you pick (or type) a shift type — GP, ER, Surgery, Dental, Emergency, On-Call, etc. — alongside its rate. When you create a shift and pick that rate, the shift type is recorded automatically and shown on the shift card. Your existing rates won't break; the new field is optional and simply unlocks better categorization across schedule and reporting.

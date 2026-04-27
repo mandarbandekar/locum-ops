@@ -2566,6 +2566,7 @@ export type Database = {
           notes: string
           rate_applied: number
           rate_kind: string
+          shift_type: string | null
           source_name_override: string | null
           start_datetime: string
           status: string
@@ -2585,6 +2586,7 @@ export type Database = {
           notes?: string
           rate_applied?: number
           rate_kind?: string
+          shift_type?: string | null
           source_name_override?: string | null
           start_datetime: string
           status?: string
@@ -2604,6 +2606,7 @@ export type Database = {
           notes?: string
           rate_applied?: number
           rate_kind?: string
+          shift_type?: string | null
           source_name_override?: string | null
           start_datetime?: string
           status?: string
