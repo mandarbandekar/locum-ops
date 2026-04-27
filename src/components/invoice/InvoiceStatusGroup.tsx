@@ -242,8 +242,6 @@ export function InvoiceStatusGroup({
                 key={group.facilityId}
                 name={group.name}
                 invoices={group.invoices}
-                selected={selected}
-                onToggleSelect={onToggleSelect}
                 onDelete={onDelete}
                 getFacilityName={getFacilityName}
                 navigate={navigate}
