@@ -843,7 +843,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
               <SelectContent>
                 {rateOptions.map((opt, i) => (
                   <SelectItem key={`rate-${i}`} value={`rate-${i}`}>
-                    {opt.label} — ${opt.amount.toLocaleString()}{opt.kind === 'hourly' ? '/hr' : '/day'}
+                    {opt.shift_type ? `[${opt.shift_type.toUpperCase()}] ` : ''}{opt.label} — ${opt.amount.toLocaleString()}{opt.kind === 'hourly' ? '/hr' : '/day'}
                   </SelectItem>
                 ))}
                 <SelectItem value="custom">Custom</SelectItem>
