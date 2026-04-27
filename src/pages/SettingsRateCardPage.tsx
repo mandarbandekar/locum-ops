@@ -99,11 +99,19 @@ function validateRates(rates: DefaultRate[]): { errors: RateErrors; firstMessage
 
 export default function SettingsRateCardPage() {
   const { profile, updateProfile, profileLoading } = useUserProfile();
+  const { shifts } = useData();
   const [preference, setPreference] = useState<BillingPreference>('per_day');
   const [rates, setRates] = useState<DefaultRate[]>([]);
   const [saving, setSaving] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const [errors, setErrors] = useState<RateErrors>({});
+  const [backfillOpen, setBackfillOpen] = useState(false);
+  const [backfillRunning, setBackfillRunning] = useState(false);
+
+  const untypedShiftCount = useMemo(
+    () => shifts.filter(s => !s.shift_type).length,
+    [shifts],
+  );
 
   useEffect(() => {
     if (!profile || initialized) return;
