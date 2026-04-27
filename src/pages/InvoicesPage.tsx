@@ -380,22 +380,6 @@ export default function InvoicesPage() {
 
       <BulkInvoiceDialog open={showCreate} onOpenChange={setShowCreate} />
 
-      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete {selected.size} invoice(s)?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete the selected invoices and all their line items. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {autoDeleteTarget && (
         <AutoInvoiceDeleteDialog
