@@ -105,6 +105,11 @@ export interface Shift {
   color: ShiftColor;
   rate_kind?: RateKind;
   hourly_rate?: number | null;
+  /**
+   * Optional category for the shift (e.g. 'gp', 'er', 'surgery'). Inherited
+   * from the rate selected in the Rate Card; nullable for legacy shifts.
+   */
+  shift_type?: string | null;
   engagement_type_override?: 'direct' | 'third_party' | 'w2' | null;
   source_name_override?: string | null;
   /** Unpaid break minutes for this shift. See Facility.default_break_minutes for semantics. */
