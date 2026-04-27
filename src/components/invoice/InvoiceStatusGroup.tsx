@@ -254,8 +254,6 @@ export function InvoiceStatusGroup({
           <div className="overflow-x-auto border-t">
             <InvoiceTable
               invoices={invoices}
-              selected={selected}
-              onToggleSelect={onToggleSelect}
               onDelete={onDelete}
               getFacilityName={getFacilityName}
               navigate={navigate}
