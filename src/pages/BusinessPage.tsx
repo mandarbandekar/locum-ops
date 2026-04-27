@@ -44,7 +44,7 @@ const BUSINESS_TOUR_STEPS: TourStep[] = [
 export default function BusinessPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'financial-health';
-  const { invoices, shifts, facilities, lineItems } = useData();
+  const { invoices } = useData();
   const businessTour = useSpotlightTour('locumops_tour_business');
 
   // Attention badges
