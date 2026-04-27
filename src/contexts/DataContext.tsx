@@ -149,7 +149,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     // due to one transient request error (e.g. token refresh race).
     type Loader = {
       name: string;
-      run: () => Promise<{ data: any[] | null; error: any }>;
+      run: () => PromiseLike<{ data: any[] | null; error: any }>;
       apply: (rows: any[]) => void;
     };
 
