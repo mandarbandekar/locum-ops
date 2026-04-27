@@ -771,6 +771,9 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
       icon={DollarSign}
       preview={reviewPreview}
     >
+      {/* Shift break */}
+      {renderBreakSection()}
+
       {/* Rate */}
       <div>
         {rateOptions.length > 0 && !isCustomRate ? (
