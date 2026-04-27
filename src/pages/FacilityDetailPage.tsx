@@ -249,6 +249,10 @@ function OverviewTab({ facility, shifts, contacts, onUpdate, onAddContact, onUpd
           <RatesEditor rates={rates} onChange={setRates} onSave={onSaveRates} />
         )}
 
+        {engagementType !== 'w2' && (
+          <BreakPolicyCard facility={facility} onUpdate={onUpdate} />
+        )}
+
         <ClinicNotesCard facility={facility} onUpdate={onUpdate} />
 
         <MileageOverrideCard facility={facility} onUpdate={onUpdate} />
