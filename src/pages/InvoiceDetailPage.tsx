@@ -224,9 +224,9 @@ export default function InvoiceDetailPage() {
         )}
       </div>
 
-      {/* Stepper */}
+      {/* Visual status timeline */}
       <div className="mb-4 max-w-2xl print:hidden">
-        <InvoiceStepper status={computedStatus} />
+        <InvoiceStatusTimeline invoice={invoice} payments={invoicePayments} computedStatus={computedStatus} />
       </div>
 
       {/* Alerts */}
