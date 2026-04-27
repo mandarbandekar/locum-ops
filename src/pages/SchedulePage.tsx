@@ -348,7 +348,7 @@ export default function SchedulePage() {
   ];
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden">
+    <div className="flex flex-col h-[calc(100vh-4rem)] min-h-[560px] overflow-hidden">
       {/* Row 1: Title + Subtitle | View Switcher | Actions */}
       <div className="flex-none px-4 sm:px-6 pt-4 sm:pt-6 pb-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
