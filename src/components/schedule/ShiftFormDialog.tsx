@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel, SelectSeparator } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -51,19 +51,38 @@ interface ShiftFormDialogProps {
   defaultMonth?: Date;
 }
 
+export type RateOptionSource = 'facility' | 'rate_card';
+export type ShiftRateOption = RateEntry & { source: RateOptionSource };
+
 function buildRateOptions(
   terms: TermsSnapshot[],
   facilityId: string,
   defaultRates: DefaultRate[] = [],
-): RateEntry[] {
+): ShiftRateOption[] {
   const facilityTerms = terms.find(t => t.facility_id === facilityId);
-  const fromFacility = facilityTerms
-    ? termsToRates(facilityTerms).filter(r => r.amount > 0)
+  const fromFacility: ShiftRateOption[] = facilityTerms
+    ? termsToRates(facilityTerms)
+        .filter(r => r.amount > 0)
+        .map(r => ({ ...r, source: 'facility' as const }))
     : [];
-  if (fromFacility.length > 0) return fromFacility;
-  // Fallback: the user's saved Rate Card so users aren't forced to retype
-  // rates for clinics that were added before they configured terms.
-  return mapDefaultRatesToRateEntries(defaultRates);
+
+  // Always merge in the user's Rate Card library so personal rates (GP, ER,
+  // Surgery, hourly, etc.) are reachable from any clinic — not only when the
+  // clinic has zero saved rates. Dedupe against facility entries by kind +
+  // normalized label + amount so we don't show duplicates.
+  const fromRateCard = mapDefaultRatesToRateEntries(defaultRates);
+  const seen = new Set(
+    fromFacility.map(r => `${r.kind}:${(r.label || '').trim().toLowerCase()}:${r.amount}`),
+  );
+  const dedupedRateCard: ShiftRateOption[] = [];
+  for (const r of fromRateCard) {
+    const key = `${r.kind}:${(r.label || '').trim().toLowerCase()}:${r.amount}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    dedupedRateCard.push({ ...r, source: 'rate_card' });
+  }
+
+  return [...fromFacility, ...dedupedRateCard];
 }
 
 
@@ -841,12 +860,43 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
                 <SelectValue placeholder="Select rate" />
               </SelectTrigger>
               <SelectContent>
-                {rateOptions.map((opt, i) => (
-                  <SelectItem key={`rate-${i}`} value={`rate-${i}`}>
-                    {opt.shift_type ? `[${opt.shift_type.toUpperCase()}] ` : ''}{opt.label} — ${opt.amount.toLocaleString()}{opt.kind === 'hourly' ? '/hr' : '/day'}
-                  </SelectItem>
-                ))}
-                <SelectItem value="custom">Custom</SelectItem>
+                {(() => {
+                  const facilityOpts = rateOptions.filter(o => o.source === 'facility');
+                  const cardOpts = rateOptions.filter(o => o.source === 'rate_card');
+                  return (
+                    <>
+                      {facilityOpts.length > 0 && (
+                        <SelectGroup>
+                          <SelectLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">From this clinic</SelectLabel>
+                          {facilityOpts.map((opt) => {
+                            const i = rateOptions.indexOf(opt);
+                            return (
+                              <SelectItem key={`rate-${i}`} value={`rate-${i}`}>
+                                {opt.shift_type ? `[${opt.shift_type.toUpperCase()}] ` : ''}{opt.label} — ${opt.amount.toLocaleString()}{opt.kind === 'hourly' ? '/hr' : '/day'}
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectGroup>
+                      )}
+                      {facilityOpts.length > 0 && cardOpts.length > 0 && <SelectSeparator />}
+                      {cardOpts.length > 0 && (
+                        <SelectGroup>
+                          <SelectLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">From your Rate Card</SelectLabel>
+                          {cardOpts.map((opt) => {
+                            const i = rateOptions.indexOf(opt);
+                            return (
+                              <SelectItem key={`rate-${i}`} value={`rate-${i}`}>
+                                {opt.shift_type ? `[${opt.shift_type.toUpperCase()}] ` : ''}{opt.label} — ${opt.amount.toLocaleString()}{opt.kind === 'hourly' ? '/hr' : '/day'}
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectGroup>
+                      )}
+                      {(facilityOpts.length > 0 || cardOpts.length > 0) && <SelectSeparator />}
+                      <SelectItem value="custom">Custom</SelectItem>
+                    </>
+                  );
+                })()}
               </SelectContent>
             </Select>
             {activeRateKind === 'hourly' && Number(rate) > 0 && isHoursValid && (
@@ -1211,10 +1261,43 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
               >
                 <SelectTrigger className="h-10"><SelectValue placeholder="Select rate" /></SelectTrigger>
                 <SelectContent>
-                  {rateOptions.map((opt, i) => (
-                    <SelectItem key={`rate-${i}`} value={`rate-${i}`}>{opt.label} — ${opt.amount.toLocaleString()}{opt.kind === 'hourly' ? '/hr' : '/day'}</SelectItem>
-                  ))}
-                  <SelectItem value="custom">Custom</SelectItem>
+                  {(() => {
+                    const facilityOpts = rateOptions.filter(o => o.source === 'facility');
+                    const cardOpts = rateOptions.filter(o => o.source === 'rate_card');
+                    return (
+                      <>
+                        {facilityOpts.length > 0 && (
+                          <SelectGroup>
+                            <SelectLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">From this clinic</SelectLabel>
+                            {facilityOpts.map((opt) => {
+                              const i = rateOptions.indexOf(opt);
+                              return (
+                                <SelectItem key={`rate-${i}`} value={`rate-${i}`}>
+                                  {opt.shift_type ? `[${opt.shift_type.toUpperCase()}] ` : ''}{opt.label} — ${opt.amount.toLocaleString()}{opt.kind === 'hourly' ? '/hr' : '/day'}
+                                </SelectItem>
+                              );
+                            })}
+                          </SelectGroup>
+                        )}
+                        {facilityOpts.length > 0 && cardOpts.length > 0 && <SelectSeparator />}
+                        {cardOpts.length > 0 && (
+                          <SelectGroup>
+                            <SelectLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">From your Rate Card</SelectLabel>
+                            {cardOpts.map((opt) => {
+                              const i = rateOptions.indexOf(opt);
+                              return (
+                                <SelectItem key={`rate-${i}`} value={`rate-${i}`}>
+                                  {opt.shift_type ? `[${opt.shift_type.toUpperCase()}] ` : ''}{opt.label} — ${opt.amount.toLocaleString()}{opt.kind === 'hourly' ? '/hr' : '/day'}
+                                </SelectItem>
+                              );
+                            })}
+                          </SelectGroup>
+                        )}
+                        {(facilityOpts.length > 0 || cardOpts.length > 0) && <SelectSeparator />}
+                        <SelectItem value="custom">Custom</SelectItem>
+                      </>
+                    );
+                  })()}
                 </SelectContent>
               </Select>
             ) : (
