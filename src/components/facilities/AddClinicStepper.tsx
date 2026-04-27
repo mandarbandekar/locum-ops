@@ -491,7 +491,7 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
                         : 'border-border bg-background text-muted-foreground hover:bg-muted',
                     )}
                   >
-                    {d} days
+                    {d === 0 ? 'Due upon receipt' : `${d} days`}
                   </button>
                 );
               })}
