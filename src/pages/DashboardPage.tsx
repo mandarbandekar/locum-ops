@@ -793,8 +793,6 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Shift Type migration nudge (one-time, pre-existing users with untyped shifts) */}
-      <ShiftTypeMigrationBanner untypedShiftCount={untypedShiftCount} />
 
       {/* Getting Started */}
       {showGettingStarted && (
