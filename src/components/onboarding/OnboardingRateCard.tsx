@@ -50,7 +50,7 @@ export function OnboardingRateCard({
   existingClinicPreference,
   onSkip,
 }: Props) {
-  const [preference, setPreference] = useState<BillingPreference>(initialPreference || 'per_day');
+  const [preference, setPreference] = useState<BillingPreference>(coercePreference(initialPreference));
   const [rates, setRates] = useState<DefaultRate[]>(initialRates && initialRates.length > 0 ? initialRates : []);
   const [touched, setTouched] = useState(initialRates && initialRates.length > 0);
 
@@ -128,8 +128,8 @@ export function OnboardingRateCard({
   const dailyRates = rates.filter(r => r.basis === 'daily').sort((a, b) => a.sort_order - b.sort_order);
   const hourlyRates = rates.filter(r => r.basis === 'hourly').sort((a, b) => a.sort_order - b.sort_order);
 
-  const showDaily = preference === 'per_day' || preference === 'both' || preference === 'unsure';
-  const showHourly = preference === 'per_hour' || preference === 'both';
+  const showDaily = preference === 'per_day';
+  const showHourly = preference === 'per_hour';
 
   return (
     <div className="space-y-6">
