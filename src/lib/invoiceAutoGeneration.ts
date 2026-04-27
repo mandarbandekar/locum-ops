@@ -243,7 +243,7 @@ export function buildAutoInvoiceDraft(
   const invoiceDate = new Date(lastShiftDate.getFullYear(), lastShiftDate.getMonth(), lastShiftDate.getDate(), 12, 0, 0);
 
   const dueDate = new Date(invoiceDate);
-  dueDate.setDate(dueDate.getDate() + (facility.invoice_due_days || 15));
+  dueDate.setDate(dueDate.getDate() + (facility.invoice_due_days ?? 15));
 
   return {
     invoice: {
