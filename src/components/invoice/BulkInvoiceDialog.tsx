@@ -92,11 +92,13 @@ export function BulkInvoiceDialog({ open, onOpenChange, preselectedFacilityId }:
     const dateLabel = format(new Date(s.start_datetime), 'MMM d, yyyy');
     const timeLabel = `${format(new Date(s.start_datetime), 'h:mm a')} – ${format(new Date(s.end_datetime), 'h:mm a')}`;
     const isHourly = s.rate_kind === 'hourly' && s.hourly_rate != null && s.hourly_rate > 0;
+    const typeLabel = getShiftTypeLabel(s.shift_type);
+    const coverageLabel = typeLabel ? `${typeLabel} relief coverage` : 'Relief coverage';
 
     if (!isHourly) {
       return [{
         shift_id: s.id,
-        description: `${dateLabel} — Relief coverage (${timeLabel})`,
+        description: `${dateLabel} — ${coverageLabel} (${timeLabel})`,
         service_date: new Date(s.start_datetime).toISOString().split('T')[0],
         qty: 1,
         unit_rate: s.rate_applied,
@@ -110,7 +112,7 @@ export function BulkInvoiceDialog({ open, onOpenChange, preselectedFacilityId }:
 
     return [{
       shift_id: s.id,
-      description: `${dateLabel} — Relief coverage (${timeLabel})`,
+      description: `${dateLabel} — ${coverageLabel} (${timeLabel})`,
       service_date: new Date(s.start_datetime).toISOString().split('T')[0],
       qty: totalHours,
       unit_rate: hourlyRate,
