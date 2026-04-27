@@ -35,6 +35,13 @@ export interface Facility {
   engagement_type?: 'direct' | 'third_party' | 'w2';
   source_name?: string | null;
   tax_form_type?: '1099' | 'w2' | null;
+  /**
+   * Default unpaid break (minutes) applied to new shifts at this clinic.
+   *   - null → break is paid (no deduction). Default for new clinics.
+   *   - 0    → no break taken.
+   *   - >0   → unpaid break length in minutes.
+   */
+  default_break_minutes?: number | null;
 }
 
 export type ContactRole = string;
@@ -96,6 +103,10 @@ export interface Shift {
   hourly_rate?: number | null;
   engagement_type_override?: 'direct' | 'third_party' | 'w2' | null;
   source_name_override?: string | null;
+  /** Unpaid break minutes for this shift. See Facility.default_break_minutes for semantics. */
+  break_minutes?: number | null;
+  /** When true, billable time = scheduled time regardless of break_minutes. */
+  worked_through_break?: boolean;
 }
 
 export type InvoiceStatus = 'draft' | 'sent' | 'partial' | 'paid';
