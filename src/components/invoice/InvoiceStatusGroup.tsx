@@ -267,11 +267,9 @@ export function InvoiceStatusGroup({
   );
 }
 
-function FacilitySubGroup({ name, invoices, selected, onToggleSelect, onDelete, getFacilityName, navigate, onMarkAsPaid, onSendFollowup }: {
+function FacilitySubGroup({ name, invoices, onDelete, getFacilityName, navigate, onMarkAsPaid, onSendFollowup }: {
   name: string;
   invoices: InvoiceWithStatus[];
-  selected: Set<string>;
-  onToggleSelect: (id: string, e: React.MouseEvent) => void;
   onDelete: (id: string) => Promise<void>;
   getFacilityName: (id: string) => string;
   navigate: (path: string) => void;
