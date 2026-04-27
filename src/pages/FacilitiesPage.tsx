@@ -119,18 +119,29 @@ export default function FacilitiesPage() {
                 </div>
 
                 <div className="space-y-2 text-xs">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <CalendarClock className="h-3.5 w-3.5 shrink-0" />
-                    <span>Billing:</span>
-                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 capitalize font-medium">
-                      {cadenceLabel(c)}
-                    </Badge>
-                    {c.auto_generate_invoices && (
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Auto</Badge>
-                    )}
-                  </div>
+                  {(c.engagement_type || 'direct') === 'direct' && (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <CalendarClock className="h-3.5 w-3.5 shrink-0" />
+                      <span>Billing:</span>
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 capitalize font-medium">
+                        {cadenceLabel(c)}
+                      </Badge>
+                      {c.auto_generate_invoices && (
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Auto</Badge>
+                      )}
+                    </div>
+                  )}
 
-                  {hasBillingContact(c) ? (
+                  {(c.engagement_type || 'direct') !== 'direct' ? (
+                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                      <User className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">
+                        {c.engagement_type === 'w2'
+                          ? 'Paid by employer — no invoicing'
+                          : 'Paid by platform — no invoicing'}
+                      </span>
+                    </div>
+                  ) : hasBillingContact(c) ? (
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <User className="h-3.5 w-3.5 shrink-0" />
                       <span className="truncate">{c.invoice_name_to}</span>
