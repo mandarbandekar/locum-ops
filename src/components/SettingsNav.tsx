@@ -1,5 +1,5 @@
 import { NavLink } from '@/components/NavLink';
-import { User, CalendarDays, CreditCard, Bell, Briefcase, Shield, Settings, Calendar, Crown } from 'lucide-react';
+import { User, CalendarDays, CreditCard, Bell, Briefcase, Shield, Settings, Calendar, Crown, DollarSign } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { isFounderAdmin } from '@/lib/founderAccess';
 
@@ -7,6 +7,7 @@ const settingsLinks = [
   { to: '/settings/profile', label: 'Profile', icon: User },
   { to: '/settings/scheduling', label: 'Scheduling', icon: CalendarDays },
   { to: '/settings/calendar-sync', label: 'Calendar Sync', icon: Calendar },
+  { to: '/settings/rate-card', label: 'Rate Card', icon: DollarSign },
   { to: '/settings/payments', label: 'Payments', icon: CreditCard },
   { to: '/settings/reminders', label: 'Reminders', icon: Bell },
   { to: '/settings/business-taxes', label: 'Business & Taxes', icon: Briefcase },

@@ -38,6 +38,7 @@ import SettingsSchedulingPage from "@/pages/SettingsSchedulingPage";
 import SettingsCalendarSyncPage from "@/pages/SettingsCalendarSyncPage";
 // SettingsInvoicingPage removed — invoice settings are now per-facility
 import SettingsPaymentsPage from "@/pages/SettingsPaymentsPage";
+import SettingsRateCardPage from "@/pages/SettingsRateCardPage";
 import SettingsRemindersPage from "@/pages/SettingsRemindersPage";
 import SettingsBusinessTaxesPage from "@/pages/SettingsBusinessTaxesPage";
 import SettingsSecurityPage from "@/pages/SettingsSecurityPage";
@@ -130,6 +131,7 @@ function AuthenticatedApp() {
           <Route path="/settings/scheduling" element={<SettingsSchedulingPage />} />
           <Route path="/settings/calendar-sync" element={<SettingsCalendarSyncPage />} />
           <Route path="/settings/invoicing" element={<Navigate to="/settings/profile" replace />} />
+          <Route path="/settings/rate-card" element={<SettingsRateCardPage />} />
           <Route path="/settings/payments" element={<SettingsPaymentsPage />} />
           <Route path="/settings/reminders" element={<SettingsRemindersPage />} />
           <Route path="/settings/business-taxes" element={<SettingsBusinessTaxesPage />} />
