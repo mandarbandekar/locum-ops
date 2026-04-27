@@ -113,7 +113,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarContent className="pt-3 overflow-hidden">
+      <SidebarContent className="pt-3 overflow-y-auto overflow-x-hidden [scrollbar-width:thin]">
         {/* Brand lockup */}
         <div className={`flex items-center gap-2.5 px-4 py-3 ${collapsed ? 'justify-center px-2' : ''}`}>
           <img src={locumOpsEmblem} alt="" className="h-7 w-7 shrink-0 object-contain" />
