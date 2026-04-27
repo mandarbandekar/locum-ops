@@ -202,12 +202,12 @@ export function OnboardingBulkShiftCalendar({
     }
   };
 
-  // Footer wiring
-  const footer = created
+  // Footer wiring — depends on subStep
+  const footer = subStep === 'dates'
     ? {
-        primaryLabel: 'See my invoices →',
-        primaryDisabled: false,
-        onPrimary: onContinue,
+        primaryLabel: 'Continue',
+        primaryDisabled: selectedDates.length === 0,
+        onPrimary: () => setSubStep('details'),
       }
     : {
         primaryLabel: submitting
@@ -215,6 +215,7 @@ export function OnboardingBulkShiftCalendar({
           : `Add ${selectedDates.length} shift${selectedDates.length === 1 ? '' : 's'}`,
         primaryDisabled: submitting || selectedDates.length === 0 || !selectedRate || !validTimes,
         onPrimary: handleSubmit,
+        onBack: () => setSubStep('dates'),
       };
 
   return (
@@ -226,118 +227,117 @@ export function OnboardingBulkShiftCalendar({
             <Sparkles className="h-5 w-5 text-primary" />
           </div>
           <p className="text-sm font-semibold text-foreground">
-            You can add multiple shifts in one go
+            {subStep === 'dates'
+              ? 'You can add multiple shifts in one go'
+              : 'Same time and rate will be applied to every selected date'}
           </p>
         </div>
 
-        {/* Success banner (after creation) */}
-        {created && (
-          <div className="rounded-xl border border-primary/40 bg-primary/[0.08] px-4 py-3">
-            <div className="flex items-center gap-2">
-              <Check className="h-4 w-4 text-primary" />
-              <p className="text-sm font-semibold text-foreground">
-                {justCreatedCount} shift{justCreatedCount === 1 ? '' : 's'} saved · Projected ${justCreatedTotal.toLocaleString()}
+        {subStep === 'dates' ? (
+          <>
+            <div className="space-y-2">
+              <h2 className="text-xl font-bold text-foreground font-[Manrope]">
+                Pick the dates you'll work at <span className="text-primary">{facility.name}</span>
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Select one or many dates. Next, you'll set the time and pick a rate.
               </p>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Your shifts are saved. Next, see how Locum Ops prepares invoices for you.
-            </p>
-          </div>
-        )}
 
-        <div className="space-y-2">
-          <h2 className="text-xl font-bold text-foreground font-[Manrope]">
-            Pick the dates you'll work at <span className="text-primary">{facility.name}</span>
-          </h2>
-          {!created && (
-            <p className="text-sm text-muted-foreground">
-              Select one or many dates. We'll create a shift for each — same time, same rate.
-            </p>
-          )}
-        </div>
-
-        <Card>
-          <CardContent className="pt-5 space-y-4">
-            <div className="flex justify-center">
-              <Calendar
-                mode="multiple"
-                selected={selectedDates}
-                onSelect={handleSelectDates}
-                modifiers={{ created: createdShiftDates }}
-                modifiersClassNames={{
-                  created: 'bg-primary/15 text-foreground font-semibold',
-                }}
-                className={cn('p-3 pointer-events-auto rounded-md border-0')}
-              />
+            <Card>
+              <CardContent className="pt-5 space-y-4">
+                <div className="flex justify-center">
+                  <Calendar
+                    mode="multiple"
+                    selected={selectedDates}
+                    onSelect={handleSelectDates}
+                    modifiers={{ created: createdShiftDates }}
+                    modifiersClassNames={{
+                      created: 'bg-primary/15 text-foreground font-semibold',
+                    }}
+                    className={cn('p-3 pointer-events-auto rounded-md border-0')}
+                  />
+                </div>
+                {selectedDates.length === 0 ? (
+                  <div className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-2 flex items-center gap-2 text-sm text-muted-foreground">
+                    <CalendarDays className="h-4 w-4 shrink-0" />
+                    <span>Tap one or more dates above to continue.</span>
+                  </div>
+                ) : (
+                  <div className="text-center text-sm text-muted-foreground">
+                    Selected:{' '}
+                    <span className="font-semibold text-foreground">
+                      {selectedDates.length} date{selectedDates.length === 1 ? '' : 's'}
+                    </span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </>
+        ) : (
+          <>
+            <div className="space-y-2">
+              <h2 className="text-xl font-bold text-foreground font-[Manrope]">
+                Set the time & rate
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Applying to <span className="font-semibold text-foreground">{selectedDates.length} date{selectedDates.length === 1 ? '' : 's'}</span> at{' '}
+                <span className="text-primary font-semibold">{facility.name}</span>.
+              </p>
             </div>
-            {selectedDates.length === 0 && !created ? (
-              <div className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-2 flex items-center gap-2 text-sm text-muted-foreground">
-                <CalendarDays className="h-4 w-4 shrink-0" />
-                <span>Tap one or more dates above to add shifts.</span>
-              </div>
-            ) : (
-              <div className="text-center text-sm text-muted-foreground">
-                Selected:{' '}
-                <span className="font-semibold text-foreground">
-                  {selectedDates.length} date{selectedDates.length === 1 ? '' : 's'}
-                </span>
-              </div>
-            )}
-          </CardContent>
-        </Card>
 
-        {!created && (
-          <Card>
-            <CardContent className="pt-5 space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Start time</Label>
-                  <Input
-                    type="time"
-                    value={startTime}
-                    onChange={e => setStartTime(e.target.value)}
-                  />
+            <Card>
+              <CardContent className="pt-5 space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Start time</Label>
+                    <Input
+                      type="time"
+                      value={startTime}
+                      onChange={e => setStartTime(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">End time</Label>
+                    <Input
+                      type="time"
+                      value={endTime}
+                      onChange={e => setEndTime(e.target.value)}
+                    />
+                  </div>
                 </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">End time</Label>
-                  <Input
-                    type="time"
-                    value={endTime}
-                    onChange={e => setEndTime(e.target.value)}
-                  />
-                </div>
-              </div>
 
-              {rateOptions.length > 0 ? (
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Rate</Label>
-                  <Select value={selectedRateId} onValueChange={setSelectedRateId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose a rate" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {rateOptions.map(opt => (
-                        <SelectItem key={opt.id} value={opt.id}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              ) : (
-                <p className="text-xs text-destructive">
-                  No rates available. Go back to set up your Rate Card.
-                </p>
-              )}
+                {rateOptions.length > 0 ? (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Rate</Label>
+                    <Select value={selectedRateId} onValueChange={setSelectedRateId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose a rate" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {rateOptions.map(opt => (
+                          <SelectItem key={opt.id} value={opt.id}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : (
+                  <p className="text-xs text-destructive">
+                    No rates available. Go back to set up your Rate Card.
+                  </p>
+                )}
 
-              <div className="flex items-center justify-between pt-1 border-t border-border/50">
-                <span className="text-sm text-muted-foreground">Projected gross</span>
-                <span className="text-lg font-bold text-foreground tabular-nums">
-                  ${projectedGross.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
+                <div className="flex items-center justify-between pt-1 border-t border-border/50">
+                  <span className="text-sm text-muted-foreground">Projected gross</span>
+                  <span className="text-lg font-bold text-foreground tabular-nums">
+                    ${projectedGross.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          </>
         )}
       </div>
 
