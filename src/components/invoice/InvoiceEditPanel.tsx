@@ -382,9 +382,9 @@ export function InvoiceEditPanel({
                   <Label className="text-xs text-muted-foreground">Issued</Label>
                   <Input type="date" value={invoiceDate} onChange={e => setInvoiceDate(e.target.value)} className="h-8 text-sm" />
                 </div>
-                <div>
+                <div data-due-date-field>
                   <Label className="text-xs text-muted-foreground">Due</Label>
-                  <Input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="h-8 text-sm" />
+                  <Input id="invoice-due-date-input" type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="h-8 text-sm" />
                 </div>
               </div>
               {isAuto && (
