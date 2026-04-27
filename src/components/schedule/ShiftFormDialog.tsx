@@ -1007,6 +1007,9 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
                 {activeRateKind === 'hourly' && isHoursValid && (
                   <span className="text-muted-foreground">· {formatHours(calculatedHours)} hrs</span>
                 )}
+                {!workedThroughBreak && (breakMinutes ?? 0) > 0 && (
+                  <span className="text-muted-foreground">({`incl. ${breakMinutes} min unpaid break`})</span>
+                )}
               </span>
             ) : <span className="text-muted-foreground">—</span>}
           </Row>
