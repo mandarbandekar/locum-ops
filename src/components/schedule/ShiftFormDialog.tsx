@@ -1261,10 +1261,43 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
               >
                 <SelectTrigger className="h-10"><SelectValue placeholder="Select rate" /></SelectTrigger>
                 <SelectContent>
-                  {rateOptions.map((opt, i) => (
-                    <SelectItem key={`rate-${i}`} value={`rate-${i}`}>{opt.label} — ${opt.amount.toLocaleString()}{opt.kind === 'hourly' ? '/hr' : '/day'}</SelectItem>
-                  ))}
-                  <SelectItem value="custom">Custom</SelectItem>
+                  {(() => {
+                    const facilityOpts = rateOptions.filter(o => o.source === 'facility');
+                    const cardOpts = rateOptions.filter(o => o.source === 'rate_card');
+                    return (
+                      <>
+                        {facilityOpts.length > 0 && (
+                          <SelectGroup>
+                            <SelectLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">From this clinic</SelectLabel>
+                            {facilityOpts.map((opt) => {
+                              const i = rateOptions.indexOf(opt);
+                              return (
+                                <SelectItem key={`rate-${i}`} value={`rate-${i}`}>
+                                  {opt.shift_type ? `[${opt.shift_type.toUpperCase()}] ` : ''}{opt.label} — ${opt.amount.toLocaleString()}{opt.kind === 'hourly' ? '/hr' : '/day'}
+                                </SelectItem>
+                              );
+                            })}
+                          </SelectGroup>
+                        )}
+                        {facilityOpts.length > 0 && cardOpts.length > 0 && <SelectSeparator />}
+                        {cardOpts.length > 0 && (
+                          <SelectGroup>
+                            <SelectLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">From your Rate Card</SelectLabel>
+                            {cardOpts.map((opt) => {
+                              const i = rateOptions.indexOf(opt);
+                              return (
+                                <SelectItem key={`rate-${i}`} value={`rate-${i}`}>
+                                  {opt.shift_type ? `[${opt.shift_type.toUpperCase()}] ` : ''}{opt.label} — ${opt.amount.toLocaleString()}{opt.kind === 'hourly' ? '/hr' : '/day'}
+                                </SelectItem>
+                              );
+                            })}
+                          </SelectGroup>
+                        )}
+                        {(facilityOpts.length > 0 || cardOpts.length > 0) && <SelectSeparator />}
+                        <SelectItem value="custom">Custom</SelectItem>
+                      </>
+                    );
+                  })()}
                 </SelectContent>
               </Select>
             ) : (
