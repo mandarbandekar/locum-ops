@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, ComposedChart } from 'recharts';
 import { format, parseISO, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths, addMonths, isWithinInterval, differenceInDays, differenceInHours, getDay } from 'date-fns';
+import { getBillableMinutes } from '@/lib/shiftBreak';
 import { DollarSign, TrendingUp, TrendingDown, Calendar, Clock, ArrowUp, ArrowDown, Minus, Sparkles, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -261,7 +262,7 @@ export default function ReportsPage() {
       shifts.forEach(shift => {
         const shiftDate = parseISO(shift.start_datetime);
         if (isWithinInterval(shiftDate, { start: month, end: monthEnd })) {
-          const hours = differenceInHours(parseISO(shift.end_datetime), parseISO(shift.start_datetime));
+          const hours = getBillableMinutes(shift) / 60;
           if (hours > 0) totalHours += hours;
         }
       });
