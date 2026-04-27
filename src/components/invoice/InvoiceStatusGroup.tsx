@@ -158,15 +158,15 @@ function InvoiceTable({ invoices, selected, onToggleSelect, onDelete, getFacilit
               <TooltipProvider delayDuration={200}>
                 <div className="flex items-center gap-0.5">
                   {onMarkAsPaid && ['sent', 'partial', 'overdue'].includes(inv.computedStatus) && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-primary"
-                          onClick={() => onMarkAsPaid(inv)}>
-                          <DollarSign className="h-3.5 w-3.5" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Mark as Paid</TooltipContent>
-                    </Tooltip>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 px-2 mr-1 text-xs font-medium border-primary/40 text-primary hover:bg-primary hover:text-primary-foreground"
+                      onClick={() => onMarkAsPaid(inv)}
+                    >
+                      <DollarSign className="h-3.5 w-3.5 mr-1" />
+                      Mark Paid
+                    </Button>
                   )}
                   {onSendFollowup && inv.computedStatus === 'overdue' && (
                     <Tooltip>
