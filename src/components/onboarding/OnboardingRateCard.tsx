@@ -226,6 +226,10 @@ export function OnboardingRateCard({
         })}
       </div>
 
+      <p className="text-sm text-muted-foreground -mt-2">
+        Enter your rates here, keep the dollar entry fields empty if a rate doesn't apply to you.
+      </p>
+
       {/* Rate sections */}
       {(showDaily || showHourly) && (
         <Card>
@@ -238,7 +242,7 @@ export function OnboardingRateCard({
                 onUpdate={updateRate}
                 onRemove={removeRate}
                 onAdd={() => addRate('daily')}
-                showHeader={preference === 'both'}
+                showHeader={false}
               />
             )}
             {showHourly && (
@@ -249,7 +253,7 @@ export function OnboardingRateCard({
                 onUpdate={updateRate}
                 onRemove={removeRate}
                 onAdd={() => addRate('hourly')}
-                showHeader={preference === 'both'}
+                showHeader={false}
               />
             )}
           </CardContent>
