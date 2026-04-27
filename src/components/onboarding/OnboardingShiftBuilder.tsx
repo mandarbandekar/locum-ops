@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { format, subDays, parseISO } from 'date-fns';
 import { Check, Plus, Sparkles, Trash2 } from 'lucide-react';
 import { BreakPolicySelector } from '@/components/facilities/BreakPolicySelector';
+import { useUserProfile } from '@/contexts/UserProfileContext';
+import { mapDefaultRatesToRateEntries } from '@/lib/onboardingRateMapping';
 import type { Facility, Shift, TermsSnapshot } from '@/types';
 
 interface Props {
@@ -30,10 +32,15 @@ export function OnboardingShiftBuilder({
   sessionShiftIds,
   onShiftAdded,
 }: Props) {
+  const { profile } = useUserProfile();
   const defaultFacility = facilities[0];
+  const rateCardFirst = useMemo(() => {
+    const entries = mapDefaultRatesToRateEntries((profile?.default_rates ?? []) as any);
+    return entries[0]?.amount ?? null;
+  }, [profile?.default_rates]);
   const defaultRate = defaultFacility
-    ? (terms.find(t => t.facility_id === defaultFacility.id)?.weekday_rate || 650)
-    : 650;
+    ? (terms.find(t => t.facility_id === defaultFacility.id)?.weekday_rate || rateCardFirst || 650)
+    : (rateCardFirst || 650);
 
   const sessionShifts = useMemo(
     () =>
