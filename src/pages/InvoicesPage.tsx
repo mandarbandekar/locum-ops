@@ -65,42 +65,9 @@ export default function InvoicesPage() {
   const navigate = useNavigate();
   const invoiceTour = useSpotlightTour('locumops_tour_invoices');
   const [showCreate, setShowCreate] = useState(false);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [autoDeleteTarget, setAutoDeleteTarget] = useState<{ id: string; invoiceNumber: string; facilityName: string; periodStart: string; periodEnd: string; facilityId: string } | null>(null);
   const [markAsPaidTarget, setMarkAsPaidTarget] = useState<any>(null);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
-
-  // Refs for scroll-to
-  const overdueRef = useRef<HTMLDivElement>(null);
-  const awaitingRef = useRef<HTMLDivElement>(null);
-  const draftsRef = useRef<HTMLDivElement>(null);
-  const paidRef = useRef<HTMLDivElement>(null);
-
-  const scrollTo = useCallback((group: string) => {
-    const map: Record<string, React.RefObject<HTMLDivElement>> = {
-      overdue: overdueRef, awaiting: awaitingRef, drafts: draftsRef, paid: paidRef,
-    };
-    map[group]?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, []);
-
-  
-
-  const safeInvoices = Array.isArray(invoices) ? invoices : [];
-  const allInvoices = safeInvoices
-    .map(inv => ({ ...inv, computedStatus: computeInvoiceStatus(inv) }))
-    .sort((a, b) => new Date(a.invoice_date || a.period_end).getTime() - new Date(b.invoice_date || b.period_end).getTime());
-
-  const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
-
-  const toggleSelect = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setSelected(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-  };
 
   // Wrapper for single-invoice delete that checks auto-generation
   const handleSingleDelete = async (id: string) => {
