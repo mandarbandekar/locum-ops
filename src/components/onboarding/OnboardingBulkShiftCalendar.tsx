@@ -179,8 +179,6 @@ export function OnboardingBulkShiftCalendar({
         newIds.push(created.id);
         totalAdded += rateApplied;
       }
-      setJustCreatedCount(newIds.length);
-      setJustCreatedTotal(totalAdded);
       onShiftsCreated(newIds);
       setSelectedDates([]);
       toast.success(`${newIds.length} shift${newIds.length === 1 ? '' : 's'} added`);
@@ -193,6 +191,8 @@ export function OnboardingBulkShiftCalendar({
         projected_gross: Math.round(totalAdded),
         facility_id: facility.id,
       });
+      // Auto-advance to invoice reveal — no extra tap needed.
+      onContinue();
     } catch (e) {
       console.error('bulk shift create failed', e);
       toast.error('Failed to add shifts. Please try again.');
