@@ -51,19 +51,38 @@ interface ShiftFormDialogProps {
   defaultMonth?: Date;
 }
 
+export type RateOptionSource = 'facility' | 'rate_card';
+export type ShiftRateOption = RateEntry & { source: RateOptionSource };
+
 function buildRateOptions(
   terms: TermsSnapshot[],
   facilityId: string,
   defaultRates: DefaultRate[] = [],
-): RateEntry[] {
+): ShiftRateOption[] {
   const facilityTerms = terms.find(t => t.facility_id === facilityId);
-  const fromFacility = facilityTerms
-    ? termsToRates(facilityTerms).filter(r => r.amount > 0)
+  const fromFacility: ShiftRateOption[] = facilityTerms
+    ? termsToRates(facilityTerms)
+        .filter(r => r.amount > 0)
+        .map(r => ({ ...r, source: 'facility' as const }))
     : [];
-  if (fromFacility.length > 0) return fromFacility;
-  // Fallback: the user's saved Rate Card so users aren't forced to retype
-  // rates for clinics that were added before they configured terms.
-  return mapDefaultRatesToRateEntries(defaultRates);
+
+  // Always merge in the user's Rate Card library so personal rates (GP, ER,
+  // Surgery, hourly, etc.) are reachable from any clinic — not only when the
+  // clinic has zero saved rates. Dedupe against facility entries by kind +
+  // normalized label + amount so we don't show duplicates.
+  const fromRateCard = mapDefaultRatesToRateEntries(defaultRates);
+  const seen = new Set(
+    fromFacility.map(r => `${r.kind}:${(r.label || '').trim().toLowerCase()}:${r.amount}`),
+  );
+  const dedupedRateCard: ShiftRateOption[] = [];
+  for (const r of fromRateCard) {
+    const key = `${r.kind}:${(r.label || '').trim().toLowerCase()}:${r.amount}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    dedupedRateCard.push({ ...r, source: 'rate_card' });
+  }
+
+  return [...fromFacility, ...dedupedRateCard];
 }
 
 
