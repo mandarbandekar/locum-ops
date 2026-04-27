@@ -25,10 +25,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="h-screen flex w-full overflow-hidden">
         <AppSidebar />
-        <div className="flex-1 flex flex-col min-w-0">
-          <header className="h-14 flex items-center border-b border-border bg-card px-4 sm:px-5 shrink-0 sticky top-0 z-30">
+        <div className="flex-1 flex flex-col min-w-0 min-h-0">
+          <header className="h-14 flex items-center border-b border-border bg-card px-4 sm:px-5 shrink-0 z-30">
             <SidebarTrigger className="mr-3" />
             <span
               className="text-[17px] sm:text-[18px] font-semibold text-foreground tracking-tight truncate"
@@ -50,7 +50,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <ThemeToggle />
             </div>
           </header>
-          <main className="flex-1 p-3 sm:p-5 md:p-7 overflow-hidden">
+          <main className="flex-1 min-h-0 p-3 sm:p-5 md:p-7 overflow-y-auto overflow-x-hidden">
             <ErrorBoundary scope="route">
               {children}
             </ErrorBoundary>

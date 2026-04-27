@@ -717,7 +717,7 @@ export default function DashboardPage() {
   }, [shifts, weekEarnings, pipeline.toCollectTotal]);
 
   return (
-    <div className="flex flex-col min-h-[calc(100vh-theme(spacing.14)-theme(spacing.6)-theme(spacing.10))] overflow-auto">
+    <div className="flex flex-col min-h-full">
       {/* First-run onboarding handoff banner */}
       {showOnboardingHandoff && (
         <div className="shrink-0 mb-3">
