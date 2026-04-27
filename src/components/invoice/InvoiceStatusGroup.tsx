@@ -193,7 +193,7 @@ function InvoiceTable({ invoices, onDelete, getFacilityName, navigate, showFacil
 }
 
 export function InvoiceStatusGroup({
-  title, icon, invoices, selected, onToggleSelect, onDelete,
+  title, icon, invoices, onDelete,
   getFacilityName, emptyMessage, defaultOpen = true, groupByFacility = false,
   headerRight, alertBanner, onMarkAsPaid, onSendFollowup,
 }: Props & { groupByFacility?: boolean }) {
