@@ -522,3 +522,48 @@ function MileageOverrideCard({ facility, onUpdate }: { facility: any; onUpdate: 
     </Card>
   );
 }
+
+// ─── Break Policy Card ─────────────────────────────────────
+
+function BreakPolicyCard({ facility, onUpdate }: { facility: any; onUpdate: (f: any) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState<number | null>(facility.default_break_minutes ?? null);
+
+  const handleSave = () => {
+    onUpdate({ ...facility, default_break_minutes: value });
+    setEditing(false);
+    toast.success('Break policy saved');
+  };
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle className="text-base">Break Policy</CardTitle>
+        {editing ? (
+          <Button size="sm" onClick={handleSave}><Save className="mr-1 h-3 w-3" /> Save</Button>
+        ) : (
+          <Button size="sm" variant="ghost" onClick={() => { setValue(facility.default_break_minutes ?? null); setEditing(true); }}>
+            <Edit2 className="mr-1 h-3 w-3" /> Edit
+          </Button>
+        )}
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {editing ? (
+          <BreakPolicySelector
+            value={value}
+            onChange={setValue}
+            helper="Default for new shifts at this clinic. You can override per shift."
+            compact
+          />
+        ) : (
+          <>
+            <p className="text-sm font-medium">{getBreakPolicyLabel(facility.default_break_minutes)}</p>
+            <p className="text-xs text-muted-foreground">
+              Applied as the default unpaid break to new shifts at this clinic. Per-shift overrides always win.
+            </p>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
