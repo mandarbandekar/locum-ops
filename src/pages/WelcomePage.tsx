@@ -33,7 +33,7 @@ export default function WelcomePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!firstName.trim() || !lastName.trim() || !email.trim()) {
+    if (!firstName.trim() || !lastName.trim() || !companyName.trim() || !email.trim()) {
       toast.error('Please fill in all fields.');
       return;
     }
@@ -45,7 +45,7 @@ export default function WelcomePage() {
     const { error } = await signUp(email.trim(), password, {
       firstName: firstName.trim(),
       lastName: lastName.trim(),
-      company: '',
+      company: companyName.trim(),
       profession: 'vet',
     });
     setSubmitting(false);
