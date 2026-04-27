@@ -56,10 +56,18 @@ export function OnboardingShiftBuilder({
   const [startTime, setStartTime] = useState('08:00');
   const [endTime, setEndTime] = useState('18:00');
   const [rate, setRate] = useState(defaultRate.toString());
+  const [breakMinutes, setBreakMinutes] = useState<number | null>(
+    defaultFacility?.default_break_minutes ?? null,
+  );
   const [submitting, setSubmitting] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
 
   const selectedFacility = facilities.find(f => f.id === selectedFacilityId) || defaultFacility;
+
+  // When the user switches facility, sync the break default to that clinic's policy.
+  useEffect(() => {
+    setBreakMinutes(selectedFacility?.default_break_minutes ?? null);
+  }, [selectedFacility?.id]);
 
   // Keep the date input in sync with the next default after each save.
   // We only push it forward when the user hasn't manually changed it from the previous default.
