@@ -76,8 +76,12 @@ export interface TermsSnapshot {
     label: string;
     amount: number;
     kind?: RateKind;
+    /** Optional shift-type slug carried over from the user's Rate Card. */
+    shift_type?: string;
   }>;
   rate_kinds?: Partial<Record<PredefinedRateKey, RateKind>>;
+  /** Shift types tied to the predefined rates (weekday/weekend/etc.). */
+  rate_shift_types?: Partial<Record<PredefinedRateKey, string>>;
 }
 
 export type ShiftColor = 'blue' | 'green' | 'red' | 'orange' | 'purple' | 'pink' | 'teal' | 'yellow';
