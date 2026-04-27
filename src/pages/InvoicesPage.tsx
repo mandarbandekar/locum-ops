@@ -190,11 +190,6 @@ export default function InvoicesPage() {
       <div className="page-header flex-col sm:flex-row gap-3">
         <h1 className="page-title">Invoices</h1>
         <div className="flex gap-2 flex-wrap w-full sm:w-auto">
-          {selected.size > 0 && (
-            <Button size="sm" variant="destructive" onClick={() => setShowDeleteConfirm(true)}>
-              <Trash2 className="mr-1 h-4 w-4" /> Delete ({selected.size})
-            </Button>
-          )}
           <Button data-tour="invoice-create" size="sm" variant="outline" onClick={() => setShowCreate(true)} className="flex-1 sm:flex-none">
             <Plus className="mr-1 h-4 w-4" /> Create Manual Invoice
           </Button>
