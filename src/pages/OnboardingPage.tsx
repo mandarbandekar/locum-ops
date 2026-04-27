@@ -316,8 +316,8 @@ export default function OnboardingPage() {
 
   const handleAdvanceToLoopChoice = () => {
     setInvoiceRevealSeen(true);
-    setPhase('loop_choice');
-    persist({ phase: 'loop_choice', invoice_reveal_seen: true });
+    setPhase('business_map');
+    persist({ phase: 'business_map', invoice_reveal_seen: true });
     trackOnboarding('onboarding_invoice_continue_clicked', {
       session_shift_count: sessionShiftIds.length,
       draft_invoice_count: draftInvoiceCount,
