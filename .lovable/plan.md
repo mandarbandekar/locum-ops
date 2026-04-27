@@ -1,96 +1,61 @@
-# Platform Stabilization Plan — Site Reliability
+# Fix: Content cutoff on small / short laptop screens
 
-A focused, multi-layer hardening pass. No feature changes. Goal: fewer "blank UI" incidents, safer error surfaces, clearer signal when something fails, and tighter backend guardrails.
+## The problem
 
-## Findings (current state)
+Two real issues are causing content to disappear on smaller laptops (e.g. 13" MacBooks at ~800px tall, like your current 815×616 viewport):
 
-- No global React error boundary — one render exception unmounts the whole app.
-- `QueryClient` constructed with defaults — no retry strategy, no `staleTime`, no failure backoff for React Query hooks (credentials, compliance, etc.).
-- `process-email-queue` source comment claims `verify_jwt = true` but `supabase/config.toml` sets it to `false` for every function (12 functions). Several should be JWT-verified (`delete-account`, `tax-advisor-chat`, `ai-setup-parse`, `ai-facility-enrich`, `auto-mileage-tracker`, `process-email-queue`, `credential-portal-crypto`, `generate-invoice-pdf`, `calendar-ics-feed`). Truly public ones (`auth-email-hook`, `public-invoice`, `public-confirmation`, `places-autocomplete`) stay open.
-- `DataContext.fetchAll` is now fault-tolerant, but a transient auth error still drops the user to a generic error toast with no retry path.
-- No client-side runtime error reporting beyond PostHog session replays — runtime issues like the one reported by `praadnyadvm@gmail.com` are diagnosed reactively from logs.
-- 27 Supabase linter WARNs (1 permissive RLS + 26 SECURITY DEFINER functions exposed to anon/authenticated). Not blocking, but reducible.
-- Auth refresh handling on `getSession` already self-heals stale tokens — keep, but extend to network-level failures.
+1. **Sidebar clips its own items.** `AppSidebar` wraps its content in `SidebarContent` with `overflow-hidden`. When the viewport is short, the bottom groups (Compliance → "Credentials & CE", and Settings) get cut off with no way to reach them.
+2. **Main area uses `overflow-hidden` aggressively.** `Layout.tsx`'s `<main>` and several pages (Dashboard, Schedule) lock to `100vh` and hide overflow. On short viewports, page content beneath the fold becomes unreachable instead of allowing internal scroll.
 
-## Plan
+There is also no global safety net — pages assume a minimum height and don't degrade gracefully below it.
 
-### 1. Frontend resilience
+## What I'll change
 
-1.1 Add a global `<ErrorBoundary>` wrapping `<AuthGate />` in `App.tsx`.
-- Catches render-time exceptions, shows a calm "Something went wrong — Reload" screen with the error logged to console + PostHog (`captureException`).
-- Includes a "Reset session and reload" button that signs out locally and reloads (covers stale-state cases).
+### 1. Sidebar — never clip nav items
 
-1.2 Add a route-level boundary inside `<Layout>` so a single page crash doesn't kill the sidebar/nav.
+`src/components/AppSidebar.tsx`
+- Replace `SidebarContent`'s `overflow-hidden` with `overflow-y-auto` and add a thin scrollbar style. Sidebar stays "non-scrollable" visually on normal screens (per design memory) but gracefully scrolls when the viewport can't fit all groups. This guarantees Credentials & CE and Settings are always reachable.
+- Ensure `SidebarFooter` (Settings) stays pinned via `mt-auto` so it doesn't float away when content shrinks.
 
-1.3 Configure `QueryClient` with sane defaults:
-```ts
-defaultOptions: {
-  queries: {
-    retry: (failureCount, err) => failureCount < 2 && !isAuthError(err),
-    retryDelay: attempt => Math.min(1000 * 2 ** attempt, 8000),
-    staleTime: 30_000,
-    refetchOnWindowFocus: false,
-  },
-  mutations: { retry: 0 },
-}
-```
+### 2. Layout shell — allow internal scroll, not clipping
 
-1.4 `DataContext.fetchAll` improvements:
-- One automatic silent retry per failed loader (300ms backoff) before surfacing the toast.
-- Replace blocking toast with a non-blocking inline banner ("Some data couldn't load — Retry") + Retry button that re-runs only the failed loaders.
-- Track `lastFailedTables` in state so the banner persists until resolved.
+`src/components/Layout.tsx`
+- Change the outer wrapper from `min-h-screen` to `h-screen` with `overflow-hidden`, so the header is sticky and the main area is the only scroll surface (no double scrollbars).
+- Change `<main>` from `overflow-hidden` to `overflow-y-auto` and add `min-h-0` to its flex parent. This is the standard pattern for a fixed shell with scrollable content.
+- Reduce vertical padding on short viewports (`py-3` instead of `p-7`) using a min-height media check so more content fits above the fold.
 
-1.5 Auth resilience: in `AuthContext`, catch `onAuthStateChange` errors and downgrade to a clean local sign-out instead of a hung loading state.
+### 3. Dashboard (Command Center) — fit-or-scroll
 
-### 2. Backend hardening
+`src/pages/DashboardPage.tsx`
+- The "fixed-height hub" rule (per memory) is preserved on tall screens, but on viewports shorter than ~720px the dashboard already uses `min-h-[calc(...)]` which forces overflow. I'll:
+  - Keep the fixed-height layout when `min-height: 760px` (md+ laptops).
+  - Below that, switch to a natural-flow layout that scrolls inside `<main>`, so the "Needs Your Attention" section and footer are always reachable.
 
-2.1 Fix `supabase/config.toml` JWT verification per function:
-- `verify_jwt = true`: `delete-account`, `tax-advisor-chat`, `ai-setup-parse`, `ai-facility-enrich`, `auto-mileage-tracker`, `backfill-mileage`, `business-summary`, `generate-auto-invoices`, `generate-invoice-pdf`, `generate-recurring-expenses`, `google-calendar-auth`, `send-invoice-to-clinic`, `send-reminder-emails`, `process-email-queue` (called by pg_cron with service-role JWT), `credential-portal-crypto`.
-- `verify_jwt = false`: `auth-email-hook`, `public-invoice`, `public-confirmation`, `places-autocomplete`, `calendar-ics-feed` (token-authenticated).
-- Update `process-email-queue/index.ts` comment to reflect actual final value.
+### 4. Schedule page — internal calendar scroll
 
-2.2 Add migration: revoke `EXECUTE` on `public` from `anon`/`authenticated` for SECURITY DEFINER helpers that should never be called over PostgREST (e.g. `move_to_dlq`, `read_email_batch`, `delete_email`, `enqueue_email`, `handle_new_user`, `handle_new_user_profile`, `update_updated_at`, `get_founder_overview` — already gated internally but lock down the API surface).
-- Keeps `has_role`-style helpers callable where intentionally used.
+`src/pages/SchedulePage.tsx`
+- Keep the fixed `h-[calc(100vh-4rem)]` shell, but add a minimum height floor (`min-h-[560px]`) so on very short screens the whole page becomes scrollable instead of squashing the calendar to unusable.
 
-2.3 Tighten the one permissive RLS policy flagged by the linter (review and replace `WITH CHECK (true)` on whichever non-SELECT policy is flagged). Concrete table identified during execution.
+### 5. Responsive audit pass (lightweight)
 
-### 3. Observability
+- Verify the Layout header doesn't push content off-screen (it's already `h-14`, fine).
+- Confirm dialogs use `max-h-[85vh] overflow-y-auto` (most already do; will spot-fix any that don't in Add Shift / Add Expense / Invoice wizard if found during the pass).
 
-3.1 Add `errorReporting.ts`: a thin wrapper that posts caught exceptions to PostHog `posthog.captureException` plus a typed console group, used by the error boundaries and `DataContext` failures.
+## Out of scope
 
-3.2 Add structured logging tags to all edge functions: every `console.error` includes `{ fn, user_id?, request_id }` so log queries can pivot per-function and per-user. Lightweight helper added to `supabase/functions/_shared/log.ts` and adopted in the 5 most-used functions (`process-email-queue`, `generate-invoice-pdf`, `auto-mileage-tracker`, `send-reminder-emails`, `auth-email-hook`).
+- No changes to sidebar visual design, colors, or group structure.
+- No changes to dashboard tile composition or copy.
+- No new breakpoints introduced beyond Tailwind defaults plus one min-height media query.
 
-3.3 Add a 1-minute health probe edge function `health` (public, returns `{ ok, db, version }`) for external uptime monitoring. Unblocks future status-page work without redesign.
+## Files to modify
 
-### 4. Tests
+- `src/components/Layout.tsx`
+- `src/components/AppSidebar.tsx`
+- `src/pages/DashboardPage.tsx`
+- `src/pages/SchedulePage.tsx`
 
-4.1 Vitest unit test for `DataContext.fetchAll` retry/banner behavior using mocked Supabase responses.
-4.2 Unit test for the new error boundary fallback (renders fallback on thrown child, recovers on reset).
+## How to verify after rollout
 
-## What this will NOT do
-
-- No schema changes to user-facing tables.
-- No UX redesign — banner + boundary fallbacks match existing `style/visual-identity` (flat, calm, themed borders).
-- No pricing/compute upgrades — those remain a user-driven decision in Cloud settings if load grows.
-
-## Files touched
-
-- `src/App.tsx` — ErrorBoundary wrap, QueryClient config.
-- `src/components/ErrorBoundary.tsx` (new), `src/lib/errorReporting.ts` (new).
-- `src/components/Layout.tsx` — route-level boundary.
-- `src/contexts/DataContext.tsx` — retry + inline banner, expose `retryFailedLoaders`.
-- `src/contexts/AuthContext.tsx` — auth listener hardening.
-- `supabase/config.toml` — per-function `verify_jwt`.
-- `supabase/functions/process-email-queue/index.ts` — comment fix.
-- `supabase/functions/_shared/log.ts` (new) + adoption in 5 functions.
-- `supabase/functions/health/index.ts` (new).
-- New migration: revoke EXECUTE on internal SECURITY DEFINER helpers + tighten one permissive policy.
-- `src/test/errorBoundary.test.tsx`, `src/test/dataContextRetry.test.ts` (new).
-
-## Risks / mitigations
-
-- Flipping `verify_jwt` to true on functions called only from the app is safe (Supabase JS auto-attaches the user JWT). pg_cron jobs already pass `Authorization: Bearer <service_role>`, which Supabase's gateway accepts under `verify_jwt = true`.
-- Revoking EXECUTE on internal helpers: each one is verified to only be called via triggers / other definer functions / service role, never from the client.
-- ErrorBoundary catches render errors but not async ones — async paths covered by existing toast + new structured logging.
-
-Approve to proceed and I'll implement in this order: config.toml + migration → ErrorBoundary + QueryClient → DataContext retry banner → logging helpers + health probe → tests.
+1. Resize browser to ~1280×700 — Credentials & CE and Settings remain visible/reachable in the sidebar.
+2. Resize to ~1024×600 — dashboard scrolls smoothly within the main area, header stays pinned.
+3. On a 1440×900 laptop — dashboard still uses the fixed-height "command center" layout with no page scroll, matching current design.
