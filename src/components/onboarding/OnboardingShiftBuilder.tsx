@@ -205,10 +205,23 @@ export function OnboardingShiftBuilder({
             <div className="space-y-1.5">
               <Label>End time</Label>
               <Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} />
-            </div>
           </div>
 
-          <Button
+          <div className="space-y-1.5">
+            <Label>Break policy</Label>
+            <BreakPolicySelector
+              value={breakMinutes}
+              onChange={setBreakMinutes}
+              compact
+              helper={
+                selectedFacility?.default_break_minutes != null
+                  ? `Defaulted from ${selectedFacility.name}'s clinic policy. Adjust if this shift was different.`
+                  : 'Unpaid breaks are deducted from billable time.'
+              }
+            />
+          </div>
+
+
             type="button"
             variant="outline"
             className="w-full"
