@@ -8,8 +8,58 @@ export interface DefaultRate {
   name: string;
   amount: number;
   basis: RateBasis;
+  /**
+   * Optional shift-type slug (e.g. 'gp', 'er', 'surgery'). Free-form to support
+   * custom values typed by the user. Carried into facility rate snapshots and
+   * ultimately onto the saved shift record.
+   */
+  shift_type?: string;
   active: boolean;
   sort_order: number;
+}
+
+/**
+ * Canonical shift-type catalog — used for the combobox in the Rate Card and
+ * for chip-rendering on shift cards. Custom values typed by the user are
+ * supported but won't appear in this list.
+ */
+export interface ShiftTypeOption {
+  value: string;       // slug stored in DB
+  label: string;       // human label for the chip
+  short: string;       // short label used to autofill rate names ("GP Day")
+}
+export const SHIFT_TYPE_OPTIONS: ShiftTypeOption[] = [
+  { value: 'gp',        label: 'GP / General Practice', short: 'GP' },
+  { value: 'er',        label: 'ER / Emergency',         short: 'ER' },
+  { value: 'surgery',   label: 'Surgery',                short: 'Surgery' },
+  { value: 'dental',    label: 'Dental',                 short: 'Dental' },
+  { value: 'wellness',  label: 'Wellness / Vaccine',     short: 'Wellness' },
+  { value: 'oncall',    label: 'On-Call',                short: 'On-Call' },
+  { value: 'telemed',   label: 'Telemedicine',           short: 'Telemed' },
+  { value: 'specialty', label: 'Specialty / Referral',   short: 'Specialty' },
+  { value: 'shelter',   label: 'Shelter / Nonprofit',    short: 'Shelter' },
+  { value: 'other',     label: 'Other Relief',           short: 'Relief' },
+];
+
+export function getShiftTypeLabel(value?: string | null): string | null {
+  if (!value) return null;
+  const match = SHIFT_TYPE_OPTIONS.find(o => o.value === value);
+  return match ? match.short : value;
+}
+
+export function getShiftTypeFullLabel(value?: string | null): string | null {
+  if (!value) return null;
+  const match = SHIFT_TYPE_OPTIONS.find(o => o.value === value);
+  return match ? match.label : value;
+}
+
+/** Suggested rate name for a shift type + basis pairing (e.g. "ER Day"). */
+export function suggestRateName(shiftType: string | undefined, basis: RateBasis): string {
+  const short = shiftType
+    ? (SHIFT_TYPE_OPTIONS.find(o => o.value === shiftType)?.short || shiftType)
+    : '';
+  if (!short) return '';
+  return basis === 'daily' ? `${short} Day` : `${short} Hour`;
 }
 
 const newId = () =>
@@ -18,17 +68,16 @@ const newId = () =>
     : Math.random().toString(36).slice(2));
 
 export const DAILY_PRESETS: Omit<DefaultRate, 'id'>[] = [
-  { name: 'Standard Day', amount: 0, basis: 'daily', active: true, sort_order: 0 },
-  { name: 'Weekend Day', amount: 0, basis: 'daily', active: true, sort_order: 1 },
-  { name: 'Holiday Day', amount: 0, basis: 'daily', active: true, sort_order: 2 },
-  { name: 'Emergency / On-call', amount: 0, basis: 'daily', active: true, sort_order: 3 },
+  { name: 'GP Day',             amount: 0, basis: 'daily', shift_type: 'gp',       active: true, sort_order: 0 },
+  { name: 'ER Day',             amount: 0, basis: 'daily', shift_type: 'er',       active: true, sort_order: 1 },
+  { name: 'Surgery Day',        amount: 0, basis: 'daily', shift_type: 'surgery',  active: true, sort_order: 2 },
+  { name: 'Emergency / On-Call', amount: 0, basis: 'daily', shift_type: 'oncall',  active: true, sort_order: 3 },
 ];
 
 export const HOURLY_PRESETS: Omit<DefaultRate, 'id'>[] = [
-  { name: 'Standard Hour', amount: 0, basis: 'hourly', active: true, sort_order: 0 },
-  { name: 'Weekend Hour', amount: 0, basis: 'hourly', active: true, sort_order: 1 },
-  { name: 'Holiday Hour', amount: 0, basis: 'hourly', active: true, sort_order: 2 },
-  { name: 'After-hours', amount: 0, basis: 'hourly', active: true, sort_order: 3 },
+  { name: 'GP Hour',     amount: 0, basis: 'hourly', shift_type: 'gp',     active: true, sort_order: 0 },
+  { name: 'ER Hour',     amount: 0, basis: 'hourly', shift_type: 'er',     active: true, sort_order: 1 },
+  { name: 'After-hours', amount: 0, basis: 'hourly', shift_type: 'oncall', active: true, sort_order: 2 },
 ];
 
 export function buildPresets(pref: BillingPreference): DefaultRate[] {
@@ -51,9 +100,9 @@ export function newBlankRate(basis: RateBasis, sort_order: number): DefaultRate 
 
 /**
  * Map the user's Rate Card → RateEntry[] used by AddClinicStepper / RatesEditor.
- * - First daily rate becomes `weekday_rate` (kind 'flat')
- * - Remaining daily rates → custom flat entries
- * - All hourly rates → custom hourly entries (label preserved)
+ * - First daily rate becomes `weekday_rate` (kind 'flat'); its shift_type is preserved.
+ * - Remaining daily rates → custom flat entries (with shift_type carried).
+ * - All hourly rates → custom hourly entries (label + shift_type preserved).
  */
 export function mapDefaultRatesToRateEntries(defaults: DefaultRate[]): RateEntry[] {
   const active = defaults.filter(r => r.active && r.amount > 0 && r.name.trim());
@@ -63,13 +112,13 @@ export function mapDefaultRatesToRateEntries(defaults: DefaultRate[]): RateEntry
 
   daily.forEach((r, i) => {
     if (i === 0) {
-      out.push({ type: 'weekday', label: 'Weekday Rate', amount: r.amount, kind: 'flat' });
+      out.push({ type: 'weekday', label: 'Weekday Rate', amount: r.amount, kind: 'flat', shift_type: r.shift_type });
     } else {
-      out.push({ type: 'custom', label: r.name.trim(), amount: r.amount, kind: 'flat' });
+      out.push({ type: 'custom', label: r.name.trim(), amount: r.amount, kind: 'flat', shift_type: r.shift_type });
     }
   });
   hourly.forEach(r => {
-    out.push({ type: 'custom', label: r.name.trim(), amount: r.amount, kind: 'hourly' });
+    out.push({ type: 'custom', label: r.name.trim(), amount: r.amount, kind: 'hourly', shift_type: r.shift_type });
   });
   return out;
 }
@@ -78,11 +127,6 @@ export function mapDefaultRatesToRateEntries(defaults: DefaultRate[]): RateEntry
  * Read-only: derive DefaultRate[] from a list of RateEntry[] (typically aggregated
  * from existing clinic terms). Used to **backfill** the Rate Card without ever
  * mutating clinic-specific rate records.
- *
- * - De-duplicates by (basis,label,amount)
- * - Preserves source labels
- * - Marks all entries active
- * - Sort order: dailies first, then hourlies, in input order
  */
 export function buildDefaultRatesFromRateEntries(entries: RateEntry[]): DefaultRate[] {
   const seen = new Set<string>();
@@ -100,6 +144,7 @@ export function buildDefaultRatesFromRateEntries(entries: RateEntry[]): DefaultR
       name: label,
       amount: r.amount,
       basis,
+      shift_type: r.shift_type,
       active: true,
       sort_order: 0,
     };
@@ -109,11 +154,7 @@ export function buildDefaultRatesFromRateEntries(entries: RateEntry[]): DefaultR
 }
 
 /**
- * Infer a sensible BillingPreference from an existing rate entry list:
- * - only daily → 'per_day'
- * - only hourly → 'per_hour'
- * - mixed → 'both'
- * - empty → 'per_day' (safe default)
+ * Infer a sensible BillingPreference from an existing rate entry list.
  */
 export function inferBillingPreference(entries: RateEntry[]): BillingPreference {
   let hasDaily = false;
@@ -130,15 +171,14 @@ export function inferBillingPreference(entries: RateEntry[]): BillingPreference 
 
 export interface BulkRateOption {
   id: string;          // synthetic; tied to source basis+label
-  label: string;       // "Standard Day — $850 /day"
+  label: string;       // "GP Day — $850 /day"
   amount: number;      // dollars
   basis: RateBasis;
+  shift_type?: string;
 }
 
 /**
  * Build the rate dropdown options for the Bulk Shift Calendar.
- * Pulls from the saved facility's terms snapshot if present, otherwise from the
- * user's default Rate Card.
  */
 export function buildBulkRateOptions(opts: {
   rateEntries?: RateEntry[];
@@ -146,7 +186,7 @@ export function buildBulkRateOptions(opts: {
 }): BulkRateOption[] {
   const list: BulkRateOption[] = [];
   const seen = new Set<string>();
-  const push = (label: string, amount: number, basis: RateBasis) => {
+  const push = (label: string, amount: number, basis: RateBasis, shift_type?: string) => {
     const key = `${basis}:${label}:${amount}`;
     if (seen.has(key) || amount <= 0) return;
     seen.add(key);
@@ -155,18 +195,17 @@ export function buildBulkRateOptions(opts: {
       label: `${label} — $${amount.toLocaleString()} /${basis === 'daily' ? 'day' : 'hr'}`,
       amount,
       basis,
+      shift_type,
     });
   };
 
-  // Prefer terms snapshot from the just-created facility
   if (opts.rateEntries && opts.rateEntries.length > 0) {
     for (const r of opts.rateEntries) {
       const basis: RateBasis = r.kind === 'hourly' ? 'hourly' : 'daily';
-      push(r.label, r.amount, basis);
+      push(r.label, r.amount, basis, r.shift_type);
     }
   }
 
-  // Fallback / supplement from default rate card
   if (opts.defaultRates && opts.defaultRates.length > 0) {
     const sorted = [...opts.defaultRates]
       .filter(r => r.active && r.amount > 0 && r.name.trim())
@@ -174,7 +213,7 @@ export function buildBulkRateOptions(opts: {
         a.basis === b.basis ? a.sort_order - b.sort_order : a.basis === 'daily' ? -1 : 1,
       );
     for (const r of sorted) {
-      push(r.name.trim(), r.amount, r.basis);
+      push(r.name.trim(), r.amount, r.basis, r.shift_type);
     }
   }
   return list;
