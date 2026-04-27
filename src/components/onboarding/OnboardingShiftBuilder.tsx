@@ -205,6 +205,7 @@ export function OnboardingShiftBuilder({
             <div className="space-y-1.5">
               <Label>End time</Label>
               <Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} />
+            </div>
           </div>
 
           <div className="space-y-1.5">
@@ -221,7 +222,7 @@ export function OnboardingShiftBuilder({
             />
           </div>
 
-
+          <Button
             type="button"
             variant="outline"
             className="w-full"
