@@ -69,9 +69,11 @@ export default function OnboardingPage() {
 
   // ── Hydrate from persisted progress (one-time) ──
   const initialProgress: OnboardingProgress = profile?.onboarding_progress ?? {};
-  const [phase, setPhase] = useState<Phase>(
-    initialProgress.phase ?? (initialProgress.welcome_seen ? 'rate_card' : 'welcome'),
-  );
+  const initialPhase: Phase =
+    initialProgress.phase === 'loop_choice'
+      ? 'business_map'
+      : (initialProgress.phase ?? (initialProgress.welcome_seen ? 'rate_card' : 'welcome'));
+  const [phase, setPhase] = useState<Phase>(initialPhase);
   const [welcomeSeen, setWelcomeSeen] = useState<boolean>(!!initialProgress.welcome_seen);
 
   const [defaultRates, setDefaultRates] = useState<DefaultRate[]>(profile?.default_rates ?? []);
