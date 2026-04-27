@@ -106,7 +106,6 @@ export function OnboardingBulkShiftCalendar({
     return selectedDates.length * hours * selectedRate.amount;
   }, [selectedRate, selectedDates.length, hours]);
 
-  const created = createdShiftIds.length > 0;
   const validTimes = hours > 0;
 
   // Highlight created shifts on the calendar (read-only secondary highlight)
