@@ -69,6 +69,26 @@ export default function InvoicesPage() {
   const [markAsPaidTarget, setMarkAsPaidTarget] = useState<any>(null);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
 
+  // Refs for scroll-to
+  const overdueRef = useRef<HTMLDivElement>(null);
+  const awaitingRef = useRef<HTMLDivElement>(null);
+  const draftsRef = useRef<HTMLDivElement>(null);
+  const paidRef = useRef<HTMLDivElement>(null);
+
+  const scrollTo = useCallback((group: string) => {
+    const map: Record<string, React.RefObject<HTMLDivElement>> = {
+      overdue: overdueRef, awaiting: awaitingRef, drafts: draftsRef, paid: paidRef,
+    };
+    map[group]?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
+
+  const safeInvoices = Array.isArray(invoices) ? invoices : [];
+  const allInvoices = safeInvoices
+    .map(inv => ({ ...inv, computedStatus: computeInvoiceStatus(inv) }))
+    .sort((a, b) => new Date(a.invoice_date || a.period_end).getTime() - new Date(b.invoice_date || b.period_end).getTime());
+
+  const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
+
   // Wrapper for single-invoice delete that checks auto-generation
   const handleSingleDelete = async (id: string) => {
     const inv = safeInvoices.find(i => i.id === id);
@@ -85,26 +105,6 @@ export default function InvoicesPage() {
     }
     await deleteInvoice(id);
     toast.success('Invoice deleted');
-  };
-
-  const handleBulkDelete = async () => {
-    // Check if any selected are auto-generated drafts
-    const autoInvs = [...selected]
-      .map(id => safeInvoices.find(i => i.id === id))
-      .filter(inv => inv && inv.generation_type === 'automatic' && inv.status === 'draft');
-
-    for (const id of selected) {
-      await deleteInvoice(id);
-    }
-    // Suppress all auto-generated draft periods in the selection
-    for (const inv of autoInvs) {
-      if (inv) {
-        await suppressInvoicePeriod(inv.facility_id, inv.period_start, inv.period_end);
-      }
-    }
-    toast.success(`${selected.size} invoice(s) deleted`);
-    setSelected(new Set());
-    setShowDeleteConfirm(false);
   };
 
   const handleMarkAsPaid = (invoice: any) => {
