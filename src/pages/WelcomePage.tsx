@@ -16,6 +16,7 @@ export default function WelcomePage() {
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [companyName, setCompanyName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -32,7 +33,7 @@ export default function WelcomePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!firstName.trim() || !lastName.trim() || !email.trim()) {
+    if (!firstName.trim() || !lastName.trim() || !companyName.trim() || !email.trim()) {
       toast.error('Please fill in all fields.');
       return;
     }
@@ -44,7 +45,7 @@ export default function WelcomePage() {
     const { error } = await signUp(email.trim(), password, {
       firstName: firstName.trim(),
       lastName: lastName.trim(),
-      company: '',
+      company: companyName.trim(),
       profession: 'vet',
     });
     setSubmitting(false);
@@ -110,6 +111,20 @@ export default function WelcomePage() {
                   autoComplete="family-name"
                   required
                 />
+              </div>
+              <div>
+                <Label htmlFor="companyName">Company / Practice name</Label>
+                <Input
+                  id="companyName"
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  autoComplete="organization"
+                  placeholder="Smith Veterinary Relief LLC"
+                  required
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  You can change this later in Settings.
+                </p>
               </div>
               <div>
                 <Label htmlFor="email">Email</Label>
