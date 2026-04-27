@@ -27,6 +27,26 @@ interface Shift {
   end_datetime: string;
   status: string;
   rate_applied: number;
+  shift_type?: string | null;
+}
+
+const SHIFT_TYPE_SHORT: Record<string, string> = {
+  gp: 'GP',
+  er: 'ER',
+  surgery: 'Surgery',
+  dental: 'Dental',
+  wellness: 'Wellness',
+  oncall: 'On-Call',
+  telemed: 'Telemed',
+  specialty: 'Specialty',
+  shelter: 'Shelter',
+  other: 'Relief',
+};
+
+function coverageLabel(shiftType?: string | null): string {
+  if (!shiftType) return 'Relief coverage';
+  const short = SHIFT_TYPE_SHORT[shiftType] ?? shiftType;
+  return `${short} relief coverage`;
 }
 
 interface Invoice {
