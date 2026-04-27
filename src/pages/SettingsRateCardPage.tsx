@@ -325,6 +325,49 @@ export default function SettingsRateCardPage() {
           })}
         </div>
 
+        {/* Review banner: any active rates missing a shift_type */}
+        {untaggedScopedCount > 0 && (
+          <div className="flex items-start gap-3 px-4 py-3 rounded-lg bg-primary/10 border border-primary/20">
+            <Tag className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-semibold text-foreground mb-0.5">
+                Tag your rates by shift type
+              </p>
+              <p className="text-[12.5px] text-muted-foreground leading-relaxed">
+                {untaggedScopedCount} rate{untaggedScopedCount === 1 ? '' : 's'} {untaggedScopedCount === 1 ? "doesn't" : "don't"} have a shift type yet. Tagging them lets us auto-categorize new shifts and show clearer line items on invoices.
+              </p>
+              <div className="mt-2">
+                <Button type="button" size="sm" variant="ghost" onClick={suggestTypesForUntagged} className="-ml-2">
+                  <Sparkles className="h-3.5 w-3.5 mr-1" /> Suggest types from rate names
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Post-save backfill prompt */}
+        {backfillOpen && (
+          <div className="flex items-start gap-3 px-4 py-3 rounded-lg bg-accent/10 border border-accent/30">
+            <Tag className="h-4 w-4 text-accent shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-semibold text-foreground mb-0.5">
+                Apply these shift types to past shifts?
+              </p>
+              <p className="text-[12.5px] text-muted-foreground leading-relaxed">
+                You have {untypedShiftCount} past shift{untypedShiftCount === 1 ? '' : 's'} without a shift type. We can match them to your rates by amount and tag them in one pass. Only confident matches are written — anything ambiguous stays untyped.
+              </p>
+              <div className="flex items-center gap-2 mt-2">
+                <Button type="button" size="sm" onClick={runBackfill} disabled={backfillRunning}>
+                  {backfillRunning ? 'Tagging…' : `Tag ${untypedShiftCount} past shift${untypedShiftCount === 1 ? '' : 's'}`}
+                </Button>
+                <Button type="button" size="sm" variant="ghost" onClick={() => setBackfillOpen(false)} disabled={backfillRunning}>
+                  Not now
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <Card>
           <CardContent className="pt-5 space-y-5">
             {showDaily && (
