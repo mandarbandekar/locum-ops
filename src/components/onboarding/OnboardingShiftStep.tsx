@@ -95,6 +95,7 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
     setStartTime('');
     setEndTime('');
     setRate('');
+    setRateTouched(false);
     formRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
@@ -161,7 +162,7 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
             <Input
               type="number"
               value={rate}
-              onChange={e => setRate(e.target.value)}
+              onChange={e => { setRate(e.target.value); setRateTouched(true); }}
               placeholder="e.g. 650"
               min={0}
             />
