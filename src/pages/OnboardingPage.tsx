@@ -28,17 +28,17 @@ const PHASE_STEP: Record<Phase, number> = {
   add_clinic: 2,
   bulk_shifts: 3,
   invoice_reveal: 4,
-  loop_choice: 5,
-  business_map: 6,
+  loop_choice: 4, // legacy — coerced on hydrate; kept to satisfy type
+  business_map: 5,
 };
-const TOTAL_STEPS = 6;
+const TOTAL_STEPS = 5;
 const PHASE_LABEL: Record<Phase, string> = {
   welcome: 'Welcome',
   rate_card: 'Set up your rates',
   add_clinic: 'Add your first clinic',
   bulk_shifts: 'Add your shifts',
   invoice_reveal: 'See your invoices',
-  loop_choice: "What's next?",
+  loop_choice: 'See your invoices',
   business_map: 'Your business in one place',
 };
 const PHASE_BACK: Record<Phase, Phase | null> = {
@@ -48,7 +48,7 @@ const PHASE_BACK: Record<Phase, Phase | null> = {
   bulk_shifts: 'add_clinic',
   invoice_reveal: 'bulk_shifts',
   loop_choice: 'invoice_reveal',
-  business_map: 'loop_choice',
+  business_map: 'invoice_reveal',
 };
 
 const US_TIMEZONES = new Set([
