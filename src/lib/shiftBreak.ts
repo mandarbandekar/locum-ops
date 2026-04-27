@@ -70,3 +70,22 @@ export function hasUnpaidBreakDeduction(shift: BreakBearingShift): boolean {
 export function billableHoursLabel(shift: BreakBearingShift): string {
   return formatBillableHours(getBillableMinutes(shift));
 }
+
+/**
+ * Parenthetical for shift detail / invoice line views.
+ * Returns null when no unpaid break applies.
+ * Example: "incl. 30 min unpaid break"
+ */
+export function unpaidBreakParenthetical(shift: BreakBearingShift): string | null {
+  if (!hasUnpaidBreakDeduction(shift)) return null;
+  return `incl. ${shift.break_minutes} min unpaid break`;
+}
+
+/** Release date for the shift-break feature. NEW pill auto-hides 30 days after. */
+export const BREAK_FEATURE_RELEASE_DATE = new Date('2026-04-27');
+
+export function isBreakFeatureNew(now: Date = new Date()): boolean {
+  const cutoff = new Date(BREAK_FEATURE_RELEASE_DATE);
+  cutoff.setDate(cutoff.getDate() + 30);
+  return now.getTime() <= cutoff.getTime();
+}
