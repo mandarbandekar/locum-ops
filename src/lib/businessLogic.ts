@@ -15,22 +15,57 @@ function toLocalSlot(dt: string) {
   return { dateKey, minutes };
 }
 
-export function detectShiftConflicts(shifts: Shift[], newShift: { start_datetime: string; end_datetime: string; id?: string }): Shift[] {
+/** Effective unpaid-break minutes for a shift; 0 if worked through or none. */
+function effectiveBreakMinutes(s: { break_minutes?: number | null; worked_through_break?: boolean | null }): number {
+  if (s.worked_through_break) return 0;
+  return Math.max(0, s.break_minutes ?? 0);
+}
+
+export interface ShiftConflict {
+  shift: Shift;
+  /** Minutes of scheduled overlap between the two shifts. */
+  overlapMinutes: number;
+  /**
+   * True when the overlap could plausibly fall entirely inside an unpaid break
+   * on either shift (overlap ≤ max effective break). Soft warning, not a hard
+   * conflict — the clinician may have stepped away during that window.
+   */
+  isBreakAbsorbable: boolean;
+}
+
+export function detectShiftConflicts(shifts: Shift[], newShift: { start_datetime: string; end_datetime: string; id?: string; break_minutes?: number | null; worked_through_break?: boolean | null }): Shift[] {
+  return detectShiftConflictsDetailed(shifts, newShift)
+    .filter(c => !c.isBreakAbsorbable)
+    .map(c => c.shift);
+}
+
+/** Richer conflict info — exposes overlap minutes and break-absorbable flag. */
+export function detectShiftConflictsDetailed(
+  shifts: Shift[],
+  newShift: { start_datetime: string; end_datetime: string; id?: string; break_minutes?: number | null; worked_through_break?: boolean | null }
+): ShiftConflict[] {
   const newStart = toLocalSlot(newShift.start_datetime);
   const newEnd = toLocalSlot(newShift.end_datetime);
+  const newBreak = effectiveBreakMinutes(newShift);
 
-  return shifts.filter(s => {
-    if (s.id === newShift.id) return false;
-
+  const out: ShiftConflict[] = [];
+  for (const s of shifts) {
+    if (s.id === newShift.id) continue;
     const sStart = toLocalSlot(s.start_datetime);
     const sEnd = toLocalSlot(s.end_datetime);
+    if (sStart.dateKey !== newStart.dateKey) continue;
+    if (!(newStart.minutes < sEnd.minutes && newEnd.minutes > sStart.minutes)) continue;
 
-    // Must be on the same calendar day to conflict
-    if (sStart.dateKey !== newStart.dateKey) return false;
-
-    // Standard interval overlap: startA < endB && endA > startB
-    return newStart.minutes < sEnd.minutes && newEnd.minutes > sStart.minutes;
-  });
+    const overlapMinutes = Math.max(
+      0,
+      Math.min(newEnd.minutes, sEnd.minutes) - Math.max(newStart.minutes, sStart.minutes)
+    );
+    const otherBreak = effectiveBreakMinutes(s);
+    // Either shift's unpaid break could absorb the overlap window.
+    const isBreakAbsorbable = overlapMinutes > 0 && overlapMinutes <= Math.max(newBreak, otherBreak);
+    out.push({ shift: s, overlapMinutes, isBreakAbsorbable });
+  }
+  return out;
 }
 
 export function computeInvoiceStatus(invoice: Invoice): InvoiceStatus | 'overdue' {
