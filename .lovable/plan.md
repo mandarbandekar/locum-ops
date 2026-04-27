@@ -1,25 +1,23 @@
-# Add "Due upon receipt" payment terms option
+# Make "Mark as Paid" easier to find on the invoices dashboard
 
-Add a new "Due upon receipt" choice at the end of the existing payment terms selectors. Internally this maps to `invoice_due_days = 0` so it works with the existing due-date math (`invoice_date + 0 days = today`).
+Today, "Mark as Paid" is a small unlabeled dollar-sign icon button in the actions column of the "Sent & Awaiting Payment" group. Users miss it. Promote it to a clearly labeled primary-style button on each row.
 
-## Changes
+## Change
 
-**1. `src/components/facilities/AddClinicStepper.tsx` (clinic creation chips)**
-- Append `0` to `NET_TERMS = [7, 14, 15, 30, 45, 60, 0]`.
-- In the chip render, label `0` as `Due upon receipt` instead of `0 days`.
+**`src/components/invoice/InvoiceStatusGroup.tsx`** — actions cell, for rows where `computedStatus` is `sent`, `partial`, or `overdue`:
 
-**2. `src/components/facilities/InvoicingPreferencesCard.tsx` (per-clinic edit)**
-- Add `<SelectItem value="0">Due upon receipt</SelectItem>` as the last option in the Payment Terms select.
-- In the read-only summary row, show `Due upon receipt` when `invoice_due_days === 0`, otherwise `Net N`.
+- Replace the icon-only Tooltip button with a compact labeled button:
+  - Outlined primary style (`variant="outline"`, primary border + text, fills primary on hover)
+  - Dollar icon + "Mark Paid" label
+  - Height matches existing row actions (`h-7`)
+- Keep delete and follow-up icon buttons as-is next to it.
+- Behavior unchanged — still calls `onMarkAsPaid(inv)` which opens the existing payment dialog (`handleMarkAsPaid` in `InvoicesPage.tsx`).
 
-**3. `src/pages/SettingsInvoicingPage.tsx` (global default)**
-- Add `<SelectItem value="0">Due upon receipt</SelectItem>` as the last option in the Default due date select.
+## Result
 
-## Display label helper
+```text
+Before:  [ $ ] [ ✉ ] [ 🗑 ]      ← all icon-only, same gray color
+After:   [ $ Mark Paid ] [ ✉ ] [ 🗑 ]   ← labeled, primary-colored CTA
+```
 
-Add a tiny helper (inline or in `src/lib/invoiceHelpers.ts`) — `formatPaymentTerms(days)` returning `"Due upon receipt"` for `0` and `"Net N"` otherwise — and reuse it in the read-only summary and any other places that already render `Net {invoice_due_days}` (e.g. `InvoiceOnboardingStepper`, `FacilityImportDialog`, `ImportReviewPanel`, `ContractsTab` pills).
-
-## Notes
-
-- No database changes needed; `invoice_due_days = 0` is already a valid integer.
-- `invoiceAutoGeneration.ts` uses `facility.invoice_due_days || 15` — the `||` would fall back to 15 for `0`. Update those few spots to use `?? 15` so an explicit `0` is honored.
+The button now reads as the obvious next step on every awaiting-payment row, while overdue rows still get the follow-up email icon next to it. No changes to the dialog, data model, or other invoice groups.
