@@ -130,7 +130,16 @@ export default function FacilitiesPage() {
                     )}
                   </div>
 
-                  {hasBillingContact(c) ? (
+                  {(c.engagement_type || 'direct') !== 'direct' ? (
+                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                      <User className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">
+                        {c.engagement_type === 'w2'
+                          ? 'Paid by employer — no invoicing'
+                          : 'Paid by platform — no invoicing'}
+                      </span>
+                    </div>
+                  ) : hasBillingContact(c) ? (
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <User className="h-3.5 w-3.5 shrink-0" />
                       <span className="truncate">{c.invoice_name_to}</span>
