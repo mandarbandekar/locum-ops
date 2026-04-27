@@ -41,11 +41,16 @@ export function syncShiftFromLineItems(
   const newEnd = new Date(start.getTime() + hours * 60 * 60 * 1000);
   const rateApplied = Math.round(hours * hourlyRate * 100) / 100;
 
+  // When the user edits invoice hours directly, treat the new value as both
+  // the scheduled and billable duration: zero out break_minutes so future
+  // recalculations can't double-deduct it.
   const patch: Partial<Shift> & { id: string } = {
     id: shift.id,
     end_datetime: newEnd.toISOString(),
     hourly_rate: hourlyRate,
     rate_applied: rateApplied,
+    break_minutes: 0,
+    worked_through_break: false,
   };
 
   return { patch, summary: `Synced shift to invoice: ${hours}h` };
