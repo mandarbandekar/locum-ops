@@ -28,17 +28,17 @@ const PHASE_STEP: Record<Phase, number> = {
   add_clinic: 2,
   bulk_shifts: 3,
   invoice_reveal: 4,
-  loop_choice: 5,
-  business_map: 6,
+  loop_choice: 4, // legacy — coerced on hydrate; kept to satisfy type
+  business_map: 5,
 };
-const TOTAL_STEPS = 6;
+const TOTAL_STEPS = 5;
 const PHASE_LABEL: Record<Phase, string> = {
   welcome: 'Welcome',
   rate_card: 'Set up your rates',
   add_clinic: 'Add your first clinic',
   bulk_shifts: 'Add your shifts',
   invoice_reveal: 'See your invoices',
-  loop_choice: "What's next?",
+  loop_choice: 'See your invoices',
   business_map: 'Your business in one place',
 };
 const PHASE_BACK: Record<Phase, Phase | null> = {
@@ -48,7 +48,7 @@ const PHASE_BACK: Record<Phase, Phase | null> = {
   bulk_shifts: 'add_clinic',
   invoice_reveal: 'bulk_shifts',
   loop_choice: 'invoice_reveal',
-  business_map: 'loop_choice',
+  business_map: 'invoice_reveal',
 };
 
 const US_TIMEZONES = new Set([
@@ -69,9 +69,11 @@ export default function OnboardingPage() {
 
   // ── Hydrate from persisted progress (one-time) ──
   const initialProgress: OnboardingProgress = profile?.onboarding_progress ?? {};
-  const [phase, setPhase] = useState<Phase>(
-    initialProgress.phase ?? (initialProgress.welcome_seen ? 'rate_card' : 'welcome'),
-  );
+  const initialPhase: Phase =
+    initialProgress.phase === 'loop_choice'
+      ? 'business_map'
+      : (initialProgress.phase ?? (initialProgress.welcome_seen ? 'rate_card' : 'welcome'));
+  const [phase, setPhase] = useState<Phase>(initialPhase);
   const [welcomeSeen, setWelcomeSeen] = useState<boolean>(!!initialProgress.welcome_seen);
 
   const [defaultRates, setDefaultRates] = useState<DefaultRate[]>(profile?.default_rates ?? []);
@@ -101,7 +103,8 @@ export default function OnboardingPage() {
     const p = profile.onboarding_progress ?? {};
     if (profile.default_rates?.length) setDefaultRates(profile.default_rates);
     if (profile.default_billing_preference) setDefaultBillingPreference(profile.default_billing_preference);
-    if (p.phase) setPhase(p.phase);
+    if (p.phase === 'loop_choice') setPhase('business_map');
+    else if (p.phase) setPhase(p.phase);
     else if (!p.welcome_seen) setPhase('welcome');
     if (p.first_facility_id !== undefined) setFirstFacilityId(p.first_facility_id);
     if (p.created_facility_ids) setCreatedFacilityIds(p.created_facility_ids);
@@ -313,8 +316,8 @@ export default function OnboardingPage() {
 
   const handleAdvanceToLoopChoice = () => {
     setInvoiceRevealSeen(true);
-    setPhase('loop_choice');
-    persist({ phase: 'loop_choice', invoice_reveal_seen: true });
+    setPhase('business_map');
+    persist({ phase: 'business_map', invoice_reveal_seen: true });
     trackOnboarding('onboarding_invoice_continue_clicked', {
       session_shift_count: sessionShiftIds.length,
       draft_invoice_count: draftInvoiceCount,
@@ -649,7 +652,7 @@ export default function OnboardingPage() {
                   </Button>
                   <button
                     type="button"
-                    onClick={goBack}
+                    onClick={footer.onBack ?? goBack}
                     className="w-full text-sm text-muted-foreground hover:text-foreground py-1 text-center"
                   >
                     ← Back

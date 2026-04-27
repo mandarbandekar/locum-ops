@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Trash2, Plus, DollarSign, Clock, Sparkles, HelpCircle, Wand2, SkipForward } from 'lucide-react';
+import { Trash2, Plus, DollarSign, Clock, Wand2, SkipForward } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   type DefaultRate,
@@ -36,9 +36,11 @@ interface Props {
 const PREF_OPTIONS: { value: BillingPreference; label: string; sub: string; icon: typeof DollarSign }[] = [
   { value: 'per_day', label: 'Per Day', sub: 'Flat day rate', icon: DollarSign },
   { value: 'per_hour', label: 'Per Hour', sub: 'Hourly billing', icon: Clock },
-  { value: 'both', label: 'Both', sub: 'Mix of day & hourly', icon: Sparkles },
-  { value: 'unsure', label: "I'm not sure yet", sub: "We'll start with day rates", icon: HelpCircle },
 ];
+
+function coercePreference(p: BillingPreference | undefined): BillingPreference {
+  return p === 'per_hour' ? 'per_hour' : 'per_day';
+}
 
 export function OnboardingRateCard({
   initialRates,
@@ -48,7 +50,7 @@ export function OnboardingRateCard({
   existingClinicPreference,
   onSkip,
 }: Props) {
-  const [preference, setPreference] = useState<BillingPreference>(initialPreference || 'per_day');
+  const [preference, setPreference] = useState<BillingPreference>(coercePreference(initialPreference));
   const [rates, setRates] = useState<DefaultRate[]>(initialRates && initialRates.length > 0 ? initialRates : []);
   const [touched, setTouched] = useState(initialRates && initialRates.length > 0);
 
@@ -126,8 +128,8 @@ export function OnboardingRateCard({
   const dailyRates = rates.filter(r => r.basis === 'daily').sort((a, b) => a.sort_order - b.sort_order);
   const hourlyRates = rates.filter(r => r.basis === 'hourly').sort((a, b) => a.sort_order - b.sort_order);
 
-  const showDaily = preference === 'per_day' || preference === 'both' || preference === 'unsure';
-  const showHourly = preference === 'per_hour' || preference === 'both';
+  const showDaily = preference === 'per_day';
+  const showHourly = preference === 'per_hour';
 
   return (
     <div className="space-y-6">
@@ -224,6 +226,10 @@ export function OnboardingRateCard({
         })}
       </div>
 
+      <p className="text-sm text-muted-foreground -mt-2">
+        Enter your rates here, keep the dollar entry fields empty if a rate doesn't apply to you.
+      </p>
+
       {/* Rate sections */}
       {(showDaily || showHourly) && (
         <Card>
@@ -236,7 +242,7 @@ export function OnboardingRateCard({
                 onUpdate={updateRate}
                 onRemove={removeRate}
                 onAdd={() => addRate('daily')}
-                showHeader={preference === 'both'}
+                showHeader={false}
               />
             )}
             {showHourly && (
@@ -247,7 +253,7 @@ export function OnboardingRateCard({
                 onUpdate={updateRate}
                 onRemove={removeRate}
                 onAdd={() => addRate('hourly')}
-                showHeader={preference === 'both'}
+                showHeader={false}
               />
             )}
           </CardContent>
