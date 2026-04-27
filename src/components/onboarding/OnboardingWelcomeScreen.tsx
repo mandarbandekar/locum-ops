@@ -247,10 +247,10 @@ export function OnboardingWelcomeScreen({ firstName, onContinue }: Props) {
       />
 
       {/* Content */}
-      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-5xl flex-col items-center justify-center px-6 py-10">
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-5xl flex-col items-center justify-start px-4 py-6 sm:justify-center sm:px-6 sm:py-10">
         {/* Brand mark — the only "Welcome to LocumOps" cue */}
-        <div className="mb-7 flex flex-col items-center gap-2 animate-in fade-in zoom-in-95 duration-500">
-          <LocumOpsMark className="h-10 w-10" />
+        <div className="mb-4 flex flex-col items-center gap-2 animate-in fade-in zoom-in-95 duration-500 sm:mb-7">
+          <LocumOpsMark className="h-8 w-8 sm:h-10 sm:w-10" />
           <span
             className="text-sm font-semibold tracking-tight text-foreground/80"
             style={{ fontFamily: '"Manrope", system-ui, sans-serif' }}
@@ -263,7 +263,7 @@ export function OnboardingWelcomeScreen({ firstName, onContinue }: Props) {
         {/* Optional small greeting */}
         {firstName && (
           <p
-            className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-primary/80 animate-in fade-in slide-in-from-bottom-2 duration-500"
+            className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary/80 animate-in fade-in slide-in-from-bottom-2 duration-500 sm:mb-3"
             style={{ animationDelay: '40ms', animationFillMode: 'backwards' }}
           >
             Hi {firstName} —
@@ -272,7 +272,7 @@ export function OnboardingWelcomeScreen({ firstName, onContinue }: Props) {
 
         {/* Hero */}
         <h1
-          className="text-center font-[Manrope] text-4xl font-bold tracking-tight text-foreground sm:text-5xl md:text-[56px] md:leading-[1.05] animate-in fade-in slide-in-from-bottom-4 duration-700"
+          className="text-center font-[Manrope] text-[28px] font-bold leading-[1.15] tracking-tight text-foreground sm:text-5xl md:text-[56px] md:leading-[1.05] animate-in fade-in slide-in-from-bottom-4 duration-700"
           style={{ animationDelay: '80ms', animationFillMode: 'backwards' }}
         >
           Your relief practice,
@@ -283,7 +283,7 @@ export function OnboardingWelcomeScreen({ firstName, onContinue }: Props) {
         </h1>
 
         <p
-          className="mt-5 max-w-xl text-center text-base leading-relaxed text-muted-foreground sm:text-lg animate-in fade-in slide-in-from-bottom-4 duration-700"
+          className="mt-3 max-w-xl text-center text-sm leading-relaxed text-muted-foreground sm:mt-5 sm:text-base sm:text-lg animate-in fade-in slide-in-from-bottom-4 duration-700"
           style={{ animationDelay: '180ms', animationFillMode: 'backwards' }}
         >
           One workspace for clinics, shifts, invoices, credentials, and taxes —
@@ -291,31 +291,31 @@ export function OnboardingWelcomeScreen({ firstName, onContinue }: Props) {
         </p>
 
         {/* Benefit grid */}
-        <div className="mt-10 grid w-full grid-cols-1 gap-5 sm:grid-cols-2">
+        <div className="mt-6 grid w-full grid-cols-1 gap-3 sm:mt-10 sm:grid-cols-2 sm:gap-5">
           {BENEFITS.map((b, i) => {
             const Motif = b.Motif;
             return (
               <div
                 key={b.title}
-                className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card/80 p-5 backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5 animate-in fade-in slide-in-from-bottom-4 duration-700"
+                className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card/80 p-3 backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5 animate-in fade-in slide-in-from-bottom-4 duration-700 sm:p-5"
                 style={{
                   animationDelay: `${280 + i * 90}ms`,
                   animationFillMode: 'backwards',
                 }}
               >
                 <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3 sm:gap-4">
                   {/* Motif tile */}
-                  <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-primary/15 via-primary/5 to-accent/15 ring-1 ring-primary/15">
-                    <div className="h-16 w-16">
+                  <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-primary/15 via-primary/5 to-accent/15 ring-1 ring-primary/15 sm:h-20 sm:w-20">
+                    <div className="h-12 w-12 sm:h-16 sm:w-16">
                       <Motif />
                     </div>
                   </div>
                   <div className="min-w-0">
-                    <h3 className="font-[Manrope] text-base font-semibold text-foreground">
+                    <h3 className="font-[Manrope] text-sm font-semibold text-foreground sm:text-base">
                       {b.title}
                     </h3>
-                    <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                    <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground sm:mt-1 sm:text-sm">
                       {b.body}
                     </p>
                   </div>
@@ -327,7 +327,7 @@ export function OnboardingWelcomeScreen({ firstName, onContinue }: Props) {
 
         {/* CTA */}
         <div
-          className="mt-10 flex flex-col items-center gap-3 animate-in fade-in slide-in-from-bottom-4 duration-700"
+          className="mt-6 flex flex-col items-center gap-3 animate-in fade-in slide-in-from-bottom-4 duration-700 sm:mt-10"
           style={{ animationDelay: '720ms', animationFillMode: 'backwards' }}
         >
           <Button onClick={handleContinue} size="lg" className="h-12 px-8 text-base shadow-lg shadow-primary/20">
@@ -340,11 +340,11 @@ export function OnboardingWelcomeScreen({ firstName, onContinue }: Props) {
           </div>
 
           {/* Reassurance pills */}
-          <div className="mt-2 flex items-center gap-2 text-[11px] text-muted-foreground/80">
+          <div className="mt-2 flex flex-wrap items-center justify-center gap-2 text-[11px] text-muted-foreground/80">
             <span className="rounded-full border border-border/60 bg-card/60 px-2.5 py-1">No credit card</span>
-            <span className="text-muted-foreground/40">·</span>
+            <span className="hidden text-muted-foreground/40 sm:inline">·</span>
             <span className="rounded-full border border-border/60 bg-card/60 px-2.5 py-1">Cancel anytime</span>
-            <span className="text-muted-foreground/40">·</span>
+            <span className="hidden text-muted-foreground/40 sm:inline">·</span>
             <span className="rounded-full border border-border/60 bg-card/60 px-2.5 py-1">Encrypted</span>
           </div>
         </div>
