@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
+import { z } from 'zod';
 import { SettingsNav } from '@/components/SettingsNav';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Save, Plus, Trash2, DollarSign, Clock } from 'lucide-react';
+import { Save, Plus, Trash2, DollarSign, Clock, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import {
@@ -15,6 +16,65 @@ import {
   buildPresets,
   newBlankRate,
 } from '@/lib/onboardingRateMapping';
+
+const MAX_NAME_LEN = 60;
+const MAX_AMOUNT = 100000;
+
+const rateSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, 'Name is required')
+    .max(MAX_NAME_LEN, `Name must be ${MAX_NAME_LEN} characters or less`),
+  amount: z
+    .number({ invalid_type_error: 'Enter a valid amount' })
+    .finite('Enter a valid amount')
+    .gt(0, 'Amount must be greater than 0')
+    .max(MAX_AMOUNT, `Amount must be ${MAX_AMOUNT.toLocaleString()} or less`),
+});
+
+type RateErrors = Record<string, { name?: string; amount?: string }>;
+
+function validateRates(rates: DefaultRate[]): { errors: RateErrors; firstMessage?: string } {
+  const errors: RateErrors = {};
+  let firstMessage: string | undefined;
+  const setErr = (id: string, field: 'name' | 'amount', msg: string) => {
+    if (!errors[id]) errors[id] = {};
+    errors[id][field] = msg;
+    if (!firstMessage) firstMessage = msg;
+  };
+
+  // Per-row schema validation (skip rows that are entirely empty — they'll be dropped)
+  for (const r of rates) {
+    const isBlankRow = !r.name.trim() && (!r.amount || r.amount === 0);
+    if (isBlankRow) continue;
+    const result = rateSchema.safeParse({ name: r.name, amount: r.amount });
+    if (!result.success) {
+      for (const issue of result.error.issues) {
+        const field = issue.path[0] as 'name' | 'amount';
+        setErr(r.id, field, issue.message);
+      }
+    }
+  }
+
+  // Duplicate name check (case-insensitive, scoped per basis, only on rows that have a name)
+  const seen = new Map<string, string>(); // key -> first id
+  for (const r of rates) {
+    const name = r.name.trim().toLowerCase();
+    if (!name) continue;
+    const key = `${r.basis}:${name}`;
+    if (seen.has(key)) {
+      setErr(r.id, 'name', 'Duplicate rate name');
+      const firstId = seen.get(key)!;
+      setErr(firstId, 'name', 'Duplicate rate name');
+    } else {
+      seen.set(key, r.id);
+    }
+  }
+
+  return { errors, firstMessage };
+}
+
 
 const PREF_OPTIONS: { value: BillingPreference; label: string; sub: string; icon: typeof DollarSign }[] = [
   { value: 'per_day', label: 'Per Day', sub: 'Flat day rate', icon: DollarSign },
