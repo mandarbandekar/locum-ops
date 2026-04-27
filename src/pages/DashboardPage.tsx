@@ -41,6 +41,7 @@ import { EmptyDashboardPrompt } from '@/components/dashboard/EmptyDashboardPromp
 import { QuarterlyTaxCallout } from '@/components/dashboard/QuarterlyTaxCallout';
 import { FirstTimeDashboard } from '@/components/dashboard/FirstTimeDashboard';
 import { OnboardingHandoffBanner } from '@/components/dashboard/OnboardingHandoffBanner';
+import { ShiftTypeMigrationBanner } from '@/components/dashboard/ShiftTypeMigrationBanner';
 import { generateDashboardBriefing, getNextQuarterlyDeadline, BriefingInput } from '@/lib/dashboardBriefing';
 
 const TOUR_STEPS: TourStep[] = [
