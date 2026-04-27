@@ -1,10 +1,11 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight, Check, SkipForward, Sparkles } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { AddClinicStepper, type AddClinicStepperHandle } from '@/components/facilities/AddClinicStepper';
+import { useUserProfile } from '@/contexts/UserProfileContext';
+import { mapDefaultRatesToRateEntries } from '@/lib/onboardingRateMapping';
 
 export function AddFacilityDialog({
   open,
@@ -18,6 +19,14 @@ export function AddFacilityDialog({
   const handleRef = useRef<AddClinicStepperHandle | null>(null);
   // Tick so the dialog footer reflects current stepper state.
   const [, setTick] = useState(0);
+  const { profile } = useUserProfile();
+
+  // Pull the user's saved Rate Card so the Rates step is pre-populated for
+  // every clinic added after onboarding (Facilities page, Dashboard, Schedule, etc.).
+  const defaultRates = useMemo(
+    () => mapDefaultRatesToRateEntries((profile?.default_rates ?? []) as any),
+    [profile?.default_rates],
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -55,6 +64,7 @@ export function AddFacilityDialog({
         <AddClinicStepper
           ref={(h) => { handleRef.current = h; }}
           onSaved={handleSaved}
+          defaultRates={defaultRates}
         />
 
         {/* Footer */}
