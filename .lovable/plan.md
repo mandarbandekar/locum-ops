@@ -1,66 +1,98 @@
-## Add Shift Types to the Rate Card
+# Migration: Roll out Shift Types to existing users
 
-### Goal
-Let users define **named shift types** (e.g. GP Day, ER Weekend, Surgery, Dental, Emergency) directly in the Rate Card, each paired with their own rate. The selected type then flows into the actual shift record so it shows up across the schedule, invoices, and reports.
+Goal: turn a silently-launched feature into one existing users can adopt with two clicks — without ever rewriting their rate card or shift records behind their back.
 
-### UX changes — `SettingsRateCardPage`
+## Strategy (recap)
 
-Each rate row gets a new optional **Shift Type** field, restructured as:
+- **Additive only.** `shift_type` stays nullable everywhere. Code already handles `null`.
+- **Two surfaces nudge users:**
+  1. A one-time **Dashboard banner** for users who have shifts but no rates with shift types.
+  2. A **Rate Card banner** that appears whenever any active rate is missing a shift type.
+- **Backfill is opt-in**, runs in an Edge Function, and only writes when we have high confidence (exact rate-name match against the user's Rate Card or the facility's `custom_rates`).
+- **Inference is deterministic** (name keywords → slug). No AI for v1.
+
+---
+
+## What we're building
+
+### 1. Inference helper — `src/lib/shiftTypeInference.ts`
+Single function `inferShiftTypeFromName(name: string): string | undefined` using a keyword table:
 
 ```text
-[ Shift Type ▾ ]   [ Rate Name (optional) ]   [ $ Amount /day ]   [ 🗑 ]
+"er" / "emergency"        → er
+"surgery" / "surg"        → surgery
+"dental"                  → dental
+"wellness" / "vaccine"    → wellness
+"on-call" / "oncall"      → oncall
+"telemed" / "telehealth"  → telemed
+"specialty" / "referral"  → specialty
+"shelter" / "nonprofit"   → shelter
+"gp" / "general"          → gp
 ```
+Match is whole-word, case-insensitive. Anything else → `undefined` (no guess).
 
-- **Shift Type** is a combobox: pick from common presets (GP, ER, Surgery, Dental, Emergency, On-Call, Wellness/Vaccine, Relief — Other) or type a custom value.
-- **Rate Name** stays editable but auto-fills from the shift type + basis (e.g. picking "ER" on a daily row prefills "ER Day"). Users can still override.
-- Existing duplicate/validation logic continues to apply to **rate name** (so "GP Day" can't appear twice).
-- Section copy updated: "Set up a rate for each kind of relief shift you take. We'll suggest these whenever you add a shift or clinic."
+### 2. Rate Card review banner (`SettingsRateCardPage.tsx`)
+- Shows above the rate sections when any active rate is missing `shift_type`.
+- Copy: "Tag your rates by shift type so we can categorize new shifts automatically. We've suggested types for some — review and save."
+- "Suggest types" button runs `inferShiftTypeFromName` against every untagged rate and patches them locally (user still has to review + Save).
+- After Save, if there are existing untyped shifts, an inline confirmation appears: "Apply these shift types to past shifts too?" → calls the backfill function.
 
-Replace the 4 hard-coded presets in `onboardingRateMapping.ts` (`Standard Day / Weekend Day / Holiday Day / Emergency`) with shift-type-flavored seeds: **GP Day, ER Day, Surgery Day, Emergency / On-Call** (daily) and **GP Hour, ER Hour, After-hours** (hourly).
+### 3. Dashboard one-time banner — `src/components/dashboard/ShiftTypeMigrationBanner.tsx`
+- Visibility rules:
+  - User has ≥1 shift AND ≥1 of those shifts has `shift_type IS NULL`
+  - `profile.dismissed_prompts.shift_type_migration` is not true
+  - Not in demo mode
+- Two actions: **"Set up shift types"** → `/settings/rate-card`, **"Dismiss"** → sets the flag.
+- Mounted in `DashboardPage.tsx` near the existing welcome / getting-started banners.
 
-### Data model
+### 4. Backfill Edge Function — `supabase/functions/backfill-shift-types/index.ts`
+- Authenticated (`getClaims`); operates on the caller's `user_id` only.
+- Loads: caller's `default_rates`, all `terms_snapshots` for their facilities, all their shifts where `shift_type IS NULL`.
+- For each untyped shift, in order:
+  1. Find the matching facility's `terms_snapshots.custom_rates[]` entry by `amount + kind` (and label fuzzy-match). If that entry has `shift_type`, use it.
+  2. Otherwise look up the predefined rates (`weekday_rate`, `weekend_rate`, …) by amount; map keys → slugs (`weekday/weekend → undefined unless rate name suggests`, `telemedicine_rate → telemed`).
+  3. Otherwise match against `default_rates` by `amount + basis` (where `basis` derived from `rate_kind`).
+  4. Otherwise run `inferShiftTypeFromName` on the rate name we recovered.
+- Writes only when a slug was resolved. Returns counts: `{ scanned, updated, skipped }`.
+- Idempotent — re-running only touches still-NULL shifts.
 
-**`default_rates` (JSONB on `user_profiles`)** — add one optional field per row:
-```ts
-interface DefaultRate {
-  id: string;
-  name: string;
-  amount: number;
-  basis: 'daily' | 'hourly';
-  shift_type?: string;   // NEW — slug like 'gp', 'er', 'surgery', 'dental', 'emergency', 'oncall', 'wellness', 'other', or a custom string
-  active: boolean;
-  sort_order: number;
-}
-```
-No SQL migration needed for this — `default_rates` is already a free-form JSONB array.
-
-**`shifts` table — new column** (DB migration):
+### 5. Migration — index for efficient lookups
 ```sql
-ALTER TABLE public.shifts ADD COLUMN shift_type text;
+CREATE INDEX IF NOT EXISTS idx_shifts_user_untyped
+  ON public.shifts (user_id)
+  WHERE shift_type IS NULL;
 ```
-Nullable, no default, no constraint (free-form to allow custom types). Existing shifts stay `NULL`.
+No data writes; safe to run anytime.
 
-### Auto-population flow
+### 6. Profile flag
+Reuse `dismissed_prompts.shift_type_migration: boolean`. No schema change needed.
 
-1. **Add Clinic / Onboarding rates** (`mapDefaultRatesToRateEntries`): pass `shift_type` through into the `RateEntry` so facility terms snapshots remember which type each rate belongs to.
-2. **Bulk shift dropdown** (`buildBulkRateOptions`): label becomes `GP Day — $850 /day` (uses shift type when present, falls back to current label).
-3. **Shift create/edit** (`ShiftFormDialog`, `OnboardingShiftBuilder`, `ManualShiftForm`): when the user picks a rate, auto-set `shift_type` on the shift from the chosen rate. Also expose a small read-only "Shift type: ER" line under the rate selector so it's visible.
-4. **Shift display**: surface `shift_type` as a small chip on shift cards in the Schedule list/calendar (next to the rate). Non-blocking — if `null`, show nothing.
+---
 
-### Files to touch
+## Files
 
-- `src/pages/SettingsRateCardPage.tsx` — add Shift Type combobox per row, auto-fill rate name, update section copy.
-- `src/lib/onboardingRateMapping.ts` — add `shift_type` to `DefaultRate` + `RateEntry`-adjacent flows; refresh seed presets; preserve `shift_type` in `mapDefaultRatesToRateEntries`, `buildDefaultRatesFromRateEntries`, `buildBulkRateOptions`.
-- `src/components/facilities/RatesEditor.tsx` (and its `RateEntry` type) — carry `shift_type` through the snapshot.
-- `src/components/schedule/ShiftFormDialog.tsx`, `src/components/onboarding/OnboardingShiftBuilder.tsx`, `src/components/onboarding/OnboardingShiftStep.tsx`, `src/components/onboarding/ManualShiftForm.tsx` — when a rate is chosen, set `shift_type` on the shift payload.
-- Schedule list/calendar shift card components — render the shift-type chip when present.
-- DB migration — `ALTER TABLE shifts ADD COLUMN shift_type text;`
-- `src/contexts/UserProfileContext.tsx` — `DefaultRate` type addition (mirrors the lib type).
+### New
+- `src/lib/shiftTypeInference.ts`
+- `src/components/dashboard/ShiftTypeMigrationBanner.tsx`
+- `supabase/functions/backfill-shift-types/index.ts`
+- `supabase/migrations/<timestamp>_shift_type_backfill_index.sql`
 
-### Out of scope (can follow later)
-- Filtering/grouping reports by shift type.
-- A dedicated "Shift Types library" page (deferred — current solution keeps types co-located with rates, which is what users asked for).
-- Backfilling `shift_type` on historical shifts.
+### Edited
+- `src/pages/SettingsRateCardPage.tsx` — review banner + "Suggest types" + post-save backfill prompt.
+- `src/pages/DashboardPage.tsx` — mount `ShiftTypeMigrationBanner`.
 
-### Summary for the user
-Each row in the Rate Card will let you pick (or type) a shift type — GP, ER, Surgery, Dental, Emergency, On-Call, etc. — alongside its rate. When you create a shift and pick that rate, the shift type is recorded automatically and shown on the shift card. Your existing rates won't break; the new field is optional and simply unlocks better categorization across schedule and reporting.
+---
+
+## Rollout order
+
+1. Ship migration + inference lib + both banners + edge function in one PR. All additive; nothing breaks for users who ignore it.
+2. Watch over 30 days: % of users who clicked into Rate Card, % of shifts now typed.
+3. If adoption stalls, follow up with a single email nudge from the existing reminders engine. We will not auto-apply types without a click.
+
+## Why no auto-backfill on deploy
+
+Two reasons:
+- Names like "Weekday Rate" are ambiguous (could be GP, ER, or Wellness depending on the user). Inferring silently would mis-tag shifts that then flow into invoice descriptions.
+- Users should see *what* changed before it lands on past invoices. The Rate Card review screen + explicit "Apply to past shifts" button gives them that control.
+
+Ready to implement on approval.
