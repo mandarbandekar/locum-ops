@@ -15,7 +15,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { format } from 'date-fns';
 import { SHIFT_COLORS, ShiftColor, TermsSnapshot, Shift, BLOCK_TYPES, BlockType, RateKind } from '@/types';
 import { BreakPolicySelector } from '@/components/facilities/BreakPolicySelector';
-import { getBreakPolicyLabel, formatBillableHours, formatHoursMinutes, getScheduledMinutes } from '@/lib/shiftBreak';
+import { getBreakPolicyLabel, formatBillableHours, formatHoursMinutes, getScheduledMinutes, getBillableMinutes, isBreakFeatureNew } from '@/lib/shiftBreak';
 import { Switch } from '@/components/ui/switch';
 import { detectShiftConflicts } from '@/lib/businessLogic';
 import { cn } from '@/lib/utils';
@@ -357,17 +357,32 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     try {
       await saveCustomRateToTerms();
       const overridePayload = computeOverridePayload();
-      const ratePayload = activeRateKind === 'hourly'
-        ? {
+      const breakPayload = {
+        break_minutes: workedThroughBreak ? (breakMinutes ?? null) : (breakMinutes ?? null),
+        worked_through_break: workedThroughBreak,
+      };
+      // For hourly shifts, recompute total from BILLABLE minutes (subtracts unpaid break unless overridden).
+      const buildRatePayload = (startIso: string, endIso: string) => {
+        if (activeRateKind === 'hourly') {
+          const billable = getBillableMinutes({
+            start_datetime: startIso,
+            end_datetime: endIso,
+            break_minutes: breakPayload.break_minutes,
+            worked_through_break: breakPayload.worked_through_break,
+          });
+          const billableHours = billable / 60;
+          return {
             rate_kind: 'hourly' as const,
             hourly_rate: Number(rate) || 0,
-            rate_applied: computedRateApplied,
-          }
-        : {
-            rate_kind: 'flat' as const,
-            hourly_rate: null,
-            rate_applied: Number(rate),
+            rate_applied: Math.round(billableHours * (Number(rate) || 0) * 100) / 100,
           };
+        }
+        return {
+          rate_kind: 'flat' as const,
+          hourly_rate: null,
+          rate_applied: Number(rate),
+        };
+      };
       if (existing) {
         const { startIso, endIso } = buildStartEndIso(selectedDates[0] || new Date());
         await onSave({
@@ -375,9 +390,10 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
           facility_id: facilityId,
           start_datetime: startIso,
           end_datetime: endIso,
-          ...ratePayload,
+          ...buildRatePayload(startIso, endIso),
           notes, color,
           ...overridePayload,
+          ...breakPayload,
         });
       } else {
         const orderedDates = [...selectedDates].sort((a, b) => a.getTime() - b.getTime());
@@ -387,9 +403,10 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
             facility_id: facilityId,
             start_datetime: startIso,
             end_datetime: endIso,
-            ...ratePayload,
+            ...buildRatePayload(startIso, endIso),
             notes, color,
             ...overridePayload,
+            ...breakPayload,
           });
         }
       }
@@ -491,7 +508,70 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     );
   };
 
-  /* ─── Step 1: Facility ─── */
+  /* ─── Shift break section (inherited from clinic, per-shift override) ─── */
+  const renderBreakSection = () => {
+    const scheduledMin = (() => {
+      if (!startTime || !endTime) return 0;
+      const [sh, sm] = startTime.split(':').map(Number);
+      const [eh, em] = endTime.split(':').map(Number);
+      let mins = (eh * 60 + em) - (sh * 60 + sm);
+      if (mins <= 0) mins += 24 * 60;
+      return mins;
+    })();
+    const billableMin = workedThroughBreak
+      ? scheduledMin
+      : Math.max(0, scheduledMin - (breakMinutes ?? 0));
+    let helper = '';
+    if (scheduledMin > 0) {
+      const billH = formatBillableHours(billableMin);
+      if (workedThroughBreak) {
+        helper = `Billable: ${billH} hours · worked through break`;
+      } else if ((breakMinutes ?? 0) > 0) {
+        helper = `Billable: ${billH} hours · ${formatHoursMinutes(scheduledMin)} scheduled − ${formatHoursMinutes(breakMinutes!)} break`;
+      } else {
+        helper = `Billable: ${billH} hours`;
+      }
+    }
+    const showNew = isBreakFeatureNew();
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+            <Clock className="h-3.5 w-3.5" /> Shift break
+          </Label>
+          {showNew && (
+            <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-[#E1ECEF] text-[#1A5C6B] border border-[#1A5C6B]/30 dark:bg-[#1A5C6B]/30 dark:text-[#BFE0E8] uppercase tracking-wider">
+              New
+            </span>
+          )}
+          {facilityForBreak && (
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#E1ECEF] text-[#1A5C6B] border border-[#1A5C6B]/20 dark:bg-[#1A5C6B]/20 dark:text-[#BFE0E8]">
+              From clinic: {getBreakPolicyLabel(clinicDefaultBreak)}
+            </span>
+          )}
+        </div>
+        <div className={cn(workedThroughBreak && 'opacity-50 pointer-events-none')}>
+          <BreakPolicySelector value={breakMinutes} onChange={setBreakMinutes} compact />
+        </div>
+        {helper && (
+          <p className="rounded-md px-2.5 py-1.5 text-[11px] text-foreground bg-[#F1EDE3] dark:bg-muted/50">
+            {helper}
+          </p>
+        )}
+        <div className="flex items-center gap-2 pt-1">
+          <Switch
+            id="worked-through-break"
+            checked={workedThroughBreak}
+            onCheckedChange={setWorkedThroughBreak}
+          />
+          <label htmlFor="worked-through-break" className="text-xs cursor-pointer">
+            <span className="font-medium">Worked through break</span>
+            <span className="block text-[10px] text-muted-foreground">Override for this shift only</span>
+          </label>
+        </div>
+      </div>
+    );
+  };
   const renderStep1 = () => (
     <GuidedStep
       title="Which clinic?"
@@ -691,6 +771,9 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
       icon={DollarSign}
       preview={reviewPreview}
     >
+      {/* Shift break */}
+      {renderBreakSection()}
+
       {/* Rate */}
       <div>
         {rateOptions.length > 0 && !isCustomRate ? (
@@ -924,6 +1007,9 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
                 {activeRateKind === 'hourly' && isHoursValid && (
                   <span className="text-muted-foreground">· {formatHours(calculatedHours)} hrs</span>
                 )}
+                {!workedThroughBreak && (breakMinutes ?? 0) > 0 && (
+                  <span className="text-muted-foreground">({`incl. ${breakMinutes} min unpaid break`})</span>
+                )}
               </span>
             ) : <span className="text-muted-foreground">—</span>}
           </Row>
@@ -1062,6 +1148,9 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
               </p>
             )}
           </div>
+
+          {/* Shift break */}
+          {renderBreakSection()}
 
           <div>
             <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1.5">

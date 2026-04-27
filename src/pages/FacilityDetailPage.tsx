@@ -23,6 +23,8 @@ import { useClinicConfirmations } from '@/hooks/useClinicConfirmations';
 import { InvoicingPreferencesCard } from '@/components/facilities/InvoicingPreferencesCard';
 import { ClinicNotesCard } from '@/components/facilities/ClinicNotesCard';
 import { EngagementSelector } from '@/components/facilities/EngagementSelector';
+import { BreakPolicySelector } from '@/components/facilities/BreakPolicySelector';
+import { getBreakPolicyLabel } from '@/lib/shiftBreak';
 import type { EngagementType, TaxFormType } from '@/lib/engagementOptions';
 
 export default function FacilityDetailPage() {
@@ -245,6 +247,10 @@ function OverviewTab({ facility, shifts, contacts, onUpdate, onAddContact, onUpd
 
         {engagementType !== 'w2' && (
           <RatesEditor rates={rates} onChange={setRates} onSave={onSaveRates} />
+        )}
+
+        {engagementType !== 'w2' && (
+          <BreakPolicyCard facility={facility} onUpdate={onUpdate} />
         )}
 
         <ClinicNotesCard facility={facility} onUpdate={onUpdate} />
@@ -511,6 +517,51 @@ function MileageOverrideCard({ facility, onUpdate }: { facility: any; onUpdate: 
             )}
             <p className="text-xs text-muted-foreground mt-1">Used for automatic mileage expense tracking after shifts.</p>
           </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Break Policy Card ─────────────────────────────────────
+
+function BreakPolicyCard({ facility, onUpdate }: { facility: any; onUpdate: (f: any) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState<number | null>(facility.default_break_minutes ?? null);
+
+  const handleSave = () => {
+    onUpdate({ ...facility, default_break_minutes: value });
+    setEditing(false);
+    toast.success('Break policy saved');
+  };
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle className="text-base">Break Policy</CardTitle>
+        {editing ? (
+          <Button size="sm" onClick={handleSave}><Save className="mr-1 h-3 w-3" /> Save</Button>
+        ) : (
+          <Button size="sm" variant="ghost" onClick={() => { setValue(facility.default_break_minutes ?? null); setEditing(true); }}>
+            <Edit2 className="mr-1 h-3 w-3" /> Edit
+          </Button>
+        )}
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {editing ? (
+          <BreakPolicySelector
+            value={value}
+            onChange={setValue}
+            helper="Default for new shifts at this clinic. You can override per shift."
+            compact
+          />
+        ) : (
+          <>
+            <p className="text-sm font-medium">{getBreakPolicyLabel(facility.default_break_minutes)}</p>
+            <p className="text-xs text-muted-foreground">
+              Applied as the default unpaid break to new shifts at this clinic. Per-shift overrides always win.
+            </p>
+          </>
         )}
       </CardContent>
     </Card>
