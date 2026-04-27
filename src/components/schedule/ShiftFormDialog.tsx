@@ -1146,6 +1146,9 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
             )}
           </div>
 
+          {/* Shift break */}
+          {renderBreakSection()}
+
           <div>
             <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
               <DollarSign className="h-3.5 w-3.5" /> Rate
