@@ -57,9 +57,9 @@ interface Props {
 }
 
 const BILLING_CADENCES: { value: BillingCadence; label: string; example: string; recommended?: boolean }[] = [
-  { value: 'daily', label: 'After each shift completes', example: 'A draft invoice each morning you have a shift.' },
-  { value: 'weekly', label: 'After all the shifts complete in a week', example: 'One invoice per week (Mon–Sun), drafted on your last shift.' },
-  { value: 'monthly', label: 'After all the shifts that complete in a month', example: 'One invoice at month-end. Most common for relief work.' },
+  { value: 'daily', label: 'After each shift is completed', example: 'Receive a draft invoice the morning after each shift.' },
+  { value: 'weekly', label: 'After all shifts for the week are completed', example: 'One invoice per week (Mon–Sun), drafted on your last shift of the week.' },
+  { value: 'monthly', label: 'After all shifts for the month are completed', example: 'One invoice at the end of the month. This is the most common option for relief work.' },
 ];
 
 const NET_TERMS = [7, 14, 15, 30, 45, 60, 0];
