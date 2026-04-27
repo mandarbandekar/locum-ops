@@ -21,6 +21,8 @@ import { detectShiftConflicts } from '@/lib/businessLogic';
 import { cn } from '@/lib/utils';
 import { termsToRates, RateEntry } from '@/components/facilities/RatesEditor';
 import { useData } from '@/contexts/DataContext';
+import { useUserProfile, type DefaultRate } from '@/contexts/UserProfileContext';
+import { mapDefaultRatesToRateEntries } from '@/lib/onboardingRateMapping';
 import { getBillingPeriod } from '@/lib/invoiceAutoGeneration';
 import type { BillingCadence } from '@/lib/invoiceBillingDefaults';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -49,10 +51,19 @@ interface ShiftFormDialogProps {
   defaultMonth?: Date;
 }
 
-function buildRateOptions(terms: TermsSnapshot[], facilityId: string): RateEntry[] {
+function buildRateOptions(
+  terms: TermsSnapshot[],
+  facilityId: string,
+  defaultRates: DefaultRate[] = [],
+): RateEntry[] {
   const facilityTerms = terms.find(t => t.facility_id === facilityId);
-  if (!facilityTerms) return [];
-  return termsToRates(facilityTerms).filter(r => r.amount > 0);
+  const fromFacility = facilityTerms
+    ? termsToRates(facilityTerms).filter(r => r.amount > 0)
+    : [];
+  if (fromFacility.length > 0) return fromFacility;
+  // Fallback: the user's saved Rate Card so users aren't forced to retype
+  // rates for clinics that were added before they configured terms.
+  return mapDefaultRatesToRateEntries(defaultRates);
 }
 
 
@@ -85,6 +96,8 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
 
   const isMobile = useIsMobile();
   const { updateTerms, timeBlocks } = useData();
+  const { profile } = useUserProfile();
+  const userDefaultRates: DefaultRate[] = (profile?.default_rates ?? []) as DefaultRate[];
   const isMultiMode = !existing;
 
   // Engagement override state (per-shift)
@@ -151,7 +164,24 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, existing, defaultDate, defaultStartTime]);
 
-  const rateOptions = useMemo(() => buildRateOptions(terms, facilityId), [terms, facilityId]);
+  const rateOptions = useMemo(
+    () => buildRateOptions(terms, facilityId, userDefaultRates),
+    [terms, facilityId, userDefaultRates],
+  );
+
+  // For new shifts, seed `rate` from the first available option (facility terms
+  // OR the user's saved Rate Card) so the field isn't blank when the user opens
+  // the dialog. Skip when editing an existing shift or when the user already typed.
+  useEffect(() => {
+    if (!open || existing) return;
+    if (rate || isCustomRate) return;
+    const first = rateOptions[0];
+    if (first) {
+      setRate(first.amount.toString());
+      setSelectedRateKey('rate-0');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, facilityId, rateOptions.length]);
 
   // Currently selected rate's kind. For preset rates, derived from the selected option.
   // For custom rates, derived from `customRateKind`. Defaults to 'flat' when no rate yet.
