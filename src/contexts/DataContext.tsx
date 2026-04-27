@@ -195,12 +195,37 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
       }
     };
 
+    const runWithOneRetry = async (l: Loader): Promise<string | null> => {
+      const first = await runOne(l);
+      if (!first) return null;
+      // Brief backoff, then a single silent retry. Covers transient
+      // network blips and JWT-refresh races without surfacing UI noise.
+      await new Promise((r) => setTimeout(r, 300));
+      return runOne(l);
+    };
+
     try {
-      const results = await Promise.all(loaders.map(runOne));
+      const results = await Promise.all(loaders.map(runWithOneRetry));
       const failed = results.filter((x): x is string => !!x);
       if (failed.length > 0) {
         console.warn('[fetchAll] partial load — failed tables:', failed);
-        toast.error('Some data failed to load. Try refreshing the page.');
+        toast.error('Some data failed to load.', {
+          description: 'Try refreshing the page.',
+          action: {
+            label: 'Retry',
+            onClick: () => {
+              const retryLoaders = loaders.filter((l) => failed.includes(l.name));
+              Promise.all(retryLoaders.map(runWithOneRetry)).then((r2) => {
+                const stillFailed = r2.filter((x): x is string => !!x);
+                if (stillFailed.length === 0) {
+                  toast.success('Data refreshed.');
+                } else {
+                  toast.error('Still couldn\'t load some data.');
+                }
+              });
+            },
+          },
+        });
       }
     } finally {
       setDataLoading(false);

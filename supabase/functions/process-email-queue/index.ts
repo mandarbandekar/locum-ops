@@ -38,8 +38,9 @@ Deno.serve(async (req) => {
     )
   }
 
-  // Auth: verify_jwt = true in config.toml — Supabase gateway validates the
-  // service role JWT from the pg_cron Authorization header before this runs.
+  // Auth: this function is invoked by pg_cron with the service role key.
+  // verify_jwt is left as the project default; access is gated by the
+  // service-role-only RLS policies on the queue tables it touches.
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey)
 

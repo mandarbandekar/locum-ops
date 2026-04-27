@@ -49,7 +49,22 @@ import PublicConfirmationPage from "@/pages/PublicConfirmationPage";
 import NotFound from "./pages/NotFound";
 import { PostHogPageTracker } from "@/components/PostHogPageTracker";
 
-const queryClient = new QueryClient();
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { isAuthError } from "@/lib/errorReporting";
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Retry once on transient failures, but never on auth errors —
+      // those will not recover without a session refresh.
+      retry: (failureCount, err) => failureCount < 2 && !isAuthError(err),
+      retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000),
+      staleTime: 30_000,
+      refetchOnWindowFocus: false,
+    },
+    mutations: { retry: 0 },
+  },
+});
 
 function AuthenticatedApp() {
   const { isDemo } = useAuth();
@@ -217,19 +232,21 @@ function RecoveryRedirect() {
 
 const App = () => (
   <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <AuthProvider>
-          <BrowserRouter>
-            <RecoveryRedirect />
-            <PostHogPageTracker />
-            <AuthGate />
-          </BrowserRouter>
-        </AuthProvider>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ErrorBoundary scope="root">
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <AuthProvider>
+            <BrowserRouter>
+              <RecoveryRedirect />
+              <PostHogPageTracker />
+              <AuthGate />
+            </BrowserRouter>
+          </AuthProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   </ThemeProvider>
 );
 

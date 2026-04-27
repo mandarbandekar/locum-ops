@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { Button } from '@/components/ui/button';
 import { Compass } from 'lucide-react';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { isDemo } = useAuth();
@@ -50,7 +51,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </div>
           </header>
           <main className="flex-1 p-3 sm:p-5 md:p-7 overflow-hidden">
-            {children}
+            <ErrorBoundary scope="route">
+              {children}
+            </ErrorBoundary>
           </main>
         </div>
       </div>
