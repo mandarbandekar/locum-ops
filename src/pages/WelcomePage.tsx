@@ -113,6 +113,20 @@ export default function WelcomePage() {
                 />
               </div>
               <div>
+                <Label htmlFor="companyName">Company / Practice name</Label>
+                <Input
+                  id="companyName"
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  autoComplete="organization"
+                  placeholder="Smith Veterinary Relief LLC"
+                  required
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  You can change this later in Settings.
+                </p>
+              </div>
+              <div>
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
