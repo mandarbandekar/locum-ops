@@ -248,15 +248,17 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
 
   const handleFacilityChange = (newFacilityId: string) => {
     setFacilityId(newFacilityId);
-    // Don't auto-pick a default rate — make the user choose explicitly.
     setSelectedRateKey('');
     setIsCustomRate(false);
     setRate('');
-    // Reset engagement override when facility changes — defaults inherit from new facility
     const newFac = facilities.find(f => f.id === newFacilityId);
     setShowEngagementOverride(false);
     setEngagementOverride((newFac?.engagement_type as EngagementType) || 'direct');
     setSourceOverride(newFac?.source_name ?? '');
+    if (!existing) {
+      setBreakMinutes(newFac?.default_break_minutes ?? null);
+      setWorkedThroughBreak(false);
+    }
   };
 
   // Compute payload override values: only set if user picked something different
