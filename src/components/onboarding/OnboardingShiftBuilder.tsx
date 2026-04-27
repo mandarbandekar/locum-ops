@@ -92,6 +92,7 @@ export function OnboardingShiftBuilder({
         rate_applied: parseFloat(rate) || 650,
         notes: '',
         color: 'blue',
+        break_minutes: breakMinutes,
       });
       onShiftAdded(created.id);
       // Reset just the date forward; keep rate/time so users rapid-fire.
