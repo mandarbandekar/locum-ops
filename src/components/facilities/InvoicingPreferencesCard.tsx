@@ -246,6 +246,7 @@ export function InvoicingPreferencesCard({ facility, onUpdate }: InvoicingPrefer
               <SelectItem value="30">Net 30</SelectItem>
               <SelectItem value="45">Net 45</SelectItem>
               <SelectItem value="60">Net 60</SelectItem>
+              <SelectItem value="0">Due upon receipt</SelectItem>
             </SelectContent>
           </Select>
         </div>
