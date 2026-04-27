@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { format, subDays, parseISO } from 'date-fns';
 import { Check, Plus, Sparkles, Trash2 } from 'lucide-react';
+import { BreakPolicySelector } from '@/components/facilities/BreakPolicySelector';
 import type { Facility, Shift, TermsSnapshot } from '@/types';
 
 interface Props {
@@ -55,10 +56,18 @@ export function OnboardingShiftBuilder({
   const [startTime, setStartTime] = useState('08:00');
   const [endTime, setEndTime] = useState('18:00');
   const [rate, setRate] = useState(defaultRate.toString());
+  const [breakMinutes, setBreakMinutes] = useState<number | null>(
+    defaultFacility?.default_break_minutes ?? null,
+  );
   const [submitting, setSubmitting] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
 
   const selectedFacility = facilities.find(f => f.id === selectedFacilityId) || defaultFacility;
+
+  // When the user switches facility, sync the break default to that clinic's policy.
+  useEffect(() => {
+    setBreakMinutes(selectedFacility?.default_break_minutes ?? null);
+  }, [selectedFacility?.id]);
 
   // Keep the date input in sync with the next default after each save.
   // We only push it forward when the user hasn't manually changed it from the previous default.
@@ -83,6 +92,7 @@ export function OnboardingShiftBuilder({
         rate_applied: parseFloat(rate) || 650,
         notes: '',
         color: 'blue',
+        break_minutes: breakMinutes,
       });
       onShiftAdded(created.id);
       // Reset just the date forward; keep rate/time so users rapid-fire.
@@ -196,6 +206,20 @@ export function OnboardingShiftBuilder({
               <Label>End time</Label>
               <Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} />
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Break policy</Label>
+            <BreakPolicySelector
+              value={breakMinutes}
+              onChange={setBreakMinutes}
+              compact
+              helper={
+                selectedFacility?.default_break_minutes != null
+                  ? `Defaulted from ${selectedFacility.name}'s clinic policy. Adjust if this shift was different.`
+                  : 'Unpaid breaks are deducted from billable time.'
+              }
+            />
           </div>
 
           <Button
