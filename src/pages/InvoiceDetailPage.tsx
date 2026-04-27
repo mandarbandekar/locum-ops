@@ -13,7 +13,7 @@ import { ArrowLeft, Trash2, AlertTriangle, Layers, Mail, FileText, Eye } from 'l
 import { format } from 'date-fns';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
 import { toast } from 'sonner';
-import { InvoiceStepper } from '@/components/invoice/InvoiceStepper';
+import { InvoiceStatusTimeline } from '@/components/invoice/InvoiceStatusTimeline';
 import { ReadyToSendChecklist, buildChecklistItems } from '@/components/invoice/ReadyToSendChecklist';
 import { InvoicePreview } from '@/components/invoice/InvoicePreview';
 import { InvoiceTimeline } from '@/components/invoice/InvoiceTimeline';
@@ -224,9 +224,9 @@ export default function InvoiceDetailPage() {
         )}
       </div>
 
-      {/* Stepper */}
+      {/* Visual status timeline */}
       <div className="mb-4 max-w-2xl print:hidden">
-        <InvoiceStepper status={computedStatus} />
+        <InvoiceStatusTimeline invoice={invoice} payments={invoicePayments} computedStatus={computedStatus} />
       </div>
 
       {/* Alerts */}
