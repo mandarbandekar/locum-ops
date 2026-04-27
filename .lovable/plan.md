@@ -1,51 +1,25 @@
-## Finish Shift Break Handling — Remaining UI
+# Add "Due upon receipt" payment terms option
 
-Wraps up the surgical addendum. The DB columns, helper (`shiftBreak.ts`), invoice math, and clinic creation UI are done. This plan finishes the user-facing pieces so break minutes actually flow through the app end-to-end.
+Add a new "Due upon receipt" choice at the end of the existing payment terms selectors. Internally this maps to `invoice_due_days = 0` so it works with the existing due-date math (`invoice_date + 0 days = today`).
 
-### 1. `ShiftFormDialog.tsx` — add the "Shift break" section + save payload
+## Changes
 
-In **both** the guided new-shift flow (Step 3, Rate & details) and the flat edit form, insert a new "Shift break" section between Time and Rate:
+**1. `src/components/facilities/AddClinicStepper.tsx` (clinic creation chips)**
+- Append `0` to `NET_TERMS = [7, 14, 15, 30, 45, 60, 0]`.
+- In the chip render, label `0` as `Due upon receipt` instead of `0 days`.
 
-- Inherited badge (light teal pill): `From clinic: <getBreakPolicyLabel(clinicDefault)>`
-- `<BreakPolicySelector>` pre-filled from `breakMinutes` state (already wired)
-- Live helper line below the selector:
-  - `worked_through_break = true` → `Billable: X hours · worked through break`
-  - `break_minutes > 0` → `Billable: X hours · HH:MM scheduled − H:MM break`
-  - else → `Billable: X hours`
-  - Helper line bg: `#F1EDE3` (light), themed for dark
-- "Worked through break" `<Switch>` with subtitle *"Override for this shift only"* — when ON, dims the segmented control and forces helper to "worked through" copy.
-- Add `break_minutes` and `worked_through_break` to **both** save payloads (existing edit branch + new multi-date branch in `handleSubmit`). Hourly `rate_applied` is recomputed from billable minutes when `activeRateKind === 'hourly'`.
+**2. `src/components/facilities/InvoicingPreferencesCard.tsx` (per-clinic edit)**
+- Add `<SelectItem value="0">Due upon receipt</SelectItem>` as the last option in the Payment Terms select.
+- In the read-only summary row, show `Due upon receipt` when `invoice_due_days === 0`, otherwise `Net N`.
 
-### 2. `FacilityDetailPage.tsx` — Break policy editor card
+**3. `src/pages/SettingsInvoicingPage.tsx` (global default)**
+- Add `<SelectItem value="0">Due upon receipt</SelectItem>` as the last option in the Default due date select.
 
-Add a new compact `BreakPolicyCard` on the Overview tab (right column, above Upcoming Shifts; or under Rates editor in left column). It shows the current policy, allows edit via `BreakPolicySelector`, and saves with `updateFacility({ ...facility, default_break_minutes })`. Only shown when `engagement_type !== 'w2'`.
+## Display label helper
 
-### 3. `DataContext.tsx` — pass through new columns
+Add a tiny helper (inline or in `src/lib/invoiceHelpers.ts`) — `formatPaymentTerms(days)` returning `"Due upon receipt"` for `0` and `"Net N"` otherwise — and reuse it in the read-only summary and any other places that already render `Net {invoice_due_days}` (e.g. `InvoiceOnboardingStepper`, `FacilityImportDialog`, `ImportReviewPanel`, `ContractsTab` pills).
 
-Confirm `addFacility` / `updateFacility` payloads include `default_break_minutes`, and `addShift` / `updateShift` include `break_minutes` and `worked_through_break`. The current spread already covers them since the `Shift`/`Facility` types now include the fields, but verify nothing strips them. (No code change expected unless `stripDbFields` or insert column lists exclude them.)
+## Notes
 
-### 4. Display billable-hours labels
-
-Add `"X hrs (incl. N min unpaid break)"` parenthetical only on **detail / invoice line** views, NOT on calendar chips or compact lists:
-
-- **`src/components/invoice/InvoicePreview.tsx`** and **`InvoiceEditPanel.tsx`** line-item rows: when the linked shift has `hasUnpaidBreakDeduction`, append the parenthetical to the description / hours column.
-- **Shift detail summary in `ShiftFormDialog` review step (Step 4)**: under the Time row, when applicable, render `formatBillableHours(...) hrs (incl. N min unpaid break)`.
-- Leave `CalendarEventChip`, `WeekTimeGrid`, `UpcomingShiftsCard` untouched.
-
-### 5. Visual polish
-
-- "NEW" pill on the "Shift break" section title and on the "Break policy" section in the clinic stepper, controlled by a `BREAK_FEATURE_RELEASE_DATE` constant in `shiftBreak.ts`. Auto-hides 30 days after release.
-- Use Monterey Bay tokens already established in `BreakPolicySelector`.
-
-### Files to change
-
-- `src/components/schedule/ShiftFormDialog.tsx` (break section in Step 3 + edit form, save payload)
-- `src/pages/FacilityDetailPage.tsx` (break policy card on Overview)
-- `src/components/invoice/InvoicePreview.tsx` and `InvoiceEditPanel.tsx` (billable parenthetical)
-- `src/lib/shiftBreak.ts` (add `BREAK_FEATURE_RELEASE_DATE`, `isBreakFeatureNew()`)
-
-### Out of scope
-
-- Backfilling existing shifts (legacy null → paid, by design).
-- Changing flat-rate or half-day pricing rules.
-- Calendar grid / weekly time grid hour labels (stay compact).
+- No database changes needed; `invoice_due_days = 0` is already a valid integer.
+- `invoiceAutoGeneration.ts` uses `facility.invoice_due_days || 15` — the `||` would fall back to 15 for `0`. Update those few spots to use `?? 15` so an explicit `0` is honored.
