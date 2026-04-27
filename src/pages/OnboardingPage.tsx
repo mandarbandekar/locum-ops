@@ -101,8 +101,8 @@ export default function OnboardingPage() {
     const p = profile.onboarding_progress ?? {};
     if (profile.default_rates?.length) setDefaultRates(profile.default_rates);
     if (profile.default_billing_preference) setDefaultBillingPreference(profile.default_billing_preference);
-    if (p.phase) setPhase(p.phase);
-    else if (!p.welcome_seen) setPhase('welcome');
+    if (p.phase === 'loop_choice') setPhase('business_map');
+    else if (p.phase) setPhase(p.phase);
     if (p.first_facility_id !== undefined) setFirstFacilityId(p.first_facility_id);
     if (p.created_facility_ids) setCreatedFacilityIds(p.created_facility_ids);
     if (p.session_shift_ids) setSessionShiftIds(p.session_shift_ids);
