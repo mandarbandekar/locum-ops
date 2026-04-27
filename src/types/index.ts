@@ -76,8 +76,12 @@ export interface TermsSnapshot {
     label: string;
     amount: number;
     kind?: RateKind;
+    /** Optional shift-type slug carried over from the user's Rate Card. */
+    shift_type?: string;
   }>;
   rate_kinds?: Partial<Record<PredefinedRateKey, RateKind>>;
+  /** Shift types tied to the predefined rates (weekday/weekend/etc.). */
+  rate_shift_types?: Partial<Record<PredefinedRateKey, string>>;
 }
 
 export type ShiftColor = 'blue' | 'green' | 'red' | 'orange' | 'purple' | 'pink' | 'teal' | 'yellow';
@@ -101,6 +105,11 @@ export interface Shift {
   color: ShiftColor;
   rate_kind?: RateKind;
   hourly_rate?: number | null;
+  /**
+   * Optional category for the shift (e.g. 'gp', 'er', 'surgery'). Inherited
+   * from the rate selected in the Rate Card; nullable for legacy shifts.
+   */
+  shift_type?: string | null;
   engagement_type_override?: 'direct' | 'third_party' | 'w2' | null;
   source_name_override?: string | null;
   /** Unpaid break minutes for this shift. See Facility.default_break_minutes for semantics. */

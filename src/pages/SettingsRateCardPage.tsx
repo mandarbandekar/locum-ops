@@ -5,6 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Save, Plus, Trash2, DollarSign, Clock, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -15,10 +22,14 @@ import {
   type RateBasis,
   buildPresets,
   newBlankRate,
+  SHIFT_TYPE_OPTIONS,
+  suggestRateName,
 } from '@/lib/onboardingRateMapping';
 
 const MAX_NAME_LEN = 60;
 const MAX_AMOUNT = 100000;
+const CUSTOM_TYPE_KEY = '__custom__';
+const NONE_TYPE_KEY = '__none__';
 
 const rateSchema = z.object({
   name: z
@@ -44,27 +55,15 @@ function coercePreference(p: BillingPreference | undefined): BillingPreference {
   return p === 'per_hour' ? 'per_hour' : 'per_day';
 }
 
-/**
- * Validates rates and returns:
- *  - field-level errors keyed by row id
- *  - the first user-visible error message (used in toast)
- *
- * Duplicate detection is per-basis, case-insensitive on trimmed names.
- * On a conflict, BOTH rows get an error message that names the original
- * (display-cased) rate they collide with, so users can see exactly what
- * already exists.
- */
 function validateRates(rates: DefaultRate[]): { errors: RateErrors; firstMessage?: string } {
   const errors: RateErrors = {};
   let firstMessage: string | undefined;
   const setErr = (id: string, field: 'name' | 'amount', msg: string) => {
     if (!errors[id]) errors[id] = {};
-    // Don't overwrite an existing error on the same field — the first one wins
     if (!errors[id][field]) errors[id][field] = msg;
     if (!firstMessage) firstMessage = msg;
   };
 
-  // Per-row schema validation (skip rows that are entirely empty — they'll be dropped)
   for (const r of rates) {
     const isBlankRow = !r.name.trim() && (!r.amount || r.amount === 0);
     if (isBlankRow) continue;
@@ -77,17 +76,14 @@ function validateRates(rates: DefaultRate[]): { errors: RateErrors; firstMessage
     }
   }
 
-  // Duplicate name check — track first occurrence so we can reference it
-  // in the error message on subsequent conflicting rows.
   type Seen = { id: string; displayName: string };
-  const firstSeen = new Map<string, Seen>(); // key=`${basis}:${lower-name}` → first row info
+  const firstSeen = new Map<string, Seen>();
   for (const r of rates) {
     const trimmed = r.name.trim();
     if (!trimmed) continue;
     const key = `${r.basis}:${trimmed.toLowerCase()}`;
     const prior = firstSeen.get(key);
     if (prior) {
-      // Both rows error, each pointing at the OTHER row's display name
       setErr(r.id, 'name', `Duplicate of "${prior.displayName}" — rate names must be unique`);
       setErr(prior.id, 'name', `Duplicate of "${trimmed}" — rate names must be unique`);
     } else {
@@ -134,20 +130,29 @@ export default function SettingsRateCardPage() {
   };
 
   const updateRate = (id: string, patch: Partial<DefaultRate>) => {
-    setRates(prev => prev.map(r => (r.id === id ? { ...r, ...patch } : r)));
-    // When a row's name changes, recompute duplicate errors across the whole
-    // list so the conflicting row clears too. Schema errors on this row also clear.
+    setRates(prev => prev.map(r => {
+      if (r.id !== id) return r;
+      const merged: DefaultRate = { ...r, ...patch };
+      // When the user picks a shift type and the name is blank or still matches
+      // the auto-suggestion for the previous type, refresh the auto-fill.
+      if ('shift_type' in patch && patch.shift_type !== undefined) {
+        const prevSuggestion = suggestRateName(r.shift_type, r.basis);
+        const trimmed = (r.name || '').trim();
+        if (!trimmed || trimmed === prevSuggestion) {
+          merged.name = suggestRateName(patch.shift_type, r.basis);
+        }
+      }
+      return merged;
+    }));
     setErrors(prev => {
       const next = { ...prev };
       if (next[id]) {
         const fieldErrs = { ...next[id] };
-        if ('name' in patch) delete fieldErrs.name;
+        if ('name' in patch || 'shift_type' in patch) delete fieldErrs.name;
         if ('amount' in patch) delete fieldErrs.amount;
         if (!fieldErrs.name && !fieldErrs.amount) delete next[id];
         else next[id] = fieldErrs;
       }
-      // Drop ALL duplicate-name errors — they'll be revalidated on next save.
-      // (Cheap heuristic: any name error containing "Duplicate" gets cleared.)
       for (const k of Object.keys(next)) {
         if (next[k]?.name?.startsWith('Duplicate')) {
           const { name: _omit, ...rest } = next[k];
@@ -190,7 +195,12 @@ export default function SettingsRateCardPage() {
     try {
       const cleaned = rates
         .filter(r => r.name.trim() && r.amount > 0)
-        .map((r, i) => ({ ...r, sort_order: i, name: r.name.trim() }));
+        .map((r, i) => ({
+          ...r,
+          sort_order: i,
+          name: r.name.trim(),
+          shift_type: r.shift_type?.trim() || undefined,
+        }));
       await updateProfile({
         default_rates: cleaned,
         default_billing_preference: preference,
@@ -218,11 +228,12 @@ export default function SettingsRateCardPage() {
         </Button>
       </div>
       <p className="text-sm text-muted-foreground mb-6 max-w-2xl">
-        These are your default rates. They autopopulate when you add a new clinic or create a new shift.
-        You can always override them per clinic or per shift.
+        Set up a rate for each kind of relief shift you take — GP, ER, Surgery, Dental, On-Call, etc.
+        We'll suggest these whenever you add a clinic or create a new shift, and the shift type will
+        flow onto the shift itself for cleaner reporting.
       </p>
 
-      <div className="max-w-2xl space-y-6">
+      <div className="max-w-3xl space-y-6">
         <div className="grid grid-cols-2 gap-3">
           {PREF_OPTIONS.map(opt => {
             const Icon = opt.icon;
@@ -277,7 +288,8 @@ export default function SettingsRateCardPage() {
         </Card>
 
         <p className="text-xs text-muted-foreground">
-          Tip: leave the dollar field blank for any preset that doesn't apply to you — it won't be saved.
+          Tip: Shift Type is optional but recommended — it lets you filter and report by the kind of
+          relief work you take. Pick "Other (custom)…" to type your own.
         </p>
       </div>
     </div>
@@ -300,14 +312,70 @@ function RateSection({ title, basis, rates, errors, onUpdate, onRemove, onAdd }:
       <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
         {title}
       </Label>
+      {/* Header row */}
+      {rates.length > 0 && (
+        <div className="hidden md:grid grid-cols-[180px_1fr_140px_36px] gap-2 px-1">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Shift type</span>
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Rate name</span>
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-right pr-2">Amount</span>
+          <span />
+        </div>
+      )}
       <div className="space-y-3">
         {rates.map(r => {
           const rowErr = errors[r.id];
           const nameErr = rowErr?.name;
           const amountErr = rowErr?.amount;
+          const isKnownType = !!r.shift_type && SHIFT_TYPE_OPTIONS.some(o => o.value === r.shift_type);
+          const isCustomType = !!r.shift_type && !isKnownType;
+          const selectValue = !r.shift_type
+            ? NONE_TYPE_KEY
+            : isCustomType
+            ? CUSTOM_TYPE_KEY
+            : r.shift_type;
           return (
             <div key={r.id} className="space-y-1">
-              <div className="grid grid-cols-[1fr_140px_36px] gap-2 items-start">
+              <div className="grid grid-cols-1 md:grid-cols-[180px_1fr_140px_36px] gap-2 items-start">
+                {/* Shift type */}
+                <div className="space-y-1">
+                  <Select
+                    value={selectValue}
+                    onValueChange={(v) => {
+                      if (v === NONE_TYPE_KEY) {
+                        onUpdate(r.id, { shift_type: undefined });
+                      } else if (v === CUSTOM_TYPE_KEY) {
+                        // Seed with empty string so the custom input renders
+                        onUpdate(r.id, { shift_type: '' });
+                      } else {
+                        onUpdate(r.id, { shift_type: v });
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="h-9" aria-label={`${title} shift type`}>
+                      <SelectValue placeholder="Choose type…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NONE_TYPE_KEY}>
+                        <span className="text-muted-foreground">No type</span>
+                      </SelectItem>
+                      {SHIFT_TYPE_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                      <SelectItem value={CUSTOM_TYPE_KEY}>Other (custom)…</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {isCustomType || selectValue === CUSTOM_TYPE_KEY ? (
+                    <Input
+                      value={r.shift_type || ''}
+                      maxLength={40}
+                      onChange={e => onUpdate(r.id, { shift_type: e.target.value })}
+                      placeholder="Type custom shift type"
+                      className="h-8 text-xs"
+                    />
+                  ) : null}
+                </div>
+
+                {/* Rate name */}
                 <Input
                   value={r.name}
                   maxLength={MAX_NAME_LEN}
@@ -315,8 +383,10 @@ function RateSection({ title, basis, rates, errors, onUpdate, onRemove, onAdd }:
                   placeholder={basis === 'daily' ? 'Rate name (e.g. Weekend Day)' : 'Rate name (e.g. Standard Hour)'}
                   aria-label={`${title} name`}
                   aria-invalid={!!nameErr}
-                  className={cn(nameErr && 'border-destructive focus-visible:ring-destructive')}
+                  className={cn('h-9', nameErr && 'border-destructive focus-visible:ring-destructive')}
                 />
+
+                {/* Amount */}
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
                   <Input
@@ -334,7 +404,7 @@ function RateSection({ title, basis, rates, errors, onUpdate, onRemove, onAdd }:
                     }}
                     placeholder="0"
                     className={cn(
-                      'pl-7 pr-12 text-right',
+                      'h-9 pl-7 pr-12 text-right',
                       amountErr && 'border-destructive focus-visible:ring-destructive',
                     )}
                     aria-label={`${title} amount`}
@@ -344,6 +414,8 @@ function RateSection({ title, basis, rates, errors, onUpdate, onRemove, onAdd }:
                     /{basis === 'daily' ? 'day' : 'hr'}
                   </span>
                 </div>
+
+                {/* Remove */}
                 <Button
                   type="button"
                   variant="ghost"

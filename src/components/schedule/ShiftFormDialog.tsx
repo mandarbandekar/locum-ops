@@ -399,6 +399,9 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
       };
       // For hourly shifts, recompute total from BILLABLE minutes (subtracts unpaid break unless overridden).
       const buildRatePayload = (startIso: string, endIso: string) => {
+        const shiftTypePayload = {
+          shift_type: isCustomRate ? null : (selectedRateOption?.shift_type ?? null),
+        };
         if (activeRateKind === 'hourly') {
           const billable = getBillableMinutes({
             start_datetime: startIso,
@@ -411,12 +414,14 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
             rate_kind: 'hourly' as const,
             hourly_rate: Number(rate) || 0,
             rate_applied: Math.round(billableHours * (Number(rate) || 0) * 100) / 100,
+            ...shiftTypePayload,
           };
         }
         return {
           rate_kind: 'flat' as const,
           hourly_rate: null,
           rate_applied: Number(rate),
+          ...shiftTypePayload,
         };
       };
       if (existing) {
@@ -838,7 +843,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
               <SelectContent>
                 {rateOptions.map((opt, i) => (
                   <SelectItem key={`rate-${i}`} value={`rate-${i}`}>
-                    {opt.label} — ${opt.amount.toLocaleString()}{opt.kind === 'hourly' ? '/hr' : '/day'}
+                    {opt.shift_type ? `[${opt.shift_type.toUpperCase()}] ` : ''}{opt.label} — ${opt.amount.toLocaleString()}{opt.kind === 'hourly' ? '/hr' : '/day'}
                   </SelectItem>
                 ))}
                 <SelectItem value="custom">Custom</SelectItem>
