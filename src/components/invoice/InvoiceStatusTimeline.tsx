@@ -44,7 +44,7 @@ export function InvoiceStatusTimeline({ invoice, payments, computedStatus }: Pro
   const isPartial = computedStatus === 'partial';
   const isSent = computedStatus !== 'draft';
 
-  const draftDate = formatShort(invoice.created_at || invoice.invoice_date);
+  const draftDate = formatShort(invoice.invoice_date);
   const sentDate = formatShort(invoice.sent_at);
   const paidDate = formatShort(invoice.paid_at);
   const dueDate = formatShort(invoice.due_date);
