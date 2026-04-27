@@ -91,7 +91,6 @@ function InvoiceTable({ invoices, onDelete, getFacilityName, navigate, showFacil
     <table className="w-full text-[13px] min-w-[600px] sm:min-w-0">
       <thead>
         <tr className="bg-muted/30">
-          <th className="p-3 w-10"><span className="sr-only">Select</span></th>
           <th className="text-left p-3 font-semibold text-muted-foreground text-xs">Invoice #</th>
           {showFacility && <th className="text-left p-3 font-semibold text-muted-foreground text-xs">Facility</th>}
           <th className="text-left p-3 font-semibold text-muted-foreground text-xs hidden sm:table-cell">Invoice Date</th>
