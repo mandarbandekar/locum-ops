@@ -12,13 +12,6 @@ import { useSpotlightTour } from '@/hooks/useSpotlightTour';
 
 const BUSINESS_TOUR_STEPS: TourStep[] = [
   {
-    targetSelector: '[data-tour="business-kpis"]',
-    title: 'Key Metrics',
-    description: 'Your year-to-date revenue, outstanding balances, monthly shift count, and active clinics — the numbers that matter most for your relief practice.',
-    placement: 'bottom',
-    icon: DollarSign,
-  },
-  {
     targetSelector: '[data-tour="business-financial"]',
     title: 'Financial Health',
     description: 'Revenue trends, payment aging, and cash flow analysis. See which months are strongest and spot slow-paying clinics.',
