@@ -12,6 +12,8 @@ export interface RateEntry {
   label: string;
   amount: number;
   kind: RateKind;
+  /** Optional shift-type slug carried from the user's Rate Card (e.g. 'gp', 'er'). */
+  shift_type?: string;
 }
 
 const PREDEFINED_RATE_TYPES = [
@@ -30,15 +32,17 @@ export function termsToRates(terms: {
   partial_day_rate?: number;
   holiday_rate?: number;
   telemedicine_rate?: number;
-  custom_rates?: Array<{ label: string; amount: number; kind?: RateKind }>;
+  custom_rates?: Array<{ label: string; amount: number; kind?: RateKind; shift_type?: string }>;
   rate_kinds?: Partial<Record<PredefinedRateKey, RateKind>>;
+  rate_shift_types?: Partial<Record<PredefinedRateKey, string>>;
 }): RateEntry[] {
   const entries: RateEntry[] = [];
   const kinds = terms.rate_kinds || {};
+  const shiftTypes = terms.rate_shift_types || {};
   const k = (key: PredefinedRateKey): RateKind => kinds[key] || 'flat';
   const push = (key: PredefinedRateKey, label: string, amount?: number) => {
     if (!amount) return;
-    entries.push({ type: key, label, amount, kind: k(key) });
+    entries.push({ type: key, label, amount, kind: k(key), shift_type: shiftTypes[key] });
   };
   push('weekday', 'Weekday Rate', terms.weekday_rate);
   push('weekend', 'Weekend Rate', terms.weekend_rate);
@@ -47,7 +51,7 @@ export function termsToRates(terms: {
   push('telemedicine', 'Telemedicine Rate', terms.telemedicine_rate);
   if (terms.custom_rates) {
     terms.custom_rates.forEach(cr => {
-      entries.push({ type: 'custom', label: cr.label, amount: cr.amount, kind: cr.kind || 'flat' });
+      entries.push({ type: 'custom', label: cr.label, amount: cr.amount, kind: cr.kind || 'flat', shift_type: cr.shift_type });
     });
   }
   return entries;
@@ -61,18 +65,22 @@ export function ratesToTermsFields(rates: RateEntry[]) {
     partial_day_rate: 0,
     holiday_rate: 0,
     telemedicine_rate: 0,
-    custom_rates: [] as Array<{ label: string; amount: number; kind?: RateKind }>,
+    custom_rates: [] as Array<{ label: string; amount: number; kind?: RateKind; shift_type?: string }>,
     rate_kinds: {} as Partial<Record<PredefinedRateKey, RateKind>>,
+    rate_shift_types: {} as Partial<Record<PredefinedRateKey, string>>,
+  };
+  const setShiftType = (key: PredefinedRateKey, st?: string) => {
+    if (st) fields.rate_shift_types[key] = st;
   };
   for (const r of rates) {
     switch (r.type) {
-      case 'weekday': fields.weekday_rate = r.amount; fields.rate_kinds.weekday = r.kind; break;
-      case 'weekend': fields.weekend_rate = r.amount; fields.rate_kinds.weekend = r.kind; break;
-      case 'partial_day': fields.partial_day_rate = r.amount; fields.rate_kinds.partial_day = r.kind; break;
-      case 'holiday': fields.holiday_rate = r.amount; fields.rate_kinds.holiday = r.kind; break;
-      case 'telemedicine': fields.telemedicine_rate = r.amount; fields.rate_kinds.telemedicine = r.kind; break;
+      case 'weekday': fields.weekday_rate = r.amount; fields.rate_kinds.weekday = r.kind; setShiftType('weekday', r.shift_type); break;
+      case 'weekend': fields.weekend_rate = r.amount; fields.rate_kinds.weekend = r.kind; setShiftType('weekend', r.shift_type); break;
+      case 'partial_day': fields.partial_day_rate = r.amount; fields.rate_kinds.partial_day = r.kind; setShiftType('partial_day', r.shift_type); break;
+      case 'holiday': fields.holiday_rate = r.amount; fields.rate_kinds.holiday = r.kind; setShiftType('holiday', r.shift_type); break;
+      case 'telemedicine': fields.telemedicine_rate = r.amount; fields.rate_kinds.telemedicine = r.kind; setShiftType('telemedicine', r.shift_type); break;
       case 'custom':
-        fields.custom_rates.push({ label: r.label, amount: r.amount, kind: r.kind });
+        fields.custom_rates.push({ label: r.label, amount: r.amount, kind: r.kind, shift_type: r.shift_type });
         break;
     }
   }
