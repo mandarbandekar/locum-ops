@@ -293,8 +293,6 @@ function FacilitySubGroup({ name, invoices, onDelete, getFacilityName, navigate,
         <div className="overflow-x-auto">
           <InvoiceTable
             invoices={invoices}
-            selected={selected}
-            onToggleSelect={onToggleSelect}
             onDelete={onDelete}
             getFacilityName={getFacilityName}
             navigate={navigate}
