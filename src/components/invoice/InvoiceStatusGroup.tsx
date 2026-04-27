@@ -76,7 +76,7 @@ function getDueBadge(dueDate: string | null, status: string) {
   return <span className="text-[11px] text-muted-foreground">Due in {days}d</span>;
 }
 
-function InvoiceTable({ invoices, selected, onToggleSelect, onDelete, getFacilityName, navigate, showFacility = true, onMarkAsPaid, onSendFollowup }: {
+function InvoiceTable({ invoices, onDelete, getFacilityName, navigate, showFacility = true, onMarkAsPaid, onSendFollowup }: {
   invoices: InvoiceWithStatus[];
   selected: Set<string>;
   onToggleSelect: (id: string, e: React.MouseEvent) => void;
