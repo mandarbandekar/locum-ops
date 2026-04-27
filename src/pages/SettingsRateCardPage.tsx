@@ -91,6 +91,7 @@ export default function SettingsRateCardPage() {
   const [rates, setRates] = useState<DefaultRate[]>([]);
   const [saving, setSaving] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const [errors, setErrors] = useState<RateErrors>({});
 
   useEffect(() => {
     if (!profile || initialized) return;
@@ -122,9 +123,25 @@ export default function SettingsRateCardPage() {
 
   const updateRate = (id: string, patch: Partial<DefaultRate>) => {
     setRates(prev => prev.map(r => (r.id === id ? { ...r, ...patch } : r)));
+    // Clear field-level errors as the user edits
+    setErrors(prev => {
+      if (!prev[id]) return prev;
+      const next = { ...prev };
+      const fieldErrs = { ...next[id] };
+      if ('name' in patch) delete fieldErrs.name;
+      if ('amount' in patch) delete fieldErrs.amount;
+      if (!fieldErrs.name && !fieldErrs.amount) delete next[id];
+      else next[id] = fieldErrs;
+      return next;
+    });
   };
   const removeRate = (id: string) => {
     setRates(prev => prev.filter(r => r.id !== id));
+    setErrors(prev => {
+      if (!prev[id]) return prev;
+      const { [id]: _, ...rest } = prev;
+      return rest;
+    });
   };
   const addRate = (basis: RateBasis) => {
     setRates(prev => {
@@ -134,12 +151,23 @@ export default function SettingsRateCardPage() {
   };
 
   const handleSave = async () => {
+    // Validate visible rates for the active billing preference
+    const scoped = rates.filter(r =>
+      preference === 'per_day' ? r.basis === 'daily' : r.basis === 'hourly',
+    );
+    const { errors: validationErrors, firstMessage } = validateRates(scoped);
+    setErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) {
+      toast.error(firstMessage || 'Please fix the highlighted fields');
+      return;
+    }
+
     setSaving(true);
     try {
-      // Strip blank rows on save
+      // Drop entirely-blank rows (all valid rows have name + amount > 0 by now)
       const cleaned = rates
         .filter(r => r.name.trim() && r.amount > 0)
-        .map((r, i) => ({ ...r, sort_order: i }));
+        .map((r, i) => ({ ...r, sort_order: i, name: r.name.trim() }));
       await updateProfile({
         default_rates: cleaned,
         default_billing_preference: preference,
