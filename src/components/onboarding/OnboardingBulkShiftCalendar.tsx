@@ -4,7 +4,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Sparkles, Check, CalendarDays } from 'lucide-react';
+import { Sparkles, CalendarDays } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import type { Facility, Shift, ShiftColor, RateKind, TermsSnapshot } from '@/types';
@@ -26,6 +26,7 @@ interface Props {
     primaryLabel: string;
     primaryDisabled: boolean;
     onPrimary: () => void;
+    onBack?: () => void;
   }) => React.ReactNode;
 }
 
@@ -62,8 +63,7 @@ export function OnboardingBulkShiftCalendar({
   const [startTime, setStartTime] = useState('08:00');
   const [endTime, setEndTime] = useState('18:00');
   const [submitting, setSubmitting] = useState(false);
-  const [justCreatedCount, setJustCreatedCount] = useState(0);
-  const [justCreatedTotal, setJustCreatedTotal] = useState(0);
+  const [subStep, setSubStep] = useState<'dates' | 'details'>('dates');
   const submitGuardRef = useRef(false);
 
   // Fire view event once on mount.
