@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ChevronDown, ChevronRight, Trash2, Zap, CheckCircle2, PartyPopper, DollarSign, Mail } from 'lucide-react';
@@ -32,8 +31,6 @@ interface Props {
   title: string;
   icon: React.ReactNode;
   invoices: InvoiceWithStatus[];
-  selected: Set<string>;
-  onToggleSelect: (id: string, e: React.MouseEvent) => void;
   onDelete: (id: string) => Promise<void>;
   getFacilityName: (id: string) => string;
   emptyMessage: string;
@@ -79,10 +76,8 @@ function getDueBadge(dueDate: string | null, status: string) {
   return <span className="text-[11px] text-muted-foreground">Due in {days}d</span>;
 }
 
-function InvoiceTable({ invoices, selected, onToggleSelect, onDelete, getFacilityName, navigate, showFacility = true, onMarkAsPaid, onSendFollowup }: {
+function InvoiceTable({ invoices, onDelete, getFacilityName, navigate, showFacility = true, onMarkAsPaid, onSendFollowup }: {
   invoices: InvoiceWithStatus[];
-  selected: Set<string>;
-  onToggleSelect: (id: string, e: React.MouseEvent) => void;
   onDelete: (id: string) => Promise<void>;
   getFacilityName: (id: string) => string;
   navigate: (path: string) => void;
@@ -94,7 +89,6 @@ function InvoiceTable({ invoices, selected, onToggleSelect, onDelete, getFacilit
     <table className="w-full text-[13px] min-w-[600px] sm:min-w-0">
       <thead>
         <tr className="bg-muted/30">
-          <th className="p-3 w-10"><span className="sr-only">Select</span></th>
           <th className="text-left p-3 font-semibold text-muted-foreground text-xs">Invoice #</th>
           {showFacility && <th className="text-left p-3 font-semibold text-muted-foreground text-xs">Facility</th>}
           <th className="text-left p-3 font-semibold text-muted-foreground text-xs hidden sm:table-cell">Invoice Date</th>
@@ -109,12 +103,9 @@ function InvoiceTable({ invoices, selected, onToggleSelect, onDelete, getFacilit
         {invoices.map(inv => (
           <tr
             key={inv.id}
-            className={`border-b last:border-0 hover:bg-muted/30 cursor-pointer transition-colors ${selected.has(inv.id) ? 'bg-primary/5' : ''}`}
+            className="border-b last:border-0 hover:bg-muted/30 cursor-pointer transition-colors"
             onClick={() => navigate(`/invoices/${inv.id}`)}
           >
-            <td className="p-3" onClick={e => onToggleSelect(inv.id, e)}>
-              <Checkbox checked={selected.has(inv.id)} />
-            </td>
             <td className="p-3 font-semibold">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span>{inv.invoice_number}</span>
@@ -202,7 +193,7 @@ function InvoiceTable({ invoices, selected, onToggleSelect, onDelete, getFacilit
 }
 
 export function InvoiceStatusGroup({
-  title, icon, invoices, selected, onToggleSelect, onDelete,
+  title, icon, invoices, onDelete,
   getFacilityName, emptyMessage, defaultOpen = true, groupByFacility = false,
   headerRight, alertBanner, onMarkAsPaid, onSendFollowup,
 }: Props & { groupByFacility?: boolean }) {
@@ -251,8 +242,6 @@ export function InvoiceStatusGroup({
                 key={group.facilityId}
                 name={group.name}
                 invoices={group.invoices}
-                selected={selected}
-                onToggleSelect={onToggleSelect}
                 onDelete={onDelete}
                 getFacilityName={getFacilityName}
                 navigate={navigate}
@@ -265,8 +254,6 @@ export function InvoiceStatusGroup({
           <div className="overflow-x-auto border-t">
             <InvoiceTable
               invoices={invoices}
-              selected={selected}
-              onToggleSelect={onToggleSelect}
               onDelete={onDelete}
               getFacilityName={getFacilityName}
               navigate={navigate}
@@ -280,11 +267,9 @@ export function InvoiceStatusGroup({
   );
 }
 
-function FacilitySubGroup({ name, invoices, selected, onToggleSelect, onDelete, getFacilityName, navigate, onMarkAsPaid, onSendFollowup }: {
+function FacilitySubGroup({ name, invoices, onDelete, getFacilityName, navigate, onMarkAsPaid, onSendFollowup }: {
   name: string;
   invoices: InvoiceWithStatus[];
-  selected: Set<string>;
-  onToggleSelect: (id: string, e: React.MouseEvent) => void;
   onDelete: (id: string) => Promise<void>;
   getFacilityName: (id: string) => string;
   navigate: (path: string) => void;
@@ -308,8 +293,6 @@ function FacilitySubGroup({ name, invoices, selected, onToggleSelect, onDelete, 
         <div className="overflow-x-auto">
           <InvoiceTable
             invoices={invoices}
-            selected={selected}
-            onToggleSelect={onToggleSelect}
             onDelete={onDelete}
             getFacilityName={getFacilityName}
             navigate={navigate}

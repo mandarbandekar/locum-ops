@@ -65,8 +65,6 @@ export default function InvoicesPage() {
   const navigate = useNavigate();
   const invoiceTour = useSpotlightTour('locumops_tour_invoices');
   const [showCreate, setShowCreate] = useState(false);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [autoDeleteTarget, setAutoDeleteTarget] = useState<{ id: string; invoiceNumber: string; facilityName: string; periodStart: string; periodEnd: string; facilityId: string } | null>(null);
   const [markAsPaidTarget, setMarkAsPaidTarget] = useState<any>(null);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
@@ -84,23 +82,12 @@ export default function InvoicesPage() {
     map[group]?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, []);
 
-  
-
   const safeInvoices = Array.isArray(invoices) ? invoices : [];
   const allInvoices = safeInvoices
     .map(inv => ({ ...inv, computedStatus: computeInvoiceStatus(inv) }))
     .sort((a, b) => new Date(a.invoice_date || a.period_end).getTime() - new Date(b.invoice_date || b.period_end).getTime());
 
   const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
-
-  const toggleSelect = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setSelected(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-  };
 
   // Wrapper for single-invoice delete that checks auto-generation
   const handleSingleDelete = async (id: string) => {
@@ -118,26 +105,6 @@ export default function InvoicesPage() {
     }
     await deleteInvoice(id);
     toast.success('Invoice deleted');
-  };
-
-  const handleBulkDelete = async () => {
-    // Check if any selected are auto-generated drafts
-    const autoInvs = [...selected]
-      .map(id => safeInvoices.find(i => i.id === id))
-      .filter(inv => inv && inv.generation_type === 'automatic' && inv.status === 'draft');
-
-    for (const id of selected) {
-      await deleteInvoice(id);
-    }
-    // Suppress all auto-generated draft periods in the selection
-    for (const inv of autoInvs) {
-      if (inv) {
-        await suppressInvoicePeriod(inv.facility_id, inv.period_start, inv.period_end);
-      }
-    }
-    toast.success(`${selected.size} invoice(s) deleted`);
-    setSelected(new Set());
-    setShowDeleteConfirm(false);
   };
 
   const handleMarkAsPaid = (invoice: any) => {
@@ -223,11 +190,6 @@ export default function InvoicesPage() {
       <div className="page-header flex-col sm:flex-row gap-3">
         <h1 className="page-title">Invoices</h1>
         <div className="flex gap-2 flex-wrap w-full sm:w-auto">
-          {selected.size > 0 && (
-            <Button size="sm" variant="destructive" onClick={() => setShowDeleteConfirm(true)}>
-              <Trash2 className="mr-1 h-4 w-4" /> Delete ({selected.size})
-            </Button>
-          )}
           <Button data-tour="invoice-create" size="sm" variant="outline" onClick={() => setShowCreate(true)} className="flex-1 sm:flex-none">
             <Plus className="mr-1 h-4 w-4" /> Create Manual Invoice
           </Button>
@@ -285,8 +247,6 @@ export default function InvoicesPage() {
                     title="Overdue"
                     icon={<AlertTriangle className="h-4 w-4 text-destructive" />}
                     invoices={overdue}
-                    selected={selected}
-                    onToggleSelect={toggleSelect}
                     onDelete={handleSingleDelete}
                     getFacilityName={getFacilityName}
                     emptyMessage="No overdue invoices — you're all caught up!"
@@ -318,8 +278,6 @@ export default function InvoicesPage() {
                     title="Ready to Review"
                     icon={<FileEdit className="h-4 w-4 text-amber-500" />}
                     invoices={readyToReview}
-                    selected={selected}
-                    onToggleSelect={toggleSelect}
                     onDelete={handleSingleDelete}
                     getFacilityName={getFacilityName}
                     emptyMessage="Invoices are auto-generated from your shifts — no need to create them manually. They'll appear here once shifts are completed."
@@ -349,8 +307,6 @@ export default function InvoicesPage() {
                     title="Sent & Awaiting Payment"
                     icon={<Send className="h-4 w-4 text-blue-500" />}
                     invoices={[...sent, ...partial]}
-                    selected={selected}
-                    onToggleSelect={toggleSelect}
                     onDelete={handleSingleDelete}
                     getFacilityName={getFacilityName}
                     emptyMessage="No invoices awaiting payment right now."
@@ -375,8 +331,6 @@ export default function InvoicesPage() {
                     title="Auto Generated Upcoming Invoices"
                     icon={<Clock className="h-4 w-4 text-muted-foreground" />}
                     invoices={upcoming}
-                    selected={selected}
-                    onToggleSelect={toggleSelect}
                     onDelete={handleSingleDelete}
                     getFacilityName={getFacilityName}
                     emptyMessage="No upcoming invoices."
@@ -411,8 +365,6 @@ export default function InvoicesPage() {
             title="Paid"
             icon={<CheckCircle className="h-4 w-4 text-primary" />}
             invoices={paid}
-            selected={selected}
-            onToggleSelect={toggleSelect}
             onDelete={handleSingleDelete}
             getFacilityName={getFacilityName}
             emptyMessage="No paid invoices yet."
@@ -428,22 +380,6 @@ export default function InvoicesPage() {
 
       <BulkInvoiceDialog open={showCreate} onOpenChange={setShowCreate} />
 
-      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete {selected.size} invoice(s)?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete the selected invoices and all their line items. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {autoDeleteTarget && (
         <AutoInvoiceDeleteDialog
