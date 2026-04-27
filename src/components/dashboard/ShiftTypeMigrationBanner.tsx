@@ -35,12 +35,10 @@ export function ShiftTypeMigrationBanner({ untypedShiftCount }: ShiftTypeMigrati
       <Tag className="h-4 w-4 text-primary shrink-0 mt-0.5" />
       <div className="flex-1 min-w-0">
         <p className="text-[13px] font-semibold text-foreground mb-0.5">
-          Categorize your relief work
+          New: categorize your rates
         </p>
         <p className="text-[12.5px] text-muted-foreground leading-relaxed">
-          You can now tag each rate by shift type — GP, ER, Surgery, Dental, On-Call, and more.
-          New shifts pick up the type automatically, and you can apply the same types to your
-          {untypedShiftCount > 0 ? ` ${untypedShiftCount} past ` : ' past '}shift{untypedShiftCount === 1 ? '' : 's'} in one click.
+          Tag each rate with a shift type (GP, ER, Surgery…) so it shows up across your schedule and invoices. We've pre-filled suggestions where we could.
         </p>
         <div className="flex items-center gap-2 mt-2">
           <button
@@ -48,14 +46,14 @@ export function ShiftTypeMigrationBanner({ untypedShiftCount }: ShiftTypeMigrati
             onClick={() => navigate('/settings/rate-card')}
             className="text-[12px] font-semibold text-primary hover:underline"
           >
-            Set up shift types →
+            Review & Save
           </button>
           <button
             type="button"
             onClick={dismiss}
             className="text-[12px] text-muted-foreground hover:text-foreground ml-2"
           >
-            Not now
+            Skip for now
           </button>
         </div>
       </div>

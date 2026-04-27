@@ -725,6 +725,9 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col min-h-full">
+      {/* Shift Type migration nudge (one-time, pre-existing users with untyped shifts) — top priority */}
+      <ShiftTypeMigrationBanner untypedShiftCount={untypedShiftCount} />
+
       {/* First-run onboarding handoff banner */}
       {showOnboardingHandoff && (
         <div className="shrink-0 mb-3">
@@ -790,8 +793,6 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Shift Type migration nudge (one-time, pre-existing users with untyped shifts) */}
-      <ShiftTypeMigrationBanner untypedShiftCount={untypedShiftCount} />
 
       {/* Getting Started */}
       {showGettingStarted && (
