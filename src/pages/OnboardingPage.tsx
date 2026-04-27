@@ -103,6 +103,7 @@ export default function OnboardingPage() {
     if (profile.default_billing_preference) setDefaultBillingPreference(profile.default_billing_preference);
     if (p.phase === 'loop_choice') setPhase('business_map');
     else if (p.phase) setPhase(p.phase);
+    else if (!p.welcome_seen) setPhase('welcome');
     if (p.first_facility_id !== undefined) setFirstFacilityId(p.first_facility_id);
     if (p.created_facility_ids) setCreatedFacilityIds(p.created_facility_ids);
     if (p.session_shift_ids) setSessionShiftIds(p.session_shift_ids);
