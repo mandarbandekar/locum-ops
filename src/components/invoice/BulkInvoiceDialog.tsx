@@ -122,7 +122,7 @@ export function BulkInvoiceDialog({ open, onOpenChange, preselectedFacilityId }:
     if (selectedShiftIds.size === 0 || !facility) return;
     setCreating(true);
     try {
-      const dueDays = facility.invoice_due_days || 15;
+      const dueDays = facility.invoice_due_days ?? 15;
       const lineItemsData = selectedShifts.flatMap(buildLineItemsForShift);
       const computedTotal = lineItemsData.reduce((sum, li) => sum + li.line_total, 0);
 

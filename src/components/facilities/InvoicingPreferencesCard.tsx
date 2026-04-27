@@ -12,6 +12,7 @@ import {
 import { Receipt, Edit2, Save, X, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useData } from '@/contexts/DataContext';
+import { formatPaymentTerms } from '@/lib/invoiceHelpers';
 import type { Facility, BillingCadence } from '@/types';
 
 interface InvoicingPreferencesCardProps {
@@ -149,7 +150,7 @@ export function InvoicingPreferencesCard({ facility, onUpdate }: InvoicingPrefer
           )}
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Payment terms</span>
-            <span className="font-medium">Net {facility.invoice_due_days ?? 15}</span>
+            <span className="font-medium">{formatPaymentTerms(facility.invoice_due_days)}</span>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Invoice prefix</span>
@@ -246,6 +247,7 @@ export function InvoicingPreferencesCard({ facility, onUpdate }: InvoicingPrefer
               <SelectItem value="30">Net 30</SelectItem>
               <SelectItem value="45">Net 45</SelectItem>
               <SelectItem value="60">Net 60</SelectItem>
+              <SelectItem value="0">Due upon receipt</SelectItem>
             </SelectContent>
           </Select>
         </div>

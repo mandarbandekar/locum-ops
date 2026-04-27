@@ -13,3 +13,12 @@ export function isInvoiceOverdue(invoice: {
   if (invoice.paid_at) return false;
   return new Date(invoice.due_date) < new Date();
 }
+
+/**
+ * Human label for invoice payment terms.
+ * 0 days → "Due upon receipt"; otherwise → "Net N".
+ */
+export function formatPaymentTerms(days: number | null | undefined): string {
+  if (days === 0) return 'Due upon receipt';
+  return `Net ${days ?? 15}`;
+}

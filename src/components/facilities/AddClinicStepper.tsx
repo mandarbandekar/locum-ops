@@ -62,7 +62,7 @@ const BILLING_CADENCES: { value: BillingCadence; label: string; example: string;
   { value: 'monthly', label: 'After all the shifts that complete in a month', example: 'One invoice at month-end. Most common for relief work.' },
 ];
 
-const NET_TERMS = [7, 14, 15, 30, 45, 60];
+const NET_TERMS = [7, 14, 15, 30, 45, 60, 0];
 
 function getInitials(text: string): string {
   return text.split(/\s+/).map(w => w[0]).filter(Boolean).join('').toUpperCase().slice(0, 4) || 'INV';
@@ -491,7 +491,7 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
                         : 'border-border bg-background text-muted-foreground hover:bg-muted',
                     )}
                   >
-                    {d} days
+                    {d === 0 ? 'Due upon receipt' : `${d} days`}
                   </button>
                 );
               })}

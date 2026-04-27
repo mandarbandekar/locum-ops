@@ -17,6 +17,7 @@ import {
   hasBillingContact,
   validateSenderProfile,
 } from '@/lib/invoiceBillingDefaults';
+import { formatPaymentTerms } from '@/lib/invoiceHelpers';
 import { toast } from 'sonner';
 
 const ONBOARDING_STEPS = [
@@ -243,7 +244,7 @@ export function InvoiceOnboardingStepper({ onComplete }: Props) {
                           </button>
                         )}
                       </td>
-                      <td className="p-3 text-xs text-muted-foreground">Net {fac.invoice_due_days || 15}</td>
+                      <td className="p-3 text-xs text-muted-foreground">{formatPaymentTerms(fac.invoice_due_days)}</td>
                     </tr>
                   );
                 })}
