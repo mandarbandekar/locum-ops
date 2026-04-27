@@ -371,7 +371,7 @@ Deno.serve(async (req) => {
           // Build line items
           const lineItems = allEligibleForPeriod.map((s) => ({
             shift_id: s.id,
-            description: `${formatShortDate(new Date(s.start_datetime))} — Relief coverage`,
+            description: `${formatShortDate(new Date(s.start_datetime))} — ${coverageLabel(s.shift_type)}`,
             service_date: formatDate(new Date(s.start_datetime)),
             qty: 1,
             unit_rate: s.rate_applied,
