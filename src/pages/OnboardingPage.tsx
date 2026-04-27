@@ -652,7 +652,7 @@ export default function OnboardingPage() {
                   </Button>
                   <button
                     type="button"
-                    onClick={goBack}
+                    onClick={footer.onBack ?? goBack}
                     className="w-full text-sm text-muted-foreground hover:text-foreground py-1 text-center"
                   >
                     ← Back
