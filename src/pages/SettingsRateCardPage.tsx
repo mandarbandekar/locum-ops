@@ -13,9 +13,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Save, Plus, Trash2, DollarSign, Clock, AlertCircle } from 'lucide-react';
+import { Save, Plus, Trash2, DollarSign, Clock, AlertCircle, Tag, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUserProfile } from '@/contexts/UserProfileContext';
+import { useData } from '@/contexts/DataContext';
+import { supabase } from '@/integrations/supabase/client';
 import {
   type DefaultRate,
   type BillingPreference,
@@ -25,6 +27,7 @@ import {
   SHIFT_TYPE_OPTIONS,
   suggestRateName,
 } from '@/lib/onboardingRateMapping';
+import { inferShiftTypeFromName } from '@/lib/shiftTypeInference';
 
 const MAX_NAME_LEN = 60;
 const MAX_AMOUNT = 100000;
