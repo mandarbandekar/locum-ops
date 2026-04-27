@@ -16,6 +16,7 @@ import { GooglePlacesAutocomplete } from '@/components/GooglePlacesAutocomplete'
 import type { PlaceSelection } from '@/components/GooglePlacesAutocomplete';
 import type { BillingCadence } from '@/lib/invoiceBillingDefaults';
 import { RatesEditor, ratesToTermsFields, type RateEntry } from '@/components/facilities/RatesEditor';
+import { BreakPolicySelector } from '@/components/facilities/BreakPolicySelector';
 import { EngagementSelector } from '@/components/facilities/EngagementSelector';
 import type { EngagementType, TaxFormType } from '@/lib/engagementOptions';
 import { GuidedStep } from '@/components/onboarding/GuidedStep';
@@ -97,6 +98,7 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
 
   // ── Step 3: Rates ──
   const [rates, setRates] = useState<RateEntry[]>(defaultRates ?? []);
+  const [defaultBreakMinutes, setDefaultBreakMinutes] = useState<number | null>(null);
 
   // ── Step 4: Billing & Contacts ──
   const [billingCadence, setBillingCadence] = useState<BillingCadence>('monthly');
@@ -182,6 +184,7 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
         engagement_type: engagementType,
         source_name: isDirect ? null : sourceName.trim() || null,
         tax_form_type: effectiveTaxForm,
+        default_break_minutes: defaultBreakMinutes,
       });
 
       if (engagementType !== 'w2' && rates.length > 0) {
@@ -403,6 +406,16 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
           </div>
 
           <RatesEditor rates={rates} onChange={setRates} showCard={false} compact />
+
+          <div className="space-y-2 pt-3 border-t border-border/60">
+            <Label className="text-sm font-semibold text-foreground normal-case tracking-normal">Break policy</Label>
+            <BreakPolicySelector
+              value={defaultBreakMinutes}
+              onChange={setDefaultBreakMinutes}
+              helper="This is the default for new shifts at this clinic. You can override per shift."
+              compact
+            />
+          </div>
 
           {rates.length === 0 && (
             <p className="text-[11px] text-muted-foreground italic">

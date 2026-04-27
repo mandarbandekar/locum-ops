@@ -14,6 +14,9 @@ import { AddFacilityDialog } from '@/components/AddFacilityDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
 import { SHIFT_COLORS, ShiftColor, TermsSnapshot, Shift, BLOCK_TYPES, BlockType, RateKind } from '@/types';
+import { BreakPolicySelector } from '@/components/facilities/BreakPolicySelector';
+import { getBreakPolicyLabel, formatBillableHours, formatHoursMinutes, getScheduledMinutes } from '@/lib/shiftBreak';
+import { Switch } from '@/components/ui/switch';
 import { detectShiftConflicts } from '@/lib/businessLogic';
 import { cn } from '@/lib/utils';
 import { termsToRates, RateEntry } from '@/components/facilities/RatesEditor';
@@ -73,6 +76,12 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   const [showAddFacility, setShowAddFacility] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [step, setStep] = useState(1);
+  const facilityForBreak = facilities.find(f => f.id === facilityId);
+  const clinicDefaultBreak: number | null = facilityForBreak?.default_break_minutes ?? null;
+  const [breakMinutes, setBreakMinutes] = useState<number | null>(
+    existing?.break_minutes !== undefined ? existing.break_minutes : clinicDefaultBreak,
+  );
+  const [workedThroughBreak, setWorkedThroughBreak] = useState<boolean>(!!existing?.worked_through_break);
 
   const isMobile = useIsMobile();
   const { updateTerms, timeBlocks } = useData();
@@ -131,6 +140,14 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     setShowAddFacility(false);
     setIsSubmitting(false);
     setStep(1);
+    if (existing) {
+      setBreakMinutes(existing.break_minutes !== undefined ? existing.break_minutes : null);
+      setWorkedThroughBreak(!!existing.worked_through_break);
+    } else {
+      const fac = facilities.find(f => f.id === (facilities[0]?.id || ''));
+      setBreakMinutes(fac?.default_break_minutes ?? null);
+      setWorkedThroughBreak(false);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, existing, defaultDate, defaultStartTime]);
 
@@ -231,15 +248,17 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
 
   const handleFacilityChange = (newFacilityId: string) => {
     setFacilityId(newFacilityId);
-    // Don't auto-pick a default rate — make the user choose explicitly.
     setSelectedRateKey('');
     setIsCustomRate(false);
     setRate('');
-    // Reset engagement override when facility changes — defaults inherit from new facility
     const newFac = facilities.find(f => f.id === newFacilityId);
     setShowEngagementOverride(false);
     setEngagementOverride((newFac?.engagement_type as EngagementType) || 'direct');
     setSourceOverride(newFac?.source_name ?? '');
+    if (!existing) {
+      setBreakMinutes(newFac?.default_break_minutes ?? null);
+      setWorkedThroughBreak(false);
+    }
   };
 
   // Compute payload override values: only set if user picked something different

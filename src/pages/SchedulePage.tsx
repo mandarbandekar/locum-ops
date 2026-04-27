@@ -28,6 +28,7 @@ import { SpotlightTour, TourStep } from '@/components/SpotlightTour';
 import { useSpotlightTour } from '@/hooks/useSpotlightTour';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { getBillableMinutes } from '@/lib/shiftBreak';
 
 const STORAGE_KEY = 'schedule-view-pref';
 
@@ -147,7 +148,7 @@ export default function SchedulePage() {
   const activeRangeShifts = rangeShifts;
   const totalShiftsInRange = activeRangeShifts.length;
   const totalHoursInRange = activeRangeShifts.reduce((sum, s) => {
-    return sum + Math.max(0, differenceInHours(new Date(s.end_datetime), new Date(s.start_datetime)));
+    return sum + getBillableMinutes(s) / 60;
   }, 0);
   const totalRevenueInRange = activeRangeShifts.reduce((sum, s) => sum + (s.rate_applied || 0), 0);
 
@@ -500,7 +501,7 @@ export default function SchedulePage() {
                   </tr></thead>
                   <tbody>
                     {rangeShifts.map(s => {
-                      const hrs = Math.max(0, differenceInHours(new Date(s.end_datetime), new Date(s.start_datetime)));
+                      const hrs = getBillableMinutes(s) / 60;
                       const isPaid = paidShiftIds.has(s.id);
                       return (
                         <React.Fragment key={s.id}>

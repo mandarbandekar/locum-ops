@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
+import { getBillableMinutes } from '@/lib/shiftBreak';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -103,7 +104,7 @@ export function BulkInvoiceDialog({ open, onOpenChange, preselectedFacilityId }:
       }];
     }
 
-    const totalHours = Math.round(((new Date(s.end_datetime).getTime() - new Date(s.start_datetime).getTime()) / 3600000) * 100) / 100;
+    const totalHours = Math.round((getBillableMinutes(s) / 60) * 100) / 100;
     const hourlyRate = Number(s.hourly_rate);
 
     return [{
@@ -285,7 +286,7 @@ export function BulkInvoiceDialog({ open, onOpenChange, preselectedFacilityId }:
                 <div className="max-h-60 overflow-y-auto border rounded-md divide-y">
                   {eligible.map(s => {
                     const isHourly = s.rate_kind === 'hourly' && s.hourly_rate != null && s.hourly_rate > 0;
-                    const totalHours = (new Date(s.end_datetime).getTime() - new Date(s.start_datetime).getTime()) / 3600000;
+                    const totalHours = getBillableMinutes(s) / 60;
                     const hoursLabel = totalHours % 1 === 0 ? totalHours.toFixed(0) : totalHours.toFixed(2).replace(/\.?0+$/, '');
                     return (
                       <label key={s.id} className="flex items-center gap-3 px-3 py-2 hover:bg-muted/30 cursor-pointer text-sm">

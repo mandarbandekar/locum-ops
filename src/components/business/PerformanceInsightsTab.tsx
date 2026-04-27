@@ -6,6 +6,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from 'recharts';
 import { TrendingUp, Calendar as CalendarDays } from 'lucide-react';
 import { format, parseISO, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths, addMonths, isWithinInterval, differenceInDays, differenceInHours, getDay } from 'date-fns';
+import { getBillableMinutes } from '@/lib/shiftBreak';
 
 const truncateName = (name: string, max = 18) =>
   name.length > max ? name.slice(0, max - 1) + '…' : name;
@@ -122,7 +123,7 @@ export default function PerformanceInsightsTab() {
       shifts.forEach(shift => {
         const shiftDate = parseISO(shift.start_datetime);
         if (isWithinInterval(shiftDate, { start: month, end: monthEnd })) {
-          const hours = differenceInHours(parseISO(shift.end_datetime), parseISO(shift.start_datetime));
+          const hours = getBillableMinutes(shift) / 60;
           if (hours > 0) totalHours += hours;
         }
       });

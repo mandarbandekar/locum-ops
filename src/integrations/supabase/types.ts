@@ -1592,6 +1592,7 @@ export type Database = {
           billing_week_end_day: string
           clinic_access_info: string
           created_at: string
+          default_break_minutes: number | null
           engagement_type: string
           facility_coordinates: Json | null
           id: string
@@ -1625,6 +1626,7 @@ export type Database = {
           billing_week_end_day?: string
           clinic_access_info?: string
           created_at?: string
+          default_break_minutes?: number | null
           engagement_type?: string
           facility_coordinates?: Json | null
           id?: string
@@ -1658,6 +1660,7 @@ export type Database = {
           billing_week_end_day?: string
           clinic_access_info?: string
           created_at?: string
+          default_break_minutes?: number | null
           engagement_type?: string
           facility_coordinates?: Json | null
           id?: string
@@ -2552,6 +2555,7 @@ export type Database = {
       }
       shifts: {
         Row: {
+          break_minutes: number | null
           color: string
           created_at: string
           end_datetime: string
@@ -2567,8 +2571,10 @@ export type Database = {
           status: string
           updated_at: string
           user_id: string
+          worked_through_break: boolean
         }
         Insert: {
+          break_minutes?: number | null
           color?: string
           created_at?: string
           end_datetime: string
@@ -2584,8 +2590,10 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id: string
+          worked_through_break?: boolean
         }
         Update: {
+          break_minutes?: number | null
           color?: string
           created_at?: string
           end_datetime?: string
@@ -2601,6 +2609,7 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id?: string
+          worked_through_break?: boolean
         }
         Relationships: [
           {

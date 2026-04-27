@@ -1,5 +1,6 @@
 import type { Facility, Shift, Invoice, InvoiceLineItem, BillingCadence } from '@/types';
 import { format, startOfDay, endOfDay, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, setHours } from 'date-fns';
+import { getBillableMinutes } from '@/lib/shiftBreak';
 
 /**
  * The hour (in local time) at which the early morning system run evaluates
@@ -218,8 +219,9 @@ export function buildAutoInvoiceDraft(
       };
     }
 
-    // Hourly: single regular line.
-    const totalHours = Math.round(((new Date(s.end_datetime).getTime() - new Date(s.start_datetime).getTime()) / 3600000) * 100) / 100;
+    // Hourly: single regular line. Use billable minutes (subtracts unpaid break unless overridden).
+    const billableMinutes = getBillableMinutes(s);
+    const totalHours = Math.round((billableMinutes / 60) * 100) / 100;
     const hourlyRate = Number(s.hourly_rate);
     return {
       shift_id: s.id,
