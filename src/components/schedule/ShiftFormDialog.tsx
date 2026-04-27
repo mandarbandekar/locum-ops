@@ -21,6 +21,8 @@ import { detectShiftConflicts } from '@/lib/businessLogic';
 import { cn } from '@/lib/utils';
 import { termsToRates, RateEntry } from '@/components/facilities/RatesEditor';
 import { useData } from '@/contexts/DataContext';
+import { useUserProfile, type DefaultRate } from '@/contexts/UserProfileContext';
+import { mapDefaultRatesToRateEntries } from '@/lib/onboardingRateMapping';
 import { getBillingPeriod } from '@/lib/invoiceAutoGeneration';
 import type { BillingCadence } from '@/lib/invoiceBillingDefaults';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -49,10 +51,19 @@ interface ShiftFormDialogProps {
   defaultMonth?: Date;
 }
 
-function buildRateOptions(terms: TermsSnapshot[], facilityId: string): RateEntry[] {
+function buildRateOptions(
+  terms: TermsSnapshot[],
+  facilityId: string,
+  defaultRates: DefaultRate[] = [],
+): RateEntry[] {
   const facilityTerms = terms.find(t => t.facility_id === facilityId);
-  if (!facilityTerms) return [];
-  return termsToRates(facilityTerms).filter(r => r.amount > 0);
+  const fromFacility = facilityTerms
+    ? termsToRates(facilityTerms).filter(r => r.amount > 0)
+    : [];
+  if (fromFacility.length > 0) return fromFacility;
+  // Fallback: the user's saved Rate Card so users aren't forced to retype
+  // rates for clinics that were added before they configured terms.
+  return mapDefaultRatesToRateEntries(defaultRates);
 }
 
 
