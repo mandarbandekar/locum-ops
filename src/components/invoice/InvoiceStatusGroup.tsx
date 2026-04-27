@@ -105,12 +105,9 @@ function InvoiceTable({ invoices, onDelete, getFacilityName, navigate, showFacil
         {invoices.map(inv => (
           <tr
             key={inv.id}
-            className={`border-b last:border-0 hover:bg-muted/30 cursor-pointer transition-colors ${selected.has(inv.id) ? 'bg-primary/5' : ''}`}
+            className="border-b last:border-0 hover:bg-muted/30 cursor-pointer transition-colors"
             onClick={() => navigate(`/invoices/${inv.id}`)}
           >
-            <td className="p-3" onClick={e => onToggleSelect(inv.id, e)}>
-              <Checkbox checked={selected.has(inv.id)} />
-            </td>
             <td className="p-3 font-semibold">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span>{inv.invoice_number}</span>
