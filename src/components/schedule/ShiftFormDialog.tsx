@@ -96,6 +96,8 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
 
   const isMobile = useIsMobile();
   const { updateTerms, timeBlocks } = useData();
+  const { profile } = useUserProfile();
+  const userDefaultRates: DefaultRate[] = (profile?.default_rates ?? []) as DefaultRate[];
   const isMultiMode = !existing;
 
   // Engagement override state (per-shift)
@@ -162,7 +164,24 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, existing, defaultDate, defaultStartTime]);
 
-  const rateOptions = useMemo(() => buildRateOptions(terms, facilityId), [terms, facilityId]);
+  const rateOptions = useMemo(
+    () => buildRateOptions(terms, facilityId, userDefaultRates),
+    [terms, facilityId, userDefaultRates],
+  );
+
+  // For new shifts, seed `rate` from the first available option (facility terms
+  // OR the user's saved Rate Card) so the field isn't blank when the user opens
+  // the dialog. Skip when editing an existing shift or when the user already typed.
+  useEffect(() => {
+    if (!open || existing) return;
+    if (rate || isCustomRate) return;
+    const first = rateOptions[0];
+    if (first) {
+      setRate(first.amount.toString());
+      setSelectedRateKey('rate-0');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, facilityId, rateOptions.length]);
 
   // Currently selected rate's kind. For preset rates, derived from the selected option.
   // For custom rates, derived from `customRateKind`. Defaults to 'flat' when no rate yet.
