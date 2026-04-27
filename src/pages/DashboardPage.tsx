@@ -41,6 +41,7 @@ import { EmptyDashboardPrompt } from '@/components/dashboard/EmptyDashboardPromp
 import { QuarterlyTaxCallout } from '@/components/dashboard/QuarterlyTaxCallout';
 import { FirstTimeDashboard } from '@/components/dashboard/FirstTimeDashboard';
 import { OnboardingHandoffBanner } from '@/components/dashboard/OnboardingHandoffBanner';
+import { ShiftTypeMigrationBanner } from '@/components/dashboard/ShiftTypeMigrationBanner';
 import { generateDashboardBriefing, getNextQuarterlyDeadline, BriefingInput } from '@/lib/dashboardBriefing';
 
 const TOUR_STEPS: TourStep[] = [
@@ -153,6 +154,12 @@ export default function DashboardPage() {
   }, [updateProfile]);
 
   const showGettingStarted = !profile?.dismissed_prompts?.getting_started && (facilities.length === 0 || shifts.length === 0);
+
+  // Migration nudge: how many existing shifts have no shift_type yet?
+  const untypedShiftCount = useMemo(() => {
+    if (isDemo) return 0;
+    return shifts.filter(s => !s.shift_type).length;
+  }, [isDemo, shifts]);
 
   useEffect(() => {
     if (!isTourCompleted && !isDemo && user) {
@@ -783,7 +790,8 @@ export default function DashboardPage() {
         </div>
       )}
 
-
+      {/* Shift Type migration nudge (one-time, pre-existing users with untyped shifts) */}
+      <ShiftTypeMigrationBanner untypedShiftCount={untypedShiftCount} />
 
       {/* Getting Started */}
       {showGettingStarted && (

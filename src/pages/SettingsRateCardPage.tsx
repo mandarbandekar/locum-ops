@@ -13,9 +13,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Save, Plus, Trash2, DollarSign, Clock, AlertCircle } from 'lucide-react';
+import { Save, Plus, Trash2, DollarSign, Clock, AlertCircle, Tag, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUserProfile } from '@/contexts/UserProfileContext';
+import { useData } from '@/contexts/DataContext';
+import { supabase } from '@/integrations/supabase/client';
 import {
   type DefaultRate,
   type BillingPreference,
@@ -25,6 +27,7 @@ import {
   SHIFT_TYPE_OPTIONS,
   suggestRateName,
 } from '@/lib/onboardingRateMapping';
+import { inferShiftTypeFromName } from '@/lib/shiftTypeInference';
 
 const MAX_NAME_LEN = 60;
 const MAX_AMOUNT = 100000;
@@ -96,11 +99,19 @@ function validateRates(rates: DefaultRate[]): { errors: RateErrors; firstMessage
 
 export default function SettingsRateCardPage() {
   const { profile, updateProfile, profileLoading } = useUserProfile();
+  const { shifts } = useData();
   const [preference, setPreference] = useState<BillingPreference>('per_day');
   const [rates, setRates] = useState<DefaultRate[]>([]);
   const [saving, setSaving] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const [errors, setErrors] = useState<RateErrors>({});
+  const [backfillOpen, setBackfillOpen] = useState(false);
+  const [backfillRunning, setBackfillRunning] = useState(false);
+
+  const untypedShiftCount = useMemo(
+    () => shifts.filter(s => !s.shift_type).length,
+    [shifts],
+  );
 
   useEffect(() => {
     if (!profile || initialized) return;
@@ -180,6 +191,48 @@ export default function SettingsRateCardPage() {
     });
   };
 
+  /**
+   * Auto-fill `shift_type` for any rate where the name keyword strongly maps
+   * to a known slug. Only patches untagged rows; never overwrites a user's
+   * choice. The user still has to review and Save.
+   */
+  const suggestTypesForUntagged = () => {
+    let touched = 0;
+    setRates(prev => prev.map(r => {
+      if (r.shift_type) return r;
+      const guess = inferShiftTypeFromName(r.name);
+      if (!guess) return r;
+      touched += 1;
+      return { ...r, shift_type: guess };
+    }));
+    if (touched > 0) {
+      toast.success(`Suggested ${touched} shift type${touched === 1 ? '' : 's'} — review and Save`);
+    } else {
+      toast.message('No clear suggestions — pick a type from the dropdown for each rate');
+    }
+  };
+
+  const runBackfill = async () => {
+    setBackfillRunning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('backfill-shift-types');
+      if (error) throw error;
+      const updated = (data as { updated?: number })?.updated ?? 0;
+      const skipped = (data as { skipped?: number })?.skipped ?? 0;
+      if (updated > 0) {
+        toast.success(`Tagged ${updated} past shift${updated === 1 ? '' : 's'}.${skipped ? ` ${skipped} couldn't be matched.` : ''}`);
+      } else {
+        toast.message(`Couldn't auto-tag past shifts — they'll stay untyped until you edit them.`);
+      }
+      setBackfillOpen(false);
+    } catch (e) {
+      console.error('backfill error', e);
+      toast.error('Could not tag past shifts — please try again');
+    } finally {
+      setBackfillRunning(false);
+    }
+  };
+
   const handleSave = async () => {
     const scoped = rates.filter(r =>
       preference === 'per_day' ? r.basis === 'daily' : r.basis === 'hourly',
@@ -207,6 +260,13 @@ export default function SettingsRateCardPage() {
       });
       setRates(cleaned);
       toast.success('Rate Card saved');
+
+      // If they have untyped past shifts AND at least one rate now has a type,
+      // surface the backfill prompt. They can opt in or ignore.
+      const anyTaggedNow = cleaned.some(r => !!r.shift_type);
+      if (anyTaggedNow && untypedShiftCount > 0) {
+        setBackfillOpen(true);
+      }
     } catch (e) {
       console.error(e);
       toast.error('Could not save Rate Card');
@@ -214,6 +274,11 @@ export default function SettingsRateCardPage() {
       setSaving(false);
     }
   };
+
+  const scopedRates = rates.filter(r =>
+    preference === 'per_day' ? r.basis === 'daily' : r.basis === 'hourly',
+  );
+  const untaggedScopedCount = scopedRates.filter(r => r.name.trim() && !r.shift_type).length;
 
   const showDaily = preference === 'per_day';
   const showHourly = preference === 'per_hour';
@@ -259,6 +324,49 @@ export default function SettingsRateCardPage() {
             );
           })}
         </div>
+
+        {/* Review banner: any active rates missing a shift_type */}
+        {untaggedScopedCount > 0 && (
+          <div className="flex items-start gap-3 px-4 py-3 rounded-lg bg-primary/10 border border-primary/20">
+            <Tag className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-semibold text-foreground mb-0.5">
+                Tag your rates by shift type
+              </p>
+              <p className="text-[12.5px] text-muted-foreground leading-relaxed">
+                {untaggedScopedCount} rate{untaggedScopedCount === 1 ? '' : 's'} {untaggedScopedCount === 1 ? "doesn't" : "don't"} have a shift type yet. Tagging them lets us auto-categorize new shifts and show clearer line items on invoices.
+              </p>
+              <div className="mt-2">
+                <Button type="button" size="sm" variant="ghost" onClick={suggestTypesForUntagged} className="-ml-2">
+                  <Sparkles className="h-3.5 w-3.5 mr-1" /> Suggest types from rate names
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Post-save backfill prompt */}
+        {backfillOpen && (
+          <div className="flex items-start gap-3 px-4 py-3 rounded-lg bg-accent/10 border border-accent/30">
+            <Tag className="h-4 w-4 text-accent shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-semibold text-foreground mb-0.5">
+                Apply these shift types to past shifts?
+              </p>
+              <p className="text-[12.5px] text-muted-foreground leading-relaxed">
+                You have {untypedShiftCount} past shift{untypedShiftCount === 1 ? '' : 's'} without a shift type. We can match them to your rates by amount and tag them in one pass. Only confident matches are written — anything ambiguous stays untyped.
+              </p>
+              <div className="flex items-center gap-2 mt-2">
+                <Button type="button" size="sm" onClick={runBackfill} disabled={backfillRunning}>
+                  {backfillRunning ? 'Tagging…' : `Tag ${untypedShiftCount} past shift${untypedShiftCount === 1 ? '' : 's'}`}
+                </Button>
+                <Button type="button" size="sm" variant="ghost" onClick={() => setBackfillOpen(false)} disabled={backfillRunning}>
+                  Not now
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <Card>
           <CardContent className="pt-5 space-y-5">
