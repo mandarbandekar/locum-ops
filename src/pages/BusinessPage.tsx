@@ -1,9 +1,8 @@
 import { useMemo } from 'react';
-import { Activity, Heart, BarChart3, Building2, DollarSign, AlertTriangle, Calendar, Compass } from 'lucide-react';
+import { Activity, Heart, BarChart3, Building2, DollarSign, Compass } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import FinancialHealthTab from '@/components/business/FinancialHealthTab';
 import PerformanceInsightsTab from '@/components/business/PerformanceInsightsTab';
