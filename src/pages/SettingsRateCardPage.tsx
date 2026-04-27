@@ -35,12 +35,32 @@ const rateSchema = z.object({
 
 type RateErrors = Record<string, { name?: string; amount?: string }>;
 
+const PREF_OPTIONS: { value: BillingPreference; label: string; sub: string; icon: typeof DollarSign }[] = [
+  { value: 'per_day', label: 'Per Day', sub: 'Flat day rate', icon: DollarSign },
+  { value: 'per_hour', label: 'Per Hour', sub: 'Hourly billing', icon: Clock },
+];
+
+function coercePreference(p: BillingPreference | undefined): BillingPreference {
+  return p === 'per_hour' ? 'per_hour' : 'per_day';
+}
+
+/**
+ * Validates rates and returns:
+ *  - field-level errors keyed by row id
+ *  - the first user-visible error message (used in toast)
+ *
+ * Duplicate detection is per-basis, case-insensitive on trimmed names.
+ * On a conflict, BOTH rows get an error message that names the original
+ * (display-cased) rate they collide with, so users can see exactly what
+ * already exists.
+ */
 function validateRates(rates: DefaultRate[]): { errors: RateErrors; firstMessage?: string } {
   const errors: RateErrors = {};
   let firstMessage: string | undefined;
   const setErr = (id: string, field: 'name' | 'amount', msg: string) => {
     if (!errors[id]) errors[id] = {};
-    errors[id][field] = msg;
+    // Don't overwrite an existing error on the same field — the first one wins
+    if (!errors[id][field]) errors[id][field] = msg;
     if (!firstMessage) firstMessage = msg;
   };
 
@@ -57,32 +77,25 @@ function validateRates(rates: DefaultRate[]): { errors: RateErrors; firstMessage
     }
   }
 
-  // Duplicate name check (case-insensitive, scoped per basis, only on rows that have a name)
-  const seen = new Map<string, string>(); // key -> first id
+  // Duplicate name check — track first occurrence so we can reference it
+  // in the error message on subsequent conflicting rows.
+  type Seen = { id: string; displayName: string };
+  const firstSeen = new Map<string, Seen>(); // key=`${basis}:${lower-name}` → first row info
   for (const r of rates) {
-    const name = r.name.trim().toLowerCase();
-    if (!name) continue;
-    const key = `${r.basis}:${name}`;
-    if (seen.has(key)) {
-      setErr(r.id, 'name', 'Duplicate rate name');
-      const firstId = seen.get(key)!;
-      setErr(firstId, 'name', 'Duplicate rate name');
+    const trimmed = r.name.trim();
+    if (!trimmed) continue;
+    const key = `${r.basis}:${trimmed.toLowerCase()}`;
+    const prior = firstSeen.get(key);
+    if (prior) {
+      // Both rows error, each pointing at the OTHER row's display name
+      setErr(r.id, 'name', `Duplicate of "${prior.displayName}" — rate names must be unique`);
+      setErr(prior.id, 'name', `Duplicate of "${trimmed}" — rate names must be unique`);
     } else {
-      seen.set(key, r.id);
+      firstSeen.set(key, { id: r.id, displayName: trimmed });
     }
   }
 
   return { errors, firstMessage };
-}
-
-
-const PREF_OPTIONS: { value: BillingPreference; label: string; sub: string; icon: typeof DollarSign }[] = [
-  { value: 'per_day', label: 'Per Day', sub: 'Flat day rate', icon: DollarSign },
-  { value: 'per_hour', label: 'Per Hour', sub: 'Hourly billing', icon: Clock },
-];
-
-function coercePreference(p: BillingPreference | undefined): BillingPreference {
-  return p === 'per_hour' ? 'per_hour' : 'per_day';
 }
 
 export default function SettingsRateCardPage() {
@@ -114,7 +127,6 @@ export default function SettingsRateCardPage() {
 
   const handleSelectPreference = (value: BillingPreference) => {
     setPreference(value);
-    // If there are no existing rates for the new basis, seed presets for it
     const hasForBasis = rates.some(r => (value === 'per_day' ? r.basis === 'daily' : r.basis === 'hourly'));
     if (!hasForBasis) {
       setRates(prev => [...prev, ...buildPresets(value)]);
@@ -123,26 +135,39 @@ export default function SettingsRateCardPage() {
 
   const updateRate = (id: string, patch: Partial<DefaultRate>) => {
     setRates(prev => prev.map(r => (r.id === id ? { ...r, ...patch } : r)));
-    // Clear field-level errors as the user edits
+    // When a row's name changes, recompute duplicate errors across the whole
+    // list so the conflicting row clears too. Schema errors on this row also clear.
     setErrors(prev => {
-      if (!prev[id]) return prev;
       const next = { ...prev };
-      const fieldErrs = { ...next[id] };
-      if ('name' in patch) delete fieldErrs.name;
-      if ('amount' in patch) delete fieldErrs.amount;
-      if (!fieldErrs.name && !fieldErrs.amount) delete next[id];
-      else next[id] = fieldErrs;
+      if (next[id]) {
+        const fieldErrs = { ...next[id] };
+        if ('name' in patch) delete fieldErrs.name;
+        if ('amount' in patch) delete fieldErrs.amount;
+        if (!fieldErrs.name && !fieldErrs.amount) delete next[id];
+        else next[id] = fieldErrs;
+      }
+      // Drop ALL duplicate-name errors — they'll be revalidated on next save.
+      // (Cheap heuristic: any name error containing "Duplicate" gets cleared.)
+      for (const k of Object.keys(next)) {
+        if (next[k]?.name?.startsWith('Duplicate')) {
+          const { name: _omit, ...rest } = next[k];
+          if (rest.amount) next[k] = rest;
+          else delete next[k];
+        }
+      }
       return next;
     });
   };
+
   const removeRate = (id: string) => {
     setRates(prev => prev.filter(r => r.id !== id));
     setErrors(prev => {
       if (!prev[id]) return prev;
-      const { [id]: _, ...rest } = prev;
+      const { [id]: _omit, ...rest } = prev;
       return rest;
     });
   };
+
   const addRate = (basis: RateBasis) => {
     setRates(prev => {
       const nextOrder = prev.filter(r => r.basis === basis).length;
@@ -151,7 +176,6 @@ export default function SettingsRateCardPage() {
   };
 
   const handleSave = async () => {
-    // Validate visible rates for the active billing preference
     const scoped = rates.filter(r =>
       preference === 'per_day' ? r.basis === 'daily' : r.basis === 'hourly',
     );
@@ -164,7 +188,6 @@ export default function SettingsRateCardPage() {
 
     setSaving(true);
     try {
-      // Drop entirely-blank rows (all valid rows have name + amount > 0 by now)
       const cleaned = rates
         .filter(r => r.name.trim() && r.amount > 0)
         .map((r, i) => ({ ...r, sort_order: i, name: r.name.trim() }));
@@ -200,7 +223,6 @@ export default function SettingsRateCardPage() {
       </p>
 
       <div className="max-w-2xl space-y-6">
-        {/* Billing preference */}
         <div className="grid grid-cols-2 gap-3">
           {PREF_OPTIONS.map(opt => {
             const Icon = opt.icon;
@@ -286,46 +308,41 @@ function RateSection({ title, basis, rates, errors, onUpdate, onRemove, onAdd }:
           return (
             <div key={r.id} className="space-y-1">
               <div className="grid grid-cols-[1fr_140px_36px] gap-2 items-start">
-                <div>
+                <Input
+                  value={r.name}
+                  maxLength={MAX_NAME_LEN}
+                  onChange={e => onUpdate(r.id, { name: e.target.value })}
+                  placeholder={basis === 'daily' ? 'Rate name (e.g. Weekend Day)' : 'Rate name (e.g. Standard Hour)'}
+                  aria-label={`${title} name`}
+                  aria-invalid={!!nameErr}
+                  className={cn(nameErr && 'border-destructive focus-visible:ring-destructive')}
+                />
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
                   <Input
-                    value={r.name}
-                    maxLength={MAX_NAME_LEN}
-                    onChange={e => onUpdate(r.id, { name: e.target.value })}
-                    placeholder={basis === 'daily' ? 'Rate name (e.g. Weekend Day)' : 'Rate name (e.g. Standard Hour)'}
-                    aria-label={`${title} name`}
-                    aria-invalid={!!nameErr}
-                    className={cn(nameErr && 'border-destructive focus-visible:ring-destructive')}
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    max={MAX_AMOUNT}
+                    step={basis === 'daily' ? '10' : '1'}
+                    value={r.amount === 0 ? '' : r.amount}
+                    onChange={e => {
+                      const raw = e.target.value;
+                      const parsed = raw === '' ? 0 : Number(raw);
+                      const safe = Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+                      onUpdate(r.id, { amount: safe });
+                    }}
+                    placeholder="0"
+                    className={cn(
+                      'pl-7 pr-12 text-right',
+                      amountErr && 'border-destructive focus-visible:ring-destructive',
+                    )}
+                    aria-label={`${title} amount`}
+                    aria-invalid={!!amountErr}
                   />
-                </div>
-                <div>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
-                    <Input
-                      type="number"
-                      inputMode="decimal"
-                      min={0}
-                      max={MAX_AMOUNT}
-                      step={basis === 'daily' ? '10' : '1'}
-                      value={r.amount === 0 ? '' : r.amount}
-                      onChange={e => {
-                        const raw = e.target.value;
-                        const parsed = raw === '' ? 0 : Number(raw);
-                        // Clamp negatives to 0 at input level — guardrail before validation
-                        const safe = Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
-                        onUpdate(r.id, { amount: safe });
-                      }}
-                      placeholder="0"
-                      className={cn(
-                        'pl-7 pr-12 text-right',
-                        amountErr && 'border-destructive focus-visible:ring-destructive',
-                      )}
-                      aria-label={`${title} amount`}
-                      aria-invalid={!!amountErr}
-                    />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                      /{basis === 'daily' ? 'day' : 'hr'}
-                    </span>
-                  </div>
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                    /{basis === 'daily' ? 'day' : 'hr'}
+                  </span>
                 </div>
                 <Button
                   type="button"
