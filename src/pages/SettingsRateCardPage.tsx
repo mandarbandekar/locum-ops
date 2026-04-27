@@ -234,6 +234,7 @@ export default function SettingsRateCardPage() {
                 title="Daily rates"
                 basis="daily"
                 rates={dailyRates}
+                errors={errors}
                 onUpdate={updateRate}
                 onRemove={removeRate}
                 onAdd={() => addRate('daily')}
@@ -244,6 +245,7 @@ export default function SettingsRateCardPage() {
                 title="Hourly rates"
                 basis="hourly"
                 rates={hourlyRates}
+                errors={errors}
                 onUpdate={updateRate}
                 onRemove={removeRate}
                 onAdd={() => addRate('hourly')}
@@ -264,55 +266,87 @@ interface RateSectionProps {
   title: string;
   basis: RateBasis;
   rates: DefaultRate[];
+  errors: RateErrors;
   onUpdate: (id: string, patch: Partial<DefaultRate>) => void;
   onRemove: (id: string) => void;
   onAdd: () => void;
 }
 
-function RateSection({ title, basis, rates, onUpdate, onRemove, onAdd }: RateSectionProps) {
+function RateSection({ title, basis, rates, errors, onUpdate, onRemove, onAdd }: RateSectionProps) {
   return (
     <div className="space-y-3">
       <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
         {title}
       </Label>
-      <div className="space-y-2">
-        {rates.map(r => (
-          <div key={r.id} className="grid grid-cols-[1fr_140px_36px] gap-2 items-center">
-            <Input
-              value={r.name}
-              onChange={e => onUpdate(r.id, { name: e.target.value })}
-              placeholder={basis === 'daily' ? 'Rate name (e.g. Weekend Day)' : 'Rate name (e.g. Standard Hour)'}
-              aria-label={`${title} name`}
-            />
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
-              <Input
-                type="number"
-                inputMode="decimal"
-                min={0}
-                step={basis === 'daily' ? '10' : '1'}
-                value={r.amount === 0 ? '' : r.amount}
-                onChange={e => onUpdate(r.id, { amount: Number(e.target.value) || 0 })}
-                placeholder="0"
-                className="pl-7 pr-12 text-right"
-                aria-label={`${title} amount`}
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                /{basis === 'daily' ? 'day' : 'hr'}
-              </span>
+      <div className="space-y-3">
+        {rates.map(r => {
+          const rowErr = errors[r.id];
+          const nameErr = rowErr?.name;
+          const amountErr = rowErr?.amount;
+          return (
+            <div key={r.id} className="space-y-1">
+              <div className="grid grid-cols-[1fr_140px_36px] gap-2 items-start">
+                <div>
+                  <Input
+                    value={r.name}
+                    maxLength={MAX_NAME_LEN}
+                    onChange={e => onUpdate(r.id, { name: e.target.value })}
+                    placeholder={basis === 'daily' ? 'Rate name (e.g. Weekend Day)' : 'Rate name (e.g. Standard Hour)'}
+                    aria-label={`${title} name`}
+                    aria-invalid={!!nameErr}
+                    className={cn(nameErr && 'border-destructive focus-visible:ring-destructive')}
+                  />
+                </div>
+                <div>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+                    <Input
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      max={MAX_AMOUNT}
+                      step={basis === 'daily' ? '10' : '1'}
+                      value={r.amount === 0 ? '' : r.amount}
+                      onChange={e => {
+                        const raw = e.target.value;
+                        const parsed = raw === '' ? 0 : Number(raw);
+                        // Clamp negatives to 0 at input level — guardrail before validation
+                        const safe = Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+                        onUpdate(r.id, { amount: safe });
+                      }}
+                      placeholder="0"
+                      className={cn(
+                        'pl-7 pr-12 text-right',
+                        amountErr && 'border-destructive focus-visible:ring-destructive',
+                      )}
+                      aria-label={`${title} amount`}
+                      aria-invalid={!!amountErr}
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                      /{basis === 'daily' ? 'day' : 'hr'}
+                    </span>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onRemove(r.id)}
+                  aria-label="Remove rate"
+                  className="h-9 w-9 text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+              {(nameErr || amountErr) && (
+                <div className="flex items-start gap-1.5 text-xs text-destructive pl-0.5">
+                  <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                  <span>{nameErr || amountErr}</span>
+                </div>
+              )}
             </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={() => onRemove(r.id)}
-              aria-label="Remove rate"
-              className="h-9 w-9 text-muted-foreground hover:text-destructive"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-        ))}
+          );
+        })}
         {rates.length === 0 && (
           <p className="text-xs text-muted-foreground italic">No {basis} rates yet.</p>
         )}
