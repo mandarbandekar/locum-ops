@@ -181,7 +181,7 @@ export function AppSidebar() {
         ))}
       </SidebarContent>
 
-      <SidebarFooter className="p-3 border-t border-sidebar-border/50">
+      <SidebarFooter className="p-3 border-t border-sidebar-border/50 mt-auto">
         <SidebarMenu className="px-2">
           <SidebarMenuItem>
             <SidebarMenuButton asChild size="lg" tooltip={collapsed ? 'Settings' : undefined}>
