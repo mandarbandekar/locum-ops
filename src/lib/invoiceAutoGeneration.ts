@@ -1,6 +1,7 @@
 import type { Facility, Shift, Invoice, InvoiceLineItem, BillingCadence } from '@/types';
 import { format, startOfDay, endOfDay, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, setHours } from 'date-fns';
 import { getBillableMinutes } from '@/lib/shiftBreak';
+import { getShiftTypeLabel } from '@/lib/onboardingRateMapping';
 
 /**
  * The hour (in local time) at which the early morning system run evaluates
