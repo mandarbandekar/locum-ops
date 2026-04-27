@@ -143,36 +143,65 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
   }
 
   async function fetchAll() {
+    // Fault-tolerant loader: a single failed query must NOT blank the entire UI.
+    // Each table is loaded independently; on failure we keep the previous state
+    // for that slice and log the error, so users don't see "all clinics gone"
+    // due to one transient request error (e.g. token refresh race).
+    type Loader = {
+      name: string;
+      run: () => PromiseLike<{ data: any[] | null; error: any }>;
+      apply: (rows: any[]) => void;
+    };
+
+    const loaders: Loader[] = [
+      { name: 'facilities', run: () => db('facilities').select('*').order('created_at'),
+        apply: (rows) => setFacilities(rows.map(stripDbFields)) },
+      { name: 'facility_contacts', run: () => db('facility_contacts').select('*').order('created_at'),
+        apply: (rows) => setContacts(rows.map(stripDbFields)) },
+      { name: 'terms_snapshots', run: () => db('terms_snapshots').select('*').order('created_at'),
+        apply: (rows) => setTerms(rows.map(stripDbFields)) },
+      { name: 'shifts', run: () => db('shifts').select('*').order('start_datetime'),
+        apply: (rows) => setShifts(rows.map(stripDbFields)) },
+      { name: 'invoices', run: () => db('invoices').select('*').order('created_at'),
+        apply: (rows) => setInvoices(rows.map(stripDbFields)) },
+      { name: 'invoice_line_items', run: () => db('invoice_line_items').select('*').order('created_at'),
+        apply: (rows) => setLineItems(rows.map(stripDbFields)) },
+      { name: 'email_logs', run: () => db('email_logs').select('*').order('sent_at'),
+        apply: (rows) => setEmailLogs(rows.map(stripDbFields)) },
+      { name: 'invoice_payments', run: () => db('invoice_payments').select('*').order('created_at'),
+        apply: (rows) => setPayments(rows.map(stripDbFields)) },
+      { name: 'invoice_activity', run: () => db('invoice_activity').select('*').order('created_at'),
+        apply: (rows) => setActivities(rows.map(stripDbFieldsKeepTimestamp)) },
+      { name: 'contract_checklist_items', run: () => db('contract_checklist_items').select('*').order('created_at'),
+        apply: (rows) => setChecklistItems(rows.map(stripDbFields)) },
+      { name: 'time_blocks', run: () => db('time_blocks').select('*').order('start_datetime'),
+        apply: (rows) => setTimeBlocks(rows.map(stripDbFields)) },
+      { name: 'suppressed_invoice_periods', run: () => db('suppressed_invoice_periods').select('*').order('created_at'),
+        apply: (rows) => setSuppressedPeriods(rows.map(stripDbFields) as SuppressedPeriod[]) },
+    ];
+
+    const runOne = async (l: Loader): Promise<string | null> => {
+      try {
+        const res = await l.run();
+        if (res.error) {
+          console.error(`[fetchAll] ${l.name} failed:`, res.error);
+          return l.name;
+        }
+        l.apply(res.data || []);
+        return null;
+      } catch (err) {
+        console.error(`[fetchAll] ${l.name} threw:`, err);
+        return l.name;
+      }
+    };
+
     try {
-      const [fRes, cRes, tRes, sRes, iRes, liRes, eRes, pRes, aRes, clRes, tbRes, spRes] = await Promise.all([
-        db('facilities').select('*').order('created_at'),
-        db('facility_contacts').select('*').order('created_at'),
-        db('terms_snapshots').select('*').order('created_at'),
-        db('shifts').select('*').order('start_datetime'),
-        db('invoices').select('*').order('created_at'),
-        db('invoice_line_items').select('*').order('created_at'),
-        db('email_logs').select('*').order('sent_at'),
-        db('invoice_payments').select('*').order('created_at'),
-        db('invoice_activity').select('*').order('created_at'),
-        db('contract_checklist_items').select('*').order('created_at'),
-        db('time_blocks').select('*').order('start_datetime'),
-        db('suppressed_invoice_periods').select('*').order('created_at'),
-      ]);
-      setFacilities((fRes.data || []).map(stripDbFields));
-      setContacts((cRes.data || []).map(stripDbFields));
-      setTerms((tRes.data || []).map(stripDbFields));
-      setShifts((sRes.data || []).map(stripDbFields));
-      setInvoices((iRes.data || []).map(stripDbFields));
-      setLineItems((liRes.data || []).map(stripDbFields));
-      setEmailLogs((eRes.data || []).map(stripDbFields));
-      setPayments((pRes.data || []).map(stripDbFields));
-      setActivities((aRes.data || []).map(stripDbFieldsKeepTimestamp));
-      setChecklistItems((clRes.data || []).map(stripDbFields));
-      setTimeBlocks((tbRes.data || []).map(stripDbFields));
-      setSuppressedPeriods((spRes.data || []).map(stripDbFields) as SuppressedPeriod[]);
-    } catch (err: any) {
-      console.error('Failed to load data:', err);
-      toast.error('Failed to load data');
+      const results = await Promise.all(loaders.map(runOne));
+      const failed = results.filter((x): x is string => !!x);
+      if (failed.length > 0) {
+        console.warn('[fetchAll] partial load — failed tables:', failed);
+        toast.error('Some data failed to load. Try refreshing the page.');
+      }
     } finally {
       setDataLoading(false);
     }
