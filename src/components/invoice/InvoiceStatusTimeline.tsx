@@ -106,11 +106,11 @@ export function InvoiceStatusTimeline({ invoice, payments, computedStatus }: Pro
         const next = steps[i + 1];
         const isLast = i === steps.length - 1;
 
-        // Connector style: primary if both nodes complete; destructive tint if leading into alert; muted otherwise.
+        // Connector style: destructive tint leading into an alert node; primary when leaving a complete node; muted otherwise.
         const connectorClass =
           next?.state === 'alert'
             ? 'bg-destructive/40'
-            : step.state === 'complete' && (next?.state === 'complete' || next?.state === 'current' || next?.state === 'alert')
+            : step.state === 'complete'
               ? 'bg-primary'
               : 'bg-border';
 
