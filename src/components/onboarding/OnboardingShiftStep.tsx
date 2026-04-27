@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,9 @@ import { format, subDays } from 'date-fns';
 import type { Facility, Shift, TermsSnapshot, Invoice, InvoiceLineItem } from '@/types';
 import { AddFacilityDialog } from '@/components/AddFacilityDialog';
 import { TimePicker } from '@/components/ui/time-picker';
+import { useUserProfile } from '@/contexts/UserProfileContext';
+import { termsToRates } from '@/components/facilities/RatesEditor';
+import { mapDefaultRatesToRateEntries } from '@/lib/onboardingRateMapping';
 
 interface Props {
   facilities: Facility[];
@@ -26,11 +29,14 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
   const yesterday = subDays(new Date(), 1);
   const defaultFacility = facilities[0];
 
+  const { profile } = useUserProfile();
+
   const [selectedFacilityId, setSelectedFacilityId] = useState(defaultFacility?.id || '');
   const [shiftDate, setShiftDate] = useState(format(yesterday, 'yyyy-MM-dd'));
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [rate, setRate] = useState('');
+  const [rateTouched, setRateTouched] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [savedShift, setSavedShift] = useState<Shift | null>(null);
@@ -38,6 +44,22 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
   const formRef = useRef<HTMLDivElement>(null);
 
   const selectedFacility = facilities.find(f => f.id === selectedFacilityId) || defaultFacility;
+
+  // Derive a sensible default rate: facility's first rate, else the user's
+  // saved Rate Card. Avoids dropping the user back at a blank field.
+  const suggestedRate = useMemo(() => {
+    if (!selectedFacility) return '';
+    const facilityTerms = terms.find(t => t.facility_id === selectedFacility.id);
+    const fromFacility = facilityTerms ? termsToRates(facilityTerms).filter(r => r.amount > 0) : [];
+    if (fromFacility[0]) return fromFacility[0].amount.toString();
+    const fromCard = mapDefaultRatesToRateEntries((profile?.default_rates ?? []) as any);
+    return fromCard[0] ? fromCard[0].amount.toString() : '';
+  }, [selectedFacility, terms, profile?.default_rates]);
+
+  useEffect(() => {
+    if (rateTouched) return;
+    if (suggestedRate) setRate(suggestedRate);
+  }, [suggestedRate, rateTouched]);
 
   const rateNum = parseFloat(rate);
   const rateIsValid = !Number.isNaN(rateNum) && rateNum > 0;
