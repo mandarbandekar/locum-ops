@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
@@ -39,11 +40,47 @@ const OPTIONS: { value: BreakOption; label: string }[] = [
 ];
 
 export function BreakPolicySelector({ value, onChange, helper, compact }: Props) {
-  const opt = breakMinutesToOption(value);
-  const customMin = opt === 'custom' ? (value ?? 30) : 30;
+  // Track the user-selected option locally so that picking "Custom" doesn't
+  // immediately collapse back to a preset when the typed value happens to be 30/60.
+  const derivedOpt = breakMinutesToOption(value);
+  const [opt, setOpt] = useState<BreakOption>(derivedOpt);
+
+  // Local string state for the custom input so the user can clear/retype freely.
+  const [customStr, setCustomStr] = useState<string>(
+    derivedOpt === 'custom' ? String(value ?? '') : (value && value > 0 ? String(value) : '45'),
+  );
+
+  // Keep local opt in sync if the parent value changes externally (e.g. clinic switch),
+  // but never override an explicit "custom" selection just because the value matches a preset.
+  const lastValueRef = useRef<number | null | undefined>(value);
+  useEffect(() => {
+    if (lastValueRef.current !== value) {
+      lastValueRef.current = value;
+      const next = breakMinutesToOption(value);
+      // Only flip away from "custom" if the new value clearly isn't custom-driven by us.
+      if (opt !== 'custom' || (value !== null && value !== undefined && (value === 30 || value === 60 || value === 0 || value == null))) {
+        if (opt === 'custom' && value && value !== 30 && value !== 60) {
+          setCustomStr(String(value));
+        } else {
+          setOpt(next);
+          if (next === 'custom' && value != null) setCustomStr(String(value));
+        }
+      }
+    }
+  }, [value, opt]);
 
   const handleSelect = (next: BreakOption) => {
-    onChange(optionToBreakMinutes(next, customMin));
+    setOpt(next);
+    if (next === 'custom') {
+      const parsed = parseInt(customStr, 10);
+      const minutes = Number.isFinite(parsed) && parsed > 0
+        ? Math.max(1, Math.min(240, parsed))
+        : 45; // sensible default for "custom" that isn't 30 or 60
+      setCustomStr(String(minutes));
+      onChange(minutes);
+    } else {
+      onChange(optionToBreakMinutes(next, 0));
+    }
   };
 
   return (
@@ -87,11 +124,25 @@ export function BreakPolicySelector({ value, onChange, helper, compact }: Props)
             type="number"
             min={1}
             max={240}
-            value={value ?? 1}
+            value={customStr}
             onChange={(e) => {
-              const n = parseInt(e.target.value, 10);
-              if (Number.isNaN(n)) return;
+              const raw = e.target.value;
+              setCustomStr(raw);
+              if (raw === '') return; // allow empty while typing; don't push to parent yet
+              const n = parseInt(raw, 10);
+              if (!Number.isFinite(n)) return;
               onChange(Math.max(1, Math.min(240, n)));
+            }}
+            onBlur={() => {
+              const n = parseInt(customStr, 10);
+              if (!Number.isFinite(n) || n < 1) {
+                setCustomStr('1');
+                onChange(1);
+              } else {
+                const clamped = Math.max(1, Math.min(240, n));
+                setCustomStr(String(clamped));
+                onChange(clamped);
+              }
             }}
             className="h-8 w-24 text-sm"
           />
