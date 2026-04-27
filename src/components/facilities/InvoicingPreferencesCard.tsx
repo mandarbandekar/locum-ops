@@ -12,6 +12,7 @@ import {
 import { Receipt, Edit2, Save, X, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useData } from '@/contexts/DataContext';
+import { formatPaymentTerms } from '@/lib/invoiceHelpers';
 import type { Facility, BillingCadence } from '@/types';
 
 interface InvoicingPreferencesCardProps {
