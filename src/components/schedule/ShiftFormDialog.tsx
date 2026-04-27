@@ -357,17 +357,32 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     try {
       await saveCustomRateToTerms();
       const overridePayload = computeOverridePayload();
-      const ratePayload = activeRateKind === 'hourly'
-        ? {
+      const breakPayload = {
+        break_minutes: workedThroughBreak ? (breakMinutes ?? null) : (breakMinutes ?? null),
+        worked_through_break: workedThroughBreak,
+      };
+      // For hourly shifts, recompute total from BILLABLE minutes (subtracts unpaid break unless overridden).
+      const buildRatePayload = (startIso: string, endIso: string) => {
+        if (activeRateKind === 'hourly') {
+          const billable = getBillableMinutes({
+            start_datetime: startIso,
+            end_datetime: endIso,
+            break_minutes: breakPayload.break_minutes,
+            worked_through_break: breakPayload.worked_through_break,
+          });
+          const billableHours = billable / 60;
+          return {
             rate_kind: 'hourly' as const,
             hourly_rate: Number(rate) || 0,
-            rate_applied: computedRateApplied,
-          }
-        : {
-            rate_kind: 'flat' as const,
-            hourly_rate: null,
-            rate_applied: Number(rate),
+            rate_applied: Math.round(billableHours * (Number(rate) || 0) * 100) / 100,
           };
+        }
+        return {
+          rate_kind: 'flat' as const,
+          hourly_rate: null,
+          rate_applied: Number(rate),
+        };
+      };
       if (existing) {
         const { startIso, endIso } = buildStartEndIso(selectedDates[0] || new Date());
         await onSave({
@@ -375,9 +390,10 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
           facility_id: facilityId,
           start_datetime: startIso,
           end_datetime: endIso,
-          ...ratePayload,
+          ...buildRatePayload(startIso, endIso),
           notes, color,
           ...overridePayload,
+          ...breakPayload,
         });
       } else {
         const orderedDates = [...selectedDates].sort((a, b) => a.getTime() - b.getTime());
@@ -387,9 +403,10 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
             facility_id: facilityId,
             start_datetime: startIso,
             end_datetime: endIso,
-            ...ratePayload,
+            ...buildRatePayload(startIso, endIso),
             notes, color,
             ...overridePayload,
+            ...breakPayload,
           });
         }
       }
