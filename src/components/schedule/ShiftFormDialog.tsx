@@ -307,7 +307,13 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     const seen = new Set<string>();
     for (const d of selectedDates) {
       const { startIso, endIso } = buildStartEndIso(d);
-      for (const c of detectShiftConflicts(shifts, { start_datetime: startIso, end_datetime: endIso, id: existing?.id })) {
+      for (const c of detectShiftConflicts(shifts, {
+        start_datetime: startIso,
+        end_datetime: endIso,
+        id: existing?.id,
+        break_minutes: breakMinutes,
+        worked_through_break: workedThroughBreak,
+      })) {
         if (!seen.has(c.id)) {
           seen.add(c.id);
           allConflicts.push(c);
@@ -315,7 +321,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
       }
     }
     return allConflicts;
-  }, [shifts, selectedDates, startTime, endTime, existing?.id, facilityId, isSubmitting, buildStartEndIso]);
+  }, [shifts, selectedDates, startTime, endTime, existing?.id, facilityId, isSubmitting, buildStartEndIso, breakMinutes, workedThroughBreak]);
 
   const saveCustomRateToTerms = useCallback(async () => {
     if (!isCustomRate || !saveCustomRate || !rate || Number(rate) <= 0) return;
