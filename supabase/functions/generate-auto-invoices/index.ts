@@ -319,7 +319,7 @@ Deno.serve(async (req) => {
             user_id: facility.user_id,
             invoice_id: existingDraft.id,
             shift_id: s.id,
-            description: `${formatShortDate(new Date(s.start_datetime))} — Relief coverage`,
+            description: `${formatShortDate(new Date(s.start_datetime))} — ${coverageLabel(s.shift_type)}`,
             service_date: formatDate(new Date(s.start_datetime)),
             qty: 1,
             unit_rate: s.rate_applied,
