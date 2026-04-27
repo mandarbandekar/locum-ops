@@ -27,6 +27,26 @@ interface Shift {
   end_datetime: string;
   status: string;
   rate_applied: number;
+  shift_type?: string | null;
+}
+
+const SHIFT_TYPE_SHORT: Record<string, string> = {
+  gp: 'GP',
+  er: 'ER',
+  surgery: 'Surgery',
+  dental: 'Dental',
+  wellness: 'Wellness',
+  oncall: 'On-Call',
+  telemed: 'Telemed',
+  specialty: 'Specialty',
+  shelter: 'Shelter',
+  other: 'Relief',
+};
+
+function coverageLabel(shiftType?: string | null): string {
+  if (!shiftType) return 'Relief coverage';
+  const short = SHIFT_TYPE_SHORT[shiftType] ?? shiftType;
+  return `${short} relief coverage`;
 }
 
 interface Invoice {
@@ -299,7 +319,7 @@ Deno.serve(async (req) => {
             user_id: facility.user_id,
             invoice_id: existingDraft.id,
             shift_id: s.id,
-            description: `${formatShortDate(new Date(s.start_datetime))} — Relief coverage`,
+            description: `${formatShortDate(new Date(s.start_datetime))} — ${coverageLabel(s.shift_type)}`,
             service_date: formatDate(new Date(s.start_datetime)),
             qty: 1,
             unit_rate: s.rate_applied,
@@ -351,7 +371,7 @@ Deno.serve(async (req) => {
           // Build line items
           const lineItems = allEligibleForPeriod.map((s) => ({
             shift_id: s.id,
-            description: `${formatShortDate(new Date(s.start_datetime))} — Relief coverage`,
+            description: `${formatShortDate(new Date(s.start_datetime))} — ${coverageLabel(s.shift_type)}`,
             service_date: formatDate(new Date(s.start_datetime)),
             qty: 1,
             unit_rate: s.rate_applied,
