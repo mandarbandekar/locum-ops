@@ -14,6 +14,8 @@ export interface DefaultRate {
   name: string;
   amount: number;
   basis: 'daily' | 'hourly';
+  /** Optional shift-type slug (e.g. 'gp', 'er', 'surgery'). */
+  shift_type?: string;
   active: boolean;
   sort_order: number;
 }
