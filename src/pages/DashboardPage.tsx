@@ -155,6 +155,12 @@ export default function DashboardPage() {
 
   const showGettingStarted = !profile?.dismissed_prompts?.getting_started && (facilities.length === 0 || shifts.length === 0);
 
+  // Migration nudge: how many existing shifts have no shift_type yet?
+  const untypedShiftCount = useMemo(() => {
+    if (isDemo) return 0;
+    return shifts.filter(s => !s.shift_type).length;
+  }, [isDemo, shifts]);
+
   useEffect(() => {
     if (!isTourCompleted && !isDemo && user) {
       const t = setTimeout(() => startTour(), 1500);
