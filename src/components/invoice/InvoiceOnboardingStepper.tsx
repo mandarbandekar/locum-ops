@@ -17,6 +17,7 @@ import {
   hasBillingContact,
   validateSenderProfile,
 } from '@/lib/invoiceBillingDefaults';
+import { formatPaymentTerms } from '@/lib/invoiceHelpers';
 import { toast } from 'sonner';
 
 const ONBOARDING_STEPS = [
