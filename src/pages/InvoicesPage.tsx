@@ -247,8 +247,6 @@ export default function InvoicesPage() {
                     title="Overdue"
                     icon={<AlertTriangle className="h-4 w-4 text-destructive" />}
                     invoices={overdue}
-                    selected={selected}
-                    onToggleSelect={toggleSelect}
                     onDelete={handleSingleDelete}
                     getFacilityName={getFacilityName}
                     emptyMessage="No overdue invoices — you're all caught up!"
