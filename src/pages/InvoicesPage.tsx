@@ -278,8 +278,6 @@ export default function InvoicesPage() {
                     title="Ready to Review"
                     icon={<FileEdit className="h-4 w-4 text-amber-500" />}
                     invoices={readyToReview}
-                    selected={selected}
-                    onToggleSelect={toggleSelect}
                     onDelete={handleSingleDelete}
                     getFacilityName={getFacilityName}
                     emptyMessage="Invoices are auto-generated from your shifts — no need to create them manually. They'll appear here once shifts are completed."
@@ -309,8 +307,6 @@ export default function InvoicesPage() {
                     title="Sent & Awaiting Payment"
                     icon={<Send className="h-4 w-4 text-blue-500" />}
                     invoices={[...sent, ...partial]}
-                    selected={selected}
-                    onToggleSelect={toggleSelect}
                     onDelete={handleSingleDelete}
                     getFacilityName={getFacilityName}
                     emptyMessage="No invoices awaiting payment right now."
@@ -335,8 +331,6 @@ export default function InvoicesPage() {
                     title="Auto Generated Upcoming Invoices"
                     icon={<Clock className="h-4 w-4 text-muted-foreground" />}
                     invoices={upcoming}
-                    selected={selected}
-                    onToggleSelect={toggleSelect}
                     onDelete={handleSingleDelete}
                     getFacilityName={getFacilityName}
                     emptyMessage="No upcoming invoices."
@@ -371,8 +365,6 @@ export default function InvoicesPage() {
             title="Paid"
             icon={<CheckCircle className="h-4 w-4 text-primary" />}
             invoices={paid}
-            selected={selected}
-            onToggleSelect={toggleSelect}
             onDelete={handleSingleDelete}
             getFacilityName={getFacilityName}
             emptyMessage="No paid invoices yet."
