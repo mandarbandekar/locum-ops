@@ -78,8 +78,6 @@ function getDueBadge(dueDate: string | null, status: string) {
 
 function InvoiceTable({ invoices, onDelete, getFacilityName, navigate, showFacility = true, onMarkAsPaid, onSendFollowup }: {
   invoices: InvoiceWithStatus[];
-  selected: Set<string>;
-  onToggleSelect: (id: string, e: React.MouseEvent) => void;
   onDelete: (id: string) => Promise<void>;
   getFacilityName: (id: string) => string;
   navigate: (path: string) => void;
