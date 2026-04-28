@@ -17,7 +17,7 @@ import { SHIFT_COLORS, ShiftColor, TermsSnapshot, Shift, BLOCK_TYPES, BlockType,
 import { BreakPolicySelector } from '@/components/facilities/BreakPolicySelector';
 import { getBreakPolicyLabel, formatBillableHours, formatHoursMinutes, getScheduledMinutes, getBillableMinutes, isBreakFeatureNew } from '@/lib/shiftBreak';
 import { Switch } from '@/components/ui/switch';
-import { detectShiftConflicts } from '@/lib/businessLogic';
+import { detectShiftConflicts, generateId } from '@/lib/businessLogic';
 import { cn } from '@/lib/utils';
 import { termsToRates, RateEntry } from '@/components/facilities/RatesEditor';
 import { useData } from '@/contexts/DataContext';
@@ -374,6 +374,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
 
   const saveCustomRateToTerms = useCallback(async () => {
     if (!isCustomRate || !saveCustomRate || !rate || Number(rate) <= 0) return;
+    if (!facilityId) return;
     const label = customRateLabel.trim() || `Custom $${Number(rate).toLocaleString()}`;
     const facilityTerms = terms.find(t => t.facility_id === facilityId);
     if (facilityTerms) {
@@ -383,6 +384,25 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
         ...facilityTerms,
         custom_rates: [...existingCustom, { label, amount: Number(rate), kind: customRateKind }],
       });
+      toast.success(`Custom rate "${label}" saved to facility`);
+    } else {
+      // No terms snapshot yet for this clinic (common for platform/agency clinics
+      // where the Rates step is skipped during clinic creation). Create one so
+      // the custom rate persists and shows up next time the user picks this clinic.
+      await updateTerms({
+        id: generateId(),
+        facility_id: facilityId,
+        weekday_rate: 0,
+        weekend_rate: 0,
+        partial_day_rate: 0,
+        holiday_rate: 0,
+        telemedicine_rate: 0,
+        cancellation_policy_text: '',
+        overtime_policy_text: '',
+        late_payment_policy_text: '',
+        special_notes: '',
+        custom_rates: [{ label, amount: Number(rate), kind: customRateKind }],
+      } as TermsSnapshot);
       toast.success(`Custom rate "${label}" saved to facility`);
     }
   }, [isCustomRate, saveCustomRate, rate, customRateLabel, customRateKind, facilityId, terms, updateTerms]);
@@ -661,7 +681,12 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
         <AddFacilityDialog
           open={showAddFacility}
           onOpenChange={setShowAddFacility}
-          onCreated={(newId) => handleFacilityChange(newId)}
+          onCreated={(newId) => {
+            handleFacilityChange(newId);
+            // Drop the user straight back into the regular shift flow on the
+            // schedule step instead of stranding them on facility selection.
+            setStep(2);
+          }}
         />
       </div>
       {/* Clinic defaults chip */}
