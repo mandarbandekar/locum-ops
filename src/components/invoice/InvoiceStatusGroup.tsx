@@ -39,6 +39,7 @@ interface Props {
   alertBanner?: React.ReactNode;
   onMarkAsPaid?: (invoice: InvoiceWithStatus) => void;
   onSendFollowup?: (invoice: InvoiceWithStatus) => void;
+  onReview?: (invoice: InvoiceWithStatus) => void;
 }
 
 const statusStyles: Record<string, string> = {
