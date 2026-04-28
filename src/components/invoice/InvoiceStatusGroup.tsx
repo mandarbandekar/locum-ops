@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { ChevronDown, ChevronRight, Trash2, Zap, CheckCircle2, PartyPopper, DollarSign, Mail } from 'lucide-react';
+import { ChevronDown, ChevronRight, Trash2, Zap, CheckCircle2, PartyPopper, DollarSign, Mail, FileEdit } from 'lucide-react';
 import { differenceInCalendarDays } from 'date-fns';
 
 /** Format a date string to 'MMM d, yyyy' without timezone shift. */
