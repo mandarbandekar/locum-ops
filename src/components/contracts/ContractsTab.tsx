@@ -366,6 +366,58 @@ function TermsEditor({ terms, contractTitle, onSave }: {
   );
 }
 
+// ─── Clinic Rates (editable, persisted to facility TermsSnapshot) ───
+
+function ClinicRatesSection({ facilityTerms, facilityId, onUpdateTerms }: {
+  facilityTerms?: TermsSnapshot;
+  facilityId: string;
+  onUpdateTerms?: (t: TermsSnapshot) => void;
+}) {
+  const [rates, setRates] = useState<RateEntry[]>(() => facilityTerms ? termsToRates(facilityTerms) : []);
+
+  const buildTerms = (next: RateEntry[]): TermsSnapshot => {
+    const fields = ratesToTermsFields(next);
+    return {
+      id: facilityTerms?.id || generateId(),
+      facility_id: facilityId,
+      weekday_rate: fields.weekday_rate,
+      weekend_rate: fields.weekend_rate,
+      partial_day_rate: fields.partial_day_rate,
+      holiday_rate: fields.holiday_rate,
+      telemedicine_rate: fields.telemedicine_rate,
+      custom_rates: fields.custom_rates,
+      rate_kinds: fields.rate_kinds,
+      rate_shift_types: fields.rate_shift_types,
+      cancellation_policy_text: facilityTerms?.cancellation_policy_text || '',
+      overtime_policy_text: facilityTerms?.overtime_policy_text || '',
+      late_payment_policy_text: facilityTerms?.late_payment_policy_text || '',
+      special_notes: facilityTerms?.special_notes || '',
+    };
+  };
+
+  const handleSave = (next: RateEntry[]) => {
+    if (!onUpdateTerms) return;
+    onUpdateTerms(buildTerms(next));
+    toast.success('Clinic rates updated');
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <DollarSign className="h-4 w-4 text-primary" /> Clinic Rates
+        </CardTitle>
+        <p className="text-xs text-muted-foreground italic">
+          These rates are pre-filled from onboarding and used as suggestions when adding shifts at this clinic. Edit anytime.
+        </p>
+      </CardHeader>
+      <CardContent>
+        <RatesEditor rates={rates} onChange={setRates} onSave={handleSave} showCard={false} />
+      </CardContent>
+    </Card>
+  );
+}
+
 // ─── Policies & Notes Section ──────────────────────────────
 
 function PoliciesSection({ facilityTerms, facilityId, onUpdateTerms }: {
