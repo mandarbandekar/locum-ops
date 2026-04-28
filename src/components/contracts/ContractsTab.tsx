@@ -8,8 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Plus, Trash2, Pencil, Save, ExternalLink, FileText, Download, AlertTriangle, Check, X, ClipboardList, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Pencil, Save, ExternalLink, FileText, Download, AlertTriangle, Check, X, ClipboardList, Loader2, DollarSign } from 'lucide-react';
 import { Contract, ContractTerms, ContractChecklistItem, ContractStatus, ChecklistItemType, getChecklistBadge, DEFAULT_CHECKLIST_ITEMS } from '@/types/contracts';
+import { RatesEditor, termsToRates, ratesToTermsFields, RateEntry } from '@/components/facilities/RatesEditor';
 import { useContracts } from '@/hooks/useContracts';
 import { useAuth } from '@/contexts/AuthContext';
 import { generateId } from '@/lib/businessLogic';
@@ -45,6 +46,9 @@ export function ContractsTab({ facilityId, isDemo = false, facilityTerms, onUpda
           <strong>Not legal advice.</strong> LocumOps stores documents and helps you organize key terms for reference. Always verify details against the signed contract and consult a qualified attorney for legal guidance.
         </AlertDescription>
       </Alert>
+
+      {/* Clinic Rates (preselected during onboarding, editable here) */}
+      <ClinicRatesSection facilityTerms={facilityTerms} facilityId={facilityId} onUpdateTerms={onUpdateTerms} />
 
       {/* A) Contract Vault */}
       <ContractVault contracts={contracts} onAdd={addContract} onUpdate={updateContract} onDelete={deleteContract} facilityId={facilityId} />
@@ -357,6 +361,58 @@ function TermsEditor({ terms, contractTitle, onSave }: {
         <div><Label>Late Payment Policy</Label><Textarea value={form.late_payment_policy_text} onChange={e => setForm(p => ({ ...p, late_payment_policy_text: e.target.value }))} rows={2} /></div>
         <div><Label>Invoicing Instructions</Label><Textarea value={form.invoicing_instructions_text} onChange={e => setForm(p => ({ ...p, invoicing_instructions_text: e.target.value }))} rows={2} /></div>
         <Button onClick={handleSave}><Save className="mr-1 h-3 w-3" /> Save Terms</Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Clinic Rates (editable, persisted to facility TermsSnapshot) ───
+
+function ClinicRatesSection({ facilityTerms, facilityId, onUpdateTerms }: {
+  facilityTerms?: TermsSnapshot;
+  facilityId: string;
+  onUpdateTerms?: (t: TermsSnapshot) => void;
+}) {
+  const [rates, setRates] = useState<RateEntry[]>(() => facilityTerms ? termsToRates(facilityTerms) : []);
+
+  const buildTerms = (next: RateEntry[]): TermsSnapshot => {
+    const fields = ratesToTermsFields(next);
+    return {
+      id: facilityTerms?.id || generateId(),
+      facility_id: facilityId,
+      weekday_rate: fields.weekday_rate,
+      weekend_rate: fields.weekend_rate,
+      partial_day_rate: fields.partial_day_rate,
+      holiday_rate: fields.holiday_rate,
+      telemedicine_rate: fields.telemedicine_rate,
+      custom_rates: fields.custom_rates,
+      rate_kinds: fields.rate_kinds,
+      rate_shift_types: fields.rate_shift_types,
+      cancellation_policy_text: facilityTerms?.cancellation_policy_text || '',
+      overtime_policy_text: facilityTerms?.overtime_policy_text || '',
+      late_payment_policy_text: facilityTerms?.late_payment_policy_text || '',
+      special_notes: facilityTerms?.special_notes || '',
+    };
+  };
+
+  const handleSave = (next: RateEntry[]) => {
+    if (!onUpdateTerms) return;
+    onUpdateTerms(buildTerms(next));
+    toast.success('Clinic rates updated');
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <DollarSign className="h-4 w-4 text-primary" /> Clinic Rates
+        </CardTitle>
+        <p className="text-xs text-muted-foreground italic">
+          These rates are pre-filled from onboarding and used as suggestions when adding shifts at this clinic. Edit anytime.
+        </p>
+      </CardHeader>
+      <CardContent>
+        <RatesEditor rates={rates} onChange={setRates} onSave={handleSave} showCard={false} />
       </CardContent>
     </Card>
   );
