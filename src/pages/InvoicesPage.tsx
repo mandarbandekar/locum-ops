@@ -293,6 +293,7 @@ export default function InvoicesPage() {
                         </Button>
                       </div>
                     ) : undefined}
+                    onReview={(inv) => navigate(`/invoices/${inv.id}`)}
                   />
                 </div>
               ),
