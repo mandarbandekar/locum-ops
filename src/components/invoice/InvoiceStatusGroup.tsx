@@ -77,7 +77,7 @@ function getDueBadge(dueDate: string | null, status: string) {
   return <span className="text-[11px] text-muted-foreground">Due in {days}d</span>;
 }
 
-function InvoiceTable({ invoices, onDelete, getFacilityName, navigate, showFacility = true, onMarkAsPaid, onSendFollowup }: {
+function InvoiceTable({ invoices, onDelete, getFacilityName, navigate, showFacility = true, onMarkAsPaid, onSendFollowup, onReview }: {
   invoices: InvoiceWithStatus[];
   onDelete: (id: string) => Promise<void>;
   getFacilityName: (id: string) => string;
@@ -85,6 +85,7 @@ function InvoiceTable({ invoices, onDelete, getFacilityName, navigate, showFacil
   showFacility?: boolean;
   onMarkAsPaid?: (invoice: InvoiceWithStatus) => void;
   onSendFollowup?: (invoice: InvoiceWithStatus) => void;
+  onReview?: (invoice: InvoiceWithStatus) => void;
 }) {
   return (
     <table className="w-full text-[13px] min-w-[600px] sm:min-w-0">
