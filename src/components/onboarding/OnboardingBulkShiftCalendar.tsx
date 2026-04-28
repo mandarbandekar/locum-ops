@@ -166,7 +166,31 @@ export function OnboardingBulkShiftCalendar({
     try {
       // Sort to add chronologically
       const sorted = [...selectedDates].sort((a, b) => a.getTime() - b.getTime());
+
+      // Filter out dates that already have a shift at this clinic — guards
+      // against duplicate creation when the user navigates back and re-submits.
+      const dupDates: Date[] = [];
+      const newDates: Date[] = [];
       for (const date of sorted) {
+        if (existingShiftDateKeys.has(ymd(date))) dupDates.push(date);
+        else newDates.push(date);
+      }
+
+      if (newDates.length === 0) {
+        toast.error('These shifts are already saved', {
+          description: `${dupDates.length} shift${dupDates.length === 1 ? '' : 's'} for ${facility.name} on the selected date${dupDates.length === 1 ? '' : 's'} already exist. Pick new dates or continue forward.`,
+        });
+        setSubmitting(false);
+        submitGuardRef.current = false;
+        return;
+      }
+      if (dupDates.length > 0) {
+        toast.warning(
+          `${dupDates.length} date${dupDates.length === 1 ? '' : 's'} skipped — already saved for ${facility.name}.`,
+        );
+      }
+
+      for (const date of newDates) {
         const start = buildIso(date, startTime);
         const end = buildIso(date, endTime);
         const rateApplied = selectedRate.basis === 'daily'
