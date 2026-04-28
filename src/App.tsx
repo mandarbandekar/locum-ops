@@ -32,6 +32,7 @@ import QuizPage from "@/pages/QuizPage";
 import ResultsPage from "@/pages/ResultsPage";
 import ThanksPage from "@/pages/ThanksPage";
 import OnboardingPage from "@/pages/OnboardingPage";
+import OnboardingStatusPage from "@/pages/OnboardingStatusPage";
 import WelcomePage from "@/pages/WelcomePage";
 import SettingsProfilePage from "@/pages/SettingsProfilePage";
 import SettingsSchedulingPage from "@/pages/SettingsSchedulingPage";
