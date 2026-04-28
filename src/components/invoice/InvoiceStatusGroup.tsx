@@ -315,6 +315,7 @@ function FacilitySubGroup({ name, invoices, onDelete, getFacilityName, navigate,
             showFacility={false}
             onMarkAsPaid={onMarkAsPaid}
             onSendFollowup={onSendFollowup}
+            onReview={onReview}
           />
         </div>
       </CollapsibleContent>
