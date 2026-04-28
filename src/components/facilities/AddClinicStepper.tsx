@@ -117,7 +117,9 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
   // and the Billing step (#4) is direct-only.
   const visibleSteps: number[] = useMemo(() => {
     const arr = [1, 2];
-    if (!hideRatesStep) arr.push(3);
+    // Rates step only applies to direct-billed clinics. Platform/agency and W-2
+    // clinics enter rates per-shift since they vary every time.
+    if (!hideRatesStep && isDirect) arr.push(3);
     if (isDirect) arr.push(4);
     return arr;
   }, [hideRatesStep, isDirect]);
@@ -209,7 +211,7 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
         default_break_minutes: defaultBreakMinutes,
       });
 
-      if (engagementType !== 'w2' && rates.length > 0) {
+      if (isDirect && rates.length > 0) {
         await updateTerms({
           id: generateId(),
           facility_id: facility.id,
