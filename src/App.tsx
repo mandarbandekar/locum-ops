@@ -98,6 +98,7 @@ function AuthenticatedApp() {
         <Routes>
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/onboarding" element={<OnboardingPage />} />
+          <Route path="/onboarding/status" element={<OnboardingStatusPage />} />
           <Route path="*" element={<Navigate to="/onboarding" replace />} />
         </Routes>
       </DataProvider>
