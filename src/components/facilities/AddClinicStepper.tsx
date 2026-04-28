@@ -216,6 +216,12 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
         default_break_minutes: defaultBreakMinutes,
       });
 
+      recordOnboardingStatusEvent({
+        type: 'clinic_create_succeeded',
+        clinicName: name.trim(),
+        facilityId: facility.id,
+      });
+
       if (isDirect && rates.length > 0) {
         try {
           await updateTerms({
@@ -227,8 +233,23 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
             late_payment_policy_text: '',
             special_notes: '',
           });
+          recordOnboardingStatusEvent({
+            type: 'rates_save_succeeded',
+            clinicName: name.trim(),
+            facilityId: facility.id,
+            rateCount: rates.length,
+          });
         } catch (e) {
+          const err = e as { message?: string; code?: string } | null;
           console.error('Failed to save clinic rates', e);
+          recordOnboardingStatusEvent({
+            type: 'rates_save_failed',
+            clinicName: name.trim(),
+            facilityId: facility.id,
+            rateCount: rates.length,
+            errorMessage: err?.message ?? 'Could not save rates',
+            errorCode: err?.code,
+          });
           toast.error('Could not save rates for this clinic', {
             description: 'Your clinic was created, but the rates didn\'t save. Please try the Rates step again.',
           });
@@ -259,7 +280,14 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
       toast.success(`${name} added!`);
       onSaved(facility.id, name.trim());
       return facility.id;
-    } catch {
+    } catch (e) {
+      const err = e as { message?: string; code?: string } | null;
+      recordOnboardingStatusEvent({
+        type: 'clinic_create_failed',
+        clinicName: name.trim(),
+        errorMessage: err?.message ?? 'Failed to save clinic',
+        errorCode: err?.code,
+      });
       toast.error('Failed to save clinic');
       return null;
     } finally {
