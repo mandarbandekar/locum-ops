@@ -88,7 +88,17 @@ function InvoiceTable({ invoices, onDelete, getFacilityName, navigate, showFacil
   onReview?: (invoice: InvoiceWithStatus) => void;
 }) {
   return (
-    <table className="w-full text-[13px] min-w-[600px] sm:min-w-0">
+    <table className="w-full text-[13px] min-w-[600px] sm:min-w-0 table-fixed">
+      <colgroup>
+        <col className="w-[16%]" />
+        {showFacility && <col className="w-[22%]" />}
+        <col className="w-[12%] hidden sm:table-column" />
+        <col className="w-[14%] hidden md:table-column" />
+        <col className="w-[10%]" />
+        <col className="w-[10%] hidden sm:table-column" />
+        <col className="w-[10%]" />
+        <col className="w-[16%]" />
+      </colgroup>
       <thead>
         <tr className="bg-muted/30">
           <th className="text-left p-3 font-semibold text-muted-foreground text-xs">Invoice #</th>
@@ -98,7 +108,7 @@ function InvoiceTable({ invoices, onDelete, getFacilityName, navigate, showFacil
           <th className="text-right p-3 font-semibold text-muted-foreground text-xs">Total</th>
           <th className="text-right p-3 font-semibold text-muted-foreground text-xs hidden sm:table-cell">Balance</th>
           <th className="text-left p-3 font-semibold text-muted-foreground text-xs">Status</th>
-          <th className="w-10" />
+          <th className="text-right p-3 font-semibold text-muted-foreground text-xs">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -108,12 +118,9 @@ function InvoiceTable({ invoices, onDelete, getFacilityName, navigate, showFacil
             className="border-b last:border-0 hover:bg-muted/30 cursor-pointer transition-colors"
             onClick={() => navigate(`/invoices/${inv.id}`)}
           >
-            <td className="p-3 font-semibold">
+            <td className="p-3 font-semibold truncate">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span>{inv.invoice_number}</span>
-                {inv.invoice_type === 'bulk' && (
-                  <Badge variant="outline" className="text-[10px] px-1 py-0">Bulk</Badge>
-                )}
+                <span className="truncate">{inv.invoice_number}</span>
                 {inv.generation_type === 'automatic' && (
                   <Badge variant="outline" className="text-[10px] px-1 py-0 text-primary border-primary/30">
                     <Zap className="h-2.5 w-2.5 mr-0.5" />Auto
@@ -122,8 +129,8 @@ function InvoiceTable({ invoices, onDelete, getFacilityName, navigate, showFacil
               </div>
             </td>
             {showFacility && (
-              <td className="p-3">
-                <div>{getFacilityName(inv.facility_id)}</div>
+              <td className="p-3 truncate">
+                <div className="truncate">{getFacilityName(inv.facility_id)}</div>
                 {inv.billing_cadence && (
                   <span className="text-[11px] text-muted-foreground">{inv.billing_cadence.charAt(0).toUpperCase() + inv.billing_cadence.slice(1)}</span>
                 )}
@@ -138,8 +145,8 @@ function InvoiceTable({ invoices, onDelete, getFacilityName, navigate, showFacil
               </div>
               {inv.due_date && getDueBadge(inv.due_date, inv.computedStatus)}
             </td>
-            <td className="p-3 text-right font-medium">${(inv.total_amount ?? 0).toLocaleString()}</td>
-            <td className="p-3 text-right hidden sm:table-cell">
+            <td className="p-3 text-right font-medium tabular-nums">${(inv.total_amount ?? 0).toLocaleString()}</td>
+            <td className="p-3 text-right hidden sm:table-cell tabular-nums">
               {(inv.balance_due ?? 0) > 0 ? <span className="font-medium">${(inv.balance_due ?? 0).toLocaleString()}</span> : <span className="text-muted-foreground">—</span>}
             </td>
             <td className="p-3">
@@ -149,7 +156,7 @@ function InvoiceTable({ invoices, onDelete, getFacilityName, navigate, showFacil
             </td>
             <td className="p-3" onClick={e => e.stopPropagation()}>
               <TooltipProvider delayDuration={200}>
-                <div className="flex items-center gap-0.5">
+                <div className="flex items-center justify-end gap-0.5">
                   {onReview && inv.computedStatus === 'draft' && (
                     <Button
                       size="sm"
