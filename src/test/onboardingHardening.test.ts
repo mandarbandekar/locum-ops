@@ -477,11 +477,6 @@ describe('Onboarding regression: clinic rate persists into shift', () => {
 // re-derives, or substitutes a different rate than what was logged on the
 // shift.
 describe('Onboarding regression: shift rate persists into invoice line', () => {
-  // Lazy require so existing tests above stay independent of this module.
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { buildAutoInvoiceDraft } = require('@/lib/invoiceAutoGeneration') as
-    typeof import('@/lib/invoiceAutoGeneration');
-
   type BulkRateOption = ReturnType<typeof buildBulkRateOptions>[number];
 
   function shiftFromBulkPick(args: {
