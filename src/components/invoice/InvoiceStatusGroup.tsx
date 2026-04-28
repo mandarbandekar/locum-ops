@@ -150,6 +150,17 @@ function InvoiceTable({ invoices, onDelete, getFacilityName, navigate, showFacil
             <td className="p-3" onClick={e => e.stopPropagation()}>
               <TooltipProvider delayDuration={200}>
                 <div className="flex items-center gap-0.5">
+                  {onReview && inv.computedStatus === 'draft' && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 px-2 mr-1 text-xs font-medium border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500 hover:text-white"
+                      onClick={() => onReview(inv)}
+                    >
+                      <FileEdit className="h-3.5 w-3.5 mr-1" />
+                      Review
+                    </Button>
+                  )}
                   {onMarkAsPaid && ['sent', 'partial', 'overdue'].includes(inv.computedStatus) && (
                     <Button
                       size="sm"
