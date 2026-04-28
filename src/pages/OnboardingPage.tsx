@@ -108,6 +108,7 @@ export default function OnboardingPage() {
     if (profile.default_rates?.length) setDefaultRates(profile.default_rates);
     if (profile.default_billing_preference) setDefaultBillingPreference(profile.default_billing_preference);
     if (p.phase === 'loop_choice') setPhase('business_map');
+    else if (p.phase === 'rate_card') setPhase('add_clinic');
     else if (p.phase) setPhase(p.phase);
     else if (!p.welcome_seen) setPhase('welcome');
     if (p.first_facility_id !== undefined) setFirstFacilityId(p.first_facility_id);
