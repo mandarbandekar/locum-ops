@@ -490,6 +490,8 @@ export function OnboardingBulkShiftCalendar({
                     </div>
                   </div>
                 )}
+
+                <div className="flex items-center justify-between pt-1 border-t border-border/50">
                   <span className="text-sm text-muted-foreground">Projected gross</span>
                   <span className="text-lg font-bold text-foreground tabular-nums">
                     ${projectedGross.toLocaleString(undefined, { maximumFractionDigits: 0 })}
