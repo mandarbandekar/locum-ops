@@ -34,11 +34,14 @@ export default function FacilitiesPage() {
   return (
     <div>
       <div className="page-header flex-col sm:flex-row gap-3 items-start sm:items-center">
-        <div>
-          <h1 className="page-title">Clinics</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Your network of clinics, billing contacts, and engagement terms.
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-primary/10">
+            <Building2 className="h-6 w-6 text-primary" />
+          </div>
+          <div>
+            <h1 className="page-title">Clinics</h1>
+            <p className="page-subtitle">Your network of clinics, billing contacts, and engagement terms</p>
+          </div>
         </div>
         <Button size="sm" onClick={() => setShowAdd(true)} className="w-full sm:w-auto sm:ml-auto">
           <Plus className="mr-1 h-4 w-4" /> Add Clinic
