@@ -9,6 +9,7 @@ import { useClinicConfirmations } from '@/hooks/useClinicConfirmations';
 import { generateId } from '@/lib/businessLogic';
 import { toast } from 'sonner';
 import { trackOnboarding } from '@/lib/onboardingAnalytics';
+import { recordOnboardingStatusEvent } from '@/lib/onboardingStatusLog';
 import {
   Building2, DollarSign, UserCheck, CalendarClock,
   Check, ArrowRight, ArrowLeft, SkipForward, Sparkles,
