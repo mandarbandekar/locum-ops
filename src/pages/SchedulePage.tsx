@@ -350,41 +350,39 @@ export default function SchedulePage() {
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] min-h-[560px] overflow-hidden">
       {/* Row 1: Title + Subtitle | View Switcher | Actions */}
-      <div className="flex-none px-4 sm:px-6 pt-4 sm:pt-6 pb-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="p-2 rounded-lg bg-primary/10 shrink-0">
-              <CalendarDays className="h-6 w-6 text-primary" />
-            </div>
-            <div className="min-w-0">
-              <h1 className="page-title">Schedule</h1>
-              <p className="page-subtitle">Plan shifts, block time, and keep clinics in sync</p>
-            </div>
+      <div className="page-header flex-col sm:flex-row gap-3 items-start sm:items-center">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="p-2 rounded-lg bg-primary/10 shrink-0">
+            <CalendarDays className="h-6 w-6 text-primary" />
           </div>
-
-          <div className="flex items-center gap-2 flex-wrap">
-            <Tabs value={view} onValueChange={(v) => setView(v as typeof view)} data-tour="schedule-view-switcher">
-              <TabsList>
-                {viewButtons.map(({ key, icon: Icon, label, tourAttr, fullLabel }) => (
-                  <TabsTrigger key={key} value={key} data-tour={tourAttr} className="gap-1.5">
-                    <Icon className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">{fullLabel || label}</span>
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
-
-            {isCalendarView && (
-              <div className="flex items-center gap-2 shrink-0" data-tour="schedule-add-shift">
-                <Button size="sm" onClick={() => setShowAdd(true)}>
-                  <Plus className="mr-1 h-4 w-4" /> Shift
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => { setBlockTimeDefaultDate(undefined); setShowBlockTime(true); }}>
-                  <Ban className="mr-1 h-4 w-4" /> Block
-                </Button>
-              </div>
-            )}
+          <div className="min-w-0">
+            <h1 className="page-title">Schedule</h1>
+            <p className="page-subtitle">Plan shifts, block time, and keep clinics in sync</p>
           </div>
+        </div>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          <Tabs value={view} onValueChange={(v) => setView(v as typeof view)} data-tour="schedule-view-switcher">
+            <TabsList>
+              {viewButtons.map(({ key, icon: Icon, label, tourAttr, fullLabel }) => (
+                <TabsTrigger key={key} value={key} data-tour={tourAttr} className="gap-1.5">
+                  <Icon className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">{fullLabel || label}</span>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+
+          {isCalendarView && (
+            <div className="flex items-center gap-2 shrink-0" data-tour="schedule-add-shift">
+              <Button size="sm" onClick={() => setShowAdd(true)}>
+                <Plus className="mr-1 h-4 w-4" /> Shift
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => { setBlockTimeDefaultDate(undefined); setShowBlockTime(true); }}>
+                <Ban className="mr-1 h-4 w-4" /> Block
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
