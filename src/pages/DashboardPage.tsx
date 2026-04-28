@@ -737,7 +737,6 @@ export default function DashboardPage() {
         <div className="shrink-0 mb-3">
           <OnboardingHandoffBanner
             firstName={profile?.first_name || ''}
-            rateCardDone={(profile?.default_rates?.length ?? 0) > 0}
             facilitiesCount={facilities.length}
             shiftsCount={shifts.length}
             invoiceReadyCount={handoffInvoiceCount}
