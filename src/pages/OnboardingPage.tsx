@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
 import { ArrowRight, Check, MapPin, LayoutDashboard, Pencil, RefreshCw } from 'lucide-react';
 import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
-import { OnboardingRateCard } from '@/components/onboarding/OnboardingRateCard';
+
 import { OnboardingBulkShiftCalendar } from '@/components/onboarding/OnboardingBulkShiftCalendar';
 import { OnboardingInvoiceReveal } from '@/components/onboarding/OnboardingInvoiceReveal';
 import { OnboardingLoopChoice } from '@/components/onboarding/OnboardingLoopChoice';
@@ -22,19 +22,21 @@ import { toast } from 'sonner';
 
 type Phase = OnboardingPhase;
 
+// Note: `rate_card` is a legacy phase — coerced to `add_clinic` on hydrate.
+// Kept in the maps to satisfy the Phase type.
 const PHASE_STEP: Record<Phase, number> = {
   welcome: 0,
   rate_card: 1,
-  add_clinic: 2,
-  bulk_shifts: 3,
-  invoice_reveal: 4,
-  loop_choice: 4, // legacy — coerced on hydrate; kept to satisfy type
-  business_map: 5,
+  add_clinic: 1,
+  bulk_shifts: 2,
+  invoice_reveal: 3,
+  loop_choice: 3,
+  business_map: 4,
 };
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 4;
 const PHASE_LABEL: Record<Phase, string> = {
   welcome: 'Welcome',
-  rate_card: 'Set up your rates',
+  rate_card: 'Add your first clinic',
   add_clinic: 'Add your first clinic',
   bulk_shifts: 'Add your shifts',
   invoice_reveal: 'See your invoices',
@@ -44,7 +46,7 @@ const PHASE_LABEL: Record<Phase, string> = {
 const PHASE_BACK: Record<Phase, Phase | null> = {
   welcome: null,
   rate_card: null,
-  add_clinic: 'rate_card',
+  add_clinic: null,
   bulk_shifts: 'add_clinic',
   invoice_reveal: 'bulk_shifts',
   loop_choice: 'invoice_reveal',
@@ -72,7 +74,9 @@ export default function OnboardingPage() {
   const initialPhase: Phase =
     initialProgress.phase === 'loop_choice'
       ? 'business_map'
-      : (initialProgress.phase ?? (initialProgress.welcome_seen ? 'rate_card' : 'welcome'));
+      : initialProgress.phase === 'rate_card'
+        ? 'add_clinic'
+        : (initialProgress.phase ?? (initialProgress.welcome_seen ? 'add_clinic' : 'welcome'));
   const [phase, setPhase] = useState<Phase>(initialPhase);
   const [welcomeSeen, setWelcomeSeen] = useState<boolean>(!!initialProgress.welcome_seen);
 
@@ -104,6 +108,7 @@ export default function OnboardingPage() {
     if (profile.default_rates?.length) setDefaultRates(profile.default_rates);
     if (profile.default_billing_preference) setDefaultBillingPreference(profile.default_billing_preference);
     if (p.phase === 'loop_choice') setPhase('business_map');
+    else if (p.phase === 'rate_card') setPhase('add_clinic');
     else if (p.phase) setPhase(p.phase);
     else if (!p.welcome_seen) setPhase('welcome');
     if (p.first_facility_id !== undefined) setFirstFacilityId(p.first_facility_id);
@@ -251,36 +256,6 @@ export default function OnboardingPage() {
 
   // ─────────────────────────── Handlers ───────────────────────────
   const finishingRef = useRef(false);
-  const rateCardSubmitRef = useRef(false);
-
-  const handleRateCardContinue = async () => {
-    if (rateCardSubmitRef.current) return;
-    const cleaned = defaultRates
-      .filter(r => r.name.trim() && r.amount > 0)
-      .map((r, i) => ({ ...r, sort_order: i }));
-    if (cleaned.length === 0) {
-      toast.error('Add at least one rate to continue');
-      return;
-    }
-    rateCardSubmitRef.current = true;
-    try {
-      await updateProfile({
-        default_rates: cleaned,
-        default_billing_preference: defaultBillingPreference,
-      });
-      setDefaultRates(cleaned);
-      trackOnboarding('onboarding_rate_card_completed', {
-        rate_count: cleaned.length,
-        preference: defaultBillingPreference,
-        daily_rate_count: cleaned.filter(r => r.basis === 'daily').length,
-        hourly_rate_count: cleaned.filter(r => r.basis === 'hourly').length,
-      });
-      setPhase('add_clinic');
-      persist({ phase: 'add_clinic' });
-    } finally {
-      rateCardSubmitRef.current = false;
-    }
-  };
 
   const handleClinicSaved = (facilityId: string) => {
     const isNew = !createdFacilityIds.includes(facilityId);
@@ -404,11 +379,8 @@ export default function OnboardingPage() {
         return null;
 
       case 'rate_card':
-        return (
-          <Button onClick={handleRateCardContinue} className="w-full h-12" size="lg">
-            Continue <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        );
+        // Legacy phase — no longer reachable. Coerced to 'add_clinic' on hydrate.
+        return null;
 
       case 'add_clinic': {
         if (firstFacilityId && !editingClinic) {
@@ -450,13 +422,7 @@ export default function OnboardingPage() {
                   ← Back
                 </button>
               ) : (
-                <button
-                  type="button"
-                  onClick={goBack}
-                  className="text-muted-foreground hover:text-foreground py-1"
-                >
-                  ← Back to rates
-                </button>
+                <span />
               )}
               <span />
             </div>
@@ -521,39 +487,15 @@ export default function OnboardingPage() {
             firstName={profile?.first_name || user?.user_metadata?.first_name}
             onContinue={() => {
               setWelcomeSeen(true);
-              setPhase('rate_card');
-              persist({ phase: 'rate_card', welcome_seen: true });
+              setPhase('add_clinic');
+              persist({ phase: 'add_clinic', welcome_seen: true });
             }}
           />
         );
 
       case 'rate_card':
-        return (
-          <OnboardingRateCard
-            initialRates={defaultRates}
-            initialPreference={defaultBillingPreference}
-            existingClinicRates={existingClinicRates}
-            existingClinicPreference={existingClinicPreference}
-            onSkip={() => {
-              // Existing-user shortcut: skip Rate Card entirely.
-              // Clinic-specific rates remain the source of truth.
-              setRateCardSkipped(true);
-              setPhase('add_clinic');
-              persist({ phase: 'add_clinic', rate_card_skipped: true });
-              trackOnboarding('onboarding_rate_card_completed', {
-                rate_count: 0,
-                preference: defaultBillingPreference,
-                daily_rate_count: 0,
-                hourly_rate_count: 0,
-                skipped: true,
-              });
-            }}
-            onChange={(rates, pref) => {
-              setDefaultRates(rates);
-              setDefaultBillingPreference(pref);
-            }}
-          />
-        );
+        // Legacy phase — no longer reachable. Coerced to 'add_clinic' on hydrate.
+        return null;
 
       case 'add_clinic':
         return (
@@ -565,8 +507,8 @@ export default function OnboardingPage() {
                   : 'Add your first clinic'}
               </h2>
               <p className="text-muted-foreground">
-                Just the basics — we'll auto-apply the rates you just set up. You can always
-                edit clinic-specific details later.
+                Add the basics and the rates you charge here. You can edit anything later,
+                and rates can be adjusted per shift too.
               </p>
             </div>
 
@@ -613,7 +555,6 @@ export default function OnboardingPage() {
               <AddClinicStepper
                 ref={stepperRef}
                 showHeader
-                hideRatesStep
                 defaultRates={stepperDefaultRates}
                 onSaved={handleClinicSaved}
               />

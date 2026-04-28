@@ -224,7 +224,7 @@ describe('maybeTrackActivation pathway property', () => {
     expect(props).toMatchObject({ pathway: 'skip', clinic_count: 2, shift_count: 4 });
   });
 
-  it('does NOT fire on skip path if rateCardSkipped flag is missing', () => {
+  it('fires even without rate card flags (Rate Card is now optional)', () => {
     maybeTrackActivation({
       rateCardCompleted: false,
       // rateCardSkipped omitted
@@ -234,7 +234,9 @@ describe('maybeTrackActivation pathway property', () => {
       draftInvoiceCount: 0,
       projectedGross: 0,
     });
-    expect(captureSpy).not.toHaveBeenCalled();
+    expect(captureSpy).toHaveBeenCalledTimes(1);
+    const [, props] = captureSpy.mock.calls[0];
+    expect(props).toMatchObject({ pathway: 'skip', clinic_count: 1, shift_count: 2 });
   });
 
   it('latches: only fires once per session even on repeated calls', () => {

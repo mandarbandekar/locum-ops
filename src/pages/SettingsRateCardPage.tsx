@@ -255,9 +255,9 @@ export default function SettingsRateCardPage() {
         </Button>
       </div>
       <p className="text-sm text-muted-foreground mb-6 max-w-2xl">
-        Set up a rate for each kind of relief shift you take — GP, ER, Surgery, Dental, On-Call, etc.
-        We'll suggest these whenever you add a clinic or create a new shift, and the shift type will
-        flow onto the shift itself for cleaner reporting.
+        Optional. Clinic-specific rates always take priority. If you charge the same rates
+        across most clinics, save them here once and they'll show up as quick picks when you
+        add a shift.
       </p>
 
       <div className="max-w-3xl space-y-6">
