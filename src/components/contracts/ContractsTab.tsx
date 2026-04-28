@@ -47,6 +47,9 @@ export function ContractsTab({ facilityId, isDemo = false, facilityTerms, onUpda
         </AlertDescription>
       </Alert>
 
+      {/* Clinic Rates (preselected during onboarding, editable here) */}
+      <ClinicRatesSection facilityTerms={facilityTerms} facilityId={facilityId} onUpdateTerms={onUpdateTerms} />
+
       {/* A) Contract Vault */}
       <ContractVault contracts={contracts} onAdd={addContract} onUpdate={updateContract} onDelete={deleteContract} facilityId={facilityId} />
 
