@@ -386,12 +386,12 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     if (exists) {
       const { id, ...rest } = c;
       const { error } = await db('terms_snapshots').update(rest).eq('id', id);
-      if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
+      if (error) { console.error(error); toast.error(friendlyDbError(error)); throw error; }
       setTerms(prev => prev.map(x => x.id === c.id ? c : x));
     } else {
       const { id: _, ...rest } = c;
       const { data, error } = await db('terms_snapshots').insert({ user_id: user!.id, ...rest }).select().single();
-      if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
+      if (error) { console.error(error); toast.error(friendlyDbError(error)); throw error; }
       setTerms(prev => [...prev, stripDbFields(data) as TermsSnapshot]);
     }
   }, [isDemo, user, terms]);
