@@ -681,7 +681,12 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
         <AddFacilityDialog
           open={showAddFacility}
           onOpenChange={setShowAddFacility}
-          onCreated={(newId) => handleFacilityChange(newId)}
+          onCreated={(newId) => {
+            handleFacilityChange(newId);
+            // Drop the user straight back into the regular shift flow on the
+            // schedule step instead of stranding them on facility selection.
+            setStep(2);
+          }}
         />
       </div>
       {/* Clinic defaults chip */}
