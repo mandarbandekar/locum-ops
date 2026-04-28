@@ -526,8 +526,8 @@ export default function OnboardingPage() {
             firstName={profile?.first_name || user?.user_metadata?.first_name}
             onContinue={() => {
               setWelcomeSeen(true);
-              setPhase('rate_card');
-              persist({ phase: 'rate_card', welcome_seen: true });
+              setPhase('add_clinic');
+              persist({ phase: 'add_clinic', welcome_seen: true });
             }}
           />
         );
