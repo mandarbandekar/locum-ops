@@ -46,26 +46,6 @@ export default function FacilitiesPage() {
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
-        <div className="relative flex-1 sm:max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search practice facilities..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-36">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="prospect">Prospect</SelectItem>
-            <SelectItem value="paused">Paused</SelectItem>
-          </SelectContent>
-        </Select>
         <div className="flex items-center border rounded-lg overflow-hidden bg-muted p-0.5 gap-0.5 ml-auto">
           <Button
             size="sm"
