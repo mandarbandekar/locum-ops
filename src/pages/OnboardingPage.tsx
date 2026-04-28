@@ -74,7 +74,9 @@ export default function OnboardingPage() {
   const initialPhase: Phase =
     initialProgress.phase === 'loop_choice'
       ? 'business_map'
-      : (initialProgress.phase ?? (initialProgress.welcome_seen ? 'rate_card' : 'welcome'));
+      : initialProgress.phase === 'rate_card'
+        ? 'add_clinic'
+        : (initialProgress.phase ?? (initialProgress.welcome_seen ? 'add_clinic' : 'welcome'));
   const [phase, setPhase] = useState<Phase>(initialPhase);
   const [welcomeSeen, setWelcomeSeen] = useState<boolean>(!!initialProgress.welcome_seen);
 
