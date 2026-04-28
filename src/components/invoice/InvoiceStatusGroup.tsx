@@ -282,7 +282,7 @@ export function InvoiceStatusGroup({
   );
 }
 
-function FacilitySubGroup({ name, invoices, onDelete, getFacilityName, navigate, onMarkAsPaid, onSendFollowup }: {
+function FacilitySubGroup({ name, invoices, onDelete, getFacilityName, navigate, onMarkAsPaid, onSendFollowup, onReview }: {
   name: string;
   invoices: InvoiceWithStatus[];
   onDelete: (id: string) => Promise<void>;
@@ -290,6 +290,7 @@ function FacilitySubGroup({ name, invoices, onDelete, getFacilityName, navigate,
   navigate: (path: string) => void;
   onMarkAsPaid?: (invoice: InvoiceWithStatus) => void;
   onSendFollowup?: (invoice: InvoiceWithStatus) => void;
+  onReview?: (invoice: InvoiceWithStatus) => void;
 }) {
   const [subOpen, setSubOpen] = useState(true);
   const total = invoices.reduce((s, i) => s + (i.total_amount ?? 0), 0);
