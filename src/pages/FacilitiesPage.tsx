@@ -27,15 +27,7 @@ export default function FacilitiesPage() {
   const hasBillingContact = (c: Facility) =>
     !!(c.invoice_name_to?.trim() && c.invoice_email_to?.trim());
 
-  const summary = useMemo(() => {
-    const total = facilities.length;
-    const active = facilities.filter(f => f.status === 'active').length;
-    const directBill = facilities.filter(f => (f.engagement_type || 'direct') === 'direct').length;
-    const missingBilling = facilities.filter(
-      f => (f.engagement_type || 'direct') === 'direct' && !hasBillingContact(f)
-    ).length;
-    return { total, active, directBill, missingBilling };
-  }, [facilities]);
+
 
   const isEmpty = facilities.length === 0;
 
