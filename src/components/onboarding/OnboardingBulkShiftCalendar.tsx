@@ -304,8 +304,10 @@ export function OnboardingBulkShiftCalendar({
     : {
         primaryLabel: submitting
           ? 'Adding…'
-          : `Add ${selectedDates.length} shift${selectedDates.length === 1 ? '' : 's'}`,
-        primaryDisabled: submitting || selectedDates.length === 0 || !selectedRate || !validTimes,
+          : !hasRates
+            ? 'Add a rate first'
+            : `Add ${selectedDates.length} shift${selectedDates.length === 1 ? '' : 's'}`,
+        primaryDisabled: submitting || selectedDates.length === 0 || !selectedRate || !validTimes || !hasRates,
         onPrimary: handleSubmit,
         onBack: () => setSubStep('dates'),
       };
