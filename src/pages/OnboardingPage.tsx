@@ -533,32 +533,8 @@ export default function OnboardingPage() {
         );
 
       case 'rate_card':
-        return (
-          <OnboardingRateCard
-            initialRates={defaultRates}
-            initialPreference={defaultBillingPreference}
-            existingClinicRates={existingClinicRates}
-            existingClinicPreference={existingClinicPreference}
-            onSkip={() => {
-              // Existing-user shortcut: skip Rate Card entirely.
-              // Clinic-specific rates remain the source of truth.
-              setRateCardSkipped(true);
-              setPhase('add_clinic');
-              persist({ phase: 'add_clinic', rate_card_skipped: true });
-              trackOnboarding('onboarding_rate_card_completed', {
-                rate_count: 0,
-                preference: defaultBillingPreference,
-                daily_rate_count: 0,
-                hourly_rate_count: 0,
-                skipped: true,
-              });
-            }}
-            onChange={(rates, pref) => {
-              setDefaultRates(rates);
-              setDefaultBillingPreference(pref);
-            }}
-          />
-        );
+        // Legacy phase — no longer reachable. Coerced to 'add_clinic' on hydrate.
+        return null;
 
       case 'add_clinic':
         return (
