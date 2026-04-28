@@ -226,19 +226,6 @@ export default function FacilitiesPage() {
   );
 }
 
-function SummaryStat({ label, value, tone = 'default' }: { label: string; value: number; tone?: 'default' | 'warning' }) {
-  return (
-    <div className="px-4 py-3">
-      <div className={cn(
-        'text-xl font-semibold tabular-nums',
-        tone === 'warning' && value > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-foreground'
-      )}>
-        {value}
-      </div>
-      <div className="text-[11px] uppercase tracking-wide text-muted-foreground mt-0.5">{label}</div>
-    </div>
-  );
-}
 
 function DeleteFacilityButton({ name, onConfirm }: { name: string; onConfirm: () => void }) {
   return (
