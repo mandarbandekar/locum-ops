@@ -8,8 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Plus, Trash2, Pencil, Save, ExternalLink, FileText, Download, AlertTriangle, Check, X, ClipboardList, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Pencil, Save, ExternalLink, FileText, Download, AlertTriangle, Check, X, ClipboardList, Loader2, DollarSign } from 'lucide-react';
 import { Contract, ContractTerms, ContractChecklistItem, ContractStatus, ChecklistItemType, getChecklistBadge, DEFAULT_CHECKLIST_ITEMS } from '@/types/contracts';
+import { RatesEditor, termsToRates, ratesToTermsFields, RateEntry } from '@/components/facilities/RatesEditor';
 import { useContracts } from '@/hooks/useContracts';
 import { useAuth } from '@/contexts/AuthContext';
 import { generateId } from '@/lib/businessLogic';
