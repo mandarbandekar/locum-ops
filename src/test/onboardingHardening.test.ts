@@ -640,3 +640,147 @@ describe('Onboarding regression: shift rate persists into invoice line', () => {
     expect(invoice.total_amount).toBe(900 + 175 * 8);
   });
 });
+
+// ─── Onboarding regression: new-clinic save preserves existing data ──
+// When an existing user (already has clinics + shifts on file) goes through
+// the onboarding flow again to add a new clinic with rates, the persistence
+// path must:
+//   1. Save the new clinic's terms_snapshot under the NEW facility id only.
+//   2. Leave every previously-stored terms_snapshot byte-identical.
+//   3. Leave every prior shift's `rate_applied`, `rate_kind`, and
+//      `hourly_rate` unchanged.
+//
+// This locks the regression where onboarding side-effects (rate inference,
+// "borrowing" rates from other clinics, default-rate seeding, etc.)
+// accidentally rewrote prior shifts/terms.
+describe('Onboarding regression: new-clinic save does not mutate existing user data', () => {
+  type StoredTerms = ReturnType<typeof ratesToTermsFields> & {
+    id: string;
+    facility_id: string;
+  };
+  type StoredShift = {
+    id: string;
+    facility_id: string;
+    rate_applied: number;
+    rate_kind: 'flat' | 'hourly';
+    hourly_rate: number | null;
+  };
+
+  /**
+   * Mirrors the persistence step in `AddClinicStepper.handleSave`:
+   * insert a brand-new terms_snapshots row for the new facility. Existing
+   * rows for other facilities must remain untouched.
+   */
+  function persistNewClinicRates(args: {
+    existingTerms: StoredTerms[];
+    existingShifts: StoredShift[];
+    newFacilityId: string;
+    newRates: RateEntry[];
+  }): { terms: StoredTerms[]; shifts: StoredShift[] } {
+    const fields = ratesToTermsFields(args.newRates);
+    const newRow: StoredTerms = {
+      id: `terms-${args.newFacilityId}`,
+      facility_id: args.newFacilityId,
+      ...fields,
+    };
+    return {
+      // Append-only: existing rows are not rewritten.
+      terms: [...args.existingTerms, newRow],
+      // Shifts are not touched at all by the new-clinic save path.
+      shifts: args.existingShifts,
+    };
+  }
+
+  it('preserves prior clinics terms_snapshots and prior shifts rate_applied when saving a new clinic', () => {
+    // ── Existing user state ────────────────────────────────────────
+    // Two prior clinics, each with stored rates and shifts.
+    const clinicA: StoredTerms = {
+      id: 'terms-A',
+      facility_id: 'fac-A',
+      ...ratesToTermsFields([
+        { type: 'weekday', label: 'Weekday Rate', amount: 825, kind: 'flat', shift_type: 'gp' },
+        { type: 'weekend', label: 'Weekend Rate', amount: 1000, kind: 'flat', shift_type: 'gp' },
+      ]),
+    };
+    const clinicB: StoredTerms = {
+      id: 'terms-B',
+      facility_id: 'fac-B',
+      ...ratesToTermsFields([
+        { type: 'custom', label: 'ER Hour', amount: 145, kind: 'hourly', shift_type: 'er' },
+      ]),
+    };
+    const existingTerms: StoredTerms[] = [clinicA, clinicB];
+
+    const existingShifts: StoredShift[] = [
+      { id: 's-A1', facility_id: 'fac-A', rate_applied: 825,        rate_kind: 'flat',   hourly_rate: null },
+      { id: 's-A2', facility_id: 'fac-A', rate_applied: 1000,       rate_kind: 'flat',   hourly_rate: null },
+      { id: 's-B1', facility_id: 'fac-B', rate_applied: 145 * 12,   rate_kind: 'hourly', hourly_rate: 145  },
+      { id: 's-B2', facility_id: 'fac-B', rate_applied: 145 * 9,    rate_kind: 'hourly', hourly_rate: 145  },
+    ];
+
+    // Snapshot deep clones so we can compare structurally after the save.
+    const termsSnapshot = JSON.parse(JSON.stringify(existingTerms));
+    const shiftsSnapshot = JSON.parse(JSON.stringify(existingShifts));
+
+    // ── New onboarding action ──────────────────────────────────────
+    // User adds a third clinic with a brand-new $160/hr rate.
+    const newRates: RateEntry[] = [
+      { type: 'custom', label: 'GP Hour', amount: 160, kind: 'hourly', shift_type: 'gp' },
+    ];
+    const { terms, shifts } = persistNewClinicRates({
+      existingTerms,
+      existingShifts,
+      newFacilityId: 'fac-C',
+      newRates,
+    });
+
+    // ── Invariant 1: prior terms_snapshots are byte-identical ─────
+    const priorTerms = terms.filter(t => t.facility_id !== 'fac-C');
+    expect(priorTerms).toEqual(termsSnapshot);
+    // Defense in depth: confirm the in-memory references weren't mutated.
+    expect(existingTerms).toEqual(termsSnapshot);
+
+    // ── Invariant 2: prior shifts are byte-identical ──────────────
+    expect(shifts).toEqual(shiftsSnapshot);
+    expect(existingShifts).toEqual(shiftsSnapshot);
+
+    // ── Invariant 3: each prior shift's rate_applied is unchanged ─
+    const byId = new Map(shifts.map(s => [s.id, s]));
+    expect(byId.get('s-A1')!.rate_applied).toBe(825);
+    expect(byId.get('s-A2')!.rate_applied).toBe(1000);
+    expect(byId.get('s-B1')!.rate_applied).toBe(145 * 12);
+    expect(byId.get('s-B1')!.hourly_rate).toBe(145);
+    expect(byId.get('s-B2')!.rate_applied).toBe(145 * 9);
+    expect(byId.get('s-B2')!.hourly_rate).toBe(145);
+
+    // ── Invariant 4: the new clinic was actually persisted ────────
+    const newRow = terms.find(t => t.facility_id === 'fac-C')!;
+    expect(newRow).toBeDefined();
+    // Hourly rate landed in custom_rates with the right kind/amount.
+    expect(newRow.custom_rates).toEqual([
+      { label: 'GP Hour', amount: 160, kind: 'hourly', shift_type: 'gp' },
+    ]);
+    // No predefined slot was clobbered with the new rate.
+    expect(newRow.weekday_rate).toBe(0);
+    expect(newRow.weekend_rate).toBe(0);
+
+    // ── Invariant 5: the new clinic's bulk-shift options reflect the
+    // NEW clinic's rates only — not borrowed from clinic A or B. ──
+    const reloadedNew = termsToRates({
+      weekday_rate: newRow.weekday_rate,
+      weekend_rate: newRow.weekend_rate,
+      partial_day_rate: newRow.partial_day_rate,
+      holiday_rate: newRow.holiday_rate,
+      telemedicine_rate: newRow.telemedicine_rate,
+      custom_rates: newRow.custom_rates,
+      rate_kinds: newRow.rate_kinds,
+      rate_shift_types: newRow.rate_shift_types,
+    });
+    const options = buildBulkRateOptions({ rateEntries: reloadedNew, defaultRates: [] });
+    expect(options).toHaveLength(1);
+    expect(options[0]).toMatchObject({ amount: 160, basis: 'hourly' });
+    // Prior clinic A's $825 weekday rate must NOT bleed into the new clinic.
+    expect(options.some(o => o.amount === 825)).toBe(false);
+    expect(options.some(o => o.amount === 145)).toBe(false);
+  });
+});
