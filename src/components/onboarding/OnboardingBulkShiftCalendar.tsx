@@ -116,6 +116,18 @@ export function OnboardingBulkShiftCalendar({
       .map(s => new Date(s.start_datetime));
   }, [shifts, createdShiftIds]);
 
+  // Set of YYYY-MM-DD dates already booked at this clinic — used to prevent
+  // duplicate shift creation when the user navigates back and re-submits.
+  const existingShiftDateKeys = useMemo(() => {
+    const set = new Set<string>();
+    for (const s of shifts) {
+      if (s.facility_id !== facility.id) continue;
+      // start_datetime is ISO; take the local YYYY-MM-DD to match `ymd()`.
+      set.add(ymd(new Date(s.start_datetime)));
+    }
+    return set;
+  }, [shifts, facility.id]);
+
   const handleSelectDates = (d: Date[] | undefined) => {
     const next = d ?? [];
     const wentEmpty = selectedDates.length > 0 && next.length === 0;
