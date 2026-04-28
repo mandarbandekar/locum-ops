@@ -81,7 +81,7 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
   { onSaved, showHeader = true, hideRatesStep = false, defaultRates },
   ref,
 ) {
-  const { addFacility, updateTerms } = useData();
+  const { addFacility, updateTerms, facilities } = useData();
   const { saveSettings: saveConfirmationSettings } = useClinicConfirmations();
 
   // ── Step 1: Identity ──
