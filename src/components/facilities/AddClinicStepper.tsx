@@ -275,6 +275,25 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
     const err = validateStep(step);
     if (err) { toast.error(err); return; }
     if (isLastStep) {
+      // Soft-required Rates step for direct clinics: if the user reached the
+      // end with zero rates, bounce them back to step 3 once with a clear
+      // warning. A second Save click will proceed (so they can intentionally
+      // defer rate entry to per-shift logging).
+      if (isDirect && rates.length === 0 && !acknowledgedNoRates) {
+        const ratesStepVisible = visibleSteps.includes(3);
+        setAcknowledgedNoRates(true);
+        trackOnboarding('onboarding_clinic_saved_without_rates', {
+          facility_name: name.trim(),
+          step_visible: ratesStepVisible,
+        });
+        if (ratesStepVisible) {
+          setStep(3);
+          toast('No rate set for this clinic yet', {
+            description: 'Add a rate now so logged shifts use the right amount, or click Save Clinic again to skip and add it later.',
+          });
+          return;
+        }
+      }
       await handleSave();
       return;
     }
