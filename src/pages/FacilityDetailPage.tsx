@@ -260,8 +260,6 @@ function ContactFormDialog({ open, onOpenChange, form, onChange, onSave, isEdit 
   onSave: () => void;
   isEdit: boolean;
 }) {
-  // Lightweight inline modal using existing Dialog component
-  const { Dialog, DialogContent, DialogHeader, DialogTitle } = require('@/components/ui/dialog');
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
