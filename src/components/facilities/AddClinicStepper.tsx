@@ -329,7 +329,7 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
     canSkip,
     primaryLabel,
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [canSave, step, totalSteps, canBack, canSkip, primaryLabel, name, engagementType, sourceName, rates, billingCadence, invoiceDueDays, schedulingContactName, schedulingContactEmail, invoiceNameTo, invoiceEmailTo, sameAsScheduling, address, taxFormType]);
+  }), [canSave, step, totalSteps, canBack, canSkip, primaryLabel, name, engagementType, sourceName, rates, billingCadence, invoiceDueDays, schedulingContactName, schedulingContactEmail, invoiceNameTo, invoiceEmailTo, sameAsScheduling, address, taxFormType, acknowledgedNoRates]);
 
   // Rendered step number depends on visibility (rates/billing steps may be hidden).
   const visibleStepNumber = currentVisibleIndex + 1;
