@@ -5,7 +5,6 @@ import { Link } from 'react-router-dom';
 
 interface Props {
   firstName: string;
-  rateCardDone: boolean;
   facilitiesCount: number;
   shiftsCount: number;
   invoiceReadyCount: number;
@@ -14,14 +13,12 @@ interface Props {
 
 export function OnboardingHandoffBanner({
   firstName,
-  rateCardDone,
   facilitiesCount,
   shiftsCount,
   invoiceReadyCount,
   onDismiss,
 }: Props) {
   const checklist = [
-    { label: 'Rate Card created', done: rateCardDone },
     { label: 'First clinic added', done: facilitiesCount > 0 },
     { label: `Shifts added (${shiftsCount})`, done: shiftsCount > 0 },
     { label: `Invoice workflow prepared${invoiceReadyCount > 0 ? ` (${invoiceReadyCount} draft${invoiceReadyCount === 1 ? '' : 's'})` : ''}`, done: invoiceReadyCount > 0 },
