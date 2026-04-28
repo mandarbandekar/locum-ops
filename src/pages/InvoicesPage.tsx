@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Plus, Trash2, AlertTriangle, Send, FileEdit, CheckCircle, Clock } from 'lucide-react';
+import { Plus, Trash2, AlertTriangle, Send, FileEdit, CheckCircle, Clock, FileText } from 'lucide-react';
 import { startOfMonth, isAfter, isBefore, startOfDay } from 'date-fns';
 import { computeInvoiceStatus, generateInvoiceNumber } from '@/lib/businessLogic';
 import { isInvoiceOverdue } from '@/lib/invoiceHelpers';
@@ -179,8 +179,16 @@ export default function InvoicesPage() {
   if (safeInvoices.length === 0) {
     return (
       <div>
-        <div className="page-header flex-col sm:flex-row gap-3">
-          <h1 className="page-title">Invoices</h1>
+        <div className="page-header flex-col sm:flex-row gap-3 items-start sm:items-center">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <FileText className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h1 className="page-title">Invoices</h1>
+              <p className="page-subtitle">Review, send, and track payment across all your clinics</p>
+            </div>
+          </div>
         </div>
         <InvoiceEmptyState onCreateManual={() => setShowCreate(true)} />
         <BulkInvoiceDialog open={showCreate} onOpenChange={setShowCreate} />
@@ -190,9 +198,17 @@ export default function InvoicesPage() {
 
   return (
     <div>
-      <div className="page-header flex-col sm:flex-row gap-3">
-        <h1 className="page-title">Invoices</h1>
-        <div className="flex gap-2 flex-wrap w-full sm:w-auto">
+      <div className="page-header flex-col sm:flex-row gap-3 items-start sm:items-center">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-primary/10">
+            <FileText className="h-6 w-6 text-primary" />
+          </div>
+          <div>
+            <h1 className="page-title">Invoices</h1>
+            <p className="page-subtitle">Review, send, and track payment across all your clinics</p>
+          </div>
+        </div>
+        <div className="flex gap-2 flex-wrap w-full sm:w-auto sm:ml-auto">
           <Button data-tour="invoice-create" size="sm" variant="outline" onClick={() => setShowCreate(true)} className="flex-1 sm:flex-none">
             <Plus className="mr-1 h-4 w-4" /> Create Manual Invoice
           </Button>
