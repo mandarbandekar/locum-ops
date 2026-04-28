@@ -6,6 +6,11 @@ import {
   type DefaultRate,
 } from '@/lib/onboardingRateMapping';
 import {
+  ratesToTermsFields,
+  termsToRates,
+  type RateEntry,
+} from '@/components/facilities/RatesEditor';
+import {
   maybeTrackActivation,
   _resetOnboardingActivationLatch,
 } from '@/lib/onboardingAnalytics';
