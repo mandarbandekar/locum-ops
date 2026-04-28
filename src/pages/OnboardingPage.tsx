@@ -543,8 +543,8 @@ export default function OnboardingPage() {
                   : 'Add your first clinic'}
               </h2>
               <p className="text-muted-foreground">
-                Just the basics — we'll auto-apply the rates you just set up. You can always
-                edit clinic-specific details later.
+                Add the basics and the rates you charge here. You can edit anything later,
+                and rates can be adjusted per shift too.
               </p>
             </div>
 
