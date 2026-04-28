@@ -408,7 +408,7 @@ export function OnboardingBulkShiftCalendar({
                   </div>
                 </div>
 
-                {rateOptions.length > 0 ? (
+                {hasRates ? (
                   <div className="space-y-1.5">
                     <Label className="text-xs">Rate</Label>
                     <Select value={selectedRateId} onValueChange={setSelectedRateId}>
@@ -425,12 +425,71 @@ export function OnboardingBulkShiftCalendar({
                     </Select>
                   </div>
                 ) : (
-                  <p className="text-xs text-destructive">
-                    No rates available. Go back to set up your Rate Card.
-                  </p>
+                  <div className="space-y-3 rounded-lg border border-dashed border-border bg-muted/30 p-3">
+                    <div className="flex items-start gap-2">
+                      <DollarSign className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                      <div className="space-y-0.5">
+                        <p className="text-sm font-semibold text-foreground">No rate saved for this clinic yet</p>
+                        <p className="text-xs text-muted-foreground">
+                          Add at least one rate so we can apply it to these shifts. You can add more later.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-[1fr_auto_auto] gap-2 items-end">
+                      <div className="space-y-1">
+                        <Label className="text-[11px]">Label</Label>
+                        <Input
+                          value={newRateLabel}
+                          onChange={e => setNewRateLabel(e.target.value)}
+                          placeholder="Standard Day"
+                        />
+                      </div>
+                      <div className="inline-flex rounded-md border border-border overflow-hidden h-9" role="group">
+                        {(['daily', 'hourly'] as const).map(b => (
+                          <button
+                            key={b}
+                            type="button"
+                            onClick={() => setNewRateBasis(b)}
+                            className={cn(
+                              'px-2.5 text-[11px] font-medium transition-colors',
+                              newRateBasis === b
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-background text-muted-foreground hover:bg-muted',
+                            )}
+                          >
+                            {b === 'daily' ? 'Flat' : 'Hourly'}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="relative w-28">
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
+                        <Input
+                          type="number"
+                          inputMode="decimal"
+                          value={newRateAmount}
+                          onChange={e => setNewRateAmount(e.target.value)}
+                          placeholder="0"
+                          className="pl-6 pr-10"
+                          min={0}
+                        />
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground pointer-events-none">
+                          {newRateBasis === 'daily' ? '/day' : '/hr'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex justify-end">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={handleSaveInlineRate}
+                        disabled={savingRate}
+                      >
+                        <Plus className="h-3.5 w-3.5 mr-1" />
+                        {savingRate ? 'Saving…' : 'Save rate to clinic'}
+                      </Button>
+                    </div>
+                  </div>
                 )}
-
-                <div className="flex items-center justify-between pt-1 border-t border-border/50">
                   <span className="text-sm text-muted-foreground">Projected gross</span>
                   <span className="text-lg font-bold text-foreground tabular-nums">
                     ${projectedGross.toLocaleString(undefined, { maximumFractionDigits: 0 })}
