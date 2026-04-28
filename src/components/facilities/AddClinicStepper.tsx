@@ -112,6 +112,9 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
 
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
+  // Tracks whether the user has acknowledged the "no rates yet" warning so a
+  // second Save click proceeds rather than bouncing them to step 3 again.
+  const [acknowledgedNoRates, setAcknowledgedNoRates] = useState(false);
 
   const isDirect = engagementType === 'direct';
   // Visible step list. The Rates step (#3) can be hidden via `hideRatesStep`,
