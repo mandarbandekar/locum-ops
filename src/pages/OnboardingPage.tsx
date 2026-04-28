@@ -409,11 +409,8 @@ export default function OnboardingPage() {
         return null;
 
       case 'rate_card':
-        return (
-          <Button onClick={handleRateCardContinue} className="w-full h-12" size="lg">
-            Continue <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        );
+        // Legacy phase — no longer reachable. Coerced to 'add_clinic' on hydrate.
+        return null;
 
       case 'add_clinic': {
         if (firstFacilityId && !editingClinic) {
