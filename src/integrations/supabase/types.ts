@@ -3152,6 +3152,7 @@ export type Database = {
           overtime_policy_text: string
           partial_day_rate: number
           rate_kinds: Json
+          rate_shift_types: Json
           special_notes: string
           telemedicine_rate: number
           updated_at: string
@@ -3170,6 +3171,7 @@ export type Database = {
           overtime_policy_text?: string
           partial_day_rate?: number
           rate_kinds?: Json
+          rate_shift_types?: Json
           special_notes?: string
           telemedicine_rate?: number
           updated_at?: string
@@ -3188,6 +3190,7 @@ export type Database = {
           overtime_policy_text?: string
           partial_day_rate?: number
           rate_kinds?: Json
+          rate_shift_types?: Json
           special_notes?: string
           telemedicine_rate?: number
           updated_at?: string

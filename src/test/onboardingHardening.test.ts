@@ -6,6 +6,11 @@ import {
   type DefaultRate,
 } from '@/lib/onboardingRateMapping';
 import {
+  ratesToTermsFields,
+  termsToRates,
+  type RateEntry,
+} from '@/components/facilities/RatesEditor';
+import {
   maybeTrackActivation,
   _resetOnboardingActivationLatch,
 } from '@/lib/onboardingAnalytics';
@@ -267,5 +272,62 @@ describe('maybeTrackActivation pathway property', () => {
     _resetOnboardingActivationLatch();
     maybeTrackActivation(input);
     expect(captureSpy).toHaveBeenCalledTimes(2);
+  });
+});
+
+// ─── Per-clinic rate persistence: schema round-trip ────────────────
+// Locks in the columns the frontend writes to `terms_snapshots`. If a future
+// change adds a new field on the RateEntry side without a matching DB column,
+// this test surfaces it before it silently breaks onboarding (see the
+// `rate_shift_types` regression).
+describe('Per-clinic rate snapshot round-trip', () => {
+  // Mirrors the live `terms_snapshots` schema. Update intentionally when
+  // running a real migration, never just to make the test pass.
+  const ALLOWED_TERMS_COLUMNS = new Set([
+    'weekday_rate',
+    'weekend_rate',
+    'partial_day_rate',
+    'holiday_rate',
+    'telemedicine_rate',
+    'custom_rates',
+    'rate_kinds',
+    'rate_shift_types',
+  ]);
+
+  it('only emits fields that exist on the terms_snapshots table', () => {
+    const rates: RateEntry[] = [
+      { type: 'weekday', label: 'Weekday Rate', amount: 850, kind: 'flat', shift_type: 'gp' },
+      { type: 'custom', label: 'After-hours', amount: 160, kind: 'hourly', shift_type: 'er' },
+    ];
+    const fields = ratesToTermsFields(rates);
+    for (const key of Object.keys(fields)) {
+      expect(ALLOWED_TERMS_COLUMNS.has(key)).toBe(true);
+    }
+  });
+
+  it('round-trips a saved hourly rate back through the bulk-shift picker', () => {
+    const rates: RateEntry[] = [
+      { type: 'custom', label: 'GP Hour', amount: 160, kind: 'hourly', shift_type: 'gp' },
+    ];
+    const fields = ratesToTermsFields(rates);
+    // Simulate what comes back from the DB after insert.
+    const stored = {
+      weekday_rate: fields.weekday_rate,
+      weekend_rate: fields.weekend_rate,
+      partial_day_rate: fields.partial_day_rate,
+      holiday_rate: fields.holiday_rate,
+      telemedicine_rate: fields.telemedicine_rate,
+      custom_rates: fields.custom_rates,
+      rate_kinds: fields.rate_kinds,
+      rate_shift_types: fields.rate_shift_types,
+    };
+    const rebuilt = termsToRates(stored);
+    const options = buildBulkRateOptions({ rateEntries: rebuilt, defaultRates: [] });
+    expect(options).toHaveLength(1);
+    expect(options[0]).toMatchObject({
+      label: 'GP Hour — $160 /hr',
+      amount: 160,
+      basis: 'hourly',
+    });
   });
 });
