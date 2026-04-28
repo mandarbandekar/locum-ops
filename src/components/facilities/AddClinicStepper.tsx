@@ -8,6 +8,7 @@ import { useData } from '@/contexts/DataContext';
 import { useClinicConfirmations } from '@/hooks/useClinicConfirmations';
 import { generateId } from '@/lib/businessLogic';
 import { toast } from 'sonner';
+import { trackOnboarding } from '@/lib/onboardingAnalytics';
 import {
   Building2, DollarSign, UserCheck, CalendarClock,
   Check, ArrowRight, ArrowLeft, SkipForward, Sparkles,
