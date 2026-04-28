@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Plus, Trash2, AlertTriangle, Send, FileEdit, CheckCircle, Clock } from 'lucide-react';
+import { Plus, Trash2, AlertTriangle, Send, FileEdit, CheckCircle, Clock, FileText } from 'lucide-react';
 import { startOfMonth, isAfter, isBefore, startOfDay } from 'date-fns';
 import { computeInvoiceStatus, generateInvoiceNumber } from '@/lib/businessLogic';
 import { isInvoiceOverdue } from '@/lib/invoiceHelpers';
