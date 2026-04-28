@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -27,15 +27,7 @@ export default function FacilitiesPage() {
   const hasBillingContact = (c: Facility) =>
     !!(c.invoice_name_to?.trim() && c.invoice_email_to?.trim());
 
-  const summary = useMemo(() => {
-    const total = facilities.length;
-    const active = facilities.filter(f => f.status === 'active').length;
-    const directBill = facilities.filter(f => (f.engagement_type || 'direct') === 'direct').length;
-    const missingBilling = facilities.filter(
-      f => (f.engagement_type || 'direct') === 'direct' && !hasBillingContact(f)
-    ).length;
-    return { total, active, directBill, missingBilling };
-  }, [facilities]);
+
 
   const isEmpty = facilities.length === 0;
 
@@ -54,24 +46,12 @@ export default function FacilitiesPage() {
       </div>
 
       {!isEmpty && (
-        <div className="flex flex-col sm:flex-row gap-3 mb-4">
-          <div className="flex-1 rounded-lg border bg-card">
-            <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-border">
-              <SummaryStat label="Total clinics" value={summary.total} />
-              <SummaryStat label="Active" value={summary.active} />
-              <SummaryStat label="Direct-bill" value={summary.directBill} />
-              <SummaryStat
-                label="Missing billing"
-                value={summary.missingBilling}
-                tone={summary.missingBilling > 0 ? 'warning' : 'default'}
-              />
-            </div>
-          </div>
-          <div className="flex items-center border rounded-lg overflow-hidden bg-muted p-0.5 gap-0.5 sm:self-stretch">
+        <div className="flex justify-end mb-4">
+          <div className="flex items-center border rounded-lg overflow-hidden bg-muted p-0.5 gap-0.5">
             <Button
               size="sm"
               variant={viewMode === 'cards' ? 'default' : 'ghost'}
-              className="h-full px-2.5 rounded-md"
+              className="h-8 px-2.5 rounded-md"
               onClick={() => setViewMode('cards')}
               aria-label="Card view"
             >
@@ -80,7 +60,7 @@ export default function FacilitiesPage() {
             <Button
               size="sm"
               variant={viewMode === 'list' ? 'default' : 'ghost'}
-              className="h-full px-2.5 rounded-md"
+              className="h-8 px-2.5 rounded-md"
               onClick={() => setViewMode('list')}
               aria-label="List view"
             >
@@ -246,19 +226,6 @@ export default function FacilitiesPage() {
   );
 }
 
-function SummaryStat({ label, value, tone = 'default' }: { label: string; value: number; tone?: 'default' | 'warning' }) {
-  return (
-    <div className="px-4 py-3">
-      <div className={cn(
-        'text-xl font-semibold tabular-nums',
-        tone === 'warning' && value > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-foreground'
-      )}>
-        {value}
-      </div>
-      <div className="text-[11px] uppercase tracking-wide text-muted-foreground mt-0.5">{label}</div>
-    </div>
-  );
-}
 
 function DeleteFacilityButton({ name, onConfirm }: { name: string; onConfirm: () => void }) {
   return (
