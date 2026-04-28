@@ -1,101 +1,92 @@
-# Diagnosis: hourly $160 rate became flat $850/day
+## Goal
 
-## What I found in the account
+Make the onboarding "add clinic + rates + shifts" flow durable and consistent with the rest of the app, so:
 
-User `mandarbandekar9@gmail.com` (`292d7911…`) onboarded just before reporting this.
+1. Rates entered during onboarding are reliably saved **per clinic** (in `terms_snapshots`).
+2. Those saved per-clinic rates show up automatically as picker options whenever the user logs a shift for that clinic — both in onboarding and in the main `ShiftFormDialog`.
+3. When the user adds a new clinic later from the Dashboard, the same per-clinic rate flow is used (no global default forced on them).
+4. Existing users (who already have clinics, terms, shifts, invoices) are not disrupted.
 
-- 1 facility: **Oakridge Veterinary Clinic** (engagement = `direct`)
-- **0 rows in `terms_snapshots`** for this user — i.e. the clinic has **no saved rates at all**
-- 11 shifts, every one of them: `rate_applied = 850`, `rate_kind = flat`, `hourly_rate = NULL`
+## Diagnosis (what's actually broken today)
 
-So the database confirms two things at once:
-1. The hourly $160 the user typed **never made it into `terms_snapshots`**.
-2. The shifts were all created with the hard-coded **"Standard Day — $850 /day"** fallback.
+There are three independent issues compounding in the reported bug:
 
-## Root cause (two bugs stacked)
+### Issue 1 — Schema mismatch causing silent rate-save failure
 
-### Bug 1 — The Rates step in AddClinicStepper was silently skipped
-In `src/components/facilities/AddClinicStepper.tsx`:
-```ts
-const visibleSteps = [1, 2];
-if (!hideRatesStep && isDirect) arr.push(3);   // Rates
-if (isDirect) arr.push(4);                     // Billing
+`src/components/facilities/RatesEditor.ts` `ratesToTermsFields()` always returns a `rate_shift_types` object on every save. But the `terms_snapshots` table has **no `rate_shift_types` column** (verified against the live schema):
+
+```text
+id, user_id, facility_id, weekday_rate, weekend_rate, partial_day_rate,
+holiday_rate, telemedicine_rate, custom_rates, rate_kinds,
+cancellation_policy_text, overtime_policy_text, late_payment_policy_text,
+special_notes, created_at, updated_at
 ```
-`engagementType` defaults to `'direct'`, so step 3 is included **on first render**. But `useMemo` recomputes `visibleSteps` whenever `engagementType` changes. If the user ever toggles engagement (or the EngagementSelector re-emits the value), the step list rebuilds — and there's no guard that keeps already-entered rates in `terms_snapshots`. More importantly, `handleSave` writes the rate snapshot only when:
-```ts
-if (isDirect && rates.length > 0) { await updateTerms(...) }
+
+PostgREST rejects the insert with `PGRST204` ("column rate_shift_types does not exist"), so **the rate row is never written**. This is why `mandarbandekar9@gmail.com`'s clinic ended up with zero rows in `terms_snapshots`.
+
+### Issue 2 — `updateTerms` swallows the error
+
+In `src/contexts/DataContext.tsx` (`updateTerms`), insert/update errors are toasted and `return`ed — they are **not thrown**. The caller (`AddClinicStepper.handleSave`) then proceeds to `onSaved(facility.id)` as if rates were saved, and the onboarding advances to "Add Shifts" with an orphaned clinic.
+
+### Issue 3 — Onboarding shift step has no awareness of "rates failed to save"
+
+`OnboardingBulkShiftCalendar` just looks at `terms` from `DataContext`. If the row never landed, the user sees the empty-state inline rate form (recently added) and is asked to re-enter the rate they thought they already saved. That UX is what made the user say "the whole flow seems broken."
+
+## Proposal
+
+### Part A — Fix the persistence bug (minimal, surgical)
+
+**A1. Migration: add the missing `rate_shift_types` jsonb column.**
+
+```sql
+ALTER TABLE public.terms_snapshots
+ADD COLUMN IF NOT EXISTS rate_shift_types jsonb NOT NULL DEFAULT '{}'::jsonb;
 ```
-There is **no validation that the user actually visited / completed step 3** before clicking Save Clinic. If `rates` is empty (because the user typed in the input but never blurred / committed, or skipped the step, or the state was reset by a re-render), the clinic is saved with no terms_snapshot — exactly what we see in the DB.
 
-### Bug 2 — The Bulk Shift Calendar's "Standard Day $850" fallback silently overrides empty rates
-In `src/components/onboarding/OnboardingBulkShiftCalendar.tsx` (lines 88–97):
-```ts
-const rateOptions = useMemo(() => {
-  const opts = buildBulkRateOptions({ rateEntries, defaultRates });
-  if (opts.length > 0) return opts;
-  return [
-    { id: 'fallback:standard-day:850', label: 'Standard Day — $850 /day', amount: 850, basis: 'daily' },
-  ];
-}, [rateEntries, defaultRates]);
-```
-When the clinic has no `terms_snapshot` AND the user has no global Rate Card (the new flow we just shipped removed the mandatory Rate Card step), `rateEntries = []` and `defaultRates = []` → the fallback kicks in. The dropdown auto-selects "Standard Day — $850 /day", and the bulk calendar happily creates 11 flat-$850 shifts. The user never sees their $160 hourly rate because **it was never saved**, and the fallback masks the problem entirely.
+This is purely additive, defaults to `{}`, and is backward compatible with all existing rows (they keep working; `termsToRates` already handles missing values via `terms.rate_shift_types || {}`).
 
-This matches the screenshots: the second screenshot shows the Edit Shift dialog defaulting to Flat $850 with a "Save to facility rates" checkbox — confirming the facility had no rates and the bulk creator wrote the fallback into every shift.
+**A2. Make `updateTerms` throw on failure.**
 
-## Why this is a real, recurring problem
+Change `updateTerms` in `src/contexts/DataContext.tsx` so DB errors are re-thrown instead of just toasted. This lets `AddClinicStepper` and `OnboardingBulkShiftCalendar` block progression when a save fails.
 
-The combination is dangerous:
-- Removing the mandatory Rate Card step (recent change) is the right product call, **but** it removed the only thing that was guaranteeing `defaultRates` was non-empty.
-- The clinic-level Rates step is **optional / skippable** (`canSkip = step === 3`).
-- The bulk calendar's "never empty" fallback was originally a UX safety net, but now it actively writes incorrect data without telling the user.
-- The shift form's "Save to facility rates" is opt-in, so even after editing, the wrong rate persists on past shifts.
+**A3. Make `AddClinicStepper.handleSave` await + guard the rates save.**
 
-Net effect: any user who skips/mis-enters rates on the clinic step gets 11 shifts at flat $850 with zero warnings.
+Wrap the `updateTerms` call in try/catch. If it throws, surface a clear toast ("Could not save rates for this clinic — please try again") and stop the flow on step 3 instead of advancing to "Add Shifts."
 
-## Proposed fix
+### Part B — Unify rate options across onboarding and main app
 
-### 1. Remove the silent $850 fallback in the Bulk Shift Calendar
-File: `src/components/onboarding/OnboardingBulkShiftCalendar.tsx`
+The good news: `ShiftFormDialog.buildRateOptions` already merges facility terms + the user's Rate Card library. Once Part A lands, per-clinic rates will reliably appear in this picker.
 
-- Drop the `fallback:standard-day:850` synthetic option.
-- When `rateOptions.length === 0`, render an inline empty-state inside the rate field:
-  - Headline: "No rate saved for this clinic yet."
-  - Body: "Add at least one rate so we can apply it to these shifts."
-  - Primary action: **"+ Add a rate"** → opens a tiny inline rate row (label + flat/hourly + amount), saves to `terms_snapshots` for this facility on commit.
-- Disable the primary "Add shifts" CTA (`primaryDisabled = true`) until at least one rate exists.
+`OnboardingBulkShiftCalendar` already uses `buildBulkRateOptions({ rateEntries, defaultRates })` from the same source of truth (`terms`). So no refactor needed here once Part A works.
 
-### 2. Make the AddClinicStepper Rates step "required-soft" for direct clinics
-File: `src/components/facilities/AddClinicStepper.tsx`
+**B1. Add a small integration test in `src/test/onboardingHardening.test.ts`** asserting:
 
-- Keep step 3 skippable, but on Save Clinic, if `isDirect && rates.length === 0`, show a non-blocking confirm toast:
-  - "You haven't added a rate yet. You can add one now or set it later when logging shifts."
-  - Buttons: **"Add a rate"** (jumps back to step 3) / **"Save without rate"** (proceeds).
-- Persist the chosen behavior in analytics (`onboarding_clinic_saved_without_rates`).
+- `ratesToTermsFields()` output round-trips through a mock DB insert that mirrors the real columns (so this regression can't reappear silently).
+- After saving rates via `AddClinicStepper`, `buildBulkRateOptions` returns the saved entries.
+- After saving rates via `AddClinicStepper`, `ShiftFormDialog.buildRateOptions` (extracted as a pure helper if needed) includes those entries with `source: 'facility'`.
 
-### 3. Tighten the rate state on step 3
-- When the user types into a `RatesEditor` row but hasn't committed (no blur), call `onSave(rates)` automatically before `handleSave` runs in the stepper. This eliminates the "rate typed but lost on save" failure mode.
+### Part C — Clinic adds from Dashboard reuse the same flow
 
-### 4. Backfill helper for affected accounts (one-shot)
-- Add a small script (server-side, run manually) to find users whose first cohort of shifts share `rate_applied = 850, rate_kind = flat` and whose facility has no `terms_snapshot` — surface them so we can reach out / they can correct.
-- Not auto-fixing data (we don't know what their real rate was), just surfacing for outreach.
+`AddClinicStepper` is already the shared component used by both onboarding (`OnboardingClinicForm`) and the in-app "Add Facility" path (`AddFacilityDialog` / `FacilitiesPage`). Once Part A lands, the per-clinic rate save works identically in both places — no additional change required.
 
-## Out of scope for this fix
+**C1. Keep the inline "Add a rate" empty state in `OnboardingBulkShiftCalendar`** as a safety net for direct clinics where the user genuinely skipped the rates step. After Part A, this becomes a real edge case (intentional skip), not a workaround for a bug.
 
-- Reworking the shift card's "Save to facility rates" semantics.
-- Building a "you used the same rate on N shifts — promote it to the clinic?" prompt (good idea, separate ticket).
-- Touching the global Rate Card UX (already simplified in the prior change).
+### Part D — Existing-user safety
+
+- The migration is purely additive with a safe default; no existing row is touched and no existing query breaks.
+- `termsToRates` already tolerates missing `rate_shift_types` via `terms.rate_shift_types || {}`.
+- `ShiftFormDialog`'s rate picker already merges facility terms with the user's Rate Card library, so existing users who relied on the global Rate Card continue to see their rates exactly as before — we're only **fixing** the "per-clinic rates didn't save" path.
+- The legacy auto-complete guard in `OnboardingPage` is unaffected.
 
 ## Files to change
 
-- `src/components/onboarding/OnboardingBulkShiftCalendar.tsx` — remove fallback, add empty-state + inline add rate.
-- `src/components/facilities/AddClinicStepper.tsx` — soft-required Rates step + auto-commit pending rate edits before save.
-- `src/lib/onboardingAnalytics.ts` — add `onboarding_clinic_saved_without_rates` event.
-- `src/test/onboardingHardening.test.ts` — replace the "Standard Day $850 fallback" assertion with the new empty-state behavior.
+- **Migration**: add `rate_shift_types jsonb DEFAULT '{}'` to `terms_snapshots`.
+- `src/contexts/DataContext.tsx` — `updateTerms` rethrows on error.
+- `src/components/facilities/AddClinicStepper.tsx` — await + try/catch around `updateTerms`; block progression on failure.
+- `src/test/onboardingHardening.test.ts` — add round-trip + picker assertions.
 
-## Note on the affected user
+## Out of scope (intentionally)
 
-`mandarbandekar9@gmail.com` currently has 11 shifts at $850 flat against Oakridge Veterinary Clinic and no facility rate snapshot. After the fix, they'll need to:
-1. Add the correct hourly $160 rate on the clinic, then
-2. Bulk-edit (or delete + recreate) the 11 shifts to apply it.
-
-I can include a one-time data outreach list in the implementation step if you want.
+- No refactor of `OnboardingBulkShiftCalendar`'s inline rate form — Part A makes it a true edge-case helper, not a workaround.
+- No changes to `ShiftFormDialog`'s rate picker logic — it already does the right thing.
+- No changes to the global Rate Card — we keep it optional, exactly as the previous proposal established.
