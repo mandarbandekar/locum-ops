@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
 import { ArrowRight, Check, MapPin, LayoutDashboard, Pencil, RefreshCw } from 'lucide-react';
 import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
-import { OnboardingRateCard } from '@/components/onboarding/OnboardingRateCard';
+
 import { OnboardingBulkShiftCalendar } from '@/components/onboarding/OnboardingBulkShiftCalendar';
 import { OnboardingInvoiceReveal } from '@/components/onboarding/OnboardingInvoiceReveal';
 import { OnboardingLoopChoice } from '@/components/onboarding/OnboardingLoopChoice';
