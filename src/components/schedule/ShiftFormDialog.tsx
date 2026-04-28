@@ -31,7 +31,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import {
   ENGAGEMENT_LABELS,
   THIRD_PARTY_PRESETS,
-  W2_EMPLOYER_PRESETS,
   getShiftEngagementHelperText,
   type EngagementType,
 } from '@/lib/engagementOptions';
@@ -512,8 +511,6 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     const presets =
       engagementOverride === 'third_party'
         ? THIRD_PARTY_PRESETS
-        : engagementOverride === 'w2'
-        ? W2_EMPLOYER_PRESETS
         : [];
     const isOtherSource =
       engagementOverride !== 'direct' &&
@@ -534,7 +531,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
         {showEngagementOverride && (
           <div className="mt-2 space-y-2 pt-2 border-t border-border/60">
             <div className="grid grid-cols-3 gap-1.5">
-              {(['direct', 'third_party', 'w2'] as EngagementType[]).map(t => (
+              {(['direct', 'third_party'] as EngagementType[]).map(t => (
                 <button
                   key={t}
                   type="button"
@@ -563,7 +560,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
                   }}
                 >
                   <SelectTrigger className="h-8 text-xs">
-                    <SelectValue placeholder={engagementOverride === 'w2' ? 'Employer name' : 'Platform / agency'} />
+                    <SelectValue placeholder="Platform / agency" />
                   </SelectTrigger>
                   <SelectContent>
                     {presets.map(p => (
@@ -576,7 +573,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
                   <Input
                     value={sourceOverride}
                     onChange={e => setSourceOverride(e.target.value)}
-                    placeholder={engagementOverride === 'w2' ? 'Employer name' : 'Platform / agency name'}
+                    placeholder="Platform / agency name"
                     className="h-8 text-xs"
                   />
                 )}

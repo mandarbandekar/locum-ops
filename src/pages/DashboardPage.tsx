@@ -764,10 +764,10 @@ export default function DashboardPage() {
           <Zap className="h-4 w-4 text-primary shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <p className="text-[13px] font-semibold text-foreground mb-0.5">
-              New: track Roo, IndeVets, and W-2 shifts
+              New: track platform shifts
             </p>
             <p className="text-[12.5px] text-muted-foreground leading-relaxed">
-              You can now log shifts from platforms like Roo and W-2 employers like Banfield alongside your direct relief work. Your existing facilities are marked as Direct — update any facility if you also work with it through a platform or employer.
+              You can now log shifts from platforms like Roo and IndeVets alongside your direct relief work. Your existing facilities are marked as Direct — update any facility if you also work with it through a platform.
             </p>
             <div className="flex items-center gap-2 mt-2">
               <button
