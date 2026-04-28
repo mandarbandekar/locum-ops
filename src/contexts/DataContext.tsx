@@ -761,8 +761,33 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
     setShifts(prev => prev.map(x => x.id === s.id ? s : x));
 
-    // (Cancel logic removed — shifts are deleted, not canceled)
-  }, [isDemo, shifts, handleInvoiceCleanupAfterShiftRemoval]);
+    // Keep auto-generated draft invoices in sync. A date change can either
+    // move invoice_date within the same period or shift the entry to a new
+    // billing period entirely — rebuild both old and new periods.
+    try {
+      const facility = facilities.find(f => f.id === s.facility_id);
+      if (!facility) return;
+      const effectiveEngagement = (s.engagement_type_override || facility.engagement_type || 'direct');
+      if (effectiveEngagement !== 'direct') return;
+
+      const newDate = new Date(s.start_datetime);
+      await rebuildAutoDraftForPeriod(facility, newDate);
+
+      if (oldShift) {
+        const oldDate = new Date(oldShift.start_datetime);
+        const cadence = facility.billing_cadence as BillingCadence;
+        const oldPeriod = getBillingPeriod(cadence, oldDate, facility.billing_week_end_day, facility.billing_cycle_anchor_date);
+        const newPeriod = getBillingPeriod(cadence, newDate, facility.billing_week_end_day, facility.billing_cycle_anchor_date);
+        const oldKey = oldPeriod.start.toISOString().slice(0, 10) + '|' + oldPeriod.end.toISOString().slice(0, 10);
+        const newKey = newPeriod.start.toISOString().slice(0, 10) + '|' + newPeriod.end.toISOString().slice(0, 10);
+        if (oldKey !== newKey) {
+          await rebuildAutoDraftForPeriod(facility, oldDate);
+        }
+      }
+    } catch (autoErr) {
+      console.error('Auto-invoice update after shift edit failed:', autoErr);
+    }
+  }, [isDemo, shifts, facilities, rebuildAutoDraftForPeriod]);
 
   const deleteShift = useCallback(async (id: string) => {
     if (isDemo) {
