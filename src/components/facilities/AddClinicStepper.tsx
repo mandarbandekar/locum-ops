@@ -216,15 +216,26 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
       });
 
       if (isDirect && rates.length > 0) {
-        await updateTerms({
-          id: generateId(),
-          facility_id: facility.id,
-          ...rateFields,
-          cancellation_policy_text: '',
-          overtime_policy_text: '',
-          late_payment_policy_text: '',
-          special_notes: '',
-        });
+        try {
+          await updateTerms({
+            id: generateId(),
+            facility_id: facility.id,
+            ...rateFields,
+            cancellation_policy_text: '',
+            overtime_policy_text: '',
+            late_payment_policy_text: '',
+            special_notes: '',
+          });
+        } catch (e) {
+          console.error('Failed to save clinic rates', e);
+          toast.error('Could not save rates for this clinic', {
+            description: 'Your clinic was created, but the rates didn\'t save. Please try the Rates step again.',
+          });
+          // Bounce back to the Rates step so the user can retry, instead of
+          // silently advancing to "Add Shifts" with no rates persisted.
+          setStep(3);
+          return null;
+        }
       }
 
       if (isDirect && schedulingContactName.trim() && schedulingContactEmail.trim()) {
