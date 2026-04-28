@@ -331,3 +331,140 @@ describe('Per-clinic rate snapshot round-trip', () => {
     });
   });
 });
+
+// ─── Onboarding regression: clinic rate → shift applied rate ──────
+// Locks in the full path a brand-new user takes during onboarding:
+//   1. Save rates on the new clinic (terms_snapshots round-trip).
+//   2. Pick that clinic's rate in the bulk-shift calendar.
+//   3. The created shift's `rate_applied` (and `hourly_rate` for hourly)
+//      must equal the stored clinic rate exactly.
+//
+// Mirrors the mapping in `OnboardingBulkShiftCalendar.tsx` (lines ~250-269).
+// If the shipped mapping changes, update this helper deliberately so the
+// regression remains meaningful.
+describe('Onboarding regression: clinic rate persists into shift', () => {
+  type BulkRateOption = ReturnType<typeof buildBulkRateOptions>[number];
+
+  function simulateShiftFromBulkPick(opts: {
+    selectedRate: BulkRateOption;
+    hoursPerShift: number;
+  }) {
+    const { selectedRate, hoursPerShift } = opts;
+    const rate_applied =
+      selectedRate.basis === 'daily'
+        ? selectedRate.amount
+        : selectedRate.amount * hoursPerShift;
+    const rate_kind = selectedRate.basis === 'daily' ? 'flat' : 'hourly';
+    const hourly_rate =
+      selectedRate.basis === 'hourly' ? selectedRate.amount : null;
+    return { rate_applied, rate_kind, hourly_rate };
+  }
+
+  function persistRatesAndReload(rates: RateEntry[]) {
+    // Frontend: serialize for `terms_snapshots`.
+    const fields = ratesToTermsFields(rates);
+    // DB: store and read back (only the columns that actually exist).
+    const stored = {
+      weekday_rate: fields.weekday_rate,
+      weekend_rate: fields.weekend_rate,
+      partial_day_rate: fields.partial_day_rate,
+      holiday_rate: fields.holiday_rate,
+      telemedicine_rate: fields.telemedicine_rate,
+      custom_rates: fields.custom_rates,
+      rate_kinds: fields.rate_kinds,
+      rate_shift_types: fields.rate_shift_types,
+    };
+    // Frontend: hydrate back into RateEntry[] (clinic-specific authoritative).
+    return termsToRates(stored);
+  }
+
+  it('flat day rate saved on the clinic flows through to the shift unchanged', () => {
+    // 1. Onboarding: user adds a clinic with an $850 weekday flat rate.
+    const enteredRates: RateEntry[] = [
+      { type: 'weekday', label: 'Weekday Rate', amount: 850, kind: 'flat', shift_type: 'gp' },
+    ];
+    const reloaded = persistRatesAndReload(enteredRates);
+
+    // 2. The clinic's stored rate is what the bulk-shift picker offers.
+    const options = buildBulkRateOptions({
+      rateEntries: reloaded,
+      defaultRates: [],
+    });
+    expect(options).toHaveLength(1);
+    expect(options[0]).toMatchObject({ amount: 850, basis: 'daily' });
+
+    // 3. User picks that single option and creates a shift.
+    const shift = simulateShiftFromBulkPick({
+      selectedRate: options[0],
+      hoursPerShift: 10, // irrelevant for a flat day rate
+    });
+
+    // The applied rate on the shift must equal the stored clinic rate.
+    expect(shift.rate_applied).toBe(850);
+    expect(shift.rate_kind).toBe('flat');
+    expect(shift.hourly_rate).toBeNull();
+  });
+
+  it('hourly rate saved on the clinic flows through to the shift (rate × hours)', () => {
+    // Reproduces the mandarbandekar9@gmail.com regression: user enters $160/hr
+    // for the clinic and expects the shift to bill at $160/hr — not the
+    // legacy $850/day fallback.
+    const enteredRates: RateEntry[] = [
+      { type: 'custom', label: 'GP Hour', amount: 160, kind: 'hourly', shift_type: 'gp' },
+    ];
+    const reloaded = persistRatesAndReload(enteredRates);
+
+    const options = buildBulkRateOptions({
+      rateEntries: reloaded,
+      defaultRates: [],
+    });
+    expect(options).toHaveLength(1);
+    expect(options[0]).toMatchObject({ amount: 160, basis: 'hourly' });
+
+    const shift = simulateShiftFromBulkPick({
+      selectedRate: options[0],
+      hoursPerShift: 10,
+    });
+
+    // hourly_rate on the shift must equal the stored clinic rate exactly.
+    expect(shift.hourly_rate).toBe(160);
+    expect(shift.rate_kind).toBe('hourly');
+    // rate_applied is rate × hours, not the legacy flat $850 fallback.
+    expect(shift.rate_applied).toBe(160 * 10);
+    expect(shift.rate_applied).not.toBe(850);
+  });
+
+  it('mixed clinic rates: each pick maps to its own stored amount', () => {
+    const enteredRates: RateEntry[] = [
+      { type: 'weekday', label: 'Weekday Rate', amount: 900, kind: 'flat', shift_type: 'gp' },
+      { type: 'weekend', label: 'Weekend Rate', amount: 1100, kind: 'flat', shift_type: 'gp' },
+      { type: 'custom', label: 'After-hours', amount: 175, kind: 'hourly', shift_type: 'er' },
+    ];
+    const reloaded = persistRatesAndReload(enteredRates);
+    const options = buildBulkRateOptions({
+      rateEntries: reloaded,
+      defaultRates: [],
+    });
+    expect(options.length).toBe(3);
+
+    const byAmount = new Map(options.map((o) => [o.amount, o]));
+    const weekday = byAmount.get(900)!;
+    const weekend = byAmount.get(1100)!;
+    const hourly = byAmount.get(175)!;
+    expect(weekday.basis).toBe('daily');
+    expect(weekend.basis).toBe('daily');
+    expect(hourly.basis).toBe('hourly');
+
+    // Pick weekday → flat $900 day.
+    expect(simulateShiftFromBulkPick({ selectedRate: weekday, hoursPerShift: 10 }))
+      .toMatchObject({ rate_applied: 900, rate_kind: 'flat', hourly_rate: null });
+
+    // Pick weekend → flat $1100 day.
+    expect(simulateShiftFromBulkPick({ selectedRate: weekend, hoursPerShift: 8 }))
+      .toMatchObject({ rate_applied: 1100, rate_kind: 'flat', hourly_rate: null });
+
+    // Pick hourly → $175/hr × 9 hours.
+    expect(simulateShiftFromBulkPick({ selectedRate: hourly, hoursPerShift: 9 }))
+      .toMatchObject({ rate_applied: 175 * 9, rate_kind: 'hourly', hourly_rate: 175 });
+  });
+});
