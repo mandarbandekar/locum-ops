@@ -46,19 +46,19 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
   const handleSubmit = async () => {
     if (!name.trim()) return;
     if (engagementType !== 'direct' && !sourceName.trim()) {
-      toast.error(engagementType === 'w2' ? 'Please select your employer' : 'Please select the platform or agency');
+      toast.error('Please select the platform or agency');
       return;
     }
     const isDirect = engagementType === 'direct';
     const effectiveTaxForm: TaxFormType | null =
-      engagementType === 'w2' ? 'w2' : engagementType === 'third_party' ? taxFormType : null;
+      engagementType === 'third_party' ? taxFormType : null;
     await onSave({
       name: name.trim(),
       billing_name_to: isDirect ? (billingNameTo.trim() || undefined) : undefined,
       billing_email: isDirect ? (billingEmail.trim() || undefined) : undefined,
       address: address.trim() || undefined,
-      weekday_rate: engagementType !== 'w2' && weekdayRate ? parseFloat(weekdayRate) : undefined,
-      weekday_rate_kind: engagementType !== 'w2' && weekdayRate ? weekdayRateKind : undefined,
+      weekday_rate: weekdayRate ? parseFloat(weekdayRate) : undefined,
+      weekday_rate_kind: weekdayRate ? weekdayRateKind : undefined,
       billing_cadence: isDirect ? billingCadence : undefined,
       billing_week_end_day: undefined,
       billing_anchor_date: undefined,
@@ -166,7 +166,7 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
           </div>
         )}
 
-        {engagementType !== 'w2' && (
+        {engagementType === 'direct' && (
           <div>
             <Label>Default rate</Label>
             <div className="flex items-center gap-2 mt-1">

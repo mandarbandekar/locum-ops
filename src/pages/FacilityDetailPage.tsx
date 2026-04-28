@@ -395,7 +395,7 @@ function ContractTab({ facility, facilityTerms, onSaveRates, onUpdateTerms, onUp
           <Card>
             <CardContent className="pt-6">
               <p className="text-sm text-muted-foreground">
-                {engagementType !== 'direct'
+                {engagementType === 'third_party'
                   ? `${facility.source_name || 'This platform'} handles billing for these shifts, so invoicing settings and clinic confirmations don't apply here.`
                   : ''}
               </p>
