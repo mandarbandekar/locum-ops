@@ -156,7 +156,7 @@ function InvoiceTable({ invoices, onDelete, getFacilityName, navigate, showFacil
             </td>
             <td className="p-3" onClick={e => e.stopPropagation()}>
               <TooltipProvider delayDuration={200}>
-                <div className="flex items-center gap-0.5">
+                <div className="flex items-center justify-end gap-0.5">
                   {onReview && inv.computedStatus === 'draft' && (
                     <Button
                       size="sm"
