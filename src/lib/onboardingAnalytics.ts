@@ -48,6 +48,8 @@ export type OnboardingEvent =
   | 'onboarding_bulk_shifts_viewed'
   | 'onboarding_shift_dates_selected'
   | 'onboarding_bulk_shifts_created'
+  | 'onboarding_inline_rate_added'
+  | 'onboarding_clinic_saved_without_rates'
   | 'onboarding_invoice_reveal_viewed'
   | 'onboarding_invoice_preview_opened'
   | 'onboarding_invoice_continue_clicked'

@@ -8,6 +8,7 @@ import { useData } from '@/contexts/DataContext';
 import { useClinicConfirmations } from '@/hooks/useClinicConfirmations';
 import { generateId } from '@/lib/businessLogic';
 import { toast } from 'sonner';
+import { trackOnboarding } from '@/lib/onboardingAnalytics';
 import {
   Building2, DollarSign, UserCheck, CalendarClock,
   Check, ArrowRight, ArrowLeft, SkipForward, Sparkles,
@@ -111,6 +112,9 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
 
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
+  // Tracks whether the user has acknowledged the "no rates yet" warning so a
+  // second Save click proceeds rather than bouncing them to step 3 again.
+  const [acknowledgedNoRates, setAcknowledgedNoRates] = useState(false);
 
   const isDirect = engagementType === 'direct';
   // Visible step list. The Rates step (#3) can be hidden via `hideRatesStep`,
@@ -271,6 +275,25 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
     const err = validateStep(step);
     if (err) { toast.error(err); return; }
     if (isLastStep) {
+      // Soft-required Rates step for direct clinics: if the user reached the
+      // end with zero rates, bounce them back to step 3 once with a clear
+      // warning. A second Save click will proceed (so they can intentionally
+      // defer rate entry to per-shift logging).
+      if (isDirect && rates.length === 0 && !acknowledgedNoRates) {
+        const ratesStepVisible = visibleSteps.includes(3);
+        setAcknowledgedNoRates(true);
+        trackOnboarding('onboarding_clinic_saved_without_rates', {
+          facility_name: name.trim(),
+          step_visible: ratesStepVisible,
+        });
+        if (ratesStepVisible) {
+          setStep(3);
+          toast('No rate set for this clinic yet', {
+            description: 'Add a rate now so logged shifts use the right amount, or click Save Clinic again to skip and add it later.',
+          });
+          return;
+        }
+      }
       await handleSave();
       return;
     }
@@ -306,7 +329,7 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
     canSkip,
     primaryLabel,
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [canSave, step, totalSteps, canBack, canSkip, primaryLabel, name, engagementType, sourceName, rates, billingCadence, invoiceDueDays, schedulingContactName, schedulingContactEmail, invoiceNameTo, invoiceEmailTo, sameAsScheduling, address, taxFormType]);
+  }), [canSave, step, totalSteps, canBack, canSkip, primaryLabel, name, engagementType, sourceName, rates, billingCadence, invoiceDueDays, schedulingContactName, schedulingContactEmail, invoiceNameTo, invoiceEmailTo, sameAsScheduling, address, taxFormType, acknowledgedNoRates]);
 
   // Rendered step number depends on visibility (rates/billing steps may be hidden).
   const visibleStepNumber = currentVisibleIndex + 1;

@@ -4,14 +4,16 @@ import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Sparkles, CalendarDays } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Sparkles, CalendarDays, DollarSign, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import type { Facility, Shift, ShiftColor, RateKind, TermsSnapshot } from '@/types';
 import { useData } from '@/contexts/DataContext';
-import { termsToRates } from '@/components/facilities/RatesEditor';
+import { termsToRates, ratesToTermsFields, type RateEntry } from '@/components/facilities/RatesEditor';
 import { buildBulkRateOptions, type DefaultRate, type BulkRateOption } from '@/lib/onboardingRateMapping';
 import { trackOnboarding } from '@/lib/onboardingAnalytics';
+import { generateId } from '@/lib/businessLogic';
 
 interface Props {
   facility: Facility;
@@ -58,13 +60,20 @@ export function OnboardingBulkShiftCalendar({
   onContinue,
   renderFooter,
 }: Props) {
-  const { addShift, terms, shifts } = useData();
+  const { addShift, terms, shifts, updateTerms } = useData();
   const [selectedDates, setSelectedDates] = useState<Date[]>([]);
   const [startTime, setStartTime] = useState('08:00');
   const [endTime, setEndTime] = useState('18:00');
   const [submitting, setSubmitting] = useState(false);
   const [subStep, setSubStep] = useState<'dates' | 'details'>('dates');
   const submitGuardRef = useRef(false);
+
+  // Inline "add a rate" form state — shown when this clinic has no rates yet
+  // and the user has no global default rates either.
+  const [newRateLabel, setNewRateLabel] = useState('Standard Day');
+  const [newRateBasis, setNewRateBasis] = useState<'daily' | 'hourly'>('daily');
+  const [newRateAmount, setNewRateAmount] = useState<string>('');
+  const [savingRate, setSavingRate] = useState(false);
 
   // Fire view event once on mount.
   useEffect(() => {
@@ -85,19 +94,67 @@ export function OnboardingBulkShiftCalendar({
     [facilityTerms],
   );
 
-  const rateOptions: BulkRateOption[] = useMemo(() => {
-    const opts = buildBulkRateOptions({ rateEntries, defaultRates });
-    if (opts.length > 0) return opts;
-    // Last-resort safety net: never let the dropdown be empty (e.g. user skipped
-    // Rate Card AND created a brand-new clinic with no rates yet). Keeps the
-    // step usable; the user can always edit clinic-specific rates later.
-    return [
-      { id: 'fallback:standard-day:850', label: 'Standard Day — $850 /day', amount: 850, basis: 'daily' as const },
-    ];
-  }, [rateEntries, defaultRates]);
+  const rateOptions: BulkRateOption[] = useMemo(
+    () => buildBulkRateOptions({ rateEntries, defaultRates }),
+    [rateEntries, defaultRates],
+  );
+  const hasRates = rateOptions.length > 0;
 
   const [selectedRateId, setSelectedRateId] = useState<string>(() => rateOptions[0]?.id ?? '');
+  // Keep selection valid when rateOptions appears (e.g. user just saved an inline rate).
+  useEffect(() => {
+    if (rateOptions.length === 0) return;
+    if (!selectedRateId || !rateOptions.find(r => r.id === selectedRateId)) {
+      setSelectedRateId(rateOptions[0].id);
+    }
+  }, [rateOptions, selectedRateId]);
   const selectedRate = rateOptions.find(r => r.id === selectedRateId) ?? rateOptions[0];
+
+  const handleSaveInlineRate = async () => {
+    const amt = Number(newRateAmount);
+    if (!newRateLabel.trim()) {
+      toast.error('Give the rate a short label, e.g. "Standard Day"');
+      return;
+    }
+    if (!Number.isFinite(amt) || amt <= 0) {
+      toast.error('Enter a rate amount greater than 0');
+      return;
+    }
+    setSavingRate(true);
+    try {
+      const merged: RateEntry[] = [
+        ...rateEntries,
+        {
+          type: rateEntries.length === 0 && newRateBasis === 'daily' ? 'weekday' : 'custom',
+          label: rateEntries.length === 0 && newRateBasis === 'daily' ? 'Weekday Rate' : newRateLabel.trim(),
+          amount: amt,
+          kind: newRateBasis === 'daily' ? 'flat' : 'hourly',
+        },
+      ];
+      const fields = ratesToTermsFields(merged);
+      await updateTerms({
+        id: facilityTerms?.id ?? generateId(),
+        facility_id: facility.id,
+        ...fields,
+        cancellation_policy_text: facilityTerms?.cancellation_policy_text ?? '',
+        overtime_policy_text: facilityTerms?.overtime_policy_text ?? '',
+        late_payment_policy_text: facilityTerms?.late_payment_policy_text ?? '',
+        special_notes: facilityTerms?.special_notes ?? '',
+      } as TermsSnapshot);
+      trackOnboarding('onboarding_inline_rate_added', {
+        facility_id: facility.id,
+        basis: newRateBasis,
+        amount: amt,
+      });
+      toast.success('Rate saved to clinic');
+      setNewRateAmount('');
+    } catch (e) {
+      console.error('inline rate save failed', e);
+      toast.error('Could not save the rate. Try again.');
+    } finally {
+      setSavingRate(false);
+    }
+  };
 
   const hours = hoursBetween(startTime, endTime);
   const projectedGross = useMemo(() => {
@@ -247,8 +304,10 @@ export function OnboardingBulkShiftCalendar({
     : {
         primaryLabel: submitting
           ? 'Adding…'
-          : `Add ${selectedDates.length} shift${selectedDates.length === 1 ? '' : 's'}`,
-        primaryDisabled: submitting || selectedDates.length === 0 || !selectedRate || !validTimes,
+          : !hasRates
+            ? 'Add a rate first'
+            : `Add ${selectedDates.length} shift${selectedDates.length === 1 ? '' : 's'}`,
+        primaryDisabled: submitting || selectedDates.length === 0 || !selectedRate || !validTimes || !hasRates,
         onPrimary: handleSubmit,
         onBack: () => setSubStep('dates'),
       };
@@ -349,7 +408,7 @@ export function OnboardingBulkShiftCalendar({
                   </div>
                 </div>
 
-                {rateOptions.length > 0 ? (
+                {hasRates ? (
                   <div className="space-y-1.5">
                     <Label className="text-xs">Rate</Label>
                     <Select value={selectedRateId} onValueChange={setSelectedRateId}>
@@ -366,9 +425,70 @@ export function OnboardingBulkShiftCalendar({
                     </Select>
                   </div>
                 ) : (
-                  <p className="text-xs text-destructive">
-                    No rates available. Go back to set up your Rate Card.
-                  </p>
+                  <div className="space-y-3 rounded-lg border border-dashed border-border bg-muted/30 p-3">
+                    <div className="flex items-start gap-2">
+                      <DollarSign className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                      <div className="space-y-0.5">
+                        <p className="text-sm font-semibold text-foreground">No rate saved for this clinic yet</p>
+                        <p className="text-xs text-muted-foreground">
+                          Add at least one rate so we can apply it to these shifts. You can add more later.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-[1fr_auto_auto] gap-2 items-end">
+                      <div className="space-y-1">
+                        <Label className="text-[11px]">Label</Label>
+                        <Input
+                          value={newRateLabel}
+                          onChange={e => setNewRateLabel(e.target.value)}
+                          placeholder="Standard Day"
+                        />
+                      </div>
+                      <div className="inline-flex rounded-md border border-border overflow-hidden h-9" role="group">
+                        {(['daily', 'hourly'] as const).map(b => (
+                          <button
+                            key={b}
+                            type="button"
+                            onClick={() => setNewRateBasis(b)}
+                            className={cn(
+                              'px-2.5 text-[11px] font-medium transition-colors',
+                              newRateBasis === b
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-background text-muted-foreground hover:bg-muted',
+                            )}
+                          >
+                            {b === 'daily' ? 'Flat' : 'Hourly'}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="relative w-28">
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
+                        <Input
+                          type="number"
+                          inputMode="decimal"
+                          value={newRateAmount}
+                          onChange={e => setNewRateAmount(e.target.value)}
+                          placeholder="0"
+                          className="pl-6 pr-10"
+                          min={0}
+                        />
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground pointer-events-none">
+                          {newRateBasis === 'daily' ? '/day' : '/hr'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex justify-end">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={handleSaveInlineRate}
+                        disabled={savingRate}
+                      >
+                        <Plus className="h-3.5 w-3.5 mr-1" />
+                        {savingRate ? 'Saving…' : 'Save rate to clinic'}
+                      </Button>
+                    </div>
+                  </div>
                 )}
 
                 <div className="flex items-center justify-between pt-1 border-t border-border/50">
