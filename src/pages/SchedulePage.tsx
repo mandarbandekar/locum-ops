@@ -353,10 +353,12 @@ export default function SchedulePage() {
       <div className="flex-none px-4 sm:px-6 pt-4 sm:pt-6 pb-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <CalendarDays className="h-7 w-7 text-primary shrink-0" />
+            <div className="p-2 rounded-lg bg-primary/10 shrink-0">
+              <CalendarDays className="h-6 w-6 text-primary" />
+            </div>
             <div className="min-w-0">
               <h1 className="page-title">Schedule</h1>
-              <p className="page-subtitle">Plan shifts, block time, and keep clinics in sync.</p>
+              <p className="page-subtitle">Plan shifts, block time, and keep clinics in sync</p>
             </div>
           </div>
 
