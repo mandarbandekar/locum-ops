@@ -293,6 +293,7 @@ export default function InvoicesPage() {
                         </Button>
                       </div>
                     ) : undefined}
+                    onReview={(inv) => navigate(`/invoices/${inv.id}`)}
                   />
                 </div>
               ),
@@ -346,6 +347,7 @@ export default function InvoicesPage() {
                         These invoices will be ready to review after the shifts are completed.
                       </div>
                     ) : undefined}
+                    onReview={(inv) => navigate(`/invoices/${inv.id}`)}
                   />
                 </div>
               ),

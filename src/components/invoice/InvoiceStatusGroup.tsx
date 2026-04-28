@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { ChevronDown, ChevronRight, Trash2, Zap, CheckCircle2, PartyPopper, DollarSign, Mail } from 'lucide-react';
+import { ChevronDown, ChevronRight, Trash2, Zap, CheckCircle2, PartyPopper, DollarSign, Mail, FileEdit } from 'lucide-react';
 import { differenceInCalendarDays } from 'date-fns';
 
 /** Format a date string to 'MMM d, yyyy' without timezone shift. */
@@ -39,6 +39,7 @@ interface Props {
   alertBanner?: React.ReactNode;
   onMarkAsPaid?: (invoice: InvoiceWithStatus) => void;
   onSendFollowup?: (invoice: InvoiceWithStatus) => void;
+  onReview?: (invoice: InvoiceWithStatus) => void;
 }
 
 const statusStyles: Record<string, string> = {
@@ -76,7 +77,7 @@ function getDueBadge(dueDate: string | null, status: string) {
   return <span className="text-[11px] text-muted-foreground">Due in {days}d</span>;
 }
 
-function InvoiceTable({ invoices, onDelete, getFacilityName, navigate, showFacility = true, onMarkAsPaid, onSendFollowup }: {
+function InvoiceTable({ invoices, onDelete, getFacilityName, navigate, showFacility = true, onMarkAsPaid, onSendFollowup, onReview }: {
   invoices: InvoiceWithStatus[];
   onDelete: (id: string) => Promise<void>;
   getFacilityName: (id: string) => string;
@@ -84,6 +85,7 @@ function InvoiceTable({ invoices, onDelete, getFacilityName, navigate, showFacil
   showFacility?: boolean;
   onMarkAsPaid?: (invoice: InvoiceWithStatus) => void;
   onSendFollowup?: (invoice: InvoiceWithStatus) => void;
+  onReview?: (invoice: InvoiceWithStatus) => void;
 }) {
   return (
     <table className="w-full text-[13px] min-w-[600px] sm:min-w-0">
@@ -148,6 +150,17 @@ function InvoiceTable({ invoices, onDelete, getFacilityName, navigate, showFacil
             <td className="p-3" onClick={e => e.stopPropagation()}>
               <TooltipProvider delayDuration={200}>
                 <div className="flex items-center gap-0.5">
+                  {onReview && inv.computedStatus === 'draft' && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 px-2 mr-1 text-xs font-medium border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500 hover:text-white"
+                      onClick={() => onReview(inv)}
+                    >
+                      <FileEdit className="h-3.5 w-3.5 mr-1" />
+                      Review
+                    </Button>
+                  )}
                   {onMarkAsPaid && ['sent', 'partial', 'overdue'].includes(inv.computedStatus) && (
                     <Button
                       size="sm"
@@ -195,7 +208,7 @@ function InvoiceTable({ invoices, onDelete, getFacilityName, navigate, showFacil
 export function InvoiceStatusGroup({
   title, icon, invoices, onDelete,
   getFacilityName, emptyMessage, defaultOpen = true, groupByFacility = false,
-  headerRight, alertBanner, onMarkAsPaid, onSendFollowup,
+  headerRight, alertBanner, onMarkAsPaid, onSendFollowup, onReview,
 }: Props & { groupByFacility?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
   const navigate = useNavigate();
@@ -247,6 +260,7 @@ export function InvoiceStatusGroup({
                 navigate={navigate}
                 onMarkAsPaid={onMarkAsPaid}
                 onSendFollowup={onSendFollowup}
+                onReview={onReview}
               />
             ))}
           </div>
@@ -259,6 +273,7 @@ export function InvoiceStatusGroup({
               navigate={navigate}
               onMarkAsPaid={onMarkAsPaid}
               onSendFollowup={onSendFollowup}
+              onReview={onReview}
             />
           </div>
         )}
@@ -267,7 +282,7 @@ export function InvoiceStatusGroup({
   );
 }
 
-function FacilitySubGroup({ name, invoices, onDelete, getFacilityName, navigate, onMarkAsPaid, onSendFollowup }: {
+function FacilitySubGroup({ name, invoices, onDelete, getFacilityName, navigate, onMarkAsPaid, onSendFollowup, onReview }: {
   name: string;
   invoices: InvoiceWithStatus[];
   onDelete: (id: string) => Promise<void>;
@@ -275,6 +290,7 @@ function FacilitySubGroup({ name, invoices, onDelete, getFacilityName, navigate,
   navigate: (path: string) => void;
   onMarkAsPaid?: (invoice: InvoiceWithStatus) => void;
   onSendFollowup?: (invoice: InvoiceWithStatus) => void;
+  onReview?: (invoice: InvoiceWithStatus) => void;
 }) {
   const [subOpen, setSubOpen] = useState(true);
   const total = invoices.reduce((s, i) => s + (i.total_amount ?? 0), 0);
@@ -299,6 +315,7 @@ function FacilitySubGroup({ name, invoices, onDelete, getFacilityName, navigate,
             showFacility={false}
             onMarkAsPaid={onMarkAsPaid}
             onSendFollowup={onSendFollowup}
+            onReview={onReview}
           />
         </div>
       </CollapsibleContent>
