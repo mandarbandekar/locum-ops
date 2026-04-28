@@ -256,36 +256,6 @@ export default function OnboardingPage() {
 
   // ─────────────────────────── Handlers ───────────────────────────
   const finishingRef = useRef(false);
-  const rateCardSubmitRef = useRef(false);
-
-  const handleRateCardContinue = async () => {
-    if (rateCardSubmitRef.current) return;
-    const cleaned = defaultRates
-      .filter(r => r.name.trim() && r.amount > 0)
-      .map((r, i) => ({ ...r, sort_order: i }));
-    if (cleaned.length === 0) {
-      toast.error('Add at least one rate to continue');
-      return;
-    }
-    rateCardSubmitRef.current = true;
-    try {
-      await updateProfile({
-        default_rates: cleaned,
-        default_billing_preference: defaultBillingPreference,
-      });
-      setDefaultRates(cleaned);
-      trackOnboarding('onboarding_rate_card_completed', {
-        rate_count: cleaned.length,
-        preference: defaultBillingPreference,
-        daily_rate_count: cleaned.filter(r => r.basis === 'daily').length,
-        hourly_rate_count: cleaned.filter(r => r.basis === 'hourly').length,
-      });
-      setPhase('add_clinic');
-      persist({ phase: 'add_clinic' });
-    } finally {
-      rateCardSubmitRef.current = false;
-    }
-  };
 
   const handleClinicSaved = (facilityId: string) => {
     const isNew = !createdFacilityIds.includes(facilityId);
