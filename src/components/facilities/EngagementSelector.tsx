@@ -1,4 +1,4 @@
-import { Building2, Briefcase, IdCard } from 'lucide-react';
+import { Building2, Briefcase } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -6,7 +6,6 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { cn } from '@/lib/utils';
 import {
   THIRD_PARTY_PRESETS,
-  W2_EMPLOYER_PRESETS,
   type EngagementType,
   type TaxFormType,
 } from '@/lib/engagementOptions';
@@ -25,7 +24,6 @@ interface Props {
 const OPTIONS: { value: EngagementType; title: string; sub: string; icon: typeof Building2 }[] = [
   { value: 'direct', title: 'Direct / Independent', sub: 'You bill the clinic yourself', icon: Building2 },
   { value: 'third_party', title: 'Via Platform or Agency', sub: 'Roo, IndeVets, staffing firm', icon: Briefcase },
-  { value: 'w2', title: 'W-2 Employer', sub: 'VCA, Banfield, etc.', icon: IdCard },
 ];
 
 export function EngagementSelector({
@@ -38,15 +36,12 @@ export function EngagementSelector({
   compact,
 }: Props) {
   const isThird = engagementType === 'third_party';
-  const isW2 = engagementType === 'w2';
 
-  const presets = isW2 ? W2_EMPLOYER_PRESETS : THIRD_PARTY_PRESETS;
+  const presets = THIRD_PARTY_PRESETS;
   const isOther = !!sourceName && !(presets as readonly string[]).includes(sourceName);
   const selectValue = !sourceName ? '' : isOther ? '__other__' : sourceName;
 
-  const sourceLabel = isW2 ? 'Employer name' : 'Platform or agency name';
-  const sourceFallback = isW2 ? 'your employer' : 'the platform';
-  const sourceDisplay = sourceName.trim() || sourceFallback;
+  const sourceDisplay = sourceName.trim() || 'the platform';
 
   return (
     <div className="space-y-3">
@@ -88,10 +83,10 @@ export function EngagementSelector({
         })}
       </RadioGroup>
 
-      {(isThird || isW2) && (
+      {isThird && (
         <div className="space-y-3 rounded-lg border border-border bg-muted/30 p-3">
           <div className="space-y-1.5">
-            <Label className="text-xs">{sourceLabel}</Label>
+            <Label className="text-xs">Platform or agency name</Label>
             <Select
               value={selectValue}
               onValueChange={(v) => {
@@ -113,36 +108,32 @@ export function EngagementSelector({
               <Input
                 value={sourceName}
                 onChange={(e) => onSourceNameChange(e.target.value)}
-                placeholder={isW2 ? 'Employer name' : 'Platform or agency name'}
+                placeholder="Platform or agency name"
                 autoFocus
               />
             )}
           </div>
 
-          {isThird && (
-            <div className="space-y-1.5">
-              <Label className="text-xs">How does {sourceDisplay} pay you?</Label>
-              <RadioGroup
-                value={taxFormType}
-                onValueChange={(v) => onTaxFormTypeChange(v as TaxFormType)}
-                className="flex gap-4"
-              >
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <RadioGroupItem value="1099" id="tax-1099" />
-                  <span className="text-sm">1099</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <RadioGroupItem value="w2" id="tax-w2" />
-                  <span className="text-sm">W-2</span>
-                </label>
-              </RadioGroup>
-            </div>
-          )}
+          <div className="space-y-1.5">
+            <Label className="text-xs">How does {sourceDisplay} pay you?</Label>
+            <RadioGroup
+              value={taxFormType}
+              onValueChange={(v) => onTaxFormTypeChange(v as TaxFormType)}
+              className="flex gap-4"
+            >
+              <label className="flex items-center gap-2 cursor-pointer">
+                <RadioGroupItem value="1099" id="tax-1099" />
+                <span className="text-sm">1099</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <RadioGroupItem value="w2" id="tax-w2" />
+                <span className="text-sm">W-2</span>
+              </label>
+            </RadioGroup>
+          </div>
 
           <p className="text-xs text-muted-foreground">
-            {isThird
-              ? `We won't generate invoices for these shifts — ${sourceDisplay} handles billing. We'll still track your earnings and taxes.`
-              : 'W-2 income is tracked separately from 1099 income for tax purposes.'}
+            We won't generate invoices for these shifts — {sourceDisplay} handles billing. We'll still track your earnings and taxes.
           </p>
         </div>
       )}
