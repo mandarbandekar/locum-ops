@@ -15,6 +15,7 @@ import {
   _resetOnboardingActivationLatch,
 } from '@/lib/onboardingAnalytics';
 import { posthog } from '@/lib/posthog';
+import { buildAutoInvoiceDraft } from '@/lib/invoiceAutoGeneration';
 
 // ─── Legacy auto-complete predicate ────────────────────────────────
 // Mirrors the gate in OnboardingPage.tsx so the rule is locked in by tests
