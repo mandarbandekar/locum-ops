@@ -54,24 +54,12 @@ export default function FacilitiesPage() {
       </div>
 
       {!isEmpty && (
-        <div className="flex flex-col sm:flex-row gap-3 mb-4">
-          <div className="flex-1 rounded-lg border bg-card">
-            <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-border">
-              <SummaryStat label="Total clinics" value={summary.total} />
-              <SummaryStat label="Active" value={summary.active} />
-              <SummaryStat label="Direct-bill" value={summary.directBill} />
-              <SummaryStat
-                label="Missing billing"
-                value={summary.missingBilling}
-                tone={summary.missingBilling > 0 ? 'warning' : 'default'}
-              />
-            </div>
-          </div>
-          <div className="flex items-center border rounded-lg overflow-hidden bg-muted p-0.5 gap-0.5 sm:self-stretch">
+        <div className="flex justify-end mb-4">
+          <div className="flex items-center border rounded-lg overflow-hidden bg-muted p-0.5 gap-0.5">
             <Button
               size="sm"
               variant={viewMode === 'cards' ? 'default' : 'ghost'}
-              className="h-full px-2.5 rounded-md"
+              className="h-8 px-2.5 rounded-md"
               onClick={() => setViewMode('cards')}
               aria-label="Card view"
             >
@@ -80,7 +68,7 @@ export default function FacilitiesPage() {
             <Button
               size="sm"
               variant={viewMode === 'list' ? 'default' : 'ghost'}
-              className="h-full px-2.5 rounded-md"
+              className="h-8 px-2.5 rounded-md"
               onClick={() => setViewMode('list')}
               aria-label="List view"
             >
