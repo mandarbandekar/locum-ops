@@ -101,7 +101,60 @@ export function OnboardingBulkShiftCalendar({
   const hasRates = rateOptions.length > 0;
 
   const [selectedRateId, setSelectedRateId] = useState<string>(() => rateOptions[0]?.id ?? '');
+  // Keep selection valid when rateOptions appears (e.g. user just saved an inline rate).
+  useEffect(() => {
+    if (rateOptions.length === 0) return;
+    if (!selectedRateId || !rateOptions.find(r => r.id === selectedRateId)) {
+      setSelectedRateId(rateOptions[0].id);
+    }
+  }, [rateOptions, selectedRateId]);
   const selectedRate = rateOptions.find(r => r.id === selectedRateId) ?? rateOptions[0];
+
+  const handleSaveInlineRate = async () => {
+    const amt = Number(newRateAmount);
+    if (!newRateLabel.trim()) {
+      toast.error('Give the rate a short label, e.g. "Standard Day"');
+      return;
+    }
+    if (!Number.isFinite(amt) || amt <= 0) {
+      toast.error('Enter a rate amount greater than 0');
+      return;
+    }
+    setSavingRate(true);
+    try {
+      const merged: RateEntry[] = [
+        ...rateEntries,
+        {
+          type: rateEntries.length === 0 && newRateBasis === 'daily' ? 'weekday' : 'custom',
+          label: rateEntries.length === 0 && newRateBasis === 'daily' ? 'Weekday Rate' : newRateLabel.trim(),
+          amount: amt,
+          kind: newRateBasis === 'daily' ? 'flat' : 'hourly',
+        },
+      ];
+      const fields = ratesToTermsFields(merged);
+      await updateTerms({
+        id: facilityTerms?.id ?? generateId(),
+        facility_id: facility.id,
+        ...fields,
+        cancellation_policy_text: facilityTerms?.cancellation_policy_text ?? '',
+        overtime_policy_text: facilityTerms?.overtime_policy_text ?? '',
+        late_payment_policy_text: facilityTerms?.late_payment_policy_text ?? '',
+        special_notes: facilityTerms?.special_notes ?? '',
+      } as TermsSnapshot);
+      trackOnboarding('onboarding_inline_rate_added', {
+        facility_id: facility.id,
+        basis: newRateBasis,
+        amount: amt,
+      });
+      toast.success('Rate saved to clinic');
+      setNewRateAmount('');
+    } catch (e) {
+      console.error('inline rate save failed', e);
+      toast.error('Could not save the rate. Try again.');
+    } finally {
+      setSavingRate(false);
+    }
+  };
 
   const hours = hoursBetween(startTime, endTime);
   const projectedGross = useMemo(() => {
