@@ -555,7 +555,6 @@ export default function OnboardingPage() {
               <AddClinicStepper
                 ref={stepperRef}
                 showHeader
-                hideRatesStep
                 defaultRates={stepperDefaultRates}
                 onSaved={handleClinicSaved}
               />
