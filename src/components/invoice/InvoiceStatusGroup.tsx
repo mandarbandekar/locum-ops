@@ -260,6 +260,7 @@ export function InvoiceStatusGroup({
                 navigate={navigate}
                 onMarkAsPaid={onMarkAsPaid}
                 onSendFollowup={onSendFollowup}
+                onReview={onReview}
               />
             ))}
           </div>
@@ -272,6 +273,7 @@ export function InvoiceStatusGroup({
               navigate={navigate}
               onMarkAsPaid={onMarkAsPaid}
               onSendFollowup={onSendFollowup}
+              onReview={onReview}
             />
           </div>
         )}
