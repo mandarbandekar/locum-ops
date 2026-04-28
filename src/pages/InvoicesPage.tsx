@@ -68,9 +68,11 @@ export default function InvoicesPage() {
   const [autoDeleteTarget, setAutoDeleteTarget] = useState<{ id: string; invoiceNumber: string; facilityName: string; periodStart: string; periodEnd: string; facilityId: string } | null>(null);
   const [markAsPaidTarget, setMarkAsPaidTarget] = useState<any>(null);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
-  const [reviewTarget, setReviewTarget] = useState<any>(null);
 
-  const handleReviewClick = (inv: any) => setReviewTarget(inv);
+  const handleReviewClick = (inv: any) => {
+    if (inv?.id) navigate(`/invoices/${inv.id}`);
+  };
+
 
   // Refs for scroll-to
   const overdueRef = useRef<HTMLDivElement>(null);
