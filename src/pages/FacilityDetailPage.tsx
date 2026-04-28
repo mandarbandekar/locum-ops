@@ -66,25 +66,12 @@ export default function FacilityDetailPage() {
         <div className="flex-1" />
       </div>
 
-      <Tabs defaultValue="contacts">
+      <Tabs defaultValue="contract">
         <TabsList className="flex-wrap h-auto gap-1">
-          <TabsTrigger value="contacts" className="gap-1.5"><Users className="h-3.5 w-3.5" /> Contacts</TabsTrigger>
           <TabsTrigger value="contract" className="gap-1.5"><FileText className="h-3.5 w-3.5" /> Contract</TabsTrigger>
           <TabsTrigger value="shifts" className="gap-1.5"><CalendarDays className="h-3.5 w-3.5" /> Shifts ({facilityShifts.length})</TabsTrigger>
           <TabsTrigger value="invoices" className="gap-1.5"><Receipt className="h-3.5 w-3.5" /> Invoices ({facilityInvoices.length})</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="contacts" className="mt-4">
-          <ContactsTab
-            facilityId={facility.id}
-            facility={facility}
-            contacts={facilityContacts}
-            onAddContact={addContact}
-            onUpdateContact={updateContact}
-            onDeleteContact={deleteContact}
-            onUpdateFacility={updateFacility}
-          />
-        </TabsContent>
 
         <TabsContent value="contract" className="mt-4">
           <ContractTab
