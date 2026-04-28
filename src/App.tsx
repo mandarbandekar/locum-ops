@@ -32,6 +32,7 @@ import QuizPage from "@/pages/QuizPage";
 import ResultsPage from "@/pages/ResultsPage";
 import ThanksPage from "@/pages/ThanksPage";
 import OnboardingPage from "@/pages/OnboardingPage";
+import OnboardingStatusPage from "@/pages/OnboardingStatusPage";
 import WelcomePage from "@/pages/WelcomePage";
 import SettingsProfilePage from "@/pages/SettingsProfilePage";
 import SettingsSchedulingPage from "@/pages/SettingsSchedulingPage";
@@ -97,6 +98,7 @@ function AuthenticatedApp() {
         <Routes>
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/onboarding" element={<OnboardingPage />} />
+          <Route path="/onboarding/status" element={<OnboardingStatusPage />} />
           <Route path="*" element={<Navigate to="/onboarding" replace />} />
         </Routes>
       </DataProvider>
@@ -142,6 +144,7 @@ function AuthenticatedApp() {
           <Route path="/settings/invoice-profile" element={<Navigate to="/settings/invoicing" replace />} />
           <Route path="/import" element={<Navigate to="/" replace />} />
           <Route path="/onboarding" element={<Navigate to="/" replace />} />
+          <Route path="/onboarding/status" element={<OnboardingStatusPage />} />
           <Route path="/login" element={<Navigate to="/" replace />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/forgot-password" element={<Navigate to="/settings/security" replace />} />
