@@ -231,13 +231,6 @@ export default function SettingsRateCardPage() {
       });
       setRates(cleaned);
       toast.success('Rate Card saved');
-
-      // If they have untyped past shifts AND at least one rate now has a type,
-      // surface the backfill prompt. They can opt in or ignore.
-      const anyTaggedNow = cleaned.some(r => !!r.shift_type);
-      if (anyTaggedNow && untypedShiftCount > 0) {
-        setBackfillOpen(true);
-      }
     } catch (e) {
       console.error(e);
       toast.error('Could not save Rate Card');
