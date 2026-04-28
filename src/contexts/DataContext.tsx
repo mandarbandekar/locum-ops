@@ -398,6 +398,150 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
 
   // ─── Shifts ──────────────────────────────────────────────
 
+  /**
+   * Rebuild (or create) the auto-generated draft invoice for the billing
+   * period that contains `referenceDate` for the given facility. Used after
+   * adding or updating a shift so the draft's line items, totals, invoice
+   * date and due date stay consistent with the shifts in that period.
+   */
+  const rebuildAutoDraftForPeriod = useCallback(async (
+    facility: Facility,
+    referenceDate: Date,
+  ): Promise<void> => {
+    try {
+      const cadence = facility.billing_cadence as BillingCadence;
+      const period = getBillingPeriod(
+        cadence,
+        referenceDate,
+        facility.billing_week_end_day,
+        facility.billing_cycle_anchor_date,
+      );
+
+      const { data: invoiceRows, error: invoiceRowsError } = await db('invoices')
+        .select('*')
+        .eq('facility_id', facility.id)
+        .eq('user_id', user!.id);
+      if (invoiceRowsError) throw invoiceRowsError;
+
+      const facilityInvoices = ((invoiceRows as any[]) || []).map(stripDbFields) as Invoice[];
+      const invoiceIds = facilityInvoices.map(inv => inv.id);
+
+      let facilityLineItems: InvoiceLineItem[] = [];
+      if (invoiceIds.length > 0) {
+        const { data: lineItemRows, error: lineItemRowsError } = await db('invoice_line_items')
+          .select('*')
+          .in('invoice_id', invoiceIds);
+        if (lineItemRowsError) throw lineItemRowsError;
+        facilityLineItems = ((lineItemRows as any[]) || []).map(stripDbFields) as InvoiceLineItem[];
+      }
+
+      const { data: periodShiftRows, error: periodShiftRowsError } = await db('shifts')
+        .select('*')
+        .eq('facility_id', facility.id)
+        .eq('user_id', user!.id)
+        .gte('start_datetime', period.start.toISOString())
+        .lte('start_datetime', period.end.toISOString())
+        .order('start_datetime', { ascending: true });
+      if (periodShiftRowsError) throw periodShiftRowsError;
+
+      const sentIds = getSentInvoiceShiftIds(facilityLineItems, facilityInvoices);
+      const eligible = getEligibleShiftsForPeriod(
+        ((periodShiftRows as any[]) || []).map(stripDbFields) as Shift[],
+        facility.id,
+        period.start,
+        period.end,
+        sentIds,
+      );
+
+      const periodStartStr = period.start.toISOString().slice(0, 10);
+      const periodEndStr = period.end.toISOString().slice(0, 10);
+      const existingDraft = facilityInvoices.find((inv) =>
+        inv.status === 'draft' &&
+        inv.generation_type === 'automatic' &&
+        new Date(inv.period_start).toISOString().slice(0, 10) === periodStartStr &&
+        new Date(inv.period_end).toISOString().slice(0, 10) === periodEndStr
+      );
+
+      if (eligible.length === 0) {
+        // No eligible shifts. If a draft existed, drop it (drafts only).
+        if (existingDraft) {
+          await db('invoice_line_items').delete().eq('invoice_id', existingDraft.id);
+          await db('invoices').delete().eq('id', existingDraft.id);
+          setLineItems(prev => prev.filter(li => li.invoice_id !== existingDraft.id));
+          setInvoices(prev => prev.filter(i => i.id !== existingDraft.id));
+        }
+        return;
+      }
+
+      if (existingDraft) {
+        // Rebuild the draft so invoice_date / due_date track the latest shifts.
+        const { invoice: rebuiltInv, lineItems: newItems } = buildAutoInvoiceDraft(
+          facility, eligible, period.start, period.end, existingDraft.invoice_number
+        );
+        const total = newItems.reduce((sum, li) => sum + li.line_total, 0);
+
+        const { error: deleteLineItemsError } = await db('invoice_line_items').delete().eq('invoice_id', existingDraft.id);
+        if (deleteLineItemsError) throw deleteLineItemsError;
+        setLineItems(prev => prev.filter(li => li.invoice_id !== existingDraft.id));
+
+        const toInsert = newItems.map(item => ({ user_id: user!.id, invoice_id: existingDraft.id, ...item }));
+        const { data: liData, error: insertLineItemsError } = await db('invoice_line_items').insert(toInsert).select();
+        if (insertLineItemsError) throw insertLineItemsError;
+        if (liData) {
+          setLineItems(prev => [...prev, ...(liData).map(stripDbFields) as InvoiceLineItem[]]);
+        }
+
+        const updatedInv = {
+          ...existingDraft,
+          total_amount: total,
+          balance_due: total,
+          invoice_date: rebuiltInv.invoice_date,
+          due_date: rebuiltInv.due_date,
+        };
+        const { error: updateDraftError } = await db('invoices').update({
+          total_amount: total,
+          balance_due: total,
+          invoice_date: rebuiltInv.invoice_date,
+          due_date: rebuiltInv.due_date,
+        }).eq('id', existingDraft.id);
+        if (updateDraftError) throw updateDraftError;
+        setInvoices(prev => prev.map(i => i.id === existingDraft.id ? updatedInv : i));
+      } else if (facility.auto_generate_invoices) {
+        const isSuppressed = suppressedPeriods.some(sp => {
+          if (sp.facility_id !== facility.id) return false;
+          const spStart = new Date(sp.period_start).toISOString().slice(0, 10);
+          const spEnd = new Date(sp.period_end).toISOString().slice(0, 10);
+          if (spStart !== periodStartStr) return false;
+          if (spEnd === periodEndStr) return true;
+          const diff = Math.abs(new Date(spEnd).getTime() - new Date(periodEndStr).getTime());
+          return diff <= 86400000;
+        });
+        if (isSuppressed) return;
+
+        const invoiceNumber = generateInvoiceNumber(invoices, facility.invoice_prefix);
+        const { invoice: invData, lineItems: newItems } = buildAutoInvoiceDraft(
+          facility, eligible, period.start, period.end, invoiceNumber
+        );
+        const { data: invRow, error: invErr } = await db('invoices')
+          .insert({ user_id: user!.id, ...invData }).select().single();
+        if (!invErr && invRow) {
+          const invoice = stripDbFields(invRow) as Invoice;
+          setInvoices(prev => [...prev, invoice]);
+          if (newItems.length > 0) {
+            const toInsert = newItems.map(item => ({ user_id: user!.id, invoice_id: invoice.id, ...item }));
+            const { data: liData, error: liErr } = await db('invoice_line_items').insert(toInsert).select();
+            if (liErr) throw liErr;
+            if (liData) {
+              setLineItems(prev => [...prev, ...(liData).map(stripDbFields) as InvoiceLineItem[]]);
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error('rebuildAutoDraftForPeriod failed:', err);
+    }
+  }, [user, invoices, suppressedPeriods]);
+
   const addShift = useCallback(async (s: Omit<Shift, 'id'>): Promise<Shift> => {
     if (isDemo) {
       const shift = { ...s, id: generateId() };
@@ -617,8 +761,33 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
     setShifts(prev => prev.map(x => x.id === s.id ? s : x));
 
-    // (Cancel logic removed — shifts are deleted, not canceled)
-  }, [isDemo, shifts, handleInvoiceCleanupAfterShiftRemoval]);
+    // Keep auto-generated draft invoices in sync. A date change can either
+    // move invoice_date within the same period or shift the entry to a new
+    // billing period entirely — rebuild both old and new periods.
+    try {
+      const facility = facilities.find(f => f.id === s.facility_id);
+      if (!facility) return;
+      const effectiveEngagement = (s.engagement_type_override || facility.engagement_type || 'direct');
+      if (effectiveEngagement !== 'direct') return;
+
+      const newDate = new Date(s.start_datetime);
+      await rebuildAutoDraftForPeriod(facility, newDate);
+
+      if (oldShift) {
+        const oldDate = new Date(oldShift.start_datetime);
+        const cadence = facility.billing_cadence as BillingCadence;
+        const oldPeriod = getBillingPeriod(cadence, oldDate, facility.billing_week_end_day, facility.billing_cycle_anchor_date);
+        const newPeriod = getBillingPeriod(cadence, newDate, facility.billing_week_end_day, facility.billing_cycle_anchor_date);
+        const oldKey = oldPeriod.start.toISOString().slice(0, 10) + '|' + oldPeriod.end.toISOString().slice(0, 10);
+        const newKey = newPeriod.start.toISOString().slice(0, 10) + '|' + newPeriod.end.toISOString().slice(0, 10);
+        if (oldKey !== newKey) {
+          await rebuildAutoDraftForPeriod(facility, oldDate);
+        }
+      }
+    } catch (autoErr) {
+      console.error('Auto-invoice update after shift edit failed:', autoErr);
+    }
+  }, [isDemo, shifts, facilities, rebuildAutoDraftForPeriod]);
 
   const deleteShift = useCallback(async (id: string) => {
     if (isDemo) {
