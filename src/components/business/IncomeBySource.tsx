@@ -54,7 +54,7 @@ export default function IncomeBySource({ rangeStart, rangeEnd }: Props) {
         key = 'direct::all';
         label = 'Direct clinics';
       } else {
-        const source = (eff.source_name || '').trim() || (eff.engagement_type === 'w2' ? 'W-2 Employer' : 'Platform');
+        const source = (eff.source_name || '').trim() || 'Platform';
         key = `${eff.engagement_type}::${source.toLowerCase()}`;
         label = source;
       }

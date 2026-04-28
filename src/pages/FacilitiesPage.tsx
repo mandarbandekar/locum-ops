@@ -129,9 +129,9 @@ export default function FacilitiesPage() {
                     <div className="flex items-center gap-1.5 text-muted-foreground">
                       <User className="h-3.5 w-3.5 shrink-0" />
                       <span className="truncate">
-                        {c.engagement_type === 'w2'
-                          ? 'Paid by employer — no invoicing'
-                          : 'Paid by platform — no invoicing'}
+                        {c.engagement_type === 'third_party'
+                          ? 'Paid by platform — no invoicing'
+                          : 'Paid by employer — no invoicing'}
                       </span>
                     </div>
                   ) : hasBillingContact(c) ? (

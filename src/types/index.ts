@@ -32,7 +32,7 @@ export interface Facility {
   billing_cycle_anchor_date: string | null;
   billing_week_end_day: string;
   auto_generate_invoices: boolean;
-  engagement_type?: 'direct' | 'third_party' | 'w2';
+  engagement_type?: 'direct' | 'third_party';
   source_name?: string | null;
   tax_form_type?: '1099' | 'w2' | null;
   /**
@@ -110,7 +110,7 @@ export interface Shift {
    * from the rate selected in the Rate Card; nullable for legacy shifts.
    */
   shift_type?: string | null;
-  engagement_type_override?: 'direct' | 'third_party' | 'w2' | null;
+  engagement_type_override?: 'direct' | 'third_party' | null;
   source_name_override?: string | null;
   /** Unpaid break minutes for this shift. See Facility.default_break_minutes for semantics. */
   break_minutes?: number | null;

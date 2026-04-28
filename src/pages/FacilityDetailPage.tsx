@@ -298,7 +298,7 @@ function ContractTab({ facility, facilityTerms, onSaveRates, onUpdateTerms, onUp
 
   const handleSaveDetails = () => {
     const isDirect = engagementType === 'direct';
-    const effectiveTaxForm = engagementType === 'w2' ? 'w2' : engagementType === 'third_party' ? taxFormType : null;
+    const effectiveTaxForm = engagementType === 'third_party' ? taxFormType : null;
     onUpdateFacility({
       ...facility,
       status,
@@ -358,9 +358,7 @@ function ContractTab({ facility, facilityTerms, onSaveRates, onUpdateTerms, onUp
                 <>
                   <Label className="text-xs text-muted-foreground">Engagement</Label>
                   <p className="text-sm">
-                    {facility.engagement_type === 'w2'
-                      ? `W-2 — ${facility.source_name || 'Employer'}`
-                      : facility.engagement_type === 'third_party'
+                    {facility.engagement_type === 'third_party'
                       ? `Platform / Agency — ${facility.source_name || 'Source'}${facility.tax_form_type ? ` (${facility.tax_form_type === 'w2' ? 'W-2' : '1099'})` : ''}`
                       : 'Direct / Independent'}
                   </p>
@@ -370,11 +368,11 @@ function ContractTab({ facility, facilityTerms, onSaveRates, onUpdateTerms, onUp
           </CardContent>
         </Card>
 
-        {engagementType !== 'w2' && (
+        {engagementType !== 'direct' && (
           <RatesEditor rates={rates} onChange={setRates} onSave={onSaveRates} />
         )}
 
-        {engagementType !== 'w2' && (
+        {engagementType !== 'direct' && (
           <BreakPolicyCard facility={facility} onUpdate={onUpdateFacility} />
         )}
 
@@ -397,9 +395,9 @@ function ContractTab({ facility, facilityTerms, onSaveRates, onUpdateTerms, onUp
           <Card>
             <CardContent className="pt-6">
               <p className="text-sm text-muted-foreground">
-                {engagementType === 'w2'
-                  ? `W-2 income from ${facility.source_name || 'this employer'} is tracked separately for tax purposes. Invoicing and confirmations don't apply.`
-                  : `${facility.source_name || 'This platform'} handles billing for these shifts, so invoicing settings and clinic confirmations don't apply here.`}
+                {engagementType === 'third_party'
+                  ? `${facility.source_name || 'This platform'} handles billing for these shifts, so invoicing settings and clinic confirmations don't apply here.`
+                  : ''}
               </p>
             </CardContent>
           </Card>

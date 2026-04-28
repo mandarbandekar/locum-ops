@@ -35,7 +35,7 @@ export interface ManualFacilityInput {
   billing_week_end_day?: string;
   billing_anchor_date?: string;
   auto_generate_invoices?: boolean;
-  engagement_type?: 'direct' | 'third_party' | 'w2';
+  engagement_type?: 'direct' | 'third_party';
   source_name?: string | null;
   tax_form_type?: '1099' | 'w2' | null;
 }

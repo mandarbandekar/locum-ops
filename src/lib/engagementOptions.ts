@@ -1,6 +1,6 @@
 import type { Facility, Shift } from '@/types';
 
-export type EngagementType = 'direct' | 'third_party' | 'w2';
+export type EngagementType = 'direct' | 'third_party';
 export type TaxFormType = '1099' | 'w2';
 
 export const THIRD_PARTY_PRESETS = [
@@ -11,26 +11,14 @@ export const THIRD_PARTY_PRESETS = [
   'VetNow',
 ] as const;
 
-export const W2_EMPLOYER_PRESETS = [
-  'VCA',
-  'Banfield',
-  'BluePearl',
-  'MedVet',
-  'Ethos',
-  'Pathway',
-  'NVA',
-] as const;
-
 export const ENGAGEMENT_LABELS: Record<EngagementType, string> = {
   direct: 'Direct / Independent',
   third_party: 'Via Platform or Agency',
-  w2: 'W-2 Employer',
 };
 
 export const ENGAGEMENT_DESCRIPTIONS: Record<EngagementType, string> = {
   direct: 'You bill the clinic directly. LocumOps generates your invoices.',
   third_party: 'A platform or staffing agency books and pays you (Roo, IndeVets, etc.).',
-  w2: 'You are a W-2 employee of a corporate group (VCA, Banfield, etc.).',
 };
 
 export interface EngagementPill {
@@ -49,17 +37,10 @@ export function getEngagementPill(facility: Pick<Facility, 'engagement_type' | '
         'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-900/60',
     };
   }
-  if (type === 'third_party') {
-    return {
-      label: source || 'Platform',
-      className:
-        'bg-blue-100 text-blue-800 dark:bg-blue-950/50 dark:text-blue-300 border border-blue-200/60 dark:border-blue-900/60',
-    };
-  }
   return {
-    label: source ? `W-2: ${source}` : 'W-2',
+    label: source || 'Platform',
     className:
-      'bg-purple-100 text-purple-800 dark:bg-purple-950/50 dark:text-purple-300 border border-purple-200/60 dark:border-purple-900/60',
+      'bg-blue-100 text-blue-800 dark:bg-blue-950/50 dark:text-blue-300 border border-blue-200/60 dark:border-blue-900/60',
   };
 }
 
@@ -94,11 +75,8 @@ export function getShiftEngagementHelperText(
   if (type === 'direct') {
     return 'Direct booking — an invoice will be created after this shift.';
   }
-  if (type === 'third_party') {
-    if (facility.tax_form_type === 'w2') {
-      return `Booked via ${source} — no invoice will be generated. This income will appear on your W-2 from ${source}.`;
-    }
-    return `Booked via ${source} — no invoice will be generated. A 1099 is expected from ${source} at year-end.`;
+  if (facility.tax_form_type === 'w2') {
+    return `Booked via ${source} — no invoice will be generated. This income will appear on your W-2 from ${source}.`;
   }
-  return `W-2 shift with ${source} — tracked separately from 1099 income.`;
+  return `Booked via ${source} — no invoice will be generated. A 1099 is expected from ${source} at year-end.`;
 }

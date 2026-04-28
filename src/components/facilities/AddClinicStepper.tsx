@@ -149,7 +149,7 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
       return null;
     }
     if (engagementType !== 'direct' && !sourceName.trim()) {
-      toast.error(engagementType === 'w2' ? 'Please select your employer' : 'Please select the platform or agency');
+      toast.error('Please select the platform or agency');
       setStep(2);
       return null;
     }
@@ -180,7 +180,7 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
       const prefix = getInitials(name);
       const rateFields = ratesToTermsFields(rates);
       const effectiveTaxForm: TaxFormType | null =
-        engagementType === 'w2' ? 'w2' : engagementType === 'third_party' ? taxFormType : null;
+        engagementType === 'third_party' ? taxFormType : null;
 
       const facility = await addFacility({
         name: name.trim(),
@@ -262,7 +262,7 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
   const validateStep = (s: number): string | null => {
     if (s === 1 && !name.trim()) return 'Please enter a clinic name';
     if (s === 2 && engagementType !== 'direct' && !sourceName.trim()) {
-      return engagementType === 'w2' ? 'Please select your employer' : 'Please select the platform or agency';
+      return 'Please select the platform or agency';
     }
     return null;
   };
@@ -396,7 +396,7 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
               </p>
             ) : (
               <p className="text-[12px] text-foreground">
-                <span className="font-medium">{sourceName.trim() || (engagementType === 'w2' ? 'Your employer' : 'The platform')} handles your billing. </span>
+                <span className="font-medium">{sourceName.trim() || 'The platform'} handles your billing. </span>
                 <span className="text-muted-foreground">
                   We'll skip invoicing and just track shifts and income for taxes.
                 </span>
