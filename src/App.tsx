@@ -144,6 +144,7 @@ function AuthenticatedApp() {
           <Route path="/settings/invoice-profile" element={<Navigate to="/settings/invoicing" replace />} />
           <Route path="/import" element={<Navigate to="/" replace />} />
           <Route path="/onboarding" element={<Navigate to="/" replace />} />
+          <Route path="/onboarding/status" element={<OnboardingStatusPage />} />
           <Route path="/login" element={<Navigate to="/" replace />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/forgot-password" element={<Navigate to="/settings/security" replace />} />
