@@ -68,6 +68,9 @@ export default function InvoicesPage() {
   const [autoDeleteTarget, setAutoDeleteTarget] = useState<{ id: string; invoiceNumber: string; facilityName: string; periodStart: string; periodEnd: string; facilityId: string } | null>(null);
   const [markAsPaidTarget, setMarkAsPaidTarget] = useState<any>(null);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [reviewTarget, setReviewTarget] = useState<any>(null);
+
+  const handleReviewClick = (inv: any) => setReviewTarget(inv);
 
   // Refs for scroll-to
   const overdueRef = useRef<HTMLDivElement>(null);
@@ -293,7 +296,7 @@ export default function InvoicesPage() {
                         </Button>
                       </div>
                     ) : undefined}
-                    onReview={(inv) => navigate(`/invoices/${inv.id}`)}
+                    onReview={handleReviewClick}
                   />
                 </div>
               ),
@@ -347,7 +350,7 @@ export default function InvoicesPage() {
                         These invoices will be ready to review after the shifts are completed.
                       </div>
                     ) : undefined}
-                    onReview={(inv) => navigate(`/invoices/${inv.id}`)}
+                    onReview={handleReviewClick}
                   />
                 </div>
               ),
@@ -404,6 +407,35 @@ export default function InvoicesPage() {
       )}
 
       <SpotlightTour steps={INVOICE_TOUR_STEPS} isOpen={invoiceTour.isOpen} onClose={invoiceTour.closeTour} />
+
+      <AlertDialog open={!!reviewTarget} onOpenChange={(open) => { if (!open) setReviewTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Review this invoice?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {reviewTarget && (
+                <>
+                  Please confirm the details for{' '}
+                  <span className="font-medium text-foreground">{reviewTarget.invoice_number}</span> to{' '}
+                  <span className="font-medium text-foreground">{getFacilityName(reviewTarget.facility_id)}</span>{' '}
+                  for <span className="font-medium text-foreground">${(reviewTarget.total_amount ?? 0).toLocaleString()}</span>{' '}
+                  are correct before sending. You'll be able to edit line items, dates, and notes on the next screen.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              const id = reviewTarget?.id;
+              setReviewTarget(null);
+              if (id) navigate(`/invoices/${id}`);
+            }}>
+              Continue to Review
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {markAsPaidTarget && (
         <RecordPaymentDialog
