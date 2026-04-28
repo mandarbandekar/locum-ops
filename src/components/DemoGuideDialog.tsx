@@ -12,7 +12,7 @@ const modules = [
   },
   {
     icon: Building2,
-    title: 'Practice Facilities',
+    title: 'Clinics',
     description: "Store clinic details, billing preferences, scheduling contacts, and contract checklists for every facility you work with. Each clinic\u2019s invoicing cadence (daily, weekly, monthly) drives automatic invoice generation.",
   },
   {

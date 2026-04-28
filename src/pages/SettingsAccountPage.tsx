@@ -187,7 +187,7 @@ export default function SettingsAccountPage() {
                 <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm space-y-1">
                   <p className="font-medium text-destructive">The following will be permanently removed:</p>
                   <ul className="text-muted-foreground text-xs list-disc pl-4 space-y-0.5">
-                    <li>All practice facilities, contacts & contracts</li>
+                    <li>All clinics, contacts & contracts</li>
                     <li>All shifts and schedule data</li>
                     <li>All invoices, payments & billing records</li>
                     <li>All credentials, documents & CE entries</li>
