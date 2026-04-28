@@ -116,6 +116,18 @@ export function OnboardingBulkShiftCalendar({
       .map(s => new Date(s.start_datetime));
   }, [shifts, createdShiftIds]);
 
+  // Set of YYYY-MM-DD dates already booked at this clinic — used to prevent
+  // duplicate shift creation when the user navigates back and re-submits.
+  const existingShiftDateKeys = useMemo(() => {
+    const set = new Set<string>();
+    for (const s of shifts) {
+      if (s.facility_id !== facility.id) continue;
+      // start_datetime is ISO; take the local YYYY-MM-DD to match `ymd()`.
+      set.add(ymd(new Date(s.start_datetime)));
+    }
+    return set;
+  }, [shifts, facility.id]);
+
   const handleSelectDates = (d: Date[] | undefined) => {
     const next = d ?? [];
     const wentEmpty = selectedDates.length > 0 && next.length === 0;
@@ -154,7 +166,31 @@ export function OnboardingBulkShiftCalendar({
     try {
       // Sort to add chronologically
       const sorted = [...selectedDates].sort((a, b) => a.getTime() - b.getTime());
+
+      // Filter out dates that already have a shift at this clinic — guards
+      // against duplicate creation when the user navigates back and re-submits.
+      const dupDates: Date[] = [];
+      const newDates: Date[] = [];
       for (const date of sorted) {
+        if (existingShiftDateKeys.has(ymd(date))) dupDates.push(date);
+        else newDates.push(date);
+      }
+
+      if (newDates.length === 0) {
+        toast.error('These shifts are already saved', {
+          description: `${dupDates.length} shift${dupDates.length === 1 ? '' : 's'} for ${facility.name} on the selected date${dupDates.length === 1 ? '' : 's'} already exist. Pick new dates or continue forward.`,
+        });
+        setSubmitting(false);
+        submitGuardRef.current = false;
+        return;
+      }
+      if (dupDates.length > 0) {
+        toast.warning(
+          `${dupDates.length} date${dupDates.length === 1 ? '' : 's'} skipped — already saved for ${facility.name}.`,
+        );
+      }
+
+      for (const date of newDates) {
         const start = buildIso(date, startTime);
         const end = buildIso(date, endTime);
         const rateApplied = selectedRate.basis === 'daily'
@@ -250,6 +286,7 @@ export function OnboardingBulkShiftCalendar({
                     mode="multiple"
                     selected={selectedDates}
                     onSelect={handleSelectDates}
+                    disabled={(date) => existingShiftDateKeys.has(ymd(date))}
                     modifiers={{ created: createdShiftDates }}
                     modifiersClassNames={{
                       created: 'bg-primary/15 text-foreground font-semibold',
@@ -257,6 +294,12 @@ export function OnboardingBulkShiftCalendar({
                     className={cn('p-3 pointer-events-auto rounded-md border-0')}
                   />
                 </div>
+                {existingShiftDateKeys.size > 0 && (
+                  <p className="text-xs text-muted-foreground text-center">
+                    Dates already saved at {facility.name} are highlighted and can't be selected again.
+                  </p>
+                )}
+                
                 {selectedDates.length === 0 ? (
                   <div className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-2 flex items-center gap-2 text-sm text-muted-foreground">
                     <CalendarDays className="h-4 w-4 shrink-0" />
