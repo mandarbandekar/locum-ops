@@ -15,6 +15,7 @@ import {
   _resetOnboardingActivationLatch,
 } from '@/lib/onboardingAnalytics';
 import { posthog } from '@/lib/posthog';
+import { buildAutoInvoiceDraft } from '@/lib/invoiceAutoGeneration';
 
 // ─── Legacy auto-complete predicate ────────────────────────────────
 // Mirrors the gate in OnboardingPage.tsx so the rule is locked in by tests
@@ -466,5 +467,176 @@ describe('Onboarding regression: clinic rate persists into shift', () => {
     // Pick hourly → $175/hr × 9 hours.
     expect(simulateShiftFromBulkPick({ selectedRate: hourly, hoursPerShift: 9 }))
       .toMatchObject({ rate_applied: 175 * 9, rate_kind: 'hourly', hourly_rate: 175 });
+  });
+});
+
+// ─── Onboarding regression: shift rate → invoice line item ────────
+// Locks in the next link in the chain: shifts created during onboarding must
+// flow into the auto-generated invoice with `unit_rate` matching the shift's
+// applied rate exactly. Catches regressions where invoice generation rounds,
+// re-derives, or substitutes a different rate than what was logged on the
+// shift.
+describe('Onboarding regression: shift rate persists into invoice line', () => {
+  type BulkRateOption = ReturnType<typeof buildBulkRateOptions>[number];
+
+  function shiftFromBulkPick(args: {
+    id: string;
+    facility_id: string;
+    date: string; // YYYY-MM-DD
+    selectedRate: BulkRateOption;
+    hoursPerShift: number;
+  }) {
+    const { id, facility_id, date, selectedRate, hoursPerShift } = args;
+    const start = `${date}T09:00:00.000Z`;
+    const endHour = 9 + hoursPerShift;
+    const end = `${date}T${String(endHour).padStart(2, '0')}:00:00.000Z`;
+    const rate_applied =
+      selectedRate.basis === 'daily'
+        ? selectedRate.amount
+        : selectedRate.amount * hoursPerShift;
+    return {
+      id,
+      facility_id,
+      start_datetime: start,
+      end_datetime: end,
+      rate_applied,
+      notes: '',
+      color: 'green' as const,
+      rate_kind: (selectedRate.basis === 'daily' ? 'flat' : 'hourly') as
+        | 'flat'
+        | 'hourly',
+      hourly_rate:
+        selectedRate.basis === 'hourly' ? selectedRate.amount : null,
+      shift_type: null,
+      engagement_type_override: null,
+      source_name_override: null,
+      break_minutes: 0,
+      worked_through_break: true,
+    };
+  }
+
+  // Minimal Facility shape required by buildAutoInvoiceDraft.
+  const facility = {
+    id: 'fac-1',
+    name: 'Oakridge Veterinary Clinic',
+    invoice_due_days: 15,
+    invoice_prefix: 'INV',
+  } as unknown as Parameters<typeof buildAutoInvoiceDraft>[0];
+
+  it('flat day-rate shifts produce line items with unit_rate === rate_applied', () => {
+    // Onboarding setup: $850 weekday flat saved on the clinic.
+    const reloaded = termsToRates({
+      ...ratesToTermsFields([
+        { type: 'weekday', label: 'Weekday Rate', amount: 850, kind: 'flat' },
+      ]),
+    });
+    const [option] = buildBulkRateOptions({ rateEntries: reloaded, defaultRates: [] });
+
+    const shifts = ['2026-05-04', '2026-05-05', '2026-05-06'].map((d, i) =>
+      shiftFromBulkPick({
+        id: `s-${i}`,
+        facility_id: facility.id,
+        date: d,
+        selectedRate: option,
+        hoursPerShift: 10,
+      }),
+    );
+
+    const { lineItems, invoice } = buildAutoInvoiceDraft(
+      facility,
+      shifts as unknown as Parameters<typeof buildAutoInvoiceDraft>[1],
+      new Date('2026-05-01T00:00:00Z'),
+      new Date('2026-05-31T23:59:59Z'),
+      'INV-001',
+    );
+
+    expect(lineItems).toHaveLength(shifts.length);
+    lineItems.forEach((li, i) => {
+      expect(li.shift_id).toBe(shifts[i].id);
+      expect(li.unit_rate).toBe(shifts[i].rate_applied);
+      expect(li.unit_rate).toBe(850);
+      expect(li.qty).toBe(1);
+      expect(li.line_total).toBe(850);
+      expect(li.line_kind).toBe('flat');
+    });
+    expect(invoice.total_amount).toBe(850 * shifts.length);
+  });
+
+  it('hourly shifts produce line items with unit_rate === hourly_rate (not rate_applied)', () => {
+    // Onboarding setup: $160/hr saved on the clinic.
+    const reloaded = termsToRates({
+      ...ratesToTermsFields([
+        { type: 'custom', label: 'GP Hour', amount: 160, kind: 'hourly' },
+      ]),
+    });
+    const [option] = buildBulkRateOptions({ rateEntries: reloaded, defaultRates: [] });
+
+    const shifts = ['2026-06-01', '2026-06-02'].map((d, i) =>
+      shiftFromBulkPick({
+        id: `h-${i}`,
+        facility_id: facility.id,
+        date: d,
+        selectedRate: option,
+        hoursPerShift: 10,
+      }),
+    );
+
+    const { lineItems } = buildAutoInvoiceDraft(
+      facility,
+      shifts as unknown as Parameters<typeof buildAutoInvoiceDraft>[1],
+      new Date('2026-06-01T00:00:00Z'),
+      new Date('2026-06-30T23:59:59Z'),
+      'INV-002',
+    );
+
+    expect(lineItems).toHaveLength(shifts.length);
+    lineItems.forEach((li, i) => {
+      // For hourly lines, `unit_rate` is the per-hour rate the user entered
+      // on the clinic — NOT the precomputed `rate_applied` (rate × hours).
+      expect(li.unit_rate).toBe(shifts[i].hourly_rate);
+      expect(li.unit_rate).toBe(160);
+      expect(li.qty).toBe(10);
+      expect(li.line_total).toBe(160 * 10);
+      expect(li.line_kind).toBe('regular');
+    });
+  });
+
+  it('mixed flat + hourly shifts each carry their own clinic rate to the invoice', () => {
+    const reloaded = termsToRates({
+      ...ratesToTermsFields([
+        { type: 'weekday', label: 'Weekday Rate', amount: 900, kind: 'flat' },
+        { type: 'custom', label: 'After-hours', amount: 175, kind: 'hourly' },
+      ]),
+    });
+    const options = buildBulkRateOptions({ rateEntries: reloaded, defaultRates: [] });
+    const flat = options.find(o => o.basis === 'daily')!;
+    const hourly = options.find(o => o.basis === 'hourly')!;
+
+    const shifts = [
+      shiftFromBulkPick({ id: 'm-flat', facility_id: facility.id, date: '2026-07-10', selectedRate: flat, hoursPerShift: 10 }),
+      shiftFromBulkPick({ id: 'm-hour', facility_id: facility.id, date: '2026-07-11', selectedRate: hourly, hoursPerShift: 8 }),
+    ];
+
+    const { lineItems, invoice } = buildAutoInvoiceDraft(
+      facility,
+      shifts as unknown as Parameters<typeof buildAutoInvoiceDraft>[1],
+      new Date('2026-07-01T00:00:00Z'),
+      new Date('2026-07-31T23:59:59Z'),
+      'INV-003',
+    );
+
+    const flatLine = lineItems.find(l => l.shift_id === 'm-flat')!;
+    const hourLine = lineItems.find(l => l.shift_id === 'm-hour')!;
+
+    // Flat line: unit_rate = rate_applied = the clinic's day rate.
+    expect(flatLine.unit_rate).toBe(900);
+    expect(flatLine.line_total).toBe(900);
+
+    // Hourly line: unit_rate = the clinic's hourly rate (NOT rate_applied).
+    expect(hourLine.unit_rate).toBe(175);
+    expect(hourLine.qty).toBe(8);
+    expect(hourLine.line_total).toBe(175 * 8);
+
+    expect(invoice.total_amount).toBe(900 + 175 * 8);
   });
 });
