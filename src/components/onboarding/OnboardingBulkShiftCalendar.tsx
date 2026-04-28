@@ -60,13 +60,20 @@ export function OnboardingBulkShiftCalendar({
   onContinue,
   renderFooter,
 }: Props) {
-  const { addShift, terms, shifts } = useData();
+  const { addShift, terms, shifts, updateTerms } = useData();
   const [selectedDates, setSelectedDates] = useState<Date[]>([]);
   const [startTime, setStartTime] = useState('08:00');
   const [endTime, setEndTime] = useState('18:00');
   const [submitting, setSubmitting] = useState(false);
   const [subStep, setSubStep] = useState<'dates' | 'details'>('dates');
   const submitGuardRef = useRef(false);
+
+  // Inline "add a rate" form state — shown when this clinic has no rates yet
+  // and the user has no global default rates either.
+  const [newRateLabel, setNewRateLabel] = useState('Standard Day');
+  const [newRateBasis, setNewRateBasis] = useState<'daily' | 'hourly'>('daily');
+  const [newRateAmount, setNewRateAmount] = useState<string>('');
+  const [savingRate, setSavingRate] = useState(false);
 
   // Fire view event once on mount.
   useEffect(() => {
@@ -87,16 +94,11 @@ export function OnboardingBulkShiftCalendar({
     [facilityTerms],
   );
 
-  const rateOptions: BulkRateOption[] = useMemo(() => {
-    const opts = buildBulkRateOptions({ rateEntries, defaultRates });
-    if (opts.length > 0) return opts;
-    // Last-resort safety net: never let the dropdown be empty (e.g. user skipped
-    // Rate Card AND created a brand-new clinic with no rates yet). Keeps the
-    // step usable; the user can always edit clinic-specific rates later.
-    return [
-      { id: 'fallback:standard-day:850', label: 'Standard Day — $850 /day', amount: 850, basis: 'daily' as const },
-    ];
-  }, [rateEntries, defaultRates]);
+  const rateOptions: BulkRateOption[] = useMemo(
+    () => buildBulkRateOptions({ rateEntries, defaultRates }),
+    [rateEntries, defaultRates],
+  );
+  const hasRates = rateOptions.length > 0;
 
   const [selectedRateId, setSelectedRateId] = useState<string>(() => rateOptions[0]?.id ?? '');
   const selectedRate = rateOptions.find(r => r.id === selectedRateId) ?? rateOptions[0];
