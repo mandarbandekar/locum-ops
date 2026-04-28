@@ -68,7 +68,7 @@ export default function FacilityDetailPage() {
 
       <Tabs defaultValue="contract">
         <TabsList className="flex-wrap h-auto gap-1">
-          <TabsTrigger value="contract" className="gap-1.5"><FileText className="h-3.5 w-3.5" /> Contract</TabsTrigger>
+          <TabsTrigger value="contract" className="gap-1.5"><FileText className="h-3.5 w-3.5" /> Clinic Overview</TabsTrigger>
           <TabsTrigger value="shifts" className="gap-1.5"><CalendarDays className="h-3.5 w-3.5" /> Shifts ({facilityShifts.length})</TabsTrigger>
           <TabsTrigger value="invoices" className="gap-1.5"><Receipt className="h-3.5 w-3.5" /> Invoices ({facilityInvoices.length})</TabsTrigger>
         </TabsList>
