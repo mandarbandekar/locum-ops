@@ -22,19 +22,21 @@ import { toast } from 'sonner';
 
 type Phase = OnboardingPhase;
 
+// Note: `rate_card` is a legacy phase — coerced to `add_clinic` on hydrate.
+// Kept in the maps to satisfy the Phase type.
 const PHASE_STEP: Record<Phase, number> = {
   welcome: 0,
   rate_card: 1,
-  add_clinic: 2,
-  bulk_shifts: 3,
-  invoice_reveal: 4,
-  loop_choice: 4, // legacy — coerced on hydrate; kept to satisfy type
-  business_map: 5,
+  add_clinic: 1,
+  bulk_shifts: 2,
+  invoice_reveal: 3,
+  loop_choice: 3,
+  business_map: 4,
 };
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 4;
 const PHASE_LABEL: Record<Phase, string> = {
   welcome: 'Welcome',
-  rate_card: 'Set up your rates',
+  rate_card: 'Add your first clinic',
   add_clinic: 'Add your first clinic',
   bulk_shifts: 'Add your shifts',
   invoice_reveal: 'See your invoices',
@@ -44,7 +46,7 @@ const PHASE_LABEL: Record<Phase, string> = {
 const PHASE_BACK: Record<Phase, Phase | null> = {
   welcome: null,
   rate_card: null,
-  add_clinic: 'rate_card',
+  add_clinic: null,
   bulk_shifts: 'add_clinic',
   invoice_reveal: 'bulk_shifts',
   loop_choice: 'invoice_reveal',
