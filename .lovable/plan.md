@@ -1,55 +1,47 @@
-# Surface Rate Card rates inside the Add Shift flow
+## Improve the Clinics (Practice Facilities) Page
 
-## What you're seeing
+The current page works but feels sparse and a little flat after the search bar and filter were removed. The toolbar is mostly empty, the cards repeat the same metadata in a busy stack, and the list view is plain. This pass tightens the hierarchy, adds a useful summary, and gives both views a more polished, "calm competent colleague" feel — consistent with the rest of LocumOps (flat design, themed borders, no shadows).
 
-When you open the **Add Shift** dialog and pick a clinic, the rate dropdown only shows rates that were saved on **that clinic's terms** (e.g. its Weekday/Weekend rates). The rates you saved in **Settings → Rate Card** (GP Day, ER Day, Surgery, hourly rates, etc.) never appear — unless the clinic has *zero* rates configured.
+### What changes
 
-## Why it happens
+**1. Header & summary strip**
+- Add a one-line subtitle under the page title: e.g. "Your network of clinics, billing contacts, and engagement terms."
+- Replace the empty toolbar row with a compact **Summary Strip** (single bordered card, 3-4 stats):
+  - Total clinics
+  - Active
+  - Direct-bill (where you invoice)
+  - Missing billing contact (amber, only shown if > 0)
+- Keep the view-mode toggle (cards / list) right-aligned on the same row as the summary.
 
-In `src/components/schedule/ShiftFormDialog.tsx`, `buildRateOptions()` does this:
+**2. Card view refinements**
+- Remove the hover shadow (per flat-design rule); use a subtle border color shift on hover instead.
+- Tighten internal spacing (p-4 instead of p-5) and reduce vertical stack noise:
+  - Line 1: clinic name + status pill (right)
+  - Line 2: address with map pin (muted, single line, truncated)
+  - Divider
+  - Line 3: engagement pill + billing cadence (inline, smaller)
+  - Line 4: billing contact OR "No billing contact" warning OR "Paid by employer/platform" note
+- Move the trash icon to a consistent top-right slot that's always visible at low opacity (not hover-only) — easier to discover, still unobtrusive.
+- Empty state: replace the plain text with a centered illustration block (icon + "No facilities yet" + "Add your first clinic" CTA) when `facilities.length === 0`.
 
-```ts
-if (fromFacility.length > 0) return fromFacility;     // ← stops here
-return mapDefaultRatesToRateEntries(defaultRates);    // ← only used if clinic has no rates
-```
+**3. List view refinements**
+- Add `table-fixed` with explicit `<colgroup>` widths for symmetric columns (matches the recent invoice table cleanup).
+- New columns: Name | Address | Status | Engagement | Billing | Actions.
+- Right-align the actions column header and cell.
+- Use `tabular-nums` and consistent badge sizing.
+- Zebra-stripe rows subtly with `even:bg-muted/20` for scannability.
 
-So the Rate Card is treated as a **fallback**, not a **library**. For any existing user (every clinic already has at least a Weekday rate), the Rate Card is invisible inside Add Shift.
+**4. Cleanup**
+- Remove unused `search`, `statusFilter`, `Input`, `Select`, `Search` imports/state (left over from the removed filter bar).
 
-## How it should work
+### Technical details
 
-The Rate Card is your personal price list. When logging a shift, you should see:
+- File: `src/pages/FacilitiesPage.tsx` (single-file change).
+- Derive summary counts from `facilities` in a `useMemo`.
+- Reuse existing `StatusBadge`, `getEngagementPill`, and `Badge` components — no new design tokens needed.
+- Stick to semantic tokens (`bg-card`, `border-border`, `text-muted-foreground`, `text-amber-600`) per the design system.
+- No data model, route, or context changes.
 
-1. **Facility-specific rates first** (they're the source of truth for that clinic's contract)
-2. **Then your Rate Card rates** that aren't already represented on the facility — labeled so you know they're coming from your personal library, not the contract.
-
-Selecting a Rate Card entry just pre-fills the amount + kind (flat/hourly) + shift_type for the shift. It does NOT silently mutate the facility's terms.
-
-## Proposed changes
-
-### 1. Merge, don't fallback (`ShiftFormDialog.tsx`)
-Rewrite `buildRateOptions()` to always concatenate:
-- All facility rates (existing behavior)
-- Plus Rate Card entries that aren't already represented at the facility (deduped by `label + amount + kind`)
-
-### 2. Visual grouping in the rate dropdown
-Inside the rate `<Select>`, render two labeled groups:
-- **From this clinic** — facility terms rates
-- **From your Rate Card** — personal library entries with a small muted "Rate Card" tag
-
-If a clinic has no terms yet, only the Rate Card group renders (current fallback behavior preserved).
-
-### 3. Carry shift_type through
-When a Rate Card option is picked, set `shift_type` on the shift from the matched entry — same as today's facility-rate path. This keeps the shift-type categorization initiative working for shifts logged via Rate Card defaults.
-
-### 4. Empty-state hint
-If both facility terms AND Rate Card are empty, show inline copy in the rate field: *"No saved rates yet — type an amount, or set defaults in Settings → Rate Card."* with a link.
-
-## Files touched
-
-- `src/components/schedule/ShiftFormDialog.tsx` — merge logic, grouped Select rendering, shift_type wiring, empty-state hint
-
-## Out of scope
-
-- No DB migrations — Rate Card already lives on `profiles.default_rates`
-- No changes to facility terms persistence — Rate Card stays a personal library, not a clinic contract
-- Bulk Shift Calendar already merges correctly via `buildBulkRateOptions` — no changes needed there
+### Out of scope
+- No new filters or search (recently removed by request).
+- No changes to facility detail page, add dialog, or data layer.
