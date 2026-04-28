@@ -151,6 +151,28 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
       setStep(2);
       return null;
     }
+
+    // Duplicate-clinic guard — prevents re-creating a clinic the user already added
+    // (e.g. after navigating Back during onboarding and re-submitting the form).
+    const trimmedName = name.trim().toLowerCase();
+    const trimmedAddress = address.trim().toLowerCase();
+    const duplicate = facilities.find(f => {
+      const existingName = (f.name || '').trim().toLowerCase();
+      const existingAddress = (f.address || '').trim().toLowerCase();
+      if (existingName !== trimmedName) return false;
+      // If both have an address, require it to match too. If neither has one,
+      // a name-only match is enough to flag a duplicate.
+      if (trimmedAddress && existingAddress) return existingAddress === trimmedAddress;
+      return true;
+    });
+    if (duplicate) {
+      toast.error('You already added this clinic', {
+        description: `"${duplicate.name}" is already in your workspace. Continuing with the existing one.`,
+      });
+      onSaved(duplicate.id, duplicate.name);
+      return duplicate.id;
+    }
+
     setSaving(true);
     try {
       const prefix = getInitials(name);
