@@ -422,13 +422,7 @@ export default function OnboardingPage() {
                   ← Back
                 </button>
               ) : (
-                <button
-                  type="button"
-                  onClick={goBack}
-                  className="text-muted-foreground hover:text-foreground py-1"
-                >
-                  ← Back to rates
-                </button>
+                <span />
               )}
               <span />
             </div>
