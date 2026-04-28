@@ -35,13 +35,13 @@ export default function FacilitiesPage() {
     <div>
       <div className="page-header flex-col sm:flex-row gap-3 items-start sm:items-center">
         <div>
-          <h1 className="page-title">Practice Facilities</h1>
+          <h1 className="page-title">Clinics</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             Your network of clinics, billing contacts, and engagement terms.
           </p>
         </div>
         <Button size="sm" onClick={() => setShowAdd(true)} className="w-full sm:w-auto sm:ml-auto">
-          <Plus className="mr-1 h-4 w-4" /> Add Practice Facility
+          <Plus className="mr-1 h-4 w-4" /> Add Clinic
         </Button>
       </div>
 
@@ -75,7 +75,7 @@ export default function FacilitiesPage() {
           <div className="rounded-full bg-muted p-3 mb-3">
             <Building2 className="h-6 w-6 text-muted-foreground" />
           </div>
-          <h3 className="font-semibold text-base">No practice facilities yet</h3>
+          <h3 className="font-semibold text-base">No clinics yet</h3>
           <p className="text-sm text-muted-foreground mt-1 max-w-sm">
             Add the clinics where you work to track shifts, billing contacts, and engagement terms in one place.
           </p>

@@ -34,7 +34,7 @@ export default function FacilityDetailPage() {
   const { getSettings, saveSettings } = useClinicConfirmations();
 
   const facility = facilities.find(c => c.id === id);
-  if (!facility) return <div className="p-6">Practice facility not found. <Button variant="link" onClick={() => navigate('/facilities')}>Back</Button></div>;
+  if (!facility) return <div className="p-6">Clinic not found. <Button variant="link" onClick={() => navigate('/facilities')}>Back</Button></div>;
 
   const facilityContacts = contacts.filter(c => c.facility_id === id);
   const facilityTerms = terms.find(c => c.facility_id === id);
@@ -61,7 +61,7 @@ export default function FacilityDetailPage() {
         <Button variant="ghost" size="icon" onClick={() => navigate('/facilities')} className="shrink-0">
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <EditableFacilityName facility={facility} onSave={(newName, newAddress) => { updateFacility({ ...facility, name: newName, address: newAddress }); toast.success('Practice facility updated'); }} />
+        <EditableFacilityName facility={facility} onSave={(newName, newAddress) => { updateFacility({ ...facility, name: newName, address: newAddress }); toast.success('Clinic updated'); }} />
         <StatusBadge status={facility.status} className="ml-1 sm:ml-3 shrink-0" />
         <div className="flex-1" />
       </div>

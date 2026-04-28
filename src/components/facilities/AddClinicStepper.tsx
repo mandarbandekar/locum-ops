@@ -347,7 +347,7 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
               )}
               <div className="space-y-1.5">
                 <Label>Clinic name <span className="text-destructive">*</span></Label>
-                <Input value={name} onChange={e => setName(e.target.value)} placeholder="Practice facility name" autoFocus={manualEntry} />
+                <Input value={name} onChange={e => setName(e.target.value)} placeholder="Clinic name" autoFocus={manualEntry} />
               </div>
               <div className="space-y-1.5">
                 <Label>Address</Label>

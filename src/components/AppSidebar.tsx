@@ -90,8 +90,8 @@ export function AppSidebar() {
       label: 'Work',
       items: [
         { title: 'Today', url: '/', icon: LayoutDashboard },
-        { title: 'Clinics', url: '/facilities', icon: Building2 },
         { title: 'Schedule', url: '/schedule', icon: CalendarDays },
+        { title: 'Clinics', url: '/facilities', icon: Building2 },
       ],
     },
     {
