@@ -1,7 +1,8 @@
 import {
   LayoutDashboard, Building2, CalendarDays, FileText, ShieldCheck, Settings,
-  Receipt, Landmark, TrendingUp,
+  Receipt, Landmark, TrendingUp, Crown,
 } from 'lucide-react';
+import { isFounderAdmin } from '@/lib/founderAccess';
 import { NavLink } from '@/components/NavLink';
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
