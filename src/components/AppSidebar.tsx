@@ -78,6 +78,8 @@ function useBadgeCounts() {
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
+  const { user } = useAuth();
+  const showFounder = isFounderAdmin(user?.email);
 
   const {
     totalInvoiceBadge,
