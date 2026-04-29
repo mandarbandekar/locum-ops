@@ -1,7 +1,8 @@
 import {
   LayoutDashboard, Building2, CalendarDays, FileText, ShieldCheck, Settings,
-  Receipt, Landmark, TrendingUp,
+  Receipt, Landmark, TrendingUp, Crown,
 } from 'lucide-react';
+import { isFounderAdmin } from '@/lib/founderAccess';
 import { NavLink } from '@/components/NavLink';
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
@@ -77,6 +78,8 @@ function useBadgeCounts() {
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
+  const { user } = useAuth();
+  const showFounder = isFounderAdmin(user?.email);
 
   const {
     totalInvoiceBadge,
@@ -183,6 +186,20 @@ export function AppSidebar() {
 
       <SidebarFooter className="p-3 border-t border-sidebar-border/50 mt-auto">
         <SidebarMenu className="px-2">
+          {showFounder && (
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild size="lg" tooltip={collapsed ? 'Founder' : undefined}>
+                <NavLink
+                  to="/founder"
+                  className="sidebar-nav-item group/navitem"
+                  activeClassName="sidebar-nav-item--active"
+                >
+                  <Crown className="mr-3 h-[18px] w-[18px] transition-all duration-150 text-amber-500 group-[.sidebar-nav-item--active]/navitem:text-primary-700" />
+                  {!collapsed && <span>Founder</span>}
+                </NavLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
           <SidebarMenuItem>
             <SidebarMenuButton asChild size="lg" tooltip={collapsed ? 'Settings' : undefined}>
               <NavLink

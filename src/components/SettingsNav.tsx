@@ -1,7 +1,5 @@
 import { NavLink } from '@/components/NavLink';
-import { User, CalendarDays, CreditCard, Bell, Briefcase, Shield, Settings, Calendar, Crown, DollarSign } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { isFounderAdmin } from '@/lib/founderAccess';
+import { User, CalendarDays, CreditCard, Bell, Briefcase, Shield, Settings, Calendar, DollarSign } from 'lucide-react';
 
 const settingsLinks = [
   { to: '/settings/profile', label: 'Profile', icon: User },
@@ -16,11 +14,8 @@ const settingsLinks = [
 ];
 
 export function SettingsNav() {
-  const { user } = useAuth();
-  const showFounder = isFounderAdmin(user?.email);
-  const links = showFounder
-    ? [...settingsLinks, { to: '/settings/founder', label: 'Founder', icon: Crown }]
-    : settingsLinks;
+  const links = settingsLinks;
+
 
   return (
     <nav className="flex flex-wrap gap-1 mb-4 sm:mb-6 border-b pb-2 overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
