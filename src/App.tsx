@@ -139,7 +139,8 @@ function AuthenticatedApp() {
           <Route path="/settings/business-taxes" element={<SettingsBusinessTaxesPage />} />
           <Route path="/settings/security" element={<SettingsSecurityPage />} />
           <Route path="/settings/account" element={<SettingsAccountPage />} />
-          <Route path="/settings/founder" element={<FounderDashboardPage />} />
+          <Route path="/founder" element={<FounderDashboardPage />} />
+          <Route path="/settings/founder" element={<Navigate to="/founder" replace />} />
           {/* Legacy redirects */}
           <Route path="/settings/invoice-profile" element={<Navigate to="/settings/invoicing" replace />} />
           <Route path="/import" element={<Navigate to="/" replace />} />
