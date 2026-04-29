@@ -134,8 +134,6 @@ export default function FounderDashboardPage() {
 
   return (
     <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
-      <SettingsNav />
-
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-6">
         <div>
