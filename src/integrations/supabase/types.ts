@@ -704,6 +704,44 @@ export type Database = {
           },
         ]
       }
+      contract_attachments: {
+        Row: {
+          contract_id: string
+          file_name: string
+          file_path: string
+          file_type: string | null
+          id: string
+          uploaded_at: string
+          user_id: string
+        }
+        Insert: {
+          contract_id: string
+          file_name?: string
+          file_path: string
+          file_type?: string | null
+          id?: string
+          uploaded_at?: string
+          user_id?: string
+        }
+        Update: {
+          contract_id?: string
+          file_name?: string
+          file_path?: string
+          file_type?: string | null
+          id?: string
+          uploaded_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_attachments_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contract_checklist_items: {
         Row: {
           created_at: string
@@ -1445,6 +1483,44 @@ export type Database = {
           used_at?: string | null
         }
         Relationships: []
+      }
+      expense_attachments: {
+        Row: {
+          expense_id: string
+          file_name: string
+          file_path: string
+          file_type: string | null
+          id: string
+          uploaded_at: string
+          user_id: string
+        }
+        Insert: {
+          expense_id: string
+          file_name?: string
+          file_path: string
+          file_type?: string | null
+          id?: string
+          uploaded_at?: string
+          user_id?: string
+        }
+        Update: {
+          expense_id?: string
+          file_name?: string
+          file_path?: string
+          file_type?: string | null
+          id?: string
+          uploaded_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_attachments_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       expense_config: {
         Row: {
