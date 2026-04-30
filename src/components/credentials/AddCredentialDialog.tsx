@@ -1,4 +1,5 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
+import { MultiFileDropzone } from '@/components/ui/multi-file-dropzone';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,9 +36,8 @@ export function AddCredentialDialog({ open, onOpenChange, editingCredential, onA
   const { addCredential, updateCredential, uploadDocument } = useCredentials();
   const { getCredentialCEStats } = useCEEntries();
   const { toast } = useToast();
-  const fileRef = useRef<HTMLInputElement>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
 
   const isEditing = !!editingCredential;
   const ceStats = isEditing ? getCredentialCEStats(editingCredential.id) : null;
@@ -93,9 +93,11 @@ export function AddCredentialDialog({ open, onOpenChange, editingCredential, onA
         credentialId = result.id;
       }
 
-      if (file) {
-        await uploadDocument(file, credentialId, 'license');
-        toast({ title: 'Document uploaded' });
+      if (files.length > 0) {
+        for (const f of files) {
+          await uploadDocument(f, credentialId, 'license');
+        }
+        toast({ title: files.length > 1 ? `${files.length} documents uploaded` : 'Document uploaded' });
       }
 
       onOpenChange(false);
@@ -113,7 +115,7 @@ export function AddCredentialDialog({ open, onOpenChange, editingCredential, onA
       credential_number: '', issue_date: '', expiration_date: '', renewal_frequency: 'annually',
       notes: '', tags: '', ce_required_hours: '', ce_requirements_notes: '',
     });
-    setFile(null);
+    setFiles([]);
   };
 
   return (
@@ -297,25 +299,14 @@ export function AddCredentialDialog({ open, onOpenChange, editingCredential, onA
           )}
 
           <div className="space-y-2">
-            <Label>Upload Document</Label>
-            <div
-              className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
-              onClick={() => fileRef.current?.click()}
-            >
-              <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-              {file ? (
-                <p className="text-sm font-medium">{file.name}</p>
-              ) : (
-                <p className="text-sm text-muted-foreground">Click to upload PDF, image, or document</p>
-              )}
-              <input
-                ref={fileRef}
-                type="file"
-                className="hidden"
-                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                onChange={e => setFile(e.target.files?.[0] || null)}
-              />
-            </div>
+            <Label>Upload Documents</Label>
+            <MultiFileDropzone
+              files={files}
+              onChange={setFiles}
+              accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+              label="Add credential documents"
+              hint="PDF, image, or Word. You can attach multiple."
+            />
           </div>
 
           <div className="flex justify-end gap-3 pt-2">

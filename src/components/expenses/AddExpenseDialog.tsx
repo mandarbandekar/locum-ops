@@ -9,8 +9,11 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Camera, HelpCircle, Repeat } from 'lucide-react';
+import { HelpCircle, Repeat } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
+import { MultiFileDropzone } from '@/components/ui/multi-file-dropzone';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   EXPENSE_CATEGORIES,
   findSubcategory,
@@ -42,7 +45,9 @@ export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit,
   const [amountStr, setAmountStr] = useState('');
   const [description, setDescription] = useState('');
   const [facilityId, setFacilityId] = useState('none');
-  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [receiptFiles, setReceiptFiles] = useState<File[]>([]);
+  const [existingAttachments, setExistingAttachments] = useState<{ id: string; name: string }[]>([]);
+  const { user } = useAuth();
   const [milesStr, setMilesStr] = useState('');
   const [sqftStr, setSqftStr] = useState('');
   const [proratePercent, setProratePercent] = useState(50);
@@ -85,16 +90,26 @@ export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit,
       setMilesStr(editingExpense.mileage_miles?.toString() || '');
       setSqftStr(editingExpense.home_office_sqft?.toString() || '');
       setProratePercent(editingExpense.prorate_percent ?? 50);
-      setReceiptFile(null);
+      setReceiptFiles([]);
       setRecurrenceType(editingExpense.recurrence_type || 'none');
       setRecurrenceEndDate(editingExpense.recurrence_end_date || '');
+      // Load existing attachments
+      (async () => {
+        const { data } = await (supabase as any)
+          .from('expense_attachments')
+          .select('id, file_name')
+          .eq('expense_id', editingExpense.id)
+          .order('uploaded_at', { ascending: true });
+        setExistingAttachments((data || []).map((d: any) => ({ id: d.id, name: d.file_name })));
+      })();
     } else {
       setDate(today);
       setSubcategoryKey(initialSubcategory || '');
       setAmountStr('');
       setDescription('');
       setFacilityId('none');
-      setReceiptFile(null);
+      setReceiptFiles([]);
+      setExistingAttachments([]);
       setMilesStr('');
       setSqftStr('');
       setProratePercent(50);
@@ -103,12 +118,26 @@ export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit,
     }
   }, [open, editingExpense, initialSubcategory]);
 
+  const removeExistingAttachment = async (id: string) => {
+    await (supabase as any).from('expense_attachments').delete().eq('id', id);
+    setExistingAttachments(prev => prev.filter(a => a.id !== id));
+  };
+
+
   async function handleSubmit() {
     if (!subcategoryKey || !amountStr) return;
     setSaving(true);
     try {
+      // Upload all newly selected receipt files
+      const uploaded: { path: string; name: string; type: string }[] = [];
+      for (const f of receiptFiles) {
+        const path = await uploadReceipt(f);
+        if (path) uploaded.push({ path, name: f.name, type: f.type });
+      }
+
+      // Legacy single receipt_url: keep first existing or first newly uploaded
       let receiptUrl: string | null = editingExpense?.receipt_url ?? null;
-      if (receiptFile) receiptUrl = await uploadReceipt(receiptFile);
+      if (!receiptUrl && uploaded.length > 0) receiptUrl = uploaded[0].path;
 
       const amountCents = Math.round((parseFloat(amountStr) || 0) * 100);
       const payload: Partial<Expense> = {
@@ -126,11 +155,28 @@ export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit,
         recurrence_end_date: recurrenceEndDate || null,
       };
 
+      let expenseId: string | undefined;
       if (isEditing && onEdit) {
         await onEdit(editingExpense!.id, payload);
+        expenseId = editingExpense!.id;
       } else {
-        await onSubmit(payload);
+        const created = await onSubmit(payload);
+        expenseId = (created as any)?.id;
       }
+
+      // Persist additional attachment rows
+      if (expenseId && uploaded.length > 0 && user) {
+        await (supabase as any).from('expense_attachments').insert(
+          uploaded.map(u => ({
+            user_id: user.id,
+            expense_id: expenseId,
+            file_path: u.path,
+            file_name: u.name,
+            file_type: u.type,
+          }))
+        );
+      }
+
       onOpenChange(false);
     } finally {
       setSaving(false);
@@ -253,17 +299,21 @@ export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit,
             </div>
 
             <div>
-              <Label>Receipt (optional)</Label>
-              <div className="flex items-center gap-2 mt-1">
-                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => document.getElementById('receipt-input')?.click()}>
-                  <Camera className="h-4 w-4" />
-                  {receiptFile ? receiptFile.name : (editingExpense?.receipt_url ? 'Replace Receipt' : 'Upload Receipt')}
-                </Button>
-                <input id="receipt-input" type="file" accept="image/*,.pdf" className="hidden" onChange={e => setReceiptFile(e.target.files?.[0] || null)} />
-              </div>
+              <Label>Receipts (optional)</Label>
+              <MultiFileDropzone
+                files={receiptFiles}
+                onChange={setReceiptFiles}
+                accept="image/*,.pdf"
+                label="Add receipts"
+                hint="Images or PDFs. You can attach multiple."
+                existing={existingAttachments}
+                onRemoveExisting={removeExistingAttachment}
+                className="mt-1"
+              />
             </div>
           </div>
         </div>
+
 
         {/* Recurrence - full width below the grid */}
         {!isMileage && (

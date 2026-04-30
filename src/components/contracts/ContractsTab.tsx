@@ -15,6 +15,8 @@ import { useContracts } from '@/hooks/useContracts';
 import { useAuth } from '@/contexts/AuthContext';
 import { generateId } from '@/lib/businessLogic';
 import { uploadContractFile, getContractSignedUrl, deleteContractFile } from '@/lib/contractStorage';
+import { MultiFileDropzone } from '@/components/ui/multi-file-dropzone';
+import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -178,32 +180,48 @@ function AddContractDialog({ open, onOpenChange, onAdd, facilityId }: {
     title: '', status: 'draft' as ContractStatus, effective_date: '', end_date: '',
     auto_renew: false, notes: '', external_link_url: '',
   });
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
 
   const handleSubmit = async () => {
     if (!form.title.trim()) { toast.error('Title is required'); return; }
     setUploading(true);
     try {
-      let fileUrl: string | null = null;
-      if (file && user) {
-        fileUrl = await uploadContractFile(user.id, file);
+      const uploaded: { path: string; name: string; type: string }[] = [];
+      if (user) {
+        for (const f of files) {
+          const path = await uploadContractFile(user.id, f);
+          uploaded.push({ path, name: f.name, type: f.type });
+        }
       }
-      await onAdd({
+      const primaryUrl = uploaded[0]?.path ?? null;
+      const created = await onAdd({
         facility_id: facilityId,
         title: form.title.trim(),
         status: form.status,
         effective_date: form.effective_date || null,
         end_date: form.end_date || null,
         auto_renew: form.auto_renew,
-        file_url: fileUrl,
+        file_url: primaryUrl,
         external_link_url: form.external_link_url || null,
         notes: form.notes,
       });
-      toast.success('Contract added');
+      // Persist all attachments (including the primary)
+      if (created?.id && uploaded.length > 0 && user) {
+        await (supabase as any).from('contract_attachments').insert(
+          uploaded.map(u => ({
+            user_id: user.id,
+            contract_id: created.id,
+            file_path: u.path,
+            file_name: u.name,
+            file_type: u.type,
+          }))
+        );
+      }
+      toast.success(uploaded.length > 1 ? `Contract added with ${uploaded.length} files` : 'Contract added');
       onOpenChange(false);
       setForm({ title: '', status: 'draft', effective_date: '', end_date: '', auto_renew: false, notes: '', external_link_url: '' });
-      setFile(null);
+      setFiles([]);
     } catch (err: any) {
       toast.error(err.message || 'Failed to add contract');
     } finally {
@@ -236,9 +254,14 @@ function AddContractDialog({ open, onOpenChange, onAdd, facilityId }: {
             <Label htmlFor="auto_renew" className="text-sm">Auto-renew</Label>
           </div>
           <div>
-            <Label>Attach File</Label>
-            <Input type="file" onChange={e => setFile(e.target.files?.[0] || null)} accept=".pdf,.doc,.docx,.png,.jpg" />
-            {file && <p className="text-xs text-muted-foreground mt-1">Selected: {file.name}</p>}
+            <Label>Attach Files</Label>
+            <MultiFileDropzone
+              files={files}
+              onChange={setFiles}
+              accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+              label="Add contract files"
+              hint="PDF, Word, or images. You can attach multiple."
+            />
           </div>
           <div><Label>External Link (optional)</Label><Input value={form.external_link_url} onChange={e => setForm(p => ({ ...p, external_link_url: e.target.value }))} placeholder="https://..." /></div>
           <div><Label>Notes</Label><Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} rows={2} /></div>

@@ -1,40 +1,46 @@
-## Goal
+# Allow multiple attachments on document uploads
 
-Surface three new per-user activation signals on the Founder Dashboard:
-- **Invoices downloaded** — distinct invoices a user has downloaded as PDF at least once.
-- **Credentials added** — total rows in `credentials` per user.
-- **Expenses added** — total rows in `expenses` per user.
+Make file pickers across the app accept multiple files at once, and persist each as its own attachment. Drag-and-drop already supports multi-file in the document vault — this brings the rest of the app to parity.
 
-## Changes
+## Surfaces to update
 
-### 1. Database (migration)
+| # | Location | Today | After |
+|---|----------|-------|-------|
+| 1 | Expenses → Add/Edit Expense → Receipt | 1 receipt only | Multiple receipts per expense |
+| 2 | Contracts → Add Contract → Attach File | 1 file | Multiple files per contract |
+| 3 | Credentials → Add Credential → Attach Document | 1 file | Multiple files attached to the credential |
+| 4 | Credentials → Add CE Entry → Certificate | 1 certificate | Multiple certificates |
+| 5 | Compliance Onboarding → both upload steps | 1 file per click | Batch upload |
+| 6 | Document Vault → "Replace" version action | 1 file (correct — keep as-is) | unchanged |
+| 7 | Facility Import / Setup Assistant lanes | parsing flows | unchanged (already process batches or are parser-specific) |
 
-- New table `public.invoice_pdf_downloads` to track distinct downloads:
-  - `id uuid pk`, `user_id uuid not null`, `invoice_id uuid not null`, `first_downloaded_at timestamptz default now()`, `download_count int default 1`, `last_downloaded_at timestamptz default now()`
-  - Unique index on `(user_id, invoice_id)` so we can upsert and count distinct invoices.
-  - RLS: users can `select` their own rows; inserts/updates only via service role (edge function).
+## Behavior
 
-- Update `public.get_founder_overview()` RPC to also return:
-  - `downloaded_invoice_count int` — distinct invoices downloaded (count from new table).
-  - `credential_count int` — count from `credentials`.
-  - `expense_count int` — count from `expenses`.
+- File picker opens with `multiple` enabled and a clear "Add more" affordance once files are selected.
+- Selected files render as a removable chip list (filename + size + ✕) above the upload button.
+- Upload runs sequentially with a progress indicator: "Uploading 2 of 5…". On partial failure, successful files are kept and failed files remain in the chip list with a retry option.
+- Toast on completion summarizes counts ("4 files attached, 1 failed").
+- Existing single-attachment data is preserved — no migration needed; attachments are added as additional rows or array entries depending on the table.
 
-### 2. Edge function `generate-invoice-pdf`
+## Data model touchpoints
 
-- After successful PDF generation, upsert into `invoice_pdf_downloads`:
-  - For owner downloads (`invoice_id` query param + JWT): use the JWT user as `user_id`.
-  - For public/clinic downloads (via `share_token`): attribute to the invoice's owning `user_id` (looked up from the `invoices` row), since the founder metric is "this user has had at least one download of this invoice".
-  - Use `INSERT ... ON CONFLICT (user_id, invoice_id) DO UPDATE SET download_count = download_count + 1, last_downloaded_at = now()`.
-- Tracking happens server-side only; failures must not block the PDF response.
+Two patterns exist in the schema today:
 
-### 3. Founder Dashboard UI (`src/pages/FounderDashboardPage.tsx`)
+- **Already many-rows-per-parent** (no schema change): credential documents, CE certificate links can be modeled by inserting multiple `credential_documents` rows tied to the same `credential_id` / CE entry.
+- **Single file column on parent** (needs adjustment): `expenses.receipt_url`, `contracts.file_url` currently store one path.
 
-- Extend `FounderRow` with `downloaded_invoice_count`, `credential_count`, `expense_count`.
-- Add three new sortable columns in the Beta testers table: **Downloads**, **Credentials**, **Expenses** (right-aligned, tabular-nums, matching existing pattern).
-- No changes to the four hero metric cards (keep current totals/active/activated/invoicing).
+For the single-column cases, the cleanest path is a small companion table per entity (e.g. `expense_attachments`, `contract_attachments`) with `{id, parent_id, user_id, file_path, file_name, uploaded_at}` and standard RLS (`user_id = auth.uid()`). The legacy single column stays populated with the first attachment for backward compatibility with existing UI/PDF/email code, and detail views read from the new table for the full list.
+
+## Technical details
+
+- Add a small reusable `MultiFileDropzone` component in `src/components/ui/` that wraps the `<input type="file" multiple>` + chip list + sequential upload progress, so each surface uses the same UX.
+- Storage paths follow existing per-bucket conventions (`{userId}/{uuid}.{ext}`).
+- Migrations create `expense_attachments` and `contract_attachments` tables with RLS policies mirroring their parent tables (`owns_expense` / `owns_contract` style checks via `user_id = auth.uid()`).
+- Detail views (Expense detail, Contract detail, Credential detail, CE entry detail) get an "Attachments" list with view/download/delete per file, reusing `viewStoredFile` / `downloadStoredFile` from `src/lib/storageUtils.ts`.
+- Drag-and-drop already supported in the Document Vault — no change needed there.
+- No changes to the Setup Assistant lanes, Facility Import, or the Vault "Replace version" input (semantically single-file).
 
 ## Out of scope
 
-- No new dashboard cards or charts.
-- No tracking of public-link views (only completed PDF downloads).
-- No backfill of historical downloads — counter starts from deploy.
+- Bulk re-categorization of existing single attachments.
+- Changing the PDF/email generation pipelines that currently reference a single `receipt_url` / `file_url` (they keep working against the legacy column).

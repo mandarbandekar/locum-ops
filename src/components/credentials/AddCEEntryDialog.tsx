@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Upload, GraduationCap } from 'lucide-react';
+import { GraduationCap } from 'lucide-react';
+import { MultiFileDropzone } from '@/components/ui/multi-file-dropzone';
 import { useCredentials } from '@/hooks/useCredentials';
 import { useCEEntries, CEEntryWithLinks } from '@/hooks/useCEEntries';
 import { CREDENTIAL_TYPE_LABELS, CE_DELIVERY_FORMATS } from '@/lib/credentialTypes';
@@ -29,9 +30,8 @@ export function AddCEEntryDialog({ open, onOpenChange, editingEntry, preLinkedCr
   const { credentials } = useCredentials();
   const { addCEEntry, updateCEEntry, uploadCertificate } = useCEEntries();
   const { toast } = useToast();
-  const fileRef = useRef<HTMLInputElement>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
 
   const isEditing = !!editingEntry;
 
@@ -70,7 +70,7 @@ export function AddCEEntryDialog({ open, onOpenChange, editingEntry, preLinkedCr
           certificate_file_url: null, certificate_file_name: null,
         });
       }
-      setFile(null);
+      setFiles([]);
     }
   }, [open, editingEntry, preLinkedCredentialId]);
 
@@ -94,11 +94,16 @@ export function AddCEEntryDialog({ open, onOpenChange, editingEntry, preLinkedCr
       let certUrl = form.certificate_file_url;
       let certName = form.certificate_file_name;
 
-      if (file) {
-        const result = await uploadCertificate(file);
-        certUrl = result.url;
-        certName = result.name;
-        toast({ title: 'Certificate uploaded' });
+      if (files.length > 0) {
+        // Upload all certificates; first one populates the legacy single-file column
+        for (let i = 0; i < files.length; i++) {
+          const result = await uploadCertificate(files[i]);
+          if (i === 0) {
+            certUrl = result.url;
+            certName = result.name;
+          }
+        }
+        toast({ title: files.length > 1 ? `${files.length} certificates uploaded` : 'Certificate uploaded' });
       }
 
       const payload = {
@@ -209,21 +214,17 @@ export function AddCEEntryDialog({ open, onOpenChange, editingEntry, preLinkedCr
           </div>
 
           <div className="space-y-2">
-            <Label>Upload Certificate</Label>
-            <div
-              className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:border-primary/50 transition-colors"
-              onClick={() => fileRef.current?.click()}
-            >
-              <Upload className="h-6 w-6 mx-auto text-muted-foreground mb-1" />
-              {file ? (
-                <p className="text-sm font-medium">{file.name}</p>
-              ) : form.certificate_file_name ? (
-                <p className="text-sm text-muted-foreground">Current: {form.certificate_file_name} — click to replace</p>
-              ) : (
-                <p className="text-sm text-muted-foreground">Click to upload PDF, image, or document</p>
-              )}
-              <input ref={fileRef} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onChange={e => setFile(e.target.files?.[0] || null)} />
-            </div>
+            <Label>Upload Certificates</Label>
+            {form.certificate_file_name && files.length === 0 && (
+              <p className="text-xs text-muted-foreground">Current: {form.certificate_file_name}</p>
+            )}
+            <MultiFileDropzone
+              files={files}
+              onChange={setFiles}
+              accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+              label="Add CE certificates"
+              hint="PDF, image, or Word. You can attach multiple."
+            />
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
