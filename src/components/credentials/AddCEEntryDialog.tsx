@@ -70,7 +70,7 @@ export function AddCEEntryDialog({ open, onOpenChange, editingEntry, preLinkedCr
           certificate_file_url: null, certificate_file_name: null,
         });
       }
-      setFile(null);
+      setFiles([]);
     }
   }, [open, editingEntry, preLinkedCredentialId]);
 
