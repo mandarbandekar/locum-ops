@@ -465,6 +465,14 @@ export function InvoiceEditPanel({
             })
           )}
 
+          {!readOnly && !showAddLine && (
+            <div className="flex justify-start pt-1">
+              <Button variant="ghost" size="sm" onClick={() => setShowAddLine(true)} className="h-7 text-xs">
+                <Plus className="h-3 w-3 mr-1" /> Add custom line
+              </Button>
+            </div>
+          )}
+
           {!readOnly && showAddLine && (
             <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
               <Input placeholder="Description" value={newDesc} onChange={e => setNewDesc(e.target.value)} className="h-8 text-sm" />
