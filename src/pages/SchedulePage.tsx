@@ -413,23 +413,21 @@ export default function SchedulePage() {
             </div>
 
             <div className="flex-1 flex items-center justify-end">
-
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="sm" className="gap-1.5 relative">
+                    <Layers className="h-4 w-4" />
+                    <span className="hidden sm:inline">Layers</span>
+                    {hasNonDefaultLayers && (
+                      <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-primary" />
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-auto p-3">
+                  <CalendarFilters filters={calendarFilters} onToggle={toggleFilter} />
+                </PopoverContent>
+              </Popover>
             </div>
-
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="ghost" size="sm" className="gap-1.5 relative">
-                  <Layers className="h-4 w-4" />
-                  <span className="hidden sm:inline">Layers</span>
-                  {hasNonDefaultLayers && (
-                    <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-primary" />
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent align="end" className="w-auto p-3">
-                <CalendarFilters filters={calendarFilters} onToggle={toggleFilter} />
-              </PopoverContent>
-            </Popover>
           </div>
         </div>
       )}
