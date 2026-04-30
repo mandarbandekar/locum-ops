@@ -1231,58 +1231,22 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
               <DollarSign className="h-3.5 w-3.5" /> Rate
             </Label>
             {rateOptions.length > 0 && !isCustomRate ? (
-              <Select
-                value={selectedRateKey || (rateOptions.findIndex(o => o.amount.toString() === rate) >= 0 ? `rate-${rateOptions.findIndex(o => o.amount.toString() === rate)}` : 'custom')}
-                onValueChange={(v) => {
-                  if (v === 'custom') { setIsCustomRate(true); setSelectedRateKey(''); setRate(''); }
-                  else {
-                    const idx = parseInt(v.replace('rate-', ''));
-                    const opt = rateOptions[idx];
-                    if (opt) { setRate(opt.amount.toString()); setSelectedRateKey(v); setIsCustomRate(false); }
-                  }
+              <RateSourcePicker
+                rateOptions={rateOptions}
+                selectedRateKey={selectedRateKey}
+                rate={rate}
+                preferRateCardOnly={preferRateCardOnly}
+                onSelect={(key, opt) => {
+                  setRate(opt.amount.toString());
+                  setSelectedRateKey(key);
+                  setIsCustomRate(false);
                 }}
-              >
-                <SelectTrigger className="h-10"><SelectValue placeholder="Select rate" /></SelectTrigger>
-                <SelectContent>
-                  {(() => {
-                    const facilityOpts = rateOptions.filter(o => o.source === 'facility');
-                    const cardOpts = rateOptions.filter(o => o.source === 'rate_card');
-                    return (
-                      <>
-                        {facilityOpts.length > 0 && (
-                          <SelectGroup>
-                            <SelectLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">From this clinic</SelectLabel>
-                            {facilityOpts.map((opt) => {
-                              const i = rateOptions.indexOf(opt);
-                              return (
-                                <SelectItem key={`rate-${i}`} value={`rate-${i}`}>
-                                  {opt.shift_type ? `[${opt.shift_type.toUpperCase()}] ` : ''}{opt.label} — ${opt.amount.toLocaleString()}{opt.kind === 'hourly' ? '/hr' : '/day'}
-                                </SelectItem>
-                              );
-                            })}
-                          </SelectGroup>
-                        )}
-                        {facilityOpts.length > 0 && cardOpts.length > 0 && <SelectSeparator />}
-                        {cardOpts.length > 0 && (
-                          <SelectGroup>
-                            <SelectLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">From your Rate Card</SelectLabel>
-                            {cardOpts.map((opt) => {
-                              const i = rateOptions.indexOf(opt);
-                              return (
-                                <SelectItem key={`rate-${i}`} value={`rate-${i}`}>
-                                  {opt.shift_type ? `[${opt.shift_type.toUpperCase()}] ` : ''}{opt.label} — ${opt.amount.toLocaleString()}{opt.kind === 'hourly' ? '/hr' : '/day'}
-                                </SelectItem>
-                              );
-                            })}
-                          </SelectGroup>
-                        )}
-                        {(facilityOpts.length > 0 || cardOpts.length > 0) && <SelectSeparator />}
-                        <SelectItem value="custom">Custom</SelectItem>
-                      </>
-                    );
-                  })()}
-                </SelectContent>
-              </Select>
+                onCustom={() => {
+                  setIsCustomRate(true);
+                  setSelectedRateKey('');
+                  setRate('');
+                }}
+              />
             ) : (
               <div className="space-y-2">
                 <Input type="text" value={customRateLabel} onChange={e => setCustomRateLabel(e.target.value)} placeholder="Rate label" className="h-9 text-sm" />
