@@ -128,8 +128,16 @@ export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit,
     if (!subcategoryKey || !amountStr) return;
     setSaving(true);
     try {
+      // Upload all newly selected receipt files
+      const uploaded: { path: string; name: string; type: string }[] = [];
+      for (const f of receiptFiles) {
+        const path = await uploadReceipt(f);
+        if (path) uploaded.push({ path, name: f.name, type: f.type });
+      }
+
+      // Legacy single receipt_url: keep first existing or first newly uploaded
       let receiptUrl: string | null = editingExpense?.receipt_url ?? null;
-      if (receiptFile) receiptUrl = await uploadReceipt(receiptFile);
+      if (!receiptUrl && uploaded.length > 0) receiptUrl = uploaded[0].path;
 
       const amountCents = Math.round((parseFloat(amountStr) || 0) * 100);
       const payload: Partial<Expense> = {
@@ -147,11 +155,28 @@ export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit,
         recurrence_end_date: recurrenceEndDate || null,
       };
 
+      let expenseId: string | undefined;
       if (isEditing && onEdit) {
         await onEdit(editingExpense!.id, payload);
+        expenseId = editingExpense!.id;
       } else {
-        await onSubmit(payload);
+        const created = await onSubmit(payload);
+        expenseId = (created as any)?.id;
       }
+
+      // Persist additional attachment rows
+      if (expenseId && uploaded.length > 0 && user) {
+        await (supabase as any).from('expense_attachments').insert(
+          uploaded.map(u => ({
+            user_id: user.id,
+            expense_id: expenseId,
+            file_path: u.path,
+            file_name: u.name,
+            file_type: u.type,
+          }))
+        );
+      }
+
       onOpenChange(false);
     } finally {
       setSaving(false);
