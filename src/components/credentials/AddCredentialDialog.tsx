@@ -115,7 +115,7 @@ export function AddCredentialDialog({ open, onOpenChange, editingCredential, onA
       credential_number: '', issue_date: '', expiration_date: '', renewal_frequency: 'annually',
       notes: '', tags: '', ce_required_hours: '', ce_requirements_notes: '',
     });
-    setFile(null);
+    setFiles([]);
   };
 
   return (
