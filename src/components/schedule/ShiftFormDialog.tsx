@@ -183,9 +183,14 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, existing, defaultDate, defaultStartTime]);
 
+  const preferRateCardOnly = !!profile?.prefer_rate_card_default;
+
   const rateOptions = useMemo(
-    () => buildRateOptions(terms, facilityId, userDefaultRates),
-    [terms, facilityId, userDefaultRates],
+    () => {
+      const all = buildRateOptions(terms, facilityId, userDefaultRates);
+      return preferRateCardOnly ? all.filter(o => o.source === 'rate_card') : all;
+    },
+    [terms, facilityId, userDefaultRates, preferRateCardOnly],
   );
 
   // For new shifts, seed `rate` from the first available option (facility terms
