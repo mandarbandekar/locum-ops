@@ -20,6 +20,9 @@ interface FounderRow {
   clinic_count: number;
   shift_count: number;
   invoice_count: number;
+  downloaded_invoice_count: number;
+  credential_count: number;
+  expense_count: number;
   last_activity_at: string | null;
   activation_status: 'active' | 'dormant' | 'never';
 }
