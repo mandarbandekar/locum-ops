@@ -20,13 +20,16 @@ interface FounderRow {
   clinic_count: number;
   shift_count: number;
   invoice_count: number;
+  downloaded_invoice_count: number;
+  credential_count: number;
+  expense_count: number;
   last_activity_at: string | null;
   activation_status: 'active' | 'dormant' | 'never';
 }
 
 type SortKey = keyof Pick<
   FounderRow,
-  'email' | 'signed_up_at' | 'last_sign_in_at' | 'clinic_count' | 'shift_count' | 'invoice_count' | 'activation_status'
+  'email' | 'signed_up_at' | 'last_sign_in_at' | 'clinic_count' | 'shift_count' | 'invoice_count' | 'downloaded_invoice_count' | 'credential_count' | 'expense_count' | 'activation_status'
 >;
 
 function formatDate(d?: string | null) {
@@ -189,6 +192,9 @@ export default function FounderDashboardPage() {
                   <Th onClick={() => toggleSort('clinic_count')} align="right">Clinics</Th>
                   <Th onClick={() => toggleSort('shift_count')} align="right">Shifts</Th>
                   <Th onClick={() => toggleSort('invoice_count')} align="right">Invoices</Th>
+                  <Th onClick={() => toggleSort('downloaded_invoice_count')} align="right">Downloads</Th>
+                  <Th onClick={() => toggleSort('credential_count')} align="right">Credentials</Th>
+                  <Th onClick={() => toggleSort('expense_count')} align="right">Expenses</Th>
                   <Th onClick={() => toggleSort('activation_status')}>Status</Th>
                 </tr>
               </thead>
@@ -196,11 +202,11 @@ export default function FounderDashboardPage() {
                 {loading && rows.length === 0 ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <tr key={i} className="border-t">
-                      <td colSpan={7} className="px-4 py-3"><Skeleton className="h-5 w-full" /></td>
+                      <td colSpan={10} className="px-4 py-3"><Skeleton className="h-5 w-full" /></td>
                     </tr>
                   ))
                 ) : sorted.length === 0 ? (
-                  <tr><td colSpan={7} className="px-4 py-10 text-center text-muted-foreground">No users yet.</td></tr>
+                  <tr><td colSpan={10} className="px-4 py-10 text-center text-muted-foreground">No users yet.</td></tr>
                 ) : (
                   sorted.map((r) => (
                     <tr key={r.user_id} className="border-t hover:bg-muted/30">
@@ -215,6 +221,9 @@ export default function FounderDashboardPage() {
                       <td className="px-4 py-2.5 text-right tabular-nums">{r.clinic_count}</td>
                       <td className="px-4 py-2.5 text-right tabular-nums">{r.shift_count}</td>
                       <td className="px-4 py-2.5 text-right tabular-nums">{r.invoice_count}</td>
+                      <td className="px-4 py-2.5 text-right tabular-nums">{r.downloaded_invoice_count}</td>
+                      <td className="px-4 py-2.5 text-right tabular-nums">{r.credential_count}</td>
+                      <td className="px-4 py-2.5 text-right tabular-nums">{r.expense_count}</td>
                       <td className="px-4 py-2.5"><StatusPill status={r.activation_status} /></td>
                     </tr>
                   ))

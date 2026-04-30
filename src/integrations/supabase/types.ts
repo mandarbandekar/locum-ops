@@ -2052,6 +2052,33 @@ export type Database = {
           },
         ]
       }
+      invoice_pdf_downloads: {
+        Row: {
+          download_count: number
+          first_downloaded_at: string
+          id: string
+          invoice_id: string
+          last_downloaded_at: string
+          user_id: string
+        }
+        Insert: {
+          download_count?: number
+          first_downloaded_at?: string
+          id?: string
+          invoice_id: string
+          last_downloaded_at?: string
+          user_id: string
+        }
+        Update: {
+          download_count?: number
+          first_downloaded_at?: string
+          id?: string
+          invoice_id?: string
+          last_downloaded_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       invoices: {
         Row: {
           balance_due: number
@@ -3442,8 +3469,11 @@ export type Database = {
         Returns: {
           activation_status: string
           clinic_count: number
+          credential_count: number
           display_name: string
+          downloaded_invoice_count: number
           email: string
+          expense_count: number
           invoice_count: number
           last_activity_at: string
           last_sign_in_at: string
