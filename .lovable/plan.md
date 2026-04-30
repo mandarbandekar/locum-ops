@@ -1,46 +1,88 @@
-# Allow multiple attachments on document uploads
+## Goal
 
-Make file pickers across the app accept multiple files at once, and persist each as its own attachment. Drag-and-drop already supports multi-file in the document vault — this brings the rest of the app to parity.
+When a user has **both** clinic-specific rates *and* Rate Card rates, the current single dropdown in the Shift form lists everything in one scrollable list. Some users can't scroll all the way down to reach Rate Card entries.
 
-## Surfaces to update
+Replace this with a **two-pane (split view) picker** that puts clinic rates and Rate Card rates side-by-side, each with its own scroll area — no more hidden options. Users who prefer to always pick from their Rate Card can opt out of the split view via a new preference; for them, only the Rate Card pane is shown. Make sure this works efficiently for mobile and web based interface. 
 
-| # | Location | Today | After |
-|---|----------|-------|-------|
-| 1 | Expenses → Add/Edit Expense → Receipt | 1 receipt only | Multiple receipts per expense |
-| 2 | Contracts → Add Contract → Attach File | 1 file | Multiple files per contract |
-| 3 | Credentials → Add Credential → Attach Document | 1 file | Multiple files attached to the credential |
-| 4 | Credentials → Add CE Entry → Certificate | 1 certificate | Multiple certificates |
-| 5 | Compliance Onboarding → both upload steps | 1 file per click | Batch upload |
-| 6 | Document Vault → "Replace" version action | 1 file (correct — keep as-is) | unchanged |
-| 7 | Facility Import / Setup Assistant lanes | parsing flows | unchanged (already process batches or are parser-specific) |
+## Where this applies
 
-## Behavior
+- `src/components/schedule/ShiftFormDialog.tsx` — primary place (Step 2 of new shift, plus the "edit existing" view; both render the same rate block, lines ~860–937 and ~1050–1130).
+- The Bulk Shift Calendar (`OnboardingBulkShiftCalendar.tsx`) is **out of scope** for this change — it uses a flat option list during onboarding only.
 
-- File picker opens with `multiple` enabled and a clear "Add more" affordance once files are selected.
-- Selected files render as a removable chip list (filename + size + ✕) above the upload button.
-- Upload runs sequentially with a progress indicator: "Uploading 2 of 5…". On partial failure, successful files are kept and failed files remain in the chip list with a retry option.
-- Toast on completion summarizes counts ("4 files attached, 1 failed").
-- Existing single-attachment data is preserved — no migration needed; attachments are added as additional rows or array entries depending on the table.
+## UX behavior
 
-## Data model touchpoints
+**Default (split view), shown when both clinic and rate-card rates exist:**
 
-Two patterns exist in the schema today:
+```text
+┌──────────────────────────────────────────────────────────────┐
+│ Choose a rate                              [ + Custom rate ] │
+├──────────────────────────────┬───────────────────────────────┤
+│ FROM THIS CLINIC             │ FROM YOUR RATE CARD           │
+│ ┌──────────────────────────┐ │ ┌───────────────────────────┐ │
+│ │ ● Weekday Rate    $850/d │ │ │ ○ GP Day          $900/d  │ │
+│ │ ○ Weekend Rate    $950/d │ │ │ ○ ER Day        $1,100/d  │ │
+│ │ ○ Holiday Rate  $1,050/d │ │ │ ○ Surgery Day   $1,000/d  │ │
+│ │ ○ Custom (ER)   $1,000/d │ │ │ ○ After-hours      $95/hr │ │
+│ │   …scrolls within pane   │ │ │   …scrolls within pane    │ │
+│ └──────────────────────────┘ │ └───────────────────────────┘ │
+└──────────────────────────────┴───────────────────────────────┘
+   Selected: Weekday Rate — $850/day  (from this clinic)
+```
 
-- **Already many-rows-per-parent** (no schema change): credential documents, CE certificate links can be modeled by inserting multiple `credential_documents` rows tied to the same `credential_id` / CE entry.
-- **Single file column on parent** (needs adjustment): `expenses.receipt_url`, `contracts.file_url` currently store one path.
+- Each pane is a `ScrollArea` with `max-h-56` (~224 px) so the **whole** list of either source is reachable without the dialog needing to grow.
+- Items render as radio rows (single-select across both panes — picking from one pane clears the other).
+- Selecting an item updates `rate`, `selectedRateKey`, `isCustomRate=false` exactly like today, so all downstream calc / save logic is unchanged.
+- The previously inline "[GP] Label — $X/day" formatting is preserved per row.
+- A small text below the panes echoes the active selection so the user knows what's saved.
+- "Custom rate" becomes a button above the panes that flips to the existing custom-rate input block (unchanged).
 
-For the single-column cases, the cleanest path is a small companion table per entity (e.g. `expense_attachments`, `contract_attachments`) with `{id, parent_id, user_id, file_path, file_name, uploaded_at}` and standard RLS (`user_id = auth.uid()`). The legacy single column stays populated with the first attachment for backward compatibility with existing UI/PDF/email code, and detail views read from the new table for the full list.
+**Fallback layouts:**
+
+- On viewports < 640 px (`sm`), the two panes stack vertically; each still has its own scroll area.
+- If only one source has rates, render that single pane full-width (no split needed).
+- If the user enabled "Always use my Rate Card" (see below), only the Rate Card pane is shown, full-width — even when the clinic has its own rates.
+
+## New preference: "Default to my Rate Card"
+
+Add a single boolean preference: `prefer_rate_card_default` on `user_profiles`.
+
+- Surfaced on **Settings → Rate Card** (`src/pages/SettingsRateCardPage.tsx`) as a toggle:
+  > **Always use my Rate Card for shift rates**
+  > When on, new shifts default to your Rate Card and clinic-specific rates are hidden from the picker. You can still add a custom rate per shift.
+- Read in `ShiftFormDialog` via `useUserProfile()`. When `true`, the picker:
+  - Hides the "From this clinic" pane.
+  - Seeds the new-shift default rate from the first Rate Card entry instead of the first facility rate.
+  - Still allows Custom Rate.
 
 ## Technical details
 
-- Add a small reusable `MultiFileDropzone` component in `src/components/ui/` that wraps the `<input type="file" multiple>` + chip list + sequential upload progress, so each surface uses the same UX.
-- Storage paths follow existing per-bucket conventions (`{userId}/{uuid}.{ext}`).
-- Migrations create `expense_attachments` and `contract_attachments` tables with RLS policies mirroring their parent tables (`owns_expense` / `owns_contract` style checks via `user_id = auth.uid()`).
-- Detail views (Expense detail, Contract detail, Credential detail, CE entry detail) get an "Attachments" list with view/download/delete per file, reusing `viewStoredFile` / `downloadStoredFile` from `src/lib/storageUtils.ts`.
-- Drag-and-drop already supported in the Document Vault — no change needed there.
-- No changes to the Setup Assistant lanes, Facility Import, or the Vault "Replace version" input (semantically single-file).
+**Database**
+
+Add column to `public.user_profiles`:
+
+- `prefer_rate_card_default boolean not null default false`
+
+No RLS changes required (table already has user-scoped RLS).
+
+`**src/components/schedule/ShiftFormDialog.tsx**`
+
+1. Pull `prefer_rate_card_default` from `profile`.
+2. Replace the `<Select>` block (used in both Step 2 of new-shift flow and the Edit view) with a new local subcomponent `RateSourcePicker` that:
+  - Receives `facilityOpts`, `cardOpts`, `selectedRateKey`, `onSelect`, `onCustom`, `preferRateCard`.
+  - Renders one or two panes inside a `grid grid-cols-1 sm:grid-cols-2 gap-3` (or single column when one source / `preferRateCard`).
+  - Each pane: header label (`"From this clinic"` / `"From your Rate Card"`) + `ScrollArea` (`max-h-56`) of radio rows.
+  - Radio rows reuse the `[SHIFT_TYPE] Label — $amount/unit` formatting from current `<SelectItem>`.
+3. When `preferRateCard === true`, `buildRateOptions` is unchanged but the picker filters out `source === 'facility'`. The seed-first-rate effect (lines 193–203) picks the first `rate_card` option.
+4. Keep all existing custom-rate handling, hourly calculation hint, and validation messages exactly as they are today — they render below the picker.
+
+`**src/pages/SettingsRateCardPage.tsx**`
+
+- Add a card titled **"Picker preference"** with the toggle bound to `prefer_rate_card_default`. Persist via the existing profile update path used elsewhere on this page.
+
+`**src/integrations/supabase/types.ts**` is auto-regenerated after the migration — no manual edit.
 
 ## Out of scope
 
-- Bulk re-categorization of existing single attachments.
-- Changing the PDF/email generation pipelines that currently reference a single `receipt_url` / `file_url` (they keep working against the legacy column).
+- Bulk Shift Calendar rate selection.
+- Reordering / pinning rates within a pane (still ordered as `buildRateOptions` returns them).
+- Any change to how rates are stored on the saved shift.
