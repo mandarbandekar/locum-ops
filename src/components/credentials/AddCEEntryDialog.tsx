@@ -30,9 +30,8 @@ export function AddCEEntryDialog({ open, onOpenChange, editingEntry, preLinkedCr
   const { credentials } = useCredentials();
   const { addCEEntry, updateCEEntry, uploadCertificate } = useCEEntries();
   const { toast } = useToast();
-  const fileRef = useRef<HTMLInputElement>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
 
   const isEditing = !!editingEntry;
 
