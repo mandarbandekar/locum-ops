@@ -90,16 +90,26 @@ export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit,
       setMilesStr(editingExpense.mileage_miles?.toString() || '');
       setSqftStr(editingExpense.home_office_sqft?.toString() || '');
       setProratePercent(editingExpense.prorate_percent ?? 50);
-      setReceiptFile(null);
+      setReceiptFiles([]);
       setRecurrenceType(editingExpense.recurrence_type || 'none');
       setRecurrenceEndDate(editingExpense.recurrence_end_date || '');
+      // Load existing attachments
+      (async () => {
+        const { data } = await (supabase as any)
+          .from('expense_attachments')
+          .select('id, file_name')
+          .eq('expense_id', editingExpense.id)
+          .order('uploaded_at', { ascending: true });
+        setExistingAttachments((data || []).map((d: any) => ({ id: d.id, name: d.file_name })));
+      })();
     } else {
       setDate(today);
       setSubcategoryKey(initialSubcategory || '');
       setAmountStr('');
       setDescription('');
       setFacilityId('none');
-      setReceiptFile(null);
+      setReceiptFiles([]);
+      setExistingAttachments([]);
       setMilesStr('');
       setSqftStr('');
       setProratePercent(50);
@@ -107,6 +117,12 @@ export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit,
       setRecurrenceEndDate('');
     }
   }, [open, editingExpense, initialSubcategory]);
+
+  const removeExistingAttachment = async (id: string) => {
+    await (supabase as any).from('expense_attachments').delete().eq('id', id);
+    setExistingAttachments(prev => prev.filter(a => a.id !== id));
+  };
+
 
   async function handleSubmit() {
     if (!subcategoryKey || !amountStr) return;
