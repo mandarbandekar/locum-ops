@@ -75,7 +75,21 @@ export default function InvoiceDetailPage() {
   const invoice = invoices.find(i => i.id === id);
   if (!invoice) return <div className="p-6">Invoice not found. <Button variant="link" onClick={() => navigate('/invoices')}>Back</Button></div>;
 
-  const items = lineItems.filter(li => li.invoice_id === id);
+  const items = lineItems
+    .filter(li => li.invoice_id === id)
+    .slice()
+    .sort((a, b) => {
+      // Ascending by service_date; nulls go to the end. Tiebreak by created_at for stability.
+      const ad = a.service_date || '';
+      const bd = b.service_date || '';
+      if (ad && bd) {
+        if (ad !== bd) return ad < bd ? -1 : 1;
+      } else if (ad && !bd) return -1;
+      else if (!ad && bd) return 1;
+      const ac = (a as any).created_at || '';
+      const bc = (b as any).created_at || '';
+      return ac < bc ? -1 : ac > bc ? 1 : 0;
+    });
   const facility = facilities.find(c => c.id === invoice.facility_id);
   const billingNameTo = facility?.invoice_name_to || '';
   const billingEmailTo = (invoice as any).billing_email_to || facility?.invoice_email_to || '';
