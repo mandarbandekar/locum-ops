@@ -6,7 +6,8 @@ import type { AttentionItem, ReminderModule } from './NeedsAttentionCard';
 const GROUP_DEFS: { key: string; title: string; modules: ReminderModule[] }[] = [
   { key: 'payments', title: 'Payments', modules: ['invoices'] },
   { key: 'credentials', title: 'Credentials', modules: ['credentials'] },
-  { key: 'schedule', title: 'Schedule', modules: ['confirmations', 'shifts', 'contracts', 'outreach', 'taxes'] },
+  { key: 'taxes', title: 'Taxes', modules: ['taxes'] },
+  { key: 'schedule', title: 'Schedule', modules: ['shifts', 'contracts', 'outreach'] },
 ];
 
 interface Props {
