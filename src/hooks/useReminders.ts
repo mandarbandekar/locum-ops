@@ -124,17 +124,7 @@ export function useGeneratedReminders() {
       });
     });
 
-    // 3) Confirmation not sent
-    if (needingActionCount > 0) {
-      items.push({
-        module: 'confirmations',
-        reminder_type: 'confirmation_not_sent',
-        title: `${needingActionCount} confirmation${needingActionCount > 1 ? 's' : ''} need action`,
-        body: 'Review and send monthly shift confirmations',
-        link: '/schedule',
-        urgency: 4,
-      });
-    }
+    // Monthly clinic confirmations are no longer surfaced in attention items.
 
     // 6) Outreach follow-up (from facilities with outreach_last_sent_at)
     facilities
