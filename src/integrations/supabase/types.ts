@@ -3381,6 +3381,7 @@ export type Database = {
           last_name: string
           onboarding_completed_at: string | null
           onboarding_progress: Json
+          prefer_rate_card_default: boolean
           profession: string
           terms_fields_enabled: Json
           timezone: string
@@ -3415,6 +3416,7 @@ export type Database = {
           last_name?: string
           onboarding_completed_at?: string | null
           onboarding_progress?: Json
+          prefer_rate_card_default?: boolean
           profession?: string
           terms_fields_enabled?: Json
           timezone?: string
@@ -3449,6 +3451,7 @@ export type Database = {
           last_name?: string
           onboarding_completed_at?: string | null
           onboarding_progress?: Json
+          prefer_rate_card_default?: boolean
           profession?: string
           terms_fields_enabled?: Json
           timezone?: string

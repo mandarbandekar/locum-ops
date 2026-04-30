@@ -23,6 +23,7 @@ import { termsToRates, RateEntry } from '@/components/facilities/RatesEditor';
 import { useData } from '@/contexts/DataContext';
 import { useUserProfile, type DefaultRate } from '@/contexts/UserProfileContext';
 import { mapDefaultRatesToRateEntries } from '@/lib/onboardingRateMapping';
+import { RateSourcePicker } from './RateSourcePicker';
 import { getBillingPeriod } from '@/lib/invoiceAutoGeneration';
 import type { BillingCadence } from '@/lib/invoiceBillingDefaults';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -182,9 +183,14 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, existing, defaultDate, defaultStartTime]);
 
+  const preferRateCardOnly = !!profile?.prefer_rate_card_default;
+
   const rateOptions = useMemo(
-    () => buildRateOptions(terms, facilityId, userDefaultRates),
-    [terms, facilityId, userDefaultRates],
+    () => {
+      const all = buildRateOptions(terms, facilityId, userDefaultRates);
+      return preferRateCardOnly ? all.filter(o => o.source === 'rate_card') : all;
+    },
+    [terms, facilityId, userDefaultRates, preferRateCardOnly],
   );
 
   // For new shifts, seed `rate` from the first available option (facility terms
@@ -860,67 +866,22 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
       <div>
         {rateOptions.length > 0 && !isCustomRate ? (
           <div className="space-y-2">
-            <Select
-              value={selectedRateKey || (rateOptions.length > 0 && rate ? (rateOptions.findIndex(o => o.amount.toString() === rate) >= 0 ? `rate-${rateOptions.findIndex(o => o.amount.toString() === rate)}` : 'custom') : 'custom')}
-              onValueChange={(v) => {
-                if (v === 'custom') {
-                  setIsCustomRate(true);
-                  setSelectedRateKey('');
-                  setRate('');
-                } else {
-                  const idx = parseInt(v.replace('rate-', ''));
-                  const opt = rateOptions[idx];
-                  if (opt) {
-                    setRate(opt.amount.toString());
-                    setSelectedRateKey(v);
-                    setIsCustomRate(false);
-                  }
-                }
+            <RateSourcePicker
+              rateOptions={rateOptions}
+              selectedRateKey={selectedRateKey}
+              rate={rate}
+              preferRateCardOnly={preferRateCardOnly}
+              onSelect={(key, opt) => {
+                setRate(opt.amount.toString());
+                setSelectedRateKey(key);
+                setIsCustomRate(false);
               }}
-            >
-              <SelectTrigger className="h-10">
-                <SelectValue placeholder="Select rate" />
-              </SelectTrigger>
-              <SelectContent>
-                {(() => {
-                  const facilityOpts = rateOptions.filter(o => o.source === 'facility');
-                  const cardOpts = rateOptions.filter(o => o.source === 'rate_card');
-                  return (
-                    <>
-                      {facilityOpts.length > 0 && (
-                        <SelectGroup>
-                          <SelectLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">From this clinic</SelectLabel>
-                          {facilityOpts.map((opt) => {
-                            const i = rateOptions.indexOf(opt);
-                            return (
-                              <SelectItem key={`rate-${i}`} value={`rate-${i}`}>
-                                {opt.shift_type ? `[${opt.shift_type.toUpperCase()}] ` : ''}{opt.label} — ${opt.amount.toLocaleString()}{opt.kind === 'hourly' ? '/hr' : '/day'}
-                              </SelectItem>
-                            );
-                          })}
-                        </SelectGroup>
-                      )}
-                      {facilityOpts.length > 0 && cardOpts.length > 0 && <SelectSeparator />}
-                      {cardOpts.length > 0 && (
-                        <SelectGroup>
-                          <SelectLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">From your Rate Card</SelectLabel>
-                          {cardOpts.map((opt) => {
-                            const i = rateOptions.indexOf(opt);
-                            return (
-                              <SelectItem key={`rate-${i}`} value={`rate-${i}`}>
-                                {opt.shift_type ? `[${opt.shift_type.toUpperCase()}] ` : ''}{opt.label} — ${opt.amount.toLocaleString()}{opt.kind === 'hourly' ? '/hr' : '/day'}
-                              </SelectItem>
-                            );
-                          })}
-                        </SelectGroup>
-                      )}
-                      {(facilityOpts.length > 0 || cardOpts.length > 0) && <SelectSeparator />}
-                      <SelectItem value="custom">Custom</SelectItem>
-                    </>
-                  );
-                })()}
-              </SelectContent>
-            </Select>
+              onCustom={() => {
+                setIsCustomRate(true);
+                setSelectedRateKey('');
+                setRate('');
+              }}
+            />
             {activeRateKind === 'hourly' && Number(rate) > 0 && isHoursValid && (
               <div className="space-y-1">
                 <p className="text-[11px] text-muted-foreground">
@@ -1270,58 +1231,22 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
               <DollarSign className="h-3.5 w-3.5" /> Rate
             </Label>
             {rateOptions.length > 0 && !isCustomRate ? (
-              <Select
-                value={selectedRateKey || (rateOptions.findIndex(o => o.amount.toString() === rate) >= 0 ? `rate-${rateOptions.findIndex(o => o.amount.toString() === rate)}` : 'custom')}
-                onValueChange={(v) => {
-                  if (v === 'custom') { setIsCustomRate(true); setSelectedRateKey(''); setRate(''); }
-                  else {
-                    const idx = parseInt(v.replace('rate-', ''));
-                    const opt = rateOptions[idx];
-                    if (opt) { setRate(opt.amount.toString()); setSelectedRateKey(v); setIsCustomRate(false); }
-                  }
+              <RateSourcePicker
+                rateOptions={rateOptions}
+                selectedRateKey={selectedRateKey}
+                rate={rate}
+                preferRateCardOnly={preferRateCardOnly}
+                onSelect={(key, opt) => {
+                  setRate(opt.amount.toString());
+                  setSelectedRateKey(key);
+                  setIsCustomRate(false);
                 }}
-              >
-                <SelectTrigger className="h-10"><SelectValue placeholder="Select rate" /></SelectTrigger>
-                <SelectContent>
-                  {(() => {
-                    const facilityOpts = rateOptions.filter(o => o.source === 'facility');
-                    const cardOpts = rateOptions.filter(o => o.source === 'rate_card');
-                    return (
-                      <>
-                        {facilityOpts.length > 0 && (
-                          <SelectGroup>
-                            <SelectLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">From this clinic</SelectLabel>
-                            {facilityOpts.map((opt) => {
-                              const i = rateOptions.indexOf(opt);
-                              return (
-                                <SelectItem key={`rate-${i}`} value={`rate-${i}`}>
-                                  {opt.shift_type ? `[${opt.shift_type.toUpperCase()}] ` : ''}{opt.label} — ${opt.amount.toLocaleString()}{opt.kind === 'hourly' ? '/hr' : '/day'}
-                                </SelectItem>
-                              );
-                            })}
-                          </SelectGroup>
-                        )}
-                        {facilityOpts.length > 0 && cardOpts.length > 0 && <SelectSeparator />}
-                        {cardOpts.length > 0 && (
-                          <SelectGroup>
-                            <SelectLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">From your Rate Card</SelectLabel>
-                            {cardOpts.map((opt) => {
-                              const i = rateOptions.indexOf(opt);
-                              return (
-                                <SelectItem key={`rate-${i}`} value={`rate-${i}`}>
-                                  {opt.shift_type ? `[${opt.shift_type.toUpperCase()}] ` : ''}{opt.label} — ${opt.amount.toLocaleString()}{opt.kind === 'hourly' ? '/hr' : '/day'}
-                                </SelectItem>
-                              );
-                            })}
-                          </SelectGroup>
-                        )}
-                        {(facilityOpts.length > 0 || cardOpts.length > 0) && <SelectSeparator />}
-                        <SelectItem value="custom">Custom</SelectItem>
-                      </>
-                    );
-                  })()}
-                </SelectContent>
-              </Select>
+                onCustom={() => {
+                  setIsCustomRate(true);
+                  setSelectedRateKey('');
+                  setRate('');
+                }}
+              />
             ) : (
               <div className="space-y-2">
                 <Input type="text" value={customRateLabel} onChange={e => setCustomRateLabel(e.target.value)} placeholder="Rate label" className="h-9 text-sm" />

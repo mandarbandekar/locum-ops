@@ -1,0 +1,1 @@
+ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS prefer_rate_card_default boolean NOT NULL DEFAULT false;

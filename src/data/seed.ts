@@ -274,5 +274,6 @@ export const seedUserProfile: UserProfile = {
   engagement_announcement_dismissed_at: new Date().toISOString(),
   default_rates: [],
   default_billing_preference: 'per_day',
+  prefer_rate_card_default: false,
   onboarding_progress: {},
 };
