@@ -59,6 +59,7 @@ export interface UserProfile {
   engagement_announcement_dismissed_at: string | null;
   default_rates: DefaultRate[];
   default_billing_preference: BillingPreference;
+  prefer_rate_card_default: boolean;
   onboarding_progress: OnboardingProgress;
 }
 
