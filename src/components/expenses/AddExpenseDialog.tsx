@@ -46,7 +46,7 @@ export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit,
   const [description, setDescription] = useState('');
   const [facilityId, setFacilityId] = useState('none');
   const [receiptFiles, setReceiptFiles] = useState<File[]>([]);
-  const [existingAttachments, setExistingAttachments] = useState<{ id: string; name: string }[]>([]);
+  const [existingAttachments, setExistingAttachments] = useState<{ id: string; name: string; path?: string }[]>([]);
   const { user } = useAuth();
   const [milesStr, setMilesStr] = useState('');
   const [sqftStr, setSqftStr] = useState('');
