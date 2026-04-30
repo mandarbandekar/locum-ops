@@ -119,7 +119,20 @@ export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit,
   }, [open, editingExpense, initialSubcategory]);
 
   const removeExistingAttachment = async (id: string) => {
+    const target = existingAttachments.find(a => a.id === id);
+    // Delete the DB row
     await (supabase as any).from('expense_attachments').delete().eq('id', id);
+    // Best-effort: remove the storage object
+    if (target?.path) {
+      try { await supabase.storage.from('expense-receipts').remove([target.path]); } catch {}
+    }
+    // If the legacy receipt_url pointed to this file, clear it on the expense row
+    if (editingExpense && target?.path && editingExpense.receipt_url === target.path) {
+      await (supabase as any)
+        .from('expenses')
+        .update({ receipt_url: null })
+        .eq('id', editingExpense.id);
+    }
     setExistingAttachments(prev => prev.filter(a => a.id !== id));
   };
 
