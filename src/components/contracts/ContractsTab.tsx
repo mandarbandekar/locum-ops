@@ -180,32 +180,48 @@ function AddContractDialog({ open, onOpenChange, onAdd, facilityId }: {
     title: '', status: 'draft' as ContractStatus, effective_date: '', end_date: '',
     auto_renew: false, notes: '', external_link_url: '',
   });
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
 
   const handleSubmit = async () => {
     if (!form.title.trim()) { toast.error('Title is required'); return; }
     setUploading(true);
     try {
-      let fileUrl: string | null = null;
-      if (file && user) {
-        fileUrl = await uploadContractFile(user.id, file);
+      const uploaded: { path: string; name: string; type: string }[] = [];
+      if (user) {
+        for (const f of files) {
+          const path = await uploadContractFile(user.id, f);
+          uploaded.push({ path, name: f.name, type: f.type });
+        }
       }
-      await onAdd({
+      const primaryUrl = uploaded[0]?.path ?? null;
+      const created = await onAdd({
         facility_id: facilityId,
         title: form.title.trim(),
         status: form.status,
         effective_date: form.effective_date || null,
         end_date: form.end_date || null,
         auto_renew: form.auto_renew,
-        file_url: fileUrl,
+        file_url: primaryUrl,
         external_link_url: form.external_link_url || null,
         notes: form.notes,
       });
-      toast.success('Contract added');
+      // Persist all attachments (including the primary)
+      if (created?.id && uploaded.length > 0 && user) {
+        await (supabase as any).from('contract_attachments').insert(
+          uploaded.map(u => ({
+            user_id: user.id,
+            contract_id: created.id,
+            file_path: u.path,
+            file_name: u.name,
+            file_type: u.type,
+          }))
+        );
+      }
+      toast.success(uploaded.length > 1 ? `Contract added with ${uploaded.length} files` : 'Contract added');
       onOpenChange(false);
       setForm({ title: '', status: 'draft', effective_date: '', end_date: '', auto_renew: false, notes: '', external_link_url: '' });
-      setFile(null);
+      setFiles([]);
     } catch (err: any) {
       toast.error(err.message || 'Failed to add contract');
     } finally {
