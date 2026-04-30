@@ -345,6 +345,44 @@ Deno.serve(async (req) => {
 
     const pdfBytes = await pdfDoc.save();
 
+    // Track distinct invoice download for founder dashboard. Failures must not
+    // block the PDF response.
+    try {
+      if (invoice?.user_id && invoice?.id) {
+        const { error: upsertError } = await supabase
+          .from('invoice_pdf_downloads')
+          .upsert(
+            {
+              user_id: invoice.user_id,
+              invoice_id: invoice.id,
+              download_count: 1,
+              last_downloaded_at: new Date().toISOString(),
+            },
+            { onConflict: 'user_id,invoice_id', ignoreDuplicates: false },
+          );
+        if (upsertError) {
+          // Fallback: increment via RPC-style update if upsert collided in a way the SDK can't merge.
+          const { data: existing } = await supabase
+            .from('invoice_pdf_downloads')
+            .select('id, download_count')
+            .eq('user_id', invoice.user_id)
+            .eq('invoice_id', invoice.id)
+            .maybeSingle();
+          if (existing) {
+            await supabase
+              .from('invoice_pdf_downloads')
+              .update({
+                download_count: (existing.download_count || 0) + 1,
+                last_downloaded_at: new Date().toISOString(),
+              })
+              .eq('id', existing.id);
+          }
+        }
+      }
+    } catch (trackErr) {
+      console.error('Failed to track invoice download:', trackErr);
+    }
+
     return new Response(pdfBytes as BodyInit, {
       status: 200,
       headers: {
