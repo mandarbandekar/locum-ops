@@ -337,6 +337,34 @@ export default function SettingsRateCardPage() {
           </CardContent>
         </Card>
 
+        <Card>
+          <CardContent className="pt-5">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-foreground">
+                  Always use my Rate Card for shift rates
+                </p>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                  When on, new shifts default to your Rate Card and clinic-specific rates are
+                  hidden from the picker. You can still add a custom rate per shift.
+                </p>
+              </div>
+              <Switch
+                checked={!!profile?.prefer_rate_card_default}
+                onCheckedChange={async (v) => {
+                  try {
+                    await updateProfile({ prefer_rate_card_default: !!v });
+                    toast.success(v ? 'Rate Card set as default' : 'Clinic rates re-enabled');
+                  } catch {
+                    toast.error('Could not update preference');
+                  }
+                }}
+                aria-label="Always use my Rate Card for shift rates"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
         <p className="text-xs text-muted-foreground">
           Tip: Shift Type is optional but recommended — it lets you filter and report by the kind of
           relief work you take. Pick "Other (custom)…" to type your own.
