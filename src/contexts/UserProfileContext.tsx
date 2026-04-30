@@ -123,6 +123,7 @@ export const DEFAULT_PROFILE: Omit<UserProfile, 'id' | 'user_id'> = {
   engagement_announcement_dismissed_at: null,
   default_rates: [],
   default_billing_preference: 'per_day',
+  prefer_rate_card_default: false,
   onboarding_progress: {},
 };
 
