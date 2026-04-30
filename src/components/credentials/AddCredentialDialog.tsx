@@ -93,9 +93,11 @@ export function AddCredentialDialog({ open, onOpenChange, editingCredential, onA
         credentialId = result.id;
       }
 
-      if (file) {
-        await uploadDocument(file, credentialId, 'license');
-        toast({ title: 'Document uploaded' });
+      if (files.length > 0) {
+        for (const f of files) {
+          await uploadDocument(f, credentialId, 'license');
+        }
+        toast({ title: files.length > 1 ? `${files.length} documents uploaded` : 'Document uploaded' });
       }
 
       onOpenChange(false);
