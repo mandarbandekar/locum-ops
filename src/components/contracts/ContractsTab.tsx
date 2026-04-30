@@ -254,9 +254,14 @@ function AddContractDialog({ open, onOpenChange, onAdd, facilityId }: {
             <Label htmlFor="auto_renew" className="text-sm">Auto-renew</Label>
           </div>
           <div>
-            <Label>Attach File</Label>
-            <Input type="file" onChange={e => setFile(e.target.files?.[0] || null)} accept=".pdf,.doc,.docx,.png,.jpg" />
-            {file && <p className="text-xs text-muted-foreground mt-1">Selected: {file.name}</p>}
+            <Label>Attach Files</Label>
+            <MultiFileDropzone
+              files={files}
+              onChange={setFiles}
+              accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+              label="Add contract files"
+              hint="PDF, Word, or images. You can attach multiple."
+            />
           </div>
           <div><Label>External Link (optional)</Label><Input value={form.external_link_url} onChange={e => setForm(p => ({ ...p, external_link_url: e.target.value }))} placeholder="https://..." /></div>
           <div><Label>Notes</Label><Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} rows={2} /></div>
