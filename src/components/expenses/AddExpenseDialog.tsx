@@ -299,17 +299,21 @@ export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit,
             </div>
 
             <div>
-              <Label>Receipt (optional)</Label>
-              <div className="flex items-center gap-2 mt-1">
-                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => document.getElementById('receipt-input')?.click()}>
-                  <Camera className="h-4 w-4" />
-                  {receiptFile ? receiptFile.name : (editingExpense?.receipt_url ? 'Replace Receipt' : 'Upload Receipt')}
-                </Button>
-                <input id="receipt-input" type="file" accept="image/*,.pdf" className="hidden" onChange={e => setReceiptFile(e.target.files?.[0] || null)} />
-              </div>
+              <Label>Receipts (optional)</Label>
+              <MultiFileDropzone
+                files={receiptFiles}
+                onChange={setReceiptFiles}
+                accept="image/*,.pdf"
+                label="Add receipts"
+                hint="Images or PDFs. You can attach multiple."
+                existing={existingAttachments}
+                onRemoveExisting={removeExistingAttachment}
+                className="mt-1"
+              />
             </div>
           </div>
         </div>
+
 
         {/* Recurrence - full width below the grid */}
         {!isMileage && (
