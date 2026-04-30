@@ -46,7 +46,7 @@ export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit,
   const [description, setDescription] = useState('');
   const [facilityId, setFacilityId] = useState('none');
   const [receiptFiles, setReceiptFiles] = useState<File[]>([]);
-  const [existingAttachments, setExistingAttachments] = useState<{ id: string; name: string }[]>([]);
+  const [existingAttachments, setExistingAttachments] = useState<{ id: string; name: string; path?: string }[]>([]);
   const { user } = useAuth();
   const [milesStr, setMilesStr] = useState('');
   const [sqftStr, setSqftStr] = useState('');
@@ -97,10 +97,10 @@ export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit,
       (async () => {
         const { data } = await (supabase as any)
           .from('expense_attachments')
-          .select('id, file_name')
+          .select('id, file_name, file_path')
           .eq('expense_id', editingExpense.id)
           .order('uploaded_at', { ascending: true });
-        setExistingAttachments((data || []).map((d: any) => ({ id: d.id, name: d.file_name })));
+        setExistingAttachments((data || []).map((d: any) => ({ id: d.id, name: d.file_name, path: d.file_path })));
       })();
     } else {
       setDate(today);
@@ -119,7 +119,20 @@ export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit,
   }, [open, editingExpense, initialSubcategory]);
 
   const removeExistingAttachment = async (id: string) => {
+    const target = existingAttachments.find(a => a.id === id);
+    // Delete the DB row
     await (supabase as any).from('expense_attachments').delete().eq('id', id);
+    // Best-effort: remove the storage object
+    if (target?.path) {
+      try { await supabase.storage.from('expense-receipts').remove([target.path]); } catch {}
+    }
+    // If the legacy receipt_url pointed to this file, clear it on the expense row
+    if (editingExpense && target?.path && editingExpense.receipt_url === target.path) {
+      await (supabase as any)
+        .from('expenses')
+        .update({ receipt_url: null })
+        .eq('id', editingExpense.id);
+    }
     setExistingAttachments(prev => prev.filter(a => a.id !== id));
   };
 

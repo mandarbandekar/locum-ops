@@ -1,7 +1,17 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Upload, X, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface MultiFileDropzoneProps {
   files: File[];
@@ -13,7 +23,8 @@ interface MultiFileDropzoneProps {
   className?: string;
   /** Existing already-uploaded items (read-only display) */
   existing?: { name: string; id?: string }[];
-  onRemoveExisting?: (id: string) => void;
+  /** Should perform the DB/storage deletion. May be async. */
+  onRemoveExisting?: (id: string) => void | Promise<void>;
 }
 
 function formatSize(bytes: number) {
@@ -21,6 +32,10 @@ function formatSize(bytes: number) {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
+
+type PendingRemoval =
+  | { kind: 'new'; index: number; name: string }
+  | { kind: 'existing'; id: string; name: string };
 
 export function MultiFileDropzone({
   files,
@@ -34,14 +49,27 @@ export function MultiFileDropzone({
   onRemoveExisting,
 }: MultiFileDropzoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [pending, setPending] = useState<PendingRemoval | null>(null);
+  const [removing, setRemoving] = useState(false);
 
   const handlePicked = (picked: FileList | null) => {
     if (!picked || picked.length === 0) return;
     onChange([...files, ...Array.from(picked)]);
   };
 
-  const removeAt = (idx: number) => {
-    onChange(files.filter((_, i) => i !== idx));
+  const confirmRemove = async () => {
+    if (!pending) return;
+    setRemoving(true);
+    try {
+      if (pending.kind === 'new') {
+        onChange(files.filter((_, i) => i !== pending.index));
+      } else if (onRemoveExisting) {
+        await onRemoveExisting(pending.id);
+      }
+      setPending(null);
+    } finally {
+      setRemoving(false);
+    }
   };
 
   const hasAny = files.length > 0 || existing.length > 0;
@@ -92,7 +120,10 @@ export function MultiFileDropzone({
                   variant="ghost"
                   size="sm"
                   className="h-6 w-6 p-0"
-                  onClick={e => { e.stopPropagation(); onRemoveExisting(f.id!); }}
+                  onClick={e => {
+                    e.stopPropagation();
+                    setPending({ kind: 'existing', id: f.id!, name: f.name });
+                  }}
                 >
                   <X className="h-3.5 w-3.5" />
                 </Button>
@@ -111,7 +142,10 @@ export function MultiFileDropzone({
                 variant="ghost"
                 size="sm"
                 className="h-6 w-6 p-0"
-                onClick={e => { e.stopPropagation(); removeAt(i); }}
+                onClick={e => {
+                  e.stopPropagation();
+                  setPending({ kind: 'new', index: i, name: f.name });
+                }}
               >
                 <X className="h-3.5 w-3.5" />
               </Button>
@@ -119,6 +153,35 @@ export function MultiFileDropzone({
           ))}
         </ul>
       )}
+
+      <AlertDialog open={!!pending} onOpenChange={(o) => { if (!o && !removing) setPending(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove this attachment?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pending?.kind === 'existing' ? (
+                <>
+                  <span className="font-medium">{pending?.name}</span> will be permanently deleted from this record. This cannot be undone.
+                </>
+              ) : (
+                <>
+                  <span className="font-medium">{pending?.name}</span> will be removed from the upload list.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={removing}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); confirmRemove(); }}
+              disabled={removing}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {removing ? 'Removing…' : 'Remove'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
