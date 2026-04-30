@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
 
     // Fetch related data
     const [liRes, facRes, profileRes, contactRes] = await Promise.all([
-      supabase.from('invoice_line_items').select('*').eq('invoice_id', invoice.id).order('created_at'),
+      supabase.from('invoice_line_items').select('*').eq('invoice_id', invoice.id).order('service_date', { ascending: true, nullsFirst: false }).order('created_at', { ascending: true }),
       supabase.from('facilities').select('name, address, invoice_name_to, invoice_email_to, invoice_name_cc, invoice_email_cc, invoice_name_bcc, invoice_email_bcc').eq('id', invoice.facility_id).single(),
       supabase.from('user_profiles').select('first_name, last_name, company_name, company_address, invoice_email, invoice_phone').eq('user_id', invoice.user_id).single(),
       supabase.from('facility_contacts').select('name, email, phone, role').eq('facility_id', invoice.facility_id).or('is_primary.eq.true,role.eq.billing').limit(1).single(),

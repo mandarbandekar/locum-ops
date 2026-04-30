@@ -402,15 +402,10 @@ export function InvoiceEditPanel({
 
       {/* Line Items as card list */}
       <Card data-line-items-section>
-        <CardHeader className="pb-1.5 pt-3 px-3 flex flex-row items-center justify-between">
+        <CardHeader className="pb-1.5 pt-3 px-3">
           <CardTitle className="text-xs text-muted-foreground uppercase tracking-wider">
             {readOnly ? 'Line Items' : 'Shifts on this invoice'} ({items.length})
           </CardTitle>
-          {!readOnly && (
-            <Button variant="ghost" size="sm" onClick={() => setShowAddLine(true)} className="h-6 text-xs">
-              <Plus className="h-3 w-3 mr-1" /> Add custom line
-            </Button>
-          )}
         </CardHeader>
         <CardContent className="px-3 pb-3 space-y-2">
           {items.length === 0 ? (
@@ -468,6 +463,14 @@ export function InvoiceEditPanel({
                 />
               );
             })
+          )}
+
+          {!readOnly && !showAddLine && (
+            <div className="flex justify-start pt-1">
+              <Button variant="ghost" size="sm" onClick={() => setShowAddLine(true)} className="h-7 text-xs">
+                <Plus className="h-3 w-3 mr-1" /> Add custom line
+              </Button>
+            </div>
           )}
 
           {!readOnly && showAddLine && (
