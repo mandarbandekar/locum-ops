@@ -326,3 +326,90 @@ export function generateTaxDeadlineReminders(
 
   return items;
 }
+
+/**
+ * Lightweight quarterly + annual tax deadline reminders for the dashboard
+ * "Needs Your Attention" list. Surfaces upcoming deadlines within `windowDays`
+ * (default 45) without requiring a configured tax profile or payment amounts.
+ */
+export function generateQuarterlyTaxAttentionReminders(
+  now: Date,
+  windowDays = 45,
+): GeneratedReminder[] {
+  const items: GeneratedReminder[] = [];
+  // Look at this year's and next year's quarters to cover Jan Q4-prior-year edge.
+  const years = [now.getFullYear() - 1, now.getFullYear(), now.getFullYear() + 1];
+  const seen = new Set<string>();
+
+  years.forEach((y) => {
+    const dueDates = getQuarterlyDueDates(y);
+    for (let q = 1; q <= 4; q++) {
+      const dd = dueDates[q];
+      const due = new Date(dd.due);
+      const daysUntil = differenceInDays(due, now);
+      // Show from 45 days out through the day-of; skip past deadlines.
+      if (daysUntil < 0 || daysUntil > windowDays) continue;
+      const key = `${y}-${q}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      const dueLabel = due.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const title =
+        daysUntil === 0
+          ? `${dd.label} estimated taxes due today`
+          : daysUntil <= 3
+          ? `${dd.label} estimated taxes due in ${daysUntil} day${daysUntil === 1 ? '' : 's'}`
+          : `${dd.label} estimated taxes due ${dueLabel}`;
+      const urgency = daysUntil === 0 ? 1 : daysUntil <= 3 ? 2 : daysUntil <= 14 ? 3 : 6;
+      items.push({
+        module: 'taxes',
+        reminder_type: 'tax_quarterly_deadline',
+        title,
+        body: `Pay federal (and state, if applicable) by ${dueLabel}`,
+        link: '/tax-center?tab=tax-estimate',
+        urgency,
+      });
+    }
+  });
+
+  return items;
+}
+
+/**
+ * Annual federal tax filing deadline (April 15). Surfaces within `windowDays`
+ * (default 60) of the upcoming April 15.
+ */
+export function generateAnnualTaxAttentionReminders(
+  now: Date,
+  windowDays = 60,
+): GeneratedReminder[] {
+  const items: GeneratedReminder[] = [];
+  const y = now.getFullYear();
+  // Candidate filing deadlines: April 15 of this year and next year.
+  const candidates = [new Date(y, 3, 15), new Date(y + 1, 3, 15)];
+
+  for (const due of candidates) {
+    const daysUntil = differenceInDays(due, now);
+    if (daysUntil < 0 || daysUntil > windowDays) continue;
+    const dueLabel = due.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const taxYear = due.getFullYear() - 1;
+    const title =
+      daysUntil === 0
+        ? `${taxYear} federal tax return due today`
+        : daysUntil <= 3
+        ? `${taxYear} federal tax return due in ${daysUntil} day${daysUntil === 1 ? '' : 's'}`
+        : `${taxYear} federal tax return due ${dueLabel}`;
+    const urgency = daysUntil === 0 ? 1 : daysUntil <= 7 ? 2 : daysUntil <= 30 ? 4 : 6;
+    items.push({
+      module: 'taxes',
+      reminder_type: 'tax_annual_deadline',
+      title,
+      body: 'File Form 1040 or request an extension (Form 4868)',
+      link: '/tax-center?tab=cpa-prep',
+      urgency,
+    });
+    break; // only surface the next upcoming annual deadline
+  }
+
+  return items;
+}
