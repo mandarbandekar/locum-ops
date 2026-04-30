@@ -214,21 +214,17 @@ export function AddCEEntryDialog({ open, onOpenChange, editingEntry, preLinkedCr
           </div>
 
           <div className="space-y-2">
-            <Label>Upload Certificate</Label>
-            <div
-              className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:border-primary/50 transition-colors"
-              onClick={() => fileRef.current?.click()}
-            >
-              <Upload className="h-6 w-6 mx-auto text-muted-foreground mb-1" />
-              {file ? (
-                <p className="text-sm font-medium">{file.name}</p>
-              ) : form.certificate_file_name ? (
-                <p className="text-sm text-muted-foreground">Current: {form.certificate_file_name} — click to replace</p>
-              ) : (
-                <p className="text-sm text-muted-foreground">Click to upload PDF, image, or document</p>
-              )}
-              <input ref={fileRef} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onChange={e => setFile(e.target.files?.[0] || null)} />
-            </div>
+            <Label>Upload Certificates</Label>
+            {form.certificate_file_name && files.length === 0 && (
+              <p className="text-xs text-muted-foreground">Current: {form.certificate_file_name}</p>
+            )}
+            <MultiFileDropzone
+              files={files}
+              onChange={setFiles}
+              accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+              label="Add CE certificates"
+              hint="PDF, image, or Word. You can attach multiple."
+            />
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
