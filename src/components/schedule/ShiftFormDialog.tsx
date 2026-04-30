@@ -23,6 +23,7 @@ import { termsToRates, RateEntry } from '@/components/facilities/RatesEditor';
 import { useData } from '@/contexts/DataContext';
 import { useUserProfile, type DefaultRate } from '@/contexts/UserProfileContext';
 import { mapDefaultRatesToRateEntries } from '@/lib/onboardingRateMapping';
+import { RateSourcePicker } from './RateSourcePicker';
 import { getBillingPeriod } from '@/lib/invoiceAutoGeneration';
 import type { BillingCadence } from '@/lib/invoiceBillingDefaults';
 import { Checkbox } from '@/components/ui/checkbox';
