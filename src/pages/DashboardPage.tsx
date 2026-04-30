@@ -18,7 +18,7 @@ import {
 import { getChecklistBadge } from '@/types/contracts';
 import { useClinicConfirmations } from '@/hooks/useClinicConfirmations';
 import { useCredentials } from '@/hooks/useCredentials';
-import { generateCredentialReminders, generateUninvoicedShiftReminders } from '@/lib/reminderEngine';
+import { generateCredentialReminders, generateUninvoicedShiftReminders, generateQuarterlyTaxAttentionReminders, generateAnnualTaxAttentionReminders } from '@/lib/reminderEngine';
 import { computeStatus as computeSubStatus } from '@/hooks/useSubscriptions';
 import { useReminderPreferences } from '@/hooks/useReminderPreferences';
 import { useTaxIntelligence } from '@/hooks/useTaxIntelligence';
@@ -613,28 +613,7 @@ export default function DashboardPage() {
       });
     }
 
-    if (confirmationBreakdown.manualReview > 0) {
-      items.push({
-        title: `${confirmationBreakdown.manualReview} confirmation${confirmationBreakdown.manualReview > 1 ? 's' : ''} to review`,
-        context: 'Review and send to clinic contacts',
-        link: '/schedule', icon: CheckSquare, urgency: 3,
-        module: 'confirmations',
-      });
-    }
-    if (confirmationBreakdown.needsUpdate > 0) {
-      items.push({
-        title: `${confirmationBreakdown.needsUpdate} confirmation${confirmationBreakdown.needsUpdate > 1 ? 's' : ''} need update`,
-        context: 'Schedule changed after confirmation sent',
-        link: '/schedule', icon: AlertTriangle, urgency: 2, module: 'confirmations',
-      });
-    }
-    if (confirmationBreakdown.missingContact > 0) {
-      items.push({
-        title: `${confirmationBreakdown.missingContact} facilit${confirmationBreakdown.missingContact > 1 ? 'ies' : 'y'} missing contact`,
-        context: 'Add scheduling contact to enable confirmations',
-        link: '/schedule', icon: AlertTriangle, urgency: 5, module: 'confirmations',
-      });
-    }
+    // Monthly clinic confirmations removed from "Needs Your Attention".
 
     checklistItems
       .filter(item => getChecklistBadge(item) === 'due_soon' || getChecklistBadge(item) === 'overdue')
@@ -649,8 +628,10 @@ export default function DashboardPage() {
         });
       });
 
+    // Credential renewals — surface anything within 60 days of expiry, plus
+    // anything already expired but not yet renewed.
     if (credentialsList) {
-      generateCredentialReminders(credentialsList, now, 30).forEach(r => {
+      generateCredentialReminders(credentialsList, now, 60).forEach(r => {
         items.push({ title: r.title, context: r.body, link: r.link, icon: ShieldAlert, urgency: r.urgency, module: 'credentials' });
       });
     }
@@ -668,17 +649,27 @@ export default function DashboardPage() {
       });
     }
 
-    const nextQuarter = taxQuarters.find(q => new Date(q.due_date) >= now && q.status !== 'paid');
-    if (nextQuarter) {
-      const daysUntil = differenceInDays(new Date(nextQuarter.due_date), now);
-      if (daysUntil <= 30) {
-        items.push({
-          title: `Q${nextQuarter.quarter} estimated tax due`,
-          context: `Due in ${daysUntil} days`,
-          link: '/business?tab=tax-strategy&subtab=tracker', icon: DollarSign, urgency: 4, module: 'taxes',
-        });
-      }
-    }
+    // Quarterly estimated tax deadlines (within 45 days). Skip any quarter the
+    // user has already marked paid in their tax tracker.
+    const paidQuarters = new Set(
+      taxQuarters.filter(q => q.status === 'paid').map(q => `Q${q.quarter}`),
+    );
+    generateQuarterlyTaxAttentionReminders(now, 45).forEach(r => {
+      const qMatch = r.title.match(/Q[1-4]/);
+      if (qMatch && paidQuarters.has(qMatch[0])) return;
+      items.push({
+        title: r.title, context: r.body, link: r.link,
+        icon: DollarSign, urgency: r.urgency, module: 'taxes',
+      });
+    });
+
+    // Annual federal filing deadline (April 15) within 60 days.
+    generateAnnualTaxAttentionReminders(now, 60).forEach(r => {
+      items.push({
+        title: r.title, context: r.body, link: r.link,
+        icon: Calculator, urgency: r.urgency, module: 'taxes',
+      });
+    });
 
     if (!hasTaxProfile && invoices.some(i => i.paid_at)) {
       items.push({
