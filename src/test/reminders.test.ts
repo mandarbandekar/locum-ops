@@ -91,14 +91,25 @@ describe('Reminder Engine', () => {
       expect(result[0].title).toContain('CA License');
     });
 
-    it('triggers for credential due within 15 days (urgent)', () => {
+    it('triggers for credential due within 15 days (medium urgency)', () => {
       const now = new Date();
       const dueIn15 = new Date(now);
       dueIn15.setDate(dueIn15.getDate() + 15);
       const creds = [{ id: 'c1', custom_title: 'CA License', expiration_date: dueIn15.toISOString().split('T')[0] }];
       const result = generateCredentialReminders(creds, now);
       expect(result).toHaveLength(1);
-      expect(result[0].urgency).toBe(6);
+      expect(result[0].urgency).toBe(5);
+    });
+
+    it('flags expired credentials with highest urgency', () => {
+      const now = new Date();
+      const expired = new Date(now);
+      expired.setDate(expired.getDate() - 5);
+      const creds = [{ id: 'c1', custom_title: 'CA License', expiration_date: expired.toISOString().split('T')[0] }];
+      const result = generateCredentialReminders(creds, now);
+      expect(result).toHaveLength(1);
+      expect(result[0].urgency).toBe(1);
+      expect(result[0].body).toContain('Expired');
     });
 
     it('marks credential due within 7 days as high urgency', () => {
