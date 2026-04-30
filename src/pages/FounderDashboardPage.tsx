@@ -29,7 +29,7 @@ interface FounderRow {
 
 type SortKey = keyof Pick<
   FounderRow,
-  'email' | 'signed_up_at' | 'last_sign_in_at' | 'clinic_count' | 'shift_count' | 'invoice_count' | 'activation_status'
+  'email' | 'signed_up_at' | 'last_sign_in_at' | 'clinic_count' | 'shift_count' | 'invoice_count' | 'downloaded_invoice_count' | 'credential_count' | 'expense_count' | 'activation_status'
 >;
 
 function formatDate(d?: string | null) {
