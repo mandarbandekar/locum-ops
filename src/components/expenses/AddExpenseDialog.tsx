@@ -97,10 +97,10 @@ export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit,
       (async () => {
         const { data } = await (supabase as any)
           .from('expense_attachments')
-          .select('id, file_name')
+          .select('id, file_name, file_path')
           .eq('expense_id', editingExpense.id)
           .order('uploaded_at', { ascending: true });
-        setExistingAttachments((data || []).map((d: any) => ({ id: d.id, name: d.file_name })));
+        setExistingAttachments((data || []).map((d: any) => ({ id: d.id, name: d.file_name, path: d.file_path })));
       })();
     } else {
       setDate(today);
