@@ -94,11 +94,16 @@ export function AddCEEntryDialog({ open, onOpenChange, editingEntry, preLinkedCr
       let certUrl = form.certificate_file_url;
       let certName = form.certificate_file_name;
 
-      if (file) {
-        const result = await uploadCertificate(file);
-        certUrl = result.url;
-        certName = result.name;
-        toast({ title: 'Certificate uploaded' });
+      if (files.length > 0) {
+        // Upload all certificates; first one populates the legacy single-file column
+        for (let i = 0; i < files.length; i++) {
+          const result = await uploadCertificate(files[i]);
+          if (i === 0) {
+            certUrl = result.url;
+            certName = result.name;
+          }
+        }
+        toast({ title: files.length > 1 ? `${files.length} certificates uploaded` : 'Certificate uploaded' });
       }
 
       const payload = {
