@@ -134,14 +134,33 @@ export function generateCredentialReminders(
   credentials.forEach(cred => {
     if (!cred.expiration_date) return;
     const daysUntil = differenceInDays(new Date(cred.expiration_date), now);
-    if (daysUntil >= 0 && daysUntil <= windowDays) {
+    // Surface anything already expired up to `windowDays` ahead.
+    if (daysUntil <= windowDays) {
+      let body: string;
+      let urgency: number;
+      if (daysUntil < 0) {
+        body = `Expired ${Math.abs(daysUntil)} day${Math.abs(daysUntil) === 1 ? '' : 's'} ago`;
+        urgency = 1;
+      } else if (daysUntil === 0) {
+        body = 'Expires today';
+        urgency = 2;
+      } else if (daysUntil <= 7) {
+        body = `Expires in ${daysUntil} day${daysUntil === 1 ? '' : 's'}`;
+        urgency = 3;
+      } else if (daysUntil <= 30) {
+        body = `Renewal due in ${daysUntil} days`;
+        urgency = 5;
+      } else {
+        body = `Renewal due in ${daysUntil} days`;
+        urgency = 6;
+      }
       items.push({
         module: 'credentials',
         reminder_type: 'credential_renewal_due',
-        title: `${cred.custom_title} renewal due`,
-        body: daysUntil === 0 ? 'Due today' : `Due in ${daysUntil} days`,
+        title: `${cred.custom_title} renewal`,
+        body,
         link: '/credentials',
-        urgency: daysUntil <= 7 ? 3 : 6,
+        urgency,
         related_entity_type: 'credential',
         related_entity_id: cred.id,
       });
