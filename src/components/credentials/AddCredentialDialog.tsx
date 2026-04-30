@@ -36,9 +36,8 @@ export function AddCredentialDialog({ open, onOpenChange, editingCredential, onA
   const { addCredential, updateCredential, uploadDocument } = useCredentials();
   const { getCredentialCEStats } = useCEEntries();
   const { toast } = useToast();
-  const fileRef = useRef<HTMLInputElement>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
 
   const isEditing = !!editingCredential;
   const ceStats = isEditing ? getCredentialCEStats(editingCredential.id) : null;
