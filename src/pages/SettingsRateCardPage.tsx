@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Save, Plus, Trash2, DollarSign, Clock, AlertCircle, Tag, Sparkles } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import {
