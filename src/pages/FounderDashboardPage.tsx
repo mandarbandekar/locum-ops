@@ -221,6 +221,9 @@ export default function FounderDashboardPage() {
                       <td className="px-4 py-2.5 text-right tabular-nums">{r.clinic_count}</td>
                       <td className="px-4 py-2.5 text-right tabular-nums">{r.shift_count}</td>
                       <td className="px-4 py-2.5 text-right tabular-nums">{r.invoice_count}</td>
+                      <td className="px-4 py-2.5 text-right tabular-nums">{r.downloaded_invoice_count}</td>
+                      <td className="px-4 py-2.5 text-right tabular-nums">{r.credential_count}</td>
+                      <td className="px-4 py-2.5 text-right tabular-nums">{r.expense_count}</td>
                       <td className="px-4 py-2.5"><StatusPill status={r.activation_status} /></td>
                     </tr>
                   ))
