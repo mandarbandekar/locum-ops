@@ -33,12 +33,13 @@ export default function IncomeBySource({ rangeStart, rangeEnd }: Props) {
   const navigate = useNavigate();
   const { shifts, facilities } = useData();
 
-  const { segments, rateRows, distinctCount, hasAnyShifts } = useMemo(() => {
+  const { segments, rateRows, distinctCount, hasAnyShifts, hasThirdParty } = useMemo(() => {
     const facilitiesById = new Map(facilities.map((f) => [f.id, f]));
 
     type Bucket = { key: string; label: string; earnings: number; minutes: number; shiftCount: number };
     const buckets = new Map<string, Bucket>();
     let totalShifts = 0;
+    let thirdPartySeen = false;
 
     shifts.forEach((shift) => {
       const start = parseISO(shift.start_datetime);
@@ -54,6 +55,7 @@ export default function IncomeBySource({ rangeStart, rangeEnd }: Props) {
         key = 'direct::all';
         label = 'Direct clinics';
       } else {
+        thirdPartySeen = true;
         const source = (eff.source_name || '').trim() || 'Platform';
         key = `${eff.engagement_type}::${source.toLowerCase()}`;
         label = source;
@@ -99,8 +101,13 @@ export default function IncomeBySource({ rangeStart, rangeEnd }: Props) {
       rateRows,
       distinctCount: all.length,
       hasAnyShifts: totalShifts > 0,
+      hasThirdParty: thirdPartySeen,
     };
   }, [shifts, facilities, rangeStart, rangeEnd]);
+
+  // Hide the entire card for users who only work direct clinics — the source
+  // breakdown is only meaningful when they have at least one Via Platform shift.
+  if (!hasThirdParty) return null;
 
   const chartConfig = useMemo(() => {
     const cfg: Record<string, { label: string; color: string }> = {};
