@@ -15,6 +15,8 @@ import { useContracts } from '@/hooks/useContracts';
 import { useAuth } from '@/contexts/AuthContext';
 import { generateId } from '@/lib/businessLogic';
 import { uploadContractFile, getContractSignedUrl, deleteContractFile } from '@/lib/contractStorage';
+import { MultiFileDropzone } from '@/components/ui/multi-file-dropzone';
+import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
