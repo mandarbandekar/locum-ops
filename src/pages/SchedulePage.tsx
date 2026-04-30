@@ -28,7 +28,7 @@ import { SpotlightTour, TourStep } from '@/components/SpotlightTour';
 import { useSpotlightTour } from '@/hooks/useSpotlightTour';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { getBillableMinutes } from '@/lib/shiftBreak';
+import { getBillableMinutes, formatHoursMinutes } from '@/lib/shiftBreak';
 
 const STORAGE_KEY = 'schedule-view-pref';
 
@@ -147,9 +147,8 @@ export default function SchedulePage() {
 
   const activeRangeShifts = rangeShifts;
   const totalShiftsInRange = activeRangeShifts.length;
-  const totalHoursInRange = activeRangeShifts.reduce((sum, s) => {
-    return sum + getBillableMinutes(s) / 60;
-  }, 0);
+  const totalMinutesInRange = activeRangeShifts.reduce((sum, s) => sum + getBillableMinutes(s), 0);
+  const totalHoursInRange = formatHoursMinutes(totalMinutesInRange);
   const totalRevenueInRange = activeRangeShifts.reduce((sum, s) => sum + (s.rate_applied || 0), 0);
 
   const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
@@ -389,8 +388,8 @@ export default function SchedulePage() {
       {/* Row 2: Date Nav | Stats | Layers (calendar views only) */}
       {isCalendarView && (
         <div className="flex-none border-y border-border/60 px-4 sm:px-6 py-2 bg-muted/20">
-          <div className="flex items-center justify-between gap-3" data-tour="schedule-calendar">
-            <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-3" data-tour="schedule-calendar">
+            <div className="flex-1 flex items-center justify-start gap-1.5 min-w-0">
               <Button variant="ghost" size="icon" onClick={navigateBack} className="h-8 w-8">
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -403,13 +402,19 @@ export default function SchedulePage() {
               </Button>
             </div>
 
-            {totalShiftsInRange > 0 && (
-              <div className="hidden md:flex items-center gap-4 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" /> <span className="font-medium text-foreground">{totalShiftsInRange}</span> shifts</span>
-                <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> <span className="font-medium text-foreground">{totalHoursInRange}</span>h</span>
-                <span className="flex items-center gap-1"><DollarSign className="h-3.5 w-3.5" /> <span className="font-medium text-foreground">${totalRevenueInRange.toLocaleString()}</span></span>
-              </div>
-            )}
+            <div className="flex-1 hidden md:flex items-center justify-center">
+              {totalShiftsInRange > 0 && (
+                <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" /> <span className="font-medium text-foreground">{totalShiftsInRange}</span> shifts</span>
+                  <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> <span className="font-medium text-foreground tabular-nums">{totalHoursInRange}</span> h</span>
+                  <span className="flex items-center gap-1"><DollarSign className="h-3.5 w-3.5" /> <span className="font-medium text-foreground">${totalRevenueInRange.toLocaleString()}</span></span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex-1 flex items-center justify-end">
+
+            </div>
 
             <Popover>
               <PopoverTrigger asChild>
