@@ -1,88 +1,65 @@
-## Goal
+# Fix: Invisible "Verify Email" button in signup emails
 
-When a user has **both** clinic-specific rates *and* Rate Card rates, the current single dropdown in the Shift form lists everything in one scrollable list. Some users can't scroll all the way down to reach Rate Card entries.
+## Diagnosis
 
-Replace this with a **two-pane (split view) picker** that puts clinic rates and Rate Card rates side-by-side, each with its own scroll area — no more hidden options. Users who prefer to always pick from their Rate Card can opt out of the split view via a new preference; for them, only the Rate Card pane is shown. Make sure this works efficiently for mobile and web based interface. 
+The button **is** in the email — but its background is rendering as transparent/white in many email clients, which makes the white button text invisible against the white email body.
 
-## Where this applies
+**Root cause:** The button styles in our auth email templates use **CSS `hsl()` color notation**:
 
-- `src/components/schedule/ShiftFormDialog.tsx` — primary place (Step 2 of new shift, plus the "edit existing" view; both render the same rate block, lines ~860–937 and ~1050–1130).
-- The Bulk Shift Calendar (`OnboardingBulkShiftCalendar.tsx`) is **out of scope** for this change — it uses a flat option list during onboarding only.
-
-## UX behavior
-
-**Default (split view), shown when both clinic and rate-card rates exist:**
-
-```text
-┌──────────────────────────────────────────────────────────────┐
-│ Choose a rate                              [ + Custom rate ] │
-├──────────────────────────────┬───────────────────────────────┤
-│ FROM THIS CLINIC             │ FROM YOUR RATE CARD           │
-│ ┌──────────────────────────┐ │ ┌───────────────────────────┐ │
-│ │ ● Weekday Rate    $850/d │ │ │ ○ GP Day          $900/d  │ │
-│ │ ○ Weekend Rate    $950/d │ │ │ ○ ER Day        $1,100/d  │ │
-│ │ ○ Holiday Rate  $1,050/d │ │ │ ○ Surgery Day   $1,000/d  │ │
-│ │ ○ Custom (ER)   $1,000/d │ │ │ ○ After-hours      $95/hr │ │
-│ │   …scrolls within pane   │ │ │   …scrolls within pane    │ │
-│ └──────────────────────────┘ │ └───────────────────────────┘ │
-└──────────────────────────────┴───────────────────────────────┘
-   Selected: Weekday Rate — $850/day  (from this clinic)
+```ts
+// supabase/functions/_shared/email-templates/signup.tsx (line 75-82)
+const button = {
+  backgroundColor: 'hsl(173, 58%, 39%)',   // teal
+  color: '#ffffff',                         // white text
+  ...
+}
 ```
 
-- Each pane is a `ScrollArea` with `max-h-56` (~224 px) so the **whole** list of either source is reachable without the dialog needing to grow.
-- Items render as radio rows (single-select across both panes — picking from one pane clears the other).
-- Selecting an item updates `rate`, `selectedRateKey`, `isCustomRate=false` exactly like today, so all downstream calc / save logic is unchanged.
-- The previously inline "[GP] Label — $X/day" formatting is preserved per row.
-- A small text below the panes echoes the active selection so the user knows what's saved.
-- "Custom rate" becomes a button above the panes that flips to the existing custom-rate input block (unchanged).
+Most major email clients — **Gmail (web + iOS + Android), Outlook (desktop & web), Yahoo, Apple Mail (older)** — strip or ignore inline styles using `hsl()`, `hsla()`, `var()`, and other modern CSS color formats. They only reliably support **hex** (`#0d9488`), named colors, and `rgb()`.
 
-**Fallback layouts:**
+Result: the `backgroundColor` is dropped → button background falls back to transparent/white → the white button text becomes invisible. The `<a>` link is still there (which is why users say "it's there but invisible") — clicking the empty space still works.
 
-- On viewports < 640 px (`sm`), the two panes stack vertically; each still has its own scroll area.
-- If only one source has rates, render that single pane full-width (no split needed).
-- If the user enabled "Always use my Rate Card" (see below), only the Rate Card pane is shown, full-width — even when the clinic has its own rates.
+The same bug exists in **all six auth email templates**:
+- `signup.tsx`
+- `magic-link.tsx`
+- `recovery.tsx`
+- `invite.tsx`
+- `email-change.tsx`
+- (`reauthentication.tsx` uses an OTP code, no button — not affected)
 
-## New preference: "Default to my Rate Card"
+The heading color `hsl(215, 25%, 15%)` and body text `hsl(215, 13%, 50%)` have the same issue but degrade more gracefully (fall back to default black/dark text on white background, so they remain readable).
 
-Add a single boolean preference: `prefer_rate_card_default` on `user_profiles`.
+## Fix
 
-- Surfaced on **Settings → Rate Card** (`src/pages/SettingsRateCardPage.tsx`) as a toggle:
-  > **Always use my Rate Card for shift rates**
-  > When on, new shifts default to your Rate Card and clinic-specific rates are hidden from the picker. You can still add a custom rate per shift.
-- Read in `ShiftFormDialog` via `useUserProfile()`. When `true`, the picker:
-  - Hides the "From this clinic" pane.
-  - Seeds the new-shift default rate from the first Rate Card entry instead of the first facility rate.
-  - Still allows Custom Rate.
+Replace every `hsl(...)` color string in the auth email templates with the equivalent hex value:
 
-## Technical details
+| HSL (current) | Hex (replacement) | Used for |
+|---|---|---|
+| `hsl(173, 58%, 39%)` | `#2a9d8f` | Button background (primary teal) |
+| `hsl(215, 25%, 15%)` | `#1d2733` | Heading text |
+| `hsl(215, 13%, 50%)` | `#6b7280` | Body text |
 
-**Database**
+Files to update (5 templates with buttons + optional cleanup of headings/body in all 6):
+1. `supabase/functions/_shared/email-templates/signup.tsx`
+2. `supabase/functions/_shared/email-templates/magic-link.tsx`
+3. `supabase/functions/_shared/email-templates/recovery.tsx`
+4. `supabase/functions/_shared/email-templates/invite.tsx`
+5. `supabase/functions/_shared/email-templates/email-change.tsx`
+6. `supabase/functions/_shared/email-templates/reauthentication.tsx` (heading/text only — no button)
 
-Add column to `public.user_profiles`:
+As a small belt-and-suspenders improvement, also set the button text color explicitly on the `<Button>` element and add `display: 'inline-block'` + `textAlign: 'center'` to the button style — this ensures Outlook renders the colored block even if it ignores some style declarations.
 
-- `prefer_rate_card_default boolean not null default false`
+## Deploy
 
-No RLS changes required (table already has user-scoped RLS).
+After editing the templates, redeploy the auth email hook so the new templates take effect:
 
-`**src/components/schedule/ShiftFormDialog.tsx**`
+- Deploy `auth-email-hook` edge function (templates are bundled at deploy time; file edits alone do nothing until redeploy).
 
-1. Pull `prefer_rate_card_default` from `profile`.
-2. Replace the `<Select>` block (used in both Step 2 of new-shift flow and the Edit view) with a new local subcomponent `RateSourcePicker` that:
-  - Receives `facilityOpts`, `cardOpts`, `selectedRateKey`, `onSelect`, `onCustom`, `preferRateCard`.
-  - Renders one or two panes inside a `grid grid-cols-1 sm:grid-cols-2 gap-3` (or single column when one source / `preferRateCard`).
-  - Each pane: header label (`"From this clinic"` / `"From your Rate Card"`) + `ScrollArea` (`max-h-56`) of radio rows.
-  - Radio rows reuse the `[SHIFT_TYPE] Label — $amount/unit` formatting from current `<SelectItem>`.
-3. When `preferRateCard === true`, `buildRateOptions` is unchanged but the picker filters out `source === 'facility'`. The seed-first-rate effect (lines 193–203) picks the first `rate_card` option.
-4. Keep all existing custom-rate handling, hourly calculation hint, and validation messages exactly as they are today — they render below the picker.
+## Verification
 
-`**src/pages/SettingsRateCardPage.tsx**`
+After deploy, send a test signup from a fresh email and confirm the teal "Verify Email" button is visible in:
+- Gmail web
+- Gmail mobile
+- Apple Mail
 
-- Add a card titled **"Picker preference"** with the toggle bound to `prefer_rate_card_default`. Persist via the existing profile update path used elsewhere on this page.
-
-`**src/integrations/supabase/types.ts**` is auto-regenerated after the migration — no manual edit.
-
-## Out of scope
-
-- Bulk Shift Calendar rate selection.
-- Reordering / pinning rates within a pane (still ordered as `buildRateOptions` returns them).
-- Any change to how rates are stored on the saved shift.
+If you want, I can also send the same fix preventatively to the non-auth transactional templates (`invoice-send`, `invoice-reminder`, `credential-reminder`, `shift-reminder`, etc.) — let me know and I'll include those in the implementation.
