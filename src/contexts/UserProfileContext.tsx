@@ -243,6 +243,7 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
           engagement_announcement_dismissed_at: d.engagement_announcement_dismissed_at ?? null,
           default_rates: (d.default_rates as DefaultRate[]) || [],
           default_billing_preference: (d.default_billing_preference as BillingPreference) || 'per_day',
+          prefer_rate_card_default: !!d.prefer_rate_card_default,
           onboarding_progress: (d.onboarding_progress as OnboardingProgress) || {},
         });
       } else {
