@@ -500,7 +500,7 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
 
   function handleNext() {
     // MFJ validation
-    if (currentStepName === 'filing' && filingStatus === 'mfj') {
+    if (currentStepName === 'filing' && filingStatus === 'married_joint') {
       const input = document.querySelector<HTMLInputElement>('[placeholder="e.g., 65000"]');
       if (input && input.value === '') {
         setMfjSpouseError(true);
@@ -510,8 +510,8 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
     setStep(step + 1);
   }
 
-  // Map filing status back to DB format
-  const dbFilingStatus = filingStatus === 'mfj' ? 'married_joint' : filingStatus === 'hoh' ? 'head_of_household' : 'single';
+  // filingStatus is already in DB long-form ('single' | 'married_joint' | 'head_of_household')
+  const dbFilingStatus = filingStatus;
 
   async function handleComplete() {
     setSaving(true);
@@ -525,7 +525,7 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
       entity_type: entityType,
       filing_status: dbFilingStatus,
       state_code: stateCode,
-      spouse_w2_income: filingStatus === 'mfj' ? spouseW2Income : 0,
+      spouse_w2_income: filingStatus === 'married_joint' ? spouseW2Income : 0,
       retirement_contribution: retirementContributions,
       scorp_salary: isScorp ? scorpSalary : 0,
       annual_relief_income: annualReliefIncome,
