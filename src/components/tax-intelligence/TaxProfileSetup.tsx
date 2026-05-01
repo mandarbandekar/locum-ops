@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CheckCircle2, Info, ArrowLeft, ArrowRight, Sparkles, Plus, X } from 'lucide-react';
-import { TAX_CONSTANTS, V1_US_STATES, V1_FILING_STATUS_LABELS, type V1FilingStatus } from '@/lib/taxConstantsV1';
+import { TAX_CONSTANTS, V1_US_STATES, V1_FILING_STATUS_LABELS, type V1FilingStatus } from '@/lib/taxConstants2026';
 import { getV1MarginalRate } from '@/lib/taxCalculatorV1';
 import type { TaxIntelligenceProfile, WorkStateAllocation } from '@/hooks/useTaxIntelligence';
 import { toast } from 'sonner';
@@ -32,10 +32,8 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
   const [scorpSalary, setScorpSalary] = useState(existingProfile?.scorp_salary ?? 0);
   const [annualBusinessExpenses, setAnnualBusinessExpenses] = useState(existingProfile?.annual_business_expenses ?? 0);
   const [filingStatus, setFilingStatus] = useState<string>(
-    existingProfile?.filing_status === 'married_joint' ? 'mfj'
-    : existingProfile?.filing_status === 'head_of_household' ? 'hoh'
-    : existingProfile?.filing_status === 'mfj' ? 'mfj'
-    : existingProfile?.filing_status === 'hoh' ? 'hoh'
+    existingProfile?.filing_status === 'married_joint' ? 'married_joint'
+    : existingProfile?.filing_status === 'head_of_household' ? 'head_of_household'
     : 'single'
   );
   const [spouseW2Income, setSpouseW2Income] = useState(existingProfile?.spouse_w2_income ?? 0);
@@ -209,13 +207,13 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
         <div className="space-y-1">
           <Label className="text-sm">Filing status</Label>
           <RadioGroup value={filingStatus} onValueChange={v => { setFilingStatus(v); setMfjSpouseError(false); }}>
-            {(['single', 'mfj', 'hoh'] as V1FilingStatus[]).map(fs => (
+            {(['single', 'married_joint', 'head_of_household'] as V1FilingStatus[]).map(fs => (
               <div key={fs} className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent/50 cursor-pointer">
                 <RadioGroupItem value={fs} id={`fs-${fs}`} />
                 <Label htmlFor={`fs-${fs}`} className="cursor-pointer flex-1">
-                  {fs === 'mfj' ? (
+                  {fs === 'married_joint' ? (
                     <TaxTerm term="filing_status_mfj">{V1_FILING_STATUS_LABELS[fs]}</TaxTerm>
-                  ) : fs === 'hoh' ? (
+                  ) : fs === 'head_of_household' ? (
                     <TaxTerm term="filing_status_hoh">{V1_FILING_STATUS_LABELS[fs]}</TaxTerm>
                   ) : (
                     V1_FILING_STATUS_LABELS[fs]
@@ -226,7 +224,7 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
           </RadioGroup>
         </div>
 
-        {filingStatus === 'mfj' && (
+        {filingStatus === 'married_joint' && (
           <div className="space-y-2 mt-4 p-4 rounded-lg border bg-muted/20">
             <Label className="text-sm font-medium">Spouse income</Label>
             <div className="space-y-1">
@@ -502,7 +500,7 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
 
   function handleNext() {
     // MFJ validation
-    if (currentStepName === 'filing' && filingStatus === 'mfj') {
+    if (currentStepName === 'filing' && filingStatus === 'married_joint') {
       const input = document.querySelector<HTMLInputElement>('[placeholder="e.g., 65000"]');
       if (input && input.value === '') {
         setMfjSpouseError(true);
@@ -512,8 +510,8 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
     setStep(step + 1);
   }
 
-  // Map filing status back to DB format
-  const dbFilingStatus = filingStatus === 'mfj' ? 'married_joint' : filingStatus === 'hoh' ? 'head_of_household' : 'single';
+  // filingStatus is already in DB long-form ('single' | 'married_joint' | 'head_of_household')
+  const dbFilingStatus = filingStatus;
 
   async function handleComplete() {
     setSaving(true);
@@ -527,7 +525,7 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
       entity_type: entityType,
       filing_status: dbFilingStatus,
       state_code: stateCode,
-      spouse_w2_income: filingStatus === 'mfj' ? spouseW2Income : 0,
+      spouse_w2_income: filingStatus === 'married_joint' ? spouseW2Income : 0,
       retirement_contribution: retirementContributions,
       scorp_salary: isScorp ? scorpSalary : 0,
       annual_relief_income: annualReliefIncome,

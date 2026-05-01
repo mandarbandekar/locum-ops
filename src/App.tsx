@@ -26,7 +26,6 @@ import CredentialsPage from "@/pages/CredentialsPage";
 import BusinessPage from "@/pages/BusinessPage";
 import ExpensesPage from "@/pages/ExpensesPage";
 import TaxCenterPage from "@/pages/TaxCenterPage";
-import TaxPlanningAdvisorPage from "@/pages/TaxPlanningAdvisorPage";
 import WaitlistPage from "@/pages/WaitlistPage";
 import QuizPage from "@/pages/QuizPage";
 import ResultsPage from "@/pages/ResultsPage";
