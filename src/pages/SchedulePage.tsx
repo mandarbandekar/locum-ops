@@ -310,7 +310,11 @@ export default function SchedulePage() {
         {dayShifts.map(s => {
           const colorDef = SHIFT_COLORS.find(c => c.value === (s.color || 'blue')) || SHIFT_COLORS[0];
           const start = new Date(s.start_datetime);
-          const end = new Date(s.end_datetime);
+          let end = new Date(s.end_datetime);
+          // Defensive: legacy overnight rows may have end <= start. Treat as next-day.
+          if (end.getTime() <= start.getTime()) {
+            end = new Date(end.getTime() + 24 * 60 * 60 * 1000);
+          }
           const hrs = Math.max(0, differenceInHours(end, start));
           return (
             <div
