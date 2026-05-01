@@ -13,6 +13,8 @@ export function initPostHog() {
     capture_pageview: false, // we capture manually on route changes
     capture_pageleave: true,
   });
+  // Expose globally so `typeof posthog !== 'undefined'` checks work anywhere.
+  (window as any).posthog = posthog;
   initialized = true;
 }
 
