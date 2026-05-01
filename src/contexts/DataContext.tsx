@@ -247,8 +247,17 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     if (error) { console.error(error); toast.error(friendlyDbError(error)); throw error; }
     const facility = stripDbFields(data) as Facility;
     setFacilities(prev => [...prev, facility]);
+    try {
+      if (typeof posthog !== 'undefined') {
+        const total = facilities.length + 1;
+        posthog.capture('clinic_added', {
+          clinic_count: total,
+          is_first_clinic: total === 1,
+        });
+      }
+    } catch { /* noop */ }
     return facility;
-  }, [isDemo, user]);
+  }, [isDemo, user, facilities]);
 
   const updateFacility = useCallback(async (c: Facility) => {
     const previous = facilities.find(f => f.id === c.id);
