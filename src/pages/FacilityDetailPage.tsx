@@ -69,6 +69,7 @@ export default function FacilityDetailPage() {
       <Tabs defaultValue="contract">
         <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="contract" className="gap-1.5"><FileText className="h-3.5 w-3.5" /> Clinic Overview</TabsTrigger>
+          <TabsTrigger value="people" className="gap-1.5"><Users className="h-3.5 w-3.5" /> People & Access ({facilityContacts.length})</TabsTrigger>
           <TabsTrigger value="shifts" className="gap-1.5"><CalendarDays className="h-3.5 w-3.5" /> Shifts ({facilityShifts.length})</TabsTrigger>
           <TabsTrigger value="invoices" className="gap-1.5"><Receipt className="h-3.5 w-3.5" /> Invoices ({facilityInvoices.length})</TabsTrigger>
         </TabsList>
@@ -82,6 +83,18 @@ export default function FacilityDetailPage() {
             onUpdateFacility={updateFacility}
             confirmationSettings={getSettings(facility.id)}
             onSaveConfirmationSettings={saveSettings}
+          />
+        </TabsContent>
+
+        <TabsContent value="people" className="mt-4">
+          <ContactsTab
+            facilityId={facility.id}
+            facility={facility}
+            contacts={facilityContacts}
+            onAddContact={addContact}
+            onUpdateContact={updateContact}
+            onDeleteContact={deleteContact}
+            onUpdateFacility={updateFacility}
           />
         </TabsContent>
 
