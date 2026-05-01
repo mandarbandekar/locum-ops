@@ -277,10 +277,22 @@ export function useSetupAssistant() {
       const facilityId = facilityNameMap[d.facility_name?.toLowerCase() || ''];
       if (facilityId) {
         try {
+          // Roll end forward 24h while end <= start (overnight shift handling).
+          // Mirrors logic in ShiftFormDialog.buildStartEndIso and useManualSetup.addShift.
+          const startRaw = d.start_time || d.date;
+          let endRaw = d.end_time || d.date;
+          const startMs = new Date(startRaw).getTime();
+          let endMs = new Date(endRaw).getTime();
+          if (Number.isFinite(startMs) && Number.isFinite(endMs)) {
+            while (endMs <= startMs) {
+              endMs += 24 * 60 * 60 * 1000;
+            }
+            endRaw = new Date(endMs).toISOString();
+          }
           await addShift({
             facility_id: facilityId,
-            start_datetime: d.start_time || d.date,
-            end_datetime: d.end_time || d.date,
+            start_datetime: startRaw,
+            end_datetime: endRaw,
             rate_applied: 0,
             status: d.status === 'proposed' ? 'proposed' : 'booked',
             notes: d.notes || '',
