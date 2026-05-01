@@ -49,7 +49,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               signup_date: u.created_at,
               ...(userType ? { user_type: userType } : {}),
             });
+            // Start session recording only for authenticated users.
+            posthog.startSessionRecording?.();
           } else if (event === 'SIGNED_OUT') {
+            posthog.stopSessionRecording?.();
             posthog.reset();
           }
         }
