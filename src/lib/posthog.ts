@@ -12,6 +12,13 @@ export function initPostHog() {
     person_profiles: 'identified_only',
     capture_pageview: false, // we capture manually on route changes
     capture_pageleave: true,
+    // Session replay: enabled in SDK, but gated to authenticated users only.
+    // We disable autostart here and call posthog.startSessionRecording() after sign-in.
+    disable_session_recording: true,
+    session_recording: {
+      maskAllInputs: true,
+      maskTextSelector: '[data-sensitive]',
+    },
   });
   // Expose globally so `typeof posthog !== 'undefined'` checks work anywhere.
   (window as any).posthog = posthog;
