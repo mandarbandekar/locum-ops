@@ -849,8 +849,18 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
         setLineItems(prev => [...prev, ...(liData || []).map(stripDbFields) as InvoiceLineItem[]]);
       }
     }
+    try {
+      if (typeof posthog !== 'undefined') {
+        const total = invoices.length + 1;
+        posthog.capture('invoice_generated', {
+          invoice_count: total,
+          is_first_invoice: total === 1,
+          invoice_amount: Number(invoice.total_amount) || 0,
+        });
+      }
+    } catch { /* noop */ }
     return invoice;
-  }, [isDemo, user]);
+  }, [isDemo, user, invoices]);
 
   const updateInvoice = useCallback(async (inv: Invoice) => {
     if (isDemo) { setInvoices(prev => prev.map(x => x.id === inv.id ? inv : x)); return; }
