@@ -563,6 +563,18 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     const shift = stripDbFields(data) as Shift;
     setShifts(prev => [...prev, shift]);
 
+    try {
+      if (typeof posthog !== 'undefined') {
+        const total = shifts.length + 1;
+        const rateType = shift.rate_kind === 'hourly' ? 'hourly' : 'daily';
+        posthog.capture('shift_logged', {
+          shift_count: total,
+          is_first_shift: total === 1,
+          rate_type: rateType,
+        });
+      }
+    } catch { /* noop */ }
+
     // Auto-generate invoice draft if applicable
     try {
       const facility = facilities.find(f => f.id === shift.facility_id);
