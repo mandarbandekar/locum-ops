@@ -31,6 +31,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+
+      // PostHog: identify on sign-in/up, reset on sign-out.
+      try {
+        if (typeof posthog !== 'undefined') {
+          if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED')) {
+            const u = session.user;
+            const meta: any = u.user_metadata || {};
+            const name = meta.display_name
+              || [meta.first_name, meta.last_name].filter(Boolean).join(' ').trim()
+              || u.email
+              || '';
+            posthog.identify(u.id, {
+              email: u.email,
+              name,
+              signup_date: u.created_at,
+            });
+          } else if (event === 'SIGNED_OUT') {
+            posthog.reset();
+          }
+        }
+      } catch { /* never break auth on analytics */ }
     });
 
     supabase.auth.getSession()
