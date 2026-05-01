@@ -4,7 +4,7 @@
  * Nothing else in the codebase does tax calculations.
  */
 
-import { TAX_CONSTANTS as C } from './taxConstantsV1';
+import { TAX_CONSTANTS as C } from './taxConstants2026';
 
 // ─────────────────────────────────────
 // SHARED UTILITIES
@@ -66,7 +66,7 @@ export interface TaxProfileV1 {
   scorpSalary: number;
   extraWithholding: number;
   payPeriodsPerYear: number;
-  filingStatus: string; // 'single' | 'mfj' | 'hoh'
+  filingStatus: string; // 'single' | 'married_joint' | 'head_of_household'
   spouseW2Income: number;
   retirementContributions: number;
   annualBusinessExpenses: number;
@@ -446,9 +446,7 @@ export function mapDbProfileToV1(p: {
     scorpSalary: p.scorp_salary || 0,
     extraWithholding: p.extra_withholding || 0,
     payPeriodsPerYear: p.pay_periods_per_year || 24,
-    filingStatus: p.filing_status === 'married_joint' ? 'mfj'
-      : p.filing_status === 'head_of_household' ? 'hoh'
-      : p.filing_status || 'single',
+    filingStatus: p.filing_status || 'single',
     spouseW2Income: p.spouse_w2_income || 0,
     retirementContributions: p.retirement_contribution || 0,
     annualBusinessExpenses: p.annual_business_expenses || 0,
