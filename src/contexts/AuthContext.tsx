@@ -42,10 +42,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               || [meta.first_name, meta.last_name].filter(Boolean).join(' ').trim()
               || u.email
               || '';
+            const userType = meta.user_type || meta.profession || undefined;
             posthog.identify(u.id, {
               email: u.email,
               name,
               signup_date: u.created_at,
+              ...(userType ? { user_type: userType } : {}),
             });
           } else if (event === 'SIGNED_OUT') {
             posthog.reset();
