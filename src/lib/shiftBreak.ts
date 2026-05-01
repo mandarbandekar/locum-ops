@@ -19,11 +19,14 @@ export interface BreakBearingShift {
   worked_through_break?: boolean | null;
 }
 
-/** Total scheduled minutes between start and end. Always non-negative. */
+/** Total scheduled minutes between start and end. Always non-negative.
+ *  If end <= start (legacy overnight rows that weren't rolled to next day),
+ *  treat the shift as crossing midnight and add 24h to end. */
 export function getScheduledMinutes(shift: Pick<BreakBearingShift, 'start_datetime' | 'end_datetime'>): number {
   const start = new Date(shift.start_datetime).getTime();
-  const end = new Date(shift.end_datetime).getTime();
+  let end = new Date(shift.end_datetime).getTime();
   if (!Number.isFinite(start) || !Number.isFinite(end)) return 0;
+  if (end <= start) end += 24 * 60 * 60 * 1000;
   return Math.max(0, Math.round((end - start) / 60000));
 }
 
