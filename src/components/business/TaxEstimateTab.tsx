@@ -37,7 +37,7 @@ export default function TaxEstimateTab({
           const result = calculateTaxV1(v1);
           quarterly = Number(result?.quarterlyPayment) || 0;
         } catch { /* ignore calc errors */ }
-        const filing = taxProfile.filing_status === 'married_joint' ? 'mfj' : 'single';
+        const filing = taxProfile.filing_status || 'single';
         const entity = taxProfile.entity_type === 's_corp' ? 's_corp' : 'schedule_c';
         const isFirstView = !sessionStorage.getItem('ph_tax_estimate_viewed');
         if (isFirstView) sessionStorage.setItem('ph_tax_estimate_viewed', '1');

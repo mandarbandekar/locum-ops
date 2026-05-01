@@ -17,7 +17,7 @@ import TaxProjectionDisplay, { daysPerWeekToIndex, indexToDaysPerWeek, SCHEDULE_
 
 import TaxTerm from './TaxTerm';
 import type { TaxIntelligenceProfile } from '@/hooks/useTaxIntelligence';
-import { TAX_CONSTANTS, V1_FILING_STATUS_LABELS, V1_DISCLAIMER, getV1QuarterlyDueDates, type V1FilingStatus } from '@/lib/taxConstantsV1';
+import { TAX_CONSTANTS, V1_FILING_STATUS_LABELS, V1_DISCLAIMER, getV1QuarterlyDueDates, type V1FilingStatus } from '@/lib/taxConstants2026';
 import { calculateTaxV1, mapDbProfileToV1, type TaxV1Result, type Tax1099Result, type TaxSCorpResult } from '@/lib/taxCalculatorV1';
 
 interface Props {
@@ -48,10 +48,8 @@ export default function TaxDashboard({ profile, onEditProfile, onSaveProfile }: 
   const currentQuarter = Math.ceil((now.getMonth() + 1) / 3);
   const dueDates = getV1QuarterlyDueDates(currentYear);
 
-  const fsKey = profile.filing_status === 'married_joint' ? 'mfj'
-    : profile.filing_status === 'head_of_household' ? 'hoh'
-    : profile.filing_status === 'mfj' ? 'mfj'
-    : profile.filing_status === 'hoh' ? 'hoh'
+  const fsKey = (profile.filing_status === 'married_joint' || profile.filing_status === 'head_of_household')
+    ? profile.filing_status
     : 'single';
   const fsLabel = V1_FILING_STATUS_LABELS[fsKey as V1FilingStatus] || 'Single';
 
