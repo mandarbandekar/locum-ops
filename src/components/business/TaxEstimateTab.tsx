@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sparkles } from 'lucide-react';
 import TaxProfileSetup from '@/components/tax-intelligence/TaxProfileSetup';
 import TaxDashboard from '@/components/tax-intelligence/TaxDashboard';
 import { useTaxIntelligence } from '@/hooks/useTaxIntelligence';
+import { posthog } from '@/lib/posthog';
+import { calculateTaxV1, mapDbProfileToV1 } from '@/lib/taxCalculatorV1';
 import type { TaxAdvisorProfile, TaxAdvisorSession, SavedTaxQuestion } from '@/hooks/useTaxAdvisor';
 
 interface Props {
