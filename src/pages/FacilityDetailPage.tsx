@@ -91,7 +91,7 @@ export default function FacilityDetailPage() {
             facilityId={facility.id}
             facility={facility}
             contacts={facilityContacts}
-            onAddContact={(c) => addContact({ ...c, id: generateId() } as FacilityContact)}
+            onAddContact={addContact}
             onUpdateContact={updateContact}
             onDeleteContact={deleteContact}
             onUpdateFacility={updateFacility}
