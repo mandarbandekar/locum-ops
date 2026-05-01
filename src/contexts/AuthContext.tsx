@@ -96,6 +96,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         emailRedirectTo: `${window.location.origin}/onboarding`,
       },
     });
+    if (!error) {
+      try {
+        if (typeof posthog !== 'undefined') {
+          posthog.capture('signup_completed', { signup_source: 'direct' });
+        }
+      } catch { /* noop */ }
+    }
     return { error: error?.message ?? null };
   };
 
