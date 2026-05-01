@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sparkles } from 'lucide-react';
 import TaxProfileSetup from '@/components/tax-intelligence/TaxProfileSetup';
 import TaxDashboard from '@/components/tax-intelligence/TaxDashboard';
 import { useTaxIntelligence } from '@/hooks/useTaxIntelligence';
+import { posthog } from '@/lib/posthog';
+import { calculateTaxV1, mapDbProfileToV1 } from '@/lib/taxCalculatorV1';
 import type { TaxAdvisorProfile, TaxAdvisorSession, SavedTaxQuestion } from '@/hooks/useTaxAdvisor';
 
 interface Props {
@@ -21,6 +23,33 @@ export default function TaxEstimateTab({
 }: Props) {
   const { profile: taxProfile, loading, saveProfile, hasProfile } = useTaxIntelligence();
   const [setupOpen, setSetupOpen] = useState(false);
+  const trackedRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!hasProfile || !taxProfile) return;
+    if (trackedRef.current === taxProfile.id) return;
+    trackedRef.current = taxProfile.id;
+    try {
+      if (typeof posthog !== 'undefined') {
+        let quarterly = 0;
+        try {
+          const v1 = mapDbProfileToV1(taxProfile as any);
+          const result = calculateTaxV1(v1);
+          quarterly = Number(result?.quarterlyPayment) || 0;
+        } catch { /* ignore calc errors */ }
+        const filing = taxProfile.filing_status === 'married_joint' ? 'mfj' : 'single';
+        const entity = taxProfile.entity_type === 's_corp' ? 's_corp' : 'schedule_c';
+        const isFirstView = !sessionStorage.getItem('ph_tax_estimate_viewed');
+        if (isFirstView) sessionStorage.setItem('ph_tax_estimate_viewed', '1');
+        posthog.capture('tax_estimate_viewed', {
+          is_first_view: isFirstView,
+          estimated_quarterly_amount: quarterly,
+          filing_status: filing,
+          entity_type: entity,
+        });
+      }
+    } catch { /* noop */ }
+  }, [hasProfile, taxProfile]);
 
   if (loading) {
     return <p className="text-muted-foreground py-8 text-center">Loading…</p>;

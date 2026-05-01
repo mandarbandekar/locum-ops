@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { posthog } from '@/lib/posthog';
 import type { User, Session } from '@supabase/supabase-js';
 
 interface AuthContextType {
@@ -30,6 +31,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+
+      // PostHog: identify on sign-in/up, reset on sign-out.
+      try {
+        if (typeof posthog !== 'undefined') {
+          if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED')) {
+            const u = session.user;
+            const meta: any = u.user_metadata || {};
+            const name = meta.display_name
+              || [meta.first_name, meta.last_name].filter(Boolean).join(' ').trim()
+              || u.email
+              || '';
+            posthog.identify(u.id, {
+              email: u.email,
+              name,
+              signup_date: u.created_at,
+            });
+          } else if (event === 'SIGNED_OUT') {
+            posthog.reset();
+          }
+        }
+      } catch { /* never break auth on analytics */ }
     });
 
     supabase.auth.getSession()
@@ -74,6 +96,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         emailRedirectTo: `${window.location.origin}/onboarding`,
       },
     });
+    if (!error) {
+      try {
+        if (typeof posthog !== 'undefined') {
+          posthog.capture('signup_completed', { signup_source: 'direct' });
+        }
+      } catch { /* noop */ }
+    }
     return { error: error?.message ?? null };
   };
 

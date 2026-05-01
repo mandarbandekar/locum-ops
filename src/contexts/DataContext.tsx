@@ -19,6 +19,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { friendlyDbError } from '@/lib/errorUtils';
+import { posthog } from '@/lib/posthog';
 
 // Helper for tables not yet in auto-generated types
 const db = (table: string) => supabase.from(table as any);
@@ -246,8 +247,17 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     if (error) { console.error(error); toast.error(friendlyDbError(error)); throw error; }
     const facility = stripDbFields(data) as Facility;
     setFacilities(prev => [...prev, facility]);
+    try {
+      if (typeof posthog !== 'undefined') {
+        const total = facilities.length + 1;
+        posthog.capture('clinic_added', {
+          clinic_count: total,
+          is_first_clinic: total === 1,
+        });
+      }
+    } catch { /* noop */ }
     return facility;
-  }, [isDemo, user]);
+  }, [isDemo, user, facilities]);
 
   const updateFacility = useCallback(async (c: Facility) => {
     const previous = facilities.find(f => f.id === c.id);
@@ -553,6 +563,18 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     const shift = stripDbFields(data) as Shift;
     setShifts(prev => [...prev, shift]);
 
+    try {
+      if (typeof posthog !== 'undefined') {
+        const total = shifts.length + 1;
+        const rateType = shift.rate_kind === 'hourly' ? 'hourly' : 'daily';
+        posthog.capture('shift_logged', {
+          shift_count: total,
+          is_first_shift: total === 1,
+          rate_type: rateType,
+        });
+      }
+    } catch { /* noop */ }
+
     // Auto-generate invoice draft if applicable
     try {
       const facility = facilities.find(f => f.id === shift.facility_id);
@@ -827,8 +849,18 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
         setLineItems(prev => [...prev, ...(liData || []).map(stripDbFields) as InvoiceLineItem[]]);
       }
     }
+    try {
+      if (typeof posthog !== 'undefined') {
+        const total = invoices.length + 1;
+        posthog.capture('invoice_generated', {
+          invoice_count: total,
+          is_first_invoice: total === 1,
+          invoice_amount: Number(invoice.total_amount) || 0,
+        });
+      }
+    } catch { /* noop */ }
     return invoice;
-  }, [isDemo, user]);
+  }, [isDemo, user, invoices]);
 
   const updateInvoice = useCallback(async (inv: Invoice) => {
     if (isDemo) { setInvoices(prev => prev.map(x => x.id === inv.id ? inv : x)); return; }
