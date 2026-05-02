@@ -47,6 +47,19 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
   const [hasExtraWithholding, setHasExtraWithholding] = useState((existingProfile?.extra_withholding ?? 0) > 0);
   const [mfjSpouseError, setMfjSpouseError] = useState(false);
 
+  // Advanced (optional) — safe harbor & accurate projection inputs
+  const [otherW2Income, setOtherW2Income] = useState(existingProfile?.other_w2_income ?? 0);
+  const [priorYearTaxPaid, setPriorYearTaxPaid] = useState(existingProfile?.prior_year_tax_paid ?? 0);
+  const [priorYearAgi, setPriorYearAgi] = useState(existingProfile?.prior_year_agi ?? 0);
+  const [q1Payment, setQ1Payment] = useState(existingProfile?.q1_estimated_payment ?? 0);
+  const [q2Payment, setQ2Payment] = useState(existingProfile?.q2_estimated_payment ?? 0);
+  const [q3Payment, setQ3Payment] = useState(existingProfile?.q3_estimated_payment ?? 0);
+  const [q4Payment, setQ4Payment] = useState(existingProfile?.q4_estimated_payment ?? 0);
+  const [pteElected, setPteElected] = useState(existingProfile?.pte_elected ?? false);
+  const [overrideProjection, setOverrideProjection] = useState(
+    (existingProfile?.income_projection_method ?? 'booked_plus_run_rate') === 'static'
+  );
+
   // Reset step when dialog opens
   useEffect(() => {
     if (open) setStep(1);
@@ -58,6 +71,7 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
   const steps = useMemo(() => {
     const s = ['entity', 'income', 'filing', 'retirement', 'state'];
     if (isScorp) s.push('withholding');
+    s.push('advanced');
     s.push('complete');
     return s;
   }, [isScorp]);
@@ -106,6 +120,7 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
       case 'retirement': return renderRetirementStep();
       case 'state': return renderStateStep();
       case 'withholding': return renderWithholdingStep();
+      case 'advanced': return renderAdvancedStep();
       case 'complete': return renderCompleteStep();
       default: return null;
     }
