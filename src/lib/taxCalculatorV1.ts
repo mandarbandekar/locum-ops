@@ -109,10 +109,12 @@ export interface TaxProfileV1 {
   payPeriodsPerYear: number;
   filingStatus: string; // 'single' | 'married_joint' | 'head_of_household'
   spouseW2Income: number;
+  userW2Income?: number; // user's own W-2 wages (separate from spouse)
   retirementContributions: number;
   annualBusinessExpenses: number;
   stateKey: string;
   workStates?: WorkStateAlloc[]; // non-resident states only
+  pteElected?: boolean; // CA Pass-Through Entity Tax election (S-Corp only)
 }
 
 /**
