@@ -387,6 +387,7 @@ export function calculateSCorpTax(profile: TaxProfileV1): TaxSCorpResult {
   } = profile;
 
   const fs = filingStatus || 'single';
+  const userW2 = profile.userW2Income || 0;
 
   // Step 1 — S-Corp P&L
   const grossRevenue = annualReliefIncome || 0;
@@ -398,28 +399,54 @@ export function calculateSCorpTax(profile: TaxProfileV1): TaxSCorpResult {
     grossRevenue - operatingExpenses - salary - employerFica
   );
 
-  // Step 3 — Federal AGI on full household
-  const agi = Math.max(0,
+  // Step 2 — Initial AGI on full household
+  // (PTET deduction, if applicable, is applied below.)
+  let agi = Math.max(0,
     salary
     + distribution
     - (retirementContributions || 0)
     + (spouseW2Income || 0)
+    + userW2
   );
   const stdDed = C.standardDeduction[fs] || C.standardDeduction.single;
-  const federalTaxableIncome = Math.max(0, agi - stdDed);
+
+  // Step 3 — PTET (CA Pass-Through Entity Tax) — S-Corp + CA + elected
+  const ptetEligible = !!(profile.pteElected && stateKey === 'CA' && (profile.entityType === 'scorp'));
+  let ptetPaid = 0;
+  if (ptetEligible) {
+    // PTET is 9.3% of qualified net business income (post-expenses, pre-salary split).
+    const qualifiedPteIncome = Math.max(0, grossRevenue - operatingExpenses);
+    ptetPaid = Math.round(qualifiedPteIncome * 0.093);
+    // PTET is deductible federally (paid at entity level) — reduces AGI.
+    agi = Math.max(0, agi - ptetPaid);
+  }
+
+  const taxableIncomeBeforeQbi = Math.max(0, agi - stdDed);
+
+  // Step 3b — QBI deduction (Section 199A) — vets are SSTB.
+  // QBI base for S-Corp = K-1 distribution (NOT including W-2 salary).
+  const qbiAmount = distribution;
+  const qbiDeduction = calculateQBIDeduction(qbiAmount, taxableIncomeBeforeQbi, fs);
+  const federalTaxableIncome = Math.max(0, taxableIncomeBeforeQbi - qbiDeduction);
 
   // Step 4 — Total household federal tax
   const totalFederalTax = calculateFederalBrackets(federalTaxableIncome, fs);
   const marginalRate = getV1MarginalRate(federalTaxableIncome, fs);
 
   // Step 5 — State tax on salary + distribution (multi-state aware)
+  // If PTET elected, CA personal tax on the entity's income is zeroed out (entity paid it).
   const personalStateIncome = salary + distribution;
-  const stateResult = calculateMultiStateTax(personalStateIncome, fs, stateKey, profile.workStates);
-  const stateTax = stateResult.totalStateTax;
+  let stateResult = calculateMultiStateTax(personalStateIncome, fs, stateKey, profile.workStates);
+  let stateTax = stateResult.totalStateTax;
+  if (ptetEligible) {
+    // Personal CA tax is replaced by the entity-level PTET payment.
+    stateTax = 0;
+    stateResult = { totalStateTax: 0, breakdown: [], residentCreditApplied: 0 };
+  }
 
   // Step 6 — What's already covered by withholding
   const salaryFederalWithheld = Math.round(salary * marginalRate);
-  const salaryStateWithheld = calculateStateTax(salary, fs, stateKey);
+  const salaryStateWithheld = ptetEligible ? 0 : calculateStateTax(salary, fs, stateKey);
   const extraWithholdingAnnual = Math.round((extraWithholding || 0) * (payPeriodsPerYear || 24));
 
   const spouseAgi = Math.max(0, (spouseW2Income || 0) - stdDed);
@@ -442,7 +469,7 @@ export function calculateSCorpTax(profile: TaxProfileV1): TaxSCorpResult {
 
   // Step 8 — Federal tax attributable to distribution only (for display)
   const federalOnDistribution = Math.round(distribution * marginalRate);
-  const stateOnDistribution = calculateStateTax(distribution, fs, stateKey);
+  const stateOnDistribution = ptetEligible ? 0 : calculateStateTax(distribution, fs, stateKey);
 
   // Set-aside rate for per-shift nudge (on distribution income only)
   const stateEffective = personalStateIncome > 0 ? stateTax / personalStateIncome : 0;
@@ -475,6 +502,10 @@ export function calculateSCorpTax(profile: TaxProfileV1): TaxSCorpResult {
       ? Math.round((annualEstimatedTaxDue / grossRevenue) * 1000) / 10
       : 0,
     setAsideRate: Math.min(0.45, Math.max(0.10, rawSetAside)),
+    qbiDeduction,
+    qbiAmount,
+    ptetPaid,
+    ptetEligible,
   };
 }
 
