@@ -4,6 +4,7 @@ import { Sparkles } from 'lucide-react';
 import TaxProfileSetup from '@/components/tax-intelligence/TaxProfileSetup';
 import TaxDashboard from '@/components/tax-intelligence/TaxDashboard';
 import { useTaxIntelligence } from '@/hooks/useTaxIntelligence';
+import { useData } from '@/contexts/DataContext';
 import { posthog } from '@/lib/posthog';
 import { calculateTaxV1, mapDbProfileToV1 } from '@/lib/taxCalculatorV1';
 import type { TaxAdvisorProfile, TaxAdvisorSession, SavedTaxQuestion } from '@/hooks/useTaxAdvisor';
@@ -22,6 +23,7 @@ export default function TaxEstimateTab({
   onSaveSession, onSaveQuestion, onSaveScorpResult,
 }: Props) {
   const { profile: taxProfile, loading, saveProfile, hasProfile } = useTaxIntelligence();
+  const { shifts, facilities } = useData();
   const [setupOpen, setSetupOpen] = useState(false);
   const trackedRef = useRef<string | null>(null);
 
@@ -33,7 +35,7 @@ export default function TaxEstimateTab({
       if (typeof posthog !== 'undefined') {
         let quarterly = 0;
         try {
-          const v1 = mapDbProfileToV1(taxProfile as any);
+          const v1 = mapDbProfileToV1(taxProfile as any, { shifts, facilities, today: new Date() });
           const result = calculateTaxV1(v1);
           quarterly = Number(result?.quarterlyPayment) || 0;
         } catch { /* ignore calc errors */ }
