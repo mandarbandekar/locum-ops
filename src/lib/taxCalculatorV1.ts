@@ -200,6 +200,8 @@ function computeSafeHarborBlock(
     recommendedQuarterlyPayment,
   };
 }
+
+function calculateQBIDeduction(
   qbiAmount: number,
   taxableIncomeBeforeQbi: number,
   filingStatus: string
