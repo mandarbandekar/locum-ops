@@ -5,6 +5,8 @@
  */
 
 import { TAX_CONSTANTS as C } from './taxConstants2026';
+import { computeIncomeProjection, type ProjectionMethod, type ProjectionResult } from './taxProjection';
+import type { Shift, Facility } from '@/types';
 
 // ─────────────────────────────────────
 // SHARED UTILITIES
@@ -259,6 +261,8 @@ export interface TaxProfileV1 {
   q3EstimatedPayment?: number;
   q4EstimatedPayment?: number;
   today?: Date;
+  /** Optional pre-computed income projection from logged + scheduled shifts. */
+  incomeProjection?: ProjectionResult;
 }
 
 /**
@@ -371,6 +375,7 @@ export interface Tax1099Result {
   recommendedRemaining: number;
   quartersRemaining: number;
   nextDueDate: string | null;
+  incomeProjection?: ProjectionResult;
 }
 
 export interface TaxSCorpResult {
@@ -412,6 +417,7 @@ export interface TaxSCorpResult {
   recommendedRemaining: number;
   quartersRemaining: number;
   nextDueDate: string | null;
+  incomeProjection?: ProjectionResult;
 }
 
 export type TaxV1Result = Tax1099Result | TaxSCorpResult;
@@ -541,6 +547,7 @@ export function calculate1099Tax(profile: TaxProfileV1): Tax1099Result {
     recommendedRemaining: sh.recommendedRemaining,
     quartersRemaining: sh.quartersRemaining,
     nextDueDate: sh.nextDueDate,
+    incomeProjection: profile.incomeProjection,
   };
 }
 
@@ -692,6 +699,7 @@ export function calculateSCorpTax(profile: TaxProfileV1): TaxSCorpResult {
     recommendedRemaining: sh.recommendedRemaining,
     quartersRemaining: sh.quartersRemaining,
     nextDueDate: sh.nextDueDate,
+    incomeProjection: profile.incomeProjection,
   };
 }
 
@@ -709,30 +717,54 @@ export function calculateTaxV1(profile: TaxProfileV1): TaxV1Result | null {
 /**
  * Convenience: map a TaxIntelligenceProfile (DB shape) to TaxProfileV1 (calculator shape).
  */
-export function mapDbProfileToV1(p: {
-  entity_type: string;
-  annual_relief_income: number;
-  scorp_salary: number;
-  extra_withholding: number;
-  pay_periods_per_year: number;
-  filing_status: string;
-  spouse_w2_income: number;
-  other_w2_income?: number;
-  retirement_contribution: number;
-  annual_business_expenses: number;
-  state_code: string;
-  pte_elected?: boolean;
-  work_states?: { state_code: string; income_pct: number }[];
-  prior_year_tax_paid?: number;
-  prior_year_agi?: number;
-  q1_estimated_payment?: number;
-  q2_estimated_payment?: number;
-  q3_estimated_payment?: number;
-  q4_estimated_payment?: number;
-}): TaxProfileV1 {
+export function mapDbProfileToV1(
+  p: {
+    entity_type: string;
+    annual_relief_income: number;
+    scorp_salary: number;
+    extra_withholding: number;
+    pay_periods_per_year: number;
+    filing_status: string;
+    spouse_w2_income: number;
+    other_w2_income?: number;
+    retirement_contribution: number;
+    annual_business_expenses: number;
+    state_code: string;
+    pte_elected?: boolean;
+    work_states?: { state_code: string; income_pct: number }[];
+    prior_year_tax_paid?: number;
+    prior_year_agi?: number;
+    q1_estimated_payment?: number;
+    q2_estimated_payment?: number;
+    q3_estimated_payment?: number;
+    q4_estimated_payment?: number;
+    income_projection_method?: string;
+  },
+  context?: {
+    shifts?: Shift[];
+    facilities?: Facility[];
+    today?: Date;
+  },
+): TaxProfileV1 {
+  // Compute income projection if shift context is provided.
+  let annualReliefIncome = p.annual_relief_income || 0;
+  let incomeProjection: ProjectionResult | undefined;
+
+  if (context?.shifts && context?.facilities) {
+    const method = (p.income_projection_method as ProjectionMethod) || 'booked_plus_run_rate';
+    incomeProjection = computeIncomeProjection({
+      shifts: context.shifts,
+      facilities: context.facilities,
+      staticAnnualReliefIncome: p.annual_relief_income || 0,
+      method,
+      today: context.today || new Date(),
+    });
+    annualReliefIncome = incomeProjection.projectedAnnual;
+  }
+
   return {
     entityType: p.entity_type === 'sole_prop' ? '1099' : p.entity_type,
-    annualReliefIncome: p.annual_relief_income || 0,
+    annualReliefIncome,
     scorpSalary: p.scorp_salary || 0,
     extraWithholding: p.extra_withholding || 0,
     payPeriodsPerYear: p.pay_periods_per_year || 24,
@@ -754,5 +786,6 @@ export function mapDbProfileToV1(p: {
     q2EstimatedPayment: Number(p.q2_estimated_payment) || 0,
     q3EstimatedPayment: Number(p.q3_estimated_payment) || 0,
     q4EstimatedPayment: Number(p.q4_estimated_payment) || 0,
+    incomeProjection,
   };
 }

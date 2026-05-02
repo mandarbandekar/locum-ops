@@ -445,3 +445,82 @@ describe('taxCalculatorV1 — remaining quarters and YTD payments', () => {
     expect(result.quarterlyPayment).toBe(0);
   });
 });
+
+describe('taxCalculatorV1 — integration with projection engine', () => {
+  it('When mapDbProfileToV1 receives shift context, projection drives annualReliefIncome', () => {
+    const directFac = {
+      id: 'fac-1',
+      engagement_type: 'direct',
+      source_name: null,
+      tax_form_type: '1099',
+      name: 'Test',
+    } as any;
+    const ytdShift = {
+      id: 's1',
+      facility_id: 'fac-1',
+      start_datetime: '2026-02-01T08:00:00Z',
+      end_datetime: '2026-02-01T18:00:00Z',
+      rate_applied: 5000,
+      notes: '',
+      color: 'blue',
+    } as any;
+
+    const v1 = mapDbProfileToV1(
+      {
+        entity_type: 'sole_prop',
+        filing_status: 'single',
+        state_code: 'TX',
+        annual_relief_income: 999999, // Should be IGNORED in favor of projected value
+        income_projection_method: 'booked_plus_run_rate',
+        annual_business_expenses: 0,
+        other_w2_income: 0,
+        spouse_w2_income: 0,
+        spouse_se_net_income: 0,
+        spouse_has_se_income: false,
+        retirement_contribution: 0,
+        pte_elected: false,
+        scorp_salary: 0,
+        extra_withholding: 0,
+        work_states: [],
+      } as any,
+      {
+        shifts: [ytdShift],
+        facilities: [directFac],
+        today: new Date('2026-04-01T12:00:00'),
+      },
+    );
+
+    // $5K over 90 days → ~$20K annualized; far below the 999,999 static value
+    expect(v1.annualReliefIncome).toBeLessThan(50000);
+    expect(v1.annualReliefIncome).toBeGreaterThan(15000);
+    expect(v1.incomeProjection).toBeDefined();
+    expect(v1.incomeProjection?.ytdActual).toBe(5000);
+
+    const result: any = calculateTaxV1(v1);
+    expect(result.incomeProjection).toBeDefined();
+    expect(result.incomeProjection.method).toBe('booked_plus_run_rate');
+  });
+
+  it('When mapDbProfileToV1 receives no shift context, annual_relief_income is used as-is', () => {
+    const v1 = mapDbProfileToV1(
+      {
+        entity_type: 'sole_prop',
+        filing_status: 'single',
+        state_code: 'TX',
+        annual_relief_income: 100000,
+        annual_business_expenses: 5000,
+        other_w2_income: 0,
+        spouse_w2_income: 0,
+        spouse_se_net_income: 0,
+        spouse_has_se_income: false,
+        retirement_contribution: 0,
+        pte_elected: false,
+        scorp_salary: 0,
+        extra_withholding: 0,
+        work_states: [],
+      } as any,
+    );
+    expect(v1.annualReliefIncome).toBe(100000);
+    expect(v1.incomeProjection).toBeUndefined();
+  });
+});
