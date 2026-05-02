@@ -523,18 +523,26 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
             <div className="space-y-1">
               <Label className="text-xs">Total tax paid (line 24 of last year's 1040)</Label>
               <Input
-                type="number"
-                value={priorYearTaxPaid || ''}
-                onChange={e => setPriorYearTaxPaid(Number(e.target.value))}
+                type="text"
+                inputMode="numeric"
+                value={priorYearTaxPaid ? String(priorYearTaxPaid) : ''}
+                onChange={e => {
+                  const d = e.target.value.replace(/[^0-9]/g, '');
+                  setPriorYearTaxPaid(d === '' ? 0 : Number(d));
+                }}
                 placeholder="e.g., 25000"
               />
             </div>
             <div className="space-y-1">
               <Label className="text-xs">AGI (line 11 of last year's 1040)</Label>
               <Input
-                type="number"
-                value={priorYearAgi || ''}
-                onChange={e => setPriorYearAgi(Number(e.target.value))}
+                type="text"
+                inputMode="numeric"
+                value={priorYearAgi ? String(priorYearAgi) : ''}
+                onChange={e => {
+                  const d = e.target.value.replace(/[^0-9]/g, '');
+                  setPriorYearAgi(d === '' ? 0 : Number(d));
+                }}
                 placeholder="e.g., 140000"
               />
             </div>
