@@ -30,7 +30,11 @@ function makeProfile(overrides: Record<string, any>) {
     work_states: [],
     ...overrides,
   };
-  return mapDbProfileToV1(baseDbProfile as any);
+  const v1 = mapDbProfileToV1(baseDbProfile as any);
+  // Force deterministic date so all 4 quarters remain (Jan 15 is before Apr 15).
+  // This keeps existing test expectations (quarterlyPayment = annual / 4) stable.
+  v1.today = new Date('2026-01-15T12:00:00');
+  return v1;
 }
 
 describe('taxCalculatorV1 — other_w2_income wiring', () => {
