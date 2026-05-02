@@ -119,6 +119,81 @@ export default function TaxDashboard({ profile, onEditProfile, onSaveProfile }: 
 
   return (
     <div className="space-y-5">
+      {/* ═══ RECOMMENDED PAYMENT (4D-1) ═══ */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-primary" />
+            Recommended next payment
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <p className="text-3xl font-bold text-amber-500">${fmt(taxResult?.quarterlyPayment ?? 0)}</p>
+            {taxResult?.nextDueDate && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Due by {new Date(taxResult.nextDueDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+              </p>
+            )}
+            {taxResult && (taxResult.quartersRemaining ?? 0) > 1 && (
+              <p className="text-xs text-muted-foreground">
+                {taxResult.quartersRemaining} quarters remaining this year
+              </p>
+            )}
+          </div>
+
+          {taxResult?.recommendationReason && recommendationReasonCopy(taxResult.recommendationReason) && (
+            <div className="flex items-start gap-2 text-xs text-muted-foreground">
+              <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+              <span>{recommendationReasonCopy(taxResult.recommendationReason)}</span>
+            </div>
+          )}
+
+          {taxResult?.safeHarborAvailable && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground">Current-year estimate</p>
+                <p className="text-lg font-semibold">${fmt(taxResult.currentYearEstimate ?? 0)}</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">What we project you'll actually owe.</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground">
+                  Safe harbor ({Math.round((taxResult.safeHarborMultiplier ?? 1.0) * 100)}% of last year)
+                </p>
+                <p className="text-lg font-semibold">${fmt(taxResult.safeHarborAnnual ?? 0)}</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Pay this and the IRS can't penalize you.</p>
+              </div>
+            </div>
+          )}
+
+          {taxResult && (taxResult.ytdPaymentsTotal ?? 0) > 0 && (
+            <p className="text-xs text-muted-foreground">
+              Already paid this year: ${fmt(taxResult.ytdPaymentsTotal ?? 0)}
+              {' · '}
+              Remaining for the year: ${fmt(taxResult.recommendedRemaining ?? 0)}
+            </p>
+          )}
+
+          {taxResult?.incomeProjection && taxResult.incomeProjection.reliefShiftCount > 0 && (
+            <div className="flex items-start gap-2 text-xs text-muted-foreground">
+              <CalendarDays className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+              <span>
+                Projecting from {taxResult.incomeProjection.reliefShiftCount} shift{taxResult.incomeProjection.reliefShiftCount !== 1 ? 's' : ''} in your schedule
+                {taxResult.incomeProjection.method !== 'static' && (
+                  <> — projected annual: ${fmt(taxResult.incomeProjection.projectedAnnual)}</>
+                )}
+              </span>
+            </div>
+          )}
+
+          {!taxResult?.safeHarborAvailable && (
+            <p className="text-xs text-muted-foreground">
+              Add last year's tax in your profile to enable safe-harbor protection.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
       {/* ═══ HERO ═══ */}
       <Card className="overflow-hidden border-primary/20">
         <div className="bg-gradient-to-br from-primary/5 via-primary/3 to-transparent p-5">
