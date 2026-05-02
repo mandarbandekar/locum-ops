@@ -224,16 +224,20 @@ export default function SchedulePage() {
 
   const navigateBack = () => {
     if (view === 'week') setCurrentDate(subWeeks(currentDate, 1));
+    else if (view === 'day') setCurrentDate(subDays(currentDate, 1));
     else setCurrentDate(subMonths(currentDate, 1));
   };
 
   const navigateForward = () => {
     if (view === 'week') setCurrentDate(addWeeks(currentDate, 1));
+    else if (view === 'day') setCurrentDate(addDays(currentDate, 1));
     else setCurrentDate(addMonths(currentDate, 1));
   };
 
   const headerLabel = view === 'week'
     ? `${format(weekStart, 'MMM d')} – ${format(weekEnd, 'MMM d, yyyy')}`
+    : view === 'day'
+    ? format(currentDate, 'EEEE, MMM d, yyyy')
     : format(currentDate, 'MMMM yyyy');
 
   const onDragStart = (e: DragEvent, shiftId: string) => {
