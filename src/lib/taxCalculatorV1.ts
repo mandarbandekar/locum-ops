@@ -331,6 +331,16 @@ export interface TaxSCorpResult {
   qbiAmount: number;
   ptetPaid: number;
   ptetEligible: boolean;
+  currentYearEstimate: number;
+  safeHarborAvailable: boolean;
+  safeHarborMultiplier: 1.0 | 1.1;
+  safeHarborAnnual: number;
+  recommendedAnnual: number;
+  recommendationReason: string;
+  ytdPaymentsTotal: number;
+  recommendedRemaining: number;
+  quartersRemaining: number;
+  nextDueDate: string | null;
 }
 
 export type TaxV1Result = Tax1099Result | TaxSCorpResult;
