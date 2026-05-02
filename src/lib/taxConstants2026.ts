@@ -294,4 +294,6 @@ export const TAX_CONSTANTS = {
   standardMileageRate: TAX_YEAR_CONFIG.standardMileageRate,
   federalBrackets: bracketsToTuples(BRACKETS),
   states: STATE_TAX_DATA,
+  qbiThresholds: QBI_THRESHOLDS_2026 as Record<string, { lower: number; upper: number; phaseInRange: number }>,
+  qbiRate: QBI_DEDUCTION_RATE,
 } as const;
