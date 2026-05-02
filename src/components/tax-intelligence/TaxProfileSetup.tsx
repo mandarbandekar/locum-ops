@@ -482,6 +482,128 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
     );
   }
 
+  function renderAdvancedStep() {
+    const showPtet = isScorp && stateCode === 'CA';
+    return (
+      <div className="space-y-5">
+        <div>
+          <Label className="text-base font-medium">Advanced (optional)</Label>
+          <p className="text-xs text-muted-foreground mt-1">
+            Filling these in unlocks safe-harbor protection and more accurate quarterly tracking.
+            Skip any field you don't have on hand — you can come back later.
+          </p>
+        </div>
+
+        {/* Other W-2 income */}
+        <div className="space-y-1">
+          <Label className="text-sm">Your other W-2 income this year (if any)</Label>
+          <p className="text-xs text-muted-foreground">
+            E.g., a part-time hospital W-2 alongside your relief work. Excludes any S-Corp salary you pay yourself.
+          </p>
+          <Input
+            type="number"
+            value={otherW2Income || ''}
+            onChange={e => setOtherW2Income(Number(e.target.value))}
+            placeholder="e.g., 60000"
+          />
+        </div>
+
+        {/* Last year's tax — safe harbor inputs */}
+        <div className="space-y-2 rounded-lg border bg-muted/20 p-3">
+          <Label className="text-sm font-medium">Last year's tax</Label>
+          <p className="text-xs text-muted-foreground">
+            From your prior-year 1040. We use these to calculate your safe-harbor payment amount —
+            paying this protects you from underpayment penalty even if income surges this year.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <div className="space-y-1">
+              <Label className="text-xs">Total tax paid (line 24 of last year's 1040)</Label>
+              <Input
+                type="number"
+                value={priorYearTaxPaid || ''}
+                onChange={e => setPriorYearTaxPaid(Number(e.target.value))}
+                placeholder="e.g., 25000"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">AGI (line 11 of last year's 1040)</Label>
+              <Input
+                type="number"
+                value={priorYearAgi || ''}
+                onChange={e => setPriorYearAgi(Number(e.target.value))}
+                placeholder="e.g., 140000"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* This year's quarterly payments already made */}
+        <div className="space-y-2 rounded-lg border bg-muted/20 p-3">
+          <Label className="text-sm font-medium">Estimated tax payments you've already made this year</Label>
+          <p className="text-xs text-muted-foreground">
+            Federal estimated tax payments you've sent to the IRS for the current tax year. Leave blank if none.
+          </p>
+          <div className="grid grid-cols-2 gap-3 pt-1">
+            <div className="space-y-1">
+              <Label className="text-xs">Q1 (paid by Apr 15)</Label>
+              <Input type="number" value={q1Payment || ''} onChange={e => setQ1Payment(Number(e.target.value))} placeholder="0" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Q2 (paid by Jun 15)</Label>
+              <Input type="number" value={q2Payment || ''} onChange={e => setQ2Payment(Number(e.target.value))} placeholder="0" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Q3 (paid by Sep 15)</Label>
+              <Input type="number" value={q3Payment || ''} onChange={e => setQ3Payment(Number(e.target.value))} placeholder="0" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Q4 (paid by Jan 15 next year)</Label>
+              <Input type="number" value={q4Payment || ''} onChange={e => setQ4Payment(Number(e.target.value))} placeholder="0" />
+            </div>
+          </div>
+        </div>
+
+        {/* CA PTET — only show for CA S-Corp */}
+        {showPtet && (
+          <div className="space-y-2 rounded-lg border bg-muted/20 p-3">
+            <Label className="text-sm font-medium">California PTET election</Label>
+            <p className="text-xs text-muted-foreground">
+              If you've elected California's Pass-Through Entity Tax (PTET) for your S-Corp, check this.
+              We'll factor it into your federal estimate.
+            </p>
+            <label className="flex items-center gap-2 text-sm pt-1 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={pteElected}
+                onChange={e => setPteElected(e.target.checked)}
+                className="h-4 w-4"
+              />
+              Yes, I've elected CA PTET for this entity
+            </label>
+          </div>
+        )}
+
+        {/* Projection method override */}
+        <div className="space-y-2 rounded-lg border bg-muted/20 p-3">
+          <Label className="text-sm font-medium">Income projection</Label>
+          <p className="text-xs text-muted-foreground">
+            By default, we project your annual income from your logged + scheduled shifts in Locum Ops.
+            If you'd rather use the manual annual income estimate you entered earlier, check this.
+          </p>
+          <label className="flex items-center gap-2 text-sm pt-1 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={overrideProjection}
+              onChange={e => setOverrideProjection(e.target.checked)}
+              className="h-4 w-4"
+            />
+            Use my manual annual income estimate (don't project from shifts)
+          </label>
+        </div>
+      </div>
+    );
+  }
+
   function renderCompleteStep() {
     return (
       <div className="text-center space-y-4 py-4">
