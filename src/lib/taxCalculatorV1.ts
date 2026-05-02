@@ -267,6 +267,7 @@ export function calculate1099Tax(profile: TaxProfileV1): Tax1099Result {
   } = profile;
 
   const fs = filingStatus || 'single';
+  const userW2 = profile.userW2Income || 0;
 
   // Step 1 — Net business income
   const grossIncome = annualReliefIncome || 0;
@@ -274,33 +275,42 @@ export function calculate1099Tax(profile: TaxProfileV1): Tax1099Result {
   const netIncome = Math.max(0, grossIncome - expenses);
 
   // Step 2 — SE tax
+  // SS wage base is per-earner; user's own W-2 wages count first toward the cap.
   const seBase = netIncome * C.seNetRate;
-  const ssTax = Math.min(seBase, C.ssWageBase) * C.ssRate;
+  const ssRemainingForSE = Math.max(0, C.ssWageBase - userW2);
+  const ssTax = Math.min(seBase, ssRemainingForSE) * C.ssRate;
   const medicareTax = seBase * C.medicareRate;
   const addlMedicareThreshold = C.additionalMedicareThreshold[fs] ?? 200000;
 
-  const thresholdUsedBySpouse = Math.min(spouseW2Income || 0, addlMedicareThreshold);
-  const remainingThreshold = Math.max(0, addlMedicareThreshold - thresholdUsedBySpouse);
+  // Both spouse W-2 and user's own W-2 wages consume the Additional Medicare threshold.
+  const thresholdUsedByW2 = Math.min((spouseW2Income || 0) + userW2, addlMedicareThreshold);
+  const remainingThreshold = Math.max(0, addlMedicareThreshold - thresholdUsedByW2);
   const additionalMedicare = Math.max(0, seBase - remainingThreshold) * C.additionalMedicareRate;
 
   const totalSeTax = Math.round(ssTax + medicareTax + additionalMedicare);
   const seDeduction = Math.round(totalSeTax * 0.5);
 
   // Step 3 — Federal AGI and taxable income
+  // User's own W-2 wages are part of their AGI (the vet's share, not subtracted later).
   const agi = Math.max(0,
     netIncome
     - seDeduction
     - (retirementContributions || 0)
     + (spouseW2Income || 0)
+    + userW2
   );
-  // Federal already-paid component (spouse withholding)
   const stdDed = C.standardDeduction[fs] || C.standardDeduction.single;
-  const federalTaxableIncome = Math.max(0, agi - stdDed);
+  const taxableIncomeBeforeQbi = Math.max(0, agi - stdDed);
+
+  // QBI deduction (Section 199A) — vets are SSTB. QBI base for sole prop = Sched C net.
+  const qbiAmount = netIncome;
+  const qbiDeduction = calculateQBIDeduction(qbiAmount, taxableIncomeBeforeQbi, fs);
+  const federalTaxableIncome = Math.max(0, taxableIncomeBeforeQbi - qbiDeduction);
 
   // Step 4 — Federal income tax on full household
   const totalFederalTax = calculateFederalBrackets(federalTaxableIncome, fs);
 
-  // Step 5 — Subtract spouse withholding share
+  // Step 5 — Subtract spouse withholding share (user's own W-2 stays in vet's share)
   const spouseAgi = Math.max(0, (spouseW2Income || 0) - stdDed);
   const spouseFederalTax = calculateFederalBrackets(Math.max(0, spouseAgi), fs);
   const vetFederalShare = Math.max(0, totalFederalTax - spouseFederalTax);
@@ -320,7 +330,7 @@ export function calculate1099Tax(profile: TaxProfileV1): Tax1099Result {
 
   // Set-aside rate for per-shift nudge
   const stateEffective = netIncome > 0 ? stateTax / netIncome : 0;
-  const seComponent = C.ssWageBase > seBase
+  const seComponent = ssRemainingForSE > seBase
     ? C.seNetRate * (C.ssRate + C.medicareRate)
     : C.seNetRate * C.medicareRate;
   const rawSetAside = marginalRate + stateEffective + seComponent;
@@ -352,6 +362,10 @@ export function calculate1099Tax(profile: TaxProfileV1): Tax1099Result {
       ? Math.round((annualEstimatedTaxDue / grossIncome) * 1000) / 10
       : 0,
     setAsideRate: Math.min(0.50, Math.max(0.10, rawSetAside)),
+    qbiDeduction,
+    qbiAmount,
+    ptetPaid: 0,       // PTET applies only to S-Corp path
+    ptetEligible: false,
   };
 }
 
