@@ -417,6 +417,7 @@ export interface TaxSCorpResult {
   recommendedRemaining: number;
   quartersRemaining: number;
   nextDueDate: string | null;
+  incomeProjection?: ProjectionResult;
 }
 
 export type TaxV1Result = Tax1099Result | TaxSCorpResult;
