@@ -501,9 +501,13 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
             E.g., a part-time hospital W-2 alongside your relief work. Excludes any S-Corp salary you pay yourself.
           </p>
           <Input
-            type="number"
-            value={otherW2Income || ''}
-            onChange={e => setOtherW2Income(Number(e.target.value))}
+            type="text"
+            inputMode="numeric"
+            value={otherW2Income ? String(otherW2Income) : ''}
+            onChange={e => {
+              const digits = e.target.value.replace(/[^0-9]/g, '');
+              setOtherW2Income(digits === '' ? 0 : Number(digits));
+            }}
             placeholder="e.g., 60000"
           />
         </div>
