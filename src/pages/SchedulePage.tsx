@@ -45,7 +45,7 @@ const SCHEDULE_TOUR_STEPS: TourStep[] = [
   {
     targetSelector: '[data-tour="schedule-view-switcher"]',
     title: 'View Options',
-    description: 'Switch between month overview, detailed weekly time grid, or a sortable list. Drag shifts between days to reschedule.',
+    description: 'Switch timeframe (month, week, day) or jump to a list view. Drag shifts between days to reschedule.',
     placement: 'bottom',
     icon: CalendarDays,
   },
