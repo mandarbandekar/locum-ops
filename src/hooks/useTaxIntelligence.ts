@@ -115,6 +115,11 @@ export function useTaxIntelligence() {
           .filter((w: any) => w && typeof w.state_code === 'string')
           .map((w: any) => ({ state_code: String(w.state_code), income_pct: Number(w.income_pct) || 0 }))
       : [],
+    prior_year_agi: Number(d.prior_year_agi ?? 0),
+    q1_estimated_payment: Number(d.q1_estimated_payment ?? 0),
+    q2_estimated_payment: Number(d.q2_estimated_payment ?? 0),
+    q3_estimated_payment: Number(d.q3_estimated_payment ?? 0),
+    q4_estimated_payment: Number(d.q4_estimated_payment ?? 0),
   });
 
   const load = useCallback(async () => {
