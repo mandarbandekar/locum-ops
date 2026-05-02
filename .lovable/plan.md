@@ -1,67 +1,52 @@
-## Diagnosis: Overnight shifts show "0h"
+## Goal
 
-### What's happening
-On the Schedule, any shift where `end_datetime` is on the **same calendar day** as `start_datetime` but with a clock time **before** the start (e.g. 11pm → 7am stored as `2026-08-09 23:00` → `2026-08-09 07:00`) renders as `0h`.
+Tighten the Schedule view switcher so it takes less horizontal space and reads more like a standard calendar app:
 
-The Schedule reads hours two ways, and both fail on a negative duration:
-- **List view** (`SchedulePage.tsx:507`) — `getBillableMinutes(s) / 60`. `getBillableMinutes` clamps negatives to `0` via `Math.max(0, …)` → shows `0h`, and any hourly-rate total recomputed from this is also `$0`.
-- **Month/week cell** (`SchedulePage.tsx:314`) — `Math.max(0, differenceInHours(end, start))` → also `0h`.
+- Combine the calendar timeframes (Month / Week / Day) into a single dropdown that shows the current selection (e.g. "Month ▾"). Default stays on Month.
+- Replace the standalone "List" tab with a single icon button that toggles between **List** and **Calendar**. Pressing the icon while in List flips back to the calendar timeframe view.
+- Leave "Confirm" and "Sync" tabs alone — they're separate workspaces, not calendar views.
 
-So the display code is doing the right defensive thing — the underlying data is wrong.
+## Current state
 
-### Confirmed in the database
-A query against `shifts` found **24 broken records across 1 user** where `end_datetime ≤ start_datetime` (all 11pm→11am same-day, intended as 12h overnights). Example rows:
+`src/pages/SchedulePage.tsx` renders one `Tabs` strip with five triggers: Month, Week, List, Confirm, Sync. There is **no Day view today** — the file only has `monthDays` and `weekDays`. The active view is persisted to `localStorage` under `schedule-view-pref`.
+
+## New layout (left → right in the header)
 
 ```text
-start_datetime          end_datetime            stored hours
-2026-08-09 23:00:00+00  2026-08-09 11:00:00+00  -12
-2026-04-28 00:00:00+00  2026-04-27 12:00:00+00  -12   (end is BEFORE start by a full day)
+[ Month ▾ ]   [ ☰ List ]   [ ✓ Confirm ]   [ ⟳ Sync ]
 ```
 
-### Why the data is broken
-The current `ShiftFormDialog` correctly rolls the end to the next day when end ≤ start (`buildStartEndIso`, line 341), and `useManualSetup.addShift` does the same. But there are write paths that do **not** roll forward:
+- **Timeframe dropdown** — a `DropdownMenu` (shadcn) trigger styled like the existing tab buttons. Label shows the current pick: Month / Week / Day. Items: Month, Week, Day. Selecting one sets `view` to that value.
+- **List toggle** — an icon-only button (`List` icon when on a calendar view, `CalendarDays` icon when on the list view). Click flips between the list and the last-used calendar timeframe (remember it in a small ref/state, default Month). Tooltip: "Switch to list" / "Switch to calendar".
+- **Confirm** and **Sync** — keep as plain icon+label buttons next to the toggle, same visual weight as today's tabs but rendered as buttons rather than tab triggers (since they're no longer part of the same `Tabs` group).
 
-1. **AI setup import** (`src/hooks/useSetupAssistant.ts:280-288`) writes `start_datetime: d.start_time`, `end_datetime: d.end_time` straight from the AI parser output with no overnight handling. If the LLM returns same-day timestamps for an overnight, we persist `end < start`.
-2. Historical shifts created before `buildStartEndIso` was added may also have leaked through.
-3. The two April rows in the sample (`end_datetime` literally a day BEFORE start) suggest a separate timezone-related bug in some import path — possibly an early version that subtracted instead of added the overnight day.
+Default on first load stays Month. Persisted preference in `localStorage` continues to work; if a stored value is unrecognized, fall back to Month.
 
-There are no DB-level guards (no CHECK / trigger) preventing `end_datetime ≤ start_datetime`.
+## Day view (new)
 
-## Fix plan
+Since the user listed Day as a dropdown option and we don't have one yet, add a minimal Day view:
 
-### 1. Backfill the broken rows (one-time migration)
-Run a SQL migration that, for every shift with `end_datetime ≤ start_datetime`, adds 24 hours to `end_datetime` until it's after `start_datetime` (handles both the −12h same-day rows and the −36h cross-day rows):
+- Reuse `WeekTimeGrid` by passing a single-day array (`[currentDate]`) — the component already handles per-day columns and absolute-positioned shifts. Header label: `format(currentDate, 'EEEE, MMM d, yyyy')`.
+- Prev/Next buttons advance by 1 day when `view === 'day'`. "Today" button already works.
+- All-day calendar events row + time blocks render the same way they do for week.
 
-```sql
-UPDATE public.shifts
-SET end_datetime = end_datetime + interval '1 day'
-WHERE end_datetime <= start_datetime;
+If reusing `WeekTimeGrid` with one day looks too wide visually, constrain the inner grid to `max-w-2xl` for day view only — decide during implementation, doesn't change the plan.
 
-UPDATE public.shifts
-SET end_datetime = end_datetime + interval '1 day'
-WHERE end_datetime <= start_datetime;  -- catches the −36h rows
-```
+## Behavior details
 
-Verify post-migration that no rows remain with `end_datetime ≤ start_datetime`.
+- `view` state type becomes `'month' | 'week' | 'day' | 'list' | 'confirmations' | 'sync'`.
+- `isCalendarView` includes `'day'`.
+- The "last calendar timeframe" memory: when the user switches to List, remember whichever of month/week/day they came from so the icon toggle returns there. If they came from confirmations/sync (shouldn't normally happen since List lives outside that flow), default to Month.
+- Spotlight tour selector `[data-tour="schedule-view-switcher"]` moves to the dropdown trigger so the existing tour still anchors correctly. Update the tour copy from "Switch between month overview, detailed weekly time grid, or a sortable list" to "Switch timeframe (month, week, day) or jump to a list view."
+- Mobile: dropdown trigger already collapses well; the List toggle stays icon-only on all sizes (label only in tooltip).
 
-### 2. Add a DB guard so this can never recur
-Add a validation **trigger** (per memory rules — not a CHECK constraint) on `public.shifts` that raises if `end_datetime <= start_datetime` on insert/update.
+## Files to touch
 
-### 3. Patch the AI-setup write path
-In `src/hooks/useSetupAssistant.ts` (`saveConfirmedEntities`, ~line 280), after computing start/end ISO, roll `end` forward by 24h while `end <= start`. Mirror the logic already in `buildStartEndIso` / `useManualSetup`.
+- `src/pages/SchedulePage.tsx` — header markup, `view` union, view buttons array → split into (a) timeframe dropdown, (b) list toggle, (c) confirm/sync buttons. Add Day rendering branch in the body. Update prev/next handlers for day. Update tour copy.
+- No DB, hook, or context changes.
 
-### 4. Defensive display fallback
-In `SchedulePage.tsx` list view and month cell, if `end <= start` after parse, treat as overnight (`end + 24h`) for the displayed hours. This prevents legacy records from showing 0h even if the backfill is delayed, and protects against any future write path we missed.
+## Out of scope
 
-### 5. Sanity-check sibling consumers
-Quick audit of the same `end_datetime - start_datetime` math in: `WeekTimeGrid.tsx` (height calc uses wall-clock hours and will render 0-height for overnights regardless — separate visual issue worth flagging), `lib/shiftBreak.ts`, `lib/businessLogic.ts` (conflict detection uses minutes-since-midnight per local day, also breaks for overnights), invoice generation, ICS feed. Surface findings; fix if cheap, ticket if not.
-
-### Out of scope for this fix
-- The week-grid visual rendering of true overnight shifts spanning two days (separate UX work).
-- Reworking `detectShiftConflicts` to understand cross-midnight overlap.
-
-### Files to touch
-- New SQL migration (backfill + validation trigger)
-- `src/hooks/useSetupAssistant.ts`
-- `src/pages/SchedulePage.tsx`
-- (audit-only first pass) `src/components/schedule/WeekTimeGrid.tsx`, `src/lib/businessLogic.ts`
+- Visual redesign of shift cards, time grid styling, or filters.
+- Confirmations and Sync screens themselves.
+- Timezone handling (separate ongoing thread).

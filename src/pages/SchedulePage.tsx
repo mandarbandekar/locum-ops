@@ -3,9 +3,9 @@ import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { StatusBadge } from '@/components/StatusBadge';
-import { Plus, ChevronLeft, ChevronRight, List, CalendarDays, Trash2, Calendar as CalendarIcon, CheckSquare, RefreshCw, AlertTriangle, Ban, Layers } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, List, CalendarDays, Trash2, Calendar as CalendarIcon, CheckSquare, RefreshCw, AlertTriangle, Ban, Layers, ChevronDown } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, getDay, startOfWeek, endOfWeek, addWeeks, subWeeks, differenceInMilliseconds, differenceInHours } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, getDay, startOfWeek, endOfWeek, addWeeks, subWeeks, addDays, subDays, differenceInMilliseconds, differenceInHours } from 'date-fns';
 import { CalendarPlus, Clock, DollarSign, TrendingUp } from 'lucide-react';
 import { SHIFT_COLORS, Shift, BLOCK_TYPES, BLOCK_COLORS, TimeBlock } from '@/types';
 import { detectShiftConflicts } from '@/lib/businessLogic';
@@ -28,6 +28,8 @@ import { SpotlightTour, TourStep } from '@/components/SpotlightTour';
 import { useSpotlightTour } from '@/hooks/useSpotlightTour';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { getBillableMinutes, formatHoursMinutes } from '@/lib/shiftBreak';
 
 const STORAGE_KEY = 'schedule-view-pref';
@@ -43,7 +45,7 @@ const SCHEDULE_TOUR_STEPS: TourStep[] = [
   {
     targetSelector: '[data-tour="schedule-view-switcher"]',
     title: 'View Options',
-    description: 'Switch between month overview, detailed weekly time grid, or a sortable list. Drag shifts between days to reschedule.',
+    description: 'Switch timeframe (month, week, day) or jump to a list view. Drag shifts between days to reschedule.',
     placement: 'bottom',
     icon: CalendarDays,
   },
@@ -102,7 +104,8 @@ export default function SchedulePage() {
     return computeEffectiveSetAsideRate(taxProfile, totalIncome || 1);
   }, [taxProfile, hasTaxProfile, invoices, shifts]);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [view, setView] = useState<'month' | 'week' | 'list' | 'confirmations' | 'sync'>('month');
+  const [view, setView] = useState<'month' | 'week' | 'day' | 'list' | 'confirmations' | 'sync'>('month');
+  const [lastTimeframe, setLastTimeframe] = useState<'month' | 'week' | 'day'>('month');
   const [showAdd, setShowAdd] = useState(false);
   const [showBlockTime, setShowBlockTime] = useState(false);
   const [editBlock, setEditBlock] = useState<string | null>(null);
@@ -123,7 +126,22 @@ export default function SchedulePage() {
   const hasNonDefaultLayers = calendarFilters.credentials || calendarFilters.subscriptions;
 
   useEffect(() => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    const valid = ['month', 'week', 'day', 'list', 'confirmations', 'sync'];
+    if (stored && valid.includes(stored)) {
+      setView(stored as typeof view);
+      if (stored === 'month' || stored === 'week' || stored === 'day') {
+        setLastTimeframe(stored);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
     localStorage.setItem(STORAGE_KEY, view);
+    if (view === 'month' || view === 'week' || view === 'day') {
+      setLastTimeframe(view);
+    }
   }, [view]);
 
   // Month calculations
@@ -137,8 +155,8 @@ export default function SchedulePage() {
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 0 });
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
-  const rangeStart = view === 'week' ? weekStart : monthStart;
-  const rangeEnd = view === 'week' ? weekEnd : monthEnd;
+  const rangeStart = view === 'week' ? weekStart : view === 'day' ? new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate()) : monthStart;
+  const rangeEnd = view === 'week' ? weekEnd : view === 'day' ? new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), 23, 59, 59, 999) : monthEnd;
 
   const rangeShifts = shifts.filter(s => {
     const d = new Date(s.start_datetime);
@@ -206,16 +224,20 @@ export default function SchedulePage() {
 
   const navigateBack = () => {
     if (view === 'week') setCurrentDate(subWeeks(currentDate, 1));
+    else if (view === 'day') setCurrentDate(subDays(currentDate, 1));
     else setCurrentDate(subMonths(currentDate, 1));
   };
 
   const navigateForward = () => {
     if (view === 'week') setCurrentDate(addWeeks(currentDate, 1));
+    else if (view === 'day') setCurrentDate(addDays(currentDate, 1));
     else setCurrentDate(addMonths(currentDate, 1));
   };
 
   const headerLabel = view === 'week'
     ? `${format(weekStart, 'MMM d')} – ${format(weekEnd, 'MMM d, yyyy')}`
+    : view === 'day'
+    ? format(currentDate, 'EEEE, MMM d, yyyy')
     : format(currentDate, 'MMMM yyyy');
 
   const onDragStart = (e: DragEvent, shiftId: string) => {
@@ -340,15 +362,18 @@ export default function SchedulePage() {
     );
   };
 
-  const isCalendarView = view === 'month' || view === 'week' || view === 'list';
+  const isCalendarView = view === 'month' || view === 'week' || view === 'day' || view === 'list';
+  const isTimeframeView = view === 'month' || view === 'week' || view === 'day';
+  const timeframeLabel = view === 'week' ? 'Week' : view === 'day' ? 'Day' : view === 'month' ? 'Month' : (lastTimeframe === 'week' ? 'Week' : lastTimeframe === 'day' ? 'Day' : 'Month');
+  const TimeframeIcon = (view === 'week' || (view === 'list' && lastTimeframe === 'week')) ? CalendarIcon
+    : (view === 'day' || (view === 'list' && lastTimeframe === 'day')) ? CalendarIcon
+    : CalendarDays;
 
-  const viewButtons = [
-    { key: 'month' as const, icon: CalendarDays, label: 'Month' },
-    { key: 'week' as const, icon: CalendarIcon, label: 'Week' },
-    { key: 'list' as const, icon: List, label: 'List' },
-    { key: 'confirmations' as const, icon: CheckSquare, label: 'Confirm', tourAttr: 'schedule-confirmations', fullLabel: 'Clinic Confirm' },
-    { key: 'sync' as const, icon: RefreshCw, label: 'Sync', tourAttr: 'schedule-sync' },
-  ];
+  const toggleListCalendar = () => {
+    if (view === 'list') setView(lastTimeframe);
+    else if (isTimeframeView) setView('list');
+    else setView(lastTimeframe);
+  };
 
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] min-h-[560px] overflow-hidden">
@@ -365,16 +390,75 @@ export default function SchedulePage() {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          <Tabs value={view} onValueChange={(v) => setView(v as typeof view)} data-tour="schedule-view-switcher">
-            <TabsList>
-              {viewButtons.map(({ key, icon: Icon, label, tourAttr, fullLabel }) => (
-                <TabsTrigger key={key} value={key} data-tour={tourAttr} className="gap-1.5">
-                  <Icon className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">{fullLabel || label}</span>
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
+          <TooltipProvider delayDuration={200}>
+            <div className="flex items-center gap-1" data-tour="schedule-view-switcher">
+              {/* Timeframe dropdown (Month / Week / Day) */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant={isTimeframeView ? 'default' : 'outline'}
+                    size="sm"
+                    className="gap-1.5"
+                  >
+                    <TimeframeIcon className="h-3.5 w-3.5" />
+                    <span>{timeframeLabel}</span>
+                    <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuItem onClick={() => setView('month')}>
+                    <CalendarDays className="mr-2 h-4 w-4" /> Month
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setView('week')}>
+                    <CalendarIcon className="mr-2 h-4 w-4" /> Week
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setView('day')}>
+                    <CalendarIcon className="mr-2 h-4 w-4" /> Day
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* List <-> Calendar toggle */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={view === 'list' ? 'default' : 'ghost'}
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={toggleListCalendar}
+                    aria-label={view === 'list' ? 'Switch to calendar' : 'Switch to list'}
+                  >
+                    {view === 'list' ? <CalendarDays className="h-4 w-4" /> : <List className="h-4 w-4" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{view === 'list' ? 'Switch to calendar' : 'Switch to list'}</TooltipContent>
+              </Tooltip>
+
+              {/* Confirm */}
+              <Button
+                variant={view === 'confirmations' ? 'default' : 'ghost'}
+                size="sm"
+                className="gap-1.5"
+                onClick={() => setView('confirmations')}
+                data-tour="schedule-confirmations"
+              >
+                <CheckSquare className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Clinic Confirm</span>
+              </Button>
+
+              {/* Sync */}
+              <Button
+                variant={view === 'sync' ? 'default' : 'ghost'}
+                size="sm"
+                className="gap-1.5"
+                onClick={() => setView('sync')}
+                data-tour="schedule-sync"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Sync</span>
+              </Button>
+            </div>
+          </TooltipProvider>
 
           {isCalendarView && (
             <div className="flex items-center gap-2 shrink-0" data-tour="schedule-add-shift">
@@ -490,6 +574,29 @@ export default function SchedulePage() {
                     <h3 className="text-lg font-semibold mb-1">No shifts this week</h3>
                     <p className="text-sm text-muted-foreground max-w-xs mb-4">Add shifts to track your schedule, auto-generate invoices, and sync to your calendar.</p>
                     <Button onClick={() => setShowAdd(true)}><Plus className="mr-1.5 h-4 w-4" /> Add Your First Shift</Button>
+                  </div>
+                )}
+              </>
+            ) : view === 'day' ? (
+              <>
+                <WeekTimeGrid
+                  weekDays={[currentDate]}
+                  shifts={calendarFilters.shifts ? shifts : []}
+                  getFacilityName={getFacilityName}
+                  onEditShift={setEditShift}
+                  onDropOnTime={handleDropOnTime}
+                  onCellClick={openAddShiftAt}
+                  calendarFilters={{ credentials: calendarFilters.credentials, subscriptions: calendarFilters.subscriptions }}
+                  getEventsForDay={getEventsForDay}
+                  timeBlocks={timeBlocks}
+                  onEditBlock={setEditBlock}
+                />
+                {totalShiftsInRange === 0 && (
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <CalendarPlus className="h-12 w-12 text-muted-foreground/40 mb-4" />
+                    <h3 className="text-lg font-semibold mb-1">No shifts this day</h3>
+                    <p className="text-sm text-muted-foreground max-w-xs mb-4">Add a shift to start tracking your schedule and revenue.</p>
+                    <Button onClick={() => setShowAdd(true)}><Plus className="mr-1.5 h-4 w-4" /> Add Shift</Button>
                   </div>
                 )}
               </>
