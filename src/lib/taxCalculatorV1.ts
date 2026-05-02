@@ -130,7 +130,76 @@ function computeRemainingQuarters(
   return allQuarters.filter(q => q.dueDate >= cutoff);
 }
 
-function calculateQBIDeduction(
+/**
+ * Shared helper: given a profile and the current-year annual estimate,
+ * compute safe harbor, recommendation, YTD payments, remaining quarters,
+ * and the per-quarter recommended payment.
+ */
+function computeSafeHarborBlock(
+  profile: { priorYearTaxPaid?: number; priorYearAgi?: number;
+    q1EstimatedPayment?: number; q2EstimatedPayment?: number;
+    q3EstimatedPayment?: number; q4EstimatedPayment?: number;
+    today?: Date; },
+  currentYearEstimate: number,
+) {
+  const today = profile.today || new Date();
+
+  const safeHarbor = calculateSafeHarbor(
+    profile.priorYearTaxPaid || 0,
+    profile.priorYearAgi || 0,
+  );
+
+  let recommendedAnnual: number;
+  let recommendationReason: string;
+  if (!safeHarbor.available) {
+    recommendedAnnual = currentYearEstimate;
+    recommendationReason = 'first_year_only_current_year_available';
+  } else if (currentYearEstimate >= safeHarbor.safeHarborAnnual) {
+    recommendedAnnual = currentYearEstimate;
+    recommendationReason = 'income_up_yoy_current_year_higher';
+  } else {
+    recommendedAnnual = safeHarbor.safeHarborAnnual;
+    recommendationReason = 'income_down_yoy_safe_harbor_higher';
+  }
+
+  const ytdPaymentsTotal =
+    (profile.q1EstimatedPayment || 0) +
+    (profile.q2EstimatedPayment || 0) +
+    (profile.q3EstimatedPayment || 0) +
+    (profile.q4EstimatedPayment || 0);
+
+  const recommendedRemaining = Math.max(0, recommendedAnnual - ytdPaymentsTotal);
+
+  const remainingQuarters = computeRemainingQuarters(today, {
+    q1: profile.q1EstimatedPayment || 0,
+    q2: profile.q2EstimatedPayment || 0,
+    q3: profile.q3EstimatedPayment || 0,
+    q4: profile.q4EstimatedPayment || 0,
+  });
+
+  const quartersRemaining = remainingQuarters.length;
+  const recommendedQuarterlyPayment = quartersRemaining > 0
+    ? Math.round(recommendedRemaining / quartersRemaining)
+    : 0;
+
+  const nextDueDate = remainingQuarters.length > 0
+    ? remainingQuarters[0].dueDate.toISOString().slice(0, 10)
+    : null;
+
+  return {
+    currentYearEstimate,
+    safeHarborAvailable: safeHarbor.available,
+    safeHarborMultiplier: safeHarbor.multiplier,
+    safeHarborAnnual: safeHarbor.safeHarborAnnual,
+    recommendedAnnual,
+    recommendationReason,
+    ytdPaymentsTotal,
+    recommendedRemaining,
+    quartersRemaining,
+    nextDueDate,
+    recommendedQuarterlyPayment,
+  };
+}
   qbiAmount: number,
   taxableIncomeBeforeQbi: number,
   filingStatus: string
