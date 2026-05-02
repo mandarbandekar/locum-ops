@@ -419,7 +419,6 @@ export function calculate1099Tax(profile: TaxProfileV1): Tax1099Result {
   const annualObligation = totalFederalTax + stateTax + totalSeTax;
   const spouseWithholdingEstimate = spouseFederalTax;
   const annualEstimatedTaxDue = Math.max(0, annualObligation - spouseWithholdingEstimate);
-  const quarterlyPayment = Math.round(annualEstimatedTaxDue / 4);
 
   // Set-aside rate for per-shift nudge
   const stateEffective = netIncome > 0 ? stateTax / netIncome : 0;
@@ -427,6 +426,8 @@ export function calculate1099Tax(profile: TaxProfileV1): Tax1099Result {
     ? C.seNetRate * (C.ssRate + C.medicareRate)
     : C.seNetRate * C.medicareRate;
   const rawSetAside = marginalRate + stateEffective + seComponent;
+
+  const sh = computeSafeHarborBlock(profile, annualEstimatedTaxDue);
 
   return {
     path: '1099',
@@ -449,7 +450,7 @@ export function calculate1099Tax(profile: TaxProfileV1): Tax1099Result {
     stateBreakdown: stateResult.breakdown,
     annualObligation: Math.round(annualObligation),
     annualEstimatedTaxDue,
-    quarterlyPayment,
+    quarterlyPayment: sh.recommendedQuarterlyPayment,
     marginalRate,
     effectiveRate: grossIncome > 0
       ? Math.round((annualEstimatedTaxDue / grossIncome) * 1000) / 10
@@ -459,6 +460,16 @@ export function calculate1099Tax(profile: TaxProfileV1): Tax1099Result {
     qbiAmount,
     ptetPaid: 0,       // PTET applies only to S-Corp path
     ptetEligible: false,
+    currentYearEstimate: sh.currentYearEstimate,
+    safeHarborAvailable: sh.safeHarborAvailable,
+    safeHarborMultiplier: sh.safeHarborMultiplier,
+    safeHarborAnnual: sh.safeHarborAnnual,
+    recommendedAnnual: sh.recommendedAnnual,
+    recommendationReason: sh.recommendationReason,
+    ytdPaymentsTotal: sh.ytdPaymentsTotal,
+    recommendedRemaining: sh.recommendedRemaining,
+    quartersRemaining: sh.quartersRemaining,
+    nextDueDate: sh.nextDueDate,
   };
 }
 
