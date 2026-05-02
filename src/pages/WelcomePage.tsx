@@ -32,6 +32,33 @@ export default function WelcomePage() {
     navigate('/onboarding', { replace: true });
   }, [user, profile, updateProfile, navigate]);
 
+  // While waiting for email verification, poll + listen for cross-tab session
+  // so this tab automatically advances to onboarding once the user verifies.
+  useEffect(() => {
+    if (!success || user) return;
+    let cancelled = false;
+    const check = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!cancelled && data.session) {
+        navigate('/onboarding', { replace: true });
+      }
+    };
+    const interval = setInterval(check, 2500);
+    const onStorage = (e: StorageEvent) => {
+      if (e.key && e.key.includes('auth-token')) check();
+    };
+    const onVisible = () => { if (document.visibilityState === 'visible') check(); };
+    window.addEventListener('storage', onStorage);
+    document.addEventListener('visibilitychange', onVisible);
+    check();
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      window.removeEventListener('storage', onStorage);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [success, user, navigate]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!firstName.trim() || !lastName.trim() || !companyName.trim() || !email.trim()) {
