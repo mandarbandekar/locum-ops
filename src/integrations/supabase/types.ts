@@ -2900,6 +2900,7 @@ export type Database = {
           extra_withholding: number
           filing_status: string
           id: string
+          income_projection_method: string | null
           other_w2_income: number
           pay_periods_per_year: number
           prior_year_agi: number | null
@@ -2936,6 +2937,7 @@ export type Database = {
           extra_withholding?: number
           filing_status?: string
           id?: string
+          income_projection_method?: string | null
           other_w2_income?: number
           pay_periods_per_year?: number
           prior_year_agi?: number | null
@@ -2972,6 +2974,7 @@ export type Database = {
           extra_withholding?: number
           filing_status?: string
           id?: string
+          income_projection_method?: string | null
           other_w2_income?: number
           pay_periods_per_year?: number
           prior_year_agi?: number | null
