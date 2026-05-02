@@ -30,6 +30,12 @@ export interface TaxIntelligenceProfile {
   typical_days_per_week: number;
   // Multi-state
   work_states: WorkStateAllocation[];
+  // Safe harbor (4B)
+  prior_year_agi: number;
+  q1_estimated_payment: number;
+  q2_estimated_payment: number;
+  q3_estimated_payment: number;
+  q4_estimated_payment: number;
 }
 
 export interface WorkStateAllocation {
