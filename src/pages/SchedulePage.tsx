@@ -126,7 +126,22 @@ export default function SchedulePage() {
   const hasNonDefaultLayers = calendarFilters.credentials || calendarFilters.subscriptions;
 
   useEffect(() => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    const valid = ['month', 'week', 'day', 'list', 'confirmations', 'sync'];
+    if (stored && valid.includes(stored)) {
+      setView(stored as typeof view);
+      if (stored === 'month' || stored === 'week' || stored === 'day') {
+        setLastTimeframe(stored);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
     localStorage.setItem(STORAGE_KEY, view);
+    if (view === 'month' || view === 'week' || view === 'day') {
+      setLastTimeframe(view);
+    }
   }, [view]);
 
   // Month calculations
