@@ -64,6 +64,72 @@ function calculateFederalBrackets(taxableIncome: number, filingStatus: string): 
  * @param filingStatus — 'single' | 'married_joint' | 'head_of_household'
  * @returns deduction amount (always >= 0)
  */
+// ─── Safe harbor & remaining-quarter helpers ───
+
+type SafeHarborResult = {
+  available: boolean;
+  multiplier: 1.0 | 1.1;
+  safeHarborAnnual: number;
+  reason: string;
+};
+
+/**
+ * Compute the prior-year safe harbor amount.
+ * IRS: pay 100% of last year's tax (110% if prior AGI > $150K) → no penalty.
+ */
+function calculateSafeHarbor(
+  priorYearTaxPaid: number,
+  priorYearAgi: number
+): SafeHarborResult {
+  if (!priorYearTaxPaid || priorYearTaxPaid <= 0) {
+    return {
+      available: false,
+      multiplier: 1.0,
+      safeHarborAnnual: 0,
+      reason: 'first_year_or_no_prior_data',
+    };
+  }
+  const HIGH_INCOME_AGI_THRESHOLD = 150000;
+  const multiplier: 1.0 | 1.1 = priorYearAgi > HIGH_INCOME_AGI_THRESHOLD ? 1.1 : 1.0;
+  return {
+    available: true,
+    multiplier,
+    safeHarborAnnual: Math.round(priorYearTaxPaid * multiplier),
+    reason: multiplier === 1.1 ? 'prior_year_high_income_110pct' : 'prior_year_standard_100pct',
+  };
+}
+
+type QuarterDueDate = {
+  quarter: 1 | 2 | 3 | 4;
+  dueDate: Date;
+  paid: number;
+};
+
+function todayAtMidnight(d: Date): Date {
+  const m = new Date(d);
+  m.setHours(0, 0, 0, 0);
+  return m;
+}
+
+/**
+ * Quarters whose due date is >= today (zeroed to midnight).
+ * Q1 Apr 15, Q2 Jun 15, Q3 Sep 15, Q4 Jan 15 of next year.
+ */
+function computeRemainingQuarters(
+  today: Date,
+  quarterPayments: { q1: number; q2: number; q3: number; q4: number }
+): QuarterDueDate[] {
+  const year = today.getFullYear();
+  const allQuarters: QuarterDueDate[] = [
+    { quarter: 1, dueDate: new Date(year, 3, 15), paid: quarterPayments.q1 },
+    { quarter: 2, dueDate: new Date(year, 5, 15), paid: quarterPayments.q2 },
+    { quarter: 3, dueDate: new Date(year, 8, 15), paid: quarterPayments.q3 },
+    { quarter: 4, dueDate: new Date(year + 1, 0, 15), paid: quarterPayments.q4 },
+  ];
+  const cutoff = todayAtMidnight(today);
+  return allQuarters.filter(q => q.dueDate >= cutoff);
+}
+
 function calculateQBIDeduction(
   qbiAmount: number,
   taxableIncomeBeforeQbi: number,
