@@ -19,6 +19,7 @@ import TaxTerm from './TaxTerm';
 import type { TaxIntelligenceProfile } from '@/hooks/useTaxIntelligence';
 import { TAX_CONSTANTS, V1_FILING_STATUS_LABELS, V1_DISCLAIMER, getV1QuarterlyDueDates, type V1FilingStatus } from '@/lib/taxConstants2026';
 import { calculateTaxV1, mapDbProfileToV1, type TaxV1Result, type Tax1099Result, type TaxSCorpResult } from '@/lib/taxCalculatorV1';
+import { useData } from '@/contexts/DataContext';
 
 interface Props {
   profile: TaxIntelligenceProfile;
@@ -30,7 +31,21 @@ function fmt(n: number) {
   return n.toLocaleString('en-US', { maximumFractionDigits: 0 });
 }
 
-// Re-export for backward compat with DashboardPage
+function recommendationReasonCopy(reason: string): string {
+  switch (reason) {
+    case 'first_year_only_current_year_available':
+      return "First year of self-employment data — based on this year's projected liability.";
+    case 'income_up_yoy_current_year_higher':
+      return "Income is up vs last year. Recommending current-year projection so you're cash-ready in April.";
+    case 'income_down_yoy_safe_harbor_higher':
+      return "Income is down vs last year. Recommending safe harbor — you're penalty-protected even if income surges.";
+    default:
+      return "";
+  }
+}
+
+// Re-export for backward compat with DashboardPage.
+// Note: this helper accepts a manual gross income and bypasses shift-based projection.
 export function calculateTax(grossIncome: number, profile: TaxIntelligenceProfile) {
   const v1Profile = mapDbProfileToV1({ ...profile, annual_relief_income: grossIncome });
   const result = calculateTaxV1(v1Profile);
