@@ -362,15 +362,18 @@ export default function SchedulePage() {
     );
   };
 
-  const isCalendarView = view === 'month' || view === 'week' || view === 'list';
+  const isCalendarView = view === 'month' || view === 'week' || view === 'day' || view === 'list';
+  const isTimeframeView = view === 'month' || view === 'week' || view === 'day';
+  const timeframeLabel = view === 'week' ? 'Week' : view === 'day' ? 'Day' : view === 'month' ? 'Month' : (lastTimeframe === 'week' ? 'Week' : lastTimeframe === 'day' ? 'Day' : 'Month');
+  const TimeframeIcon = (view === 'week' || (view === 'list' && lastTimeframe === 'week')) ? CalendarIcon
+    : (view === 'day' || (view === 'list' && lastTimeframe === 'day')) ? CalendarIcon
+    : CalendarDays;
 
-  const viewButtons = [
-    { key: 'month' as const, icon: CalendarDays, label: 'Month' },
-    { key: 'week' as const, icon: CalendarIcon, label: 'Week' },
-    { key: 'list' as const, icon: List, label: 'List' },
-    { key: 'confirmations' as const, icon: CheckSquare, label: 'Confirm', tourAttr: 'schedule-confirmations', fullLabel: 'Clinic Confirm' },
-    { key: 'sync' as const, icon: RefreshCw, label: 'Sync', tourAttr: 'schedule-sync' },
-  ];
+  const toggleListCalendar = () => {
+    if (view === 'list') setView(lastTimeframe);
+    else if (isTimeframeView) setView('list');
+    else setView(lastTimeframe);
+  };
 
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] min-h-[560px] overflow-hidden">
@@ -387,16 +390,75 @@ export default function SchedulePage() {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          <Tabs value={view} onValueChange={(v) => setView(v as typeof view)} data-tour="schedule-view-switcher">
-            <TabsList>
-              {viewButtons.map(({ key, icon: Icon, label, tourAttr, fullLabel }) => (
-                <TabsTrigger key={key} value={key} data-tour={tourAttr} className="gap-1.5">
-                  <Icon className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">{fullLabel || label}</span>
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
+          <TooltipProvider delayDuration={200}>
+            <div className="flex items-center gap-1" data-tour="schedule-view-switcher">
+              {/* Timeframe dropdown (Month / Week / Day) */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant={isTimeframeView ? 'default' : 'outline'}
+                    size="sm"
+                    className="gap-1.5"
+                  >
+                    <TimeframeIcon className="h-3.5 w-3.5" />
+                    <span>{timeframeLabel}</span>
+                    <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuItem onClick={() => setView('month')}>
+                    <CalendarDays className="mr-2 h-4 w-4" /> Month
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setView('week')}>
+                    <CalendarIcon className="mr-2 h-4 w-4" /> Week
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setView('day')}>
+                    <CalendarIcon className="mr-2 h-4 w-4" /> Day
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* List <-> Calendar toggle */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={view === 'list' ? 'default' : 'ghost'}
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={toggleListCalendar}
+                    aria-label={view === 'list' ? 'Switch to calendar' : 'Switch to list'}
+                  >
+                    {view === 'list' ? <CalendarDays className="h-4 w-4" /> : <List className="h-4 w-4" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{view === 'list' ? 'Switch to calendar' : 'Switch to list'}</TooltipContent>
+              </Tooltip>
+
+              {/* Confirm */}
+              <Button
+                variant={view === 'confirmations' ? 'default' : 'ghost'}
+                size="sm"
+                className="gap-1.5"
+                onClick={() => setView('confirmations')}
+                data-tour="schedule-confirmations"
+              >
+                <CheckSquare className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Clinic Confirm</span>
+              </Button>
+
+              {/* Sync */}
+              <Button
+                variant={view === 'sync' ? 'default' : 'ghost'}
+                size="sm"
+                className="gap-1.5"
+                onClick={() => setView('sync')}
+                data-tour="schedule-sync"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Sync</span>
+              </Button>
+            </div>
+          </TooltipProvider>
 
           {isCalendarView && (
             <div className="flex items-center gap-2 shrink-0" data-tour="schedule-add-shift">
