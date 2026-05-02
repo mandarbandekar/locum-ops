@@ -104,7 +104,8 @@ export default function SchedulePage() {
     return computeEffectiveSetAsideRate(taxProfile, totalIncome || 1);
   }, [taxProfile, hasTaxProfile, invoices, shifts]);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [view, setView] = useState<'month' | 'week' | 'list' | 'confirmations' | 'sync'>('month');
+  const [view, setView] = useState<'month' | 'week' | 'day' | 'list' | 'confirmations' | 'sync'>('month');
+  const [lastTimeframe, setLastTimeframe] = useState<'month' | 'week' | 'day'>('month');
   const [showAdd, setShowAdd] = useState(false);
   const [showBlockTime, setShowBlockTime] = useState(false);
   const [editBlock, setEditBlock] = useState<string | null>(null);
