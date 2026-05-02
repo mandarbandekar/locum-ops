@@ -531,9 +531,11 @@ export function mapDbProfileToV1(p: {
   pay_periods_per_year: number;
   filing_status: string;
   spouse_w2_income: number;
+  other_w2_income?: number;
   retirement_contribution: number;
   annual_business_expenses: number;
   state_code: string;
+  pte_elected?: boolean;
   work_states?: { state_code: string; income_pct: number }[];
 }): TaxProfileV1 {
   return {
@@ -544,9 +546,11 @@ export function mapDbProfileToV1(p: {
     payPeriodsPerYear: p.pay_periods_per_year || 24,
     filingStatus: p.filing_status || 'single',
     spouseW2Income: p.spouse_w2_income || 0,
+    userW2Income: p.other_w2_income || 0,
     retirementContributions: p.retirement_contribution || 0,
     annualBusinessExpenses: p.annual_business_expenses || 0,
     stateKey: p.state_code || '',
+    pteElected: !!p.pte_elected,
     workStates: Array.isArray(p.work_states)
       ? p.work_states
           .filter(w => w && typeof w.state_code === 'string')
