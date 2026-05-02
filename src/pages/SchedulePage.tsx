@@ -28,6 +28,8 @@ import { SpotlightTour, TourStep } from '@/components/SpotlightTour';
 import { useSpotlightTour } from '@/hooks/useSpotlightTour';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider as TT } from '@/components/ui/tooltip';
 import { getBillableMinutes, formatHoursMinutes } from '@/lib/shiftBreak';
 
 const STORAGE_KEY = 'schedule-view-pref';
