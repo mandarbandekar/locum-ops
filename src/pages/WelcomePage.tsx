@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -30,6 +31,33 @@ export default function WelcomePage() {
     }
     navigate('/onboarding', { replace: true });
   }, [user, profile, updateProfile, navigate]);
+
+  // While waiting for email verification, poll + listen for cross-tab session
+  // so this tab automatically advances to onboarding once the user verifies.
+  useEffect(() => {
+    if (!success || user) return;
+    let cancelled = false;
+    const check = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!cancelled && data.session) {
+        navigate('/onboarding', { replace: true });
+      }
+    };
+    const interval = setInterval(check, 2500);
+    const onStorage = (e: StorageEvent) => {
+      if (e.key && e.key.includes('auth-token')) check();
+    };
+    const onVisible = () => { if (document.visibilityState === 'visible') check(); };
+    window.addEventListener('storage', onStorage);
+    document.addEventListener('visibilitychange', onVisible);
+    check();
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      window.removeEventListener('storage', onStorage);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [success, user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,11 +107,12 @@ export default function WelcomePage() {
             </div>
             <h1 className="text-xl font-bold text-foreground">Check your email</h1>
             <p className="text-sm text-muted-foreground">
-              We sent a confirmation link to <span className="font-medium text-foreground">{email}</span>. Click it to activate your account.
+              We sent a confirmation link to <span className="font-medium text-foreground">{email}</span>. Open it on this device — once you verify, this page will continue to onboarding automatically.
             </p>
-            <Button onClick={() => navigate('/login')} className="w-full mt-2" size="lg">
-              Go to login
-            </Button>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              Waiting for verification…
+            </div>
           </div>
         ) : (
           <>
