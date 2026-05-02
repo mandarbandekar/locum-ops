@@ -5,6 +5,8 @@
  */
 
 import { TAX_CONSTANTS as C } from './taxConstants2026';
+import { computeIncomeProjection, type ProjectionMethod, type ProjectionResult } from './taxProjection';
+import type { Shift, Facility } from '@/types';
 
 // ─────────────────────────────────────
 // SHARED UTILITIES
@@ -259,6 +261,8 @@ export interface TaxProfileV1 {
   q3EstimatedPayment?: number;
   q4EstimatedPayment?: number;
   today?: Date;
+  /** Optional pre-computed income projection from logged + scheduled shifts. */
+  incomeProjection?: ProjectionResult;
 }
 
 /**
