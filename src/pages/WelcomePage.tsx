@@ -80,11 +80,12 @@ export default function WelcomePage() {
             </div>
             <h1 className="text-xl font-bold text-foreground">Check your email</h1>
             <p className="text-sm text-muted-foreground">
-              We sent a confirmation link to <span className="font-medium text-foreground">{email}</span>. Click it to activate your account.
+              We sent a confirmation link to <span className="font-medium text-foreground">{email}</span>. Open it on this device — once you verify, this page will continue to onboarding automatically.
             </p>
-            <Button onClick={() => navigate('/login')} className="w-full mt-2" size="lg">
-              Go to login
-            </Button>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              Waiting for verification…
+            </div>
           </div>
         ) : (
           <>
