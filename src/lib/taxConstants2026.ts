@@ -125,6 +125,15 @@ export const US_STATES: { code: string; name: string }[] = [
   { code: 'WI', name: 'Wisconsin' }, { code: 'WY', name: 'Wyoming' }, { code: 'DC', name: 'District of Columbia' },
 ];
 
+// ── QBI Section 199A (2026 — Rev. Proc. 2025-32 + OBBBA) ──
+export const QBI_THRESHOLDS_2026: Record<FilingStatus, { lower: number; upper: number; phaseInRange: number }> = {
+  single:            { lower: 201775, upper: 276775, phaseInRange: 75000 },
+  married_joint:     { lower: 403500, upper: 553500, phaseInRange: 150000 },
+  head_of_household: { lower: 201775, upper: 276775, phaseInRange: 75000 },
+};
+
+export const QBI_DEDUCTION_RATE = 0.20;
+
 // ── Retirement Limits (2026 — IRS Notice 2025-67) ──
 export const RETIREMENT_LIMITS = {
   sep_ira: { maxContribution: 72000, percentOfNet: 0.25 },
@@ -285,4 +294,6 @@ export const TAX_CONSTANTS = {
   standardMileageRate: TAX_YEAR_CONFIG.standardMileageRate,
   federalBrackets: bracketsToTuples(BRACKETS),
   states: STATE_TAX_DATA,
+  qbiThresholds: QBI_THRESHOLDS_2026 as Record<string, { lower: number; upper: number; phaseInRange: number }>,
+  qbiRate: QBI_DEDUCTION_RATE,
 } as const;

@@ -51,6 +51,47 @@ function calculateFederalBrackets(taxableIncome: number, filingStatus: string): 
   return Math.round(applyBrackets(taxableIncome, C.federalBrackets[filingStatus] || C.federalBrackets.single));
 }
 
+/**
+ * Compute QBI deduction (Section 199A) for an SSTB taxpayer.
+ *
+ * Veterinary services are SSTB. SSTBs lose the deduction linearly across the
+ * phase-in range above the threshold, reaching zero at the upper threshold.
+ *
+ * @param qbiAmount — net business income eligible for QBI (Sched C net for sole prop;
+ *                    K-1 distribution for S-Corp; does NOT include W-2 wages)
+ * @param taxableIncomeBeforeQbi — taxable income before applying QBI deduction
+ *                                 (i.e., AGI − standard deduction, NOT yet QBI-reduced)
+ * @param filingStatus — 'single' | 'married_joint' | 'head_of_household'
+ * @returns deduction amount (always >= 0)
+ */
+function calculateQBIDeduction(
+  qbiAmount: number,
+  taxableIncomeBeforeQbi: number,
+  filingStatus: string
+): number {
+  if (qbiAmount <= 0 || taxableIncomeBeforeQbi <= 0) return 0;
+
+  const thresholds = C.qbiThresholds[filingStatus] || C.qbiThresholds.single;
+  const baseDeduction = qbiAmount * C.qbiRate;
+  const taxableIncomeCap = taxableIncomeBeforeQbi * C.qbiRate;
+
+  // Below threshold: full deduction (capped at 20% of taxable income)
+  if (taxableIncomeBeforeQbi <= thresholds.lower) {
+    return Math.round(Math.min(baseDeduction, taxableIncomeCap));
+  }
+
+  // Above upper threshold: SSTB gets zero
+  if (taxableIncomeBeforeQbi >= thresholds.upper) {
+    return 0;
+  }
+
+  // In phase-out range: linear reduction (SSTB)
+  const excessIncome = taxableIncomeBeforeQbi - thresholds.lower;
+  const phaseOutFraction = excessIncome / thresholds.phaseInRange;
+  const reducedDeduction = baseDeduction * (1 - phaseOutFraction);
+  return Math.round(Math.max(0, Math.min(reducedDeduction, taxableIncomeCap)));
+}
+
 // ─────────────────────────────────────
 // PROFILE INTERFACE
 // ─────────────────────────────────────
@@ -68,10 +109,12 @@ export interface TaxProfileV1 {
   payPeriodsPerYear: number;
   filingStatus: string; // 'single' | 'married_joint' | 'head_of_household'
   spouseW2Income: number;
+  userW2Income?: number; // user's own W-2 wages (separate from spouse)
   retirementContributions: number;
   annualBusinessExpenses: number;
   stateKey: string;
   workStates?: WorkStateAlloc[]; // non-resident states only
+  pteElected?: boolean; // CA Pass-Through Entity Tax election (S-Corp only)
 }
 
 /**
@@ -170,6 +213,10 @@ export interface Tax1099Result {
   marginalRate: number;
   effectiveRate: number;
   setAsideRate: number;
+  qbiDeduction: number;
+  qbiAmount: number;
+  ptetPaid: number;
+  ptetEligible: boolean;
 }
 
 export interface TaxSCorpResult {
@@ -197,6 +244,10 @@ export interface TaxSCorpResult {
   quarterlyPayment: number;
   effectiveRate: number;
   setAsideRate: number;
+  qbiDeduction: number;
+  qbiAmount: number;
+  ptetPaid: number;
+  ptetEligible: boolean;
 }
 
 export type TaxV1Result = Tax1099Result | TaxSCorpResult;
@@ -216,6 +267,7 @@ export function calculate1099Tax(profile: TaxProfileV1): Tax1099Result {
   } = profile;
 
   const fs = filingStatus || 'single';
+  const userW2 = profile.userW2Income || 0;
 
   // Step 1 — Net business income
   const grossIncome = annualReliefIncome || 0;
@@ -223,33 +275,42 @@ export function calculate1099Tax(profile: TaxProfileV1): Tax1099Result {
   const netIncome = Math.max(0, grossIncome - expenses);
 
   // Step 2 — SE tax
+  // SS wage base is per-earner; user's own W-2 wages count first toward the cap.
   const seBase = netIncome * C.seNetRate;
-  const ssTax = Math.min(seBase, C.ssWageBase) * C.ssRate;
+  const ssRemainingForSE = Math.max(0, C.ssWageBase - userW2);
+  const ssTax = Math.min(seBase, ssRemainingForSE) * C.ssRate;
   const medicareTax = seBase * C.medicareRate;
   const addlMedicareThreshold = C.additionalMedicareThreshold[fs] ?? 200000;
 
-  const thresholdUsedBySpouse = Math.min(spouseW2Income || 0, addlMedicareThreshold);
-  const remainingThreshold = Math.max(0, addlMedicareThreshold - thresholdUsedBySpouse);
+  // Both spouse W-2 and user's own W-2 wages consume the Additional Medicare threshold.
+  const thresholdUsedByW2 = Math.min((spouseW2Income || 0) + userW2, addlMedicareThreshold);
+  const remainingThreshold = Math.max(0, addlMedicareThreshold - thresholdUsedByW2);
   const additionalMedicare = Math.max(0, seBase - remainingThreshold) * C.additionalMedicareRate;
 
   const totalSeTax = Math.round(ssTax + medicareTax + additionalMedicare);
   const seDeduction = Math.round(totalSeTax * 0.5);
 
   // Step 3 — Federal AGI and taxable income
+  // User's own W-2 wages are part of their AGI (the vet's share, not subtracted later).
   const agi = Math.max(0,
     netIncome
     - seDeduction
     - (retirementContributions || 0)
     + (spouseW2Income || 0)
+    + userW2
   );
-  // Federal already-paid component (spouse withholding)
   const stdDed = C.standardDeduction[fs] || C.standardDeduction.single;
-  const federalTaxableIncome = Math.max(0, agi - stdDed);
+  const taxableIncomeBeforeQbi = Math.max(0, agi - stdDed);
+
+  // QBI deduction (Section 199A) — vets are SSTB. QBI base for sole prop = Sched C net.
+  const qbiAmount = netIncome;
+  const qbiDeduction = calculateQBIDeduction(qbiAmount, taxableIncomeBeforeQbi, fs);
+  const federalTaxableIncome = Math.max(0, taxableIncomeBeforeQbi - qbiDeduction);
 
   // Step 4 — Federal income tax on full household
   const totalFederalTax = calculateFederalBrackets(federalTaxableIncome, fs);
 
-  // Step 5 — Subtract spouse withholding share
+  // Step 5 — Subtract spouse withholding share (user's own W-2 stays in vet's share)
   const spouseAgi = Math.max(0, (spouseW2Income || 0) - stdDed);
   const spouseFederalTax = calculateFederalBrackets(Math.max(0, spouseAgi), fs);
   const vetFederalShare = Math.max(0, totalFederalTax - spouseFederalTax);
@@ -269,7 +330,7 @@ export function calculate1099Tax(profile: TaxProfileV1): Tax1099Result {
 
   // Set-aside rate for per-shift nudge
   const stateEffective = netIncome > 0 ? stateTax / netIncome : 0;
-  const seComponent = C.ssWageBase > seBase
+  const seComponent = ssRemainingForSE > seBase
     ? C.seNetRate * (C.ssRate + C.medicareRate)
     : C.seNetRate * C.medicareRate;
   const rawSetAside = marginalRate + stateEffective + seComponent;
@@ -301,6 +362,10 @@ export function calculate1099Tax(profile: TaxProfileV1): Tax1099Result {
       ? Math.round((annualEstimatedTaxDue / grossIncome) * 1000) / 10
       : 0,
     setAsideRate: Math.min(0.50, Math.max(0.10, rawSetAside)),
+    qbiDeduction,
+    qbiAmount,
+    ptetPaid: 0,       // PTET applies only to S-Corp path
+    ptetEligible: false,
   };
 }
 
@@ -322,6 +387,7 @@ export function calculateSCorpTax(profile: TaxProfileV1): TaxSCorpResult {
   } = profile;
 
   const fs = filingStatus || 'single';
+  const userW2 = profile.userW2Income || 0;
 
   // Step 1 — S-Corp P&L
   const grossRevenue = annualReliefIncome || 0;
@@ -333,28 +399,54 @@ export function calculateSCorpTax(profile: TaxProfileV1): TaxSCorpResult {
     grossRevenue - operatingExpenses - salary - employerFica
   );
 
-  // Step 3 — Federal AGI on full household
-  const agi = Math.max(0,
+  // Step 2 — Initial AGI on full household
+  // (PTET deduction, if applicable, is applied below.)
+  let agi = Math.max(0,
     salary
     + distribution
     - (retirementContributions || 0)
     + (spouseW2Income || 0)
+    + userW2
   );
   const stdDed = C.standardDeduction[fs] || C.standardDeduction.single;
-  const federalTaxableIncome = Math.max(0, agi - stdDed);
+
+  // Step 3 — PTET (CA Pass-Through Entity Tax) — S-Corp + CA + elected
+  const ptetEligible = !!(profile.pteElected && stateKey === 'CA' && (profile.entityType === 'scorp'));
+  let ptetPaid = 0;
+  if (ptetEligible) {
+    // PTET is 9.3% of qualified net business income (post-expenses, pre-salary split).
+    const qualifiedPteIncome = Math.max(0, grossRevenue - operatingExpenses);
+    ptetPaid = Math.round(qualifiedPteIncome * 0.093);
+    // PTET is deductible federally (paid at entity level) — reduces AGI.
+    agi = Math.max(0, agi - ptetPaid);
+  }
+
+  const taxableIncomeBeforeQbi = Math.max(0, agi - stdDed);
+
+  // Step 3b — QBI deduction (Section 199A) — vets are SSTB.
+  // QBI base for S-Corp = K-1 distribution (NOT including W-2 salary).
+  const qbiAmount = distribution;
+  const qbiDeduction = calculateQBIDeduction(qbiAmount, taxableIncomeBeforeQbi, fs);
+  const federalTaxableIncome = Math.max(0, taxableIncomeBeforeQbi - qbiDeduction);
 
   // Step 4 — Total household federal tax
   const totalFederalTax = calculateFederalBrackets(federalTaxableIncome, fs);
   const marginalRate = getV1MarginalRate(federalTaxableIncome, fs);
 
   // Step 5 — State tax on salary + distribution (multi-state aware)
+  // If PTET elected, CA personal tax on the entity's income is zeroed out (entity paid it).
   const personalStateIncome = salary + distribution;
-  const stateResult = calculateMultiStateTax(personalStateIncome, fs, stateKey, profile.workStates);
-  const stateTax = stateResult.totalStateTax;
+  let stateResult = calculateMultiStateTax(personalStateIncome, fs, stateKey, profile.workStates);
+  let stateTax = stateResult.totalStateTax;
+  if (ptetEligible) {
+    // Personal CA tax is replaced by the entity-level PTET payment.
+    stateTax = 0;
+    stateResult = { totalStateTax: 0, breakdown: [], residentCreditApplied: 0 };
+  }
 
   // Step 6 — What's already covered by withholding
   const salaryFederalWithheld = Math.round(salary * marginalRate);
-  const salaryStateWithheld = calculateStateTax(salary, fs, stateKey);
+  const salaryStateWithheld = ptetEligible ? 0 : calculateStateTax(salary, fs, stateKey);
   const extraWithholdingAnnual = Math.round((extraWithholding || 0) * (payPeriodsPerYear || 24));
 
   const spouseAgi = Math.max(0, (spouseW2Income || 0) - stdDed);
@@ -377,7 +469,7 @@ export function calculateSCorpTax(profile: TaxProfileV1): TaxSCorpResult {
 
   // Step 8 — Federal tax attributable to distribution only (for display)
   const federalOnDistribution = Math.round(distribution * marginalRate);
-  const stateOnDistribution = calculateStateTax(distribution, fs, stateKey);
+  const stateOnDistribution = ptetEligible ? 0 : calculateStateTax(distribution, fs, stateKey);
 
   // Set-aside rate for per-shift nudge (on distribution income only)
   const stateEffective = personalStateIncome > 0 ? stateTax / personalStateIncome : 0;
@@ -410,6 +502,10 @@ export function calculateSCorpTax(profile: TaxProfileV1): TaxSCorpResult {
       ? Math.round((annualEstimatedTaxDue / grossRevenue) * 1000) / 10
       : 0,
     setAsideRate: Math.min(0.45, Math.max(0.10, rawSetAside)),
+    qbiDeduction,
+    qbiAmount,
+    ptetPaid,
+    ptetEligible,
   };
 }
 
@@ -435,9 +531,11 @@ export function mapDbProfileToV1(p: {
   pay_periods_per_year: number;
   filing_status: string;
   spouse_w2_income: number;
+  other_w2_income?: number;
   retirement_contribution: number;
   annual_business_expenses: number;
   state_code: string;
+  pte_elected?: boolean;
   work_states?: { state_code: string; income_pct: number }[];
 }): TaxProfileV1 {
   return {
@@ -448,9 +546,11 @@ export function mapDbProfileToV1(p: {
     payPeriodsPerYear: p.pay_periods_per_year || 24,
     filingStatus: p.filing_status || 'single',
     spouseW2Income: p.spouse_w2_income || 0,
+    userW2Income: p.other_w2_income || 0,
     retirementContributions: p.retirement_contribution || 0,
     annualBusinessExpenses: p.annual_business_expenses || 0,
     stateKey: p.state_code || '',
+    pteElected: !!p.pte_elected,
     workStates: Array.isArray(p.work_states)
       ? p.work_states
           .filter(w => w && typeof w.state_code === 'string')
