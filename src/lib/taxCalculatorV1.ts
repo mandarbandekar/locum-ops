@@ -723,6 +723,12 @@ export function mapDbProfileToV1(p: {
   state_code: string;
   pte_elected?: boolean;
   work_states?: { state_code: string; income_pct: number }[];
+  prior_year_tax_paid?: number;
+  prior_year_agi?: number;
+  q1_estimated_payment?: number;
+  q2_estimated_payment?: number;
+  q3_estimated_payment?: number;
+  q4_estimated_payment?: number;
 }): TaxProfileV1 {
   return {
     entityType: p.entity_type === 'sole_prop' ? '1099' : p.entity_type,
@@ -742,5 +748,11 @@ export function mapDbProfileToV1(p: {
           .filter(w => w && typeof w.state_code === 'string')
           .map(w => ({ stateKey: w.state_code, incomePct: Number(w.income_pct) || 0 }))
       : [],
+    priorYearTaxPaid: Number(p.prior_year_tax_paid) || 0,
+    priorYearAgi: Number(p.prior_year_agi) || 0,
+    q1EstimatedPayment: Number(p.q1_estimated_payment) || 0,
+    q2EstimatedPayment: Number(p.q2_estimated_payment) || 0,
+    q3EstimatedPayment: Number(p.q3_estimated_payment) || 0,
+    q4EstimatedPayment: Number(p.q4_estimated_payment) || 0,
   };
 }
