@@ -213,6 +213,10 @@ export interface Tax1099Result {
   marginalRate: number;
   effectiveRate: number;
   setAsideRate: number;
+  qbiDeduction: number;
+  qbiAmount: number;
+  ptetPaid: number;
+  ptetEligible: boolean;
 }
 
 export interface TaxSCorpResult {
@@ -240,6 +244,10 @@ export interface TaxSCorpResult {
   quarterlyPayment: number;
   effectiveRate: number;
   setAsideRate: number;
+  qbiDeduction: number;
+  qbiAmount: number;
+  ptetPaid: number;
+  ptetEligible: boolean;
 }
 
 export type TaxV1Result = Tax1099Result | TaxSCorpResult;
