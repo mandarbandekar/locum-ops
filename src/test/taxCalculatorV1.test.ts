@@ -137,8 +137,11 @@ describe('taxCalculatorV1 — QBI deduction (Section 199A, SSTB)', () => {
     const result: any = calculateTaxV1(profile);
 
     expect(result.qbiAmount).toBe(240000);
-    expect(result.qbiDeduction).toBeGreaterThan(40000);
-    expect(result.qbiDeduction).toBeLessThan(48000);
+    // Hand-verified: net $240K, SE ded ~$16,950, AGI ~$223,050, MFJ stdDed $32,300
+    // → taxable-before-QBI ~$190,750, 20% cap = ~$38,150 (binds below base 20% of $240K = $48,000).
+    // Prompt's original $40K–$48K range was miscomputed; actual $38,629 reflects the cap.
+    expect(result.qbiDeduction).toBeGreaterThan(36000);
+    expect(result.qbiDeduction).toBeLessThan(40000);
   });
 
   it('Result object shape: 1099 path includes qbiAmount, qbiDeduction', () => {
