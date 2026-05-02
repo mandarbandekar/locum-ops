@@ -51,6 +51,47 @@ function calculateFederalBrackets(taxableIncome: number, filingStatus: string): 
   return Math.round(applyBrackets(taxableIncome, C.federalBrackets[filingStatus] || C.federalBrackets.single));
 }
 
+/**
+ * Compute QBI deduction (Section 199A) for an SSTB taxpayer.
+ *
+ * Veterinary services are SSTB. SSTBs lose the deduction linearly across the
+ * phase-in range above the threshold, reaching zero at the upper threshold.
+ *
+ * @param qbiAmount — net business income eligible for QBI (Sched C net for sole prop;
+ *                    K-1 distribution for S-Corp; does NOT include W-2 wages)
+ * @param taxableIncomeBeforeQbi — taxable income before applying QBI deduction
+ *                                 (i.e., AGI − standard deduction, NOT yet QBI-reduced)
+ * @param filingStatus — 'single' | 'married_joint' | 'head_of_household'
+ * @returns deduction amount (always >= 0)
+ */
+function calculateQBIDeduction(
+  qbiAmount: number,
+  taxableIncomeBeforeQbi: number,
+  filingStatus: string
+): number {
+  if (qbiAmount <= 0 || taxableIncomeBeforeQbi <= 0) return 0;
+
+  const thresholds = C.qbiThresholds[filingStatus] || C.qbiThresholds.single;
+  const baseDeduction = qbiAmount * C.qbiRate;
+  const taxableIncomeCap = taxableIncomeBeforeQbi * C.qbiRate;
+
+  // Below threshold: full deduction (capped at 20% of taxable income)
+  if (taxableIncomeBeforeQbi <= thresholds.lower) {
+    return Math.round(Math.min(baseDeduction, taxableIncomeCap));
+  }
+
+  // Above upper threshold: SSTB gets zero
+  if (taxableIncomeBeforeQbi >= thresholds.upper) {
+    return 0;
+  }
+
+  // In phase-out range: linear reduction (SSTB)
+  const excessIncome = taxableIncomeBeforeQbi - thresholds.lower;
+  const phaseOutFraction = excessIncome / thresholds.phaseInRange;
+  const reducedDeduction = baseDeduction * (1 - phaseOutFraction);
+  return Math.round(Math.max(0, Math.min(reducedDeduction, taxableIncomeCap)));
+}
+
 // ─────────────────────────────────────
 // PROFILE INTERFACE
 // ─────────────────────────────────────
