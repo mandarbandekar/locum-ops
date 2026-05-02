@@ -377,6 +377,8 @@ export interface Tax1099Result {
   nextDueDate: string | null;
   incomeProjection?: ProjectionResult;
 }
+
+export interface TaxSCorpResult {
   path: 'scorp';
   grossRevenue: number;
   operatingExpenses: number;
