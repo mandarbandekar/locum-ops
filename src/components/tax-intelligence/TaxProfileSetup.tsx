@@ -671,6 +671,16 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
       pay_periods_per_year: isScorp ? payPeriodsPerYear : 24,
       work_states: cleanWorkStates,
       setup_completed_at: new Date().toISOString(),
+      // Advanced step fields
+      other_w2_income: otherW2Income || 0,
+      prior_year_tax_paid: priorYearTaxPaid || 0,
+      prior_year_agi: priorYearAgi || 0,
+      q1_estimated_payment: q1Payment || 0,
+      q2_estimated_payment: q2Payment || 0,
+      q3_estimated_payment: q3Payment || 0,
+      q4_estimated_payment: q4Payment || 0,
+      pte_elected: isScorp && stateCode === 'CA' && pteElected,
+      income_projection_method: overrideProjection ? 'static' : 'booked_plus_run_rate',
     } as any);
     setSaving(false);
     toast.success(existingProfile ? 'Tax profile updated' : 'Tax profile created');
