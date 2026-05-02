@@ -2902,10 +2902,15 @@ export type Database = {
           id: string
           other_w2_income: number
           pay_periods_per_year: number
+          prior_year_agi: number | null
           prior_year_tax_paid: number
           prior_year_total_income: number
           projection_method: string
           pte_elected: boolean | null
+          q1_estimated_payment: number | null
+          q2_estimated_payment: number | null
+          q3_estimated_payment: number | null
+          q4_estimated_payment: number | null
           retirement_contribution: number
           retirement_type: string
           safe_harbor_method: string
@@ -2933,10 +2938,15 @@ export type Database = {
           id?: string
           other_w2_income?: number
           pay_periods_per_year?: number
+          prior_year_agi?: number | null
           prior_year_tax_paid?: number
           prior_year_total_income?: number
           projection_method?: string
           pte_elected?: boolean | null
+          q1_estimated_payment?: number | null
+          q2_estimated_payment?: number | null
+          q3_estimated_payment?: number | null
+          q4_estimated_payment?: number | null
           retirement_contribution?: number
           retirement_type?: string
           safe_harbor_method?: string
@@ -2964,10 +2974,15 @@ export type Database = {
           id?: string
           other_w2_income?: number
           pay_periods_per_year?: number
+          prior_year_agi?: number | null
           prior_year_tax_paid?: number
           prior_year_total_income?: number
           projection_method?: string
           pte_elected?: boolean | null
+          q1_estimated_payment?: number | null
+          q2_estimated_payment?: number | null
+          q3_estimated_payment?: number | null
+          q4_estimated_payment?: number | null
           retirement_contribution?: number
           retirement_type?: string
           safe_harbor_method?: string

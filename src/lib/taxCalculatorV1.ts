@@ -64,6 +64,143 @@ function calculateFederalBrackets(taxableIncome: number, filingStatus: string): 
  * @param filingStatus — 'single' | 'married_joint' | 'head_of_household'
  * @returns deduction amount (always >= 0)
  */
+// ─── Safe harbor & remaining-quarter helpers ───
+
+type SafeHarborResult = {
+  available: boolean;
+  multiplier: 1.0 | 1.1;
+  safeHarborAnnual: number;
+  reason: string;
+};
+
+/**
+ * Compute the prior-year safe harbor amount.
+ * IRS: pay 100% of last year's tax (110% if prior AGI > $150K) → no penalty.
+ */
+function calculateSafeHarbor(
+  priorYearTaxPaid: number,
+  priorYearAgi: number
+): SafeHarborResult {
+  if (!priorYearTaxPaid || priorYearTaxPaid <= 0) {
+    return {
+      available: false,
+      multiplier: 1.0,
+      safeHarborAnnual: 0,
+      reason: 'first_year_or_no_prior_data',
+    };
+  }
+  const HIGH_INCOME_AGI_THRESHOLD = 150000;
+  const multiplier: 1.0 | 1.1 = priorYearAgi > HIGH_INCOME_AGI_THRESHOLD ? 1.1 : 1.0;
+  return {
+    available: true,
+    multiplier,
+    safeHarborAnnual: Math.round(priorYearTaxPaid * multiplier),
+    reason: multiplier === 1.1 ? 'prior_year_high_income_110pct' : 'prior_year_standard_100pct',
+  };
+}
+
+type QuarterDueDate = {
+  quarter: 1 | 2 | 3 | 4;
+  dueDate: Date;
+  paid: number;
+};
+
+function todayAtMidnight(d: Date): Date {
+  const m = new Date(d);
+  m.setHours(0, 0, 0, 0);
+  return m;
+}
+
+/**
+ * Quarters whose due date is >= today (zeroed to midnight).
+ * Q1 Apr 15, Q2 Jun 15, Q3 Sep 15, Q4 Jan 15 of next year.
+ */
+function computeRemainingQuarters(
+  today: Date,
+  quarterPayments: { q1: number; q2: number; q3: number; q4: number }
+): QuarterDueDate[] {
+  const year = today.getFullYear();
+  const allQuarters: QuarterDueDate[] = [
+    { quarter: 1, dueDate: new Date(year, 3, 15), paid: quarterPayments.q1 },
+    { quarter: 2, dueDate: new Date(year, 5, 15), paid: quarterPayments.q2 },
+    { quarter: 3, dueDate: new Date(year, 8, 15), paid: quarterPayments.q3 },
+    { quarter: 4, dueDate: new Date(year + 1, 0, 15), paid: quarterPayments.q4 },
+  ];
+  const cutoff = todayAtMidnight(today);
+  return allQuarters.filter(q => q.dueDate >= cutoff);
+}
+
+/**
+ * Shared helper: given a profile and the current-year annual estimate,
+ * compute safe harbor, recommendation, YTD payments, remaining quarters,
+ * and the per-quarter recommended payment.
+ */
+function computeSafeHarborBlock(
+  profile: { priorYearTaxPaid?: number; priorYearAgi?: number;
+    q1EstimatedPayment?: number; q2EstimatedPayment?: number;
+    q3EstimatedPayment?: number; q4EstimatedPayment?: number;
+    today?: Date; },
+  currentYearEstimate: number,
+) {
+  const today = profile.today || new Date();
+
+  const safeHarbor = calculateSafeHarbor(
+    profile.priorYearTaxPaid || 0,
+    profile.priorYearAgi || 0,
+  );
+
+  let recommendedAnnual: number;
+  let recommendationReason: string;
+  if (!safeHarbor.available) {
+    recommendedAnnual = currentYearEstimate;
+    recommendationReason = 'first_year_only_current_year_available';
+  } else if (currentYearEstimate >= safeHarbor.safeHarborAnnual) {
+    recommendedAnnual = currentYearEstimate;
+    recommendationReason = 'income_up_yoy_current_year_higher';
+  } else {
+    recommendedAnnual = safeHarbor.safeHarborAnnual;
+    recommendationReason = 'income_down_yoy_safe_harbor_higher';
+  }
+
+  const ytdPaymentsTotal =
+    (profile.q1EstimatedPayment || 0) +
+    (profile.q2EstimatedPayment || 0) +
+    (profile.q3EstimatedPayment || 0) +
+    (profile.q4EstimatedPayment || 0);
+
+  const recommendedRemaining = Math.max(0, recommendedAnnual - ytdPaymentsTotal);
+
+  const remainingQuarters = computeRemainingQuarters(today, {
+    q1: profile.q1EstimatedPayment || 0,
+    q2: profile.q2EstimatedPayment || 0,
+    q3: profile.q3EstimatedPayment || 0,
+    q4: profile.q4EstimatedPayment || 0,
+  });
+
+  const quartersRemaining = remainingQuarters.length;
+  const recommendedQuarterlyPayment = quartersRemaining > 0
+    ? Math.round(recommendedRemaining / quartersRemaining)
+    : 0;
+
+  const nextDueDate = remainingQuarters.length > 0
+    ? remainingQuarters[0].dueDate.toISOString().slice(0, 10)
+    : null;
+
+  return {
+    currentYearEstimate,
+    safeHarborAvailable: safeHarbor.available,
+    safeHarborMultiplier: safeHarbor.multiplier,
+    safeHarborAnnual: safeHarbor.safeHarborAnnual,
+    recommendedAnnual,
+    recommendationReason,
+    ytdPaymentsTotal,
+    recommendedRemaining,
+    quartersRemaining,
+    nextDueDate,
+    recommendedQuarterlyPayment,
+  };
+}
+
 function calculateQBIDeduction(
   qbiAmount: number,
   taxableIncomeBeforeQbi: number,
@@ -115,6 +252,13 @@ export interface TaxProfileV1 {
   stateKey: string;
   workStates?: WorkStateAlloc[]; // non-resident states only
   pteElected?: boolean; // CA Pass-Through Entity Tax election (S-Corp only)
+  priorYearTaxPaid?: number;
+  priorYearAgi?: number;
+  q1EstimatedPayment?: number;
+  q2EstimatedPayment?: number;
+  q3EstimatedPayment?: number;
+  q4EstimatedPayment?: number;
+  today?: Date;
 }
 
 /**
@@ -217,6 +361,16 @@ export interface Tax1099Result {
   qbiAmount: number;
   ptetPaid: number;
   ptetEligible: boolean;
+  currentYearEstimate: number;
+  safeHarborAvailable: boolean;
+  safeHarborMultiplier: 1.0 | 1.1;
+  safeHarborAnnual: number;
+  recommendedAnnual: number;
+  recommendationReason: string;
+  ytdPaymentsTotal: number;
+  recommendedRemaining: number;
+  quartersRemaining: number;
+  nextDueDate: string | null;
 }
 
 export interface TaxSCorpResult {
@@ -248,6 +402,16 @@ export interface TaxSCorpResult {
   qbiAmount: number;
   ptetPaid: number;
   ptetEligible: boolean;
+  currentYearEstimate: number;
+  safeHarborAvailable: boolean;
+  safeHarborMultiplier: 1.0 | 1.1;
+  safeHarborAnnual: number;
+  recommendedAnnual: number;
+  recommendationReason: string;
+  ytdPaymentsTotal: number;
+  recommendedRemaining: number;
+  quartersRemaining: number;
+  nextDueDate: string | null;
 }
 
 export type TaxV1Result = Tax1099Result | TaxSCorpResult;
@@ -326,7 +490,6 @@ export function calculate1099Tax(profile: TaxProfileV1): Tax1099Result {
   const annualObligation = totalFederalTax + stateTax + totalSeTax;
   const spouseWithholdingEstimate = spouseFederalTax;
   const annualEstimatedTaxDue = Math.max(0, annualObligation - spouseWithholdingEstimate);
-  const quarterlyPayment = Math.round(annualEstimatedTaxDue / 4);
 
   // Set-aside rate for per-shift nudge
   const stateEffective = netIncome > 0 ? stateTax / netIncome : 0;
@@ -334,6 +497,8 @@ export function calculate1099Tax(profile: TaxProfileV1): Tax1099Result {
     ? C.seNetRate * (C.ssRate + C.medicareRate)
     : C.seNetRate * C.medicareRate;
   const rawSetAside = marginalRate + stateEffective + seComponent;
+
+  const sh = computeSafeHarborBlock(profile, annualEstimatedTaxDue);
 
   return {
     path: '1099',
@@ -356,7 +521,7 @@ export function calculate1099Tax(profile: TaxProfileV1): Tax1099Result {
     stateBreakdown: stateResult.breakdown,
     annualObligation: Math.round(annualObligation),
     annualEstimatedTaxDue,
-    quarterlyPayment,
+    quarterlyPayment: sh.recommendedQuarterlyPayment,
     marginalRate,
     effectiveRate: grossIncome > 0
       ? Math.round((annualEstimatedTaxDue / grossIncome) * 1000) / 10
@@ -366,6 +531,16 @@ export function calculate1099Tax(profile: TaxProfileV1): Tax1099Result {
     qbiAmount,
     ptetPaid: 0,       // PTET applies only to S-Corp path
     ptetEligible: false,
+    currentYearEstimate: sh.currentYearEstimate,
+    safeHarborAvailable: sh.safeHarborAvailable,
+    safeHarborMultiplier: sh.safeHarborMultiplier,
+    safeHarborAnnual: sh.safeHarborAnnual,
+    recommendedAnnual: sh.recommendedAnnual,
+    recommendationReason: sh.recommendationReason,
+    ytdPaymentsTotal: sh.ytdPaymentsTotal,
+    recommendedRemaining: sh.recommendedRemaining,
+    quartersRemaining: sh.quartersRemaining,
+    nextDueDate: sh.nextDueDate,
   };
 }
 
@@ -465,7 +640,8 @@ export function calculateSCorpTax(profile: TaxProfileV1): TaxSCorpResult {
   // Step 7 — What the quarterly 1040-ES needs to cover
   const totalPersonalTax = totalFederalTax + stateTax;
   const annualEstimatedTaxDue = Math.max(0, totalPersonalTax - totalAlreadyWithheld);
-  const quarterlyPayment = Math.round(annualEstimatedTaxDue / 4);
+
+  const sh = computeSafeHarborBlock(profile, annualEstimatedTaxDue);
 
   // Step 8 — Federal tax attributable to distribution only (for display)
   const federalOnDistribution = Math.round(distribution * marginalRate);
@@ -497,7 +673,7 @@ export function calculateSCorpTax(profile: TaxProfileV1): TaxSCorpResult {
     federalOnDistribution,
     stateOnDistribution,
     annualEstimatedTaxDue,
-    quarterlyPayment,
+    quarterlyPayment: sh.recommendedQuarterlyPayment,
     effectiveRate: grossRevenue > 0
       ? Math.round((annualEstimatedTaxDue / grossRevenue) * 1000) / 10
       : 0,
@@ -506,6 +682,16 @@ export function calculateSCorpTax(profile: TaxProfileV1): TaxSCorpResult {
     qbiAmount,
     ptetPaid,
     ptetEligible,
+    currentYearEstimate: sh.currentYearEstimate,
+    safeHarborAvailable: sh.safeHarborAvailable,
+    safeHarborMultiplier: sh.safeHarborMultiplier,
+    safeHarborAnnual: sh.safeHarborAnnual,
+    recommendedAnnual: sh.recommendedAnnual,
+    recommendationReason: sh.recommendationReason,
+    ytdPaymentsTotal: sh.ytdPaymentsTotal,
+    recommendedRemaining: sh.recommendedRemaining,
+    quartersRemaining: sh.quartersRemaining,
+    nextDueDate: sh.nextDueDate,
   };
 }
 
@@ -537,6 +723,12 @@ export function mapDbProfileToV1(p: {
   state_code: string;
   pte_elected?: boolean;
   work_states?: { state_code: string; income_pct: number }[];
+  prior_year_tax_paid?: number;
+  prior_year_agi?: number;
+  q1_estimated_payment?: number;
+  q2_estimated_payment?: number;
+  q3_estimated_payment?: number;
+  q4_estimated_payment?: number;
 }): TaxProfileV1 {
   return {
     entityType: p.entity_type === 'sole_prop' ? '1099' : p.entity_type,
@@ -556,5 +748,11 @@ export function mapDbProfileToV1(p: {
           .filter(w => w && typeof w.state_code === 'string')
           .map(w => ({ stateKey: w.state_code, incomePct: Number(w.income_pct) || 0 }))
       : [],
+    priorYearTaxPaid: Number(p.prior_year_tax_paid) || 0,
+    priorYearAgi: Number(p.prior_year_agi) || 0,
+    q1EstimatedPayment: Number(p.q1_estimated_payment) || 0,
+    q2EstimatedPayment: Number(p.q2_estimated_payment) || 0,
+    q3EstimatedPayment: Number(p.q3_estimated_payment) || 0,
+    q4EstimatedPayment: Number(p.q4_estimated_payment) || 0,
   };
 }

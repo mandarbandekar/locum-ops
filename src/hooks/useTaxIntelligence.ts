@@ -30,6 +30,12 @@ export interface TaxIntelligenceProfile {
   typical_days_per_week: number;
   // Multi-state
   work_states: WorkStateAllocation[];
+  // Safe harbor (4B)
+  prior_year_agi: number;
+  q1_estimated_payment: number;
+  q2_estimated_payment: number;
+  q3_estimated_payment: number;
+  q4_estimated_payment: number;
 }
 
 export interface WorkStateAllocation {
@@ -66,6 +72,11 @@ const DEMO_PROFILE: TaxIntelligenceProfile = {
   annual_business_expenses: 9500,
   typical_days_per_week: 3,
   work_states: [],
+  prior_year_agi: 0,
+  q1_estimated_payment: 0,
+  q2_estimated_payment: 0,
+  q3_estimated_payment: 0,
+  q4_estimated_payment: 0,
 };
 
 export function useTaxIntelligence() {
@@ -104,6 +115,11 @@ export function useTaxIntelligence() {
           .filter((w: any) => w && typeof w.state_code === 'string')
           .map((w: any) => ({ state_code: String(w.state_code), income_pct: Number(w.income_pct) || 0 }))
       : [],
+    prior_year_agi: Number(d.prior_year_agi ?? 0),
+    q1_estimated_payment: Number(d.q1_estimated_payment ?? 0),
+    q2_estimated_payment: Number(d.q2_estimated_payment ?? 0),
+    q3_estimated_payment: Number(d.q3_estimated_payment ?? 0),
+    q4_estimated_payment: Number(d.q4_estimated_payment ?? 0),
   });
 
   const load = useCallback(async () => {
