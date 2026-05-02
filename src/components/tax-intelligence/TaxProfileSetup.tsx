@@ -501,9 +501,13 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
             E.g., a part-time hospital W-2 alongside your relief work. Excludes any S-Corp salary you pay yourself.
           </p>
           <Input
-            type="number"
-            value={otherW2Income || ''}
-            onChange={e => setOtherW2Income(Number(e.target.value))}
+            type="text"
+            inputMode="numeric"
+            value={otherW2Income ? String(otherW2Income) : ''}
+            onChange={e => {
+              const digits = e.target.value.replace(/[^0-9]/g, '');
+              setOtherW2Income(digits === '' ? 0 : Number(digits));
+            }}
             placeholder="e.g., 60000"
           />
         </div>
@@ -519,18 +523,26 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
             <div className="space-y-1">
               <Label className="text-xs">Total tax paid (line 24 of last year's 1040)</Label>
               <Input
-                type="number"
-                value={priorYearTaxPaid || ''}
-                onChange={e => setPriorYearTaxPaid(Number(e.target.value))}
+                type="text"
+                inputMode="numeric"
+                value={priorYearTaxPaid ? String(priorYearTaxPaid) : ''}
+                onChange={e => {
+                  const d = e.target.value.replace(/[^0-9]/g, '');
+                  setPriorYearTaxPaid(d === '' ? 0 : Number(d));
+                }}
                 placeholder="e.g., 25000"
               />
             </div>
             <div className="space-y-1">
               <Label className="text-xs">AGI (line 11 of last year's 1040)</Label>
               <Input
-                type="number"
-                value={priorYearAgi || ''}
-                onChange={e => setPriorYearAgi(Number(e.target.value))}
+                type="text"
+                inputMode="numeric"
+                value={priorYearAgi ? String(priorYearAgi) : ''}
+                onChange={e => {
+                  const d = e.target.value.replace(/[^0-9]/g, '');
+                  setPriorYearAgi(d === '' ? 0 : Number(d));
+                }}
                 placeholder="e.g., 140000"
               />
             </div>
@@ -544,22 +556,26 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
             Federal estimated tax payments you've sent to the IRS for the current tax year. Leave blank if none.
           </p>
           <div className="grid grid-cols-2 gap-3 pt-1">
-            <div className="space-y-1">
-              <Label className="text-xs">Q1 (paid by Apr 15)</Label>
-              <Input type="number" value={q1Payment || ''} onChange={e => setQ1Payment(Number(e.target.value))} placeholder="0" />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Q2 (paid by Jun 15)</Label>
-              <Input type="number" value={q2Payment || ''} onChange={e => setQ2Payment(Number(e.target.value))} placeholder="0" />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Q3 (paid by Sep 15)</Label>
-              <Input type="number" value={q3Payment || ''} onChange={e => setQ3Payment(Number(e.target.value))} placeholder="0" />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Q4 (paid by Jan 15 next year)</Label>
-              <Input type="number" value={q4Payment || ''} onChange={e => setQ4Payment(Number(e.target.value))} placeholder="0" />
-            </div>
+            {([
+              { label: 'Q1 (paid by Apr 15)', val: q1Payment, set: setQ1Payment },
+              { label: 'Q2 (paid by Jun 15)', val: q2Payment, set: setQ2Payment },
+              { label: 'Q3 (paid by Sep 15)', val: q3Payment, set: setQ3Payment },
+              { label: 'Q4 (paid by Jan 15 next year)', val: q4Payment, set: setQ4Payment },
+            ]).map(({ label, val, set }) => (
+              <div className="space-y-1" key={label}>
+                <Label className="text-xs">{label}</Label>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  value={val ? String(val) : ''}
+                  onChange={e => {
+                    const d = e.target.value.replace(/[^0-9]/g, '');
+                    set(d === '' ? 0 : Number(d));
+                  }}
+                  placeholder="0"
+                />
+              </div>
+            ))}
           </div>
         </div>
 
