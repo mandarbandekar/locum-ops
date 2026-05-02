@@ -640,7 +640,8 @@ export function calculateSCorpTax(profile: TaxProfileV1): TaxSCorpResult {
   // Step 7 — What the quarterly 1040-ES needs to cover
   const totalPersonalTax = totalFederalTax + stateTax;
   const annualEstimatedTaxDue = Math.max(0, totalPersonalTax - totalAlreadyWithheld);
-  const quarterlyPayment = Math.round(annualEstimatedTaxDue / 4);
+
+  const sh = computeSafeHarborBlock(profile, annualEstimatedTaxDue);
 
   // Step 8 — Federal tax attributable to distribution only (for display)
   const federalOnDistribution = Math.round(distribution * marginalRate);
@@ -672,7 +673,7 @@ export function calculateSCorpTax(profile: TaxProfileV1): TaxSCorpResult {
     federalOnDistribution,
     stateOnDistribution,
     annualEstimatedTaxDue,
-    quarterlyPayment,
+    quarterlyPayment: sh.recommendedQuarterlyPayment,
     effectiveRate: grossRevenue > 0
       ? Math.round((annualEstimatedTaxDue / grossRevenue) * 1000) / 10
       : 0,
@@ -681,6 +682,16 @@ export function calculateSCorpTax(profile: TaxProfileV1): TaxSCorpResult {
     qbiAmount,
     ptetPaid,
     ptetEligible,
+    currentYearEstimate: sh.currentYearEstimate,
+    safeHarborAvailable: sh.safeHarborAvailable,
+    safeHarborMultiplier: sh.safeHarborMultiplier,
+    safeHarborAnnual: sh.safeHarborAnnual,
+    recommendedAnnual: sh.recommendedAnnual,
+    recommendationReason: sh.recommendationReason,
+    ytdPaymentsTotal: sh.ytdPaymentsTotal,
+    recommendedRemaining: sh.recommendedRemaining,
+    quartersRemaining: sh.quartersRemaining,
+    nextDueDate: sh.nextDueDate,
   };
 }
 
