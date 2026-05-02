@@ -68,7 +68,11 @@ export default function TaxDashboard({ profile, onEditProfile, onSaveProfile }: 
     : 'single';
   const fsLabel = V1_FILING_STATUS_LABELS[fsKey as V1FilingStatus] || 'Single';
 
-  const v1Profile = useMemo(() => mapDbProfileToV1(profile), [profile]);
+  const { shifts, facilities } = useData();
+  const v1Profile = useMemo(
+    () => mapDbProfileToV1(profile, { shifts, facilities, today: new Date() }),
+    [profile, shifts, facilities]
+  );
   const taxResult = useMemo(() => calculateTaxV1(v1Profile), [v1Profile]);
 
   const [breakdownOpen, setBreakdownOpen] = useState(false);
