@@ -155,8 +155,8 @@ export default function SchedulePage() {
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 0 });
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
-  const rangeStart = view === 'week' ? weekStart : monthStart;
-  const rangeEnd = view === 'week' ? weekEnd : monthEnd;
+  const rangeStart = view === 'week' ? weekStart : view === 'day' ? new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate()) : monthStart;
+  const rangeEnd = view === 'week' ? weekEnd : view === 'day' ? new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), 23, 59, 59, 999) : monthEnd;
 
   const rangeShifts = shifts.filter(s => {
     const d = new Date(s.start_datetime);
