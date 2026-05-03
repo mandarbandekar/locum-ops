@@ -81,10 +81,10 @@ export default function SettingsAccountPage() {
     <div>
       <SettingsNav />
       <div className="page-header">
-        <h1 className="page-title">Account</h1>
+        <h1 className="page-title">Your Account</h1>
       </div>
       <p className="text-sm text-muted-foreground mb-6">
-        Manage your login and account preferences.
+        Manage your login, security, and account preferences.
       </p>
 
       <div className="grid gap-6 max-w-2xl">
