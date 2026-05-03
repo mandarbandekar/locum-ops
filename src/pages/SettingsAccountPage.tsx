@@ -111,6 +111,38 @@ export default function SettingsAccountPage() {
         </Card>
 
         <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Lock className="h-4 w-4 text-primary" /> Credential Portal Passwords
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Renewal portal URLs, usernames, and passwords stored in your credential details are encrypted at rest and hidden by default.
+            </p>
+            <div className="flex items-start gap-2 rounded-md border border-border bg-muted/30 p-3">
+              <Eye className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+              <p className="text-xs text-muted-foreground">
+                Sensitive information is stored securely and hidden by default. Use the reveal button on individual credential detail pages to view or copy these fields.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Shield className="h-4 w-4 text-primary" /> Account Security
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Your account is protected by email-based authentication. To change your password, use the "Forgot Password" flow from the login page.
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
           <CardHeader><CardTitle className="text-base">Delete My Account</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-muted-foreground">
