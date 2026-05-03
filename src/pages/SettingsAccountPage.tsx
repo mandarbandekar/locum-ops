@@ -3,7 +3,7 @@ import { SettingsNav } from '@/components/SettingsNav';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { LogOut, Trash2, AlertTriangle } from 'lucide-react';
+import { LogOut, Trash2, AlertTriangle, Shield, Lock, Eye } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -81,10 +81,10 @@ export default function SettingsAccountPage() {
     <div>
       <SettingsNav />
       <div className="page-header">
-        <h1 className="page-title">Account</h1>
+        <h1 className="page-title">Your Account</h1>
       </div>
       <p className="text-sm text-muted-foreground mb-6">
-        Manage your login and account preferences.
+        Manage your login, security, and account preferences.
       </p>
 
       <div className="grid gap-6 max-w-2xl">
@@ -107,6 +107,38 @@ export default function SettingsAccountPage() {
             <Button variant="outline" onClick={signOut} className="gap-2">
               <LogOut className="h-4 w-4" /> Sign out
             </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Lock className="h-4 w-4 text-primary" /> Credential Portal Passwords
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Renewal portal URLs, usernames, and passwords stored in your credential details are encrypted at rest and hidden by default.
+            </p>
+            <div className="flex items-start gap-2 rounded-md border border-border bg-muted/30 p-3">
+              <Eye className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+              <p className="text-xs text-muted-foreground">
+                Sensitive information is stored securely and hidden by default. Use the reveal button on individual credential detail pages to view or copy these fields.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Shield className="h-4 w-4 text-primary" /> Account Security
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Your account is protected by email-based authentication. To change your password, use the "Forgot Password" flow from the login page.
+            </p>
           </CardContent>
         </Card>
 
