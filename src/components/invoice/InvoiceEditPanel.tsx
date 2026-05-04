@@ -50,19 +50,22 @@ function ShiftLineItemCard({
   const [editing, setEditing] = useState(false);
   const [desc, setDesc] = useState(item.description);
   const [date, setDate] = useState(item.service_date || '');
-  const [qty, setQty] = useState(item.qty);
-  const [rate, setRate] = useState(item.unit_rate);
+  const [qty, setQty] = useState<string>(String(item.qty ?? ''));
+  const [rate, setRate] = useState<string>(String(item.unit_rate ?? ''));
+
+  const qtyNum = parseFloat(qty) || 0;
+  const rateNum = parseFloat(rate) || 0;
 
   const handleSave = async () => {
     if (!onUpdate) return;
-    const lineTotal = qty * rate;
-    await onUpdate({ ...item, description: desc, service_date: date || null, qty, unit_rate: rate, line_total: lineTotal });
+    const lineTotal = qtyNum * rateNum;
+    await onUpdate({ ...item, description: desc, service_date: date || null, qty: qtyNum, unit_rate: rateNum, line_total: lineTotal });
     setEditing(false);
     toast.success('Line item updated');
   };
   const handleCancel = () => {
     setDesc(item.description); setDate(item.service_date || '');
-    setQty(item.qty); setRate(item.unit_rate); setEditing(false);
+    setQty(String(item.qty ?? '')); setRate(String(item.unit_rate ?? '')); setEditing(false);
   };
 
   const meta = parseShiftMeta(item);
@@ -80,18 +83,18 @@ function ShiftLineItemCard({
           </div>
           <div>
             <Label className="text-[10px] text-muted-foreground uppercase">Qty{item.line_kind === 'regular' ? ' (hrs)' : ''}</Label>
-            <Input type="number" value={qty} onChange={e => setQty(Number(e.target.value))} className="h-8 text-sm" min={0} step="0.25" />
+            <Input type="number" inputMode="decimal" value={qty} onChange={e => setQty(e.target.value)} className="h-8 text-sm" min={0} step="0.25" />
           </div>
           <div>
             <Label className="text-[10px] text-muted-foreground uppercase">Rate</Label>
-            <Input type="number" value={rate} onChange={e => setRate(Number(e.target.value))} className="h-8 text-sm" min={0} step="0.01" />
+            <Input type="number" inputMode="decimal" value={rate} onChange={e => setRate(e.target.value)} className="h-8 text-sm" min={0} step="0.01" />
           </div>
         </div>
         {showSyncHint && (
           <p className="text-[11px] text-muted-foreground italic">Editing this updates the shift on your schedule.</p>
         )}
         <div className="flex justify-between items-center pt-1">
-          <span className="text-sm text-muted-foreground">Line total: <span className="font-semibold text-foreground">{fmtMoney(qty * rate)}</span></span>
+          <span className="text-sm text-muted-foreground">Line total: <span className="font-semibold text-foreground">{fmtMoney(qtyNum * rateNum)}</span></span>
           <div className="flex gap-1">
             <Button size="sm" variant="ghost" className="h-7" onClick={handleCancel}><X className="h-3.5 w-3.5 mr-1" />Cancel</Button>
             <Button size="sm" className="h-7" onClick={handleSave}><Check className="h-3.5 w-3.5 mr-1" />Save</Button>
