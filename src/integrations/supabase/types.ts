@@ -1870,6 +1870,48 @@ export type Database = {
           },
         ]
       }
+      feedback_submissions: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          internal_notes: string | null
+          page_url: string | null
+          priority: string
+          screenshot_url: string | null
+          status: string
+          type: string
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          internal_notes?: string | null
+          page_url?: string | null
+          priority?: string
+          screenshot_url?: string | null
+          status?: string
+          type?: string
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          internal_notes?: string | null
+          page_url?: string | null
+          priority?: string
+          screenshot_url?: string | null
+          status?: string
+          type?: string
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       import_files: {
         Row: {
           file_name: string
@@ -3587,6 +3629,7 @@ export type Database = {
           tax_form_type: string
         }[]
       }
+      is_feedback_admin: { Args: never; Returns: boolean }
       move_to_dlq: {
         Args: {
           dlq_name: string
