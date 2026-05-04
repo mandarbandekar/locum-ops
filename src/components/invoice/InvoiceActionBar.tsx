@@ -274,7 +274,7 @@ export function InvoiceActionBar({
         {/* OVERDUE */}
         {overdue && !isPaid && (
           <div className="flex w-full sm:w-auto items-center justify-end gap-2 flex-wrap">
-            <Button variant="outline" size="sm" onClick={handleShareLinkClick} disabled={shareLoading} className="shrink-0">
+            <Button variant="outline" size="sm" onClick={handleShareLinkClick} disabled={shareLoading} className="shrink-0" aria-label={hasShareLink ? 'Copy share link' : 'Create share link'}>
               {hasShareLink ? <Copy className="sm:mr-1.5 h-3.5 w-3.5" /> : <Link2 className="sm:mr-1.5 h-3.5 w-3.5" />}
               <span className="hidden sm:inline">{hasShareLink ? 'Copy link' : 'Share link'}</span>
             </Button>
