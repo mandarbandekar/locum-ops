@@ -125,14 +125,12 @@ export default function SchedulePage() {
 
   const hasNonDefaultLayers = calendarFilters.credentials || calendarFilters.subscriptions;
 
+  // Always default to Month view on mount; only persist non-timeframe views (list/confirmations/sync)
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
-    const valid = ['month', 'week', 'day', 'list', 'confirmations', 'sync'];
-    if (stored && valid.includes(stored)) {
+    const persistable = ['list', 'confirmations', 'sync'];
+    if (stored && persistable.includes(stored)) {
       setView(stored as typeof view);
-      if (stored === 'month' || stored === 'week' || stored === 'day') {
-        setLastTimeframe(stored);
-      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
