@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useCalendarSync } from '@/hooks/useCalendarSync';
 import { useEffect, useState } from 'react';
-import { Copy, Check, ChevronDown, AlertCircle, Apple, Calendar as CalendarIcon } from 'lucide-react';
+import { Copy, Check, ChevronDown, AlertCircle, Apple, Calendar as CalendarIcon, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function SettingsCalendarSyncPage() {
