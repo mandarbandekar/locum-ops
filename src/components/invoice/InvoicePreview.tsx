@@ -155,7 +155,7 @@ export function InvoicePreview({ sender, billTo, invoiceNumber, invoiceDate, due
 
         {/* Totals */}
         <div className="flex justify-end">
-          <div className="w-48 space-y-1.5 text-sm">
+          <div className="w-full sm:w-48 space-y-1.5 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Subtotal</span>
               <span>${total.toLocaleString()}</span>
