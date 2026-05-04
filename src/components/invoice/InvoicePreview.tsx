@@ -95,9 +95,33 @@ export function InvoicePreview({ sender, billTo, invoiceNumber, invoiceDate, due
           </div>
         </div>
 
-        {/* Line Items */}
+        {/* Line Items — table on sm+, stacked cards on mobile */}
         <div className="border rounded-md overflow-hidden">
-          <table className="w-full text-sm">
+          {/* Mobile: stacked rows */}
+          <div className="sm:hidden divide-y">
+            {lineItems.length === 0 && (
+              <div className="p-4 text-center text-muted-foreground text-sm">No line items</div>
+            )}
+            {lineItems.map((li, i) => {
+              const isHourly = li.line_kind === 'regular' || (!!li.shift_id && li.qty !== 1 && li.line_kind !== 'flat');
+              return (
+                <div key={i} className="p-3 space-y-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-sm font-medium break-words flex-1">{li.description}</p>
+                    <p className="text-sm font-semibold tabular-nums shrink-0">${li.line_total.toLocaleString()}</p>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{formatDateShort(li.service_date)}</span>
+                    <span>
+                      {isHourly ? `${li.qty}h` : li.qty} × ${li.unit_rate.toLocaleString()}{isHourly ? '/hr' : ''}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {/* Desktop: table */}
+          <table className="w-full text-sm hidden sm:table">
             <thead>
               <tr className="bg-muted/50">
                 <th className="text-left p-2.5 font-medium text-muted-foreground">Description</th>
