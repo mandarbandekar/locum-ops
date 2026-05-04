@@ -44,6 +44,8 @@ import SettingsBusinessTaxesPage from "@/pages/SettingsBusinessTaxesPage";
 import SettingsSecurityPage from "@/pages/SettingsSecurityPage";
 import SettingsAccountPage from "@/pages/SettingsAccountPage";
 import FounderDashboardPage from "@/pages/FounderDashboardPage";
+import AdminFeedbackPage from "@/pages/AdminFeedbackPage";
+import { FeedbackButton } from "@/components/feedback/FeedbackButton";
 
 import PublicInvoicePage from "@/pages/PublicInvoicePage";
 import PublicConfirmationPage from "@/pages/PublicConfirmationPage";
@@ -139,6 +141,7 @@ function AuthenticatedApp() {
           <Route path="/settings/security" element={<SettingsSecurityPage />} />
           <Route path="/settings/account" element={<SettingsAccountPage />} />
           <Route path="/founder" element={<FounderDashboardPage />} />
+          <Route path="/admin/feedback" element={<AdminFeedbackPage />} />
           <Route path="/settings/founder" element={<Navigate to="/founder" replace />} />
           {/* Legacy redirects */}
           <Route path="/settings/invoice-profile" element={<Navigate to="/settings/invoicing" replace />} />
@@ -195,6 +198,7 @@ function AuthGate() {
         onStay={stayLoggedIn}
         onLogout={signOut}
       />
+      <FeedbackButton />
     </UserProfileProvider>
   );
 }
