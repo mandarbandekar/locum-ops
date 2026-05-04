@@ -354,10 +354,6 @@ export default function InvoiceDetailPage() {
 
           {/* RIGHT: Live Preview — sticky */}
           <div className="lg:col-span-3 lg:sticky lg:top-4 self-start" id="invoice-print-area">
-            <div className="mb-2 flex items-center justify-between print:hidden">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Live Preview</p>
-              {isDraft && <span className="text-[10px] text-muted-foreground">Changes update in real-time</span>}
-            </div>
             {livePreview}
           </div>
         </div>
