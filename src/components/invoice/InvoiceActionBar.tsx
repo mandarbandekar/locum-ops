@@ -187,7 +187,9 @@ export function InvoiceActionBar({
   };
 
   // ─── Right-side actions ────────────────────────────────────
-  const moreMenu = (
+  // On mobile, secondary actions collapse into the more menu so the primary
+  // CTA + status are always visible without horizontal scrolling.
+  const moreMenu = (showShareOnMobile = false, showFollowUpOnMobile = false, showPdfOnMobile = true) => (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="shrink-0 h-9 w-9" aria-label="More actions">
@@ -195,10 +197,12 @@ export function InvoiceActionBar({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuItem onClick={handleDownloadPdf} disabled={pdfLoading}>
-          {pdfLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-          Download PDF
-        </DropdownMenuItem>
+        {showPdfOnMobile && (
+          <DropdownMenuItem onClick={handleDownloadPdf} disabled={pdfLoading}>
+            {pdfLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+            Download PDF
+          </DropdownMenuItem>
+        )}
         {!isDraft && (
           hasShareLink ? (
             <DropdownMenuItem onClick={handleCopyShareLink}>
@@ -212,7 +216,7 @@ export function InvoiceActionBar({
         )}
         {!isDraft && !isPaid && (
           <DropdownMenuItem onClick={onOpenCompose}>
-            <Mail className="mr-2 h-4 w-4" /> Resend email
+            <Mail className="mr-2 h-4 w-4" /> {overdue ? 'Send follow-up' : 'Resend email'}
           </DropdownMenuItem>
         )}
         {!isDraft && (
@@ -229,8 +233,8 @@ export function InvoiceActionBar({
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 print:hidden">
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2 sm:py-3 flex flex-wrap items-center gap-2 sm:gap-3">
-        <div className="w-full sm:w-auto flex items-center">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2 sm:py-3 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 sm:gap-3">
+        <div className="w-full sm:w-auto flex items-center min-w-0">
           {renderStatusChip()}
         </div>
 
@@ -239,19 +243,39 @@ export function InvoiceActionBar({
         {/* DRAFT */}
         {isDraft && (
           <div className="flex w-full sm:w-auto items-center justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={handleDownloadPdf} disabled={pdfLoading} className="shrink-0" aria-label="Download PDF">
-              {pdfLoading ? <Loader2 className="sm:mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Download className="sm:mr-1.5 h-3.5 w-3.5" />}
-              <span className="hidden sm:inline">Download PDF</span>
+            {/* Desktop-only secondary actions */}
+            <Button variant="outline" size="sm" onClick={handleDownloadPdf} disabled={pdfLoading} className="shrink-0 hidden sm:inline-flex" aria-label="Download PDF">
+              {pdfLoading ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-1.5 h-3.5 w-3.5" />}
+              <span>Download PDF</span>
             </Button>
-            <Button variant="outline" size="sm" onClick={handleShareLinkClick} disabled={shareLoading} className="shrink-0">
+            <Button variant="outline" size="sm" onClick={handleShareLinkClick} disabled={shareLoading} className="shrink-0 hidden sm:inline-flex">
               {hasShareLink ? <Copy className="mr-1.5 h-3.5 w-3.5" /> : <Link2 className="mr-1.5 h-3.5 w-3.5" />}
-              <span className="hidden sm:inline">{hasShareLink ? 'Copy share link' : 'Copy share link'}</span>
-              <span className="sm:hidden">Link</span>
+              <span>Copy share link</span>
             </Button>
-            <Button size="sm" onClick={() => setConfirmAlreadySentOpen(true)} disabled={sending} className="shrink-0 flex-1 sm:flex-initial">
-              <CheckCircle className="mr-1.5 h-3.5 w-3.5" />
+            {/* Mobile: collapse share + PDF into more menu */}
+            <div className="sm:hidden">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="shrink-0 h-9 w-9" aria-label="More actions">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem onClick={handleDownloadPdf} disabled={pdfLoading}>
+                    {pdfLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                    Download PDF
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleShareLinkClick} disabled={shareLoading}>
+                    {hasShareLink ? <Copy className="mr-2 h-4 w-4" /> : <Link2 className="mr-2 h-4 w-4" />}
+                    {hasShareLink ? 'Copy share link' : 'Create share link'}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+            <Button size="sm" onClick={() => setConfirmAlreadySentOpen(true)} disabled={sending} className="shrink-0 flex-1 sm:flex-initial min-w-0">
+              <CheckCircle className="mr-1.5 h-3.5 w-3.5 shrink-0" />
               <span className="hidden sm:inline">I already sent this</span>
-              <span className="sm:hidden">Mark sent</span>
+              <span className="sm:hidden truncate">Mark as sent</span>
             </Button>
           </div>
         )}
@@ -259,35 +283,34 @@ export function InvoiceActionBar({
         {/* SENT / PARTIAL */}
         {!isDraft && !isPaid && !overdue && (
           <div className="flex w-full sm:w-auto items-center justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={handleShareLinkClick} disabled={shareLoading} className="shrink-0" aria-label={hasShareLink ? 'Copy share link' : 'Create share link'}>
-              {hasShareLink ? <Copy className="sm:mr-1.5 h-3.5 w-3.5" /> : <Link2 className="sm:mr-1.5 h-3.5 w-3.5" />}
-              <span className="hidden sm:inline">{hasShareLink ? 'Copy link' : 'Share link'}</span>
+            <Button variant="outline" size="sm" onClick={handleShareLinkClick} disabled={shareLoading} className="shrink-0 hidden sm:inline-flex" aria-label={hasShareLink ? 'Copy share link' : 'Create share link'}>
+              {hasShareLink ? <Copy className="mr-1.5 h-3.5 w-3.5" /> : <Link2 className="mr-1.5 h-3.5 w-3.5" />}
+              <span>{hasShareLink ? 'Copy link' : 'Share link'}</span>
             </Button>
-            {moreMenu}
-            <Button size="sm" onClick={onRecordPayment} className="shrink-0 flex-1 sm:flex-initial">
-              <DollarSign className="mr-1.5 h-3.5 w-3.5" />
-              Record payment
+            {moreMenu()}
+            <Button size="sm" onClick={onRecordPayment} className="shrink-0 flex-1 sm:flex-initial min-w-0">
+              <DollarSign className="mr-1.5 h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">Record payment</span>
             </Button>
           </div>
         )}
 
         {/* OVERDUE */}
         {overdue && !isPaid && (
-          <div className="flex w-full sm:w-auto items-center justify-end gap-2 flex-wrap">
-            <Button variant="outline" size="sm" onClick={handleShareLinkClick} disabled={shareLoading} className="shrink-0" aria-label={hasShareLink ? 'Copy share link' : 'Create share link'}>
-              {hasShareLink ? <Copy className="sm:mr-1.5 h-3.5 w-3.5" /> : <Link2 className="sm:mr-1.5 h-3.5 w-3.5" />}
-              <span className="hidden sm:inline">{hasShareLink ? 'Copy link' : 'Share link'}</span>
+          <div className="flex w-full sm:w-auto items-center justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={handleShareLinkClick} disabled={shareLoading} className="shrink-0 hidden sm:inline-flex" aria-label={hasShareLink ? 'Copy share link' : 'Create share link'}>
+              {hasShareLink ? <Copy className="mr-1.5 h-3.5 w-3.5" /> : <Link2 className="mr-1.5 h-3.5 w-3.5" />}
+              <span>{hasShareLink ? 'Copy link' : 'Share link'}</span>
             </Button>
-            {moreMenu}
-            <Button variant="outline" size="sm" onClick={onOpenCompose} className="shrink-0">
+            <Button variant="outline" size="sm" onClick={onOpenCompose} className="shrink-0 hidden sm:inline-flex">
               <Mail className="mr-1.5 h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Send follow-up</span>
-              <span className="sm:hidden">Follow-up</span>
+              <span>Send follow-up</span>
             </Button>
-            <Button size="sm" onClick={onRecordPayment} className="shrink-0 flex-1 sm:flex-initial">
-              <DollarSign className="mr-1.5 h-3.5 w-3.5" />
+            {moreMenu()}
+            <Button size="sm" onClick={onRecordPayment} className="shrink-0 flex-1 sm:flex-initial min-w-0">
+              <DollarSign className="mr-1.5 h-3.5 w-3.5 shrink-0" />
               <span className="hidden sm:inline">Record payment</span>
-              <span className="sm:hidden">Pay</span>
+              <span className="sm:hidden truncate">Record payment</span>
             </Button>
           </div>
         )}
@@ -295,29 +318,42 @@ export function InvoiceActionBar({
         {/* PAID */}
         {isPaid && (
           <div className="flex w-full sm:w-auto items-center justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={handleDownloadPdf} disabled={pdfLoading} className="shrink-0 flex-1 sm:flex-initial">
+            <Button variant="outline" size="sm" onClick={handleDownloadPdf} disabled={pdfLoading} className="shrink-0 hidden sm:inline-flex">
               {pdfLoading ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-1.5 h-3.5 w-3.5" />}
-              <span className="hidden sm:inline">Download Invoice PDF</span>
-              <span className="sm:hidden">PDF</span>
+              <span>Download Invoice PDF</span>
             </Button>
             {hasShareLink ? (
-              <Button variant="outline" size="sm" onClick={handleCopyShareLink} className="shrink-0" aria-label="Copy share link">
-                <Copy className="sm:mr-1.5 h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Copy link</span>
+              <Button variant="outline" size="sm" onClick={handleCopyShareLink} className="shrink-0 hidden sm:inline-flex" aria-label="Copy share link">
+                <Copy className="mr-1.5 h-3.5 w-3.5" />
+                <span>Copy link</span>
               </Button>
             ) : (
-              <Button variant="outline" size="sm" onClick={handleCreateShareLink} disabled={shareLoading} className="shrink-0" aria-label="Create share link">
-                <Link2 className="sm:mr-1.5 h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Share link</span>
+              <Button variant="outline" size="sm" onClick={handleCreateShareLink} disabled={shareLoading} className="shrink-0 hidden sm:inline-flex" aria-label="Create share link">
+                <Link2 className="mr-1.5 h-3.5 w-3.5" />
+                <span>Share link</span>
               </Button>
             )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="shrink-0 h-9 w-9" aria-label="More actions">
+                <Button variant="ghost" size="icon" className="shrink-0 h-9 w-9 sm:ml-0 ml-auto" aria-label="More actions">
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem onClick={handleDownloadPdf} disabled={pdfLoading} className="sm:hidden">
+                  {pdfLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                  Download PDF
+                </DropdownMenuItem>
+                {hasShareLink ? (
+                  <DropdownMenuItem onClick={handleCopyShareLink} className="sm:hidden">
+                    <Copy className="mr-2 h-4 w-4" /> Copy share link
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem onClick={handleCreateShareLink} disabled={shareLoading} className="sm:hidden">
+                    <Link2 className="mr-2 h-4 w-4" /> Create share link
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator className="sm:hidden" />
                 <DropdownMenuItem onClick={() => setConfirmRevertOpen(true)}>
                   <Undo2 className="mr-2 h-4 w-4" /> Revert to Draft
                 </DropdownMenuItem>
