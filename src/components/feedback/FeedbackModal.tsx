@@ -136,7 +136,6 @@ export function FeedbackModal({ open, onOpenChange }: Props) {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={5}
-                minLength={10}
               />
 
               <div>
