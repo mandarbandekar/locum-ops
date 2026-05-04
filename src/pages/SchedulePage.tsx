@@ -412,9 +412,6 @@ export default function SchedulePage() {
                   <DropdownMenuItem onClick={() => setView('week')}>
                     <CalendarIcon className="mr-2 h-4 w-4" /> Week
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setView('day')}>
-                    <CalendarIcon className="mr-2 h-4 w-4" /> Day
-                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 
