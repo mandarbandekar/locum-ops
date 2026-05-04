@@ -249,13 +249,6 @@ export function InvoiceActionBar({
               <span className="hidden sm:inline">I already sent this</span>
               <span className="sm:hidden">Sent</span>
             </Button>
-            <div className="hidden sm:block w-px h-6 bg-border mx-1" />
-            <Button size="sm" onClick={() => setComingSoonOpen(true)} className="shrink-0">
-              <Send className="mr-1.5 h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Send to clinic</span>
-              <span className="sm:hidden">Send</span>
-              <ArrowRight className="ml-1 h-3.5 w-3.5" />
-            </Button>
           </>
         )}
 
