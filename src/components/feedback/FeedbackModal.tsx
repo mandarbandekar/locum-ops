@@ -61,8 +61,8 @@ export function FeedbackModal({ open, onOpenChange }: Props) {
       toast.error('You must be signed in to submit feedback');
       return;
     }
-    if (description.trim().length < 10) {
-      toast.error('Please add at least 10 characters');
+    if (description.trim().length < 3) {
+      toast.error('Please add a short description');
       return;
     }
     setSubmitting(true);
@@ -136,7 +136,6 @@ export function FeedbackModal({ open, onOpenChange }: Props) {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={5}
-                minLength={10}
               />
 
               <div>
@@ -163,7 +162,7 @@ export function FeedbackModal({ open, onOpenChange }: Props) {
 
               <Button
                 onClick={handleSubmit}
-                disabled={submitting || description.trim().length < 10}
+                disabled={submitting || description.trim().length < 3}
                 className="w-full text-white"
                 style={{ backgroundColor: '#1A5C6B' }}
               >
