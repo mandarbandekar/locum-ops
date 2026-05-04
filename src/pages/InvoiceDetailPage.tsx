@@ -163,16 +163,16 @@ export default function InvoiceDetailPage() {
   );
 
   return (
-    <div className="pb-20">
+    <div className="pb-32 sm:pb-20">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-3 print:hidden">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/invoices')}>
+      <div className="flex items-center gap-2 sm:gap-3 mb-3 print:hidden">
+        <Button variant="ghost" size="icon" onClick={() => navigate('/invoices')} className="shrink-0">
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <div className="flex items-center gap-2 flex-1 min-w-0 flex-wrap">
-          <h1 className="text-lg font-bold truncate">{invoice.invoice_number}</h1>
+        <div className="flex items-baseline gap-2 flex-1 min-w-0 flex-wrap">
+          <h1 className="text-base sm:text-lg font-bold truncate">{invoice.invoice_number}</h1>
           {facility?.name && (
-            <h2 className="text-lg font-bold text-foreground truncate">{facility.name}</h2>
+            <h2 className="text-sm sm:text-lg font-semibold sm:font-bold text-muted-foreground sm:text-foreground truncate">{facility.name}</h2>
           )}
         </div>
 

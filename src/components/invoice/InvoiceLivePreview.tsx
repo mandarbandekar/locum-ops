@@ -36,15 +36,15 @@ export function InvoiceLivePreview(props: Props) {
   const statusLabel = computedStatus.charAt(0).toUpperCase() + computedStatus.slice(1);
 
   return (
-    <div className="rounded-xl border border-border bg-muted/40 p-3 sm:p-4">
-      <div className="flex items-center justify-between mb-3 px-1">
-        <div className="flex items-center gap-2">
-          <h2 className="text-base font-semibold tracking-tight text-foreground">Preview</h2>
+    <div className="rounded-xl border border-border bg-muted/40 p-2 sm:p-4">
+      <div className="flex items-center justify-between mb-2 sm:mb-3 px-1 gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <h2 className="text-sm sm:text-base font-semibold tracking-tight text-foreground">Preview</h2>
           <Badge variant="outline" className={`text-[10px] uppercase tracking-wider ${STATUS_TONE[computedStatus] || ''}`}>
             {statusLabel}
           </Badge>
         </div>
-        <span className="text-[10px] text-muted-foreground">Updates in real-time</span>
+        <span className="hidden sm:inline text-[10px] text-muted-foreground shrink-0">Updates in real-time</span>
       </div>
 
       <div className="rounded-lg overflow-hidden">

@@ -56,26 +56,26 @@ interface PreviewProps {
 export function InvoicePreview({ sender, billTo, invoiceNumber, invoiceDate, dueDate, lineItems, total, balanceDue, notes }: PreviewProps) {
   return (
     <Card className="bg-card border shadow-sm overflow-hidden">
-      <div className="p-6 space-y-6" id="invoice-preview">
+      <div className="p-4 sm:p-6 space-y-5 sm:space-y-6" id="invoice-preview">
         {/* Header */}
-        <div className="flex justify-between items-start">
-          <div>
-            <h2 className="text-xl font-bold text-foreground">{sender.company || 'Your Company'}</h2>
+        <div className="flex justify-between items-start gap-3">
+          <div className="min-w-0">
+            <h2 className="text-lg sm:text-xl font-bold text-foreground break-words">{sender.company || 'Your Company'}</h2>
             <p className="text-sm text-muted-foreground">{sender.firstName} {sender.lastName}</p>
             {sender.address && (
-              <p className="text-xs text-muted-foreground mt-1 whitespace-pre-line">{sender.address}</p>
+              <p className="text-xs text-muted-foreground mt-1 whitespace-pre-line break-words">{sender.address}</p>
             )}
-            {sender.email && <p className="text-xs text-muted-foreground">{sender.email}</p>}
+            {sender.email && <p className="text-xs text-muted-foreground break-all">{sender.email}</p>}
             {sender.phone && <p className="text-xs text-muted-foreground">{sender.phone}</p>}
           </div>
-          <div className="text-right">
-            <p className="text-2xl font-bold text-primary tracking-tight">INVOICE</p>
-            <p className="text-sm font-medium text-foreground mt-1">{invoiceNumber}</p>
+          <div className="text-right shrink-0">
+            <p className="text-xl sm:text-2xl font-bold text-primary tracking-tight">INVOICE</p>
+            <p className="text-xs sm:text-sm font-medium text-foreground mt-1 break-all">{invoiceNumber}</p>
           </div>
         </div>
 
         {/* Bill-to + dates */}
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 gap-4 sm:gap-6">
           <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Bill To</p>
             <p className="text-sm font-medium">{billTo.facilityName}</p>
@@ -95,9 +95,33 @@ export function InvoicePreview({ sender, billTo, invoiceNumber, invoiceDate, due
           </div>
         </div>
 
-        {/* Line Items */}
+        {/* Line Items — table on sm+, stacked cards on mobile */}
         <div className="border rounded-md overflow-hidden">
-          <table className="w-full text-sm">
+          {/* Mobile: stacked rows */}
+          <div className="sm:hidden divide-y">
+            {lineItems.length === 0 && (
+              <div className="p-4 text-center text-muted-foreground text-sm">No line items</div>
+            )}
+            {lineItems.map((li, i) => {
+              const isHourly = li.line_kind === 'regular' || (!!li.shift_id && li.qty !== 1 && li.line_kind !== 'flat');
+              return (
+                <div key={i} className="p-3 space-y-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-sm font-medium break-words flex-1">{li.description}</p>
+                    <p className="text-sm font-semibold tabular-nums shrink-0">${li.line_total.toLocaleString()}</p>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{formatDateShort(li.service_date)}</span>
+                    <span>
+                      {isHourly ? `${li.qty}h` : li.qty} × ${li.unit_rate.toLocaleString()}{isHourly ? '/hr' : ''}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {/* Desktop: table */}
+          <table className="w-full text-sm hidden sm:table">
             <thead>
               <tr className="bg-muted/50">
                 <th className="text-left p-2.5 font-medium text-muted-foreground">Description</th>
@@ -131,7 +155,7 @@ export function InvoicePreview({ sender, billTo, invoiceNumber, invoiceDate, due
 
         {/* Totals */}
         <div className="flex justify-end">
-          <div className="w-48 space-y-1.5 text-sm">
+          <div className="w-full sm:w-48 space-y-1.5 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Subtotal</span>
               <span>${total.toLocaleString()}</span>
