@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useCalendarSync } from '@/hooks/useCalendarSync';
 import { useEffect, useState } from 'react';
-import { Copy, Check, ChevronDown, AlertCircle, Apple, Calendar as CalendarIcon } from 'lucide-react';
+import { Copy, Check, ChevronDown, AlertCircle, Apple, Calendar as CalendarIcon, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function SettingsCalendarSyncPage() {
@@ -57,8 +57,18 @@ export default function SettingsCalendarSyncPage() {
               <Button onClick={handleCopy} disabled={!feedUrl} className="shrink-0">
                 {copied ? <><Check className="h-4 w-4 mr-1.5" /> Copied</> : <><Copy className="h-4 w-4 mr-1.5" /> Copy URL</>}
               </Button>
+              <Button
+                variant="outline"
+                disabled={!feedUrl}
+                onClick={() => feedUrl && window.open(feedUrl, '_blank', 'noopener,noreferrer')}
+                className="shrink-0"
+              >
+                <ExternalLink className="h-4 w-4 mr-1.5" /> Test URL
+              </Button>
             </div>
-            <p className="text-xs text-muted-foreground">You'll paste this URL during setup below.</p>
+            <p className="text-xs text-muted-foreground">
+              You'll paste this URL during setup below. "Test URL" opens the feed in a new tab — you should see a file download or calendar data.
+            </p>
           </CardContent>
         </Card>
 
