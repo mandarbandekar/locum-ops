@@ -202,8 +202,8 @@ export default function InvoiceDetailPage() {
         ) : (
           <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
             <AlertDialogTrigger asChild>
-              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive shrink-0">
-                <Trash2 className="h-3.5 w-3.5" />
+              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive shrink-0 h-10 w-10" aria-label={`Delete invoice ${invoice.invoice_number}`}>
+                <Trash2 className="h-4 w-4" />
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
