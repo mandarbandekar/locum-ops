@@ -321,7 +321,7 @@ export default function InvoiceDetailPage() {
               )}
             </TabsContent>
             <TabsContent value="preview">
-              {previewComponent}
+              {livePreview}
             </TabsContent>
           </Tabs>
         </div>
@@ -358,7 +358,7 @@ export default function InvoiceDetailPage() {
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Live Preview</p>
               {isDraft && <span className="text-[10px] text-muted-foreground">Changes update in real-time</span>}
             </div>
-            {previewComponent}
+            {livePreview}
           </div>
         </div>
       )}
