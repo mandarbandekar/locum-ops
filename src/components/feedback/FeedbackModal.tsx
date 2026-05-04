@@ -61,8 +61,8 @@ export function FeedbackModal({ open, onOpenChange }: Props) {
       toast.error('You must be signed in to submit feedback');
       return;
     }
-    if (description.trim().length < 10) {
-      toast.error('Please add at least 10 characters');
+    if (description.trim().length < 3) {
+      toast.error('Please add a short description');
       return;
     }
     setSubmitting(true);
