@@ -163,7 +163,7 @@ export default function InvoiceDetailPage() {
   );
 
   return (
-    <div className="pb-20">
+    <div className="pb-32 sm:pb-20">
       {/* Header */}
       <div className="flex items-center gap-3 mb-3 print:hidden">
         <Button variant="ghost" size="icon" onClick={() => navigate('/invoices')}>
