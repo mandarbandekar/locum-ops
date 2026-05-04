@@ -166,7 +166,7 @@ export default function InvoiceDetailPage() {
     <div className="pb-32 sm:pb-20">
       {/* Header */}
       <div className="flex items-center gap-2 sm:gap-3 mb-3 print:hidden">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/invoices')} className="shrink-0">
+        <Button variant="ghost" size="icon" onClick={() => navigate('/invoices')} className="shrink-0 h-10 w-10" aria-label="Back to invoices">
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="flex items-baseline gap-2 flex-1 min-w-0 flex-wrap">
@@ -178,8 +178,8 @@ export default function InvoiceDetailPage() {
 
         {invoice.generation_type === 'automatic' && invoice.status === 'draft' ? (
           <>
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive shrink-0" onClick={() => setAutoDeleteOpen(true)}>
-              <Trash2 className="h-3.5 w-3.5" />
+            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive shrink-0 h-10 w-10" onClick={() => setAutoDeleteOpen(true)} aria-label={`Delete invoice ${invoice.invoice_number}`}>
+              <Trash2 className="h-4 w-4" />
             </Button>
             <AutoInvoiceDeleteDialog
               open={autoDeleteOpen}
@@ -202,8 +202,8 @@ export default function InvoiceDetailPage() {
         ) : (
           <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
             <AlertDialogTrigger asChild>
-              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive shrink-0">
-                <Trash2 className="h-3.5 w-3.5" />
+              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive shrink-0 h-10 w-10" aria-label={`Delete invoice ${invoice.invoice_number}`}>
+                <Trash2 className="h-4 w-4" />
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>

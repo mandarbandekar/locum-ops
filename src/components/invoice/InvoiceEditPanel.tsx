@@ -73,86 +73,131 @@ function ShiftLineItemCard({
   const Icon = isShift ? CalendarClock : FileText;
 
   if (editing) {
+    const onKeyDown = (e: React.KeyboardEvent) => {
+      if (e.key === 'Escape') { e.preventDefault(); handleCancel(); }
+      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); handleSave(); }
+    };
     return (
-      <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
-        <Input value={desc} onChange={e => setDesc(e.target.value)} className="h-8 text-sm" placeholder="Description" />
-        <div className="grid grid-cols-3 gap-2">
+      <div className="rounded-lg border bg-muted/30 p-3 space-y-3" onKeyDown={onKeyDown}>
+        <div>
+          <Label htmlFor={`li-desc-${item.id}`} className="text-[10px] text-muted-foreground uppercase">Description</Label>
+          <Input
+            id={`li-desc-${item.id}`}
+            value={desc}
+            onChange={e => setDesc(e.target.value)}
+            className="h-9 text-sm mt-1"
+            placeholder="Description"
+            autoFocus
+          />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           <div>
-            <Label className="text-[10px] text-muted-foreground uppercase">Date</Label>
-            <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="h-8 text-sm" />
+            <Label htmlFor={`li-date-${item.id}`} className="text-[10px] text-muted-foreground uppercase">Date</Label>
+            <Input id={`li-date-${item.id}`} type="date" value={date} onChange={e => setDate(e.target.value)} className="h-9 text-sm mt-1" />
           </div>
           <div>
-            <Label className="text-[10px] text-muted-foreground uppercase">Qty{item.line_kind === 'regular' ? ' (hrs)' : ''}</Label>
-            <Input type="number" inputMode="decimal" value={qty} onChange={e => setQty(e.target.value)} className="h-8 text-sm" min={0} step="0.25" />
+            <Label htmlFor={`li-qty-${item.id}`} className="text-[10px] text-muted-foreground uppercase">Qty{item.line_kind === 'regular' ? ' (hrs)' : ''}</Label>
+            <Input id={`li-qty-${item.id}`} type="number" inputMode="decimal" value={qty} onChange={e => setQty(e.target.value)} className="h-9 text-sm mt-1" min={0} step="0.25" aria-label="Quantity" />
           </div>
           <div>
-            <Label className="text-[10px] text-muted-foreground uppercase">Rate</Label>
-            <Input type="number" inputMode="decimal" value={rate} onChange={e => setRate(e.target.value)} className="h-8 text-sm" min={0} step="0.01" />
+            <Label htmlFor={`li-rate-${item.id}`} className="text-[10px] text-muted-foreground uppercase">Rate</Label>
+            <Input id={`li-rate-${item.id}`} type="number" inputMode="decimal" value={rate} onChange={e => setRate(e.target.value)} className="h-9 text-sm mt-1" min={0} step="0.01" aria-label="Rate" />
           </div>
         </div>
         {showSyncHint && (
           <p className="text-[11px] text-muted-foreground italic">Editing this updates the shift on your schedule.</p>
         )}
-        <div className="flex justify-between items-center pt-1">
-          <span className="text-sm text-muted-foreground">Line total: <span className="font-semibold text-foreground">{fmtMoney(qtyNum * rateNum)}</span></span>
-          <div className="flex gap-1">
-            <Button size="sm" variant="ghost" className="h-7" onClick={handleCancel}><X className="h-3.5 w-3.5 mr-1" />Cancel</Button>
-            <Button size="sm" className="h-7" onClick={handleSave}><Check className="h-3.5 w-3.5 mr-1" />Save</Button>
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 pt-1 border-t">
+          <span className="text-sm text-muted-foreground">
+            Line total: <span className="font-semibold text-foreground tabular-nums">{fmtMoney(qtyNum * rateNum)}</span>
+          </span>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button size="sm" variant="outline" className="h-9 flex-1 sm:flex-initial" onClick={handleCancel}>
+              <X className="h-3.5 w-3.5 mr-1" />Cancel
+            </Button>
+            <Button size="sm" className="h-9 flex-1 sm:flex-initial" onClick={handleSave}>
+              <Check className="h-3.5 w-3.5 mr-1" />Save
+            </Button>
           </div>
         </div>
       </div>
     );
   }
 
+  const ariaLabel = `${meta.dateStr || (item.service_date || meta.label)} — ${fmtMoney(item.line_total)}${!readOnly ? ', tap to edit' : ''}`;
+
   return (
     <div
-      className={`group rounded-lg border bg-card p-3 transition-colors ${!readOnly ? 'cursor-pointer hover:border-primary/40 hover:bg-muted/30' : ''}`}
+      className={`group rounded-lg border bg-card p-3 sm:p-3 transition-colors ${!readOnly ? 'cursor-pointer hover:border-primary/40 hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1' : ''}`}
       onClick={() => !readOnly && setEditing(true)}
+      role={!readOnly ? 'button' : undefined}
+      tabIndex={!readOnly ? 0 : undefined}
+      aria-label={!readOnly ? ariaLabel : undefined}
+      onKeyDown={e => {
+        if (readOnly) return;
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          setEditing(true);
+        }
+      }}
     >
       <div className="flex items-start gap-3">
-        <div className={`mt-0.5 rounded-md p-1.5 shrink-0 ${isShift ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
-          <Icon className="h-3.5 w-3.5" />
+        <div className={`mt-0.5 rounded-md p-2 shrink-0 ${isShift ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
+          <Icon className="h-4 w-4" aria-hidden="true" />
         </div>
         <div className="flex-1 min-w-0">
+          {/* Row 1: Date + amount */}
           <div className="flex items-baseline justify-between gap-2">
-            <p className="text-sm font-medium truncate">
+            <p className="text-sm font-semibold truncate">
               {meta.dateStr || (item.service_date ? format(new Date(item.service_date + 'T00:00:00'), 'MMM d, yyyy') : meta.label)}
             </p>
-            <p className="text-sm font-semibold tabular-nums shrink-0">{fmtMoney(item.line_total)}</p>
+            <p className="text-base font-semibold tabular-nums shrink-0">{fmtMoney(item.line_total)}</p>
           </div>
-          <p className="text-xs text-muted-foreground mt-0.5 truncate">
-            {meta.dateStr ? <>{meta.label}{meta.timeStr ? ` · ${meta.timeStr}` : ''}</> : null}
-            {!meta.dateStr && item.qty > 1 ? null : null}
-          </p>
-          <div className="flex items-center justify-between mt-1">
-            <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
-              {isShift && item.line_kind === 'regular' ? (
+
+          {/* Row 2: Label + time */}
+          {meta.dateStr && (
+            <p className="text-xs text-muted-foreground mt-0.5 truncate">
+              {meta.label}{meta.timeStr ? ` · ${meta.timeStr}` : ''}
+            </p>
+          )}
+
+          {/* Row 3: Rate breakdown + chips */}
+          <div className="flex items-center justify-between gap-2 mt-2">
+            <div className="text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap min-w-0">
+              {isShift && (item.line_kind === 'regular' || (item.qty !== 1 && !item.line_kind)) ? (
                 <>
-                  <span>{item.qty}h × {fmtMoney(item.unit_rate)}/hr</span>
-                  <span className="inline-flex items-center rounded-full bg-primary/10 text-primary text-[10px] font-medium px-1.5 py-0.5">Hourly</span>
-                </>
-              ) : isShift && item.qty !== 1 && !item.line_kind ? (
-                <>
-                  <span>{item.qty}h × {fmtMoney(item.unit_rate)}/hr</span>
+                  <span className="tabular-nums">{item.qty}h × {fmtMoney(item.unit_rate)}/hr</span>
                   <span className="inline-flex items-center rounded-full bg-primary/10 text-primary text-[10px] font-medium px-1.5 py-0.5">Hourly</span>
                 </>
               ) : (
                 <>
-                  <span>{item.qty} × {fmtMoney(item.unit_rate)}</span>
+                  <span className="tabular-nums">{item.qty} × {fmtMoney(item.unit_rate)}</span>
                   {isShift && (
                     <span className="inline-flex items-center rounded-full bg-muted text-muted-foreground text-[10px] font-medium px-1.5 py-0.5">Flat</span>
                   )}
                 </>
               )}
-              {isShift && <span className="ml-1.5 text-primary">· from shift ✓</span>}
-            </p>
+              {isShift && <span className="text-primary text-[10px]">· from shift ✓</span>}
+            </div>
             {!readOnly && (
-              <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={e => { e.stopPropagation(); setEditing(true); }}>
-                  <Pencil className="h-3 w-3" />
+              <div className="flex gap-1 shrink-0 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 transition-opacity">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-9 w-9 sm:h-7 sm:w-7"
+                  onClick={e => { e.stopPropagation(); setEditing(true); }}
+                  aria-label="Edit line item"
+                >
+                  <Pencil className="h-4 w-4 sm:h-3 sm:w-3" />
                 </Button>
-                <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={async e => { e.stopPropagation(); if (onDelete) await onDelete(); }}>
-                  <Trash2 className="h-3 w-3" />
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-9 w-9 sm:h-7 sm:w-7 text-muted-foreground hover:text-destructive"
+                  onClick={async e => { e.stopPropagation(); if (onDelete) await onDelete(); }}
+                  aria-label="Delete line item"
+                >
+                  <Trash2 className="h-4 w-4 sm:h-3 sm:w-3" />
                 </Button>
               </div>
             )}
@@ -472,25 +517,39 @@ export function InvoiceEditPanel({
 
           {!readOnly && !showAddLine && (
             <div className="flex justify-start pt-1">
-              <Button variant="ghost" size="sm" onClick={() => setShowAddLine(true)} className="h-7 text-xs">
-                <Plus className="h-3 w-3 mr-1" /> Add custom line
+              <Button variant="ghost" size="sm" onClick={() => setShowAddLine(true)} className="h-9 text-xs">
+                <Plus className="h-3.5 w-3.5 mr-1" /> Add custom line
               </Button>
             </div>
           )}
 
           {!readOnly && showAddLine && (
-            <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
-              <Input placeholder="Description" value={newDesc} onChange={e => setNewDesc(e.target.value)} className="h-8 text-sm" />
-              <div className="grid grid-cols-3 gap-2">
-                <Input type="date" value={newDate} onChange={e => setNewDate(e.target.value)} className="h-8 text-sm" />
-                <Input type="number" inputMode="decimal" placeholder="Qty" value={newQty} onChange={e => setNewQty(e.target.value)} className="h-8 text-sm" min={0} step="0.25" />
-                <Input type="number" inputMode="decimal" placeholder="Rate" value={newRate} onChange={e => setNewRate(e.target.value)} className="h-8 text-sm" min={0} step="0.01" />
+            <div className="rounded-lg border bg-muted/30 p-3 space-y-3">
+              <div>
+                <Label htmlFor="new-line-desc" className="text-[10px] text-muted-foreground uppercase">Description</Label>
+                <Input id="new-line-desc" placeholder="What's this for?" value={newDesc} onChange={e => setNewDesc(e.target.value)} className="h-9 text-sm mt-1" autoFocus />
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Line total: <span className="font-semibold text-foreground">{fmtMoney((parseFloat(newQty) || 0) * (parseFloat(newRate) || 0))}</span></span>
-                <div className="flex gap-2">
-                  <Button size="sm" variant="ghost" onClick={() => setShowAddLine(false)} className="h-7">Cancel</Button>
-                  <Button size="sm" onClick={handleAddLineItem} className="h-7">Add</Button>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div>
+                  <Label htmlFor="new-line-date" className="text-[10px] text-muted-foreground uppercase">Date</Label>
+                  <Input id="new-line-date" type="date" value={newDate} onChange={e => setNewDate(e.target.value)} className="h-9 text-sm mt-1" />
+                </div>
+                <div>
+                  <Label htmlFor="new-line-qty" className="text-[10px] text-muted-foreground uppercase">Qty</Label>
+                  <Input id="new-line-qty" type="number" inputMode="decimal" placeholder="1" value={newQty} onChange={e => setNewQty(e.target.value)} className="h-9 text-sm mt-1" min={0} step="0.25" aria-label="Quantity" />
+                </div>
+                <div>
+                  <Label htmlFor="new-line-rate" className="text-[10px] text-muted-foreground uppercase">Rate</Label>
+                  <Input id="new-line-rate" type="number" inputMode="decimal" placeholder="0.00" value={newRate} onChange={e => setNewRate(e.target.value)} className="h-9 text-sm mt-1" min={0} step="0.01" aria-label="Rate" />
+                </div>
+              </div>
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 pt-1 border-t">
+                <span className="text-sm text-muted-foreground">
+                  Line total: <span className="font-semibold text-foreground tabular-nums">{fmtMoney((parseFloat(newQty) || 0) * (parseFloat(newRate) || 0))}</span>
+                </span>
+                <div className="flex gap-2 w-full sm:w-auto">
+                  <Button size="sm" variant="outline" onClick={() => setShowAddLine(false)} className="h-9 flex-1 sm:flex-initial">Cancel</Button>
+                  <Button size="sm" onClick={handleAddLineItem} className="h-9 flex-1 sm:flex-initial" disabled={!newDesc.trim()}>Add</Button>
                 </div>
               </div>
             </div>
