@@ -98,27 +98,41 @@ export function InvoicePreview({ sender, billTo, invoiceNumber, invoiceDate, due
         {/* Line Items — table on sm+, stacked cards on mobile */}
         <div className="border rounded-md overflow-hidden">
           {/* Mobile: stacked rows */}
-          <div className="sm:hidden divide-y">
+          <div className="sm:hidden">
             {lineItems.length === 0 && (
-              <div className="p-4 text-center text-muted-foreground text-sm">No line items</div>
+              <div className="p-6 text-center text-muted-foreground text-sm">No line items</div>
             )}
-            {lineItems.map((li, i) => {
-              const isHourly = li.line_kind === 'regular' || (!!li.shift_id && li.qty !== 1 && li.line_kind !== 'flat');
-              return (
-                <div key={i} className="p-3 space-y-1">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="text-sm font-medium break-words flex-1">{li.description}</p>
-                    <p className="text-sm font-semibold tabular-nums shrink-0">${li.line_total.toLocaleString()}</p>
-                  </div>
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>{formatDateShort(li.service_date)}</span>
-                    <span>
-                      {isHourly ? `${li.qty}h` : li.qty} × ${li.unit_rate.toLocaleString()}{isHourly ? '/hr' : ''}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
+            {lineItems.length > 0 && (
+              <div className="flex items-center justify-between px-4 py-2 bg-muted/40 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                <span>{lineItems.length} {lineItems.length === 1 ? 'item' : 'items'}</span>
+                <span>Amount</span>
+              </div>
+            )}
+            <ul className="divide-y">
+              {lineItems.map((li, i) => {
+                const isHourly = li.line_kind === 'regular' || (!!li.shift_id && li.qty !== 1 && li.line_kind !== 'flat');
+                return (
+                  <li key={i} className="px-4 py-3.5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <p className="text-sm font-medium leading-snug break-words text-foreground">
+                          {li.description}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDateShort(li.service_date) || '—'}
+                        </p>
+                      </div>
+                      <p className="text-sm font-semibold tabular-nums shrink-0 text-foreground">
+                        ${li.line_total.toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="mt-2 text-xs text-muted-foreground tabular-nums">
+                      {isHourly ? `${li.qty} hrs` : `${li.qty} ×`} <span className="text-foreground/80">${li.unit_rate.toLocaleString()}</span>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
           {/* Desktop: table */}
           <table className="w-full text-sm hidden sm:table">
