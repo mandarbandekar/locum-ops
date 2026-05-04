@@ -19,15 +19,17 @@ interface Props {
 
 export function RecordPaymentDialog({ open, onOpenChange, balanceDue, onRecord }: Props) {
   const [paymentDate, setPaymentDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [amount, setAmount] = useState(balanceDue);
+  const [amount, setAmount] = useState<string>(String(balanceDue ?? ''));
   const [method, setMethod] = useState('ACH');
   const [account, setAccount] = useState('Business Checking');
   const [memo, setMemo] = useState('');
 
-  const isFullPayment = amount >= balanceDue;
+  const amountNum = parseFloat(amount) || 0;
+  const isFullPayment = amountNum >= balanceDue;
 
   const handleSubmit = () => {
-    onRecord({ payment_date: paymentDate, amount, method, account, memo: memo.trim() });
+    if (amountNum <= 0) return;
+    onRecord({ payment_date: paymentDate, amount: amountNum, method, account, memo: memo.trim() });
     onOpenChange(false);
   };
 
@@ -42,7 +44,7 @@ export function RecordPaymentDialog({ open, onOpenChange, balanceDue, onRecord }
           </div>
           <div>
             <Label>Amount ($)</Label>
-            <Input type="number" value={amount} onChange={e => setAmount(Number(e.target.value))} min={0.01} step={0.01} />
+            <Input type="number" inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value)} min={0.01} step={0.01} />
             <p className="text-xs text-muted-foreground mt-1">
               {isFullPayment ? 'Invoice will be fully paid' : 'Partial payment will be recorded'}
             </p>
