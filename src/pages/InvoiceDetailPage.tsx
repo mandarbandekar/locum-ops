@@ -166,7 +166,7 @@ export default function InvoiceDetailPage() {
     <div className="pb-32 sm:pb-20">
       {/* Header */}
       <div className="flex items-center gap-2 sm:gap-3 mb-3 print:hidden">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/invoices')} className="shrink-0">
+        <Button variant="ghost" size="icon" onClick={() => navigate('/invoices')} className="shrink-0 h-10 w-10" aria-label="Back to invoices">
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="flex items-baseline gap-2 flex-1 min-w-0 flex-wrap">
