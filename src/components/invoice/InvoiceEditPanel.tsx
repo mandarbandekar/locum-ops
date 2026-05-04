@@ -295,17 +295,19 @@ export function InvoiceEditPanel({
 
   const handleAddLineItem = async () => {
     if (!newDesc.trim() || !onAddLineItem) return;
-    const lineTotal = newQty * newRate;
+    const qtyN = parseFloat(newQty) || 0;
+    const rateN = parseFloat(newRate) || 0;
+    const lineTotal = qtyN * rateN;
     await onAddLineItem({
       invoice_id: invoice.id,
       shift_id: null,
       description: newDesc,
       service_date: newDate || null,
-      qty: newQty,
-      unit_rate: newRate,
+      qty: qtyN,
+      unit_rate: rateN,
       line_total: lineTotal,
     });
-    setNewDesc(''); setNewDate(''); setNewQty(1); setNewRate(0); setShowAddLine(false);
+    setNewDesc(''); setNewDate(''); setNewQty('1'); setNewRate(''); setShowAddLine(false);
     const newTotal = total + lineTotal;
     await onUpdateInvoice({ ...invoice, total_amount: newTotal, balance_due: newTotal });
   };
