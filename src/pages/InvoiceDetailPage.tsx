@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { InvoiceStatusTimeline } from '@/components/invoice/InvoiceStatusTimeline';
 import { ReadyToSendChecklist, buildChecklistItems } from '@/components/invoice/ReadyToSendChecklist';
 import { InvoicePreview } from '@/components/invoice/InvoicePreview';
+import { InvoiceLivePreview } from '@/components/invoice/InvoiceLivePreview';
 import { InvoiceTimeline } from '@/components/invoice/InvoiceTimeline';
 import { InvoiceEditPanel } from '@/components/invoice/InvoiceEditPanel';
 import { InvoiceActionBar } from '@/components/invoice/InvoiceActionBar';
