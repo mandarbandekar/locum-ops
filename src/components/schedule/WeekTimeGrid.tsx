@@ -7,7 +7,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { CalendarEventStack } from '@/components/schedule/CalendarEventChip';
 
-const HOURS = Array.from({ length: 18 }, (_, i) => i + 5); // 5 AM – 10 PM
+const DEFAULT_HOURS = Array.from({ length: 18 }, (_, i) => i + 5); // 5 AM – 10 PM
+const FULL_DAY_HOURS = Array.from({ length: 24 }, (_, i) => i); // 12 AM – 11 PM
 const HOUR_HEIGHT = 60; // px per hour
 const GUTTER_WIDTH = 56; // px for time labels
 
@@ -22,9 +23,11 @@ interface WeekTimeGridProps {
   getEventsForDay?: (day: Date, filters: { credentials: boolean; subscriptions: boolean }) => CalendarEvent[];
   timeBlocks?: TimeBlock[];
   onEditBlock?: (id: string) => void;
+  fullDay?: boolean;
 }
 
-export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, onDropOnTime, onCellClick, calendarFilters, getEventsForDay, timeBlocks = [], onEditBlock }: WeekTimeGridProps) {
+export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, onDropOnTime, onCellClick, calendarFilters, getEventsForDay, timeBlocks = [], onEditBlock, fullDay = false }: WeekTimeGridProps) {
+  const HOURS = fullDay ? FULL_DAY_HOURS : DEFAULT_HOURS;
   const [dragOverCell, setDragOverCell] = useState<string | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 

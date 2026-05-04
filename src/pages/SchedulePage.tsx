@@ -434,18 +434,6 @@ export default function SchedulePage() {
                 <TooltipContent>{view === 'list' ? 'Switch to calendar' : 'Switch to list'}</TooltipContent>
               </Tooltip>
 
-              {/* Confirm */}
-              <Button
-                variant={view === 'confirmations' ? 'default' : 'ghost'}
-                size="sm"
-                className="gap-1.5"
-                onClick={() => setView('confirmations')}
-                data-tour="schedule-confirmations"
-              >
-                <CheckSquare className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Clinic Confirm</span>
-              </Button>
-
               {/* Sync */}
               <Button
                 variant={view === 'sync' ? 'default' : 'ghost'}
@@ -455,7 +443,7 @@ export default function SchedulePage() {
                 data-tour="schedule-sync"
               >
                 <RefreshCw className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Sync</span>
+                <span className="hidden sm:inline">iPhone/Google Calendar Sync</span>
               </Button>
             </div>
           </TooltipProvider>
@@ -590,6 +578,7 @@ export default function SchedulePage() {
                   getEventsForDay={getEventsForDay}
                   timeBlocks={timeBlocks}
                   onEditBlock={setEditBlock}
+                  fullDay
                 />
                 {totalShiftsInRange === 0 && (
                   <div className="flex flex-col items-center justify-center py-16 text-center">
