@@ -237,15 +237,23 @@ export function InvoiceActionBar({
           <>
             <Button variant="outline" size="sm" onClick={handleDownloadPdf} disabled={pdfLoading} className="shrink-0">
               {pdfLoading ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-1.5 h-3.5 w-3.5" />}
-              <span className="hidden sm:inline">Download Invoice PDF</span>
+              <span className="hidden sm:inline">Download PDF</span>
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleShareLinkClick} disabled={shareLoading} className="shrink-0">
+              {hasShareLink ? <Copy className="mr-1.5 h-3.5 w-3.5" /> : <Link2 className="mr-1.5 h-3.5 w-3.5" />}
+              <span className="hidden sm:inline">{hasShareLink ? 'Copy share link' : 'Copy share link'}</span>
+              <span className="sm:hidden">Link</span>
             </Button>
             <Button variant="outline" size="sm" onClick={() => setConfirmAlreadySentOpen(true)} disabled={sending} className="shrink-0">
+              <CheckCircle className="mr-1.5 h-3.5 w-3.5" />
               <span className="hidden sm:inline">I already sent this</span>
               <span className="sm:hidden">Sent</span>
             </Button>
+            <div className="hidden sm:block w-px h-6 bg-border mx-1" />
             <Button size="sm" onClick={() => setComingSoonOpen(true)} className="shrink-0">
               <Send className="mr-1.5 h-3.5 w-3.5" />
-              Send to clinic
+              <span className="hidden sm:inline">Send to clinic</span>
+              <span className="sm:hidden">Send</span>
               <ArrowRight className="ml-1 h-3.5 w-3.5" />
             </Button>
           </>
@@ -254,6 +262,10 @@ export function InvoiceActionBar({
         {/* SENT / PARTIAL */}
         {!isDraft && !isPaid && !overdue && (
           <>
+            <Button variant="outline" size="sm" onClick={handleShareLinkClick} disabled={shareLoading} className="shrink-0">
+              {hasShareLink ? <Copy className="mr-1.5 h-3.5 w-3.5" /> : <Link2 className="mr-1.5 h-3.5 w-3.5" />}
+              <span className="hidden sm:inline">{hasShareLink ? 'Copy link' : 'Share link'}</span>
+            </Button>
             {moreMenu}
             <Button size="sm" onClick={onRecordPayment} className="shrink-0">
               <DollarSign className="mr-1.5 h-3.5 w-3.5" />
@@ -265,6 +277,10 @@ export function InvoiceActionBar({
         {/* OVERDUE */}
         {overdue && !isPaid && (
           <>
+            <Button variant="outline" size="sm" onClick={handleShareLinkClick} disabled={shareLoading} className="shrink-0">
+              {hasShareLink ? <Copy className="mr-1.5 h-3.5 w-3.5" /> : <Link2 className="mr-1.5 h-3.5 w-3.5" />}
+              <span className="hidden sm:inline">{hasShareLink ? 'Copy link' : 'Share link'}</span>
+            </Button>
             {moreMenu}
             <Button variant="outline" size="sm" onClick={onOpenCompose} className="shrink-0">
               <Mail className="mr-1.5 h-3.5 w-3.5" />
