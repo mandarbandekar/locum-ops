@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
-  ArrowRight, Download, Loader2, DollarSign, Link2, Copy, CheckCircle,
-  Send, MoreHorizontal, Undo2, AlertTriangle, Mail,
+  Download, Loader2, DollarSign, Link2, Copy, CheckCircle,
+  MoreHorizontal, Undo2, AlertTriangle, Mail,
 } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { toast } from 'sonner';
@@ -60,7 +60,7 @@ export function InvoiceActionBar({
   const [shareLoading, setShareLoading] = useState(false);
   const [confirmAlreadySentOpen, setConfirmAlreadySentOpen] = useState(false);
   const [confirmRevertOpen, setConfirmRevertOpen] = useState(false);
-  const [comingSoonOpen, setComingSoonOpen] = useState(false);
+  
 
   const computedStatus = computeInvoiceStatus(invoice);
   const isDraft = invoice.status === 'draft';
@@ -249,13 +249,6 @@ export function InvoiceActionBar({
               <span className="hidden sm:inline">I already sent this</span>
               <span className="sm:hidden">Sent</span>
             </Button>
-            <div className="hidden sm:block w-px h-6 bg-border mx-1" />
-            <Button size="sm" onClick={() => setComingSoonOpen(true)} className="shrink-0">
-              <Send className="mr-1.5 h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Send to clinic</span>
-              <span className="sm:hidden">Send</span>
-              <ArrowRight className="ml-1 h-3.5 w-3.5" />
-            </Button>
           </>
         )}
 
@@ -361,21 +354,6 @@ export function InvoiceActionBar({
             <AlertDialogAction onClick={async () => { setConfirmRevertOpen(false); await handleRevertToDraft(); }}>
               Revert to Draft
             </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Coming soon dialog for Send to clinic */}
-      <AlertDialog open={comingSoonOpen} onOpenChange={setComingSoonOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Email functionality is coming soon</AlertDialogTitle>
-            <AlertDialogDescription>
-              Please download the invoice and send it manually using your own work email.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setComingSoonOpen(false)}>OK</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
