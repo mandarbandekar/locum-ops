@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
-  ArrowRight, Download, Loader2, DollarSign, Link2, Copy, CheckCircle,
-  Send, MoreHorizontal, Undo2, AlertTriangle, Mail,
+  Download, Loader2, DollarSign, Link2, Copy, CheckCircle,
+  MoreHorizontal, Undo2, AlertTriangle, Mail,
 } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { toast } from 'sonner';
