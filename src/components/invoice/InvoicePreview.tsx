@@ -56,26 +56,26 @@ interface PreviewProps {
 export function InvoicePreview({ sender, billTo, invoiceNumber, invoiceDate, dueDate, lineItems, total, balanceDue, notes }: PreviewProps) {
   return (
     <Card className="bg-card border shadow-sm overflow-hidden">
-      <div className="p-6 space-y-6" id="invoice-preview">
+      <div className="p-4 sm:p-6 space-y-5 sm:space-y-6" id="invoice-preview">
         {/* Header */}
-        <div className="flex justify-between items-start">
-          <div>
-            <h2 className="text-xl font-bold text-foreground">{sender.company || 'Your Company'}</h2>
+        <div className="flex justify-between items-start gap-3">
+          <div className="min-w-0">
+            <h2 className="text-lg sm:text-xl font-bold text-foreground break-words">{sender.company || 'Your Company'}</h2>
             <p className="text-sm text-muted-foreground">{sender.firstName} {sender.lastName}</p>
             {sender.address && (
-              <p className="text-xs text-muted-foreground mt-1 whitespace-pre-line">{sender.address}</p>
+              <p className="text-xs text-muted-foreground mt-1 whitespace-pre-line break-words">{sender.address}</p>
             )}
-            {sender.email && <p className="text-xs text-muted-foreground">{sender.email}</p>}
+            {sender.email && <p className="text-xs text-muted-foreground break-all">{sender.email}</p>}
             {sender.phone && <p className="text-xs text-muted-foreground">{sender.phone}</p>}
           </div>
-          <div className="text-right">
-            <p className="text-2xl font-bold text-primary tracking-tight">INVOICE</p>
-            <p className="text-sm font-medium text-foreground mt-1">{invoiceNumber}</p>
+          <div className="text-right shrink-0">
+            <p className="text-xl sm:text-2xl font-bold text-primary tracking-tight">INVOICE</p>
+            <p className="text-xs sm:text-sm font-medium text-foreground mt-1 break-all">{invoiceNumber}</p>
           </div>
         </div>
 
         {/* Bill-to + dates */}
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 gap-4 sm:gap-6">
           <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Bill To</p>
             <p className="text-sm font-medium">{billTo.facilityName}</p>
