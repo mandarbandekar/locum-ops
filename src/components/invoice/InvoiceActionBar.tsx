@@ -102,7 +102,13 @@ export function InvoiceActionBar({
 
   const handleCopyShareLink = () => {
     navigator.clipboard.writeText(shareUrl);
-    toast.success('Share link copied');
+    if (isDraft) {
+      toast.success('Share link copied', {
+        description: 'Paste it into your email or text, then click "I already sent this" to mark it as Sent.',
+      });
+    } else {
+      toast.success('Share link copied');
+    }
   };
 
   const handleCreateShareLink = async () => {
@@ -111,12 +117,19 @@ export function InvoiceActionBar({
     await onUpdateInvoice({ ...invoice, share_token: token, share_token_created_at: new Date().toISOString(), share_token_revoked_at: null });
     await onAddActivity({ invoice_id: invoice.id, action: 'share_link_created', description: 'Share link created' });
     setShareLoading(false);
-    toast.success('Share link created');
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
       navigator.clipboard.writeText(`${window.location.origin}/invoice/public/${token}`);
-      toast.success('Share link copied');
+    }
+    if (isDraft) {
+      toast.success('Share link created and copied', {
+        description: 'Paste it into your email or text, then click "I already sent this" to mark it as Sent.',
+      });
+    } else {
+      toast.success('Share link created and copied');
     }
   };
+
+  const handleShareLinkClick = hasShareLink ? handleCopyShareLink : handleCreateShareLink;
 
   const handleRevertToDraft = async () => {
     await onUpdateInvoice({ ...invoice, status: 'draft', sent_at: null, paid_at: null });
@@ -224,15 +237,23 @@ export function InvoiceActionBar({
           <>
             <Button variant="outline" size="sm" onClick={handleDownloadPdf} disabled={pdfLoading} className="shrink-0">
               {pdfLoading ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-1.5 h-3.5 w-3.5" />}
-              <span className="hidden sm:inline">Download Invoice PDF</span>
+              <span className="hidden sm:inline">Download PDF</span>
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleShareLinkClick} disabled={shareLoading} className="shrink-0">
+              {hasShareLink ? <Copy className="mr-1.5 h-3.5 w-3.5" /> : <Link2 className="mr-1.5 h-3.5 w-3.5" />}
+              <span className="hidden sm:inline">{hasShareLink ? 'Copy share link' : 'Copy share link'}</span>
+              <span className="sm:hidden">Link</span>
             </Button>
             <Button variant="outline" size="sm" onClick={() => setConfirmAlreadySentOpen(true)} disabled={sending} className="shrink-0">
+              <CheckCircle className="mr-1.5 h-3.5 w-3.5" />
               <span className="hidden sm:inline">I already sent this</span>
               <span className="sm:hidden">Sent</span>
             </Button>
+            <div className="hidden sm:block w-px h-6 bg-border mx-1" />
             <Button size="sm" onClick={() => setComingSoonOpen(true)} className="shrink-0">
               <Send className="mr-1.5 h-3.5 w-3.5" />
-              Send to clinic
+              <span className="hidden sm:inline">Send to clinic</span>
+              <span className="sm:hidden">Send</span>
               <ArrowRight className="ml-1 h-3.5 w-3.5" />
             </Button>
           </>
@@ -241,6 +262,10 @@ export function InvoiceActionBar({
         {/* SENT / PARTIAL */}
         {!isDraft && !isPaid && !overdue && (
           <>
+            <Button variant="outline" size="sm" onClick={handleShareLinkClick} disabled={shareLoading} className="shrink-0">
+              {hasShareLink ? <Copy className="mr-1.5 h-3.5 w-3.5" /> : <Link2 className="mr-1.5 h-3.5 w-3.5" />}
+              <span className="hidden sm:inline">{hasShareLink ? 'Copy link' : 'Share link'}</span>
+            </Button>
             {moreMenu}
             <Button size="sm" onClick={onRecordPayment} className="shrink-0">
               <DollarSign className="mr-1.5 h-3.5 w-3.5" />
@@ -252,6 +277,10 @@ export function InvoiceActionBar({
         {/* OVERDUE */}
         {overdue && !isPaid && (
           <>
+            <Button variant="outline" size="sm" onClick={handleShareLinkClick} disabled={shareLoading} className="shrink-0">
+              {hasShareLink ? <Copy className="mr-1.5 h-3.5 w-3.5" /> : <Link2 className="mr-1.5 h-3.5 w-3.5" />}
+              <span className="hidden sm:inline">{hasShareLink ? 'Copy link' : 'Share link'}</span>
+            </Button>
             {moreMenu}
             <Button variant="outline" size="sm" onClick={onOpenCompose} className="shrink-0">
               <Mail className="mr-1.5 h-3.5 w-3.5" />
@@ -306,7 +335,7 @@ export function InvoiceActionBar({
           <AlertDialogHeader>
             <AlertDialogTitle>Mark as already sent?</AlertDialogTitle>
             <AlertDialogDescription>
-              Use this only if you've already sent this invoice from your own email. The invoice will move to "Sent" without sending any email from Locum Ops.
+              Use this if you've already delivered this invoice — by your own email, text message, or by sharing the public link. The invoice will move to "Sent" without sending any email from Locum Ops.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
