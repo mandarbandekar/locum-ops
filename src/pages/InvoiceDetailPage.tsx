@@ -171,9 +171,6 @@ export default function InvoiceDetailPage() {
         </Button>
         <div className="flex items-center gap-2 flex-1 min-w-0 flex-wrap">
           <h1 className="text-lg font-bold truncate">{invoice.invoice_number}</h1>
-          <Badge variant={statusConfig.variant} className="text-xs shrink-0">
-            {statusConfig.label}
-          </Badge>
           {facility?.name && (
             <span className="text-sm font-bold text-foreground truncate">{facility.name}</span>
           )}
