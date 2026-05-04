@@ -178,8 +178,8 @@ export default function InvoiceDetailPage() {
 
         {invoice.generation_type === 'automatic' && invoice.status === 'draft' ? (
           <>
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive shrink-0" onClick={() => setAutoDeleteOpen(true)}>
-              <Trash2 className="h-3.5 w-3.5" />
+            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive shrink-0 h-10 w-10" onClick={() => setAutoDeleteOpen(true)} aria-label={`Delete invoice ${invoice.invoice_number}`}>
+              <Trash2 className="h-4 w-4" />
             </Button>
             <AutoInvoiceDeleteDialog
               open={autoDeleteOpen}
