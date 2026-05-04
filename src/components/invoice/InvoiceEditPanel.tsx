@@ -483,11 +483,11 @@ export function InvoiceEditPanel({
               <Input placeholder="Description" value={newDesc} onChange={e => setNewDesc(e.target.value)} className="h-8 text-sm" />
               <div className="grid grid-cols-3 gap-2">
                 <Input type="date" value={newDate} onChange={e => setNewDate(e.target.value)} className="h-8 text-sm" />
-                <Input type="number" placeholder="Qty" value={newQty} onChange={e => setNewQty(Number(e.target.value))} className="h-8 text-sm" min={1} />
-                <Input type="number" placeholder="Rate" value={newRate} onChange={e => setNewRate(Number(e.target.value))} className="h-8 text-sm" min={0} step="0.01" />
+                <Input type="number" inputMode="decimal" placeholder="Qty" value={newQty} onChange={e => setNewQty(e.target.value)} className="h-8 text-sm" min={0} step="0.25" />
+                <Input type="number" inputMode="decimal" placeholder="Rate" value={newRate} onChange={e => setNewRate(e.target.value)} className="h-8 text-sm" min={0} step="0.01" />
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Line total: <span className="font-semibold text-foreground">{fmtMoney(newQty * newRate)}</span></span>
+                <span className="text-sm text-muted-foreground">Line total: <span className="font-semibold text-foreground">{fmtMoney((parseFloat(newQty) || 0) * (parseFloat(newRate) || 0))}</span></span>
                 <div className="flex gap-2">
                   <Button size="sm" variant="ghost" onClick={() => setShowAddLine(false)} className="h-7">Cancel</Button>
                   <Button size="sm" onClick={handleAddLineItem} className="h-7">Add</Button>
