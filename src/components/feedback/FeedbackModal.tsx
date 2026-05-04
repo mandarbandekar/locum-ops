@@ -162,7 +162,7 @@ export function FeedbackModal({ open, onOpenChange }: Props) {
 
               <Button
                 onClick={handleSubmit}
-                disabled={submitting || description.trim().length < 10}
+                disabled={submitting || description.trim().length < 3}
                 className="w-full text-white"
                 style={{ backgroundColor: '#1A5C6B' }}
               >
