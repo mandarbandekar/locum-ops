@@ -517,25 +517,39 @@ export function InvoiceEditPanel({
 
           {!readOnly && !showAddLine && (
             <div className="flex justify-start pt-1">
-              <Button variant="ghost" size="sm" onClick={() => setShowAddLine(true)} className="h-7 text-xs">
-                <Plus className="h-3 w-3 mr-1" /> Add custom line
+              <Button variant="ghost" size="sm" onClick={() => setShowAddLine(true)} className="h-9 text-xs">
+                <Plus className="h-3.5 w-3.5 mr-1" /> Add custom line
               </Button>
             </div>
           )}
 
           {!readOnly && showAddLine && (
-            <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
-              <Input placeholder="Description" value={newDesc} onChange={e => setNewDesc(e.target.value)} className="h-8 text-sm" />
-              <div className="grid grid-cols-3 gap-2">
-                <Input type="date" value={newDate} onChange={e => setNewDate(e.target.value)} className="h-8 text-sm" />
-                <Input type="number" inputMode="decimal" placeholder="Qty" value={newQty} onChange={e => setNewQty(e.target.value)} className="h-8 text-sm" min={0} step="0.25" />
-                <Input type="number" inputMode="decimal" placeholder="Rate" value={newRate} onChange={e => setNewRate(e.target.value)} className="h-8 text-sm" min={0} step="0.01" />
+            <div className="rounded-lg border bg-muted/30 p-3 space-y-3">
+              <div>
+                <Label htmlFor="new-line-desc" className="text-[10px] text-muted-foreground uppercase">Description</Label>
+                <Input id="new-line-desc" placeholder="What's this for?" value={newDesc} onChange={e => setNewDesc(e.target.value)} className="h-9 text-sm mt-1" autoFocus />
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Line total: <span className="font-semibold text-foreground">{fmtMoney((parseFloat(newQty) || 0) * (parseFloat(newRate) || 0))}</span></span>
-                <div className="flex gap-2">
-                  <Button size="sm" variant="ghost" onClick={() => setShowAddLine(false)} className="h-7">Cancel</Button>
-                  <Button size="sm" onClick={handleAddLineItem} className="h-7">Add</Button>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div>
+                  <Label htmlFor="new-line-date" className="text-[10px] text-muted-foreground uppercase">Date</Label>
+                  <Input id="new-line-date" type="date" value={newDate} onChange={e => setNewDate(e.target.value)} className="h-9 text-sm mt-1" />
+                </div>
+                <div>
+                  <Label htmlFor="new-line-qty" className="text-[10px] text-muted-foreground uppercase">Qty</Label>
+                  <Input id="new-line-qty" type="number" inputMode="decimal" placeholder="1" value={newQty} onChange={e => setNewQty(e.target.value)} className="h-9 text-sm mt-1" min={0} step="0.25" aria-label="Quantity" />
+                </div>
+                <div>
+                  <Label htmlFor="new-line-rate" className="text-[10px] text-muted-foreground uppercase">Rate</Label>
+                  <Input id="new-line-rate" type="number" inputMode="decimal" placeholder="0.00" value={newRate} onChange={e => setNewRate(e.target.value)} className="h-9 text-sm mt-1" min={0} step="0.01" aria-label="Rate" />
+                </div>
+              </div>
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 pt-1 border-t">
+                <span className="text-sm text-muted-foreground">
+                  Line total: <span className="font-semibold text-foreground tabular-nums">{fmtMoney((parseFloat(newQty) || 0) * (parseFloat(newRate) || 0))}</span>
+                </span>
+                <div className="flex gap-2 w-full sm:w-auto">
+                  <Button size="sm" variant="outline" onClick={() => setShowAddLine(false)} className="h-9 flex-1 sm:flex-initial">Cancel</Button>
+                  <Button size="sm" onClick={handleAddLineItem} className="h-9 flex-1 sm:flex-initial" disabled={!newDesc.trim()}>Add</Button>
                 </div>
               </div>
             </div>
