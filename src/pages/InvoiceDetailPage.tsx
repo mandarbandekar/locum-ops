@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { InvoiceStatusTimeline } from '@/components/invoice/InvoiceStatusTimeline';
 import { ReadyToSendChecklist, buildChecklistItems } from '@/components/invoice/ReadyToSendChecklist';
 import { InvoicePreview } from '@/components/invoice/InvoicePreview';
+import { InvoiceLivePreview } from '@/components/invoice/InvoiceLivePreview';
 import { InvoiceTimeline } from '@/components/invoice/InvoiceTimeline';
 import { InvoiceEditPanel } from '@/components/invoice/InvoiceEditPanel';
 import { InvoiceActionBar } from '@/components/invoice/InvoiceActionBar';
@@ -143,29 +144,21 @@ export default function InvoiceDetailPage() {
     onRevertToDraft: handleRevertToDraft,
   };
 
-  const previewComponent = (
-    <InvoicePreview
-      sender={{
-        firstName: profile?.first_name || '',
-        lastName: profile?.last_name || '',
-        company: profile?.company_name || '',
-        address: profile?.company_address || '',
-        email: profile?.invoice_email,
-        phone: profile?.invoice_phone,
-      }}
-      billTo={{
-        facilityName: facility?.name || 'Unknown',
-        contactName: billingNameTo || undefined,
-        email: billingEmailTo,
-        address: facility?.address,
-      }}
-      invoiceNumber={previewInvoiceNumber}
-      invoiceDate={previewInvoiceDate}
-      dueDate={previewDueDate}
-      lineItems={items}
-      total={previewTotal}
-      balanceDue={isDraft ? previewTotal : invoice.balance_due}
-      notes={previewNotes}
+  const livePreview = (
+    <InvoiceLivePreview
+      profile={profile}
+      facility={facility}
+      billingNameTo={billingNameTo}
+      billingEmailTo={billingEmailTo}
+      invoice={invoice}
+      items={items}
+      previewInvoiceNumber={previewInvoiceNumber}
+      previewInvoiceDate={previewInvoiceDate}
+      previewDueDate={previewDueDate}
+      previewNotes={previewNotes}
+      previewTotal={previewTotal}
+      previewBalanceDue={isDraft ? previewTotal : invoice.balance_due}
+      computedStatus={computedStatus}
     />
   );
 
@@ -328,7 +321,7 @@ export default function InvoiceDetailPage() {
               )}
             </TabsContent>
             <TabsContent value="preview">
-              {previewComponent}
+              {livePreview}
             </TabsContent>
           </Tabs>
         </div>
@@ -361,11 +354,7 @@ export default function InvoiceDetailPage() {
 
           {/* RIGHT: Live Preview — sticky */}
           <div className="lg:col-span-3 lg:sticky lg:top-4 self-start" id="invoice-print-area">
-            <div className="mb-2 flex items-center justify-between print:hidden">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Live Preview</p>
-              {isDraft && <span className="text-[10px] text-muted-foreground">Changes update in real-time</span>}
-            </div>
-            {previewComponent}
+            {livePreview}
           </div>
         </div>
       )}
