@@ -301,12 +301,12 @@ export function InvoiceActionBar({
               <span className="sm:hidden">PDF</span>
             </Button>
             {hasShareLink ? (
-              <Button variant="outline" size="sm" onClick={handleCopyShareLink} className="shrink-0">
+              <Button variant="outline" size="sm" onClick={handleCopyShareLink} className="shrink-0" aria-label="Copy share link">
                 <Copy className="sm:mr-1.5 h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Copy link</span>
               </Button>
             ) : (
-              <Button variant="outline" size="sm" onClick={handleCreateShareLink} disabled={shareLoading} className="shrink-0">
+              <Button variant="outline" size="sm" onClick={handleCreateShareLink} disabled={shareLoading} className="shrink-0" aria-label="Create share link">
                 <Link2 className="sm:mr-1.5 h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Share link</span>
               </Button>
