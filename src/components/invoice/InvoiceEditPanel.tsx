@@ -204,8 +204,8 @@ export function InvoiceEditPanel({
   const [showAddLine, setShowAddLine] = useState(false);
   const [newDesc, setNewDesc] = useState('');
   const [newDate, setNewDate] = useState('');
-  const [newQty, setNewQty] = useState(1);
-  const [newRate, setNewRate] = useState(0);
+  const [newQty, setNewQty] = useState<string>('1');
+  const [newRate, setNewRate] = useState<string>('');
   const showPayment = externalPaymentOpen ?? false;
   const setShowPayment = onPaymentDialogChange ?? (() => {});
   const [showPayNudge, setShowPayNudge] = useState(false);
