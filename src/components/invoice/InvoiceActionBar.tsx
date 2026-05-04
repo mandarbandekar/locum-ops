@@ -229,10 +229,12 @@ export function InvoiceActionBar({
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 print:hidden">
-      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-2 sm:gap-3">
-        {renderStatusChip()}
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2 sm:py-3 flex flex-wrap items-center gap-2 sm:gap-3">
+        <div className="w-full sm:w-auto flex items-center">
+          {renderStatusChip()}
+        </div>
 
-        <div className="flex-1" />
+        <div className="hidden sm:block flex-1" />
 
         {/* DRAFT */}
         {isDraft && (
