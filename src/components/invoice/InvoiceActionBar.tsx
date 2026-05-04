@@ -95,20 +95,24 @@ export function InvoiceActionBar({
     setPdfLoading(true);
     try {
       await downloadInvoicePdf(invoice.id, invoice.invoice_number);
-      toast.success('PDF downloaded');
-    } catch { toast.error('PDF generation failed'); }
+      toast.success('PDF downloaded', {
+        description: `${invoice.invoice_number}.pdf saved to your Downloads folder.`,
+      });
+    } catch {
+      toast.error('PDF generation failed', {
+        description: 'Please try again in a moment.',
+      });
+    }
     finally { setPdfLoading(false); }
   };
 
   const handleCopyShareLink = () => {
     navigator.clipboard.writeText(shareUrl);
-    if (isDraft) {
-      toast.success('Share link copied', {
-        description: 'Paste it into your email or text, then click "I already sent this" to mark it as Sent.',
-      });
-    } else {
-      toast.success('Share link copied');
-    }
+    toast.success('Share link copied to clipboard', {
+      description: isDraft
+        ? 'Paste it into your email or text, then click "I already sent this" to mark it as Sent.'
+        : 'Paste it into your email or text to share with your clinic.',
+    });
   };
 
   const handleCreateShareLink = async () => {
@@ -120,13 +124,11 @@ export function InvoiceActionBar({
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
       navigator.clipboard.writeText(`${window.location.origin}/invoice/public/${token}`);
     }
-    if (isDraft) {
-      toast.success('Share link created and copied', {
-        description: 'Paste it into your email or text, then click "I already sent this" to mark it as Sent.',
-      });
-    } else {
-      toast.success('Share link created and copied');
-    }
+    toast.success('Share link created and copied to clipboard', {
+      description: isDraft
+        ? 'Paste it into your email or text, then click "I already sent this" to mark it as Sent.'
+        : 'Paste it into your email or text to share with your clinic.',
+    });
   };
 
   const handleShareLinkClick = hasShareLink ? handleCopyShareLink : handleCreateShareLink;
