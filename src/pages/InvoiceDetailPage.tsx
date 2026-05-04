@@ -172,7 +172,7 @@ export default function InvoiceDetailPage() {
         <div className="flex items-center gap-2 flex-1 min-w-0 flex-wrap">
           <h1 className="text-lg font-bold truncate">{invoice.invoice_number}</h1>
           {facility?.name && (
-            <span className="text-sm font-bold text-foreground truncate">{facility.name}</span>
+            <h2 className="text-lg font-bold text-foreground truncate">{facility.name}</h2>
           )}
         </div>
 
