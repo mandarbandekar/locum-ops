@@ -335,7 +335,7 @@ export function InvoiceActionBar({
           <AlertDialogHeader>
             <AlertDialogTitle>Mark as already sent?</AlertDialogTitle>
             <AlertDialogDescription>
-              Use this only if you've already sent this invoice from your own email. The invoice will move to "Sent" without sending any email from Locum Ops.
+              Use this if you've already delivered this invoice — by your own email, text message, or by sharing the public link. The invoice will move to "Sent" without sending any email from Locum Ops.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
