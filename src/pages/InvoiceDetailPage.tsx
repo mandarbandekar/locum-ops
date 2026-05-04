@@ -174,13 +174,9 @@ export default function InvoiceDetailPage() {
           <Badge variant={statusConfig.variant} className="text-xs shrink-0">
             {statusConfig.label}
           </Badge>
-          {(invoice as any).invoice_type === 'bulk' && (
-            <Badge variant="outline" className="text-xs shrink-0">Bulk</Badge>
+          {facility?.name && (
+            <span className="text-sm font-bold text-foreground truncate">{facility.name}</span>
           )}
-          {(invoice as any).generation_type === 'automatic' && (
-            <Badge variant="outline" className="text-xs text-primary border-primary/30 shrink-0">Auto</Badge>
-          )}
-          <span className="text-sm text-muted-foreground truncate">{facility?.name}</span>
         </div>
 
         {invoice.generation_type === 'automatic' && invoice.status === 'draft' ? (
