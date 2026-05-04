@@ -239,7 +239,7 @@ export function InvoiceActionBar({
         {/* DRAFT */}
         {isDraft && (
           <div className="flex w-full sm:w-auto items-center justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={handleDownloadPdf} disabled={pdfLoading} className="shrink-0">
+            <Button variant="outline" size="sm" onClick={handleDownloadPdf} disabled={pdfLoading} className="shrink-0" aria-label="Download PDF">
               {pdfLoading ? <Loader2 className="sm:mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Download className="sm:mr-1.5 h-3.5 w-3.5" />}
               <span className="hidden sm:inline">Download PDF</span>
             </Button>
