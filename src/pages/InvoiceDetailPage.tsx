@@ -144,29 +144,21 @@ export default function InvoiceDetailPage() {
     onRevertToDraft: handleRevertToDraft,
   };
 
-  const previewComponent = (
-    <InvoicePreview
-      sender={{
-        firstName: profile?.first_name || '',
-        lastName: profile?.last_name || '',
-        company: profile?.company_name || '',
-        address: profile?.company_address || '',
-        email: profile?.invoice_email,
-        phone: profile?.invoice_phone,
-      }}
-      billTo={{
-        facilityName: facility?.name || 'Unknown',
-        contactName: billingNameTo || undefined,
-        email: billingEmailTo,
-        address: facility?.address,
-      }}
-      invoiceNumber={previewInvoiceNumber}
-      invoiceDate={previewInvoiceDate}
-      dueDate={previewDueDate}
-      lineItems={items}
-      total={previewTotal}
-      balanceDue={isDraft ? previewTotal : invoice.balance_due}
-      notes={previewNotes}
+  const livePreview = (
+    <InvoiceLivePreview
+      profile={profile}
+      facility={facility}
+      billingNameTo={billingNameTo}
+      billingEmailTo={billingEmailTo}
+      invoice={invoice}
+      items={items}
+      previewInvoiceNumber={previewInvoiceNumber}
+      previewInvoiceDate={previewInvoiceDate}
+      previewDueDate={previewDueDate}
+      previewNotes={previewNotes}
+      previewTotal={previewTotal}
+      previewBalanceDue={isDraft ? previewTotal : invoice.balance_due}
+      computedStatus={computedStatus}
     />
   );
 
