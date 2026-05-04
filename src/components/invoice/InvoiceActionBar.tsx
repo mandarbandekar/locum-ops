@@ -358,19 +358,6 @@ export function InvoiceActionBar({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Coming soon dialog for Send to clinic */}
-      <AlertDialog open={comingSoonOpen} onOpenChange={setComingSoonOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Email functionality is coming soon</AlertDialogTitle>
-            <AlertDialogDescription>
-              Please download the invoice and send it manually using your own work email.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setComingSoonOpen(false)}>OK</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
       </AlertDialog>
     </div>
   );
