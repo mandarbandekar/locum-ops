@@ -357,8 +357,6 @@ export function InvoiceActionBar({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      </AlertDialog>
     </div>
   );
 }
