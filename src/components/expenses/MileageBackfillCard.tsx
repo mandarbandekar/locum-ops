@@ -89,26 +89,33 @@ export default function MileageBackfillCard({ onComplete }: Props) {
 
   // Initial state — no scan yet
   if (!eligible) {
+    const missing: string[] = [];
+    if (!homeAddressReady) missing.push('home address');
+    if (!anyFacilityAddressReady) missing.push('clinic address');
+
     return (
       <Card className="border-dashed border-primary/30">
-        <CardContent className="py-4 px-4">
+        <CardContent className="py-4 px-4 space-y-2">
           <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2.5 min-w-0">
               <History className="h-4 w-4 text-primary shrink-0" />
-              <div>
+              <div className="min-w-0">
                 <p className="text-sm font-medium">Have past shifts?</p>
                 <p className="text-[11px] text-muted-foreground">
-                  Import mileage for previously logged shifts automatically
+                  {precheckReady
+                    ? 'Scanning past shifts for mileage…'
+                    : 'Scanning starts automatically once your home and clinic addresses are saved.'}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <Button
                 size="sm"
                 variant="outline"
                 className="text-xs gap-1.5"
                 onClick={scan}
-                disabled={scanning}
+                disabled={scanning || !precheckReady}
+                title={precheckReady ? undefined : `Add ${missing.join(' and ')} first`}
               >
                 {scanning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <History className="h-3.5 w-3.5" />}
                 {scanning ? 'Scanning…' : 'Scan Past Shifts'}
@@ -118,7 +125,28 @@ export default function MileageBackfillCard({ onComplete }: Props) {
               </Button>
             </div>
           </div>
-          {error && <p className="text-xs text-destructive mt-2">{error}</p>}
+
+          {!precheckReady && (
+            <div className="flex flex-wrap items-center gap-2 pt-1 border-t text-[11px]">
+              <MapPin className="h-3 w-3 text-muted-foreground" />
+              <span className="text-muted-foreground">Needs:</span>
+              {!homeAddressReady && (
+                <Link to="/settings/profile" className="underline text-primary">
+                  Add home address
+                </Link>
+              )}
+              {!homeAddressReady && !anyFacilityAddressReady && (
+                <span className="text-muted-foreground">·</span>
+              )}
+              {!anyFacilityAddressReady && (
+                <Link to="/facilities" className="underline text-primary">
+                  Add clinic address
+                </Link>
+              )}
+            </div>
+          )}
+
+          {error && <p className="text-xs text-destructive">{error}</p>}
         </CardContent>
       </Card>
     );
