@@ -62,6 +62,36 @@ export default function MileageTrackerTab({
 
   return (
     <div className="space-y-4">
+      {/* Required: Home address prompt (blocks accurate mileage if missing) */}
+      {!homeAddressSet && (
+        <Card className="border-amber-300 dark:border-amber-900 bg-amber-50/40 dark:bg-amber-950/20">
+          <CardContent className="py-4 px-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+            <div className="flex items-start gap-2.5 flex-1 min-w-0">
+              <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+              <div className="min-w-0">
+                <p className="text-sm font-semibold flex items-center gap-2">
+                  Home address required
+                  <Badge variant="outline" className="text-[10px] border-amber-500 text-amber-700 dark:text-amber-400">
+                    Required
+                  </Badge>
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  We use your home address to calculate mileage between home and each clinic. Add it once in your profile and scanning starts automatically.
+                </p>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              className="gap-1.5 shrink-0 self-start sm:self-auto"
+              onClick={() => navigate('/settings/profile')}
+            >
+              <MapPin className="h-3.5 w-3.5" />
+              Add Home Address
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Onboarding */}
       {showOnboarding && (
         <MileageOnboarding onDismiss={() => {
