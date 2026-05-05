@@ -38,6 +38,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               {company || 'Dashboard'}
             </span>
             <div className="ml-auto flex items-center gap-2">
+              <FeedbackButton />
               <Button
                 variant="outline"
                 size="sm"
