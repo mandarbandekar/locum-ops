@@ -42,6 +42,7 @@ import { QuarterlyTaxCallout } from '@/components/dashboard/QuarterlyTaxCallout'
 import { FirstTimeDashboard } from '@/components/dashboard/FirstTimeDashboard';
 import { OnboardingHandoffBanner } from '@/components/dashboard/OnboardingHandoffBanner';
 import { ShiftTypeMigrationBanner } from '@/components/dashboard/ShiftTypeMigrationBanner';
+import { FeedbackAvailableBanner } from '@/components/dashboard/FeedbackAvailableBanner';
 import { generateDashboardBriefing, getNextQuarterlyDeadline, BriefingInput } from '@/lib/dashboardBriefing';
 
 const TOUR_STEPS: TourStep[] = [
@@ -716,6 +717,7 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col min-h-full">
+      <FeedbackAvailableBanner />
       {/* Shift Type migration nudge (one-time, pre-existing users with untyped shifts) — top priority */}
       <ShiftTypeMigrationBanner
         untypedShiftCount={untypedShiftCount}
