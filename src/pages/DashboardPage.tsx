@@ -717,6 +717,7 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col min-h-full">
+      <FeedbackAvailableBanner />
       {/* Shift Type migration nudge (one-time, pre-existing users with untyped shifts) — top priority */}
       <ShiftTypeMigrationBanner
         untypedShiftCount={untypedShiftCount}
