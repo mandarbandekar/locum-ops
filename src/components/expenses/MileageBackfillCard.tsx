@@ -20,8 +20,30 @@ export default function MileageBackfillCard({ onComplete }: Props) {
     () => !!localStorage.getItem(DISMISSED_KEY)
   );
   const { scan, confirm, reset, scanning, confirming, eligible, error } = useBackfillMileage(onComplete);
+  const { profile } = useUserProfile();
+  const { facilities } = useData();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [expanded, setExpanded] = useState(false);
+  const autoScannedRef = useRef(false);
+
+  const homeAddressReady = !!(profile?.home_address && profile.home_address.trim().length > 0);
+  const facilitiesWithAddress = facilities.filter(f => (f.address || '').trim().length > 0);
+  const anyFacilityAddressReady = facilitiesWithAddress.length > 0;
+  const precheckReady = homeAddressReady && anyFacilityAddressReady;
+
+  // Auto-trigger scan once both addresses are saved (and not previously dismissed).
+  useEffect(() => {
+    if (
+      precheckReady &&
+      !autoScannedRef.current &&
+      !eligible &&
+      !scanning &&
+      !dismissed
+    ) {
+      autoScannedRef.current = true;
+      scan();
+    }
+  }, [precheckReady, eligible, scanning, dismissed, scan]);
 
   const fmt = (cents: number) =>
     '$' + (cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
