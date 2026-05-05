@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { MessageCircle } from 'lucide-react';
 import { FeedbackModal } from './FeedbackModal';
 import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
 
 export function FeedbackButton() {
   const [open, setOpen] = useState(false);
@@ -14,16 +15,16 @@ export function FeedbackButton() {
 
   return (
     <>
-      <button
-        type="button"
-        aria-label="Send feedback"
+      <Button
+        variant="outline"
+        size="sm"
         onClick={() => setOpen(true)}
-        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[100] h-12 px-4 rounded-full flex items-center gap-2 text-white text-sm font-medium transition-all hover:scale-105 hover:shadow-lg"
-        style={{ backgroundColor: '#1A5C6B', boxShadow: '0 4px 14px rgba(0,0,0,0.15)' }}
+        className="gap-1.5 text-xs"
+        aria-label="Send feedback"
       >
-        <MessageCircle className="h-5 w-5" />
-        <span>Feedback</span>
-      </button>
+        <MessageCircle className="h-3.5 w-3.5" />
+        <span className="hidden sm:inline">Feedback</span>
+      </Button>
       <FeedbackModal open={open} onOpenChange={setOpen} />
     </>
   );
