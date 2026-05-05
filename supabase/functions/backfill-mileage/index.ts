@@ -70,9 +70,8 @@ Deno.serve(async (req) => {
     // Fetch all user shifts
     const { data: allShifts, error: shiftErr } = await supabase
       .from("shifts")
-      .select("id, facility_id, start_datetime, end_datetime, status")
+      .select("id, facility_id, start_datetime, end_datetime")
       .eq("user_id", userId)
-      .in("status", ["completed", "booked"])
       .lte("end_datetime", new Date().toISOString())
       .order("start_datetime", { ascending: false });
 
