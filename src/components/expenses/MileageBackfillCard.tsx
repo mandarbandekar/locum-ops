@@ -1,10 +1,13 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { History, Loader2, CheckCircle2, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { History, Loader2, CheckCircle2, ChevronDown, ChevronUp, X, MapPin } from 'lucide-react';
 import { useBackfillMileage, type BackfillShift } from '@/hooks/useBackfillMileage';
+import { useUserProfile } from '@/contexts/UserProfileContext';
+import { useData } from '@/contexts/DataContext';
 
 const DISMISSED_KEY = 'locumops_mileage_backfill_dismissed';
 
