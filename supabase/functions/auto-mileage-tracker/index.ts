@@ -19,10 +19,9 @@ Deno.serve(async (req) => {
     // Find shifts that ended in the last 60 minutes
     const { data: recentShifts, error: shiftErr } = await supabase
       .from("shifts")
-      .select("id, user_id, facility_id, start_datetime, end_datetime, status")
+      .select("id, user_id, facility_id, start_datetime, end_datetime")
       .gte("end_datetime", sixtyMinsAgo.toISOString())
-      .lte("end_datetime", now.toISOString())
-      .in("status", ["completed", "booked"]);
+      .lte("end_datetime", now.toISOString());
 
     if (shiftErr) {
       console.error("Failed to fetch shifts:", shiftErr);
