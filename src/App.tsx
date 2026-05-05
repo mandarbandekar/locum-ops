@@ -200,7 +200,7 @@ function AuthGate() {
         onStay={stayLoggedIn}
         onLogout={signOut}
       />
-      <FeedbackButton />
+      
     </UserProfileProvider>
   );
 }
