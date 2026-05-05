@@ -12,6 +12,7 @@ import { Layout } from "@/components/Layout";
 
 
 import { useIdleTimeout } from "@/hooks/useIdleTimeout";
+import { useVersionCheck } from "@/hooks/useVersionCheck";
 import { IdleTimeoutWarning } from "@/components/IdleTimeoutWarning";
 import LoginPage from "@/pages/LoginPage";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
@@ -162,6 +163,7 @@ function AuthGate() {
   const { user, loading, isDemo, signOut } = useAuth();
   const idleEnabled = !!(user || isDemo);
   const { showWarning, secondsLeft, stayLoggedIn } = useIdleTimeout(signOut, idleEnabled);
+  useVersionCheck();
 
   if (loading) {
     return (
