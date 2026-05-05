@@ -46,7 +46,7 @@ import SettingsSecurityPage from "@/pages/SettingsSecurityPage";
 import SettingsAccountPage from "@/pages/SettingsAccountPage";
 import FounderDashboardPage from "@/pages/FounderDashboardPage";
 import AdminFeedbackPage from "@/pages/AdminFeedbackPage";
-import { FeedbackButton } from "@/components/feedback/FeedbackButton";
+
 
 import PublicInvoicePage from "@/pages/PublicInvoicePage";
 import PublicConfirmationPage from "@/pages/PublicConfirmationPage";
@@ -200,7 +200,7 @@ function AuthGate() {
         onStay={stayLoggedIn}
         onLogout={signOut}
       />
-      <FeedbackButton />
+      
     </UserProfileProvider>
   );
 }

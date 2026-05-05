@@ -7,6 +7,7 @@ import { useUserProfile } from '@/contexts/UserProfileContext';
 import { Button } from '@/components/ui/button';
 import { Compass } from 'lucide-react';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { FeedbackButton } from '@/components/feedback/FeedbackButton';
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { isDemo } = useAuth();
@@ -37,6 +38,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               {company || 'Dashboard'}
             </span>
             <div className="ml-auto flex items-center gap-2">
+              <FeedbackButton />
               <Button
                 variant="outline"
                 size="sm"
