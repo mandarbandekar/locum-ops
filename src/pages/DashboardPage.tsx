@@ -23,14 +23,13 @@ import { computeStatus as computeSubStatus } from '@/hooks/useSubscriptions';
 import { useReminderPreferences } from '@/hooks/useReminderPreferences';
 import { useTaxIntelligence } from '@/hooks/useTaxIntelligence';
 import { useTaxPaymentLogs } from '@/hooks/useTaxPaymentLogs';
-import { calculateTaxV1, mapDbProfileToV1 } from '@/lib/taxCalculatorV1';
-
-/** Parse a 'YYYY-MM-DD' (date-only) string in local time to avoid UTC drift. */
-function parseDateOnly(s: string): Date {
-  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
-  if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
-  return new Date(s);
-}
+import {
+  parseDateOnly,
+  getQuarterRange,
+  sumPaymentsInRange,
+  sumShiftEarningsInRange,
+  computeEstimatedQuarterlyTax,
+} from '@/lib/dashboardCalculations';
 
 import { NeedsAttentionCard, AttentionItem, type ReminderModule } from '@/components/dashboard/NeedsAttentionCard';
 import { DashboardPromptCards } from '@/components/dashboard/DashboardPromptCards';
