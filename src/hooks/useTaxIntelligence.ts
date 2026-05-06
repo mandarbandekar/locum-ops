@@ -70,10 +70,6 @@ const DEMO_PROFILE: TaxIntelligenceProfile = {
   typical_days_per_week: 3,
   work_states: [],
   prior_year_agi: 0,
-  q1_estimated_payment: 0,
-  q2_estimated_payment: 0,
-  q3_estimated_payment: 0,
-  q4_estimated_payment: 0,
   income_projection_method: 'booked_plus_run_rate',
 };
 
