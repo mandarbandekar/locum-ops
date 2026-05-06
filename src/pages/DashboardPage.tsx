@@ -49,8 +49,7 @@ import { EmptyDashboardPrompt } from '@/components/dashboard/EmptyDashboardPromp
 import { QuarterlyTaxCallout } from '@/components/dashboard/QuarterlyTaxCallout';
 import { FirstTimeDashboard } from '@/components/dashboard/FirstTimeDashboard';
 import { OnboardingHandoffBanner } from '@/components/dashboard/OnboardingHandoffBanner';
-import { ShiftTypeMigrationBanner } from '@/components/dashboard/ShiftTypeMigrationBanner';
-import { FeedbackAvailableBanner } from '@/components/dashboard/FeedbackAvailableBanner';
+import { HighlightBanner } from '@/components/announcements/HighlightBanner';
 import { generateDashboardBriefing, getNextQuarterlyDeadline, BriefingInput } from '@/lib/dashboardBriefing';
 
 const TOUR_STEPS: TourStep[] = [
@@ -149,19 +148,7 @@ export default function DashboardPage() {
     });
   }, [profile, updateProfile]);
 
-  // Engagement-type announcement banner — show once to pre-existing users with at least one facility
-  const showEngagementAnnouncement = useMemo(() => {
-    if (isDemo || !profile || !user?.created_at) return false;
-    if (profile.engagement_announcement_dismissed_at) return false;
-    if (facilities.length === 0) return false;
-    const createdAt = parseISO(user.created_at);
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    return createdAt < startOfToday;
-  }, [isDemo, profile, user?.created_at, facilities.length, now]);
-
-  const dismissEngagementAnnouncement = useCallback(async () => {
-    await updateProfile({ engagement_announcement_dismissed_at: new Date().toISOString() });
-  }, [updateProfile]);
+  // (Engagement-type announcement migrated to the announcements registry.)
 
   const showGettingStarted = !profile?.dismissed_prompts?.getting_started && (facilities.length === 0 || shifts.length === 0);
 
@@ -747,15 +734,7 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col min-h-full">
-      <FeedbackAvailableBanner />
-      {/* Shift Type migration nudge (one-time, pre-existing users with untyped shifts) — top priority */}
-      <ShiftTypeMigrationBanner
-        untypedShiftCount={untypedShiftCount}
-        shifts={shifts}
-        facilities={facilities}
-      />
-
-      {/* First-run onboarding handoff banner */}
+      {/* First-run onboarding handoff banner — onboarding lane (new users) */}
       {showOnboardingHandoff && (
         <div className="shrink-0 mb-3">
           <OnboardingHandoffBanner
@@ -768,7 +747,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Welcome banner */}
+      {/* Welcome banner — onboarding lane */}
       {showWelcomeBanner && (
         <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-primary/10 border border-primary/20 shrink-0 mb-2">
           <p className="text-[13px] text-foreground flex-1">
@@ -780,43 +759,11 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Engagement-type announcement (one-time, pre-existing users with facilities) */}
-      {showEngagementAnnouncement && (
-        <div className="flex items-start gap-3 px-4 py-3 rounded-lg bg-primary/10 border border-primary/20 shrink-0 mb-2">
-          <Zap className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-          <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-semibold text-foreground mb-0.5">
-              New: track platform shifts
-            </p>
-            <p className="text-[12.5px] text-muted-foreground leading-relaxed">
-              You can now log shifts from platforms like Roo and IndeVets alongside your direct relief work. Your existing facilities are marked as Direct — update any facility if you also work with it through a platform.
-            </p>
-            <div className="flex items-center gap-2 mt-2">
-              <button
-                type="button"
-                onClick={() => navigate('/facilities')}
-                className="text-[12px] font-semibold text-primary hover:underline"
-              >
-                Update a facility →
-              </button>
-              <button
-                type="button"
-                onClick={dismissEngagementAnnouncement}
-                className="text-[12px] text-muted-foreground hover:text-foreground ml-2"
-              >
-                Dismiss
-              </button>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={dismissEngagementAnnouncement}
-            className="text-muted-foreground hover:text-foreground shrink-0"
-            aria-label="Dismiss"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
+      {/* Single inline highlight slot — only renders for non-onboarding users with an action-required announcement */}
+      {!showOnboardingHandoff && !showWelcomeBanner && (
+        <HighlightBanner
+          ctx={{ shifts, facilities, untypedShiftCount }}
+        />
       )}
 
 

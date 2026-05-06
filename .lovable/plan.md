@@ -1,62 +1,107 @@
+# Fix the "stacked banners" problem on the Dashboard
+
+## What's wrong today
+
+Every new feature ships its own full-width banner glued to the top of `DashboardPage`. A returning user currently sees, in order:
+
+1. `FeedbackAvailableBanner` (feedback button announcement)
+2. `ShiftTypeMigrationBanner` (categorize your rates)
+3. `OnboardingHandoffBanner` (welcome, your back office is live)
+4. Welcome banner (5-min setup)
+5. Engagement-type announcement (platform shifts)
+6. `GettingStartedChecklist` / `DashboardPromptCards`
+
+Each one was added independently, has its own dismissal flag in `profile.dismissed_prompts`, its own colors, its own CTA pattern, and no priority logic. The dashboard becomes a wall of yellow/blue boxes before the user sees a single shift or invoice. New users get drowned. Returning users get ambushed every time we ship.
+
+This is the recurring shape of the problem, not a one-off — every future feature will repeat it unless we build the rails.
+
 ## Goal
 
-Add an end-to-end-style unit test that exercises an **overnight shift** (e.g. 22:00 → 06:00 next day) through the two surfaces it has to behave correctly on:
+One predictable surface for "things you should know about," with rules for what shows up where, when, and for how long. New users see a focused setup path. Existing users get a calm, batched changelog instead of a banner avalanche.
 
-1. **Schedule calendar** — placement and rendering on the correct day(s)
-2. **Invoice generation** — eligibility, line item, and total math when billed
+## Proposed system
 
-Plus a short list of overnight-related edge cases worth covering that I noticed but aren't explicitly tested today.
+Three distinct surfaces, each with one clear job:
 
-## What's already covered
+### 1. Onboarding lane (new users only)
 
-`src/test/overnightShifts.test.ts` already tests:
-- `getScheduledMinutes` / `getBillableMinutes` for the 8h overnight case
-- Legacy fallback when `end <= start` on same day
-- Break deduction + `worked_through_break` override
-- The write-path `rollEndForward` helper that the form / setup-assistant use
+- Keep `OnboardingHandoffBanner` + `GettingStartedChecklist` exactly as-is.
+- These only render until activation criteria are met (already the case).
+- No "What's New" announcements show while onboarding is active — new users shouldn't be told about features they haven't used yet.
 
-So duration math and the write-path are solid. What's **not** covered: calendar placement, and the auto-invoice pipeline for an overnight shift.
+### 2. What's New center (existing users)
 
-## New test file
+A single compact entry point that replaces every standalone announcement banner.
 
-`src/test/overnightShiftFlow.test.ts` — pure logic test (no React render, same style as `dashboardQuarterlyFlow.test.ts` and `invoiceDraftTotals.test.ts`).
+- A small pill in the header next to Feedback/Tour: **"What's new"** with a dot when there are unread items.
+- Clicking opens a side panel / popover listing recent updates, newest first, each with: title, 1–2 sentence description, optional CTA, optional "Learn more" link, and a "dismiss" affordance.
+- Each item has an `id`, `publishedAt`, `audience` rule (e.g. "users with ≥1 facility", "users created before X"), and an optional `priority: 'highlight'` flag.
+- Read state stored in `profile.seen_announcements: string[]` (additive, never destructive). The existing `dismissed_prompts` map continues to work for legacy entries during migration.
+- Items auto-expire after N days so the panel stays short.
 
-### Scenario seeded
-- Facility: monthly billing cadence, $80/hr rate
-- Shift A: overnight 2026-05-31 22:00 → 2026-06-01 06:00 (8h, crosses month boundary)
-- Shift B (control): same-day 2026-06-02 09:00 → 17:00 (8h)
+### 3. Inline "highlight" slot (rare, rate-limited)
 
-### Calendar placement assertions
-Mirrors `WeekTimeGrid`'s `isSameDay(new Date(s.start_datetime), day)` rule:
-1. Overnight shift appears on the **start day** (2026-05-31), not the end day (2026-06-01).
-2. A week view containing 2026-05-31 includes the overnight shift exactly once.
-3. A week view containing only 2026-06-01 does **not** show the overnight shift (current product behavior — worth pinning so a future "split across days" change is intentional).
-4. Day-level conflict detection on 2026-06-01 with a 07:00 shift does NOT flag the overnight shift as a conflict (since `detectShiftConflicts` keys off `dateKey` of the start).
+For genuinely high-impact changes that benefit from being seen in context (e.g. shift-type migration, where action is required to keep data clean):
 
-### Invoice generation assertions
-Using `getEligibleShiftsForPeriod` + `buildAutoInvoiceDraft` + `recalcDraftTotals`:
-1. **Bucketing by start date**: an invoice for May 2026 (period 2026-05-01 → 2026-05-31) includes the overnight shift; June 2026 invoice does not.
-2. **Line item math**: overnight line uses billable minutes (480 → 8h) × rate = $640; same-day line = $640; invoice total = $1,280; `balance_due` matches.
-3. **No double-billing**: passing the overnight shift's id in `invoicedShiftIds` excludes it from the next eligibility query.
-4. **Break deduction flows through**: a 30-min unpaid break on the overnight shift drops its line to 7.5h × $80 = $600 and recomputes the invoice total.
+- At most **one** highlight banner renders above the dashboard at a time.
+- Selected by the announcement system based on `priority: 'highlight'` + audience match + not-yet-dismissed.
+- Same component shape every time — no more bespoke banner files per feature.
+- Dismissal moves it into the What's New panel, where the user can re-open it.
 
-## What else I'd suggest adding (not in this PR, listed for your call)
+## Migration of today's banners
 
-These are gaps I noticed while wiring this up — happy to add any/all in a follow-up:
-
-| Gap | Why it matters |
+| Today | New home |
 |---|---|
-| **iCal export of overnight shifts** (`src/lib/icsGenerator.ts`) — assert `DTEND` is the rolled-forward timestamp, not same-day | Calendar-sync subscribers (Google/Apple) silently drop or misrender 0-length events |
-| **Dashboard "Upcoming Shifts" card** with an overnight shift starting tonight | Confirms it's still considered "today" not "tomorrow" |
-| **Dashboard earnings by quarter** for a shift whose `end_datetime` crosses Q1→Q2 | `sumShiftEarningsInRange` uses `end_datetime`; an overnight shift on Mar 31 → Apr 1 currently lands in Q2, which may surprise users |
-| **Mileage backfill / auto-mileage** for overnight shifts | The end-of-shift trigger fires on the next calendar day — worth pinning |
-| **Confirmations checklist month bucketing** for overnight shifts on the last day of the month | Same boundary issue |
-| **Tax withholding nudge** uses shift `end_datetime` for "earned this quarter" — same Q1→Q2 edge as above |
-| **DST transition overnight** (e.g. shift on Nov 1 2026 spanning the fall-back) | Currently `getScheduledMinutes` uses ISO ms diff so 8h becomes 9h on fall-back, 7h on spring-forward — may or may not be intended |
+| FeedbackAvailableBanner | What's New entry, no inline banner |
+| ShiftTypeMigrationBanner | Inline highlight (action required), also listed in What's New |
+| Engagement-type platform-shifts announcement | What's New entry |
+| OnboardingHandoffBanner | Unchanged (onboarding lane) |
+| Welcome banner | Unchanged (onboarding lane) |
+
+Net effect: dashboard top goes from up to 5 banners → 0 or 1 banner + a quiet "What's new (2)" pill in the header.
+
+## Authoring model
+
+A single source-of-truth file, e.g. `src/lib/announcements.ts`:
+
+```ts
+export const announcements: Announcement[] = [
+  {
+    id: 'feedback-button-2026-04',
+    title: "Got feedback? We're listening.",
+    body: "Send bugs or ideas straight from the app — look for the Feedback button.",
+    publishedAt: '2026-04-20',
+    audience: 'all',
+    expiresAfterDays: 30,
+  },
+  {
+    id: 'shift-types-2026-05',
+    title: 'Categorize your rates',
+    body: 'Tag each rate with a shift type so it shows up across schedule and invoices.',
+    cta: { label: 'Review & save', to: '/settings/rate-card' },
+    publishedAt: '2026-05-01',
+    audience: ctx => ctx.untypedShiftCount > 0,
+    priority: 'highlight',
+  },
+  // ...
+];
+```
+
+Adding a new feature = appending one entry. No more new banner components, no more dashboard edits, no more dismissal flags to invent.
 
 ## Technical notes
 
-- Test uses `vi.useFakeTimers` + `setSystemTime` so "now" is deterministic for the eligibility window.
-- No DB / Supabase calls — all helpers used (`getEligibleShiftsForPeriod`, `buildAutoInvoiceDraft`, `recalcDraftTotals`, `detectShiftConflicts`, `getBillableMinutes`) are pure functions already exported.
-- For the calendar-week assertion we replicate the one-line filter `shifts.filter(s => isSameDay(new Date(s.start_datetime), day))` from `WeekTimeGrid` so the test fails loudly if that rule ever changes.
-- Run with `bunx vitest run src/test/overnightShiftFlow.test.ts`.
+- New file: `src/lib/announcements.ts` (registry + types + audience evaluator).
+- New component: `src/components/announcements/WhatsNewButton.tsx` (header pill + panel).
+- New component: `src/components/announcements/HighlightBanner.tsx` (single inline slot).
+- `profile.seen_announcements text[]` column added via migration; backfill from existing `dismissed_prompts` entries where ids overlap.
+- Delete `FeedbackAvailableBanner.tsx`, `ShiftTypeMigrationBanner.tsx`, and the inline engagement-announcement JSX in `DashboardPage.tsx` once their entries exist in the registry.
+- Header in `Layout.tsx` gains the WhatsNewButton between Feedback and Tour.
+- Audience evaluator receives a small context object (`{ profile, shifts, facilities, untypedShiftCount, userCreatedAt }`) so rules stay declarative.
+- One test file covering: ordering, audience filtering, seen-state persistence, single-highlight rule, expiry.
+
+## Out of scope
+
+- Server-driven announcements / CMS — registry stays in code for now.
+- Email digests of "what's new" — separate decision.
+- Per-page announcements (e.g. on Schedule, Invoices) — same primitives can be reused later, but this plan ships the dashboard surface only.
