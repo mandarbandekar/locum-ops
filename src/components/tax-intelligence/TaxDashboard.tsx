@@ -70,8 +70,18 @@ export default function TaxDashboard({ profile, onEditProfile, onSaveProfile }: 
 
   const { shifts, facilities } = useData();
   const v1Profile = useMemo(
-    () => mapDbProfileToV1(profile, { shifts, facilities, today: new Date() }),
-    [profile, shifts, facilities]
+    () => mapDbProfileToV1(profile, {
+      shifts,
+      facilities,
+      today: new Date(),
+      quarterlyPaymentsPaid: {
+        q1: paymentLogs.getQuarterTotal('Q1', 'federal_1040es'),
+        q2: paymentLogs.getQuarterTotal('Q2', 'federal_1040es'),
+        q3: paymentLogs.getQuarterTotal('Q3', 'federal_1040es'),
+        q4: paymentLogs.getQuarterTotal('Q4', 'federal_1040es'),
+      },
+    }),
+    [profile, shifts, facilities, paymentLogs.payments]
   );
   const taxResult = useMemo(() => calculateTaxV1(v1Profile), [v1Profile]);
 
