@@ -12,6 +12,7 @@ import { CheckCircle2, Info, ArrowLeft, ArrowRight, Sparkles, Plus, X } from 'lu
 import { TAX_CONSTANTS, V1_US_STATES, V1_FILING_STATUS_LABELS, type V1FilingStatus } from '@/lib/taxConstants2026';
 import { getV1MarginalRate } from '@/lib/taxCalculatorV1';
 import type { TaxIntelligenceProfile, WorkStateAllocation } from '@/hooks/useTaxIntelligence';
+import { useTaxPaymentLogs } from '@/hooks/useTaxPaymentLogs';
 import { toast } from 'sonner';
 import TaxTerm from './TaxTerm';
 
@@ -25,6 +26,7 @@ interface Props {
 export default function TaxProfileSetup({ open, onOpenChange, existingProfile, onSave }: Props) {
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
+  const paymentLogs = useTaxPaymentLogs();
 
   // Form state
   const [entityType, setEntityType] = useState(existingProfile?.entity_type || '1099');
@@ -51,10 +53,19 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
   const [otherW2Income, setOtherW2Income] = useState(existingProfile?.other_w2_income ?? 0);
   const [priorYearTaxPaid, setPriorYearTaxPaid] = useState(existingProfile?.prior_year_tax_paid ?? 0);
   const [priorYearAgi, setPriorYearAgi] = useState(existingProfile?.prior_year_agi ?? 0);
-  const [q1Payment, setQ1Payment] = useState(existingProfile?.q1_estimated_payment ?? 0);
-  const [q2Payment, setQ2Payment] = useState(existingProfile?.q2_estimated_payment ?? 0);
-  const [q3Payment, setQ3Payment] = useState(existingProfile?.q3_estimated_payment ?? 0);
-  const [q4Payment, setQ4Payment] = useState(existingProfile?.q4_estimated_payment ?? 0);
+  const [q1Payment, setQ1Payment] = useState(0);
+  const [q2Payment, setQ2Payment] = useState(0);
+  const [q3Payment, setQ3Payment] = useState(0);
+  const [q4Payment, setQ4Payment] = useState(0);
+
+  // Load existing federal payments from tax_payment_logs when the wizard opens
+  useEffect(() => {
+    if (!open) return;
+    setQ1Payment(paymentLogs.getQuarterTotal('Q1', 'federal_1040es'));
+    setQ2Payment(paymentLogs.getQuarterTotal('Q2', 'federal_1040es'));
+    setQ3Payment(paymentLogs.getQuarterTotal('Q3', 'federal_1040es'));
+    setQ4Payment(paymentLogs.getQuarterTotal('Q4', 'federal_1040es'));
+  }, [open, paymentLogs.payments]);
   const [pteElected, setPteElected] = useState(existingProfile?.pte_elected ?? false);
   const [overrideProjection, setOverrideProjection] = useState(
     (existingProfile?.income_projection_method ?? 'booked_plus_run_rate') === 'static'
@@ -551,9 +562,9 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
 
         {/* This year's quarterly payments already made */}
         <div className="space-y-2 rounded-lg border bg-muted/20 p-3">
-          <Label className="text-sm font-medium">Estimated tax payments you've already made this year</Label>
+          <Label className="text-sm font-medium">Federal estimated tax payments made this year</Label>
           <p className="text-xs text-muted-foreground">
-            Federal estimated tax payments you've sent to the IRS for the current tax year. Leave blank if none.
+            Total federal estimated tax you've paid the IRS for each quarter so far. Editing here will sync with your payment history. Leave any quarter blank if you haven't paid it.
           </p>
           <div className="grid grid-cols-2 gap-3 pt-1">
             {([
@@ -666,8 +677,37 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
   // filingStatus is already in DB long-form ('single' | 'married_joint' | 'head_of_household')
   const dbFilingStatus = filingStatus;
 
+  async function syncQuarterPayments() {
+    const targets: Array<{ quarter: 'Q1' | 'Q2' | 'Q3' | 'Q4'; amount: number }> = [
+      { quarter: 'Q1', amount: q1Payment || 0 },
+      { quarter: 'Q2', amount: q2Payment || 0 },
+      { quarter: 'Q3', amount: q3Payment || 0 },
+      { quarter: 'Q4', amount: q4Payment || 0 },
+    ];
+
+    for (const t of targets) {
+      const existing = paymentLogs.getQuarterTotal(t.quarter, 'federal_1040es' as any);
+      const delta = t.amount - existing;
+      if (delta > 0) {
+        await paymentLogs.logPayment({
+          quarter: t.quarter,
+          payment_type: 'federal_1040es' as any,
+          amount: delta,
+          paid_from: 'personal',
+        });
+      } else if (delta < 0) {
+        console.warn(
+          `[TaxProfileSetup] User attempted to reduce ${t.quarter} federal payment from $${existing} to $${t.amount}. ` +
+          `Decreases are not supported via the wizard — needs edit/delete UI (4D-2).`
+        );
+      }
+    }
+    await paymentLogs.reload();
+  }
+
   async function handleComplete() {
     setSaving(true);
+    await syncQuarterPayments();
     // Sanitize work_states: drop empties / resident duplicates / zero%
     const cleanWorkStates = multiStateOn
       ? workStates
@@ -691,10 +731,6 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
       other_w2_income: otherW2Income || 0,
       prior_year_tax_paid: priorYearTaxPaid || 0,
       prior_year_agi: priorYearAgi || 0,
-      q1_estimated_payment: q1Payment || 0,
-      q2_estimated_payment: q2Payment || 0,
-      q3_estimated_payment: q3Payment || 0,
-      q4_estimated_payment: q4Payment || 0,
       pte_elected: isScorp && stateCode === 'CA' && pteElected,
       income_projection_method: overrideProjection ? 'static' : 'booked_plus_run_rate',
     } as any);

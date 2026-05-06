@@ -32,10 +32,6 @@ export interface TaxIntelligenceProfile {
   work_states: WorkStateAllocation[];
   // Safe harbor (4B)
   prior_year_agi: number;
-  q1_estimated_payment: number;
-  q2_estimated_payment: number;
-  q3_estimated_payment: number;
-  q4_estimated_payment: number;
   income_projection_method: string;
 }
 
@@ -74,10 +70,6 @@ const DEMO_PROFILE: TaxIntelligenceProfile = {
   typical_days_per_week: 3,
   work_states: [],
   prior_year_agi: 0,
-  q1_estimated_payment: 0,
-  q2_estimated_payment: 0,
-  q3_estimated_payment: 0,
-  q4_estimated_payment: 0,
   income_projection_method: 'booked_plus_run_rate',
 };
 
@@ -118,10 +110,6 @@ export function useTaxIntelligence() {
           .map((w: any) => ({ state_code: String(w.state_code), income_pct: Number(w.income_pct) || 0 }))
       : [],
     prior_year_agi: Number(d.prior_year_agi ?? 0),
-    q1_estimated_payment: Number(d.q1_estimated_payment ?? 0),
-    q2_estimated_payment: Number(d.q2_estimated_payment ?? 0),
-    q3_estimated_payment: Number(d.q3_estimated_payment ?? 0),
-    q4_estimated_payment: Number(d.q4_estimated_payment ?? 0),
     income_projection_method: String(d.income_projection_method ?? 'booked_plus_run_rate'),
   });
 

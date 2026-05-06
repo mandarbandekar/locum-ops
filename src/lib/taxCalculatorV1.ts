@@ -139,8 +139,7 @@ function computeRemainingQuarters(
  */
 function computeSafeHarborBlock(
   profile: { priorYearTaxPaid?: number; priorYearAgi?: number;
-    q1EstimatedPayment?: number; q2EstimatedPayment?: number;
-    q3EstimatedPayment?: number; q4EstimatedPayment?: number;
+    quarterlyPaymentsPaid?: { q1: number; q2: number; q3: number; q4: number };
     today?: Date; },
   currentYearEstimate: number,
 ) {
@@ -164,19 +163,18 @@ function computeSafeHarborBlock(
     recommendationReason = 'income_down_yoy_safe_harbor_higher';
   }
 
-  const ytdPaymentsTotal =
-    (profile.q1EstimatedPayment || 0) +
-    (profile.q2EstimatedPayment || 0) +
-    (profile.q3EstimatedPayment || 0) +
-    (profile.q4EstimatedPayment || 0);
+  const paid = profile.quarterlyPaymentsPaid;
+  const ytdPaymentsTotal = paid
+    ? (paid.q1 || 0) + (paid.q2 || 0) + (paid.q3 || 0) + (paid.q4 || 0)
+    : 0;
 
   const recommendedRemaining = Math.max(0, recommendedAnnual - ytdPaymentsTotal);
 
   const remainingQuarters = computeRemainingQuarters(today, {
-    q1: profile.q1EstimatedPayment || 0,
-    q2: profile.q2EstimatedPayment || 0,
-    q3: profile.q3EstimatedPayment || 0,
-    q4: profile.q4EstimatedPayment || 0,
+    q1: paid?.q1 || 0,
+    q2: paid?.q2 || 0,
+    q3: paid?.q3 || 0,
+    q4: paid?.q4 || 0,
   });
 
   const quartersRemaining = remainingQuarters.length;
@@ -256,10 +254,12 @@ export interface TaxProfileV1 {
   pteElected?: boolean; // CA Pass-Through Entity Tax election (S-Corp only)
   priorYearTaxPaid?: number;
   priorYearAgi?: number;
-  q1EstimatedPayment?: number;
-  q2EstimatedPayment?: number;
-  q3EstimatedPayment?: number;
-  q4EstimatedPayment?: number;
+  quarterlyPaymentsPaid?: {
+    q1: number;
+    q2: number;
+    q3: number;
+    q4: number;
+  };
   today?: Date;
   /** Optional pre-computed income projection from logged + scheduled shifts. */
   incomeProjection?: ProjectionResult;
@@ -734,16 +734,13 @@ export function mapDbProfileToV1(
     work_states?: { state_code: string; income_pct: number }[];
     prior_year_tax_paid?: number;
     prior_year_agi?: number;
-    q1_estimated_payment?: number;
-    q2_estimated_payment?: number;
-    q3_estimated_payment?: number;
-    q4_estimated_payment?: number;
     income_projection_method?: string;
   },
   context?: {
     shifts?: Shift[];
     facilities?: Facility[];
     today?: Date;
+    quarterlyPaymentsPaid?: { q1: number; q2: number; q3: number; q4: number };
   },
 ): TaxProfileV1 {
   // Compute income projection if shift context is provided.
@@ -782,10 +779,7 @@ export function mapDbProfileToV1(
       : [],
     priorYearTaxPaid: Number(p.prior_year_tax_paid) || 0,
     priorYearAgi: Number(p.prior_year_agi) || 0,
-    q1EstimatedPayment: Number(p.q1_estimated_payment) || 0,
-    q2EstimatedPayment: Number(p.q2_estimated_payment) || 0,
-    q3EstimatedPayment: Number(p.q3_estimated_payment) || 0,
-    q4EstimatedPayment: Number(p.q4_estimated_payment) || 0,
+    quarterlyPaymentsPaid: context?.quarterlyPaymentsPaid,
     incomeProjection,
   };
 }
