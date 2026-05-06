@@ -139,8 +139,7 @@ function computeRemainingQuarters(
  */
 function computeSafeHarborBlock(
   profile: { priorYearTaxPaid?: number; priorYearAgi?: number;
-    q1EstimatedPayment?: number; q2EstimatedPayment?: number;
-    q3EstimatedPayment?: number; q4EstimatedPayment?: number;
+    quarterlyPaymentsPaid?: { q1: number; q2: number; q3: number; q4: number };
     today?: Date; },
   currentYearEstimate: number,
 ) {
