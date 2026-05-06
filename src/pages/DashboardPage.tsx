@@ -418,7 +418,7 @@ export default function DashboardPage() {
     const monthStart = startOfMonth(now);
     const monthEnd = endOfMonth(now);
     const collectedPayments = payments.filter(p => {
-      const d = parseISO(p.payment_date);
+      const d = parseDateOnly(p.payment_date);
       return d >= monthStart && d <= monthEnd;
     });
     const collectedTotal = collectedPayments.reduce((s, p) => s + p.amount, 0);
