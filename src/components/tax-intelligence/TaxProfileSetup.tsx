@@ -562,9 +562,9 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
 
         {/* This year's quarterly payments already made */}
         <div className="space-y-2 rounded-lg border bg-muted/20 p-3">
-          <Label className="text-sm font-medium">Estimated tax payments you've already made this year</Label>
+          <Label className="text-sm font-medium">Federal estimated tax payments made this year</Label>
           <p className="text-xs text-muted-foreground">
-            Federal estimated tax payments you've sent to the IRS for the current tax year. Leave blank if none.
+            Total federal estimated tax you've paid the IRS for each quarter so far. Editing here will sync with your payment history. Leave any quarter blank if you haven't paid it.
           </p>
           <div className="grid grid-cols-2 gap-3 pt-1">
             {([
