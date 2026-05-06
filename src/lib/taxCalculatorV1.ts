@@ -254,10 +254,12 @@ export interface TaxProfileV1 {
   pteElected?: boolean; // CA Pass-Through Entity Tax election (S-Corp only)
   priorYearTaxPaid?: number;
   priorYearAgi?: number;
-  q1EstimatedPayment?: number;
-  q2EstimatedPayment?: number;
-  q3EstimatedPayment?: number;
-  q4EstimatedPayment?: number;
+  quarterlyPaymentsPaid?: {
+    q1: number;
+    q2: number;
+    q3: number;
+    q4: number;
+  };
   today?: Date;
   /** Optional pre-computed income projection from logged + scheduled shifts. */
   incomeProjection?: ProjectionResult;
