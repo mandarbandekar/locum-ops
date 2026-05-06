@@ -2950,10 +2950,6 @@ export type Database = {
           prior_year_total_income: number
           projection_method: string
           pte_elected: boolean | null
-          q1_estimated_payment: number | null
-          q2_estimated_payment: number | null
-          q3_estimated_payment: number | null
-          q4_estimated_payment: number | null
           retirement_contribution: number
           retirement_type: string
           safe_harbor_method: string
@@ -2987,10 +2983,6 @@ export type Database = {
           prior_year_total_income?: number
           projection_method?: string
           pte_elected?: boolean | null
-          q1_estimated_payment?: number | null
-          q2_estimated_payment?: number | null
-          q3_estimated_payment?: number | null
-          q4_estimated_payment?: number | null
           retirement_contribution?: number
           retirement_type?: string
           safe_harbor_method?: string
@@ -3024,10 +3016,6 @@ export type Database = {
           prior_year_total_income?: number
           projection_method?: string
           pte_elected?: boolean | null
-          q1_estimated_payment?: number | null
-          q2_estimated_payment?: number | null
-          q3_estimated_payment?: number | null
-          q4_estimated_payment?: number | null
           retirement_contribution?: number
           retirement_type?: string
           safe_harbor_method?: string
