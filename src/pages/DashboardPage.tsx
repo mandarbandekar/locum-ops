@@ -22,6 +22,15 @@ import { generateCredentialReminders, generateUninvoicedShiftReminders, generate
 import { computeStatus as computeSubStatus } from '@/hooks/useSubscriptions';
 import { useReminderPreferences } from '@/hooks/useReminderPreferences';
 import { useTaxIntelligence } from '@/hooks/useTaxIntelligence';
+import { useTaxPaymentLogs } from '@/hooks/useTaxPaymentLogs';
+import { calculateTaxV1, mapDbProfileToV1 } from '@/lib/taxCalculatorV1';
+
+/** Parse a 'YYYY-MM-DD' (date-only) string in local time to avoid UTC drift. */
+function parseDateOnly(s: string): Date {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
+  if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  return new Date(s);
+}
 
 import { NeedsAttentionCard, AttentionItem, type ReminderModule } from '@/components/dashboard/NeedsAttentionCard';
 import { DashboardPromptCards } from '@/components/dashboard/DashboardPromptCards';
@@ -102,10 +111,11 @@ export default function DashboardPage() {
   const { shifts, invoices, facilities, payments, checklistItems, lineItems, addShift } = useData();
   const { user, isDemo } = useAuth();
   const { profile, updateProfile } = useUserProfile();
-  const { hasProfile: hasTaxProfile } = useTaxIntelligence();
+  const { profile: taxProfile, hasProfile: hasTaxProfile } = useTaxIntelligence();
   const { categories: reminderCategories } = useReminderPreferences();
   const navigate = useNavigate();
   const now = new Date();
+  const paymentLogs = useTaxPaymentLogs(now.getFullYear());
   const { isOpen: tourOpen, isTourCompleted, startTour, closeTour } = useSpotlightTour();
 
   const [addClinicOpen, setAddClinicOpen] = useState(false);
@@ -250,7 +260,7 @@ export default function DashboardPage() {
     const monthEnd = endOfMonth(now);
     const collectedThisMonth = payments
       .filter(p => {
-        const d = parseISO(p.payment_date);
+        const d = parseDateOnly(p.payment_date);
         return d >= monthStart && d <= monthEnd;
       })
       .reduce((s, p) => s + p.amount, 0);
@@ -259,7 +269,7 @@ export default function DashboardPage() {
     const sameDayLastMonthCutoff = addDays(lastMonthStart, now.getDate() - 1);
     const collectedLastMonthAtSamePoint = payments
       .filter(p => {
-        const d = parseISO(p.payment_date);
+        const d = parseDateOnly(p.payment_date);
         return d >= lastMonthStart && d <= sameDayLastMonthCutoff;
       })
       .reduce((s, p) => s + p.amount, 0);
@@ -276,10 +286,23 @@ export default function DashboardPage() {
       return d >= qStart && d <= qEnd;
     });
     const invoicedThisQuarter = invoicesSentThisQuarter.reduce((s, i) => s + i.total_amount, 0);
-    const collectedThisQuarter = invoices
-      .filter(i => i.paid_at && parseISO(i.paid_at) >= qStart && parseISO(i.paid_at) <= qEnd)
-      .reduce((s, i) => s + i.total_amount, 0);
-    const earnedThisQuarter = collectedThisQuarter; // earned = paid in quarter
+
+    // Collected this quarter — sum actual payments inside the quarter (not invoice totals).
+    const collectedThisQuarter = payments
+      .filter(p => {
+        const d = parseDateOnly(p.payment_date);
+        return d >= qStart && d <= qEnd;
+      })
+      .reduce((s, p) => s + p.amount, 0);
+
+    // Earned this quarter — sum rate_applied for shifts that ended in the quarter.
+    const earnedThisQuarter = shifts
+      .filter(s => {
+        const d = parseISO(s.end_datetime);
+        return d >= qStart && d <= qEnd;
+      })
+      .reduce((s, sh) => s + (sh.rate_applied || 0), 0);
+
     const shiftsThisQuarterCount = shifts.filter(s => {
       const d = parseISO(s.end_datetime);
       return d >= qStart && d <= qEnd && d < now;
@@ -289,18 +312,38 @@ export default function DashboardPage() {
     const { quarter: nextTaxQ, deadline: nextTaxDeadline } = getNextQuarterlyDeadline(now);
     const daysUntilNextTax = differenceInDays(nextTaxDeadline, now);
 
-    // Estimated quarterly tax — prefer DB value for that quarter, else 25% of this-quarter earnings
-    const dbQuarter = taxQuarters.find(q => q.quarter === nextTaxQ && q.status !== 'paid');
-    const estimatedQuarterlyTax = dbQuarter
-      ? Math.round(earnedThisQuarter * 0.25) // fallback heuristic — DB row exists but no amount field
-      : Math.round(earnedThisQuarter * 0.25);
+    // Estimated quarterly tax — use the calculator's recommended quarterly payment when
+    // we have a tax profile; otherwise fall back to a 25% heuristic of earned-this-quarter.
+    let estimatedQuarterlyTax = Math.round(earnedThisQuarter * 0.25);
+    if (taxProfile?.setup_completed_at) {
+      try {
+        const v1 = mapDbProfileToV1(taxProfile as any, {
+          shifts,
+          facilities,
+          today: now,
+          quarterlyPaymentsPaid: {
+            q1: paymentLogs.getQuarterTotal('Q1', 'federal_1040es'),
+            q2: paymentLogs.getQuarterTotal('Q2', 'federal_1040es'),
+            q3: paymentLogs.getQuarterTotal('Q3', 'federal_1040es'),
+            q4: paymentLogs.getQuarterTotal('Q4', 'federal_1040es'),
+          },
+        });
+        const result = calculateTaxV1(v1);
+        if (result?.quarterlyPayment != null) {
+          estimatedQuarterlyTax = Math.round(result.quarterlyPayment);
+        }
+      } catch (e) {
+        // keep heuristic fallback
+      }
+    }
 
-    // Stale draft invoices (>3 days old)
+    // Stale draft invoices (>3 days old). created_at isn't on the Invoice type
+    // (stripped in DataContext), so fall back to invoice_date as the closest proxy
+    // and ignore drafts whose invoice_date is in the future (user-set).
     const staleDraftCount = invoices.filter(i => {
       if (i.status !== 'draft') return false;
-      // use invoice_date or created_at proxy
       const ref = i.invoice_date ? parseISO(i.invoice_date) : null;
-      if (!ref) return false;
+      if (!ref || ref > now) return false;
       return differenceInDays(now, ref) > 3;
     }).length;
 
@@ -333,7 +376,7 @@ export default function DashboardPage() {
       estimatedQuarterlyTax,
       staleDraftCount,
     };
-  }, [shifts, invoices, lineItems, payments, facilities, taxQuarters, now]);
+  }, [shifts, invoices, lineItems, payments, facilities, taxQuarters, taxProfile, paymentLogs, now]);
 
   // ── Money Pipeline stages ──
   const pipeline = useMemo(() => {
@@ -375,7 +418,7 @@ export default function DashboardPage() {
     const monthStart = startOfMonth(now);
     const monthEnd = endOfMonth(now);
     const collectedPayments = payments.filter(p => {
-      const d = parseISO(p.payment_date);
+      const d = parseDateOnly(p.payment_date);
       return d >= monthStart && d <= monthEnd;
     });
     const collectedTotal = collectedPayments.reduce((s, p) => s + p.amount, 0);
@@ -421,18 +464,20 @@ export default function DashboardPage() {
     const qStart = new Date(now.getFullYear(), (quarter - 1) * 3, 1);
     const qEnd = new Date(now.getFullYear(), quarter * 3, 0, 23, 59, 59);
 
-    const earnings = invoices
-      .filter(i => i.paid_at && parseISO(i.paid_at) >= qStart && parseISO(i.paid_at) <= qEnd)
-      .reduce((s, i) => s + i.total_amount, 0);
-
-    const shiftsCompleted = shifts.filter(s => {
+    // Earnings this quarter = sum of rate_applied for shifts ending in the quarter.
+    // (Was previously summing invoice.total_amount of paid invoices, which mixes
+    // collection timing with earning timing and ignores partial payments.)
+    const quarterShifts = shifts.filter(s => {
       const d = parseISO(s.end_datetime);
-      return d >= qStart && d <= qEnd && d < now;
-    }).length;
+      return d >= qStart && d <= qEnd;
+    });
+    const earnings = quarterShifts.reduce((s, sh) => s + (sh.rate_applied || 0), 0);
+
+    const shiftsCompleted = quarterShifts.filter(s => parseISO(s.end_datetime) < now).length;
 
     const avg = shiftsCompleted > 0 ? earnings / shiftsCompleted : 0;
     return { quarter, earnings, shiftsCompleted, avg };
-  }, [invoices, shifts, now]);
+  }, [shifts, now]);
 
   // ── First-time dashboard experience gating ──
   // Show first-time layout when: real user (not demo), has 1+ clinic, has 1+ shift, fewer than 5 shifts,
