@@ -92,11 +92,14 @@ export function TimePicker({
         className="w-[180px] p-0 pointer-events-auto"
         align="start"
         sideOffset={4}
+        onWheel={(e) => e.stopPropagation()}
+        onTouchMove={(e) => e.stopPropagation()}
       >
         <div
           ref={listRef}
-          className="max-h-64 overflow-y-auto py-1"
+          className="max-h-72 overflow-y-auto overscroll-contain py-1"
           role="listbox"
+          onWheel={(e) => e.stopPropagation()}
         >
           {options.map(opt => {
             const isActive = opt.value === value;
