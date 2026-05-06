@@ -779,10 +779,7 @@ export function mapDbProfileToV1(
       : [],
     priorYearTaxPaid: Number(p.prior_year_tax_paid) || 0,
     priorYearAgi: Number(p.prior_year_agi) || 0,
-    q1EstimatedPayment: Number(p.q1_estimated_payment) || 0,
-    q2EstimatedPayment: Number(p.q2_estimated_payment) || 0,
-    q3EstimatedPayment: Number(p.q3_estimated_payment) || 0,
-    q4EstimatedPayment: Number(p.q4_estimated_payment) || 0,
+    quarterlyPaymentsPaid: context?.quarterlyPaymentsPaid,
     incomeProjection,
   };
 }
