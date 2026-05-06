@@ -112,10 +112,10 @@ export default function DashboardPage() {
   const { user, isDemo } = useAuth();
   const { profile, updateProfile } = useUserProfile();
   const { profile: taxProfile, hasProfile: hasTaxProfile } = useTaxIntelligence();
-  const paymentLogs = useTaxPaymentLogs(now.getFullYear());
   const { categories: reminderCategories } = useReminderPreferences();
   const navigate = useNavigate();
   const now = new Date();
+  const paymentLogs = useTaxPaymentLogs(now.getFullYear());
   const { isOpen: tourOpen, isTourCompleted, startTour, closeTour } = useSpotlightTour();
 
   const [addClinicOpen, setAddClinicOpen] = useState(false);
