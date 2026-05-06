@@ -4,6 +4,7 @@ import { Sparkles } from 'lucide-react';
 import TaxProfileSetup from '@/components/tax-intelligence/TaxProfileSetup';
 import TaxDashboard from '@/components/tax-intelligence/TaxDashboard';
 import { useTaxIntelligence } from '@/hooks/useTaxIntelligence';
+import { useTaxPaymentLogs } from '@/hooks/useTaxPaymentLogs';
 import { useData } from '@/contexts/DataContext';
 import { posthog } from '@/lib/posthog';
 import { calculateTaxV1, mapDbProfileToV1 } from '@/lib/taxCalculatorV1';
