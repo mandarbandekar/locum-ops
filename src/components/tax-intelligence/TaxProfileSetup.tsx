@@ -26,6 +26,7 @@ interface Props {
 export default function TaxProfileSetup({ open, onOpenChange, existingProfile, onSave }: Props) {
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
+  const paymentLogs = useTaxPaymentLogs();
 
   // Form state
   const [entityType, setEntityType] = useState(existingProfile?.entity_type || '1099');
