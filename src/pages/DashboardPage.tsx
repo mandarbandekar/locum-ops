@@ -23,14 +23,13 @@ import { computeStatus as computeSubStatus } from '@/hooks/useSubscriptions';
 import { useReminderPreferences } from '@/hooks/useReminderPreferences';
 import { useTaxIntelligence } from '@/hooks/useTaxIntelligence';
 import { useTaxPaymentLogs } from '@/hooks/useTaxPaymentLogs';
-import { calculateTaxV1, mapDbProfileToV1 } from '@/lib/taxCalculatorV1';
-
-/** Parse a 'YYYY-MM-DD' (date-only) string in local time to avoid UTC drift. */
-function parseDateOnly(s: string): Date {
-  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
-  if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
-  return new Date(s);
-}
+import {
+  parseDateOnly,
+  getQuarterRange,
+  sumPaymentsInRange,
+  sumShiftEarningsInRange,
+  computeEstimatedQuarterlyTax,
+} from '@/lib/dashboardCalculations';
 
 import { NeedsAttentionCard, AttentionItem, type ReminderModule } from '@/components/dashboard/NeedsAttentionCard';
 import { DashboardPromptCards } from '@/components/dashboard/DashboardPromptCards';
@@ -312,30 +311,16 @@ export default function DashboardPage() {
     const { quarter: nextTaxQ, deadline: nextTaxDeadline } = getNextQuarterlyDeadline(now);
     const daysUntilNextTax = differenceInDays(nextTaxDeadline, now);
 
-    // Estimated quarterly tax — use the calculator's recommended quarterly payment when
-    // we have a tax profile; otherwise fall back to a 25% heuristic of earned-this-quarter.
-    let estimatedQuarterlyTax = Math.round(earnedThisQuarter * 0.25);
-    if (taxProfile?.setup_completed_at) {
-      try {
-        const v1 = mapDbProfileToV1(taxProfile as any, {
-          shifts,
-          facilities,
-          today: now,
-          quarterlyPaymentsPaid: {
-            q1: paymentLogs.getQuarterTotal('Q1', 'federal_1040es'),
-            q2: paymentLogs.getQuarterTotal('Q2', 'federal_1040es'),
-            q3: paymentLogs.getQuarterTotal('Q3', 'federal_1040es'),
-            q4: paymentLogs.getQuarterTotal('Q4', 'federal_1040es'),
-          },
-        });
-        const result = calculateTaxV1(v1);
-        if (result?.quarterlyPayment != null) {
-          estimatedQuarterlyTax = Math.round(result.quarterlyPayment);
-        }
-      } catch (e) {
-        // keep heuristic fallback
-      }
-    }
+    // Estimated quarterly tax — calculator-driven when a profile exists,
+    // otherwise a 25% heuristic of earned-this-quarter.
+    const estimatedQuarterlyTax = computeEstimatedQuarterlyTax({
+      earnedThisQuarter,
+      taxProfile,
+      shifts,
+      facilities,
+      now,
+      getQuarterTotal: paymentLogs.getQuarterTotal,
+    });
 
     // Stale draft invoices (>3 days old). created_at isn't on the Invoice type
     // (stripped in DataContext), so fall back to invoice_date as the closest proxy
