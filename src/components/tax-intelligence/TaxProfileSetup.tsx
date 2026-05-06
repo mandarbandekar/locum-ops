@@ -53,10 +53,19 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
   const [otherW2Income, setOtherW2Income] = useState(existingProfile?.other_w2_income ?? 0);
   const [priorYearTaxPaid, setPriorYearTaxPaid] = useState(existingProfile?.prior_year_tax_paid ?? 0);
   const [priorYearAgi, setPriorYearAgi] = useState(existingProfile?.prior_year_agi ?? 0);
-  const [q1Payment, setQ1Payment] = useState(existingProfile?.q1_estimated_payment ?? 0);
-  const [q2Payment, setQ2Payment] = useState(existingProfile?.q2_estimated_payment ?? 0);
-  const [q3Payment, setQ3Payment] = useState(existingProfile?.q3_estimated_payment ?? 0);
-  const [q4Payment, setQ4Payment] = useState(existingProfile?.q4_estimated_payment ?? 0);
+  const [q1Payment, setQ1Payment] = useState(0);
+  const [q2Payment, setQ2Payment] = useState(0);
+  const [q3Payment, setQ3Payment] = useState(0);
+  const [q4Payment, setQ4Payment] = useState(0);
+
+  // Load existing federal payments from tax_payment_logs when the wizard opens
+  useEffect(() => {
+    if (!open) return;
+    setQ1Payment(paymentLogs.getQuarterTotal('Q1', 'federal_1040es'));
+    setQ2Payment(paymentLogs.getQuarterTotal('Q2', 'federal_1040es'));
+    setQ3Payment(paymentLogs.getQuarterTotal('Q3', 'federal_1040es'));
+    setQ4Payment(paymentLogs.getQuarterTotal('Q4', 'federal_1040es'));
+  }, [open, paymentLogs.payments]);
   const [pteElected, setPteElected] = useState(existingProfile?.pte_elected ?? false);
   const [overrideProjection, setOverrideProjection] = useState(
     (existingProfile?.income_projection_method ?? 'booked_plus_run_rate') === 'static'
