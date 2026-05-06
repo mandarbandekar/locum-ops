@@ -337,11 +337,13 @@ export default function DashboardPage() {
       }
     }
 
-    // Stale draft invoices (>3 days old) — use created_at, not user-editable invoice_date.
+    // Stale draft invoices (>3 days old). created_at isn't on the Invoice type
+    // (stripped in DataContext), so fall back to invoice_date as the closest proxy
+    // and ignore drafts whose invoice_date is in the future (user-set).
     const staleDraftCount = invoices.filter(i => {
       if (i.status !== 'draft') return false;
-      const ref = i.created_at ? parseISO(i.created_at) : null;
-      if (!ref) return false;
+      const ref = i.invoice_date ? parseISO(i.invoice_date) : null;
+      if (!ref || ref > now) return false;
       return differenceInDays(now, ref) > 3;
     }).length;
 
