@@ -99,7 +99,14 @@ export function TimePicker({
           ref={listRef}
           className="max-h-72 overflow-y-auto overscroll-contain py-1"
           role="listbox"
+          style={{
+            WebkitOverflowScrolling: 'touch',
+            touchAction: 'pan-y',
+            overscrollBehavior: 'contain',
+          }}
           onWheel={(e) => e.stopPropagation()}
+          onTouchMove={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
         >
           {options.map(opt => {
             const isActive = opt.value === value;
