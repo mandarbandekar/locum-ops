@@ -176,14 +176,15 @@ Deno.serve(async (req) => {
         .eq("facility_id", facility.id);
       const suppressedPeriods = (suppressedRows || []) as { period_start: string; period_end: string }[];
 
-      // Get ALL booked/completed shifts for this facility (not just current period)
+      // Get ALL shifts for this facility. Per product model, shifts no longer
+      // carry a status (all shifts are active; cancellation = delete). We keep
+      // the `canceled` exclusion only as a safety net for legacy rows.
       const { data: allShifts } = await supabase
         .from("shifts")
         .select("*")
         .eq("facility_id", facility.id)
         .eq("user_id", facility.user_id)
         .neq("status", "canceled")
-        .neq("status", "proposed")
         .order("start_datetime");
 
       if (!allShifts || allShifts.length === 0) {
