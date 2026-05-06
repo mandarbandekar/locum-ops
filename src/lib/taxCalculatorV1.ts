@@ -734,16 +734,13 @@ export function mapDbProfileToV1(
     work_states?: { state_code: string; income_pct: number }[];
     prior_year_tax_paid?: number;
     prior_year_agi?: number;
-    q1_estimated_payment?: number;
-    q2_estimated_payment?: number;
-    q3_estimated_payment?: number;
-    q4_estimated_payment?: number;
     income_projection_method?: string;
   },
   context?: {
     shifts?: Shift[];
     facilities?: Facility[];
     today?: Date;
+    quarterlyPaymentsPaid?: { q1: number; q2: number; q3: number; q4: number };
   },
 ): TaxProfileV1 {
   // Compute income projection if shift context is provided.
