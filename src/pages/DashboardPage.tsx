@@ -464,18 +464,20 @@ export default function DashboardPage() {
     const qStart = new Date(now.getFullYear(), (quarter - 1) * 3, 1);
     const qEnd = new Date(now.getFullYear(), quarter * 3, 0, 23, 59, 59);
 
-    const earnings = invoices
-      .filter(i => i.paid_at && parseISO(i.paid_at) >= qStart && parseISO(i.paid_at) <= qEnd)
-      .reduce((s, i) => s + i.total_amount, 0);
-
-    const shiftsCompleted = shifts.filter(s => {
+    // Earnings this quarter = sum of rate_applied for shifts ending in the quarter.
+    // (Was previously summing invoice.total_amount of paid invoices, which mixes
+    // collection timing with earning timing and ignores partial payments.)
+    const quarterShifts = shifts.filter(s => {
       const d = parseISO(s.end_datetime);
-      return d >= qStart && d <= qEnd && d < now;
-    }).length;
+      return d >= qStart && d <= qEnd;
+    });
+    const earnings = quarterShifts.reduce((s, sh) => s + (sh.rate_applied || 0), 0);
+
+    const shiftsCompleted = quarterShifts.filter(s => parseISO(s.end_datetime) < now).length;
 
     const avg = shiftsCompleted > 0 ? earnings / shiftsCompleted : 0;
     return { quarter, earnings, shiftsCompleted, avg };
-  }, [invoices, shifts, now]);
+  }, [shifts, now]);
 
   // ── First-time dashboard experience gating ──
   // Show first-time layout when: real user (not demo), has 1+ clinic, has 1+ shift, fewer than 5 shifts,
