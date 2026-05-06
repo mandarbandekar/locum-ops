@@ -260,7 +260,7 @@ export default function DashboardPage() {
     const monthEnd = endOfMonth(now);
     const collectedThisMonth = payments
       .filter(p => {
-        const d = parseISO(p.payment_date);
+        const d = parseDateOnly(p.payment_date);
         return d >= monthStart && d <= monthEnd;
       })
       .reduce((s, p) => s + p.amount, 0);
@@ -269,7 +269,7 @@ export default function DashboardPage() {
     const sameDayLastMonthCutoff = addDays(lastMonthStart, now.getDate() - 1);
     const collectedLastMonthAtSamePoint = payments
       .filter(p => {
-        const d = parseISO(p.payment_date);
+        const d = parseDateOnly(p.payment_date);
         return d >= lastMonthStart && d <= sameDayLastMonthCutoff;
       })
       .reduce((s, p) => s + p.amount, 0);
@@ -286,10 +286,23 @@ export default function DashboardPage() {
       return d >= qStart && d <= qEnd;
     });
     const invoicedThisQuarter = invoicesSentThisQuarter.reduce((s, i) => s + i.total_amount, 0);
-    const collectedThisQuarter = invoices
-      .filter(i => i.paid_at && parseISO(i.paid_at) >= qStart && parseISO(i.paid_at) <= qEnd)
-      .reduce((s, i) => s + i.total_amount, 0);
-    const earnedThisQuarter = collectedThisQuarter; // earned = paid in quarter
+
+    // Collected this quarter — sum actual payments inside the quarter (not invoice totals).
+    const collectedThisQuarter = payments
+      .filter(p => {
+        const d = parseDateOnly(p.payment_date);
+        return d >= qStart && d <= qEnd;
+      })
+      .reduce((s, p) => s + p.amount, 0);
+
+    // Earned this quarter — sum rate_applied for shifts that ended in the quarter.
+    const earnedThisQuarter = shifts
+      .filter(s => {
+        const d = parseISO(s.end_datetime);
+        return d >= qStart && d <= qEnd;
+      })
+      .reduce((s, sh) => s + (sh.rate_applied || 0), 0);
+
     const shiftsThisQuarterCount = shifts.filter(s => {
       const d = parseISO(s.end_datetime);
       return d >= qStart && d <= qEnd && d < now;
@@ -299,17 +312,35 @@ export default function DashboardPage() {
     const { quarter: nextTaxQ, deadline: nextTaxDeadline } = getNextQuarterlyDeadline(now);
     const daysUntilNextTax = differenceInDays(nextTaxDeadline, now);
 
-    // Estimated quarterly tax — prefer DB value for that quarter, else 25% of this-quarter earnings
-    const dbQuarter = taxQuarters.find(q => q.quarter === nextTaxQ && q.status !== 'paid');
-    const estimatedQuarterlyTax = dbQuarter
-      ? Math.round(earnedThisQuarter * 0.25) // fallback heuristic — DB row exists but no amount field
-      : Math.round(earnedThisQuarter * 0.25);
+    // Estimated quarterly tax — use the calculator's recommended quarterly payment when
+    // we have a tax profile; otherwise fall back to a 25% heuristic of earned-this-quarter.
+    let estimatedQuarterlyTax = Math.round(earnedThisQuarter * 0.25);
+    if (taxProfile?.setup_completed_at) {
+      try {
+        const v1 = mapDbProfileToV1(taxProfile as any, {
+          shifts,
+          facilities,
+          today: now,
+          quarterlyPaymentsPaid: {
+            q1: paymentLogs.getQuarterTotal('Q1', 'federal_1040es'),
+            q2: paymentLogs.getQuarterTotal('Q2', 'federal_1040es'),
+            q3: paymentLogs.getQuarterTotal('Q3', 'federal_1040es'),
+            q4: paymentLogs.getQuarterTotal('Q4', 'federal_1040es'),
+          },
+        });
+        const result = calculateTaxV1(v1);
+        if (result?.quarterlyPayment != null) {
+          estimatedQuarterlyTax = Math.round(result.quarterlyPayment);
+        }
+      } catch (e) {
+        // keep heuristic fallback
+      }
+    }
 
-    // Stale draft invoices (>3 days old)
+    // Stale draft invoices (>3 days old) — use created_at, not user-editable invoice_date.
     const staleDraftCount = invoices.filter(i => {
       if (i.status !== 'draft') return false;
-      // use invoice_date or created_at proxy
-      const ref = i.invoice_date ? parseISO(i.invoice_date) : null;
+      const ref = i.created_at ? parseISO(i.created_at) : null;
       if (!ref) return false;
       return differenceInDays(now, ref) > 3;
     }).length;
@@ -343,7 +374,7 @@ export default function DashboardPage() {
       estimatedQuarterlyTax,
       staleDraftCount,
     };
-  }, [shifts, invoices, lineItems, payments, facilities, taxQuarters, now]);
+  }, [shifts, invoices, lineItems, payments, facilities, taxQuarters, taxProfile, paymentLogs, now]);
 
   // ── Money Pipeline stages ──
   const pipeline = useMemo(() => {
