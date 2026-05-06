@@ -677,8 +677,37 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
   // filingStatus is already in DB long-form ('single' | 'married_joint' | 'head_of_household')
   const dbFilingStatus = filingStatus;
 
+  async function syncQuarterPayments() {
+    const targets: Array<{ quarter: 'Q1' | 'Q2' | 'Q3' | 'Q4'; amount: number }> = [
+      { quarter: 'Q1', amount: q1Payment || 0 },
+      { quarter: 'Q2', amount: q2Payment || 0 },
+      { quarter: 'Q3', amount: q3Payment || 0 },
+      { quarter: 'Q4', amount: q4Payment || 0 },
+    ];
+
+    for (const t of targets) {
+      const existing = paymentLogs.getQuarterTotal(t.quarter, 'federal_1040es' as any);
+      const delta = t.amount - existing;
+      if (delta > 0) {
+        await paymentLogs.logPayment({
+          quarter: t.quarter,
+          payment_type: 'federal_1040es' as any,
+          amount: delta,
+          paid_from: 'personal',
+        });
+      } else if (delta < 0) {
+        console.warn(
+          `[TaxProfileSetup] User attempted to reduce ${t.quarter} federal payment from $${existing} to $${t.amount}. ` +
+          `Decreases are not supported via the wizard — needs edit/delete UI (4D-2).`
+        );
+      }
+    }
+    await paymentLogs.reload();
+  }
+
   async function handleComplete() {
     setSaving(true);
+    await syncQuarterPayments();
     // Sanitize work_states: drop empties / resident duplicates / zero%
     const cleanWorkStates = multiStateOn
       ? workStates
@@ -702,10 +731,6 @@ export default function TaxProfileSetup({ open, onOpenChange, existingProfile, o
       other_w2_income: otherW2Income || 0,
       prior_year_tax_paid: priorYearTaxPaid || 0,
       prior_year_agi: priorYearAgi || 0,
-      q1_estimated_payment: q1Payment || 0,
-      q2_estimated_payment: q2Payment || 0,
-      q3_estimated_payment: q3Payment || 0,
-      q4_estimated_payment: q4Payment || 0,
       pte_elected: isScorp && stateCode === 'CA' && pteElected,
       income_projection_method: overrideProjection ? 'static' : 'booked_plus_run_rate',
     } as any);
