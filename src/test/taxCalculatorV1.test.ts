@@ -13,6 +13,14 @@ import { calculateTaxV1, mapDbProfileToV1 } from '@/lib/taxCalculatorV1';
  */
 
 function makeProfile(overrides: Record<string, any>) {
+  const {
+    q1_estimated_payment,
+    q2_estimated_payment,
+    q3_estimated_payment,
+    q4_estimated_payment,
+    ...profileOverrides
+  } = overrides;
+
   const baseDbProfile = {
     entity_type: 'sole_prop',
     filing_status: 'single',
@@ -28,11 +36,27 @@ function makeProfile(overrides: Record<string, any>) {
     scorp_salary: 0,
     extra_withholding: 0,
     work_states: [],
-    ...overrides,
+    ...profileOverrides,
   };
-  const v1 = mapDbProfileToV1(baseDbProfile as any);
-  // Force deterministic date so all 4 quarters remain (Jan 15 is before Apr 15).
-  // This keeps existing test expectations (quarterlyPayment = annual / 4) stable.
+
+  const hasPayments =
+    q1_estimated_payment !== undefined ||
+    q2_estimated_payment !== undefined ||
+    q3_estimated_payment !== undefined ||
+    q4_estimated_payment !== undefined;
+
+  const context = hasPayments
+    ? {
+        quarterlyPaymentsPaid: {
+          q1: q1_estimated_payment || 0,
+          q2: q2_estimated_payment || 0,
+          q3: q3_estimated_payment || 0,
+          q4: q4_estimated_payment || 0,
+        },
+      }
+    : undefined;
+
+  const v1 = mapDbProfileToV1(baseDbProfile as any, context);
   v1.today = new Date('2026-01-15T12:00:00');
   return v1;
 }
