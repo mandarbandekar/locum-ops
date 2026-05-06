@@ -111,7 +111,8 @@ export default function DashboardPage() {
   const { shifts, invoices, facilities, payments, checklistItems, lineItems, addShift } = useData();
   const { user, isDemo } = useAuth();
   const { profile, updateProfile } = useUserProfile();
-  const { hasProfile: hasTaxProfile } = useTaxIntelligence();
+  const { profile: taxProfile, hasProfile: hasTaxProfile } = useTaxIntelligence();
+  const paymentLogs = useTaxPaymentLogs(now.getFullYear());
   const { categories: reminderCategories } = useReminderPreferences();
   const navigate = useNavigate();
   const now = new Date();
