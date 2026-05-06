@@ -12,6 +12,7 @@ import { CheckCircle2, Info, ArrowLeft, ArrowRight, Sparkles, Plus, X } from 'lu
 import { TAX_CONSTANTS, V1_US_STATES, V1_FILING_STATUS_LABELS, type V1FilingStatus } from '@/lib/taxConstants2026';
 import { getV1MarginalRate } from '@/lib/taxCalculatorV1';
 import type { TaxIntelligenceProfile, WorkStateAllocation } from '@/hooks/useTaxIntelligence';
+import { useTaxPaymentLogs } from '@/hooks/useTaxPaymentLogs';
 import { toast } from 'sonner';
 import TaxTerm from './TaxTerm';
 
