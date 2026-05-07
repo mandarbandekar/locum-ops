@@ -72,7 +72,7 @@ function ShiftLineItemCard({
 
   const handleSave = async () => {
     if (!onUpdate) return;
-    const lineTotal = qtyNum * rateNum;
+    const lineTotal = Math.round(qtyNum * rateNum * 100) / 100;
     await onUpdate({ ...item, description: desc, service_date: date || null, qty: qtyNum, unit_rate: rateNum, line_total: lineTotal });
     setEditing(false);
     toast.success('Line item updated');
