@@ -635,6 +635,21 @@ export default function DashboardPage() {
 
     // Monthly clinic confirmations removed from "Needs Your Attention".
 
+    // Mileage trip confirmations — drafts auto-generated from completed shifts
+    if (draftMileageExpenses.length > 0) {
+      const total = draftMileageExpenses.reduce((s, e) => s + e.amount_cents, 0);
+      const count = draftMileageExpenses.length;
+      items.push({
+        title: `${count} mileage trip${count > 1 ? 's' : ''} to confirm`,
+        context: 'Auto-found from your shifts — confirm to claim',
+        link: '/expenses?tab=mileage',
+        icon: Car,
+        urgency: 4,
+        amount: `$${(total / 100).toFixed(2)}`,
+        module: 'shifts',
+      });
+    }
+
     checklistItems
       .filter(item => getChecklistBadge(item) === 'due_soon' || getChecklistBadge(item) === 'overdue')
       .forEach(item => {
