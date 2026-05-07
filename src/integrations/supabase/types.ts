@@ -2715,6 +2715,8 @@ export type Database = {
           hourly_rate: number | null
           id: string
           notes: string
+          overtime_hours: number
+          overtime_rate: number
           rate_applied: number
           rate_kind: string
           shift_type: string | null
@@ -2735,6 +2737,8 @@ export type Database = {
           hourly_rate?: number | null
           id?: string
           notes?: string
+          overtime_hours?: number
+          overtime_rate?: number
           rate_applied?: number
           rate_kind?: string
           shift_type?: string | null
@@ -2755,6 +2759,8 @@ export type Database = {
           hourly_rate?: number | null
           id?: string
           notes?: string
+          overtime_hours?: number
+          overtime_rate?: number
           rate_applied?: number
           rate_kind?: string
           shift_type?: string | null
