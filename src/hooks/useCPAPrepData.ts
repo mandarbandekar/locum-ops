@@ -60,6 +60,8 @@ export interface ExpenseCategoryRow {
 export interface MileageSummary {
   totalMiles: number; deductionCents: number;
   byClinic: { name: string; miles: number }[];
+  startingMiles?: number;
+  startingMilesNote?: string;
 }
 
 // ── Readiness ──
