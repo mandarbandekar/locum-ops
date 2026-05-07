@@ -214,13 +214,13 @@ export default function MileageTrackerTab({
                 className="mx-auto mb-4 flex items-center justify-center rounded-full"
                 style={{ width: 48, height: 48, background: 'rgba(94, 168, 122, 0.12)' }}
               >
-                <Car className="h-5 w-5" style={{ color: '#2D6B4A' }} />
+                <Route className="h-5 w-5" style={{ color: '#2D6B4A' }} />
               </div>
               <p className="text-[14px] font-medium text-foreground">
-                Your first claim is one shift away
+                Find money you've been leaving on the table
               </p>
-              <p className="mt-1.5 mx-auto max-w-[360px] text-[12px] text-muted-foreground leading-relaxed">
-                Once you confirm a trip, it lands here as money in your pocket at tax time. We'll keep a running tally so nothing slips through.
+              <p className="mt-1.5 mx-auto max-w-[400px] text-[12px] text-muted-foreground leading-relaxed">
+                Relief vets on Locum Ops typically find <span className="font-medium text-foreground">$4,000–$8,000</span> in mileage deductions per year. Every confirmed trip lands here — money in your pocket at tax time.
               </p>
             </CardContent>
           </Card>
