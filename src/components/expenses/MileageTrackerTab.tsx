@@ -183,8 +183,6 @@ export default function MileageTrackerTab({
         </CardContent>
       </Card>
 
-      </Card>
-
       {/* YTD Starting Balance (manually-tracked miles from another tool) */}
       <Card>
         <CardContent className="py-3 px-4 flex items-center justify-between gap-3">
