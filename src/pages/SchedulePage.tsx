@@ -113,17 +113,11 @@ export default function SchedulePage() {
   const [editShift, setEditShift] = useState<string | null>(null);
   const [blockTimeDefaultDate, setBlockTimeDefaultDate] = useState<Date | undefined>(undefined);
   const [dragOverDay, setDragOverDay] = useState<string | null>(null);
-  const [calendarFilters, setCalendarFilters] = useState<CalendarLayerFilters>({
+  const calendarFilters: CalendarLayerFilters = {
     shifts: true,
-    credentials: false,
-    subscriptions: false,
-  });
-
-  const toggleFilter = (key: keyof CalendarLayerFilters) => {
-    setCalendarFilters(prev => ({ ...prev, [key]: !prev[key] }));
+    credentials: true,
+    subscriptions: true,
   };
-
-  const hasNonDefaultLayers = calendarFilters.credentials || calendarFilters.subscriptions;
 
   // Always default to Month view on mount; only persist non-timeframe views (list/confirmations/sync)
   useEffect(() => {
