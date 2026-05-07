@@ -117,11 +117,16 @@ export default function SchedulePage() {
   const [editShift, setEditShift] = useState<string | null>(null);
   const [blockTimeDefaultDate, setBlockTimeDefaultDate] = useState<Date | undefined>(undefined);
   const [dragOverDay, setDragOverDay] = useState<string | null>(null);
-  const [calendarFilters] = useState<CalendarLayerFilters>({
-    shifts: true,
-    credentials: true,
-    subscriptions: true,
-  });
+  const { filters, update: updateFilter, toggleClinic, reset: resetFilters, isDefault: filtersAreDefault } = useScheduleFilters();
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Map facility id -> a stable color (uses first shift color, else fallback)
+  const facilityColor = useCallback((id: string) => {
+    const sh = shifts.find(s => s.facility_id === id && s.color);
+    return sh?.color || 'blue';
+  }, [shifts]);
 
   // Always default to Month view on mount; only persist non-timeframe views (list/confirmations/sync)
   useEffect(() => {
