@@ -92,7 +92,7 @@ export default function SchedulePage() {
     const yr = new Date().getFullYear();
     return shifts
       .filter(s => paidShiftIds.has(s.id) && new Date(s.start_datetime).getFullYear() === yr)
-      .reduce((sum, s) => sum + (s.rate_applied || 0), 0);
+      .reduce((sum, s) => sum + getShiftTotalRevenue(s), 0);
   }, [shifts, paidShiftIds]);
 
   const effectiveRate = useMemo(() => {
@@ -100,7 +100,7 @@ export default function SchedulePage() {
     const totalIncome = invoices
       .filter(inv => inv.status === 'paid' && inv.paid_at && new Date(inv.paid_at).getFullYear() === new Date().getFullYear())
       .reduce((sum, inv) => sum + inv.total_amount, 0)
-      + shifts.filter(s => new Date(s.start_datetime) >= new Date()).reduce((sum, s) => sum + (s.rate_applied || 0), 0);
+      + shifts.filter(s => new Date(s.start_datetime) >= new Date()).reduce((sum, s) => sum + getShiftTotalRevenue(s), 0);
     return computeEffectiveSetAsideRate(taxProfile, totalIncome || 1);
   }, [taxProfile, hasTaxProfile, invoices, shifts]);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -165,7 +165,7 @@ export default function SchedulePage() {
   const totalShiftsInRange = activeRangeShifts.length;
   const totalMinutesInRange = activeRangeShifts.reduce((sum, s) => sum + getBillableMinutes(s), 0);
   const totalHoursInRange = formatHoursMinutes(totalMinutesInRange);
-  const totalRevenueInRange = activeRangeShifts.reduce((sum, s) => sum + (s.rate_applied || 0), 0);
+  const totalRevenueInRange = activeRangeShifts.reduce((sum, s) => sum + getShiftTotalRevenue(s), 0);
 
   const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
 
