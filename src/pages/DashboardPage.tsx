@@ -22,6 +22,7 @@ import { generateCredentialReminders, generateUninvoicedShiftReminders, generate
 import { computeStatus as computeSubStatus } from '@/hooks/useSubscriptions';
 import { useReminderPreferences } from '@/hooks/useReminderPreferences';
 import { useTaxIntelligence } from '@/hooks/useTaxIntelligence';
+import { useExpenses } from '@/hooks/useExpenses';
 import { useTaxPaymentLogs } from '@/hooks/useTaxPaymentLogs';
 import {
   parseDateOnly,
@@ -38,7 +39,7 @@ import { SpotlightTour, TourStep } from '@/components/SpotlightTour';
 import { useSpotlightTour } from '@/hooks/useSpotlightTour';
 import {
   Building2, CalendarDays as CalendarDaysIcon2, FileText as FileText2,
-  Activity, Landmark,
+  Activity, Landmark, Car,
 } from 'lucide-react';
 
 import { BriefingBanner } from '@/components/dashboard/BriefingBanner';
@@ -110,6 +111,7 @@ export default function DashboardPage() {
   const { user, isDemo } = useAuth();
   const { profile, updateProfile } = useUserProfile();
   const { profile: taxProfile, hasProfile: hasTaxProfile } = useTaxIntelligence();
+  const { draftMileageExpenses } = useExpenses();
   const { categories: reminderCategories } = useReminderPreferences();
   const navigate = useNavigate();
   const now = new Date();
@@ -633,6 +635,21 @@ export default function DashboardPage() {
 
     // Monthly clinic confirmations removed from "Needs Your Attention".
 
+    // Mileage trip confirmations — drafts auto-generated from completed shifts
+    if (draftMileageExpenses.length > 0) {
+      const total = draftMileageExpenses.reduce((s, e) => s + e.amount_cents, 0);
+      const count = draftMileageExpenses.length;
+      items.push({
+        title: `${count} mileage trip${count > 1 ? 's' : ''} to confirm`,
+        context: 'Auto-found from your shifts — confirm to claim',
+        link: '/expenses?tab=mileage',
+        icon: Car,
+        urgency: 4,
+        amount: `$${(total / 100).toFixed(2)}`,
+        module: 'shifts',
+      });
+    }
+
     checklistItems
       .filter(item => getChecklistBadge(item) === 'due_soon' || getChecklistBadge(item) === 'overdue')
       .forEach(item => {
@@ -704,7 +721,7 @@ export default function DashboardPage() {
       if (!catSetting) return true;
       return catSetting.enabled && catSetting.in_app_enabled;
     });
-  }, [invoices, summary, checklistItems, confirmationBreakdown, credentialsList, subscriptions, taxQuarters, reminderCategories, shifts, hasTaxProfile, now]);
+  }, [invoices, summary, checklistItems, confirmationBreakdown, credentialsList, subscriptions, taxQuarters, reminderCategories, shifts, hasTaxProfile, draftMileageExpenses, now]);
 
   const greeting = (() => {
     const hour = new Date().getHours();
