@@ -171,7 +171,7 @@ function ShiftLineItemCard({
             <div className="text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap min-w-0">
               {item.line_kind === 'overtime' ? (
                 <>
-                  <span className="tabular-nums">{item.qty}h × {fmtMoney(item.unit_rate)}/hr</span>
+                  <span className="tabular-nums">{formatHours(item.qty)} × {fmtMoney(item.unit_rate)}/hr</span>
                   <span className="inline-flex items-center rounded-full bg-[hsl(var(--warning))]/15 text-[hsl(var(--warning))] text-[10px] font-medium px-1.5 py-0.5">Overtime</span>
                 </>
               ) : isShift && (item.line_kind === 'regular' || (item.qty !== 1 && !item.line_kind)) ? (
