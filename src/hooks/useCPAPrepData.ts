@@ -87,7 +87,7 @@ export function useCPAPrepData() {
     const uninvoicedRevenueCents = Math.round(
       ytdShifts
         .filter(s => !invoicedShiftIds.has(s.id))
-        .reduce((sum, s) => sum + (s.rate_applied || 0), 0) * 100
+        .reduce((sum, s) => sum + getShiftTotalRevenue(s), 0) * 100
     );
 
     const ytdIncomeCents = paidCents + outstandingCents + uninvoicedRevenueCents;
