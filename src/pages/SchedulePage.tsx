@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo, DragEvent } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, DragEvent } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { StatusBadge } from '@/components/StatusBadge';
-import { Plus, ChevronLeft, ChevronRight, List, CalendarDays, Trash2, Calendar as CalendarIcon, CheckSquare, RefreshCw, AlertTriangle, Ban, ChevronDown } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, List, CalendarDays, Trash2, Calendar as CalendarIcon, CheckSquare, RefreshCw, AlertTriangle, Ban, ChevronDown, Search, X, Keyboard } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, getDay, startOfWeek, endOfWeek, addWeeks, subWeeks, addDays, subDays, differenceInMilliseconds, differenceInHours } from 'date-fns';
 import { CalendarPlus, Clock, DollarSign, TrendingUp } from 'lucide-react';
@@ -16,7 +17,6 @@ import { WeekTimeGrid } from '@/components/schedule/WeekTimeGrid';
 import { ClinicConfirmationsTab } from '@/components/schedule/ClinicConfirmationsTab';
 import { getMarkersForDay } from '@/lib/calendarMarkers';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { CalendarFilters, CalendarLayerFilters } from '@/components/schedule/CalendarFilters';
 import { useCalendarEvents } from '@/hooks/useCalendarEvents';
 import { CalendarEventStack } from '@/components/schedule/CalendarEventChip';
 import { CalendarSyncPanel } from '@/components/schedule/CalendarSyncPanel';
@@ -27,10 +27,14 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { SpotlightTour, TourStep } from '@/components/SpotlightTour';
 import { useSpotlightTour } from '@/hooks/useSpotlightTour';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { getBillableMinutes, formatHoursMinutes } from '@/lib/shiftBreak';
+import { useScheduleFilters } from '@/hooks/useScheduleFilters';
+import { ScheduleFiltersPopover } from '@/components/schedule/ScheduleFiltersPopover';
+import { DayPeekContent } from '@/components/schedule/DayPeekContent';
 
 const STORAGE_KEY = 'schedule-view-pref';
 
