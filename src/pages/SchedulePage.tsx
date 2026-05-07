@@ -113,17 +113,11 @@ export default function SchedulePage() {
   const [editShift, setEditShift] = useState<string | null>(null);
   const [blockTimeDefaultDate, setBlockTimeDefaultDate] = useState<Date | undefined>(undefined);
   const [dragOverDay, setDragOverDay] = useState<string | null>(null);
-  const [calendarFilters, setCalendarFilters] = useState<CalendarLayerFilters>({
+  const calendarFilters: CalendarLayerFilters = {
     shifts: true,
-    credentials: false,
-    subscriptions: false,
-  });
-
-  const toggleFilter = (key: keyof CalendarLayerFilters) => {
-    setCalendarFilters(prev => ({ ...prev, [key]: !prev[key] }));
+    credentials: true,
+    subscriptions: true,
   };
-
-  const hasNonDefaultLayers = calendarFilters.credentials || calendarFilters.subscriptions;
 
   // Always default to Month view on mount; only persist non-timeframe views (list/confirmations/sync)
   useEffect(() => {
@@ -390,28 +384,7 @@ export default function SchedulePage() {
         <div className="flex items-center gap-2 flex-wrap">
           <TooltipProvider delayDuration={200}>
             <div className="flex items-center gap-1" data-tour="schedule-view-switcher">
-              {/* Timeframe dropdown (Month / Week / Day) */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant={isTimeframeView ? 'default' : 'outline'}
-                    size="sm"
-                    className="gap-1.5"
-                  >
-                    <TimeframeIcon className="h-3.5 w-3.5" />
-                    <span>{timeframeLabel}</span>
-                    <ChevronDown className="h-3.5 w-3.5 opacity-70" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  <DropdownMenuItem onClick={() => setView('month')}>
-                    <CalendarDays className="mr-2 h-4 w-4" /> Month
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setView('week')}>
-                    <CalendarIcon className="mr-2 h-4 w-4" /> Week
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {/* Timeframe selector moved to calendar toolbar (Month/Week tabs) */}
 
               {/* List <-> Calendar toggle */}
               <Tooltip>
@@ -484,20 +457,16 @@ export default function SchedulePage() {
             </div>
 
             <div className="flex-1 flex items-center justify-end">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="ghost" size="sm" className="gap-1.5 relative">
-                    <Layers className="h-4 w-4" />
-                    <span className="hidden sm:inline">Layers</span>
-                    {hasNonDefaultLayers && (
-                      <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-primary" />
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent align="end" className="w-auto p-3">
-                  <CalendarFilters filters={calendarFilters} onToggle={toggleFilter} />
-                </PopoverContent>
-              </Popover>
+              <Tabs value={isTimeframeView ? view : lastTimeframe} onValueChange={(v) => setView(v as 'month' | 'week')}>
+                <TabsList className="h-8">
+                  <TabsTrigger value="month" className="text-xs gap-1.5">
+                    <CalendarDays className="h-3.5 w-3.5" /> Month
+                  </TabsTrigger>
+                  <TabsTrigger value="week" className="text-xs gap-1.5">
+                    <CalendarIcon className="h-3.5 w-3.5" /> Week
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
             </div>
           </div>
         </div>
@@ -521,10 +490,10 @@ export default function SchedulePage() {
                       ))}
                     </div>
                     <div className="grid grid-cols-7">
-                      {Array.from({ length: startDow }).map((_, i) => (
-                        <div key={`empty-${i}`} className="min-h-[60px] sm:min-h-[80px] border-t border-r bg-muted/20" />
-                      ))}
-                      {monthDays.map(day => renderDayCell(day, 'min-h-[60px] sm:min-h-[80px]'))}
+                    {Array.from({ length: startDow }).map((_, i) => (
+                      <div key={`empty-${i}`} className="min-h-[100px] sm:min-h-[130px] border-t border-r bg-muted/20" />
+                    ))}
+                    {monthDays.map(day => renderDayCell(day, 'min-h-[100px] sm:min-h-[130px]'))}
                     </div>
                   </div>
                 </div>
