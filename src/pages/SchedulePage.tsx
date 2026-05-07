@@ -482,7 +482,7 @@ export default function SchedulePage() {
       )}
 
       {/* Content area - fills remaining space */}
-      <div className="flex-1 overflow-auto px-4 py-3">
+      <div className={`flex-1 min-h-0 px-4 py-3 ${view === 'month' || view === 'week' || view === 'day' ? 'flex flex-col overflow-hidden' : 'overflow-auto'}`}>
         {view === 'sync' ? (
           <CalendarSyncPanel />
         ) : view === 'confirmations' ? (
@@ -491,29 +491,30 @@ export default function SchedulePage() {
           <>
             {view === 'month' ? (
               <>
-                <div className="rounded-lg border bg-card overflow-x-auto -mx-1 sm:mx-0">
-                  <div className="min-w-[420px]">
-                    <div className="grid grid-cols-7 bg-muted/50">
-                      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-                        <div key={d} className="p-1.5 sm:p-2 text-center text-[10px] sm:text-xs font-medium text-muted-foreground">{d}</div>
-                      ))}
-                    </div>
-                    <div className="grid grid-cols-7">
-                      {Array.from({ length: startDow }).map((_, i) => (
-                        <div key={`empty-${i}`} className="min-h-[60px] sm:min-h-[80px] border-t border-r bg-muted/20" />
-                      ))}
-                      {monthDays.map(day => renderDayCell(day, 'min-h-[60px] sm:min-h-[80px]'))}
-                    </div>
-                  </div>
-                </div>
-                {totalShiftsInRange === 0 && (
+                {totalShiftsInRange === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16 text-center">
                     <CalendarPlus className="h-12 w-12 text-muted-foreground/40 mb-4" />
                     <h3 className="text-lg font-semibold mb-1">No shifts this month</h3>
                     <p className="text-sm text-muted-foreground max-w-xs mb-4">Add shifts to track your schedule, auto-generate invoices, and sync to your calendar.</p>
                     <Button onClick={() => setShowAdd(true)}><Plus className="mr-1.5 h-4 w-4" /> Add Your First Shift</Button>
                   </div>
-                )}
+                ) : null}
+                <div className="rounded-lg border bg-card overflow-hidden flex-1 min-h-0 flex flex-col -mx-1 sm:mx-0">
+                  <div className="grid grid-cols-7 bg-muted/50 flex-none">
+                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+                      <div key={d} className="p-1.5 sm:p-2 text-center text-[10px] sm:text-xs font-medium text-muted-foreground">{d}</div>
+                    ))}
+                  </div>
+                  <div
+                    className="grid grid-cols-7 flex-1 min-h-0 overflow-hidden"
+                    style={{ gridTemplateRows: `repeat(${Math.ceil((startDow + monthDays.length) / 7)}, minmax(0, 1fr))` }}
+                  >
+                    {Array.from({ length: startDow }).map((_, i) => (
+                      <div key={`empty-${i}`} className="border-t border-r bg-muted/20" />
+                    ))}
+                    {monthDays.map(day => renderDayCell(day, 'h-full overflow-hidden'))}
+                  </div>
+                </div>
               </>
             ) : view === 'week' ? (
               <>
