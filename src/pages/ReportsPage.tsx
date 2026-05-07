@@ -9,6 +9,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, ComposedChart } from 'recharts';
 import { format, parseISO, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths, addMonths, isWithinInterval, differenceInDays, differenceInHours, getDay } from 'date-fns';
 import { getBillableMinutes } from '@/lib/shiftBreak';
+import { getShiftTotalRevenue } from '@/types';
 import { DollarSign, TrendingUp, TrendingDown, Calendar, Clock, ArrowUp, ArrowDown, Minus, Sparkles, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -119,7 +120,7 @@ export default function ReportsPage() {
           const shiftDate = parseISO(s.start_datetime);
           return isWithinInterval(shiftDate, { start: month, end: monthEnd }) &&
             !invoicedShiftIds.has(s.id);
-        }).reduce((sum, s) => sum + s.rate_applied, 0);
+        }).reduce((sum, s) => sum + getShiftTotalRevenue(s), 0);
 
         anticipated = draftTotal + uninvoicedShiftTotal;
       }
@@ -243,7 +244,7 @@ export default function ReportsPage() {
       const shiftDate = parseISO(shift.start_datetime);
       if (isWithinInterval(shiftDate, { start: rangeStart, end: rangeEnd }) && shift.rate_applied > 0) {
         const day = getDay(shiftDate);
-        dayTotals[day] += shift.rate_applied;
+        dayTotals[day] += getShiftTotalRevenue(shift);
         dayCounts[day] += 1;
       }
     });

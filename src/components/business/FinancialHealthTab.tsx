@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { format, parseISO, startOfMonth, eachMonthOfInterval, subMonths, endOfMonth, isWithinInterval, addMonths } from 'date-fns';
 import { toast } from 'sonner';
 import IncomeBySource from './IncomeBySource';
+import { getShiftTotalRevenue } from '@/types';
 
 const fmtAmount = (n: number) => `$${n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
@@ -68,7 +69,7 @@ export default function FinancialHealthTab() {
         const uninvoicedShiftTotal = shifts.filter(s => {
           const shiftDate = parseISO(s.start_datetime);
           return isWithinInterval(shiftDate, { start: month, end: monthEnd }) && !invoicedShiftIds.has(s.id);
-        }).reduce((sum, s) => sum + s.rate_applied, 0);
+        }).reduce((sum, s) => sum + getShiftTotalRevenue(s), 0);
         anticipated = draftTotal + uninvoicedShiftTotal;
       }
       return { month: format(month, 'MMM yyyy'), collected, outstanding, anticipated };

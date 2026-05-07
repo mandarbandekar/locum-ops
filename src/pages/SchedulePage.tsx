@@ -7,7 +7,7 @@ import { Plus, ChevronLeft, ChevronRight, List, CalendarDays, Trash2, Calendar a
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, getDay, startOfWeek, endOfWeek, addWeeks, subWeeks, addDays, subDays, differenceInMilliseconds, differenceInHours } from 'date-fns';
 import { CalendarPlus, Clock, DollarSign, TrendingUp } from 'lucide-react';
-import { SHIFT_COLORS, Shift, BLOCK_TYPES, BLOCK_COLORS, TimeBlock } from '@/types';
+import { SHIFT_COLORS, Shift, BLOCK_TYPES, BLOCK_COLORS, TimeBlock, getShiftTotalRevenue } from '@/types';
 import { detectShiftConflicts } from '@/lib/businessLogic';
 import { toast } from 'sonner';
 import { ShiftFormDialog } from '@/components/schedule/ShiftFormDialog';
@@ -92,7 +92,7 @@ export default function SchedulePage() {
     const yr = new Date().getFullYear();
     return shifts
       .filter(s => paidShiftIds.has(s.id) && new Date(s.start_datetime).getFullYear() === yr)
-      .reduce((sum, s) => sum + (s.rate_applied || 0), 0);
+      .reduce((sum, s) => sum + getShiftTotalRevenue(s), 0);
   }, [shifts, paidShiftIds]);
 
   const effectiveRate = useMemo(() => {
@@ -100,7 +100,7 @@ export default function SchedulePage() {
     const totalIncome = invoices
       .filter(inv => inv.status === 'paid' && inv.paid_at && new Date(inv.paid_at).getFullYear() === new Date().getFullYear())
       .reduce((sum, inv) => sum + inv.total_amount, 0)
-      + shifts.filter(s => new Date(s.start_datetime) >= new Date()).reduce((sum, s) => sum + (s.rate_applied || 0), 0);
+      + shifts.filter(s => new Date(s.start_datetime) >= new Date()).reduce((sum, s) => sum + getShiftTotalRevenue(s), 0);
     return computeEffectiveSetAsideRate(taxProfile, totalIncome || 1);
   }, [taxProfile, hasTaxProfile, invoices, shifts]);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -165,7 +165,7 @@ export default function SchedulePage() {
   const totalShiftsInRange = activeRangeShifts.length;
   const totalMinutesInRange = activeRangeShifts.reduce((sum, s) => sum + getBillableMinutes(s), 0);
   const totalHoursInRange = formatHoursMinutes(totalMinutesInRange);
-  const totalRevenueInRange = activeRangeShifts.reduce((sum, s) => sum + (s.rate_applied || 0), 0);
+  const totalRevenueInRange = activeRangeShifts.reduce((sum, s) => sum + getShiftTotalRevenue(s), 0);
 
   const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
 
@@ -352,6 +352,11 @@ export default function SchedulePage() {
                   ? <>${s.hourly_rate}/hr · {hrs}h = ${s.rate_applied}</>
                   : <>${s.rate_applied} · {hrs}h</>}
               </div>
+              {(s.overtime_hours || 0) > 0 && (s.overtime_rate || 0) > 0 && (
+                <div className="truncate opacity-70 text-[10px]">
+                  +{s.overtime_hours}h OT · ${Math.round((Number(s.overtime_hours) || 0) * (Number(s.overtime_rate) || 0))}
+                </div>
+              )}
             </div>
           );
         })}
@@ -610,7 +615,7 @@ export default function SchedulePage() {
                             <td className="p-3 text-muted-foreground hidden md:table-cell">{hrs}h</td>
                             <td className="p-3 font-medium">
                               <div className="flex items-center gap-1.5 flex-wrap">
-                                <span>${s.rate_applied}</span>
+                                <span>${getShiftTotalRevenue(s)}</span>
                                 {s.rate_kind === 'hourly' && s.hourly_rate ? (
                                   <span className="inline-flex items-center rounded-full bg-primary/10 text-primary text-[10px] font-medium px-1.5 py-0.5">
                                     ${s.hourly_rate}/hr × {hrs}h
@@ -618,6 +623,11 @@ export default function SchedulePage() {
                                 ) : (
                                   <span className="inline-flex items-center rounded-full bg-muted text-muted-foreground text-[10px] font-medium px-1.5 py-0.5">
                                     Flat
+                                  </span>
+                                )}
+                                {(s.overtime_hours || 0) > 0 && (s.overtime_rate || 0) > 0 && (
+                                  <span className="inline-flex items-center rounded-full bg-[hsl(var(--warning))]/15 text-[hsl(var(--warning))] text-[10px] font-medium px-1.5 py-0.5">
+                                    +{s.overtime_hours}h OT
                                   </span>
                                 )}
                               </div>

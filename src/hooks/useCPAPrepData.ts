@@ -5,7 +5,7 @@ import { useTaxAdvisor, TaxAdvisorProfile } from '@/hooks/useTaxAdvisor';
 import { useTaxPaymentLogs, TaxPaymentLog } from '@/hooks/useTaxPaymentLogs';
 import { EXPENSE_CATEGORIES, ALL_SUBCATEGORIES } from '@/lib/expenseCategories';
 import { aggregateQuarterlyIncome } from '@/lib/taxCalculations';
-import { Invoice } from '@/types';
+import { Invoice, getShiftTotalRevenue } from '@/types';
 
 const currentYear = new Date().getFullYear();
 const currentMonth = new Date().getMonth(); // 0-indexed
@@ -87,7 +87,7 @@ export function useCPAPrepData() {
     const uninvoicedRevenueCents = Math.round(
       ytdShifts
         .filter(s => !invoicedShiftIds.has(s.id))
-        .reduce((sum, s) => sum + (s.rate_applied || 0), 0) * 100
+        .reduce((sum, s) => sum + getShiftTotalRevenue(s), 0) * 100
     );
 
     const ytdIncomeCents = paidCents + outstandingCents + uninvoicedRevenueCents;

@@ -203,7 +203,7 @@ export function buildAutoInvoiceDraft(
   lineItems: Omit<InvoiceLineItem, 'id' | 'invoice_id'>[];
 } {
   type LineDraft = Omit<InvoiceLineItem, 'id' | 'invoice_id'>;
-  const lineItems: LineDraft[] = eligibleShifts.map((s): LineDraft => {
+  const lineItems: LineDraft[] = eligibleShifts.flatMap((s): LineDraft[] => {
     const isHourly = s.rate_kind === 'hourly' && s.hourly_rate != null && s.hourly_rate > 0;
     const dateLabel = format(new Date(s.start_datetime), 'MMM d, yyyy');
     const timeLabel = `${format(new Date(s.start_datetime), 'h:mm a')} – ${format(new Date(s.end_datetime), 'h:mm a')}`;
@@ -211,32 +211,48 @@ export function buildAutoInvoiceDraft(
     const breakSuffix = hasBreakDeduction ? ` (incl. ${s.break_minutes} min unpaid break)` : '';
     const typeLabel = getShiftTypeLabel(s.shift_type);
     const coverageLabel = typeLabel ? `${typeLabel} relief coverage` : 'Relief coverage';
+    const serviceDate = new Date(s.start_datetime).toISOString().split('T')[0];
 
-    if (!isHourly) {
-      return {
+    const baseLine: LineDraft = isHourly
+      ? (() => {
+          const billableMinutes = getBillableMinutes(s);
+          const totalHours = Math.round((billableMinutes / 60) * 100) / 100;
+          const hourlyRate = Number(s.hourly_rate);
+          return {
+            shift_id: s.id,
+            description: `${dateLabel} — ${coverageLabel} (${timeLabel})${breakSuffix}`,
+            service_date: serviceDate,
+            qty: totalHours,
+            unit_rate: hourlyRate,
+            line_total: Math.round(totalHours * hourlyRate * 100) / 100,
+            line_kind: 'regular' as const,
+          };
+        })()
+      : {
+          shift_id: s.id,
+          description: `${dateLabel} — ${coverageLabel} (${timeLabel})${breakSuffix}`,
+          service_date: serviceDate,
+          qty: 1,
+          unit_rate: s.rate_applied,
+          line_total: s.rate_applied,
+          line_kind: 'flat' as const,
+        };
+
+    const otHours = Number(s.overtime_hours) || 0;
+    const otRate = Number(s.overtime_rate) || 0;
+    if (otHours > 0 && otRate > 0) {
+      const otLine: LineDraft = {
         shift_id: s.id,
-        description: `${dateLabel} — ${coverageLabel} (${timeLabel})${breakSuffix}`,
-        service_date: new Date(s.start_datetime).toISOString().split('T')[0],
-        qty: 1,
-        unit_rate: s.rate_applied,
-        line_total: s.rate_applied,
-        line_kind: 'flat' as const,
+        description: `Overtime — ${dateLabel}`,
+        service_date: serviceDate,
+        qty: otHours,
+        unit_rate: otRate,
+        line_total: Math.round(otHours * otRate * 100) / 100,
+        line_kind: 'overtime' as const,
       };
+      return [baseLine, otLine];
     }
-
-    // Hourly: single regular line. Use billable minutes (subtracts unpaid break unless overridden).
-    const billableMinutes = getBillableMinutes(s);
-    const totalHours = Math.round((billableMinutes / 60) * 100) / 100;
-    const hourlyRate = Number(s.hourly_rate);
-    return {
-      shift_id: s.id,
-      description: `${dateLabel} — ${coverageLabel} (${timeLabel})${breakSuffix}`,
-      service_date: new Date(s.start_datetime).toISOString().split('T')[0],
-      qty: totalHours,
-      unit_rate: hourlyRate,
-      line_total: Math.round(totalHours * hourlyRate * 100) / 100,
-      line_kind: 'regular' as const,
-    };
+    return [baseLine];
   });
 
   const total = lineItems.reduce((sum, li) => sum + li.line_total, 0);
