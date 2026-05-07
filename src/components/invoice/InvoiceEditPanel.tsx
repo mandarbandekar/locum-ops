@@ -84,7 +84,8 @@ function ShiftLineItemCard({
   };
   const handleCancel = () => {
     setDesc(item.description); setDate(item.service_date || '');
-    setQty(String(item.qty ?? '')); setRate(String(item.unit_rate ?? '')); setEditing(false);
+    setQty(isOvertime ? String(Math.round((Number(item.qty) || 0) * 60)) : String(item.qty ?? ''));
+    setRate(String(item.unit_rate ?? '')); setEditing(false);
   };
 
   const meta = parseShiftMeta(item);
