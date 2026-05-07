@@ -635,7 +635,7 @@ export default function SchedulePage() {
                     {Array.from({ length: startDow }).map((_, i) => (
                       <div key={`empty-${i}`} className="border-t border-r bg-muted/20" />
                     ))}
-                    {monthDays.map(day => renderDayCell(day, 'h-full overflow-hidden'))}
+                    {monthDays.map(day => renderDayCell(day))}
                   </div>
                 </div>
               </>
