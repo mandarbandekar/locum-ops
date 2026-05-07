@@ -666,12 +666,12 @@ export default function SchedulePage() {
               <>
                 <WeekTimeGrid
                   weekDays={[currentDate]}
-                  shifts={calendarFilters.shifts ? shifts : []}
+                  shifts={filters.showShifts ? shifts.filter(s => passesClinic(s.facility_id)) : []}
                   getFacilityName={getFacilityName}
                   onEditShift={setEditShift}
                   onDropOnTime={handleDropOnTime}
                   onCellClick={openAddShiftAt}
-                  calendarFilters={{ credentials: calendarFilters.credentials, subscriptions: calendarFilters.subscriptions }}
+                  calendarFilters={{ credentials: filters.showCredentials, subscriptions: filters.showSubscriptions }}
                   getEventsForDay={getEventsForDay}
                   timeBlocks={timeBlocks}
                   onEditBlock={setEditBlock}
