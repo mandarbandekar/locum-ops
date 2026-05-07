@@ -104,7 +104,40 @@ export default function MileageTrackerTab({
           </p>
         </div>
 
-        {/* Faded preview card */}
+        {/* Next steps checklist */}
+        <div className="mx-auto max-w-[480px]">
+          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground/70 mb-2 text-center">
+            What happens next
+          </p>
+          <ol className="space-y-2">
+            {[
+              { n: 1, label: 'Add your home address', sub: 'So we can measure each trip', active: true },
+              { n: 2, label: 'Work your shifts as usual', sub: 'Trips appear here for review' },
+              { n: 3, label: 'Confirm trips in one tap', sub: 'Each one becomes a tax deduction' },
+            ].map(step => (
+              <li
+                key={step.n}
+                className="flex items-center gap-3 rounded-lg border border-border/50 bg-card px-3.5 py-2.5"
+              >
+                <div
+                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-medium"
+                  style={
+                    step.active
+                      ? { background: '#1A5C6B', color: '#fff' }
+                      : { background: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))' }
+                  }
+                >
+                  {step.n}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[13px] font-medium text-foreground leading-tight">{step.label}</p>
+                  <p className="text-[11px] text-muted-foreground">{step.sub}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+
         <div className="mx-auto max-w-[480px]" style={{ opacity: 0.6 }}>
           <Card className="bg-secondary/40 relative">
             <CardContent className="py-5 px-5">
