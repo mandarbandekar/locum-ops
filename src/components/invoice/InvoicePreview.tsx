@@ -47,7 +47,7 @@ interface PreviewProps {
   invoiceNumber: string;
   invoiceDate: string;
   dueDate: string | null;
-  lineItems: { description: string; service_date: string | null; qty: number; unit_rate: number; line_total: number; shift_id?: string | null; line_kind?: 'regular' | 'flat' }[];
+  lineItems: { description: string; service_date: string | null; qty: number; unit_rate: number; line_total: number; shift_id?: string | null; line_kind?: 'regular' | 'flat' | 'overtime' }[];
   total: number;
   balanceDue: number;
   notes: string;
