@@ -30,6 +30,18 @@ function toDateOnlyISO(v: string | Date | null | undefined): string {
 
 const fmtMoney = (n: number) => `$${(n || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 
+/** Format an hour quantity with sub-hour amounts shown as minutes (e.g. 0.25 → "15 min", 1.5 → "1h 30m"). */
+function formatHours(qty: number | string): string {
+  const n = Number(qty) || 0;
+  if (n === 0) return '0h';
+  const totalMin = Math.round(n * 60);
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  if (h === 0) return `${m} min`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
+}
+
 function parseShiftMeta(item: any): { dateStr: string | null; timeStr: string | null; label: string } {
   // description tends to look like: "Apr 16, 2026 — Relief coverage (8:00 AM – 6:00 PM)"
   const desc: string = item.description || '';
@@ -98,8 +110,11 @@ function ShiftLineItemCard({
             <Input id={`li-date-${item.id}`} type="date" value={date} onChange={e => setDate(e.target.value)} className="h-9 text-sm mt-1" />
           </div>
           <div>
-            <Label htmlFor={`li-qty-${item.id}`} className="text-[10px] text-muted-foreground uppercase">Qty{item.line_kind === 'regular' ? ' (hrs)' : ''}</Label>
+            <Label htmlFor={`li-qty-${item.id}`} className="text-[10px] text-muted-foreground uppercase">Qty{(item.line_kind === 'regular' || item.line_kind === 'overtime') ? ' (hrs)' : ''}</Label>
             <Input id={`li-qty-${item.id}`} type="number" inputMode="decimal" value={qty} onChange={e => setQty(e.target.value)} className="h-9 text-sm mt-1" min={0} step="0.25" aria-label="Quantity" />
+            {(item.line_kind === 'regular' || item.line_kind === 'overtime') && (
+              <p className="text-[10px] text-muted-foreground mt-1">15-min steps (0.25 = 15 min, 0.5 = 30 min)</p>
+            )}
           </div>
           <div>
             <Label htmlFor={`li-rate-${item.id}`} className="text-[10px] text-muted-foreground uppercase">Rate</Label>
@@ -168,7 +183,7 @@ function ShiftLineItemCard({
             <div className="text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap min-w-0">
               {item.line_kind === 'overtime' ? (
                 <>
-                  <span className="tabular-nums">{item.qty}h × {fmtMoney(item.unit_rate)}/hr</span>
+                  <span className="tabular-nums">{formatHours(item.qty)} × {fmtMoney(item.unit_rate)}/hr</span>
                   <span className="inline-flex items-center rounded-full bg-[hsl(var(--warning))]/15 text-[hsl(var(--warning))] text-[10px] font-medium px-1.5 py-0.5">Overtime</span>
                 </>
               ) : isShift && (item.line_kind === 'regular' || (item.qty !== 1 && !item.line_kind)) ? (
