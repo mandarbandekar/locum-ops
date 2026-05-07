@@ -234,8 +234,10 @@ export function useCPAPrepData() {
       totalMiles: ytdMileageMiles,
       deductionCents: ytdMileageDeductionCents,
       byClinic: Object.entries(byClinic).map(([name, miles]) => ({ name, miles })).sort((a, b) => b.miles - a.miles),
+      startingMiles,
+      startingMilesNote,
     };
-  }, [confirmedMileageExpenses, facilities, ytdMileageMiles, ytdMileageDeductionCents]);
+  }, [confirmedMileageExpenses, facilities, ytdMileageMiles, ytdMileageDeductionCents, startingMiles, startingMilesNote]);
 
   // ── Readiness ──
   const readiness = useMemo<ReadinessItem[]>(() => {
