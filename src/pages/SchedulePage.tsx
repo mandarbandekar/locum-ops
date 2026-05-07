@@ -643,7 +643,7 @@ export default function SchedulePage() {
               <>
                 <WeekTimeGrid
                   weekDays={weekDays}
-                  shifts={calendarFilters.shifts ? shifts : []}
+                  shifts={filters.showShifts ? shifts.filter(s => passesClinic(s.facility_id)) : []}
                   getFacilityName={getFacilityName}
                   onEditShift={setEditShift}
                   onDropOnTime={handleDropOnTime}
