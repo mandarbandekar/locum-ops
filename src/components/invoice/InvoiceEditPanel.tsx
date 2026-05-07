@@ -64,11 +64,16 @@ function ShiftLineItemCard({
   const [editing, setEditing] = useState(false);
   const [desc, setDesc] = useState(item.description);
   const [date, setDate] = useState(item.service_date || '');
-  const [qty, setQty] = useState<string>(String(item.qty ?? ''));
+  const isOvertime = item.line_kind === 'overtime';
+  // For overtime, edit in minutes (15-min steps). For everything else, edit in original units.
+  const [qty, setQty] = useState<string>(
+    isOvertime ? String(Math.round((Number(item.qty) || 0) * 60)) : String(item.qty ?? '')
+  );
   const [rate, setRate] = useState<string>(String(item.unit_rate ?? ''));
 
-  const qtyNum = parseFloat(qty) || 0;
   const rateNum = parseFloat(rate) || 0;
+  // qtyNum is always in the line item's stored unit (hours for OT/regular, units otherwise)
+  const qtyNum = isOvertime ? (parseFloat(qty) || 0) / 60 : (parseFloat(qty) || 0);
 
   const handleSave = async () => {
     if (!onUpdate) return;
@@ -79,7 +84,8 @@ function ShiftLineItemCard({
   };
   const handleCancel = () => {
     setDesc(item.description); setDate(item.service_date || '');
-    setQty(String(item.qty ?? '')); setRate(String(item.unit_rate ?? '')); setEditing(false);
+    setQty(isOvertime ? String(Math.round((Number(item.qty) || 0) * 60)) : String(item.qty ?? ''));
+    setRate(String(item.unit_rate ?? '')); setEditing(false);
   };
 
   const meta = parseShiftMeta(item);
@@ -110,14 +116,42 @@ function ShiftLineItemCard({
             <Input id={`li-date-${item.id}`} type="date" value={date} onChange={e => setDate(e.target.value)} className="h-9 text-sm mt-1" />
           </div>
           <div>
-            <Label htmlFor={`li-qty-${item.id}`} className="text-[10px] text-muted-foreground uppercase">Qty{(item.line_kind === 'regular' || item.line_kind === 'overtime') ? ' (hrs)' : ''}</Label>
-            <Input id={`li-qty-${item.id}`} type="number" inputMode="decimal" value={qty} onChange={e => setQty(e.target.value)} className="h-9 text-sm mt-1" min={0} step="0.25" aria-label="Quantity" />
-            {(item.line_kind === 'regular' || item.line_kind === 'overtime') && (
+            <Label htmlFor={`li-qty-${item.id}`} className="text-[10px] text-muted-foreground uppercase">
+              {isOvertime ? 'Qty (min)' : (item.line_kind === 'regular' ? 'Qty (hrs)' : 'Qty')}
+            </Label>
+            <Input
+              id={`li-qty-${item.id}`}
+              type="number"
+              inputMode="decimal"
+              value={qty}
+              onChange={e => setQty(e.target.value)}
+              className="h-9 text-sm mt-1"
+              min={0}
+              step={isOvertime ? 15 : (item.line_kind === 'regular' ? 0.25 : 'any')}
+              aria-label="Quantity"
+            />
+            {isOvertime ? (
+              <>
+                <div className="flex flex-wrap gap-1 mt-1.5">
+                  {[15, 30, 45, 60, 90, 120].map(min => (
+                    <button
+                      key={min}
+                      type="button"
+                      onClick={() => setQty(String(min))}
+                      className={`text-[10px] px-1.5 py-0.5 rounded border ${Number(qty) === min ? 'bg-primary/10 border-primary text-primary' : 'border-border text-muted-foreground hover:bg-muted'}`}
+                    >
+                      {min < 60 ? `${min}m` : (min % 60 === 0 ? `${min / 60}h` : `${Math.floor(min / 60)}h ${min % 60}m`)}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-1">Enter minutes (15-min steps)</p>
+              </>
+            ) : (item.line_kind === 'regular' && (
               <p className="text-[10px] text-muted-foreground mt-1">15-min steps (0.25 = 15 min, 0.5 = 30 min)</p>
-            )}
+            ))}
           </div>
           <div>
-            <Label htmlFor={`li-rate-${item.id}`} className="text-[10px] text-muted-foreground uppercase">Rate</Label>
+            <Label htmlFor={`li-rate-${item.id}`} className="text-[10px] text-muted-foreground uppercase">Rate{isOvertime ? ' / hr' : ''}</Label>
             <Input id={`li-rate-${item.id}`} type="number" inputMode="decimal" value={rate} onChange={e => setRate(e.target.value)} className="h-9 text-sm mt-1" min={0} step="0.01" aria-label="Rate" />
           </div>
         </div>
@@ -511,7 +545,7 @@ export function InvoiceEditPanel({
                   hasOvertime={hasOvertime}
                   onAddOvertime={shift && !readOnly && onAddLineItem ? async () => {
                     const defaultRate = shift.rate_kind === 'hourly' && shift.hourly_rate ? Number(shift.hourly_rate) : 0;
-                    const otQty = 1;
+                    const otQty = 0.25;
                     const otTotal = Math.round(otQty * defaultRate * 100) / 100;
                     const dateLabel = format(new Date(shift.start_datetime), 'MMM d, yyyy');
                     await onAddLineItem({
@@ -531,9 +565,9 @@ export function InvoiceEditPanel({
                     await onAddActivity({
                       invoice_id: invoice.id,
                       action: 'overtime_added',
-                      description: `Added overtime line — ${otQty}h${defaultRate ? ` × ${fmtMoney(defaultRate)}` : ''}`,
+                      description: `Added overtime line — 15 min${defaultRate ? ` × ${fmtMoney(defaultRate)}/hr` : ''}`,
                     });
-                    toast.success('Overtime added — edit qty or rate to adjust');
+                    toast.success('Overtime added (15 min) — adjust qty or rate as needed');
                   } : undefined}
                   onUpdate={async (updated) => {
                     if (!onUpdateLineItem) return;
