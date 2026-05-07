@@ -549,7 +549,7 @@ export function InvoiceEditPanel({
                   hasOvertime={hasOvertime}
                   onAddOvertime={shift && !readOnly && onAddLineItem ? async () => {
                     const defaultRate = shift.rate_kind === 'hourly' && shift.hourly_rate ? Number(shift.hourly_rate) : 0;
-                    const otQty = 1;
+                    const otQty = 0.25;
                     const otTotal = Math.round(otQty * defaultRate * 100) / 100;
                     const dateLabel = format(new Date(shift.start_datetime), 'MMM d, yyyy');
                     await onAddLineItem({
@@ -569,9 +569,9 @@ export function InvoiceEditPanel({
                     await onAddActivity({
                       invoice_id: invoice.id,
                       action: 'overtime_added',
-                      description: `Added overtime line — ${otQty}h${defaultRate ? ` × ${fmtMoney(defaultRate)}` : ''}`,
+                      description: `Added overtime line — 15 min${defaultRate ? ` × ${fmtMoney(defaultRate)}/hr` : ''}`,
                     });
-                    toast.success('Overtime added — edit qty or rate to adjust');
+                    toast.success('Overtime added (15 min) — adjust qty or rate as needed');
                   } : undefined}
                   onUpdate={async (updated) => {
                     if (!onUpdateLineItem) return;
