@@ -120,7 +120,7 @@ export default function ReportsPage() {
           const shiftDate = parseISO(s.start_datetime);
           return isWithinInterval(shiftDate, { start: month, end: monthEnd }) &&
             !invoicedShiftIds.has(s.id);
-        }).reduce((sum, s) => sum + s.rate_applied, 0);
+        }).reduce((sum, s) => sum + getShiftTotalRevenue(s), 0);
 
         anticipated = draftTotal + uninvoicedShiftTotal;
       }
