@@ -648,7 +648,7 @@ export default function SchedulePage() {
                   onEditShift={setEditShift}
                   onDropOnTime={handleDropOnTime}
                   onCellClick={openAddShiftAt}
-                  calendarFilters={{ credentials: calendarFilters.credentials, subscriptions: calendarFilters.subscriptions }}
+                  calendarFilters={{ credentials: filters.showCredentials, subscriptions: filters.showSubscriptions }}
                   getEventsForDay={getEventsForDay}
                   timeBlocks={timeBlocks}
                   onEditBlock={setEditBlock}
