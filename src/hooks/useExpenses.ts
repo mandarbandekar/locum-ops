@@ -83,6 +83,8 @@ export function useExpenses() {
     irs_mileage_rate_cents: config?.irs_mileage_rate_cents ?? DEFAULT_CONFIG.irs_mileage_rate_cents,
     home_office_rate_cents: config?.home_office_rate_cents ?? DEFAULT_CONFIG.home_office_rate_cents,
     tax_year: config?.tax_year ?? DEFAULT_CONFIG.tax_year,
+    ytd_starting_miles: Number(config?.ytd_starting_miles ?? 0) || 0,
+    ytd_starting_miles_note: config?.ytd_starting_miles_note ?? '',
   }), [config]);
 
   const addExpense = useCallback(async (data: Partial<Expense>) => {
