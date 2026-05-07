@@ -627,7 +627,7 @@ export default function SchedulePage() {
                                 )}
                                 {(s.overtime_hours || 0) > 0 && (s.overtime_rate || 0) > 0 && (
                                   <span className="inline-flex items-center rounded-full bg-[hsl(var(--warning))]/15 text-[hsl(var(--warning))] text-[10px] font-medium px-1.5 py-0.5">
-                                    +{s.overtime_hours}h OT
+                                    +{formatHoursDisplay(s.overtime_hours)} OT
                                   </span>
                                 )}
                               </div>
