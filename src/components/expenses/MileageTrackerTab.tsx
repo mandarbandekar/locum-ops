@@ -183,6 +183,32 @@ export default function MileageTrackerTab({
         </CardContent>
       </Card>
 
+      </Card>
+
+      {/* YTD Starting Balance (manually-tracked miles from another tool) */}
+      <Card>
+        <CardContent className="py-3 px-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Hash className="h-4 w-4 text-muted-foreground shrink-0" />
+            <div className="min-w-0">
+              <p className="text-sm font-medium">
+                {startingMiles > 0
+                  ? `Starting balance: ${startingMiles.toLocaleString()} mi imported`
+                  : 'Add miles tracked elsewhere this year'}
+              </p>
+              <p className="text-[11px] text-muted-foreground truncate">
+                {startingMiles > 0 && startingMilesNote
+                  ? startingMilesNote
+                  : `Already tracked ${config.tax_year} miles in another app? Add the total so YTD picks up where you left off.`}
+              </p>
+            </div>
+          </div>
+          <Button size="sm" variant="outline" className="text-xs shrink-0" onClick={() => setShowStartingDialog(true)}>
+            {startingMiles > 0 ? 'Edit' : 'Add'}
+          </Button>
+        </CardContent>
+      </Card>
+
       {/* Backfill Past Shifts */}
       <MileageBackfillCard onComplete={reload} />
 
