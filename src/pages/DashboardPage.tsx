@@ -38,7 +38,7 @@ import { SpotlightTour, TourStep } from '@/components/SpotlightTour';
 import { useSpotlightTour } from '@/hooks/useSpotlightTour';
 import {
   Building2, CalendarDays as CalendarDaysIcon2, FileText as FileText2,
-  Activity, Landmark,
+  Activity, Landmark, Car,
 } from 'lucide-react';
 
 import { BriefingBanner } from '@/components/dashboard/BriefingBanner';
