@@ -3,7 +3,7 @@ import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { StatusBadge } from '@/components/StatusBadge';
-import { Plus, ChevronLeft, ChevronRight, List, CalendarDays, Trash2, Calendar as CalendarIcon, CheckSquare, RefreshCw, AlertTriangle, Ban, Layers, ChevronDown } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, List, CalendarDays, Trash2, Calendar as CalendarIcon, CheckSquare, RefreshCw, AlertTriangle, Ban, ChevronDown } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, getDay, startOfWeek, endOfWeek, addWeeks, subWeeks, addDays, subDays, differenceInMilliseconds, differenceInHours } from 'date-fns';
 import { CalendarPlus, Clock, DollarSign, TrendingUp } from 'lucide-react';
@@ -113,17 +113,11 @@ export default function SchedulePage() {
   const [editShift, setEditShift] = useState<string | null>(null);
   const [blockTimeDefaultDate, setBlockTimeDefaultDate] = useState<Date | undefined>(undefined);
   const [dragOverDay, setDragOverDay] = useState<string | null>(null);
-  const [calendarFilters, setCalendarFilters] = useState<CalendarLayerFilters>({
+  const [calendarFilters] = useState<CalendarLayerFilters>({
     shifts: true,
-    credentials: false,
-    subscriptions: false,
+    credentials: true,
+    subscriptions: true,
   });
-
-  const toggleFilter = (key: keyof CalendarLayerFilters) => {
-    setCalendarFilters(prev => ({ ...prev, [key]: !prev[key] }));
-  };
-
-  const hasNonDefaultLayers = calendarFilters.credentials || calendarFilters.subscriptions;
 
   // Always default to Month view on mount; only persist non-timeframe views (list/confirmations/sync)
   useEffect(() => {
@@ -390,29 +384,6 @@ export default function SchedulePage() {
         <div className="flex items-center gap-2 flex-wrap">
           <TooltipProvider delayDuration={200}>
             <div className="flex items-center gap-1" data-tour="schedule-view-switcher">
-              {/* Timeframe dropdown (Month / Week / Day) */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant={isTimeframeView ? 'default' : 'outline'}
-                    size="sm"
-                    className="gap-1.5"
-                  >
-                    <TimeframeIcon className="h-3.5 w-3.5" />
-                    <span>{timeframeLabel}</span>
-                    <ChevronDown className="h-3.5 w-3.5 opacity-70" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  <DropdownMenuItem onClick={() => setView('month')}>
-                    <CalendarDays className="mr-2 h-4 w-4" /> Month
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setView('week')}>
-                    <CalendarIcon className="mr-2 h-4 w-4" /> Week
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
               {/* List <-> Calendar toggle */}
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -484,27 +455,34 @@ export default function SchedulePage() {
             </div>
 
             <div className="flex-1 flex items-center justify-end">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="ghost" size="sm" className="gap-1.5 relative">
-                    <Layers className="h-4 w-4" />
-                    <span className="hidden sm:inline">Layers</span>
-                    {hasNonDefaultLayers && (
-                      <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-primary" />
-                    )}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant={isTimeframeView ? 'default' : 'outline'}
+                    size="sm"
+                    className="gap-1.5"
+                  >
+                    <TimeframeIcon className="h-3.5 w-3.5" />
+                    <span>{timeframeLabel}</span>
+                    <ChevronDown className="h-3.5 w-3.5 opacity-70" />
                   </Button>
-                </PopoverTrigger>
-                <PopoverContent align="end" className="w-auto p-3">
-                  <CalendarFilters filters={calendarFilters} onToggle={toggleFilter} />
-                </PopoverContent>
-              </Popover>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setView('month')}>
+                    <CalendarDays className="mr-2 h-4 w-4" /> Month
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setView('week')}>
+                    <CalendarIcon className="mr-2 h-4 w-4" /> Week
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
       )}
 
       {/* Content area - fills remaining space */}
-      <div className="flex-1 overflow-auto px-4 py-3">
+      <div className={`flex-1 min-h-0 px-4 py-3 ${view === 'month' || view === 'week' || view === 'day' ? 'flex flex-col overflow-hidden' : 'overflow-auto'}`}>
         {view === 'sync' ? (
           <CalendarSyncPanel />
         ) : view === 'confirmations' ? (
@@ -513,29 +491,30 @@ export default function SchedulePage() {
           <>
             {view === 'month' ? (
               <>
-                <div className="rounded-lg border bg-card overflow-x-auto -mx-1 sm:mx-0">
-                  <div className="min-w-[420px]">
-                    <div className="grid grid-cols-7 bg-muted/50">
-                      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-                        <div key={d} className="p-1.5 sm:p-2 text-center text-[10px] sm:text-xs font-medium text-muted-foreground">{d}</div>
-                      ))}
-                    </div>
-                    <div className="grid grid-cols-7">
-                      {Array.from({ length: startDow }).map((_, i) => (
-                        <div key={`empty-${i}`} className="min-h-[60px] sm:min-h-[80px] border-t border-r bg-muted/20" />
-                      ))}
-                      {monthDays.map(day => renderDayCell(day, 'min-h-[60px] sm:min-h-[80px]'))}
-                    </div>
-                  </div>
-                </div>
-                {totalShiftsInRange === 0 && (
+                {totalShiftsInRange === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16 text-center">
                     <CalendarPlus className="h-12 w-12 text-muted-foreground/40 mb-4" />
                     <h3 className="text-lg font-semibold mb-1">No shifts this month</h3>
                     <p className="text-sm text-muted-foreground max-w-xs mb-4">Add shifts to track your schedule, auto-generate invoices, and sync to your calendar.</p>
                     <Button onClick={() => setShowAdd(true)}><Plus className="mr-1.5 h-4 w-4" /> Add Your First Shift</Button>
                   </div>
-                )}
+                ) : null}
+                <div className="rounded-lg border bg-card overflow-hidden flex-1 min-h-0 flex flex-col -mx-1 sm:mx-0">
+                  <div className="grid grid-cols-7 bg-muted/50 flex-none">
+                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+                      <div key={d} className="p-1.5 sm:p-2 text-center text-[10px] sm:text-xs font-medium text-muted-foreground">{d}</div>
+                    ))}
+                  </div>
+                  <div
+                    className="grid grid-cols-7 flex-1 min-h-0 overflow-hidden"
+                    style={{ gridTemplateRows: `repeat(${Math.ceil((startDow + monthDays.length) / 7)}, minmax(0, 1fr))` }}
+                  >
+                    {Array.from({ length: startDow }).map((_, i) => (
+                      <div key={`empty-${i}`} className="border-t border-r bg-muted/20" />
+                    ))}
+                    {monthDays.map(day => renderDayCell(day, 'h-full overflow-hidden'))}
+                  </div>
+                </div>
               </>
             ) : view === 'week' ? (
               <>

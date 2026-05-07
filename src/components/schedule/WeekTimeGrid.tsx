@@ -77,7 +77,7 @@ export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, o
   }, [weekDays, shifts]);
 
   return (
-    <div className="rounded-lg border bg-card overflow-x-auto -mx-3 sm:mx-0">
+    <div className="rounded-lg border bg-card overflow-hidden flex flex-col h-full -mx-3 sm:mx-0">
       {/* Day headers */}
       <div className="grid bg-muted/50 min-w-[700px]" style={{ gridTemplateColumns: `${GUTTER_WIDTH}px repeat(7, 1fr)` }}>
         <div className="p-2 border-r" />
@@ -121,7 +121,7 @@ export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, o
       )}
 
       {/* Time grid body */}
-      <ScrollArea className="h-[600px]">
+      <ScrollArea className="flex-1 min-h-0">
         <div ref={gridRef} className="relative min-w-[700px]" style={{ height: `${HOURS.length * HOUR_HEIGHT}px` }}>
           {/* Hour rows – grid lines + labels + drop zones */}
           {HOURS.map((hour, rowIdx) => (
