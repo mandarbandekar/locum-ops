@@ -615,7 +615,7 @@ export default function SchedulePage() {
                             <td className="p-3 text-muted-foreground hidden md:table-cell">{hrs}h</td>
                             <td className="p-3 font-medium">
                               <div className="flex items-center gap-1.5 flex-wrap">
-                                <span>${s.rate_applied}</span>
+                                <span>${getShiftTotalRevenue(s)}</span>
                                 {s.rate_kind === 'hourly' && s.hourly_rate ? (
                                   <span className="inline-flex items-center rounded-full bg-primary/10 text-primary text-[10px] font-medium px-1.5 py-0.5">
                                     ${s.hourly_rate}/hr × {hrs}h
@@ -623,6 +623,11 @@ export default function SchedulePage() {
                                 ) : (
                                   <span className="inline-flex items-center rounded-full bg-muted text-muted-foreground text-[10px] font-medium px-1.5 py-0.5">
                                     Flat
+                                  </span>
+                                )}
+                                {(s.overtime_hours || 0) > 0 && (s.overtime_rate || 0) > 0 && (
+                                  <span className="inline-flex items-center rounded-full bg-[hsl(var(--warning))]/15 text-[hsl(var(--warning))] text-[10px] font-medium px-1.5 py-0.5">
+                                    +{s.overtime_hours}h OT
                                   </span>
                                 )}
                               </div>
