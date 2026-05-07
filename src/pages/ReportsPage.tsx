@@ -244,7 +244,7 @@ export default function ReportsPage() {
       const shiftDate = parseISO(shift.start_datetime);
       if (isWithinInterval(shiftDate, { start: rangeStart, end: rangeEnd }) && shift.rate_applied > 0) {
         const day = getDay(shiftDate);
-        dayTotals[day] += shift.rate_applied;
+        dayTotals[day] += getShiftTotalRevenue(shift);
         dayCounts[day] += 1;
       }
     });
