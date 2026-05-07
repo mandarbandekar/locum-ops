@@ -154,8 +154,19 @@ export interface Invoice {
   billing_cadence: BillingCadence | null;
 }
 
-export type InvoiceLineKind = 'regular' | 'flat';
+export type InvoiceLineKind = 'regular' | 'flat' | 'overtime';
 export interface InvoiceLineItem {
+  id: string;
+  invoice_id: string;
+  shift_id: string | null;
+  description: string;
+  service_date: string | null;
+  qty: number;
+  unit_rate: number;
+  line_total: number;
+  /** Distinguishes hourly (regular), flat day-rate, and overtime lines. */
+  line_kind?: InvoiceLineKind;
+}
   id: string;
   invoice_id: string;
   shift_id: string | null;
