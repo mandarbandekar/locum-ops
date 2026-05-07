@@ -223,17 +223,20 @@ export function useExpenses() {
     expenses.filter(e => e.subcategory === 'mileage' && e.mileage_status === 'confirmed'),
   [expenses]);
 
+  const startingMiles = effectiveConfig.ytd_starting_miles;
+  const startingMilesDeductionCents = Math.round(startingMiles * effectiveConfig.irs_mileage_rate_cents);
+
   const ytdMileageMiles = useMemo(() =>
-    confirmedMileageExpenses
+    startingMiles + confirmedMileageExpenses
       .filter(e => new Date(e.expense_date).getFullYear() === currentYear)
       .reduce((s, e) => s + (e.mileage_miles || 0), 0),
-  [confirmedMileageExpenses, currentYear]);
+  [confirmedMileageExpenses, currentYear, startingMiles]);
 
   const ytdMileageDeductionCents = useMemo(() =>
-    confirmedMileageExpenses
+    startingMilesDeductionCents + confirmedMileageExpenses
       .filter(e => new Date(e.expense_date).getFullYear() === currentYear)
       .reduce((s, e) => s + e.deductible_amount_cents, 0),
-  [confirmedMileageExpenses, currentYear]);
+  [confirmedMileageExpenses, currentYear, startingMilesDeductionCents]);
 
   const confirmMileage = useCallback(async (id: string) => {
     if (isDemo) {
