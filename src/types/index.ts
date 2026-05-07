@@ -116,6 +116,17 @@ export interface Shift {
   break_minutes?: number | null;
   /** When true, billable time = scheduled time regardless of break_minutes. */
   worked_through_break?: boolean;
+  /** Extra hours worked beyond the scheduled shift (mirrored from invoice overtime line). */
+  overtime_hours?: number | null;
+  /** Hourly rate charged for overtime (mirrored from invoice overtime line). */
+  overtime_rate?: number | null;
+}
+
+/** Total billable revenue for a shift, including any overtime. */
+export function getShiftTotalRevenue(shift: Pick<Shift, 'rate_applied' | 'overtime_hours' | 'overtime_rate'>): number {
+  const base = Number(shift.rate_applied) || 0;
+  const ot = (Number(shift.overtime_hours) || 0) * (Number(shift.overtime_rate) || 0);
+  return Math.round((base + ot) * 100) / 100;
 }
 
 export type InvoiceStatus = 'draft' | 'sent' | 'partial' | 'paid';
