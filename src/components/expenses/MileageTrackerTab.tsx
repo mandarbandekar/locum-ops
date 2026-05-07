@@ -222,6 +222,14 @@ export default function MileageTrackerTab({
               <p className="mt-1.5 mx-auto max-w-[400px] text-[12px] text-muted-foreground leading-relaxed">
                 Relief vets on Locum Ops typically find <span className="font-medium text-foreground">$4,000–$8,000</span> in mileage deductions per year. Every confirmed trip lands here — money in your pocket at tax time.
               </p>
+              <div className="mt-5">
+                <Button
+                  onClick={() => navigate('/settings/profile')}
+                  className="bg-[#1A5C6B] text-white hover:bg-[#1A5C6B]/90 text-[14px] font-medium h-10 px-5"
+                >
+                  Set home address →
+                </Button>
+              </div>
             </CardContent>
           </Card>
         ) : (
