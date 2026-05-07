@@ -166,7 +166,12 @@ function ShiftLineItemCard({
           {/* Row 3: Rate breakdown + chips */}
           <div className="flex items-center justify-between gap-2 mt-2">
             <div className="text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap min-w-0">
-              {isShift && (item.line_kind === 'regular' || (item.qty !== 1 && !item.line_kind)) ? (
+              {item.line_kind === 'overtime' ? (
+                <>
+                  <span className="tabular-nums">{item.qty}h × {fmtMoney(item.unit_rate)}/hr</span>
+                  <span className="inline-flex items-center rounded-full bg-[hsl(var(--warning))]/15 text-[hsl(var(--warning))] text-[10px] font-medium px-1.5 py-0.5">Overtime</span>
+                </>
+              ) : isShift && (item.line_kind === 'regular' || (item.qty !== 1 && !item.line_kind)) ? (
                 <>
                   <span className="tabular-nums">{item.qty}h × {fmtMoney(item.unit_rate)}/hr</span>
                   <span className="inline-flex items-center rounded-full bg-primary/10 text-primary text-[10px] font-medium px-1.5 py-0.5">Hourly</span>
@@ -179,7 +184,7 @@ function ShiftLineItemCard({
                   )}
                 </>
               )}
-              {isShift && <span className="text-primary text-[10px]">· from shift ✓</span>}
+              {isShift && item.line_kind !== 'overtime' && <span className="text-primary text-[10px]">· from shift ✓</span>}
             </div>
             {!readOnly && (
               <div className="flex gap-1 shrink-0 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 transition-opacity">
@@ -206,6 +211,18 @@ function ShiftLineItemCard({
           </div>
           {showSyncHint && !readOnly && (
             <p className="text-[10.5px] text-muted-foreground/80 italic mt-1.5">Editing this updates the shift on your schedule.</p>
+          )}
+          {!readOnly && isShift && item.line_kind !== 'overtime' && !hasOvertime && onAddOvertime && (
+            <div className="mt-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-[11px] px-2 text-[hsl(var(--warning))] hover:bg-[hsl(var(--warning))]/10"
+                onClick={e => { e.stopPropagation(); onAddOvertime(); }}
+              >
+                <Plus className="h-3 w-3 mr-1" /> Add overtime
+              </Button>
+            </div>
           )}
         </div>
       </div>
