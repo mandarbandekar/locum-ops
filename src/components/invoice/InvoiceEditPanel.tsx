@@ -30,6 +30,18 @@ function toDateOnlyISO(v: string | Date | null | undefined): string {
 
 const fmtMoney = (n: number) => `$${(n || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 
+/** Format an hour quantity with sub-hour amounts shown as minutes (e.g. 0.25 → "15 min", 1.5 → "1h 30m"). */
+function formatHours(qty: number | string): string {
+  const n = Number(qty) || 0;
+  if (n === 0) return '0h';
+  const totalMin = Math.round(n * 60);
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  if (h === 0) return `${m} min`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
+}
+
 function parseShiftMeta(item: any): { dateStr: string | null; timeStr: string | null; label: string } {
   // description tends to look like: "Apr 16, 2026 — Relief coverage (8:00 AM – 6:00 PM)"
   const desc: string = item.description || '';
