@@ -257,6 +257,15 @@ export default function MileageTrackerTab({
           </div>
         )}
       </div>
+
+      <MileageStartingBalanceDialog
+        open={showStartingDialog}
+        onOpenChange={setShowStartingDialog}
+        initialMiles={startingMiles}
+        initialNote={startingMilesNote}
+        taxYear={config.tax_year}
+        onSave={updateMileageStartingBalance}
+      />
     </div>
   );
 }
