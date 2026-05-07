@@ -1,9 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Car, MapPin, CheckCircle2, AlertCircle, ArrowRight, Info, TrendingUp, Hash } from 'lucide-react';
+import { Car, Route, ShieldCheck, Hash } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useData } from '@/contexts/DataContext';
@@ -57,48 +55,93 @@ export default function MileageTrackerTab({
   const irsRate = config.irs_mileage_rate_cents;
   const fmt = (cents: number) => '$' + (cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  const thisMonthMiles = useMemo(() => {
+  const thisMonthCents = useMemo(() => {
     const now = new Date();
     return confirmedMileageExpenses
       .filter(e => {
         const d = new Date(e.expense_date);
         return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
       })
-      .reduce((s, e) => s + (e.mileage_miles || 0), 0);
+      .reduce((s, e) => s + e.amount_cents, 0);
   }, [confirmedMileageExpenses]);
 
+  const clinicCount = useMemo(() => {
+    const ids = new Set<string>();
+    confirmedMileageExpenses.forEach(e => { if (e.facility_id) ids.add(e.facility_id); });
+    return ids.size;
+  }, [confirmedMileageExpenses]);
+
+  // ============================================================
+  // EMPTY STATE — no home address set
+  // ============================================================
+  if (!homeAddressSet) {
+    return (
+      <div className="space-y-6">
+        {/* Hero */}
+        <div className="mx-auto max-w-[480px] text-center pt-6 pb-2">
+          <div
+            className="mx-auto mb-5 flex items-center justify-center rounded-full"
+            style={{ width: 56, height: 56, background: 'rgba(94, 168, 122, 0.12)' }}
+          >
+            <Route className="h-7 w-7" style={{ color: '#2D6B4A' }} />
+          </div>
+          <h2 className="text-[18px] font-medium text-foreground">
+            Find money you've been leaving on the table
+          </h2>
+          <p className="mt-2 mx-auto max-w-[440px] text-[13px] text-muted-foreground leading-relaxed">
+            Relief vets on Locum Ops typically find <span className="font-medium text-foreground">$4,000–$8,000</span> in mileage deductions per year. Add your home address and we'll auto-calculate every trip.
+          </p>
+          <div className="mt-5">
+            <Button
+              onClick={() => navigate('/settings/profile')}
+              className="bg-[#1A5C6B] text-white hover:bg-[#1A5C6B]/90 text-[14px] font-medium h-10 px-5"
+            >
+              Add home address →
+            </Button>
+          </div>
+          <p className="mt-3 text-[11px] text-muted-foreground/70">
+            Takes 30 seconds. Used only to calculate distance to clinics.
+          </p>
+        </div>
+
+        {/* Faded preview card */}
+        <div className="mx-auto max-w-[480px]" style={{ opacity: 0.6 }}>
+          <Card className="bg-secondary/40 relative">
+            <CardContent className="py-5 px-5">
+              <span className="absolute top-3 right-3 inline-flex items-center rounded-full border border-border/40 bg-white px-2 py-0.5 text-[10px] text-muted-foreground">
+                Preview · your dashboard after first shift
+              </span>
+              <p className="text-[12px] text-muted-foreground">Money found this year</p>
+              <p className="mt-1 text-[28px] font-medium leading-none" style={{ color: '#1A5C6B' }}>
+                $1,471.40
+              </p>
+              <p className="mt-2 text-[11px] text-muted-foreground">2,102 miles · 4 clinics</p>
+              <div className="mt-3 flex gap-2 flex-wrap">
+                <span className="inline-flex items-center rounded-full bg-white border border-border/40 px-2.5 py-1 text-[11px] text-muted-foreground">
+                  South County · $24.22
+                </span>
+                <span className="inline-flex items-center rounded-full bg-white border border-border/40 px-2.5 py-1 text-[11px] text-muted-foreground">
+                  Parktown · $23.80
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground/70">
+          <ShieldCheck className="h-3.5 w-3.5" />
+          <span>IRS standard rate ${(irsRate / 100).toFixed(2)}/mile · auto-updated each tax year</span>
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================================
+  // POPULATED STATE
+  // ============================================================
   return (
     <div className="space-y-4">
-      {/* Required: Home address prompt (blocks accurate mileage if missing) */}
-      {!homeAddressSet && (
-        <Card className="border-amber-300 dark:border-amber-900 bg-amber-50/40 dark:bg-amber-950/20">
-          <CardContent className="py-4 px-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-            <div className="flex items-start gap-2.5 flex-1 min-w-0">
-              <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
-              <div className="min-w-0">
-                <p className="text-sm font-semibold flex items-center gap-2">
-                  Home address required
-                  <Badge variant="outline" className="text-[10px] border-amber-500 text-amber-700 dark:text-amber-400">
-                    Required
-                  </Badge>
-                </p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  We use your home address to calculate mileage between home and each clinic. Add it once in your profile and scanning starts automatically.
-                </p>
-              </div>
-            </div>
-            <Button
-              size="sm"
-              className="gap-1.5 shrink-0 self-start sm:self-auto"
-              onClick={() => navigate('/settings/profile')}
-            >
-              <MapPin className="h-3.5 w-3.5" />
-              Add Home Address
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Onboarding */}
       {showOnboarding && (
         <MileageOnboarding onDismiss={() => {
@@ -107,83 +150,37 @@ export default function MileageTrackerTab({
         }} />
       )}
 
-      {/* YTD Stats Strip */}
-      <div className="grid grid-cols-3 gap-3">
-        <Card>
-          <CardContent className="py-3 px-4 flex items-center gap-2.5">
-            <Car className="h-4 w-4 text-primary shrink-0" />
-            <div className="min-w-0">
-              <div className="flex items-center gap-1">
-                <p className="text-[11px] text-muted-foreground">YTD Miles</p>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-[260px] text-xs">
-                      <p className="font-medium mb-1">IRS Commute Rule for Relief Vets</p>
-                      <p>As a relief vet with no fixed office, travel from home to each clinic is generally deductible business mileage — not a personal commute.</p>
-                      {startingMiles > 0 && (
-                        <p className="mt-2 pt-2 border-t border-border/40 text-muted-foreground">
-                          Includes {startingMiles.toLocaleString()} mi imported starting balance{startingMilesNote ? ` (${startingMilesNote})` : ''}.
-                        </p>
-                      )}
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              <p className="font-semibold text-sm">{ytdMileageMiles.toLocaleString()} mi</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="py-3 px-4 flex items-center gap-2.5">
-            <TrendingUp className="h-4 w-4 text-green-600 shrink-0" />
-            <div className="min-w-0">
-              <p className="text-[11px] text-muted-foreground">YTD Deduction</p>
-              <p className="font-semibold text-sm">{fmt(ytdMileageDeductionCents)}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="py-3 px-4 flex items-center gap-2.5">
-            <Hash className="h-4 w-4 text-muted-foreground shrink-0" />
-            <div className="min-w-0">
-              <p className="text-[11px] text-muted-foreground">This Month</p>
-              <p className="font-semibold text-sm">{thisMonthMiles.toLocaleString()} mi</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Setup Status */}
-      <Card className={homeAddressSet ? 'border-green-200 dark:border-green-900' : 'border-amber-200 dark:border-amber-900'}>
-        <CardContent className="py-3 px-4 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            {homeAddressSet ? (
-              <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
-            ) : (
-              <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
-            )}
-            <div>
-              <p className="text-sm font-medium">
-                {homeAddressSet ? 'Home address set' : 'Home address needed'}
-              </p>
-              <p className="text-[11px] text-muted-foreground">
-                IRS rate: ${(irsRate / 100).toFixed(2)}/mile ({new Date().getFullYear()})
-              </p>
-            </div>
-          </div>
-          {!homeAddressSet && (
-            <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => navigate('/settings/profile')}>
-              <MapPin className="h-3.5 w-3.5" />
-              Set Address
-            </Button>
-          )}
+      {/* Hero — Money found this year */}
+      <Card>
+        <CardContent className="py-5 px-5">
+          <p className="text-[12px] text-muted-foreground">Money found this year</p>
+          <p
+            className="mt-1 text-[38px] font-medium tabular-nums sm:text-[38px] text-[30px]"
+            style={{ color: '#1A5C6B', lineHeight: 1.1 }}
+          >
+            {fmt(ytdMileageDeductionCents)}
+          </p>
+          <p className="mt-2 text-[13px] text-muted-foreground">
+            {ytdMileageMiles.toLocaleString()} miles tracked across {clinicCount} {clinicCount === 1 ? 'clinic' : 'clinics'}
+            {' · '}
+            <span className="text-foreground">+{fmt(thisMonthCents)} this month</span>
+          </p>
         </CardContent>
       </Card>
 
-      {/* YTD Starting Balance (manually-tracked miles from another tool) */}
+      {/* Pending Review */}
+      <MileageReviewBanner
+        drafts={draftMileageExpenses}
+        onConfirm={confirmMileage}
+        onDismiss={dismissMileage}
+        onConfirmAll={confirmAllMileage}
+        onEdit={() => {}}
+      />
+
+      {/* Backfill Past Shifts */}
+      <MileageBackfillCard onComplete={reload} />
+
+      {/* YTD Starting Balance */}
       <Card>
         <CardContent className="py-3 px-4 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0">
@@ -207,21 +204,9 @@ export default function MileageTrackerTab({
         </CardContent>
       </Card>
 
-      {/* Backfill Past Shifts */}
-      <MileageBackfillCard onComplete={reload} />
-
-      {/* Pending Review */}
-      <MileageReviewBanner
-        drafts={draftMileageExpenses}
-        onConfirm={confirmMileage}
-        onDismiss={dismissMileage}
-        onConfirmAll={confirmAllMileage}
-        onEdit={() => {}}
-      />
-
-      {/* Confirmed Mileage Log */}
+      {/* Money claimed (formerly Confirmed Mileage Log) */}
       <div>
-        <h3 className="text-sm font-semibold mb-2 text-muted-foreground">Confirmed Mileage Log</h3>
+        <h3 className="text-sm font-semibold mb-2 text-muted-foreground">Money claimed</h3>
         {confirmedMileageExpenses.length === 0 ? (
           <Card>
             <CardContent className="py-8 text-center text-sm text-muted-foreground">
