@@ -72,7 +72,7 @@ function ShiftLineItemCard({
 
   const handleSave = async () => {
     if (!onUpdate) return;
-    const lineTotal = qtyNum * rateNum;
+    const lineTotal = Math.round(qtyNum * rateNum * 100) / 100;
     await onUpdate({ ...item, description: desc, service_date: date || null, qty: qtyNum, unit_rate: rateNum, line_total: lineTotal });
     setEditing(false);
     toast.success('Line item updated');
@@ -539,7 +539,7 @@ export function InvoiceEditPanel({
                     if (!onUpdateLineItem) return;
                     await onUpdateLineItem(updated);
                     const nextItems = items.map((x: any) => x.id === updated.id ? updated : x);
-                    const newTotal = nextItems.reduce((s: number, x: any) => s + (x.line_total || 0), 0);
+                    const newTotal = Math.round(nextItems.reduce((s: number, x: any) => s + (Number(x.line_total) || 0), 0) * 100) / 100;
                     await onUpdateInvoice({ ...invoice, total_amount: newTotal, balance_due: newTotal });
 
                     // Sync underlying shift if eligible
