@@ -39,12 +39,16 @@ export interface ExpenseConfig {
   irs_mileage_rate_cents: number;
   home_office_rate_cents: number;
   tax_year: number;
+  ytd_starting_miles: number;
+  ytd_starting_miles_note: string;
 }
 
 const DEFAULT_CONFIG: Omit<ExpenseConfig, 'id' | 'user_id'> = {
   irs_mileage_rate_cents: 70,
   home_office_rate_cents: 500,
   tax_year: new Date().getFullYear(),
+  ytd_starting_miles: 0,
+  ytd_starting_miles_note: '',
 };
 
 export function useExpenses() {
