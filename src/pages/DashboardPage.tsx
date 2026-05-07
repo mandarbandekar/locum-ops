@@ -721,7 +721,7 @@ export default function DashboardPage() {
       if (!catSetting) return true;
       return catSetting.enabled && catSetting.in_app_enabled;
     });
-  }, [invoices, summary, checklistItems, confirmationBreakdown, credentialsList, subscriptions, taxQuarters, reminderCategories, shifts, hasTaxProfile, now]);
+  }, [invoices, summary, checklistItems, confirmationBreakdown, credentialsList, subscriptions, taxQuarters, reminderCategories, shifts, hasTaxProfile, draftMileageExpenses, now]);
 
   const greeting = (() => {
     const hour = new Date().getHours();
