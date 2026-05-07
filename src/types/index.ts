@@ -129,6 +129,21 @@ export function getShiftTotalRevenue(shift: Pick<Shift, 'rate_applied' | 'overti
   return Math.round((base + ot) * 100) / 100;
 }
 
+/**
+ * Format an hour quantity for display, showing sub-hour amounts in minutes.
+ * 0.25 → "15 min", 0.5 → "30 min", 1 → "1h", 1.5 → "1h 30m", 2 → "2h".
+ */
+export function formatHoursDisplay(qty: number | string | null | undefined): string {
+  const n = Number(qty) || 0;
+  if (n === 0) return '0h';
+  const totalMin = Math.round(n * 60);
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  if (h === 0) return `${m} min`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
+}
+
 export type InvoiceStatus = 'draft' | 'sent' | 'partial' | 'paid';
 export type InvoiceType = 'single' | 'bulk';
 export type InvoiceGenerationType = 'manual' | 'automatic';
