@@ -577,13 +577,50 @@ export default function SchedulePage() {
               )}
             </div>
 
-            <div className="flex-1 flex items-center justify-end">
+            <div className="flex-1 flex items-center justify-end gap-1">
+              {searchOpen ? (
+                <div className="relative">
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                  <Input
+                    ref={searchInputRef}
+                    autoFocus
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Escape') { setSearchQuery(''); setSearchOpen(false); } }}
+                    placeholder="Search clinic, notes…"
+                    className="h-8 w-44 pl-7 pr-7 text-[12px]"
+                  />
+                  {(searchQuery || searchOpen) && (
+                    <button
+                      type="button"
+                      onClick={() => { setSearchQuery(''); setSearchOpen(false); }}
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      aria-label="Close search"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSearchOpen(true)} aria-label="Search">
+                  <Search className="h-3.5 w-3.5" />
+                </Button>
+              )}
+              <ScheduleFiltersPopover
+                filters={filters}
+                facilities={facilities}
+                facilityColor={facilityColor}
+                isDefault={filtersAreDefault}
+                onUpdate={updateFilter}
+                onToggleClinic={toggleClinic}
+                onReset={resetFilters}
+              />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant={isTimeframeView ? 'default' : 'outline'}
                     size="sm"
-                    className="gap-1.5"
+                    className="gap-1.5 h-8"
                   >
                     <TimeframeIcon className="h-3.5 w-3.5" />
                     <span>{timeframeLabel}</span>
@@ -596,6 +633,9 @@ export default function SchedulePage() {
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setView('week')}>
                     <CalendarIcon className="mr-2 h-4 w-4" /> Week
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setView('day')}>
+                    <CalendarIcon className="mr-2 h-4 w-4" /> Day
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
