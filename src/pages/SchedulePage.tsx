@@ -384,29 +384,6 @@ export default function SchedulePage() {
         <div className="flex items-center gap-2 flex-wrap">
           <TooltipProvider delayDuration={200}>
             <div className="flex items-center gap-1" data-tour="schedule-view-switcher">
-              {/* Timeframe dropdown (Month / Week / Day) */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant={isTimeframeView ? 'default' : 'outline'}
-                    size="sm"
-                    className="gap-1.5"
-                  >
-                    <TimeframeIcon className="h-3.5 w-3.5" />
-                    <span>{timeframeLabel}</span>
-                    <ChevronDown className="h-3.5 w-3.5 opacity-70" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  <DropdownMenuItem onClick={() => setView('month')}>
-                    <CalendarDays className="mr-2 h-4 w-4" /> Month
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setView('week')}>
-                    <CalendarIcon className="mr-2 h-4 w-4" /> Week
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
               {/* List <-> Calendar toggle */}
               <Tooltip>
                 <TooltipTrigger asChild>
