@@ -354,7 +354,7 @@ export default function SchedulePage() {
               </div>
               {(s.overtime_hours || 0) > 0 && (s.overtime_rate || 0) > 0 && (
                 <div className="truncate opacity-70 text-[10px]">
-                  +{s.overtime_hours}h OT · ${Math.round((Number(s.overtime_hours) || 0) * (Number(s.overtime_rate) || 0))}
+                  +{formatHoursDisplay(s.overtime_hours)} OT · ${Math.round((Number(s.overtime_hours) || 0) * (Number(s.overtime_rate) || 0))}
                 </div>
               )}
             </div>
