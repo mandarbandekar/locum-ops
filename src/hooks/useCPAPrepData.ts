@@ -5,7 +5,7 @@ import { useTaxAdvisor, TaxAdvisorProfile } from '@/hooks/useTaxAdvisor';
 import { useTaxPaymentLogs, TaxPaymentLog } from '@/hooks/useTaxPaymentLogs';
 import { EXPENSE_CATEGORIES, ALL_SUBCATEGORIES } from '@/lib/expenseCategories';
 import { aggregateQuarterlyIncome } from '@/lib/taxCalculations';
-import { Invoice } from '@/types';
+import { Invoice, getShiftTotalRevenue } from '@/types';
 
 const currentYear = new Date().getFullYear();
 const currentMonth = new Date().getMonth(); // 0-indexed
