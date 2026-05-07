@@ -16,11 +16,15 @@ const MILEAGE_ONBOARDING_KEY = 'locumops_mileage_tab_onboarding_dismissed';
 
 interface Props {
   expenses: Expense[];
-  config: { irs_mileage_rate_cents: number };
+  config: { irs_mileage_rate_cents: number; tax_year: number };
   draftMileageExpenses: Expense[];
   confirmedMileageExpenses: Expense[];
   ytdMileageMiles: number;
   ytdMileageDeductionCents: number;
+  startingMiles: number;
+  startingMilesDeductionCents: number;
+  startingMilesNote: string;
+  updateMileageStartingBalance: (miles: number, note: string) => Promise<void> | void;
   confirmMileage: (id: string) => Promise<void>;
   dismissMileage: (id: string) => Promise<void>;
   confirmAllMileage: () => Promise<void>;
@@ -31,6 +35,7 @@ interface Props {
 export default function MileageTrackerTab({
   config, draftMileageExpenses, confirmedMileageExpenses,
   ytdMileageMiles, ytdMileageDeductionCents,
+  startingMiles, startingMilesNote, updateMileageStartingBalance,
   confirmMileage, dismissMileage, confirmAllMileage, reload,
 }: Props) {
   const navigate = useNavigate();
