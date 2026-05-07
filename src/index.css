@@ -332,15 +332,22 @@
     @apply bg-background text-foreground antialiased;
     font-family: inherit;
     font-feature-settings: 'ss01', 'cv11';
+    font-size: 15px;
+    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
   }
-  h1, h2, h3, h4, h5, h6 {
-    @apply tracking-tight;
-    letter-spacing: -0.02em;
-    font-family: inherit;
-  }
+  /* Apple-like type rhythm — tight headings, comfortable body */
+  h1 { font-size: clamp(1.75rem, 1.4rem + 1.6vw, 2.25rem); line-height: 1.1; letter-spacing: -0.022em; font-weight: 700; }
+  h2 { font-size: clamp(1.375rem, 1.2rem + 0.8vw, 1.625rem); line-height: 1.15; letter-spacing: -0.02em; font-weight: 600; }
+  h3 { font-size: 1.125rem; line-height: 1.25; letter-spacing: -0.015em; font-weight: 600; }
+  h4 { font-size: 1rem; line-height: 1.3; letter-spacing: -0.01em; font-weight: 600; }
+  h5 { font-size: 0.9375rem; line-height: 1.35; letter-spacing: -0.005em; font-weight: 600; }
+  h6 { font-size: 0.8125rem; line-height: 1.4; letter-spacing: 0; font-weight: 600; text-transform: uppercase; }
+  h1, h2, h3, h4, h5, h6 { font-family: inherit; }
+  p { line-height: 1.55; }
+  small, .text-xs { line-height: 1.45; }
   /* Tabular numerals for tables, dashboard stats, money */
   table, .tabular-nums, .stat-card, [class*="font-mono"] {
     font-variant-numeric: tabular-nums;
@@ -354,27 +361,42 @@
   }
   .stat-card .stat-value {
     color: hsl(var(--stat-card-value));
+    font-size: 1.625rem;
+    line-height: 1.15;
+    letter-spacing: -0.022em;
+    font-weight: 600;
   }
   .stat-card .stat-label {
     color: hsl(var(--stat-card-label));
+    font-size: 0.6875rem;
+    line-height: 1.3;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-weight: 600;
   }
   .page-header {
     @apply mb-4 sm:mb-6 md:mb-8 flex items-start sm:items-center justify-between;
   }
   .page-title {
-    @apply text-[22px] sm:text-[26px] md:text-[34px] font-bold tracking-tight text-foreground;
+    @apply text-[22px] sm:text-[26px] md:text-[32px] font-bold text-foreground;
     font-family: inherit;
+    line-height: 1.1;
+    letter-spacing: -0.022em;
   }
   .page-subtitle {
-    @apply text-[13px] sm:text-[15px] text-muted-foreground mt-0.5;
+    @apply text-[13px] sm:text-[14px] text-muted-foreground mt-1;
+    line-height: 1.45;
   }
   .status-badge {
     @apply inline-flex items-center rounded-[20px] px-2.5 py-1 text-[11px] font-medium;
+    line-height: 1.3;
   }
 
   /* Section heading for card groups */
   .section-heading {
-    @apply text-base sm:text-lg font-semibold tracking-tight text-foreground;
+    @apply text-[15px] sm:text-base font-semibold text-foreground;
+    line-height: 1.25;
+    letter-spacing: -0.015em;
   }
 
   /* Pill tag styles using semantic tokens */
