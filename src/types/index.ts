@@ -167,17 +167,6 @@ export interface InvoiceLineItem {
   /** Distinguishes hourly (regular), flat day-rate, and overtime lines. */
   line_kind?: InvoiceLineKind;
 }
-  id: string;
-  invoice_id: string;
-  shift_id: string | null;
-  description: string;
-  service_date: string | null;
-  qty: number;
-  unit_rate: number;
-  line_total: number;
-  /** Distinguishes hourly (regular) lines from flat day-rate lines. */
-  line_kind?: InvoiceLineKind;
-}
 
 export interface InvoicePayment {
   id: string;
