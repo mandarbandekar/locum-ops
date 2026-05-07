@@ -64,11 +64,16 @@ function ShiftLineItemCard({
   const [editing, setEditing] = useState(false);
   const [desc, setDesc] = useState(item.description);
   const [date, setDate] = useState(item.service_date || '');
-  const [qty, setQty] = useState<string>(String(item.qty ?? ''));
+  const isOvertime = item.line_kind === 'overtime';
+  // For overtime, edit in minutes (15-min steps). For everything else, edit in original units.
+  const [qty, setQty] = useState<string>(
+    isOvertime ? String(Math.round((Number(item.qty) || 0) * 60)) : String(item.qty ?? '')
+  );
   const [rate, setRate] = useState<string>(String(item.unit_rate ?? ''));
 
-  const qtyNum = parseFloat(qty) || 0;
   const rateNum = parseFloat(rate) || 0;
+  // qtyNum is always in the line item's stored unit (hours for OT/regular, units otherwise)
+  const qtyNum = isOvertime ? (parseFloat(qty) || 0) / 60 : (parseFloat(qty) || 0);
 
   const handleSave = async () => {
     if (!onUpdate) return;
