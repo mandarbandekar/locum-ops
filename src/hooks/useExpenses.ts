@@ -276,6 +276,48 @@ export function useExpenses() {
     toast.success(`${ids.length} mileage entries confirmed`);
   }, [isDemo, draftMileageExpenses]);
 
+  const updateMileageStartingBalance = useCallback(async (miles: number, note: string) => {
+    const safeMiles = Math.max(0, Number.isFinite(miles) ? miles : 0);
+    const safeNote = (note || '').slice(0, 200);
+    const taxYear = effectiveConfig.tax_year;
+
+    if (isDemo) {
+      setConfig(prev => ({
+        ...(prev as ExpenseConfig),
+        id: prev?.id || 'demo',
+        user_id: prev?.user_id || 'demo',
+        irs_mileage_rate_cents: effectiveConfig.irs_mileage_rate_cents,
+        home_office_rate_cents: effectiveConfig.home_office_rate_cents,
+        tax_year: taxYear,
+        ytd_starting_miles: safeMiles,
+        ytd_starting_miles_note: safeNote,
+      }));
+      toast.success('Starting balance saved');
+      return;
+    }
+    if (!user) return;
+
+    if (config?.id) {
+      const { data: updated, error } = await db('expense_config')
+        .update({ ytd_starting_miles: safeMiles, ytd_starting_miles_note: safeNote } as any)
+        .eq('id', config.id).select().single();
+      if (error) { toast.error('Failed to save'); return; }
+      setConfig(updated as any as ExpenseConfig);
+    } else {
+      const { data: inserted, error } = await db('expense_config').insert({
+        user_id: user.id,
+        irs_mileage_rate_cents: effectiveConfig.irs_mileage_rate_cents,
+        home_office_rate_cents: effectiveConfig.home_office_rate_cents,
+        tax_year: taxYear,
+        ytd_starting_miles: safeMiles,
+        ytd_starting_miles_note: safeNote,
+      } as any).select().single();
+      if (error) { toast.error('Failed to save'); return; }
+      setConfig(inserted as any as ExpenseConfig);
+    }
+    toast.success('Starting balance saved');
+  }, [user, isDemo, config, effectiveConfig]);
+
   return {
     expenses,
     loading,
@@ -295,6 +337,10 @@ export function useExpenses() {
     confirmedMileageExpenses,
     ytdMileageMiles,
     ytdMileageDeductionCents,
+    startingMiles,
+    startingMilesDeductionCents,
+    startingMilesNote: effectiveConfig.ytd_starting_miles_note,
+    updateMileageStartingBalance,
     confirmMileage,
     dismissMileage,
     confirmAllMileage,
