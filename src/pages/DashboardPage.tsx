@@ -111,6 +111,7 @@ export default function DashboardPage() {
   const { user, isDemo } = useAuth();
   const { profile, updateProfile } = useUserProfile();
   const { profile: taxProfile, hasProfile: hasTaxProfile } = useTaxIntelligence();
+  const { draftMileageExpenses } = useExpenses();
   const { categories: reminderCategories } = useReminderPreferences();
   const navigate = useNavigate();
   const now = new Date();
