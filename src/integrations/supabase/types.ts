@@ -1531,6 +1531,8 @@ export type Database = {
           tax_year: number
           updated_at: string
           user_id: string
+          ytd_starting_miles: number
+          ytd_starting_miles_note: string
         }
         Insert: {
           created_at?: string
@@ -1540,6 +1542,8 @@ export type Database = {
           tax_year?: number
           updated_at?: string
           user_id?: string
+          ytd_starting_miles?: number
+          ytd_starting_miles_note?: string
         }
         Update: {
           created_at?: string
@@ -1549,6 +1553,8 @@ export type Database = {
           tax_year?: number
           updated_at?: string
           user_id?: string
+          ytd_starting_miles?: number
+          ytd_starting_miles_note?: string
         }
         Relationships: []
       }
