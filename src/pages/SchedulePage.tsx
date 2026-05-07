@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo, DragEvent } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, DragEvent } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { StatusBadge } from '@/components/StatusBadge';
-import { Plus, ChevronLeft, ChevronRight, List, CalendarDays, Trash2, Calendar as CalendarIcon, CheckSquare, RefreshCw, AlertTriangle, Ban, ChevronDown } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, List, CalendarDays, Trash2, Calendar as CalendarIcon, CheckSquare, RefreshCw, AlertTriangle, Ban, ChevronDown, Search, X, Keyboard } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, getDay, startOfWeek, endOfWeek, addWeeks, subWeeks, addDays, subDays, differenceInMilliseconds, differenceInHours } from 'date-fns';
 import { CalendarPlus, Clock, DollarSign, TrendingUp } from 'lucide-react';
@@ -16,7 +17,6 @@ import { WeekTimeGrid } from '@/components/schedule/WeekTimeGrid';
 import { ClinicConfirmationsTab } from '@/components/schedule/ClinicConfirmationsTab';
 import { getMarkersForDay } from '@/lib/calendarMarkers';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { CalendarFilters, CalendarLayerFilters } from '@/components/schedule/CalendarFilters';
 import { useCalendarEvents } from '@/hooks/useCalendarEvents';
 import { CalendarEventStack } from '@/components/schedule/CalendarEventChip';
 import { CalendarSyncPanel } from '@/components/schedule/CalendarSyncPanel';
@@ -27,10 +27,14 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { SpotlightTour, TourStep } from '@/components/SpotlightTour';
 import { useSpotlightTour } from '@/hooks/useSpotlightTour';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { getBillableMinutes, formatHoursMinutes } from '@/lib/shiftBreak';
+import { useScheduleFilters } from '@/hooks/useScheduleFilters';
+import { ScheduleFiltersPopover } from '@/components/schedule/ScheduleFiltersPopover';
+import { DayPeekContent } from '@/components/schedule/DayPeekContent';
 
 const STORAGE_KEY = 'schedule-view-pref';
 
@@ -113,11 +117,16 @@ export default function SchedulePage() {
   const [editShift, setEditShift] = useState<string | null>(null);
   const [blockTimeDefaultDate, setBlockTimeDefaultDate] = useState<Date | undefined>(undefined);
   const [dragOverDay, setDragOverDay] = useState<string | null>(null);
-  const [calendarFilters] = useState<CalendarLayerFilters>({
-    shifts: true,
-    credentials: true,
-    subscriptions: true,
-  });
+  const { filters, update: updateFilter, toggleClinic, reset: resetFilters, isDefault: filtersAreDefault } = useScheduleFilters();
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Map facility id -> a stable color (uses first shift color, else fallback)
+  const facilityColor = useCallback((id: string) => {
+    const sh = shifts.find(s => s.facility_id === id && s.color);
+    return sh?.color || 'blue';
+  }, [shifts]);
 
   // Always default to Month view on mount; only persist non-timeframe views (list/confirmations/sync)
   useEffect(() => {
@@ -271,49 +280,91 @@ export default function SchedulePage() {
     return false;
   }, []);
 
-  const renderDayCell = (day: Date, minHeight: string) => {
-    const dayShifts = calendarFilters.shifts ? shifts.filter(s => isSameDay(new Date(s.start_datetime), day)) : [];
-    const dayBlocks = timeBlocks.filter(b => {
+  // Apply clinic + search filters
+  const passesClinic = useCallback((facilityId: string) => {
+    return filters.clinicIds.length === 0 || filters.clinicIds.includes(facilityId);
+  }, [filters.clinicIds]);
+
+  const matchesSearch = useCallback((text: string) => {
+    if (!searchQuery.trim()) return true;
+    return text.toLowerCase().includes(searchQuery.trim().toLowerCase());
+  }, [searchQuery]);
+
+  const renderDayCell = (day: Date) => {
+    const dayShifts = filters.showShifts
+      ? shifts.filter(s => isSameDay(new Date(s.start_datetime), day) && passesClinic(s.facility_id))
+      : [];
+    const dayBlocks = filters.showBlocks ? timeBlocks.filter(b => {
       const bs = new Date(b.start_datetime);
       const be = new Date(b.end_datetime);
       return day >= new Date(bs.getFullYear(), bs.getMonth(), bs.getDate()) && day <= new Date(be.getFullYear(), be.getMonth(), be.getDate());
-    });
+    }) : [];
     const isToday = isSameDay(day, new Date());
-    const markers = getMarkersForDay(day);
+    const allMarkers = getMarkersForDay(day);
+    const markers = allMarkers.filter(m =>
+      (m.type === 'holiday' && filters.showHolidays) || (m.type === 'tax' && filters.showTax)
+    );
     const dayKey = day.toISOString();
     const isDragOver = dragOverDay === dayKey;
-    const calEvents = getEventsForDay(day, { credentials: calendarFilters.credentials, subscriptions: calendarFilters.subscriptions });
+    const calEvents = getEventsForDay(day, { credentials: filters.showCredentials, subscriptions: filters.showSubscriptions });
     const isDoubleBooked = hasDoubleBooking(dayShifts);
 
-    return (
-      <div
-        key={dayKey}
-        className={`${minHeight} border-t border-r p-1 transition-colors cursor-pointer ${isToday ? 'bg-primary/5 border-l-2 border-l-primary' : ''} ${isDragOver ? 'bg-primary/10 ring-2 ring-inset ring-primary/30' : ''} ${isDoubleBooked ? 'ring-1 ring-inset ring-amber-500/40' : ''}`}
-        onDragOver={(e) => onDragOver(e, dayKey)}
-        onDragLeave={onDragLeave}
-        onDrop={(e) => onDrop(e, day)}
-        onClick={() => openAddShiftAt(day)}
-      >
-        <div className={`text-xs font-medium mb-1 flex items-center gap-1 ${isToday ? 'text-primary font-bold' : 'text-muted-foreground'}`}>
-          {isToday ? <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary text-primary-foreground text-[11px]">{format(day, 'd')}</span> : format(day, 'd')}
-          {isDoubleBooked && (
-            <span className="inline-flex items-center gap-0.5 text-[9px] text-amber-600 dark:text-amber-400" title="Overlapping shifts">
-              <AlertTriangle className="h-3 w-3" />
-            </span>
+    const dayMatchesSearch = !searchQuery.trim() || dayShifts.some(s =>
+      matchesSearch(getFacilityName(s.facility_id)) || matchesSearch(s.notes || '')
+    ) || dayBlocks.some(b => matchesSearch(b.title));
+    const dimmed = (filters.conflictsOnly && !isDoubleBooked) || (!!searchQuery.trim() && !dayMatchesSearch);
+
+    const density = dayShifts.length + dayBlocks.length + markers.length + calEvents.length;
+    const ultra = density >= 5;
+    const compact = density >= 3;
+
+    const dayMinutes = dayShifts.reduce((sum, s) => sum + getBillableMinutes(s), 0);
+    const heavyDay = dayMinutes >= 8 * 60;
+
+    const cellInner = (
+      <>
+        <div className={`text-[11px] font-medium mb-0.5 flex items-center justify-between gap-1 ${isToday ? 'text-primary font-bold' : 'text-muted-foreground'}`}>
+          <span className="flex items-center gap-1">
+            {isToday ? <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary text-primary-foreground text-[11px]">{format(day, 'd')}</span> : format(day, 'd')}
+            {isDoubleBooked && (
+              <span className="inline-flex items-center text-amber-600 dark:text-amber-400" title="Overlapping shifts">
+                <AlertTriangle className="h-3 w-3" />
+              </span>
+            )}
+          </span>
+          {ultra && (
+            <span className="text-[9px] font-medium text-muted-foreground tabular-nums">{density}</span>
           )}
         </div>
-        {markers.map(m => (
-          <div key={m.label} className={`text-[10px] px-1 py-0.5 rounded mb-0.5 truncate font-medium ${m.bg} ${m.text}`} title={m.label}>
+
+        {!ultra && markers.map(m => (
+          <div key={m.label} className={`text-[9px] leading-tight px-1 py-px rounded mb-0.5 truncate font-medium ${m.bg} ${m.text}`} title={m.label}>
             {m.type === 'tax' ? '💰' : '🔴'} {m.label}
           </div>
         ))}
+        {ultra && markers.length > 0 && (
+          <div className="absolute top-0.5 right-0.5 text-[10px]" title={markers.map(m => m.label).join(', ')}>
+            {markers.some(m => m.type === 'tax') ? '💰' : '🔴'}
+          </div>
+        )}
+
         {dayBlocks.map(b => {
           const blockColor = BLOCK_COLORS.find(c => c.value === b.color) || BLOCK_COLORS[0];
           const blockTypeInfo = BLOCK_TYPES.find(t => t.value === b.block_type);
+          if (ultra) {
+            return (
+              <div
+                key={b.id}
+                className={`h-1.5 rounded-sm mb-0.5 ${blockColor.bg} border border-dashed border-current/20`}
+                onClick={(e) => { e.stopPropagation(); setEditBlock(b.id); }}
+                title={`${b.title} (${blockTypeInfo?.label || 'Block'})`}
+              />
+            );
+          }
           return (
             <div
               key={b.id}
-              className={`text-[10px] px-1 py-0.5 rounded mb-0.5 truncate font-medium ${blockColor.bg} ${blockColor.text} border border-dashed border-current/20`}
+              className={`text-[9px] leading-tight px-1 py-px rounded mb-0.5 truncate font-medium ${blockColor.bg} ${blockColor.text} border border-dashed border-current/20`}
               onClick={(e) => { e.stopPropagation(); setEditBlock(b.id); }}
               title={`${b.title} (${blockTypeInfo?.label || 'Block'})`}
             >
@@ -321,15 +372,43 @@ export default function SchedulePage() {
             </div>
           );
         })}
+
         {dayShifts.map(s => {
           const colorDef = SHIFT_COLORS.find(c => c.value === (s.color || 'blue')) || SHIFT_COLORS[0];
           const start = new Date(s.start_datetime);
           let end = new Date(s.end_datetime);
-          // Defensive: legacy overnight rows may have end <= start. Treat as next-day.
-          if (end.getTime() <= start.getTime()) {
-            end = new Date(end.getTime() + 24 * 60 * 60 * 1000);
-          }
+          if (end.getTime() <= start.getTime()) end = new Date(end.getTime() + 86400000);
           const hrs = Math.max(0, differenceInHours(end, start));
+          if (ultra) {
+            return (
+              <div
+                key={s.id}
+                draggable
+                onDragStart={(e) => onDragStart(e, s.id)}
+                className={`flex items-center gap-1 text-[9px] leading-tight px-1 py-px rounded mb-0.5 cursor-grab active:cursor-grabbing ${colorDef.bg} ${colorDef.text} select-none`}
+                onClick={(e) => { e.stopPropagation(); setEditShift(s.id); }}
+                title={`${getFacilityName(s.facility_id)} ${format(start, 'h:mma')}`}
+              >
+                <span className="font-semibold truncate flex-1">{getFacilityName(s.facility_id)}</span>
+                <span className="opacity-70 tabular-nums">{format(start, 'ha').toLowerCase()}</span>
+              </div>
+            );
+          }
+          if (compact) {
+            return (
+              <div
+                key={s.id}
+                draggable
+                onDragStart={(e) => onDragStart(e, s.id)}
+                className={`text-[10px] leading-tight px-1 py-0.5 rounded mb-0.5 cursor-grab active:cursor-grabbing ${colorDef.bg} ${colorDef.text} hover:opacity-80 transition-opacity select-none`}
+                onClick={(e) => { e.stopPropagation(); setEditShift(s.id); }}
+                title={`${getFacilityName(s.facility_id)} — drag to reschedule`}
+              >
+                <div className="font-semibold truncate">{getFacilityName(s.facility_id)}</div>
+                <div className="truncate opacity-80 text-[9px]">{format(start, 'h:mma').toLowerCase()} · ${s.rate_applied}</div>
+              </div>
+            );
+          }
           return (
             <div
               key={s.id}
@@ -349,8 +428,52 @@ export default function SchedulePage() {
             </div>
           );
         })}
-        <CalendarEventStack events={calEvents} maxVisible={2} />
-      </div>
+
+        {calEvents.length > 0 && (
+          ultra ? (
+            <div className="flex gap-0.5 mt-0.5">
+              {calEvents.slice(0, 3).map(e => (
+                <span key={`${e.type}-${e.id}`} className="text-[10px]" title={e.label}>
+                  {e.type === 'credential' ? '🛡️' : '🔄'}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <CalendarEventStack events={calEvents} maxVisible={compact ? 1 : 2} />
+          )
+        )}
+      </>
+    );
+
+    return (
+      <HoverCard key={dayKey} openDelay={350} closeDelay={80}>
+        <HoverCardTrigger asChild>
+          <div
+            className={`relative h-full overflow-hidden border-t border-r p-1 transition-all cursor-pointer ${isToday ? 'bg-primary/5 border-l-2 border-l-primary' : ''} ${heavyDay && !isToday ? 'bg-primary/[0.04]' : ''} ${isDragOver ? 'bg-primary/10 ring-2 ring-inset ring-primary/30' : ''} ${isDoubleBooked ? 'ring-1 ring-inset ring-amber-500/40' : ''} ${dimmed ? 'opacity-30' : ''}`}
+            onDragOver={(e) => onDragOver(e, dayKey)}
+            onDragLeave={onDragLeave}
+            onDrop={(e) => onDrop(e, day)}
+            onClick={() => openAddShiftAt(day)}
+          >
+            {cellInner}
+          </div>
+        </HoverCardTrigger>
+        <HoverCardContent side="top" align="center" className="p-0 w-auto">
+          <DayPeekContent
+            day={day}
+            shifts={dayShifts}
+            blocks={dayBlocks}
+            events={calEvents}
+            markers={markers}
+            getFacilityName={getFacilityName}
+            onEditShift={setEditShift}
+            onEditBlock={setEditBlock}
+            onAddShift={() => openAddShiftAt(day)}
+            onBlockTime={() => { setBlockTimeDefaultDate(day); setShowBlockTime(true); }}
+            onOpenDay={() => { setCurrentDate(day); setView('day'); }}
+          />
+        </HoverCardContent>
+      </HoverCard>
     );
   };
 
@@ -454,13 +577,50 @@ export default function SchedulePage() {
               )}
             </div>
 
-            <div className="flex-1 flex items-center justify-end">
+            <div className="flex-1 flex items-center justify-end gap-1">
+              {searchOpen ? (
+                <div className="relative">
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                  <Input
+                    ref={searchInputRef}
+                    autoFocus
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Escape') { setSearchQuery(''); setSearchOpen(false); } }}
+                    placeholder="Search clinic, notes…"
+                    className="h-8 w-44 pl-7 pr-7 text-[12px]"
+                  />
+                  {(searchQuery || searchOpen) && (
+                    <button
+                      type="button"
+                      onClick={() => { setSearchQuery(''); setSearchOpen(false); }}
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      aria-label="Close search"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSearchOpen(true)} aria-label="Search">
+                  <Search className="h-3.5 w-3.5" />
+                </Button>
+              )}
+              <ScheduleFiltersPopover
+                filters={filters}
+                facilities={facilities}
+                facilityColor={facilityColor}
+                isDefault={filtersAreDefault}
+                onUpdate={updateFilter}
+                onToggleClinic={toggleClinic}
+                onReset={resetFilters}
+              />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant={isTimeframeView ? 'default' : 'outline'}
                     size="sm"
-                    className="gap-1.5"
+                    className="gap-1.5 h-8"
                   >
                     <TimeframeIcon className="h-3.5 w-3.5" />
                     <span>{timeframeLabel}</span>
@@ -473,6 +633,9 @@ export default function SchedulePage() {
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setView('week')}>
                     <CalendarIcon className="mr-2 h-4 w-4" /> Week
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setView('day')}>
+                    <CalendarIcon className="mr-2 h-4 w-4" /> Day
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -512,7 +675,7 @@ export default function SchedulePage() {
                     {Array.from({ length: startDow }).map((_, i) => (
                       <div key={`empty-${i}`} className="border-t border-r bg-muted/20" />
                     ))}
-                    {monthDays.map(day => renderDayCell(day, 'h-full overflow-hidden'))}
+                    {monthDays.map(day => renderDayCell(day))}
                   </div>
                 </div>
               </>
@@ -520,12 +683,12 @@ export default function SchedulePage() {
               <>
                 <WeekTimeGrid
                   weekDays={weekDays}
-                  shifts={calendarFilters.shifts ? shifts : []}
+                  shifts={filters.showShifts ? shifts.filter(s => passesClinic(s.facility_id)) : []}
                   getFacilityName={getFacilityName}
                   onEditShift={setEditShift}
                   onDropOnTime={handleDropOnTime}
                   onCellClick={openAddShiftAt}
-                  calendarFilters={{ credentials: calendarFilters.credentials, subscriptions: calendarFilters.subscriptions }}
+                  calendarFilters={{ credentials: filters.showCredentials, subscriptions: filters.showSubscriptions }}
                   getEventsForDay={getEventsForDay}
                   timeBlocks={timeBlocks}
                   onEditBlock={setEditBlock}
@@ -543,12 +706,12 @@ export default function SchedulePage() {
               <>
                 <WeekTimeGrid
                   weekDays={[currentDate]}
-                  shifts={calendarFilters.shifts ? shifts : []}
+                  shifts={filters.showShifts ? shifts.filter(s => passesClinic(s.facility_id)) : []}
                   getFacilityName={getFacilityName}
                   onEditShift={setEditShift}
                   onDropOnTime={handleDropOnTime}
                   onCellClick={openAddShiftAt}
-                  calendarFilters={{ credentials: calendarFilters.credentials, subscriptions: calendarFilters.subscriptions }}
+                  calendarFilters={{ credentials: filters.showCredentials, subscriptions: filters.showSubscriptions }}
                   getEventsForDay={getEventsForDay}
                   timeBlocks={timeBlocks}
                   onEditBlock={setEditBlock}
