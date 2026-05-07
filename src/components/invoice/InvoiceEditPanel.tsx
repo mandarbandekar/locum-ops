@@ -98,8 +98,11 @@ function ShiftLineItemCard({
             <Input id={`li-date-${item.id}`} type="date" value={date} onChange={e => setDate(e.target.value)} className="h-9 text-sm mt-1" />
           </div>
           <div>
-            <Label htmlFor={`li-qty-${item.id}`} className="text-[10px] text-muted-foreground uppercase">Qty{item.line_kind === 'regular' ? ' (hrs)' : ''}</Label>
+            <Label htmlFor={`li-qty-${item.id}`} className="text-[10px] text-muted-foreground uppercase">Qty{(item.line_kind === 'regular' || item.line_kind === 'overtime') ? ' (hrs)' : ''}</Label>
             <Input id={`li-qty-${item.id}`} type="number" inputMode="decimal" value={qty} onChange={e => setQty(e.target.value)} className="h-9 text-sm mt-1" min={0} step="0.25" aria-label="Quantity" />
+            {(item.line_kind === 'regular' || item.line_kind === 'overtime') && (
+              <p className="text-[10px] text-muted-foreground mt-1">15-min steps (0.25 = 15 min, 0.5 = 30 min)</p>
+            )}
           </div>
           <div>
             <Label htmlFor={`li-rate-${item.id}`} className="text-[10px] text-muted-foreground uppercase">Rate</Label>
