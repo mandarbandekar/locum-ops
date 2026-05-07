@@ -280,49 +280,91 @@ export default function SchedulePage() {
     return false;
   }, []);
 
-  const renderDayCell = (day: Date, minHeight: string) => {
-    const dayShifts = calendarFilters.shifts ? shifts.filter(s => isSameDay(new Date(s.start_datetime), day)) : [];
-    const dayBlocks = timeBlocks.filter(b => {
+  // Apply clinic + search filters
+  const passesClinic = useCallback((facilityId: string) => {
+    return filters.clinicIds.length === 0 || filters.clinicIds.includes(facilityId);
+  }, [filters.clinicIds]);
+
+  const matchesSearch = useCallback((text: string) => {
+    if (!searchQuery.trim()) return true;
+    return text.toLowerCase().includes(searchQuery.trim().toLowerCase());
+  }, [searchQuery]);
+
+  const renderDayCell = (day: Date) => {
+    const dayShifts = filters.showShifts
+      ? shifts.filter(s => isSameDay(new Date(s.start_datetime), day) && passesClinic(s.facility_id))
+      : [];
+    const dayBlocks = filters.showBlocks ? timeBlocks.filter(b => {
       const bs = new Date(b.start_datetime);
       const be = new Date(b.end_datetime);
       return day >= new Date(bs.getFullYear(), bs.getMonth(), bs.getDate()) && day <= new Date(be.getFullYear(), be.getMonth(), be.getDate());
-    });
+    }) : [];
     const isToday = isSameDay(day, new Date());
-    const markers = getMarkersForDay(day);
+    const allMarkers = getMarkersForDay(day);
+    const markers = allMarkers.filter(m =>
+      (m.type === 'holiday' && filters.showHolidays) || (m.type === 'tax' && filters.showTax)
+    );
     const dayKey = day.toISOString();
     const isDragOver = dragOverDay === dayKey;
-    const calEvents = getEventsForDay(day, { credentials: calendarFilters.credentials, subscriptions: calendarFilters.subscriptions });
+    const calEvents = getEventsForDay(day, { credentials: filters.showCredentials, subscriptions: filters.showSubscriptions });
     const isDoubleBooked = hasDoubleBooking(dayShifts);
 
-    return (
-      <div
-        key={dayKey}
-        className={`${minHeight} border-t border-r p-1 transition-colors cursor-pointer ${isToday ? 'bg-primary/5 border-l-2 border-l-primary' : ''} ${isDragOver ? 'bg-primary/10 ring-2 ring-inset ring-primary/30' : ''} ${isDoubleBooked ? 'ring-1 ring-inset ring-amber-500/40' : ''}`}
-        onDragOver={(e) => onDragOver(e, dayKey)}
-        onDragLeave={onDragLeave}
-        onDrop={(e) => onDrop(e, day)}
-        onClick={() => openAddShiftAt(day)}
-      >
-        <div className={`text-xs font-medium mb-1 flex items-center gap-1 ${isToday ? 'text-primary font-bold' : 'text-muted-foreground'}`}>
-          {isToday ? <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary text-primary-foreground text-[11px]">{format(day, 'd')}</span> : format(day, 'd')}
-          {isDoubleBooked && (
-            <span className="inline-flex items-center gap-0.5 text-[9px] text-amber-600 dark:text-amber-400" title="Overlapping shifts">
-              <AlertTriangle className="h-3 w-3" />
-            </span>
+    const dayMatchesSearch = !searchQuery.trim() || dayShifts.some(s =>
+      matchesSearch(getFacilityName(s.facility_id)) || matchesSearch(s.notes || '')
+    ) || dayBlocks.some(b => matchesSearch(b.title));
+    const dimmed = (filters.conflictsOnly && !isDoubleBooked) || (!!searchQuery.trim() && !dayMatchesSearch);
+
+    const density = dayShifts.length + dayBlocks.length + markers.length + calEvents.length;
+    const ultra = density >= 5;
+    const compact = density >= 3;
+
+    const dayMinutes = dayShifts.reduce((sum, s) => sum + getBillableMinutes(s), 0);
+    const heavyDay = dayMinutes >= 8 * 60;
+
+    const cellInner = (
+      <>
+        <div className={`text-[11px] font-medium mb-0.5 flex items-center justify-between gap-1 ${isToday ? 'text-primary font-bold' : 'text-muted-foreground'}`}>
+          <span className="flex items-center gap-1">
+            {isToday ? <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary text-primary-foreground text-[11px]">{format(day, 'd')}</span> : format(day, 'd')}
+            {isDoubleBooked && (
+              <span className="inline-flex items-center text-amber-600 dark:text-amber-400" title="Overlapping shifts">
+                <AlertTriangle className="h-3 w-3" />
+              </span>
+            )}
+          </span>
+          {ultra && (
+            <span className="text-[9px] font-medium text-muted-foreground tabular-nums">{density}</span>
           )}
         </div>
-        {markers.map(m => (
-          <div key={m.label} className={`text-[10px] px-1 py-0.5 rounded mb-0.5 truncate font-medium ${m.bg} ${m.text}`} title={m.label}>
+
+        {!ultra && markers.map(m => (
+          <div key={m.label} className={`text-[9px] leading-tight px-1 py-px rounded mb-0.5 truncate font-medium ${m.bg} ${m.text}`} title={m.label}>
             {m.type === 'tax' ? '💰' : '🔴'} {m.label}
           </div>
         ))}
+        {ultra && markers.length > 0 && (
+          <div className="absolute top-0.5 right-0.5 text-[10px]" title={markers.map(m => m.label).join(', ')}>
+            {markers.some(m => m.type === 'tax') ? '💰' : '🔴'}
+          </div>
+        )}
+
         {dayBlocks.map(b => {
           const blockColor = BLOCK_COLORS.find(c => c.value === b.color) || BLOCK_COLORS[0];
           const blockTypeInfo = BLOCK_TYPES.find(t => t.value === b.block_type);
+          if (ultra) {
+            return (
+              <div
+                key={b.id}
+                className={`h-1.5 rounded-sm mb-0.5 ${blockColor.bg} border border-dashed border-current/20`}
+                onClick={(e) => { e.stopPropagation(); setEditBlock(b.id); }}
+                title={`${b.title} (${blockTypeInfo?.label || 'Block'})`}
+              />
+            );
+          }
           return (
             <div
               key={b.id}
-              className={`text-[10px] px-1 py-0.5 rounded mb-0.5 truncate font-medium ${blockColor.bg} ${blockColor.text} border border-dashed border-current/20`}
+              className={`text-[9px] leading-tight px-1 py-px rounded mb-0.5 truncate font-medium ${blockColor.bg} ${blockColor.text} border border-dashed border-current/20`}
               onClick={(e) => { e.stopPropagation(); setEditBlock(b.id); }}
               title={`${b.title} (${blockTypeInfo?.label || 'Block'})`}
             >
@@ -330,15 +372,43 @@ export default function SchedulePage() {
             </div>
           );
         })}
+
         {dayShifts.map(s => {
           const colorDef = SHIFT_COLORS.find(c => c.value === (s.color || 'blue')) || SHIFT_COLORS[0];
           const start = new Date(s.start_datetime);
           let end = new Date(s.end_datetime);
-          // Defensive: legacy overnight rows may have end <= start. Treat as next-day.
-          if (end.getTime() <= start.getTime()) {
-            end = new Date(end.getTime() + 24 * 60 * 60 * 1000);
-          }
+          if (end.getTime() <= start.getTime()) end = new Date(end.getTime() + 86400000);
           const hrs = Math.max(0, differenceInHours(end, start));
+          if (ultra) {
+            return (
+              <div
+                key={s.id}
+                draggable
+                onDragStart={(e) => onDragStart(e, s.id)}
+                className={`flex items-center gap-1 text-[9px] leading-tight px-1 py-px rounded mb-0.5 cursor-grab active:cursor-grabbing ${colorDef.bg} ${colorDef.text} select-none`}
+                onClick={(e) => { e.stopPropagation(); setEditShift(s.id); }}
+                title={`${getFacilityName(s.facility_id)} ${format(start, 'h:mma')}`}
+              >
+                <span className="font-semibold truncate flex-1">{getFacilityName(s.facility_id)}</span>
+                <span className="opacity-70 tabular-nums">{format(start, 'ha').toLowerCase()}</span>
+              </div>
+            );
+          }
+          if (compact) {
+            return (
+              <div
+                key={s.id}
+                draggable
+                onDragStart={(e) => onDragStart(e, s.id)}
+                className={`text-[10px] leading-tight px-1 py-0.5 rounded mb-0.5 cursor-grab active:cursor-grabbing ${colorDef.bg} ${colorDef.text} hover:opacity-80 transition-opacity select-none`}
+                onClick={(e) => { e.stopPropagation(); setEditShift(s.id); }}
+                title={`${getFacilityName(s.facility_id)} — drag to reschedule`}
+              >
+                <div className="font-semibold truncate">{getFacilityName(s.facility_id)}</div>
+                <div className="truncate opacity-80 text-[9px]">{format(start, 'h:mma').toLowerCase()} · ${s.rate_applied}</div>
+              </div>
+            );
+          }
           return (
             <div
               key={s.id}
@@ -358,8 +428,52 @@ export default function SchedulePage() {
             </div>
           );
         })}
-        <CalendarEventStack events={calEvents} maxVisible={2} />
-      </div>
+
+        {calEvents.length > 0 && (
+          ultra ? (
+            <div className="flex gap-0.5 mt-0.5">
+              {calEvents.slice(0, 3).map(e => (
+                <span key={`${e.type}-${e.id}`} className="text-[10px]" title={e.label}>
+                  {e.type === 'credential' ? '🛡️' : '🔄'}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <CalendarEventStack events={calEvents} maxVisible={compact ? 1 : 2} />
+          )
+        )}
+      </>
+    );
+
+    return (
+      <HoverCard key={dayKey} openDelay={350} closeDelay={80}>
+        <HoverCardTrigger asChild>
+          <div
+            className={`relative h-full overflow-hidden border-t border-r p-1 transition-all cursor-pointer ${isToday ? 'bg-primary/5 border-l-2 border-l-primary' : ''} ${heavyDay && !isToday ? 'bg-primary/[0.04]' : ''} ${isDragOver ? 'bg-primary/10 ring-2 ring-inset ring-primary/30' : ''} ${isDoubleBooked ? 'ring-1 ring-inset ring-amber-500/40' : ''} ${dimmed ? 'opacity-30' : ''}`}
+            onDragOver={(e) => onDragOver(e, dayKey)}
+            onDragLeave={onDragLeave}
+            onDrop={(e) => onDrop(e, day)}
+            onClick={() => openAddShiftAt(day)}
+          >
+            {cellInner}
+          </div>
+        </HoverCardTrigger>
+        <HoverCardContent side="top" align="center" className="p-0 w-auto">
+          <DayPeekContent
+            day={day}
+            shifts={dayShifts}
+            blocks={dayBlocks}
+            events={calEvents}
+            markers={markers}
+            getFacilityName={getFacilityName}
+            onEditShift={setEditShift}
+            onEditBlock={setEditBlock}
+            onAddShift={() => openAddShiftAt(day)}
+            onBlockTime={() => { setBlockTimeDefaultDate(day); setShowBlockTime(true); }}
+            onOpenDay={() => { setCurrentDate(day); setView('day'); }}
+          />
+        </HoverCardContent>
+      </HoverCard>
     );
   };
 
