@@ -154,10 +154,6 @@ function ShiftLineItemCard({
             <Label htmlFor={`li-rate-${item.id}`} className="text-[10px] text-muted-foreground uppercase">Rate{isOvertime ? ' / hr' : ''}</Label>
             <Input id={`li-rate-${item.id}`} type="number" inputMode="decimal" value={rate} onChange={e => setRate(e.target.value)} className="h-9 text-sm mt-1" min={0} step="0.01" aria-label="Rate" />
           </div>
-          <div>
-            <Label htmlFor={`li-rate-${item.id}`} className="text-[10px] text-muted-foreground uppercase">Rate</Label>
-            <Input id={`li-rate-${item.id}`} type="number" inputMode="decimal" value={rate} onChange={e => setRate(e.target.value)} className="h-9 text-sm mt-1" min={0} step="0.01" aria-label="Rate" />
-          </div>
         </div>
         {showSyncHint && (
           <p className="text-[11px] text-muted-foreground italic">Editing this updates the shift on your schedule.</p>
