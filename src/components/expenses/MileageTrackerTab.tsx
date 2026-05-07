@@ -120,9 +120,14 @@ export default function MileageTrackerTab({
                     <TooltipTrigger asChild>
                       <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />
                     </TooltipTrigger>
-                    <TooltipContent className="max-w-[240px] text-xs">
+                    <TooltipContent className="max-w-[260px] text-xs">
                       <p className="font-medium mb-1">IRS Commute Rule for Relief Vets</p>
                       <p>As a relief vet with no fixed office, travel from home to each clinic is generally deductible business mileage — not a personal commute.</p>
+                      {startingMiles > 0 && (
+                        <p className="mt-2 pt-2 border-t border-border/40 text-muted-foreground">
+                          Includes {startingMiles.toLocaleString()} mi imported starting balance{startingMilesNote ? ` (${startingMilesNote})` : ''}.
+                        </p>
+                      )}
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
