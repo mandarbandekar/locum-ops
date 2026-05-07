@@ -22,6 +22,7 @@ import { generateCredentialReminders, generateUninvoicedShiftReminders, generate
 import { computeStatus as computeSubStatus } from '@/hooks/useSubscriptions';
 import { useReminderPreferences } from '@/hooks/useReminderPreferences';
 import { useTaxIntelligence } from '@/hooks/useTaxIntelligence';
+import { useExpenses } from '@/hooks/useExpenses';
 import { useTaxPaymentLogs } from '@/hooks/useTaxPaymentLogs';
 import {
   parseDateOnly,
