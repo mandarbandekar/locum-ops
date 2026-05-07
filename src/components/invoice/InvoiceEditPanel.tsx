@@ -39,13 +39,15 @@ function parseShiftMeta(item: any): { dateStr: string | null; timeStr: string | 
 }
 
 function ShiftLineItemCard({
-  item, readOnly, onUpdate, onDelete, showSyncHint,
+  item, readOnly, onUpdate, onDelete, showSyncHint, onAddOvertime, hasOvertime,
 }: {
   item: any;
   readOnly?: boolean;
   onUpdate?: (u: any) => Promise<void>;
   onDelete?: () => Promise<void>;
   showSyncHint?: boolean;
+  onAddOvertime?: () => void;
+  hasOvertime?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [desc, setDesc] = useState(item.description);
