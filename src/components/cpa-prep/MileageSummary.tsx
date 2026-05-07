@@ -30,6 +30,14 @@ export default function MileageSummary({ data }: Props) {
                 <span className="font-medium">{Math.round(c.miles).toLocaleString()} mi</span>
               </div>
             ))}
+            {(data.startingMiles ?? 0) > 0 && (
+              <div className="flex justify-between text-sm pt-1 mt-1 border-t border-border/40">
+                <span className="text-muted-foreground italic">
+                  + Starting balance{data.startingMilesNote ? ` (${data.startingMilesNote})` : ''}
+                </span>
+                <span className="font-medium">{Math.round(data.startingMiles!).toLocaleString()} mi</span>
+              </div>
+            )}
           </div>
         </div>
       )}

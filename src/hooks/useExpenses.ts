@@ -39,12 +39,16 @@ export interface ExpenseConfig {
   irs_mileage_rate_cents: number;
   home_office_rate_cents: number;
   tax_year: number;
+  ytd_starting_miles: number;
+  ytd_starting_miles_note: string;
 }
 
 const DEFAULT_CONFIG: Omit<ExpenseConfig, 'id' | 'user_id'> = {
   irs_mileage_rate_cents: 70,
   home_office_rate_cents: 500,
   tax_year: new Date().getFullYear(),
+  ytd_starting_miles: 0,
+  ytd_starting_miles_note: '',
 };
 
 export function useExpenses() {
@@ -79,6 +83,8 @@ export function useExpenses() {
     irs_mileage_rate_cents: config?.irs_mileage_rate_cents ?? DEFAULT_CONFIG.irs_mileage_rate_cents,
     home_office_rate_cents: config?.home_office_rate_cents ?? DEFAULT_CONFIG.home_office_rate_cents,
     tax_year: config?.tax_year ?? DEFAULT_CONFIG.tax_year,
+    ytd_starting_miles: Number(config?.ytd_starting_miles ?? 0) || 0,
+    ytd_starting_miles_note: config?.ytd_starting_miles_note ?? '',
   }), [config]);
 
   const addExpense = useCallback(async (data: Partial<Expense>) => {
@@ -217,17 +223,20 @@ export function useExpenses() {
     expenses.filter(e => e.subcategory === 'mileage' && e.mileage_status === 'confirmed'),
   [expenses]);
 
+  const startingMiles = effectiveConfig.ytd_starting_miles;
+  const startingMilesDeductionCents = Math.round(startingMiles * effectiveConfig.irs_mileage_rate_cents);
+
   const ytdMileageMiles = useMemo(() =>
-    confirmedMileageExpenses
+    startingMiles + confirmedMileageExpenses
       .filter(e => new Date(e.expense_date).getFullYear() === currentYear)
       .reduce((s, e) => s + (e.mileage_miles || 0), 0),
-  [confirmedMileageExpenses, currentYear]);
+  [confirmedMileageExpenses, currentYear, startingMiles]);
 
   const ytdMileageDeductionCents = useMemo(() =>
-    confirmedMileageExpenses
+    startingMilesDeductionCents + confirmedMileageExpenses
       .filter(e => new Date(e.expense_date).getFullYear() === currentYear)
       .reduce((s, e) => s + e.deductible_amount_cents, 0),
-  [confirmedMileageExpenses, currentYear]);
+  [confirmedMileageExpenses, currentYear, startingMilesDeductionCents]);
 
   const confirmMileage = useCallback(async (id: string) => {
     if (isDemo) {
@@ -267,6 +276,48 @@ export function useExpenses() {
     toast.success(`${ids.length} mileage entries confirmed`);
   }, [isDemo, draftMileageExpenses]);
 
+  const updateMileageStartingBalance = useCallback(async (miles: number, note: string) => {
+    const safeMiles = Math.max(0, Number.isFinite(miles) ? miles : 0);
+    const safeNote = (note || '').slice(0, 200);
+    const taxYear = effectiveConfig.tax_year;
+
+    if (isDemo) {
+      setConfig(prev => ({
+        ...(prev as ExpenseConfig),
+        id: prev?.id || 'demo',
+        user_id: prev?.user_id || 'demo',
+        irs_mileage_rate_cents: effectiveConfig.irs_mileage_rate_cents,
+        home_office_rate_cents: effectiveConfig.home_office_rate_cents,
+        tax_year: taxYear,
+        ytd_starting_miles: safeMiles,
+        ytd_starting_miles_note: safeNote,
+      }));
+      toast.success('Starting balance saved');
+      return;
+    }
+    if (!user) return;
+
+    if (config?.id) {
+      const { data: updated, error } = await db('expense_config')
+        .update({ ytd_starting_miles: safeMiles, ytd_starting_miles_note: safeNote } as any)
+        .eq('id', config.id).select().single();
+      if (error) { toast.error('Failed to save'); return; }
+      setConfig(updated as any as ExpenseConfig);
+    } else {
+      const { data: inserted, error } = await db('expense_config').insert({
+        user_id: user.id,
+        irs_mileage_rate_cents: effectiveConfig.irs_mileage_rate_cents,
+        home_office_rate_cents: effectiveConfig.home_office_rate_cents,
+        tax_year: taxYear,
+        ytd_starting_miles: safeMiles,
+        ytd_starting_miles_note: safeNote,
+      } as any).select().single();
+      if (error) { toast.error('Failed to save'); return; }
+      setConfig(inserted as any as ExpenseConfig);
+    }
+    toast.success('Starting balance saved');
+  }, [user, isDemo, config, effectiveConfig]);
+
   return {
     expenses,
     loading,
@@ -286,6 +337,10 @@ export function useExpenses() {
     confirmedMileageExpenses,
     ytdMileageMiles,
     ytdMileageDeductionCents,
+    startingMiles,
+    startingMilesDeductionCents,
+    startingMilesNote: effectiveConfig.ytd_starting_miles_note,
+    updateMileageStartingBalance,
     confirmMileage,
     dismissMileage,
     confirmAllMileage,

@@ -10,17 +10,22 @@ import { useData } from '@/contexts/DataContext';
 import { MileageOnboarding } from './MileageOnboarding';
 import { MileageReviewBanner } from './MileageReviewBanner';
 import MileageBackfillCard from './MileageBackfillCard';
+import MileageStartingBalanceDialog from './MileageStartingBalanceDialog';
 import type { Expense } from '@/hooks/useExpenses';
 
 const MILEAGE_ONBOARDING_KEY = 'locumops_mileage_tab_onboarding_dismissed';
 
 interface Props {
   expenses: Expense[];
-  config: { irs_mileage_rate_cents: number };
+  config: { irs_mileage_rate_cents: number; tax_year: number };
   draftMileageExpenses: Expense[];
   confirmedMileageExpenses: Expense[];
   ytdMileageMiles: number;
   ytdMileageDeductionCents: number;
+  startingMiles: number;
+  startingMilesDeductionCents: number;
+  startingMilesNote: string;
+  updateMileageStartingBalance: (miles: number, note: string) => Promise<void> | void;
   confirmMileage: (id: string) => Promise<void>;
   dismissMileage: (id: string) => Promise<void>;
   confirmAllMileage: () => Promise<void>;
@@ -31,11 +36,13 @@ interface Props {
 export default function MileageTrackerTab({
   config, draftMileageExpenses, confirmedMileageExpenses,
   ytdMileageMiles, ytdMileageDeductionCents,
+  startingMiles, startingMilesNote, updateMileageStartingBalance,
   confirmMileage, dismissMileage, confirmAllMileage, reload,
 }: Props) {
   const navigate = useNavigate();
   const { profile: userProfile } = useUserProfile();
   const { facilities } = useData();
+  const [showStartingDialog, setShowStartingDialog] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(
     () => !localStorage.getItem(MILEAGE_ONBOARDING_KEY)
   );
@@ -113,9 +120,14 @@ export default function MileageTrackerTab({
                     <TooltipTrigger asChild>
                       <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />
                     </TooltipTrigger>
-                    <TooltipContent className="max-w-[240px] text-xs">
+                    <TooltipContent className="max-w-[260px] text-xs">
                       <p className="font-medium mb-1">IRS Commute Rule for Relief Vets</p>
                       <p>As a relief vet with no fixed office, travel from home to each clinic is generally deductible business mileage — not a personal commute.</p>
+                      {startingMiles > 0 && (
+                        <p className="mt-2 pt-2 border-t border-border/40 text-muted-foreground">
+                          Includes {startingMiles.toLocaleString()} mi imported starting balance{startingMilesNote ? ` (${startingMilesNote})` : ''}.
+                        </p>
+                      )}
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -171,6 +183,30 @@ export default function MileageTrackerTab({
         </CardContent>
       </Card>
 
+      {/* YTD Starting Balance (manually-tracked miles from another tool) */}
+      <Card>
+        <CardContent className="py-3 px-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Hash className="h-4 w-4 text-muted-foreground shrink-0" />
+            <div className="min-w-0">
+              <p className="text-sm font-medium">
+                {startingMiles > 0
+                  ? `Starting balance: ${startingMiles.toLocaleString()} mi imported`
+                  : 'Add miles tracked elsewhere this year'}
+              </p>
+              <p className="text-[11px] text-muted-foreground truncate">
+                {startingMiles > 0 && startingMilesNote
+                  ? startingMilesNote
+                  : `Already tracked ${config.tax_year} miles in another app? Add the total so YTD picks up where you left off.`}
+              </p>
+            </div>
+          </div>
+          <Button size="sm" variant="outline" className="text-xs shrink-0" onClick={() => setShowStartingDialog(true)}>
+            {startingMiles > 0 ? 'Edit' : 'Add'}
+          </Button>
+        </CardContent>
+      </Card>
+
       {/* Backfill Past Shifts */}
       <MileageBackfillCard onComplete={reload} />
 
@@ -221,6 +257,15 @@ export default function MileageTrackerTab({
           </div>
         )}
       </div>
+
+      <MileageStartingBalanceDialog
+        open={showStartingDialog}
+        onOpenChange={setShowStartingDialog}
+        initialMiles={startingMiles}
+        initialNote={startingMilesNote}
+        taxYear={config.tax_year}
+        onSave={updateMileageStartingBalance}
+      />
     </div>
   );
 }

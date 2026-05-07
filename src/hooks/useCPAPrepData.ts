@@ -60,6 +60,8 @@ export interface ExpenseCategoryRow {
 export interface MileageSummary {
   totalMiles: number; deductionCents: number;
   byClinic: { name: string; miles: number }[];
+  startingMiles?: number;
+  startingMilesNote?: string;
 }
 
 // ── Readiness ──
@@ -67,7 +69,7 @@ export interface ReadinessItem { label: string; status: 'ok' | 'warning' | 'miss
 
 export function useCPAPrepData() {
   const { invoices, shifts, facilities, lineItems, payments } = useData();
-  const { expenses, ytdDeductibleCents, ytdTotalCents, ytdExpenses, confirmedMileageExpenses, ytdMileageMiles, ytdMileageDeductionCents, config } = useExpenses();
+  const { expenses, ytdDeductibleCents, ytdTotalCents, ytdExpenses, confirmedMileageExpenses, ytdMileageMiles, ytdMileageDeductionCents, startingMiles, startingMilesNote, config } = useExpenses();
   const { profile } = useTaxAdvisor();
   const { payments: taxPaymentLogs } = useTaxPaymentLogs();
 
@@ -232,8 +234,10 @@ export function useCPAPrepData() {
       totalMiles: ytdMileageMiles,
       deductionCents: ytdMileageDeductionCents,
       byClinic: Object.entries(byClinic).map(([name, miles]) => ({ name, miles })).sort((a, b) => b.miles - a.miles),
+      startingMiles,
+      startingMilesNote,
     };
-  }, [confirmedMileageExpenses, facilities, ytdMileageMiles, ytdMileageDeductionCents]);
+  }, [confirmedMileageExpenses, facilities, ytdMileageMiles, ytdMileageDeductionCents, startingMiles, startingMilesNote]);
 
   // ── Readiness ──
   const readiness = useMemo<ReadinessItem[]>(() => {
