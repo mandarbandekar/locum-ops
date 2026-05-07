@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { format, parseISO, startOfMonth, eachMonthOfInterval, subMonths, endOfMonth, isWithinInterval, addMonths } from 'date-fns';
 import { toast } from 'sonner';
 import IncomeBySource from './IncomeBySource';
+import { getShiftTotalRevenue } from '@/types';
 
 const fmtAmount = (n: number) => `$${n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
