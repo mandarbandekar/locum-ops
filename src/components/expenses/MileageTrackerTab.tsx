@@ -209,8 +209,19 @@ export default function MileageTrackerTab({
         <h3 className="text-sm font-semibold mb-2 text-muted-foreground">Money claimed</h3>
         {confirmedMileageExpenses.length === 0 ? (
           <Card>
-            <CardContent className="py-8 text-center text-sm text-muted-foreground">
-              No confirmed mileage entries yet. Complete a shift and entries will appear here for review.
+            <CardContent className="py-10 px-6 text-center">
+              <div
+                className="mx-auto mb-4 flex items-center justify-center rounded-full"
+                style={{ width: 48, height: 48, background: 'rgba(94, 168, 122, 0.12)' }}
+              >
+                <Car className="h-5 w-5" style={{ color: '#2D6B4A' }} />
+              </div>
+              <p className="text-[14px] font-medium text-foreground">
+                Your first claim is one shift away
+              </p>
+              <p className="mt-1.5 mx-auto max-w-[360px] text-[12px] text-muted-foreground leading-relaxed">
+                Once you confirm a trip, it lands here as money in your pocket at tax time. We'll keep a running tally so nothing slips through.
+              </p>
             </CardContent>
           </Card>
         ) : (
