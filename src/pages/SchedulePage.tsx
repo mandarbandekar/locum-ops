@@ -490,10 +490,10 @@ export default function SchedulePage() {
                       ))}
                     </div>
                     <div className="grid grid-cols-7">
-                      {Array.from({ length: startDow }).map((_, i) => (
-                        <div key={`empty-${i}`} className="min-h-[60px] sm:min-h-[80px] border-t border-r bg-muted/20" />
-                      ))}
-                      {monthDays.map(day => renderDayCell(day, 'min-h-[60px] sm:min-h-[80px]'))}
+                    {Array.from({ length: startDow }).map((_, i) => (
+                      <div key={`empty-${i}`} className="min-h-[100px] sm:min-h-[130px] border-t border-r bg-muted/20" />
+                    ))}
+                    {monthDays.map(day => renderDayCell(day, 'min-h-[100px] sm:min-h-[130px]'))}
                     </div>
                   </div>
                 </div>
