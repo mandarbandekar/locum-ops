@@ -483,6 +483,9 @@ export function InvoiceEditPanel({
             items.map((li: any) => {
               const shift = li.shift_id ? shifts.find(s => s.id === li.shift_id) : null;
               const syncEligible = canSyncShiftForLine(invoice.status, li.line_kind, li.shift_id);
+              const hasOvertime = li.shift_id
+                ? items.some((x: any) => x.shift_id === li.shift_id && x.line_kind === 'overtime')
+                : false;
 
               return (
                 <ShiftLineItemCard
@@ -490,6 +493,33 @@ export function InvoiceEditPanel({
                   item={li}
                   readOnly={readOnly}
                   showSyncHint={syncEligible}
+                  hasOvertime={hasOvertime}
+                  onAddOvertime={shift && !readOnly && onAddLineItem ? async () => {
+                    const defaultRate = shift.rate_kind === 'hourly' && shift.hourly_rate ? Number(shift.hourly_rate) : 0;
+                    const otQty = 1;
+                    const otTotal = Math.round(otQty * defaultRate * 100) / 100;
+                    const dateLabel = format(new Date(shift.start_datetime), 'MMM d, yyyy');
+                    await onAddLineItem({
+                      invoice_id: invoice.id,
+                      shift_id: shift.id,
+                      description: `Overtime — ${dateLabel}`,
+                      service_date: li.service_date || new Date(shift.start_datetime).toISOString().split('T')[0],
+                      qty: otQty,
+                      unit_rate: defaultRate,
+                      line_total: otTotal,
+                      line_kind: 'overtime',
+                    });
+                    const newTotal = total + otTotal;
+                    await onUpdateInvoice({ ...invoice, total_amount: newTotal, balance_due: newTotal });
+                    // Mirror to shift immediately
+                    await updateShift({ ...shift, overtime_hours: otQty, overtime_rate: defaultRate });
+                    await onAddActivity({
+                      invoice_id: invoice.id,
+                      action: 'overtime_added',
+                      description: `Added overtime line — ${otQty}h${defaultRate ? ` × ${fmtMoney(defaultRate)}` : ''}`,
+                    });
+                    toast.success('Overtime added — edit qty or rate to adjust');
+                  } : undefined}
                   onUpdate={async (updated) => {
                     if (!onUpdateLineItem) return;
                     await onUpdateLineItem(updated);
