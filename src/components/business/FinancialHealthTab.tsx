@@ -69,7 +69,7 @@ export default function FinancialHealthTab() {
         const uninvoicedShiftTotal = shifts.filter(s => {
           const shiftDate = parseISO(s.start_datetime);
           return isWithinInterval(shiftDate, { start: month, end: monthEnd }) && !invoicedShiftIds.has(s.id);
-        }).reduce((sum, s) => sum + s.rate_applied, 0);
+        }).reduce((sum, s) => sum + getShiftTotalRevenue(s), 0);
         anticipated = draftTotal + uninvoicedShiftTotal;
       }
       return { month: format(month, 'MMM yyyy'), collected, outstanding, anticipated };
