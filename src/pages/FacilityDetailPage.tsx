@@ -359,7 +359,23 @@ function ContractTab({ facility, facilityTerms, onSaveRates, onUpdateTerms, onUp
             </div>
             <div>
               <Label className="text-xs text-muted-foreground">Timezone</Label>
-              <p className="text-sm">{facility.timezone}</p>
+              {editingDetails ? (
+                <Select value={timezone} onValueChange={setTimezone}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="America/New_York">Eastern (New York)</SelectItem>
+                    <SelectItem value="America/Chicago">Central (Chicago)</SelectItem>
+                    <SelectItem value="America/Denver">Mountain (Denver)</SelectItem>
+                    <SelectItem value="America/Phoenix">Mountain — no DST (Phoenix)</SelectItem>
+                    <SelectItem value="America/Los_Angeles">Pacific (Los Angeles)</SelectItem>
+                    <SelectItem value="America/Anchorage">Alaska (Anchorage)</SelectItem>
+                    <SelectItem value="Pacific/Honolulu">Hawaii (Honolulu)</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <p className="text-sm">{facility.timezone}</p>
+              )}
+              <p className="text-xs text-muted-foreground mt-1">Shifts at this clinic display in this timezone.</p>
             </div>
             <div className="border-t border-border pt-3">
               {editingDetails ? (
