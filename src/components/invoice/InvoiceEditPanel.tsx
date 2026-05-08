@@ -183,7 +183,6 @@ function ShiftLineItemCard({
             Override applied: this overtime line uses {fmtMoney(rateNum)}/hr instead of the clinic's saved {fmtMoney(Number(clinicOvertimeRate))}/hr.
           </p>
         )}
-        </div>
         {showSyncHint && (
           <p className="text-[11px] text-muted-foreground italic">Editing this updates the shift on your schedule.</p>
         )}
