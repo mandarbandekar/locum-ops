@@ -35,6 +35,8 @@ export interface UserProfile {
   profession: Profession;
   work_style_label: string;
   timezone: string;
+  /** When true, user manually pinned their timezone — don't auto-update from device. */
+  timezone_pinned: boolean;
   currency: string;
   current_tools: CurrentTool[];
   facilities_count_band: FacilitiesCountBand;
@@ -101,6 +103,7 @@ export const DEFAULT_PROFILE: Omit<UserProfile, 'id' | 'user_id'> = {
   profession: 'other',
   work_style_label: '',
   timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  timezone_pinned: false,
   currency: 'USD',
   current_tools: [],
   facilities_count_band: 'band_1_3',
