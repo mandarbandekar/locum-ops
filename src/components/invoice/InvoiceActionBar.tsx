@@ -71,6 +71,26 @@ export function InvoiceActionBar({
   const shareUrl = hasShareLink ? `${window.location.origin}/invoice/public/${invoice.share_token}` : '';
   const draftTotal = items.reduce((s: number, li: any) => s + li.line_total, 0);
 
+  const hasBusinessName = !!(profile?.company_name && String(profile.company_name).trim());
+  const hasBusinessAddress = !!(profile?.company_address && String(profile.company_address).trim());
+  const missingBusinessInfo = !hasBusinessName || !hasBusinessAddress;
+  const missingParts = [!hasBusinessName && 'business name', !hasBusinessAddress && 'business address'].filter(Boolean).join(' and ');
+  const missingTooltip = missingBusinessInfo ? `Add your ${missingParts} in Settings → Profile to enable this.` : '';
+
+  const wrapMissing = (node: React.ReactNode) => {
+    if (!missingBusinessInfo) return node;
+    return (
+      <TooltipProvider delayDuration={150}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="inline-flex">{node}</span>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="max-w-[240px] text-xs">{missingTooltip}</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  };
+
   const requireBusinessInfo = (): boolean => {
     const hasName = !!(profile?.company_name && String(profile.company_name).trim());
     const hasAddress = !!(profile?.company_address && String(profile.company_address).trim());
