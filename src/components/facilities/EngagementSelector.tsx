@@ -17,6 +17,9 @@ interface Props {
   onSourceNameChange: (s: string) => void;
   taxFormType: TaxFormType;
   onTaxFormTypeChange: (t: TaxFormType) => void;
+  /** Whether LocumOps generates invoices for this direct facility. */
+  generatesInvoices?: boolean;
+  onGeneratesInvoicesChange?: (v: boolean) => void;
   /** Whether to render a compact title instead of large heading (used in dialogs). */
   compact?: boolean;
 }
