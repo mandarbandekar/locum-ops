@@ -32,6 +32,12 @@ export interface Facility {
   billing_cycle_anchor_date: string | null;
   billing_week_end_day: string;
   auto_generate_invoices: boolean;
+  /**
+   * Whether LocumOps should generate invoices for this facility at all.
+   * Defaults to true. Set to false for direct clinics that pay you without
+   * an invoice and issue a 1099 at year-end. Income is still tracked.
+   */
+  generates_invoices?: boolean;
   engagement_type?: 'direct' | 'third_party';
   source_name?: string | null;
   tax_form_type?: '1099' | 'w2' | null;

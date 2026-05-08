@@ -307,10 +307,12 @@ function ContractTab({ facility, facilityTerms, onSaveRates, onUpdateTerms, onUp
   const [engagementType, setEngagementType] = useState<EngagementType>((facility.engagement_type || 'direct') as EngagementType);
   const [sourceName, setSourceName] = useState<string>(facility.source_name || '');
   const [taxFormType, setTaxFormType] = useState<TaxFormType>((facility.tax_form_type as TaxFormType) || '1099');
+  const [generatesInvoices, setGeneratesInvoices] = useState<boolean>(facility.generates_invoices !== false);
   const [rates, setRates] = useState<RateEntry[]>(termsToRates(facilityTerms || {}));
 
   const handleSaveDetails = () => {
     const isDirect = engagementType === 'direct';
+    const directInvoicing = isDirect && generatesInvoices;
     const effectiveTaxForm = engagementType === 'third_party' ? taxFormType : null;
     onUpdateFacility({
       ...facility,
@@ -318,7 +320,8 @@ function ContractTab({ facility, facilityTerms, onSaveRates, onUpdateTerms, onUp
       engagement_type: engagementType,
       source_name: isDirect ? null : (sourceName.trim() || null),
       tax_form_type: effectiveTaxForm,
-      auto_generate_invoices: isDirect ? facility.auto_generate_invoices : false,
+      generates_invoices: directInvoicing,
+      auto_generate_invoices: directInvoicing ? facility.auto_generate_invoices : false,
     });
     setEditingDetails(false);
     toast.success('Engagement updated');
@@ -365,6 +368,8 @@ function ContractTab({ facility, facilityTerms, onSaveRates, onUpdateTerms, onUp
                   onSourceNameChange={setSourceName}
                   taxFormType={taxFormType}
                   onTaxFormTypeChange={setTaxFormType}
+                  generatesInvoices={generatesInvoices}
+                  onGeneratesInvoicesChange={setGeneratesInvoices}
                   compact
                 />
               ) : (
@@ -373,7 +378,9 @@ function ContractTab({ facility, facilityTerms, onSaveRates, onUpdateTerms, onUp
                   <p className="text-sm">
                     {facility.engagement_type === 'third_party'
                       ? `Platform / Agency — ${facility.source_name || 'Source'}${facility.tax_form_type ? ` (${facility.tax_form_type === 'w2' ? 'W-2' : '1099'})` : ''}`
-                      : 'Direct / Independent'}
+                      : facility.generates_invoices === false
+                        ? 'Direct — no invoicing (1099 from clinic)'
+                        : 'Direct / Independent'}
                   </p>
                 </>
               )}
@@ -393,7 +400,7 @@ function ContractTab({ facility, facilityTerms, onSaveRates, onUpdateTerms, onUp
       </div>
 
       <div className="space-y-4">
-        {engagementType === 'direct' && (
+        {engagementType === 'direct' && facility.generates_invoices !== false && (
           <>
             <InvoicingPreferencesCard facility={facility} onUpdate={onUpdateFacility} />
             <FacilityConfirmationSettingsCard
@@ -402,6 +409,16 @@ function ContractTab({ facility, facilityTerms, onSaveRates, onUpdateTerms, onUp
               onSave={onSaveConfirmationSettings}
             />
           </>
+        )}
+
+        {engagementType === 'direct' && facility.generates_invoices === false && (
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-sm text-muted-foreground">
+                Invoicing is off for this clinic. They pay you directly and will issue a 1099 at year-end. Shifts here still count toward your income and tax projections. Switch this in the engagement section if that changes.
+              </p>
+            </CardContent>
+          </Card>
         )}
 
         {engagementType !== 'direct' && (

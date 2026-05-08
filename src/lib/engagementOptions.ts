@@ -27,10 +27,17 @@ export interface EngagementPill {
   className: string;
 }
 
-export function getEngagementPill(facility: Pick<Facility, 'engagement_type' | 'source_name'>): EngagementPill {
+export function getEngagementPill(facility: Pick<Facility, 'engagement_type' | 'source_name' | 'generates_invoices'>): EngagementPill {
   const type = (facility.engagement_type || 'direct') as EngagementType;
   const source = (facility.source_name || '').trim();
   if (type === 'direct') {
+    if (facility.generates_invoices === false) {
+      return {
+        label: 'Direct — 1099',
+        className:
+          'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200/60 dark:border-amber-900/60',
+      };
+    }
     return {
       label: 'Direct',
       className:
@@ -68,11 +75,15 @@ export function getEffectiveEngagement(
  * facility's engagement_type and tax_form_type.
  */
 export function getShiftEngagementHelperText(
-  facility: Pick<Facility, 'engagement_type' | 'source_name' | 'tax_form_type'>,
+  facility: Pick<Facility, 'engagement_type' | 'source_name' | 'tax_form_type' | 'generates_invoices' | 'name'>,
 ): string {
   const type = (facility.engagement_type || 'direct') as EngagementType;
   const source = (facility.source_name || '').trim() || 'this platform';
   if (type === 'direct') {
+    if (facility.generates_invoices === false) {
+      const clinic = (facility.name || '').trim() || 'this clinic';
+      return `Direct booking — no invoice will be generated. A 1099 is expected from ${clinic} at year-end.`;
+    }
     return 'Direct booking — an invoice will be created after this shift.';
   }
   if (facility.tax_form_type === 'w2') {

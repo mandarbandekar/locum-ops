@@ -17,6 +17,9 @@ interface Props {
   onSourceNameChange: (s: string) => void;
   taxFormType: TaxFormType;
   onTaxFormTypeChange: (t: TaxFormType) => void;
+  /** Whether LocumOps generates invoices for this direct facility. */
+  generatesInvoices?: boolean;
+  onGeneratesInvoicesChange?: (v: boolean) => void;
   /** Whether to render a compact title instead of large heading (used in dialogs). */
   compact?: boolean;
 }
@@ -33,9 +36,12 @@ export function EngagementSelector({
   onSourceNameChange,
   taxFormType,
   onTaxFormTypeChange,
+  generatesInvoices = true,
+  onGeneratesInvoicesChange,
   compact,
 }: Props) {
   const isThird = engagementType === 'third_party';
+  const isDirect = engagementType === 'direct';
 
   const presets = THIRD_PARTY_PRESETS;
   const isOther = !!sourceName && !(presets as readonly string[]).includes(sourceName);
@@ -82,6 +88,55 @@ export function EngagementSelector({
           );
         })}
       </RadioGroup>
+
+      {isDirect && onGeneratesInvoicesChange && (
+        <div className="space-y-3 rounded-lg border border-border bg-muted/30 p-3">
+          <div className="space-y-1">
+            <Label className="text-xs">Do you send this clinic invoices?</Label>
+            <p className="text-[11px] text-muted-foreground">
+              Some clinics pay you directly via deposit and issue a 1099 — no invoice needed.
+            </p>
+          </div>
+          <RadioGroup
+            value={generatesInvoices ? 'yes' : 'no'}
+            onValueChange={(v) => onGeneratesInvoicesChange(v === 'yes')}
+            className="grid grid-cols-1 gap-2"
+          >
+            <label
+              htmlFor="gi-yes"
+              className={cn(
+                'flex items-start gap-2 rounded-md border p-2.5 cursor-pointer transition-colors',
+                generatesInvoices
+                  ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
+                  : 'border-border hover:border-primary/40 hover:bg-muted/40',
+              )}
+            >
+              <RadioGroupItem id="gi-yes" value="yes" className="mt-0.5" />
+              <div className="min-w-0">
+                <p className="text-sm font-medium leading-tight">Yes — I send invoices</p>
+                <p className="text-xs text-muted-foreground mt-0.5">LocumOps will generate invoices for these shifts.</p>
+              </div>
+            </label>
+            <label
+              htmlFor="gi-no"
+              className={cn(
+                'flex items-start gap-2 rounded-md border p-2.5 cursor-pointer transition-colors',
+                !generatesInvoices
+                  ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
+                  : 'border-border hover:border-primary/40 hover:bg-muted/40',
+              )}
+            >
+              <RadioGroupItem id="gi-no" value="no" className="mt-0.5" />
+              <div className="min-w-0">
+                <p className="text-sm font-medium leading-tight">No — clinic pays me directly and issues a 1099</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  We won't generate invoices. Shifts still count toward your 1099 income and tax projections.
+                </p>
+              </div>
+            </label>
+          </RadioGroup>
+        </div>
+      )}
 
       {isThird && (
         <div className="space-y-3 rounded-lg border border-border bg-muted/30 p-3">

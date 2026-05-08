@@ -97,6 +97,7 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
   const [engagementType, setEngagementType] = useState<EngagementType>('direct');
   const [sourceName, setSourceName] = useState('');
   const [taxFormType, setTaxFormType] = useState<TaxFormType>('1099');
+  const [generatesInvoices, setGeneratesInvoices] = useState(true);
 
   // ── Step 3: Rates ──
   const [rates, setRates] = useState<RateEntry[]>(defaultRates ?? []);
@@ -118,6 +119,7 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
   const [acknowledgedNoRates, setAcknowledgedNoRates] = useState(false);
 
   const isDirect = engagementType === 'direct';
+  const directInvoicing = isDirect && generatesInvoices;
   // Visible step list. The Rates step (#3) can be hidden via `hideRatesStep`,
   // and the Billing step (#4) is direct-only.
   const visibleSteps: number[] = useMemo(() => {
@@ -125,9 +127,9 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
     // Rates step only applies to direct-billed clinics. Platform/agency and W-2
     // clinics enter rates per-shift since they vary every time.
     if (!hideRatesStep && isDirect) arr.push(3);
-    if (isDirect) arr.push(4);
+    if (directInvoicing) arr.push(4);
     return arr;
-  }, [hideRatesStep, isDirect]);
+  }, [hideRatesStep, isDirect, directInvoicing]);
   const totalSteps = visibleSteps.length;
   const currentVisibleIndex = visibleSteps.indexOf(step); // 0-based; -1 if step not visible
 
@@ -200,8 +202,8 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
         clinic_access_info: '',
         invoice_prefix: prefix,
         invoice_due_days: invoiceDueDays,
-        invoice_name_to: isDirect ? effectiveBillingName.trim() : '',
-        invoice_email_to: isDirect ? effectiveBillingEmail.trim() : '',
+        invoice_name_to: directInvoicing ? effectiveBillingName.trim() : '',
+        invoice_email_to: directInvoicing ? effectiveBillingEmail.trim() : '',
         invoice_name_cc: '',
         invoice_email_cc: '',
         invoice_name_bcc: '',
@@ -209,7 +211,8 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
         billing_cadence: billingCadence,
         billing_cycle_anchor_date: null,
         billing_week_end_day: 'saturday',
-        auto_generate_invoices: isDirect,
+        auto_generate_invoices: directInvoicing,
+        generates_invoices: directInvoicing,
         engagement_type: engagementType,
         source_name: isDirect ? null : sourceName.trim() || null,
         tax_form_type: effectiveTaxForm,
@@ -297,7 +300,7 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
 
   // Step 1 (identity) is required: name. Step 2 (engagement): required for non-direct (source).
   // Step 3 (rates): skippable. Step 4 (billing): skippable; defaults applied.
-  const canSkip = step === 3 || (step === 4 && isDirect);
+  const canSkip = step === 3 || (step === 4 && directInvoicing);
   const canBack = currentVisibleIndex > 0;
 
   const isLastStep = currentVisibleIndex === visibleSteps.length - 1;
@@ -474,6 +477,8 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
             onSourceNameChange={setSourceName}
             taxFormType={taxFormType}
             onTaxFormTypeChange={setTaxFormType}
+            generatesInvoices={generatesInvoices}
+            onGeneratesInvoicesChange={setGeneratesInvoices}
             compact
           />
         </GuidedStep>

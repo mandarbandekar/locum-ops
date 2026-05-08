@@ -48,7 +48,11 @@ export function BulkInvoiceDialog({ open, onOpenChange, preselectedFacilityId }:
   const [selectedShiftIds, setSelectedShiftIds] = useState<Set<string>>(new Set());
   const [creating, setCreating] = useState(false);
 
-  const activeFacilities = facilities.filter(f => f.status === 'active');
+  const activeFacilities = facilities.filter(
+    f => f.status === 'active'
+      && (f.engagement_type || 'direct') === 'direct'
+      && f.generates_invoices !== false,
+  );
   const facility = facilities.find(f => f.id === facilityId);
 
   const period = periodPreset === 'custom'

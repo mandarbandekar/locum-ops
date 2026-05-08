@@ -1677,6 +1677,7 @@ export type Database = {
           default_break_minutes: number | null
           engagement_type: string
           facility_coordinates: Json | null
+          generates_invoices: boolean
           id: string
           invoice_due_days: number
           invoice_email_bcc: string
@@ -1711,6 +1712,7 @@ export type Database = {
           default_break_minutes?: number | null
           engagement_type?: string
           facility_coordinates?: Json | null
+          generates_invoices?: boolean
           id?: string
           invoice_due_days?: number
           invoice_email_bcc?: string
@@ -1745,6 +1747,7 @@ export type Database = {
           default_break_minutes?: number | null
           engagement_type?: string
           facility_coordinates?: Json | null
+          generates_invoices?: boolean
           id?: string
           invoice_due_days?: number
           invoice_email_bcc?: string
