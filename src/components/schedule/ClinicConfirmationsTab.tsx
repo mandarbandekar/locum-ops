@@ -31,6 +31,7 @@ export function ClinicConfirmationsTab() {
   const [editingMessages, setEditingMessages] = useState<Record<string, { subject: string; body: string }>>({});
   const [showHistory, setShowHistory] = useState<Record<string, boolean>>({});
   const [sendingAll, setSendingAll] = useState(false);
+  const [comingSoonOpen, setComingSoonOpen] = useState(false);
   const settingsSaveRef = useRef<(() => void) | null>(null);
 
   const monthKey = format(currentMonth, 'yyyy-MM');
