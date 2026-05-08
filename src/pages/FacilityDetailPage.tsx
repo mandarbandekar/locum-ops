@@ -304,6 +304,7 @@ function ContractTab({ facility, facilityTerms, onSaveRates, onUpdateTerms, onUp
 }) {
   const [editingDetails, setEditingDetails] = useState(false);
   const [status, setStatus] = useState(facility.status);
+  const [timezone, setTimezone] = useState<string>(facility.timezone || 'America/New_York');
   const [engagementType, setEngagementType] = useState<EngagementType>((facility.engagement_type || 'direct') as EngagementType);
   const [sourceName, setSourceName] = useState<string>(facility.source_name || '');
   const [taxFormType, setTaxFormType] = useState<TaxFormType>((facility.tax_form_type as TaxFormType) || '1099');
