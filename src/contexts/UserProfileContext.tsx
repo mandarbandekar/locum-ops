@@ -60,6 +60,8 @@ export interface UserProfile {
   default_rates: DefaultRate[];
   default_billing_preference: BillingPreference;
   prefer_rate_card_default: boolean;
+  /** Saved hourly overtime rate, used as default when adding overtime to invoices. */
+  default_overtime_rate: number | null;
   onboarding_progress: OnboardingProgress;
 }
 
