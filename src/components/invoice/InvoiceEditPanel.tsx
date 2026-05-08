@@ -544,9 +544,11 @@ export function InvoiceEditPanel({
                   showSyncHint={syncEligible}
                   hasOvertime={hasOvertime}
                   onAddOvertime={shift && !readOnly && onAddLineItem ? async () => {
+                    const clinicTerms = terms.find(t => t.facility_id === shift.facility_id);
+                    const clinicOtRate = clinicTerms?.overtime_rate != null ? Number(clinicTerms.overtime_rate) : 0;
                     const savedOtRate = profile?.default_overtime_rate != null ? Number(profile.default_overtime_rate) : 0;
                     const shiftHourly = shift.rate_kind === 'hourly' && shift.hourly_rate ? Number(shift.hourly_rate) : 0;
-                    const defaultRate = savedOtRate > 0 ? savedOtRate : shiftHourly;
+                    const defaultRate = clinicOtRate > 0 ? clinicOtRate : (savedOtRate > 0 ? savedOtRate : shiftHourly);
                     const otQty = 0.25;
                     const otTotal = Math.round(otQty * defaultRate * 100) / 100;
                     const dateLabel = format(new Date(shift.start_datetime), 'MMM d, yyyy');
