@@ -89,8 +89,8 @@ function buildRateOptions(
 
 
 
-export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms, existing, onSave, onDelete, embedded, defaultDate, defaultStartTime, defaultMonth }: ShiftFormDialogProps) {
-  const [facilityId, setFacilityId] = useState(existing?.facility_id || facilities[0]?.id || '');
+export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms, existing, onSave, onDelete, embedded, defaultDate, defaultStartTime, defaultMonth, lockedFacilityId }: ShiftFormDialogProps) {
+  const [facilityId, setFacilityId] = useState(existing?.facility_id || lockedFacilityId || facilities[0]?.id || '');
   const [selectedDates, setSelectedDates] = useState<Date[]>(
     existing ? [new Date(existing.start_datetime)] : defaultDate ? [defaultDate] : []
   );
