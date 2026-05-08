@@ -1,5 +1,9 @@
 import { Shift, Invoice, InvoiceStatus } from '@/types';
 import { isInvoiceOverdue } from './invoiceHelpers';
+import { getShiftAbsoluteRange } from './shiftTimezone';
+
+/** Map of facility id → IANA timezone, used for cross-tz conflict math. */
+export type FacilityTzMap = Record<string, string | undefined | null>;
 
 /**
  * Normalize a datetime string to { dateKey, minutes-since-midnight } so that
