@@ -111,12 +111,22 @@ export function ClinicConfirmationsTab({ facilityId }: ClinicConfirmationsTabPro
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h2 className="text-xl font-semibold">Clinic Confirmations</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          Confirm your upcoming schedule with each clinic before the month starts.
-        </p>
-      </div>
+      {!scoped && (
+        <div>
+          <h2 className="text-xl font-semibold">Clinic Confirmations</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Confirm your upcoming schedule with each clinic before the month starts.
+          </p>
+        </div>
+      )}
+      {scoped && (
+        <div>
+          <h2 className="text-lg font-semibold">Schedule Confirmations</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Confirm {scopedFacilityName ? scopedFacilityName + "'s" : 'this clinic\u2019s'} upcoming schedule before the month starts.
+          </p>
+        </div>
+      )}
 
       {/* Month nav + summary + bulk send */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 flex-wrap">
@@ -134,7 +144,7 @@ export function ClinicConfirmationsTab({ facilityId }: ClinicConfirmationsTabPro
           <p className="text-sm text-muted-foreground">{summaryParts.join(' · ')}</p>
         )}
 
-        {unsentWithContact.length > 0 && (
+        {!scoped && unsentWithContact.length > 0 && (
           <Button size="sm" className="ml-auto h-8 text-xs" onClick={handleSendAll} disabled={sendingAll}>
             <Send className="h-3 w-3 mr-1" /> Send All Unsent ({unsentWithContact.length})
           </Button>
@@ -150,7 +160,9 @@ export function ClinicConfirmationsTab({ facilityId }: ClinicConfirmationsTabPro
             <CalendarDays className="h-10 w-10 text-muted-foreground/40 mx-auto" />
             <h3 className="font-semibold text-foreground">No booked shifts to confirm</h3>
             <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              Once you book shifts for a practice in {format(currentMonth, 'MMMM yyyy')}, they'll appear here for confirmation.
+              {scoped
+                ? `Once you book shifts at ${scopedFacilityName || 'this clinic'} for ${format(currentMonth, 'MMMM yyyy')}, they'll appear here for confirmation.`
+                : `Once you book shifts for a practice in ${format(currentMonth, 'MMMM yyyy')}, they'll appear here for confirmation.`}
             </p>
           </CardContent>
         </Card>
