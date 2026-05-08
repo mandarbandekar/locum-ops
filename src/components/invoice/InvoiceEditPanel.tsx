@@ -180,7 +180,7 @@ function ShiftLineItemCard({
         </div>
         {isOvertime && rateNum > 0 && hasClinicOt && !editMatchesClinic && (
           <p className="text-[11px] text-[hsl(var(--warning))] italic">
-            Override applied: this overtime line uses {fmtMoney(rateNum)}/hr instead of the clinic\u2019s saved {fmtMoney(Number(clinicOvertimeRate))}/hr.
+            Override applied: this overtime line uses {fmtMoney(rateNum)}/hr instead of the clinic's saved {fmtMoney(Number(clinicOvertimeRate))}/hr.
           </p>
         )}
         </div>
