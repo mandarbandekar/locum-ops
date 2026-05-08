@@ -76,7 +76,11 @@ export function InvoiceActionBar({
     if (!hasName || !hasAddress) {
       const missing = [!hasName && 'business name', !hasAddress && 'business address'].filter(Boolean).join(' and ');
       toast.error(`Add your ${missing} first`, {
-        description: 'Your business name and address are required on invoices. Update them in Settings → Profile.',
+        description: 'Your business name and address are required on invoices.',
+        action: {
+          label: 'Open Profile',
+          onClick: () => { window.location.href = '/settings/profile'; },
+        },
       });
       return false;
     }
