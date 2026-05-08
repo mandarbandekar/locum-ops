@@ -195,7 +195,7 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
         name: name.trim(),
         status: 'active',
         address,
-        timezone: 'America/Los_Angeles',
+        timezone: profile?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York',
         notes: '',
         outreach_last_sent_at: null,
         tech_computer_info: '',
