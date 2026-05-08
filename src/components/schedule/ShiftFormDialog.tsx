@@ -49,6 +49,8 @@ interface ShiftFormDialogProps {
   defaultDate?: Date;
   defaultStartTime?: string;
   defaultMonth?: Date;
+  /** When set, skip the clinic-selection step — the clinic is already known (e.g. opened from a Clinic Detail page). */
+  lockedFacilityId?: string;
 }
 
 export type RateOptionSource = 'facility' | 'rate_card';
