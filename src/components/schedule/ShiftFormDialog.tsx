@@ -49,6 +49,8 @@ interface ShiftFormDialogProps {
   defaultDate?: Date;
   defaultStartTime?: string;
   defaultMonth?: Date;
+  /** When set, skip the clinic-selection step — the clinic is already known (e.g. opened from a Clinic Detail page). */
+  lockedFacilityId?: string;
 }
 
 export type RateOptionSource = 'facility' | 'rate_card';
@@ -87,8 +89,8 @@ function buildRateOptions(
 
 
 
-export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms, existing, onSave, onDelete, embedded, defaultDate, defaultStartTime, defaultMonth }: ShiftFormDialogProps) {
-  const [facilityId, setFacilityId] = useState(existing?.facility_id || facilities[0]?.id || '');
+export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms, existing, onSave, onDelete, embedded, defaultDate, defaultStartTime, defaultMonth, lockedFacilityId }: ShiftFormDialogProps) {
+  const [facilityId, setFacilityId] = useState(existing?.facility_id || lockedFacilityId || facilities[0]?.id || '');
   const [selectedDates, setSelectedDates] = useState<Date[]>(
     existing ? [new Date(existing.start_datetime)] : defaultDate ? [defaultDate] : []
   );
@@ -105,7 +107,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   const [showNotes, setShowNotes] = useState(!!existing?.notes);
   const [showAddFacility, setShowAddFacility] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(lockedFacilityId ? 2 : 1);
   const facilityForBreak = facilities.find(f => f.id === facilityId);
   const clinicDefaultBreak: number | null = facilityForBreak?.default_break_minutes ?? null;
   const [breakMinutes, setBreakMinutes] = useState<number | null>(
@@ -151,7 +153,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
       );
       setSourceOverride(existing.source_name_override ?? fac?.source_name ?? '');
     } else {
-      setFacilityId(facilities[0]?.id || '');
+      setFacilityId(lockedFacilityId || facilities[0]?.id || '');
       setSelectedDates(defaultDate ? [defaultDate] : []);
       setStartTime(defaultStartTime || '');
       setEndTime('');
@@ -171,7 +173,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     setSaveCustomRate(true);
     setShowAddFacility(false);
     setIsSubmitting(false);
-    setStep(1);
+    setStep(lockedFacilityId ? 2 : 1);
     if (existing) {
       setBreakMinutes(existing.break_minutes !== undefined ? existing.break_minutes : null);
       setWorkedThroughBreak(!!existing.worked_through_break);
@@ -828,9 +830,11 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
 
       {/* Navigation */}
       <div className="flex gap-2 pt-1">
-        <Button type="button" variant="outline" onClick={() => setStep(1)} className="h-10 min-w-[100px]">
-          <ChevronLeft className="h-4 w-4 mr-1" /> Back
-        </Button>
+        {!lockedFacilityId && (
+          <Button type="button" variant="outline" onClick={() => setStep(1)} className="h-10 min-w-[100px]">
+            <ChevronLeft className="h-4 w-4 mr-1" /> Back
+          </Button>
+        )}
         <Button type="button" onClick={() => setStep(3)} disabled={!datesPicked || !timeIsSet || !!hoursInvalidReason} className="flex-1 h-10">
           Next <ChevronRight className="h-4 w-4 ml-1" />
         </Button>
@@ -1033,7 +1037,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     }: {
       icon: typeof Building2;
       label: string;
-      onEdit: () => void;
+      onEdit?: () => void;
       children: React.ReactNode;
     }) => (
       <div className="flex items-start gap-3 py-2.5 border-b border-border last:border-b-0">
@@ -1044,15 +1048,17 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
           <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
           <div className="text-sm text-foreground mt-0.5 break-words">{children}</div>
         </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={onEdit}
-          className="h-7 px-2 text-[11px] text-primary hover:text-primary shrink-0"
-        >
-          <Pencil className="h-3 w-3 mr-1" /> Edit
-        </Button>
+        {onEdit && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onEdit}
+            className="h-7 px-2 text-[11px] text-primary hover:text-primary shrink-0"
+          >
+            <Pencil className="h-3 w-3 mr-1" /> Edit
+          </Button>
+        )}
       </div>
     );
 
@@ -1063,7 +1069,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
         icon={Eye}
       >
         <div className="rounded-lg border border-border bg-muted/20 px-3 py-1">
-          <Row icon={Building2} label="Clinic" onEdit={() => setStep(1)}>
+          <Row icon={Building2} label="Clinic" onEdit={lockedFacilityId ? undefined : () => setStep(1)}>
             {facilityName || <span className="text-muted-foreground">—</span>}
           </Row>
           <Row icon={CalendarDays} label={sortedDates.length > 1 ? `Dates (${sortedDates.length})` : 'Date'} onEdit={() => setStep(2)}>
@@ -1355,12 +1361,13 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   );
 
   /* ─── New shift: guided stepper ─── */
-  const totalSteps = 4;
+  const totalSteps = lockedFacilityId ? 3 : 4;
+  const displayStep = lockedFacilityId ? Math.max(1, step - 1) : step;
   const renderGuidedForm = () => (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       <div className="flex items-center justify-between">
         <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Step {step} of {totalSteps}
+          Step {displayStep} of {totalSteps}
         </p>
         <div className="flex gap-1">
           {Array.from({ length: totalSteps }).map((_, i) => (
@@ -1368,7 +1375,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
               key={i}
               className={cn(
                 'h-1 w-8 rounded-full transition-colors',
-                i + 1 <= step ? 'bg-primary' : 'bg-muted',
+                i + 1 <= displayStep ? 'bg-primary' : 'bg-muted',
               )}
             />
           ))}
