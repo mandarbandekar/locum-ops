@@ -3313,6 +3313,7 @@ export type Database = {
           id: string
           late_payment_policy_text: string
           overtime_policy_text: string
+          overtime_rate: number | null
           partial_day_rate: number
           rate_kinds: Json
           rate_shift_types: Json
@@ -3332,6 +3333,7 @@ export type Database = {
           id?: string
           late_payment_policy_text?: string
           overtime_policy_text?: string
+          overtime_rate?: number | null
           partial_day_rate?: number
           rate_kinds?: Json
           rate_shift_types?: Json
@@ -3351,6 +3353,7 @@ export type Database = {
           id?: string
           late_payment_policy_text?: string
           overtime_policy_text?: string
+          overtime_rate?: number | null
           partial_day_rate?: number
           rate_kinds?: Json
           rate_shift_types?: Json
