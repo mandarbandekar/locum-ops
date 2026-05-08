@@ -35,6 +35,8 @@ export interface UserProfile {
   profession: Profession;
   work_style_label: string;
   timezone: string;
+  /** When true, user manually pinned their timezone — don't auto-update from device. */
+  timezone_pinned: boolean;
   currency: string;
   current_tools: CurrentTool[];
   facilities_count_band: FacilitiesCountBand;
@@ -101,6 +103,7 @@ export const DEFAULT_PROFILE: Omit<UserProfile, 'id' | 'user_id'> = {
   profession: 'other',
   work_style_label: '',
   timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  timezone_pinned: false,
   currency: 'USD',
   current_tools: [],
   facilities_count_band: 'band_1_3',
@@ -174,6 +177,20 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
     loadProfile();
   }, [isDemo, user?.id]);
 
+  // Silently re-sync the profile timezone with the device on each session.
+  // Skipped when the user has manually pinned a timezone.
+  useEffect(() => {
+    if (isDemo || !profile || profile.timezone_pinned) return;
+    const deviceTz = (() => {
+      try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return ''; }
+    })();
+    if (!deviceTz || deviceTz === profile.timezone) return;
+    db('user_profiles').update({ timezone: deviceTz }).eq('id', profile.id).then(({ error }: any) => {
+      if (!error) setProfile(prev => prev ? { ...prev, timezone: deviceTz } : prev);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDemo, profile?.id, profile?.timezone_pinned]);
+
   async function loadProfile() {
     try {
       const { data, error } = await db('user_profiles')
@@ -222,6 +239,7 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
           profession,
           work_style_label: d.work_style_label,
           timezone: d.timezone,
+          timezone_pinned: !!d.timezone_pinned,
           currency: d.currency,
           current_tools: (d.current_tools as CurrentTool[]) || [],
           facilities_count_band: d.facilities_count_band,
@@ -292,6 +310,7 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
             profession: nd.profession || 'other',
             work_style_label: nd.work_style_label || '',
             timezone: nd.timezone,
+            timezone_pinned: !!nd.timezone_pinned,
             currency: nd.currency || 'USD',
             current_tools: [],
             facilities_count_band: nd.facilities_count_band || 'band_1_3',

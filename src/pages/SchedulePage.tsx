@@ -9,6 +9,7 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMont
 import { CalendarPlus, Clock, DollarSign, TrendingUp } from 'lucide-react';
 import { SHIFT_COLORS, Shift, BLOCK_TYPES, BLOCK_COLORS, TimeBlock, getShiftTotalRevenue, formatHoursDisplay } from '@/types';
 import { detectShiftConflicts } from '@/lib/businessLogic';
+import { formatInClinicTz, getTimezoneAbbr } from '@/lib/shiftTimezone';
 import { toast } from 'sonner';
 import { ShiftFormDialog } from '@/components/schedule/ShiftFormDialog';
 import { BlockTimeDialog } from '@/components/schedule/BlockTimeDialog';
@@ -190,7 +191,8 @@ export default function SchedulePage() {
     const newEnd = new Date(newStart.getTime() + duration);
     if (newStart.getTime() === oldStart.getTime()) return;
     const otherShifts = shifts.filter(s => s.id !== shiftId);
-    const conflicts = detectShiftConflicts(otherShifts, { start_datetime: newStart.toISOString(), end_datetime: newEnd.toISOString() });
+    const tzMap = Object.fromEntries(facilities.map(f => [f.id, f.timezone]));
+    const conflicts = detectShiftConflicts(otherShifts, { start_datetime: newStart.toISOString(), end_datetime: newEnd.toISOString(), facility_id: shift.facility_id }, tzMap);
     if (conflicts.length > 0) {
       toast.warning(`Scheduling conflict on ${format(newStart, 'EEE, MMM d')} with ${getFacilityName(conflicts[0].facility_id)}`);
     }
@@ -212,7 +214,8 @@ export default function SchedulePage() {
     const newEnd = new Date(newStart.getTime() + duration);
     if (newStart.getTime() === oldStart.getTime()) return;
     const otherShifts = shifts.filter(s => s.id !== shiftId);
-    const conflicts = detectShiftConflicts(otherShifts, { start_datetime: newStart.toISOString(), end_datetime: newEnd.toISOString() });
+    const tzMap2 = Object.fromEntries(facilities.map(f => [f.id, f.timezone]));
+    const conflicts = detectShiftConflicts(otherShifts, { start_datetime: newStart.toISOString(), end_datetime: newEnd.toISOString(), facility_id: shift.facility_id }, tzMap2);
     if (conflicts.length > 0) {
       toast.warning(`Scheduling conflict at ${format(newStart, 'h:mm a')} with ${getFacilityName(conflicts[0].facility_id)}`);
     }
@@ -606,12 +609,18 @@ export default function SchedulePage() {
                     {rangeShifts.map(s => {
                       const hrs = getBillableMinutes(s) / 60;
                       const isPaid = paidShiftIds.has(s.id);
+                      const fac = facilities.find(f => f.id === s.facility_id);
+                      const tz = fac?.timezone || undefined;
+                      const startStr = tz ? formatInClinicTz(s.start_datetime, tz, 'h:mm a') : format(new Date(s.start_datetime), 'h:mm a');
+                      const endStr = tz ? formatInClinicTz(s.end_datetime, tz, 'h:mm a') : format(new Date(s.end_datetime), 'h:mm a');
+                      const tzAbbr = tz ? getTimezoneAbbr(tz, s.start_datetime) : '';
+                      const dateStr = tz ? formatInClinicTz(s.start_datetime, tz, 'EEE, MMM d') : format(new Date(s.start_datetime), 'EEE, MMM d');
                       return (
                         <React.Fragment key={s.id}>
                           <tr className="border-b last:border-0 hover:bg-muted/30 cursor-pointer" onClick={() => setEditShift(s.id)}>
-                            <td className="p-3">{format(new Date(s.start_datetime), 'EEE, MMM d')}</td>
+                            <td className="p-3">{dateStr}</td>
                             <td className="p-3 font-medium">{getFacilityName(s.facility_id)}</td>
-                            <td className="p-3 text-muted-foreground hidden md:table-cell">{format(new Date(s.start_datetime), 'h:mm a')} – {format(new Date(s.end_datetime), 'h:mm a')}</td>
+                            <td className="p-3 text-muted-foreground hidden md:table-cell">{startStr} – {endStr}{tzAbbr ? ` ${tzAbbr}` : ''}</td>
                             <td className="p-3 text-muted-foreground hidden md:table-cell">{hrs}h</td>
                             <td className="p-3 font-medium">
                               <div className="flex items-center gap-1.5 flex-wrap">

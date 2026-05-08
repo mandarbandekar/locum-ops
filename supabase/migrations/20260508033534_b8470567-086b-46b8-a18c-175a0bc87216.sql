@@ -1,0 +1,1 @@
+ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS timezone_pinned boolean NOT NULL DEFAULT false;

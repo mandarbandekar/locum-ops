@@ -3452,6 +3452,7 @@ export type Database = {
           profession: string
           terms_fields_enabled: Json
           timezone: string
+          timezone_pinned: boolean
           updated_at: string
           user_id: string
           work_style_label: string
@@ -3488,6 +3489,7 @@ export type Database = {
           profession?: string
           terms_fields_enabled?: Json
           timezone?: string
+          timezone_pinned?: boolean
           updated_at?: string
           user_id: string
           work_style_label?: string
@@ -3524,6 +3526,7 @@ export type Database = {
           profession?: string
           terms_fields_enabled?: Json
           timezone?: string
+          timezone_pinned?: boolean
           updated_at?: string
           user_id?: string
           work_style_label?: string

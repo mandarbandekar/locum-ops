@@ -173,9 +173,31 @@ export default function SettingsProfilePage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <Label>Timezone</Label>
-                <Input value={timezone} onChange={e => setTimezone(e.target.value)} />
-                <p className="text-xs text-muted-foreground mt-1">Used for schedule display.</p>
+                <Label>Home timezone</Label>
+                {profile?.timezone_pinned ? (
+                  <>
+                    <Input value={timezone} onChange={e => setTimezone(e.target.value)} />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Manually pinned. <button type="button" className="underline" onClick={async () => {
+                        const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                        setTimezone(detected);
+                        await updateProfile({ timezone: detected, timezone_pinned: false });
+                        toast.success('Auto-detect re-enabled');
+                      }}>Re-enable auto-detect</button>
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <Input value={timezone} disabled className="text-muted-foreground" />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Detected from your device — updates automatically when you travel.{' '}
+                      <button type="button" className="underline" onClick={async () => {
+                        await updateProfile({ timezone_pinned: true });
+                        toast.success('Timezone pinned. Edit it above.');
+                      }}>Override</button>
+                    </p>
+                  </>
+                )}
               </div>
               <div>
                 <Label>Currency</Label>
