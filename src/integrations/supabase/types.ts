@@ -3424,6 +3424,7 @@ export type Database = {
           dashboard_intro_dismissed: boolean
           dashboard_levelup_shown: boolean
           default_billing_preference: string
+          default_overtime_rate: number | null
           default_rates: Json
           dismissed_prompts: Json
           email_tone: string
@@ -3459,6 +3460,7 @@ export type Database = {
           dashboard_intro_dismissed?: boolean
           dashboard_levelup_shown?: boolean
           default_billing_preference?: string
+          default_overtime_rate?: number | null
           default_rates?: Json
           dismissed_prompts?: Json
           email_tone?: string
@@ -3494,6 +3496,7 @@ export type Database = {
           dashboard_intro_dismissed?: boolean
           dashboard_levelup_shown?: boolean
           default_billing_preference?: string
+          default_overtime_rate?: number | null
           default_rates?: Json
           dismissed_prompts?: Json
           email_tone?: string

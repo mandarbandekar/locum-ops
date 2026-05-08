@@ -60,6 +60,8 @@ export interface UserProfile {
   default_rates: DefaultRate[];
   default_billing_preference: BillingPreference;
   prefer_rate_card_default: boolean;
+  /** Saved hourly overtime rate, used as default when adding overtime to invoices. */
+  default_overtime_rate: number | null;
   onboarding_progress: OnboardingProgress;
 }
 
@@ -124,6 +126,7 @@ export const DEFAULT_PROFILE: Omit<UserProfile, 'id' | 'user_id'> = {
   default_rates: [],
   default_billing_preference: 'per_day',
   prefer_rate_card_default: false,
+  default_overtime_rate: null,
   onboarding_progress: {},
 };
 
@@ -244,6 +247,7 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
           default_rates: (d.default_rates as DefaultRate[]) || [],
           default_billing_preference: (d.default_billing_preference as BillingPreference) || 'per_day',
           prefer_rate_card_default: !!d.prefer_rate_card_default,
+          default_overtime_rate: d.default_overtime_rate != null ? Number(d.default_overtime_rate) : null,
           onboarding_progress: (d.onboarding_progress as OnboardingProgress) || {},
         });
       } else {
@@ -313,6 +317,7 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
             default_rates: [],
             default_billing_preference: 'per_day',
             prefer_rate_card_default: false,
+            default_overtime_rate: null,
             onboarding_progress: {},
           });
         }

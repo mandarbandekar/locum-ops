@@ -338,6 +338,39 @@ export default function SettingsRateCardPage() {
         </Card>
 
         <Card>
+          <CardContent className="pt-5 space-y-2">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-foreground">Overtime rate</p>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                  Saved hourly rate used as the default when you add an overtime line to an invoice.
+                  You can still override it per shift.
+                </p>
+              </div>
+              <div className="relative w-32 shrink-0">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+                <Input
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  step="1"
+                  value={profile?.default_overtime_rate ?? ''}
+                  onChange={async (e) => {
+                    const raw = e.target.value;
+                    const v = raw === '' ? null : Number(raw);
+                    await updateProfile({ default_overtime_rate: v != null && Number.isFinite(v) && v >= 0 ? v : null });
+                  }}
+                  placeholder="0"
+                  className="h-9 pl-7 pr-10 text-right"
+                  aria-label="Default overtime hourly rate"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">/hr</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
           <CardContent className="pt-5">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">

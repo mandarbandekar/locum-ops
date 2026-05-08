@@ -275,5 +275,6 @@ export const seedUserProfile: UserProfile = {
   default_rates: [],
   default_billing_preference: 'per_day',
   prefer_rate_card_default: false,
+  default_overtime_rate: 125,
   onboarding_progress: {},
 };
