@@ -72,6 +72,8 @@ export interface TermsSnapshot {
   overtime_policy_text: string;
   late_payment_policy_text: string;
   special_notes: string;
+  /** Saved overtime hourly rate for this clinic; used as default when adding overtime to invoices. */
+  overtime_rate?: number | null;
   custom_rates?: Array<{
     label: string;
     amount: number;
