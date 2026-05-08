@@ -1037,7 +1037,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     }: {
       icon: typeof Building2;
       label: string;
-      onEdit: () => void;
+      onEdit?: () => void;
       children: React.ReactNode;
     }) => (
       <div className="flex items-start gap-3 py-2.5 border-b border-border last:border-b-0">
@@ -1048,15 +1048,17 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
           <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
           <div className="text-sm text-foreground mt-0.5 break-words">{children}</div>
         </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={onEdit}
-          className="h-7 px-2 text-[11px] text-primary hover:text-primary shrink-0"
-        >
-          <Pencil className="h-3 w-3 mr-1" /> Edit
-        </Button>
+        {onEdit && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onEdit}
+            className="h-7 px-2 text-[11px] text-primary hover:text-primary shrink-0"
+          >
+            <Pencil className="h-3 w-3 mr-1" /> Edit
+          </Button>
+        )}
       </div>
     );
 
