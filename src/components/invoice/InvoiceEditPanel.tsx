@@ -160,7 +160,29 @@ function ShiftLineItemCard({
           <div>
             <Label htmlFor={`li-rate-${item.id}`} className="text-[10px] text-muted-foreground uppercase">Rate{isOvertime ? ' / hr' : ''}</Label>
             <Input id={`li-rate-${item.id}`} type="number" inputMode="decimal" value={rate} onChange={e => setRate(e.target.value)} className="h-9 text-sm mt-1" min={0} step="0.01" aria-label="Rate" />
+            {hasClinicOt && (
+              <div className="mt-1 flex items-center justify-between gap-2">
+                <span className="text-[10px] text-muted-foreground">
+                  Clinic rate: {fmtMoney(Number(clinicOvertimeRate))}/hr
+                </span>
+                {!editMatchesClinic && (
+                  <button
+                    type="button"
+                    onClick={() => setRate(String(clinicOvertimeRate))}
+                    className="text-[10px] font-medium text-primary hover:underline"
+                  >
+                    Reset to clinic rate
+                  </button>
+                )}
+              </div>
+            )}
           </div>
+        </div>
+        {isOvertime && rateNum > 0 && hasClinicOt && !editMatchesClinic && (
+          <p className="text-[11px] text-[hsl(var(--warning))] italic">
+            Override applied: this overtime line uses {fmtMoney(rateNum)}/hr instead of the clinic\u2019s saved {fmtMoney(Number(clinicOvertimeRate))}/hr.
+          </p>
+        )}
         </div>
         {showSyncHint && (
           <p className="text-[11px] text-muted-foreground italic">Editing this updates the shift on your schedule.</p>
