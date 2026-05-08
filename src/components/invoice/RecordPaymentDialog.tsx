@@ -36,7 +36,7 @@ export function RecordPaymentDialog({ open, onOpenChange, balanceDue, onRecord }
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
-        <DialogHeader><DialogTitle>Record Payment</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>Mark Paid</DialogTitle></DialogHeader>
         <div className="space-y-4">
           <div>
             <Label>Date</Label>
@@ -71,7 +71,7 @@ export function RecordPaymentDialog({ open, onOpenChange, balanceDue, onRecord }
             <Label>Memo <span className="text-muted-foreground text-xs">(optional)</span></Label>
             <Textarea value={memo} onChange={e => setMemo(e.target.value)} placeholder="Payment notes..." rows={2} />
           </div>
-          <Button onClick={handleSubmit} className="w-full">Record Payment</Button>
+          <Button onClick={handleSubmit} className="w-full">Mark Paid</Button>
         </div>
       </DialogContent>
     </Dialog>
