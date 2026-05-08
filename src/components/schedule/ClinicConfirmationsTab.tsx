@@ -317,6 +317,21 @@ export function ClinicConfirmationsTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Coming soon dialog */}
+      <Dialog open={comingSoonOpen} onOpenChange={setComingSoonOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Email Functionality coming soon</DialogTitle>
+            <DialogDescription>
+              Sending confirmations directly from LocumOps is on the way. In the meantime, use "Copy to Clipboard" to paste the message into your email.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => setComingSoonOpen(false)}>Got it</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
