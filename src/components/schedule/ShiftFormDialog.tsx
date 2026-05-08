@@ -18,6 +18,7 @@ import { BreakPolicySelector } from '@/components/facilities/BreakPolicySelector
 import { getBreakPolicyLabel, formatBillableHours, formatHoursMinutes, getScheduledMinutes, getBillableMinutes, isBreakFeatureNew } from '@/lib/shiftBreak';
 import { Switch } from '@/components/ui/switch';
 import { detectShiftConflicts, generateId } from '@/lib/businessLogic';
+import { buildShiftIso, getTimezoneAbbr, getDeviceTimezone } from '@/lib/shiftTimezone';
 import { cn } from '@/lib/utils';
 import { termsToRates, RateEntry } from '@/components/facilities/RatesEditor';
 import { useData } from '@/contexts/DataContext';
