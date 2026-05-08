@@ -8,6 +8,8 @@ export interface UpcomingShiftItem {
   clinicName: string;
   startTime: string; // already formatted "8:00 AM"
   endTime: string;   // already formatted "6:00 PM"
+  /** Optional clinic timezone abbr (e.g. "EST"); shown next to time when present. */
+  tzAbbr?: string;
 }
 
 interface UpcomingShiftsStripProps {
@@ -61,7 +63,7 @@ export function UpcomingShiftsStrip({ shifts }: UpcomingShiftsStripProps) {
                 {s.clinicName}
               </p>
               <p className="text-[11px] mt-1" style={{ color: '#6B7280' }}>
-                {s.startTime} - {s.endTime}
+                {s.startTime} - {s.endTime}{s.tzAbbr ? ` ${s.tzAbbr}` : ''}
               </p>
             </div>
           ))}
