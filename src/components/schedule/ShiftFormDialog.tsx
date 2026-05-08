@@ -107,7 +107,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   const [showNotes, setShowNotes] = useState(!!existing?.notes);
   const [showAddFacility, setShowAddFacility] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(lockedFacilityId ? 2 : 1);
   const facilityForBreak = facilities.find(f => f.id === facilityId);
   const clinicDefaultBreak: number | null = facilityForBreak?.default_break_minutes ?? null;
   const [breakMinutes, setBreakMinutes] = useState<number | null>(
