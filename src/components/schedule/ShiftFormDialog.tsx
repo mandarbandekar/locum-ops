@@ -813,6 +813,17 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
 
       {/* Time row */}
       <div>
+        {(() => {
+          const tz = clinicTz;
+          const deviceTz = getDeviceTimezone();
+          if (!tz || tz === deviceTz) return null;
+          const abbr = getTimezoneAbbr(tz, selectedDates[0] || new Date());
+          return (
+            <p className="mb-1.5 text-[11px] text-muted-foreground">
+              Times are in <span className="font-medium text-foreground">{abbr || tz}</span> (clinic time).
+            </p>
+          );
+        })()}
         <div className="grid grid-cols-2 gap-3">
           <div>
             <span className="text-[10px] text-muted-foreground">Start</span>
