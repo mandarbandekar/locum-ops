@@ -5,6 +5,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useData } from '@/contexts/DataContext';
+import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useClinicConfirmations } from '@/hooks/useClinicConfirmations';
 import { generateId } from '@/lib/businessLogic';
 import { toast } from 'sonner';
@@ -84,6 +85,7 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
   ref,
 ) {
   const { addFacility, updateTerms, facilities } = useData();
+  const { profile } = useUserProfile();
   const { saveSettings: saveConfirmationSettings } = useClinicConfirmations();
 
   // ── Step 1: Identity ──
@@ -193,7 +195,7 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
         name: name.trim(),
         status: 'active',
         address,
-        timezone: 'America/Los_Angeles',
+        timezone: profile?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York',
         notes: '',
         outreach_last_sent_at: null,
         tech_computer_info: '',

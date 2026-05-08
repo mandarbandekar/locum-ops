@@ -304,6 +304,7 @@ function ContractTab({ facility, facilityTerms, onSaveRates, onUpdateTerms, onUp
 }) {
   const [editingDetails, setEditingDetails] = useState(false);
   const [status, setStatus] = useState(facility.status);
+  const [timezone, setTimezone] = useState<string>(facility.timezone || 'America/New_York');
   const [engagementType, setEngagementType] = useState<EngagementType>((facility.engagement_type || 'direct') as EngagementType);
   const [sourceName, setSourceName] = useState<string>(facility.source_name || '');
   const [taxFormType, setTaxFormType] = useState<TaxFormType>((facility.tax_form_type as TaxFormType) || '1099');
@@ -317,6 +318,7 @@ function ContractTab({ facility, facilityTerms, onSaveRates, onUpdateTerms, onUp
     onUpdateFacility({
       ...facility,
       status,
+      timezone,
       engagement_type: engagementType,
       source_name: isDirect ? null : (sourceName.trim() || null),
       tax_form_type: effectiveTaxForm,
@@ -357,7 +359,23 @@ function ContractTab({ facility, facilityTerms, onSaveRates, onUpdateTerms, onUp
             </div>
             <div>
               <Label className="text-xs text-muted-foreground">Timezone</Label>
-              <p className="text-sm">{facility.timezone}</p>
+              {editingDetails ? (
+                <Select value={timezone} onValueChange={setTimezone}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="America/New_York">Eastern (New York)</SelectItem>
+                    <SelectItem value="America/Chicago">Central (Chicago)</SelectItem>
+                    <SelectItem value="America/Denver">Mountain (Denver)</SelectItem>
+                    <SelectItem value="America/Phoenix">Mountain — no DST (Phoenix)</SelectItem>
+                    <SelectItem value="America/Los_Angeles">Pacific (Los Angeles)</SelectItem>
+                    <SelectItem value="America/Anchorage">Alaska (Anchorage)</SelectItem>
+                    <SelectItem value="Pacific/Honolulu">Hawaii (Honolulu)</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <p className="text-sm">{facility.timezone}</p>
+              )}
+              <p className="text-xs text-muted-foreground mt-1">Shifts at this clinic display in this timezone.</p>
             </div>
             <div className="border-t border-border pt-3">
               {editingDetails ? (
