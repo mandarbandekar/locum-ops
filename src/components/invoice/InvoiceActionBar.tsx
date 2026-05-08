@@ -17,6 +17,7 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 async function downloadInvoicePdf(invoiceId: string, invoiceNumber: string) {
   const { data: { session } } = await supabase.auth.getSession();
@@ -69,6 +70,26 @@ export function InvoiceActionBar({
   const hasShareLink = !!invoice.share_token && !invoice.share_token_revoked_at;
   const shareUrl = hasShareLink ? `${window.location.origin}/invoice/public/${invoice.share_token}` : '';
   const draftTotal = items.reduce((s: number, li: any) => s + li.line_total, 0);
+
+  const hasBusinessName = !!(profile?.company_name && String(profile.company_name).trim());
+  const hasBusinessAddress = !!(profile?.company_address && String(profile.company_address).trim());
+  const missingBusinessInfo = !hasBusinessName || !hasBusinessAddress;
+  const missingParts = [!hasBusinessName && 'business name', !hasBusinessAddress && 'business address'].filter(Boolean).join(' and ');
+  const missingTooltip = missingBusinessInfo ? `Add your ${missingParts} in Settings → Profile to enable this.` : '';
+
+  const wrapMissing = (node: React.ReactNode) => {
+    if (!missingBusinessInfo) return node;
+    return (
+      <TooltipProvider delayDuration={150}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="inline-flex">{node}</span>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="max-w-[240px] text-xs">{missingTooltip}</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  };
 
   const requireBusinessInfo = (): boolean => {
     const hasName = !!(profile?.company_name && String(profile.company_name).trim());
@@ -219,18 +240,18 @@ export function InvoiceActionBar({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         {showPdfOnMobile && (
-          <DropdownMenuItem onClick={handleDownloadPdf} disabled={pdfLoading}>
+          <DropdownMenuItem onClick={handleDownloadPdf} disabled={pdfLoading || missingBusinessInfo} title={missingTooltip}>
             {pdfLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
             Download PDF
           </DropdownMenuItem>
         )}
         {!isDraft && (
           hasShareLink ? (
-            <DropdownMenuItem onClick={handleCopyShareLink}>
+            <DropdownMenuItem onClick={handleCopyShareLink} disabled={missingBusinessInfo} title={missingTooltip}>
               <Copy className="mr-2 h-4 w-4" /> Copy share link
             </DropdownMenuItem>
           ) : (
-            <DropdownMenuItem onClick={handleCreateShareLink} disabled={shareLoading}>
+            <DropdownMenuItem onClick={handleCreateShareLink} disabled={shareLoading || missingBusinessInfo} title={missingTooltip}>
               <Link2 className="mr-2 h-4 w-4" /> Create share link
             </DropdownMenuItem>
           )
@@ -265,14 +286,18 @@ export function InvoiceActionBar({
         {isDraft && (
           <div className="flex w-full sm:w-auto items-center justify-end gap-2">
             {/* Desktop-only secondary actions */}
-            <Button variant="outline" size="sm" onClick={handleDownloadPdf} disabled={pdfLoading} className="shrink-0 hidden sm:inline-flex" aria-label="Download PDF">
-              {pdfLoading ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-1.5 h-3.5 w-3.5" />}
-              <span>Download PDF</span>
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleShareLinkClick} disabled={shareLoading} className="shrink-0 hidden sm:inline-flex">
-              {hasShareLink ? <Copy className="mr-1.5 h-3.5 w-3.5" /> : <Link2 className="mr-1.5 h-3.5 w-3.5" />}
-              <span>Copy share link</span>
-            </Button>
+            {wrapMissing(
+              <Button variant="outline" size="sm" onClick={handleDownloadPdf} disabled={pdfLoading || missingBusinessInfo} className="shrink-0 hidden sm:inline-flex" aria-label="Download PDF">
+                {pdfLoading ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-1.5 h-3.5 w-3.5" />}
+                <span>Download PDF</span>
+              </Button>
+            )}
+            {wrapMissing(
+              <Button variant="outline" size="sm" onClick={handleShareLinkClick} disabled={shareLoading || missingBusinessInfo} className="shrink-0 hidden sm:inline-flex">
+                {hasShareLink ? <Copy className="mr-1.5 h-3.5 w-3.5" /> : <Link2 className="mr-1.5 h-3.5 w-3.5" />}
+                <span>Copy share link</span>
+              </Button>
+            )}
             {/* Mobile: collapse share + PDF into more menu */}
             <div className="sm:hidden">
               <DropdownMenu>
@@ -282,7 +307,7 @@ export function InvoiceActionBar({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem onClick={handleDownloadPdf} disabled={pdfLoading}>
+                  <DropdownMenuItem onClick={handleDownloadPdf} disabled={pdfLoading || missingBusinessInfo} title={missingTooltip}>
                     {pdfLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
                     Download PDF
                   </DropdownMenuItem>
@@ -304,10 +329,12 @@ export function InvoiceActionBar({
         {/* SENT / PARTIAL */}
         {!isDraft && !isPaid && !overdue && (
           <div className="flex w-full sm:w-auto items-center justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={handleShareLinkClick} disabled={shareLoading} className="shrink-0 hidden sm:inline-flex" aria-label={hasShareLink ? 'Copy share link' : 'Create share link'}>
-              {hasShareLink ? <Copy className="mr-1.5 h-3.5 w-3.5" /> : <Link2 className="mr-1.5 h-3.5 w-3.5" />}
-              <span>{hasShareLink ? 'Copy link' : 'Share link'}</span>
-            </Button>
+            {wrapMissing(
+              <Button variant="outline" size="sm" onClick={handleShareLinkClick} disabled={shareLoading || missingBusinessInfo} className="shrink-0 hidden sm:inline-flex" aria-label={hasShareLink ? 'Copy share link' : 'Create share link'}>
+                {hasShareLink ? <Copy className="mr-1.5 h-3.5 w-3.5" /> : <Link2 className="mr-1.5 h-3.5 w-3.5" />}
+                <span>{hasShareLink ? 'Copy link' : 'Share link'}</span>
+              </Button>
+            )}
             {moreMenu()}
             <Button size="sm" onClick={onRecordPayment} className="shrink-0 flex-1 sm:flex-initial min-w-0">
               <DollarSign className="mr-1.5 h-3.5 w-3.5 shrink-0" />
@@ -319,10 +346,12 @@ export function InvoiceActionBar({
         {/* OVERDUE */}
         {overdue && !isPaid && (
           <div className="flex w-full sm:w-auto items-center justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={handleShareLinkClick} disabled={shareLoading} className="shrink-0 hidden sm:inline-flex" aria-label={hasShareLink ? 'Copy share link' : 'Create share link'}>
-              {hasShareLink ? <Copy className="mr-1.5 h-3.5 w-3.5" /> : <Link2 className="mr-1.5 h-3.5 w-3.5" />}
-              <span>{hasShareLink ? 'Copy link' : 'Share link'}</span>
-            </Button>
+            {wrapMissing(
+              <Button variant="outline" size="sm" onClick={handleShareLinkClick} disabled={shareLoading || missingBusinessInfo} className="shrink-0 hidden sm:inline-flex" aria-label={hasShareLink ? 'Copy share link' : 'Create share link'}>
+                {hasShareLink ? <Copy className="mr-1.5 h-3.5 w-3.5" /> : <Link2 className="mr-1.5 h-3.5 w-3.5" />}
+                <span>{hasShareLink ? 'Copy link' : 'Share link'}</span>
+              </Button>
+            )}
             <Button variant="outline" size="sm" onClick={onOpenCompose} className="shrink-0 hidden sm:inline-flex">
               <Mail className="mr-1.5 h-3.5 w-3.5" />
               <span>Send follow-up</span>
@@ -339,20 +368,26 @@ export function InvoiceActionBar({
         {/* PAID */}
         {isPaid && (
           <div className="flex w-full sm:w-auto items-center justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={handleDownloadPdf} disabled={pdfLoading} className="shrink-0 hidden sm:inline-flex">
-              {pdfLoading ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-1.5 h-3.5 w-3.5" />}
-              <span>Download Invoice PDF</span>
-            </Button>
+            {wrapMissing(
+              <Button variant="outline" size="sm" onClick={handleDownloadPdf} disabled={pdfLoading || missingBusinessInfo} className="shrink-0 hidden sm:inline-flex">
+                {pdfLoading ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-1.5 h-3.5 w-3.5" />}
+                <span>Download Invoice PDF</span>
+              </Button>
+            )}
             {hasShareLink ? (
-              <Button variant="outline" size="sm" onClick={handleCopyShareLink} className="shrink-0 hidden sm:inline-flex" aria-label="Copy share link">
-                <Copy className="mr-1.5 h-3.5 w-3.5" />
-                <span>Copy link</span>
-              </Button>
+              wrapMissing(
+                <Button variant="outline" size="sm" onClick={handleCopyShareLink} disabled={missingBusinessInfo} className="shrink-0 hidden sm:inline-flex" aria-label="Copy share link">
+                  <Copy className="mr-1.5 h-3.5 w-3.5" />
+                  <span>Copy link</span>
+                </Button>
+              )
             ) : (
-              <Button variant="outline" size="sm" onClick={handleCreateShareLink} disabled={shareLoading} className="shrink-0 hidden sm:inline-flex" aria-label="Create share link">
-                <Link2 className="mr-1.5 h-3.5 w-3.5" />
-                <span>Share link</span>
-              </Button>
+              wrapMissing(
+                <Button variant="outline" size="sm" onClick={handleCreateShareLink} disabled={shareLoading || missingBusinessInfo} className="shrink-0 hidden sm:inline-flex" aria-label="Create share link">
+                  <Link2 className="mr-1.5 h-3.5 w-3.5" />
+                  <span>Share link</span>
+                </Button>
+              )
             )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -361,16 +396,16 @@ export function InvoiceActionBar({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem onClick={handleDownloadPdf} disabled={pdfLoading} className="sm:hidden">
+                <DropdownMenuItem onClick={handleDownloadPdf} disabled={pdfLoading || missingBusinessInfo} title={missingTooltip} className="sm:hidden">
                   {pdfLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
                   Download PDF
                 </DropdownMenuItem>
                 {hasShareLink ? (
-                  <DropdownMenuItem onClick={handleCopyShareLink} className="sm:hidden">
+                  <DropdownMenuItem onClick={handleCopyShareLink} disabled={missingBusinessInfo} title={missingTooltip} className="sm:hidden">
                     <Copy className="mr-2 h-4 w-4" /> Copy share link
                   </DropdownMenuItem>
                 ) : (
-                  <DropdownMenuItem onClick={handleCreateShareLink} disabled={shareLoading} className="sm:hidden">
+                  <DropdownMenuItem onClick={handleCreateShareLink} disabled={shareLoading || missingBusinessInfo} title={missingTooltip} className="sm:hidden">
                     <Link2 className="mr-2 h-4 w-4" /> Create share link
                   </DropdownMenuItem>
                 )}
