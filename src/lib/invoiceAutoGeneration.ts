@@ -205,7 +205,7 @@ export function buildAutoInvoiceDraft(
   type LineDraft = Omit<InvoiceLineItem, 'id' | 'invoice_id'>;
   const lineItems: LineDraft[] = eligibleShifts.flatMap((s): LineDraft[] => {
     const isHourly = s.rate_kind === 'hourly' && s.hourly_rate != null && s.hourly_rate > 0;
-    const dateLabel = format(new Date(s.start_datetime), 'MMM d, yyyy');
+    
     const timeLabel = `${format(new Date(s.start_datetime), 'h:mm a')} – ${format(new Date(s.end_datetime), 'h:mm a')}`;
     const hasBreakDeduction = !s.worked_through_break && (s.break_minutes ?? 0) > 0;
     const breakSuffix = hasBreakDeduction ? ` (incl. ${s.break_minutes} min unpaid break)` : '';
