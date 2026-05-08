@@ -286,14 +286,18 @@ export function InvoiceActionBar({
         {isDraft && (
           <div className="flex w-full sm:w-auto items-center justify-end gap-2">
             {/* Desktop-only secondary actions */}
-            <Button variant="outline" size="sm" onClick={handleDownloadPdf} disabled={pdfLoading} className="shrink-0 hidden sm:inline-flex" aria-label="Download PDF">
-              {pdfLoading ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-1.5 h-3.5 w-3.5" />}
-              <span>Download PDF</span>
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleShareLinkClick} disabled={shareLoading} className="shrink-0 hidden sm:inline-flex">
-              {hasShareLink ? <Copy className="mr-1.5 h-3.5 w-3.5" /> : <Link2 className="mr-1.5 h-3.5 w-3.5" />}
-              <span>Copy share link</span>
-            </Button>
+            {wrapMissing(
+              <Button variant="outline" size="sm" onClick={handleDownloadPdf} disabled={pdfLoading || missingBusinessInfo} className="shrink-0 hidden sm:inline-flex" aria-label="Download PDF">
+                {pdfLoading ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-1.5 h-3.5 w-3.5" />}
+                <span>Download PDF</span>
+              </Button>
+            )}
+            {wrapMissing(
+              <Button variant="outline" size="sm" onClick={handleShareLinkClick} disabled={shareLoading || missingBusinessInfo} className="shrink-0 hidden sm:inline-flex">
+                {hasShareLink ? <Copy className="mr-1.5 h-3.5 w-3.5" /> : <Link2 className="mr-1.5 h-3.5 w-3.5" />}
+                <span>Copy share link</span>
+              </Button>
+            )}
             {/* Mobile: collapse share + PDF into more menu */}
             <div className="sm:hidden">
               <DropdownMenu>
