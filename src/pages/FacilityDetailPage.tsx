@@ -368,6 +368,8 @@ function ContractTab({ facility, facilityTerms, onSaveRates, onUpdateTerms, onUp
                   onSourceNameChange={setSourceName}
                   taxFormType={taxFormType}
                   onTaxFormTypeChange={setTaxFormType}
+                  generatesInvoices={generatesInvoices}
+                  onGeneratesInvoicesChange={setGeneratesInvoices}
                   compact
                 />
               ) : (
@@ -376,7 +378,9 @@ function ContractTab({ facility, facilityTerms, onSaveRates, onUpdateTerms, onUp
                   <p className="text-sm">
                     {facility.engagement_type === 'third_party'
                       ? `Platform / Agency — ${facility.source_name || 'Source'}${facility.tax_form_type ? ` (${facility.tax_form_type === 'w2' ? 'W-2' : '1099'})` : ''}`
-                      : 'Direct / Independent'}
+                      : facility.generates_invoices === false
+                        ? 'Direct — no invoicing (1099 from clinic)'
+                        : 'Direct / Independent'}
                   </p>
                 </>
               )}
