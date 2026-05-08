@@ -1,0 +1,1 @@
+ALTER TABLE public.terms_snapshots ADD COLUMN IF NOT EXISTS overtime_rate numeric;
