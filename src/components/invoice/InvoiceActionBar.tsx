@@ -70,6 +70,19 @@ export function InvoiceActionBar({
   const shareUrl = hasShareLink ? `${window.location.origin}/invoice/public/${invoice.share_token}` : '';
   const draftTotal = items.reduce((s: number, li: any) => s + li.line_total, 0);
 
+  const requireBusinessInfo = (): boolean => {
+    const hasName = !!(profile?.company_name && String(profile.company_name).trim());
+    const hasAddress = !!(profile?.company_address && String(profile.company_address).trim());
+    if (!hasName || !hasAddress) {
+      const missing = [!hasName && 'business name', !hasAddress && 'business address'].filter(Boolean).join(' and ');
+      toast.error(`Add your ${missing} first`, {
+        description: 'Your business name and address are required on invoices. Update them in Settings → Profile.',
+      });
+      return false;
+    }
+    return true;
+  };
+
   const handleProceedAlreadySent = async () => {
     const checklist = buildChecklistItems(profile, { ...invoice, due_date: dueDate || invoice.due_date }, items, facility);
     const incomplete = checklist.filter((i: any) => i.required && !i.complete);
@@ -92,6 +105,7 @@ export function InvoiceActionBar({
   };
 
   const handleDownloadPdf = async () => {
+    if (!requireBusinessInfo()) return;
     setPdfLoading(true);
     try {
       await downloadInvoicePdf(invoice.id, invoice.invoice_number);
@@ -107,6 +121,7 @@ export function InvoiceActionBar({
   };
 
   const handleCopyShareLink = () => {
+    if (!requireBusinessInfo()) return;
     navigator.clipboard.writeText(shareUrl);
     toast.success('Share link copied to clipboard', {
       description: isDraft
@@ -116,6 +131,7 @@ export function InvoiceActionBar({
   };
 
   const handleCreateShareLink = async () => {
+    if (!requireBusinessInfo()) return;
     setShareLoading(true);
     const token = crypto.randomUUID();
     await onUpdateInvoice({ ...invoice, share_token: token, share_token_created_at: new Date().toISOString(), share_token_revoked_at: null });
@@ -130,6 +146,7 @@ export function InvoiceActionBar({
         : 'Paste it into your email or text to share with your clinic.',
     });
   };
+
 
   const handleShareLinkClick = hasShareLink ? handleCopyShareLink : handleCreateShareLink;
 
