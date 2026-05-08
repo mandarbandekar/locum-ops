@@ -318,6 +318,7 @@ function ContractTab({ facility, facilityTerms, onSaveRates, onUpdateTerms, onUp
     onUpdateFacility({
       ...facility,
       status,
+      timezone,
       engagement_type: engagementType,
       source_name: isDirect ? null : (sourceName.trim() || null),
       tax_form_type: effectiveTaxForm,
