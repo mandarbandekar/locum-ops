@@ -52,6 +52,7 @@ function parseShiftMeta(item: any): { dateStr: string | null; timeStr: string | 
 
 function ShiftLineItemCard({
   item, readOnly, onUpdate, onDelete, showSyncHint, onAddOvertime, hasOvertime,
+  clinicOvertimeRate,
 }: {
   item: any;
   readOnly?: boolean;
@@ -60,6 +61,8 @@ function ShiftLineItemCard({
   showSyncHint?: boolean;
   onAddOvertime?: () => void;
   hasOvertime?: boolean;
+  /** Clinic-saved overtime rate (or null when none). Used to flag overrides. */
+  clinicOvertimeRate?: number | null;
 }) {
   const [editing, setEditing] = useState(false);
   const [desc, setDesc] = useState(item.description);
