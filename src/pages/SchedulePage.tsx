@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { ShiftFormDialog } from '@/components/schedule/ShiftFormDialog';
 import { BlockTimeDialog } from '@/components/schedule/BlockTimeDialog';
 import { WeekTimeGrid } from '@/components/schedule/WeekTimeGrid';
+import { MixedTzLegend } from '@/components/schedule/MixedTzLegend';
 import { ClinicConfirmationsTab } from '@/components/schedule/ClinicConfirmationsTab';
 import { getMarkersForDay } from '@/lib/calendarMarkers';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -169,6 +170,32 @@ export default function SchedulePage() {
   const totalRevenueInRange = activeRangeShifts.reduce((sum, s) => sum + getShiftTotalRevenue(s), 0);
 
   const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
+
+  const facilityTzMap = useMemo(
+    () => Object.fromEntries(facilities.map(f => [f.id, f.timezone])),
+    [facilities],
+  );
+
+  // Mixed-tz legend: show only when visible range contains 2+ distinct clinic tzs.
+  const visibleClinicTzs = useMemo(() => {
+    const set = new Set<string>();
+    activeRangeShifts.forEach(s => {
+      const tz = facilityTzMap[s.facility_id];
+      if (tz) set.add(tz);
+    });
+    return Array.from(set);
+  }, [activeRangeShifts, facilityTzMap]);
+  const [mixedTzDismissed, setMixedTzDismissed] = useState(
+    () => typeof window !== 'undefined' && localStorage.getItem('schedule-mixed-tz-legend-dismissed') === '1',
+  );
+  const showMixedTzLegend =
+    (view === 'week' || view === 'day') &&
+    visibleClinicTzs.length >= 2 &&
+    !mixedTzDismissed;
+  const dismissMixedTzLegend = () => {
+    localStorage.setItem('schedule-mixed-tz-legend-dismissed', '1');
+    setMixedTzDismissed(true);
+  };
 
   const handleSaveShift = async (s: any) => {
     if (s.id) {
@@ -547,6 +574,9 @@ export default function SchedulePage() {
               </>
             ) : view === 'week' ? (
               <>
+                {showMixedTzLegend && (
+                  <MixedTzLegend tzs={visibleClinicTzs} onDismiss={dismissMixedTzLegend} />
+                )}
                 <WeekTimeGrid
                   weekDays={weekDays}
                   shifts={calendarFilters.shifts ? shifts : []}
@@ -558,6 +588,7 @@ export default function SchedulePage() {
                   getEventsForDay={getEventsForDay}
                   timeBlocks={timeBlocks}
                   onEditBlock={setEditBlock}
+                  facilityTzMap={facilityTzMap}
                 />
                 {totalShiftsInRange === 0 && (
                   <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -570,6 +601,9 @@ export default function SchedulePage() {
               </>
             ) : view === 'day' ? (
               <>
+                {showMixedTzLegend && (
+                  <MixedTzLegend tzs={visibleClinicTzs} onDismiss={dismissMixedTzLegend} />
+                )}
                 <WeekTimeGrid
                   weekDays={[currentDate]}
                   shifts={calendarFilters.shifts ? shifts : []}
@@ -582,6 +616,7 @@ export default function SchedulePage() {
                   timeBlocks={timeBlocks}
                   onEditBlock={setEditBlock}
                   fullDay
+                  facilityTzMap={facilityTzMap}
                 />
                 {totalShiftsInRange === 0 && (
                   <div className="flex flex-col items-center justify-center py-16 text-center">
