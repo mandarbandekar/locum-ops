@@ -1,0 +1,1 @@
+ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS default_overtime_rate numeric;
