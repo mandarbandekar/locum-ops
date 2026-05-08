@@ -46,7 +46,6 @@ import { BriefingBanner } from '@/components/dashboard/BriefingBanner';
 import { MoneyPipeline, PipelineStage } from '@/components/dashboard/MoneyPipeline';
 import { AttentionGroupedList } from '@/components/dashboard/AttentionGroupedList';
 import { UpcomingShiftsStrip, UpcomingShiftItem } from '@/components/dashboard/UpcomingShiftsStrip';
-import { formatInClinicTz, getTimezoneAbbr } from '@/lib/shiftTimezone';
 import { EmptyDashboardPrompt } from '@/components/dashboard/EmptyDashboardPrompt';
 import { QuarterlyTaxCallout } from '@/components/dashboard/QuarterlyTaxCallout';
 import { FirstTimeDashboard } from '@/components/dashboard/FirstTimeDashboard';
@@ -514,18 +513,13 @@ export default function DashboardPage() {
       .filter(s => parseISO(s.start_datetime) >= now)
       .sort((a, b) => parseISO(a.start_datetime).getTime() - parseISO(b.start_datetime).getTime())
       .slice(0, 5)
-      .map(s => {
-        const fac = facilities.find(f => f.id === s.facility_id);
-        const tz = fac?.timezone || undefined;
-        return {
-          id: s.id,
-          date: parseISO(s.start_datetime),
-          clinicName: getFacilityName(s.facility_id),
-          startTime: tz ? formatInClinicTz(s.start_datetime, tz, 'h:mm a') : format(parseISO(s.start_datetime), 'h:mm a'),
-          endTime: tz ? formatInClinicTz(s.end_datetime, tz, 'h:mm a') : format(parseISO(s.end_datetime), 'h:mm a'),
-          tzAbbr: tz ? getTimezoneAbbr(tz, s.start_datetime) : undefined,
-        };
-      });
+      .map(s => ({
+        id: s.id,
+        date: parseISO(s.start_datetime),
+        clinicName: getFacilityName(s.facility_id),
+        startTime: format(parseISO(s.start_datetime), 'h:mm a'),
+        endTime: format(parseISO(s.end_datetime), 'h:mm a'),
+      }));
   }, [shifts, facilities, now]);
 
   // ── Attention items (existing logic preserved) ──

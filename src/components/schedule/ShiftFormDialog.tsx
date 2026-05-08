@@ -18,7 +18,6 @@ import { BreakPolicySelector } from '@/components/facilities/BreakPolicySelector
 import { getBreakPolicyLabel, formatBillableHours, formatHoursMinutes, getScheduledMinutes, getBillableMinutes, isBreakFeatureNew } from '@/lib/shiftBreak';
 import { Switch } from '@/components/ui/switch';
 import { detectShiftConflicts, generateId } from '@/lib/businessLogic';
-import { buildShiftIso, getTimezoneAbbr, getDeviceTimezone, formatInClinicTz } from '@/lib/shiftTimezone';
 import { cn } from '@/lib/utils';
 import { termsToRates, RateEntry } from '@/components/facilities/RatesEditor';
 import { useData } from '@/contexts/DataContext';
@@ -91,17 +90,12 @@ function buildRateOptions(
 
 
 export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms, existing, onSave, onDelete, embedded, defaultDate, defaultStartTime, defaultMonth, lockedFacilityId }: ShiftFormDialogProps) {
-  const initialFacilityId = existing?.facility_id || lockedFacilityId || facilities[0]?.id || '';
-  const initialClinicTz: string | undefined =
-    facilities.find(f => f.id === initialFacilityId)?.timezone || undefined;
-  const [facilityId, setFacilityId] = useState(initialFacilityId);
+  const [facilityId, setFacilityId] = useState(existing?.facility_id || lockedFacilityId || facilities[0]?.id || '');
   const [selectedDates, setSelectedDates] = useState<Date[]>(
-    existing
-      ? [new Date(initialClinicTz ? `${formatInClinicTz(existing.start_datetime, initialClinicTz, 'yyyy-MM-dd')}T00:00:00` : existing.start_datetime)]
-      : defaultDate ? [defaultDate] : []
+    existing ? [new Date(existing.start_datetime)] : defaultDate ? [defaultDate] : []
   );
-  const [startTime, setStartTime] = useState(existing ? formatInClinicTz(existing.start_datetime, initialClinicTz || getDeviceTimezone(), 'HH:mm') : (defaultStartTime || ''));
-  const [endTime, setEndTime] = useState(existing ? formatInClinicTz(existing.end_datetime, initialClinicTz || getDeviceTimezone(), 'HH:mm') : '');
+  const [startTime, setStartTime] = useState(existing ? format(new Date(existing.start_datetime), 'HH:mm') : (defaultStartTime || ''));
+  const [endTime, setEndTime] = useState(existing ? format(new Date(existing.end_datetime), 'HH:mm') : '');
   const [rate, setRate] = useState(existing?.rate_applied?.toString() || '');
   const [selectedRateKey, setSelectedRateKey] = useState<string>('');
   const [isCustomRate, setIsCustomRate] = useState(false);
@@ -144,14 +138,10 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   useEffect(() => {
     if (!open) return;
     if (existing) {
-      const fid = existing.facility_id || facilities[0]?.id || '';
-      const ftz = facilities.find(f => f.id === fid)?.timezone || getDeviceTimezone();
-      setFacilityId(fid);
-      const ymd = formatInClinicTz(existing.start_datetime, ftz, 'yyyy-MM-dd');
-      const [y, m, d] = ymd.split('-').map(Number);
-      setSelectedDates([new Date(y, m - 1, d)]);
-      setStartTime(formatInClinicTz(existing.start_datetime, ftz, 'HH:mm'));
-      setEndTime(formatInClinicTz(existing.end_datetime, ftz, 'HH:mm'));
+      setFacilityId(existing.facility_id || facilities[0]?.id || '');
+      setSelectedDates([new Date(existing.start_datetime)]);
+      setStartTime(format(new Date(existing.start_datetime), 'HH:mm'));
+      setEndTime(format(new Date(existing.end_datetime), 'HH:mm'));
       setRate(existing.rate_applied?.toString() || '');
       setNotes(existing.notes || '');
       setColor(existing.color || 'blue');
@@ -348,16 +338,17 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     };
   };
 
-  // Build start/end ISO timestamps for a given date in the **clinic's
-  // timezone**, rolling end into the next day for overnight shifts. This is
-  // what makes "9am at PA clinic" save as 9am EST regardless of where the
-  // user lives.
-  const facilityForTz = facilities.find(f => f.id === facilityId);
-  const clinicTz: string | undefined = facilityForTz?.timezone || undefined;
+  // Build start/end ISO timestamps for a given date, rolling end into the next
+  // day when end time is on/before start time (overnight shift).
   const buildStartEndIso = useCallback((d: Date) => {
     const dateStr = format(d, 'yyyy-MM-dd');
-    return buildShiftIso(dateStr, startTime, endTime, clinicTz);
-  }, [startTime, endTime, clinicTz]);
+    const start = new Date(`${dateStr}T${startTime}:00`);
+    let end = new Date(`${dateStr}T${endTime}:00`);
+    if (end.getTime() <= start.getTime()) {
+      end = new Date(end.getTime() + 24 * 60 * 60 * 1000);
+    }
+    return { startIso: start.toISOString(), endIso: end.toISOString() };
+  }, [startTime, endTime]);
 
   const isOvernight = useMemo(() => {
     if (!startTime || !endTime) return false;
@@ -365,11 +356,6 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     const [eh, em] = endTime.split(':').map(Number);
     return (eh * 60 + em) <= (sh * 60 + sm);
   }, [startTime, endTime]);
-
-  const facilityTzMap = useMemo(
-    () => Object.fromEntries(facilities.map(f => [f.id, f.timezone])),
-    [facilities],
-  );
 
   const conflicts = useMemo(() => {
     if (isSubmitting || selectedDates.length === 0 || !facilityId || !startTime || !endTime) return [];
@@ -381,10 +367,9 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
         start_datetime: startIso,
         end_datetime: endIso,
         id: existing?.id,
-        facility_id: facilityId,
         break_minutes: breakMinutes,
         worked_through_break: workedThroughBreak,
-      }, facilityTzMap)) {
+      })) {
         if (!seen.has(c.id)) {
           seen.add(c.id);
           allConflicts.push(c);
@@ -392,7 +377,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
       }
     }
     return allConflicts;
-  }, [shifts, selectedDates, startTime, endTime, existing?.id, facilityId, isSubmitting, buildStartEndIso, breakMinutes, workedThroughBreak, facilityTzMap]);
+  }, [shifts, selectedDates, startTime, endTime, existing?.id, facilityId, isSubmitting, buildStartEndIso, breakMinutes, workedThroughBreak]);
 
   const saveCustomRateToTerms = useCallback(async () => {
     if (!isCustomRate || !saveCustomRate || !rate || Number(rate) <= 0) return;
@@ -813,17 +798,6 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
 
       {/* Time row */}
       <div>
-        {(() => {
-          const tz = clinicTz;
-          const deviceTz = getDeviceTimezone();
-          if (!tz || tz === deviceTz) return null;
-          const abbr = getTimezoneAbbr(tz, selectedDates[0] || new Date());
-          return (
-            <p className="mb-1.5 text-[11px] text-muted-foreground">
-              Times are in <span className="font-medium text-foreground">{abbr || tz}</span> (clinic time).
-            </p>
-          );
-        })()}
         <div className="grid grid-cols-2 gap-3">
           <div>
             <span className="text-[10px] text-muted-foreground">Start</span>

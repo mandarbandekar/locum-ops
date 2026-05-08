@@ -247,7 +247,6 @@ export const seedUserProfile: UserProfile = {
   profession: 'vet',
   work_style_label: 'Independent contractor (1099)',
   timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-  timezone_pinned: false,
   currency: 'USD',
   current_tools: ['sheets_excel', 'calendar'],
   facilities_count_band: 'band_4_8',

@@ -1,9 +1,5 @@
 import { Shift, Invoice, InvoiceStatus } from '@/types';
 import { isInvoiceOverdue } from './invoiceHelpers';
-import { getShiftAbsoluteRange } from './shiftTimezone';
-
-/** Map of facility id → IANA timezone, used for cross-tz conflict math. */
-export type FacilityTzMap = Record<string, string | undefined | null>;
 
 /**
  * Normalize a datetime string to { dateKey, minutes-since-midnight } so that
@@ -37,49 +33,20 @@ export interface ShiftConflict {
   isBreakAbsorbable: boolean;
 }
 
-export function detectShiftConflicts(
-  shifts: Shift[],
-  newShift: { start_datetime: string; end_datetime: string; id?: string; facility_id?: string; break_minutes?: number | null; worked_through_break?: boolean | null },
-  facilityTzMap?: FacilityTzMap,
-): Shift[] {
-  return detectShiftConflictsDetailed(shifts, newShift, facilityTzMap)
+export function detectShiftConflicts(shifts: Shift[], newShift: { start_datetime: string; end_datetime: string; id?: string; break_minutes?: number | null; worked_through_break?: boolean | null }): Shift[] {
+  return detectShiftConflictsDetailed(shifts, newShift)
     .filter(c => !c.isBreakAbsorbable)
     .map(c => c.shift);
 }
 
-/** Richer conflict info — exposes overlap minutes and break-absorbable flag.
- *  When `facilityTzMap` is provided, overlap is computed on the absolute UTC
- *  timeline using each shift's clinic timezone (so a 9–5 EST and 9–5 CST
- *  shift correctly do NOT overlap). When omitted, falls back to wall-clock
- *  comparison for backward compatibility. */
+/** Richer conflict info — exposes overlap minutes and break-absorbable flag. */
 export function detectShiftConflictsDetailed(
   shifts: Shift[],
-  newShift: { start_datetime: string; end_datetime: string; id?: string; facility_id?: string; break_minutes?: number | null; worked_through_break?: boolean | null },
-  facilityTzMap?: FacilityTzMap,
+  newShift: { start_datetime: string; end_datetime: string; id?: string; break_minutes?: number | null; worked_through_break?: boolean | null }
 ): ShiftConflict[] {
-  const newBreak = effectiveBreakMinutes(newShift);
-  const useUtc = !!facilityTzMap;
-
-  if (useUtc) {
-    const newTz = facilityTzMap?.[newShift.facility_id || ''] || undefined;
-    const { startUtcMs: nStart, endUtcMs: nEnd } = getShiftAbsoluteRange(newShift, newTz);
-    const out: ShiftConflict[] = [];
-    for (const s of shifts) {
-      if (s.id === newShift.id) continue;
-      const sTz = facilityTzMap?.[s.facility_id] || undefined;
-      const { startUtcMs: sStart, endUtcMs: sEnd } = getShiftAbsoluteRange(s, sTz);
-      if (!(nStart < sEnd && nEnd > sStart)) continue;
-      const overlapMs = Math.min(nEnd, sEnd) - Math.max(nStart, sStart);
-      const overlapMinutes = Math.max(0, Math.round(overlapMs / 60000));
-      const otherBreak = effectiveBreakMinutes(s);
-      const isBreakAbsorbable = overlapMinutes > 0 && overlapMinutes <= Math.max(newBreak, otherBreak);
-      out.push({ shift: s, overlapMinutes, isBreakAbsorbable });
-    }
-    return out;
-  }
-
   const newStart = toLocalSlot(newShift.start_datetime);
   const newEnd = toLocalSlot(newShift.end_datetime);
+  const newBreak = effectiveBreakMinutes(newShift);
 
   const out: ShiftConflict[] = [];
   for (const s of shifts) {
@@ -94,6 +61,7 @@ export function detectShiftConflictsDetailed(
       Math.min(newEnd.minutes, sEnd.minutes) - Math.max(newStart.minutes, sStart.minutes)
     );
     const otherBreak = effectiveBreakMinutes(s);
+    // Either shift's unpaid break could absorb the overlap window.
     const isBreakAbsorbable = overlapMinutes > 0 && overlapMinutes <= Math.max(newBreak, otherBreak);
     out.push({ shift: s, overlapMinutes, isBreakAbsorbable });
   }

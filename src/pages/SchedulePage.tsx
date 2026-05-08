@@ -9,12 +9,10 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMont
 import { CalendarPlus, Clock, DollarSign, TrendingUp } from 'lucide-react';
 import { SHIFT_COLORS, Shift, BLOCK_TYPES, BLOCK_COLORS, TimeBlock, getShiftTotalRevenue, formatHoursDisplay } from '@/types';
 import { detectShiftConflicts } from '@/lib/businessLogic';
-import { formatInClinicTz, getTimezoneAbbr } from '@/lib/shiftTimezone';
 import { toast } from 'sonner';
 import { ShiftFormDialog } from '@/components/schedule/ShiftFormDialog';
 import { BlockTimeDialog } from '@/components/schedule/BlockTimeDialog';
 import { WeekTimeGrid } from '@/components/schedule/WeekTimeGrid';
-import { MixedTzLegend } from '@/components/schedule/MixedTzLegend';
 import { ClinicConfirmationsTab } from '@/components/schedule/ClinicConfirmationsTab';
 import { getMarkersForDay } from '@/lib/calendarMarkers';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -171,32 +169,6 @@ export default function SchedulePage() {
 
   const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
 
-  const facilityTzMap = useMemo(
-    () => Object.fromEntries(facilities.map(f => [f.id, f.timezone])),
-    [facilities],
-  );
-
-  // Mixed-tz legend: show only when visible range contains 2+ distinct clinic tzs.
-  const visibleClinicTzs = useMemo(() => {
-    const set = new Set<string>();
-    activeRangeShifts.forEach(s => {
-      const tz = facilityTzMap[s.facility_id];
-      if (tz) set.add(tz);
-    });
-    return Array.from(set);
-  }, [activeRangeShifts, facilityTzMap]);
-  const [mixedTzDismissed, setMixedTzDismissed] = useState(
-    () => typeof window !== 'undefined' && localStorage.getItem('schedule-mixed-tz-legend-dismissed') === '1',
-  );
-  const showMixedTzLegend =
-    (view === 'week' || view === 'day') &&
-    visibleClinicTzs.length >= 2 &&
-    !mixedTzDismissed;
-  const dismissMixedTzLegend = () => {
-    localStorage.setItem('schedule-mixed-tz-legend-dismissed', '1');
-    setMixedTzDismissed(true);
-  };
-
   const handleSaveShift = async (s: any) => {
     if (s.id) {
       await updateShift(s as any);
@@ -218,8 +190,7 @@ export default function SchedulePage() {
     const newEnd = new Date(newStart.getTime() + duration);
     if (newStart.getTime() === oldStart.getTime()) return;
     const otherShifts = shifts.filter(s => s.id !== shiftId);
-    const tzMap = Object.fromEntries(facilities.map(f => [f.id, f.timezone]));
-    const conflicts = detectShiftConflicts(otherShifts, { start_datetime: newStart.toISOString(), end_datetime: newEnd.toISOString(), facility_id: shift.facility_id }, tzMap);
+    const conflicts = detectShiftConflicts(otherShifts, { start_datetime: newStart.toISOString(), end_datetime: newEnd.toISOString() });
     if (conflicts.length > 0) {
       toast.warning(`Scheduling conflict on ${format(newStart, 'EEE, MMM d')} with ${getFacilityName(conflicts[0].facility_id)}`);
     }
@@ -241,8 +212,7 @@ export default function SchedulePage() {
     const newEnd = new Date(newStart.getTime() + duration);
     if (newStart.getTime() === oldStart.getTime()) return;
     const otherShifts = shifts.filter(s => s.id !== shiftId);
-    const tzMap2 = Object.fromEntries(facilities.map(f => [f.id, f.timezone]));
-    const conflicts = detectShiftConflicts(otherShifts, { start_datetime: newStart.toISOString(), end_datetime: newEnd.toISOString(), facility_id: shift.facility_id }, tzMap2);
+    const conflicts = detectShiftConflicts(otherShifts, { start_datetime: newStart.toISOString(), end_datetime: newEnd.toISOString() });
     if (conflicts.length > 0) {
       toast.warning(`Scheduling conflict at ${format(newStart, 'h:mm a')} with ${getFacilityName(conflicts[0].facility_id)}`);
     }
@@ -574,9 +544,6 @@ export default function SchedulePage() {
               </>
             ) : view === 'week' ? (
               <>
-                {showMixedTzLegend && (
-                  <MixedTzLegend tzs={visibleClinicTzs} onDismiss={dismissMixedTzLegend} />
-                )}
                 <WeekTimeGrid
                   weekDays={weekDays}
                   shifts={calendarFilters.shifts ? shifts : []}
@@ -588,7 +555,6 @@ export default function SchedulePage() {
                   getEventsForDay={getEventsForDay}
                   timeBlocks={timeBlocks}
                   onEditBlock={setEditBlock}
-                  facilityTzMap={facilityTzMap}
                 />
                 {totalShiftsInRange === 0 && (
                   <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -601,9 +567,6 @@ export default function SchedulePage() {
               </>
             ) : view === 'day' ? (
               <>
-                {showMixedTzLegend && (
-                  <MixedTzLegend tzs={visibleClinicTzs} onDismiss={dismissMixedTzLegend} />
-                )}
                 <WeekTimeGrid
                   weekDays={[currentDate]}
                   shifts={calendarFilters.shifts ? shifts : []}
@@ -616,7 +579,6 @@ export default function SchedulePage() {
                   timeBlocks={timeBlocks}
                   onEditBlock={setEditBlock}
                   fullDay
-                  facilityTzMap={facilityTzMap}
                 />
                 {totalShiftsInRange === 0 && (
                   <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -644,18 +606,12 @@ export default function SchedulePage() {
                     {rangeShifts.map(s => {
                       const hrs = getBillableMinutes(s) / 60;
                       const isPaid = paidShiftIds.has(s.id);
-                      const fac = facilities.find(f => f.id === s.facility_id);
-                      const tz = fac?.timezone || undefined;
-                      const startStr = tz ? formatInClinicTz(s.start_datetime, tz, 'h:mm a') : format(new Date(s.start_datetime), 'h:mm a');
-                      const endStr = tz ? formatInClinicTz(s.end_datetime, tz, 'h:mm a') : format(new Date(s.end_datetime), 'h:mm a');
-                      const tzAbbr = tz ? getTimezoneAbbr(tz, s.start_datetime) : '';
-                      const dateStr = tz ? formatInClinicTz(s.start_datetime, tz, 'EEE, MMM d') : format(new Date(s.start_datetime), 'EEE, MMM d');
                       return (
                         <React.Fragment key={s.id}>
                           <tr className="border-b last:border-0 hover:bg-muted/30 cursor-pointer" onClick={() => setEditShift(s.id)}>
-                            <td className="p-3">{dateStr}</td>
+                            <td className="p-3">{format(new Date(s.start_datetime), 'EEE, MMM d')}</td>
                             <td className="p-3 font-medium">{getFacilityName(s.facility_id)}</td>
-                            <td className="p-3 text-muted-foreground hidden md:table-cell">{startStr} – {endStr}{tzAbbr ? ` ${tzAbbr}` : ''}</td>
+                            <td className="p-3 text-muted-foreground hidden md:table-cell">{format(new Date(s.start_datetime), 'h:mm a')} – {format(new Date(s.end_datetime), 'h:mm a')}</td>
                             <td className="p-3 text-muted-foreground hidden md:table-cell">{hrs}h</td>
                             <td className="p-3 font-medium">
                               <div className="flex items-center gap-1.5 flex-wrap">
