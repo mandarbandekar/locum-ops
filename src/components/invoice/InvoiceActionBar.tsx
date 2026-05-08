@@ -240,18 +240,18 @@ export function InvoiceActionBar({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         {showPdfOnMobile && (
-          <DropdownMenuItem onClick={handleDownloadPdf} disabled={pdfLoading}>
+          <DropdownMenuItem onClick={handleDownloadPdf} disabled={pdfLoading || missingBusinessInfo} title={missingTooltip}>
             {pdfLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
             Download PDF
           </DropdownMenuItem>
         )}
         {!isDraft && (
           hasShareLink ? (
-            <DropdownMenuItem onClick={handleCopyShareLink}>
+            <DropdownMenuItem onClick={handleCopyShareLink} disabled={missingBusinessInfo} title={missingTooltip}>
               <Copy className="mr-2 h-4 w-4" /> Copy share link
             </DropdownMenuItem>
           ) : (
-            <DropdownMenuItem onClick={handleCreateShareLink} disabled={shareLoading}>
+            <DropdownMenuItem onClick={handleCreateShareLink} disabled={shareLoading || missingBusinessInfo} title={missingTooltip}>
               <Link2 className="mr-2 h-4 w-4" /> Create share link
             </DropdownMenuItem>
           )
@@ -303,7 +303,7 @@ export function InvoiceActionBar({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem onClick={handleDownloadPdf} disabled={pdfLoading}>
+                  <DropdownMenuItem onClick={handleDownloadPdf} disabled={pdfLoading || missingBusinessInfo} title={missingTooltip}>
                     {pdfLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
                     Download PDF
                   </DropdownMenuItem>
@@ -382,16 +382,16 @@ export function InvoiceActionBar({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem onClick={handleDownloadPdf} disabled={pdfLoading} className="sm:hidden">
+                <DropdownMenuItem onClick={handleDownloadPdf} disabled={pdfLoading || missingBusinessInfo} title={missingTooltip} className="sm:hidden">
                   {pdfLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
                   Download PDF
                 </DropdownMenuItem>
                 {hasShareLink ? (
-                  <DropdownMenuItem onClick={handleCopyShareLink} className="sm:hidden">
+                  <DropdownMenuItem onClick={handleCopyShareLink} disabled={missingBusinessInfo} title={missingTooltip} className="sm:hidden">
                     <Copy className="mr-2 h-4 w-4" /> Copy share link
                   </DropdownMenuItem>
                 ) : (
-                  <DropdownMenuItem onClick={handleCreateShareLink} disabled={shareLoading} className="sm:hidden">
+                  <DropdownMenuItem onClick={handleCreateShareLink} disabled={shareLoading || missingBusinessInfo} title={missingTooltip} className="sm:hidden">
                     <Link2 className="mr-2 h-4 w-4" /> Create share link
                   </DropdownMenuItem>
                 )}
