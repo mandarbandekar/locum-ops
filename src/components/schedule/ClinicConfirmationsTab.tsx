@@ -54,21 +54,12 @@ export function ClinicConfirmationsTab() {
     });
   };
 
-  const handleSend = async (facilityId: string) => {
-    const msg = getEditableMessage(facilityId);
-    await sendConfirmationEmail(facilityId, 'monthly', monthKey, null, msg.body, msg.subject);
+  const handleSend = async (_facilityId: string) => {
+    setComingSoonOpen(true);
   };
 
   const handleSendAll = async () => {
-    const unsent = queue.filter(q => q.status === 'not_sent' && q.contactEmail);
-    if (unsent.length === 0) return;
-    setSendingAll(true);
-    for (const item of unsent) {
-      const msg = getEditableMessage(item.facilityId);
-      await sendConfirmationEmail(item.facilityId, 'monthly', monthKey, null, msg.body, msg.subject);
-    }
-    setSendingAll(false);
-    toast.success(`Sent ${unsent.length} confirmation${unsent.length > 1 ? 's' : ''}`);
+    setComingSoonOpen(true);
   };
 
   const handleCopy = (facilityId: string) => {
