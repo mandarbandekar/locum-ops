@@ -93,6 +93,10 @@ function ShiftLineItemCard({
 
   const meta = parseShiftMeta(item);
   const isShift = !!item.shift_id;
+  // Overtime override = clinic has a saved overtime rate AND this line uses a different rate.
+  const hasClinicOt = isOvertime && clinicOvertimeRate != null && Number(clinicOvertimeRate) > 0;
+  const isOtOverride = hasClinicOt && Math.abs(Number(item.unit_rate || 0) - Number(clinicOvertimeRate)) > 0.001;
+  const editMatchesClinic = hasClinicOt && Math.abs(rateNum - Number(clinicOvertimeRate)) < 0.001;
   const Icon = isShift ? CalendarClock : FileText;
 
   if (editing) {
