@@ -97,6 +97,7 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
   const [engagementType, setEngagementType] = useState<EngagementType>('direct');
   const [sourceName, setSourceName] = useState('');
   const [taxFormType, setTaxFormType] = useState<TaxFormType>('1099');
+  const [generatesInvoices, setGeneratesInvoices] = useState(true);
 
   // ── Step 3: Rates ──
   const [rates, setRates] = useState<RateEntry[]>(defaultRates ?? []);
