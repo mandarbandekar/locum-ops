@@ -50,13 +50,6 @@ const SCHEDULE_TOUR_STEPS: TourStep[] = [
     icon: CalendarDays,
   },
   {
-    targetSelector: '[data-tour="schedule-confirmations"]',
-    title: 'Clinic Confirmations',
-    description: 'Send monthly schedule confirmations to each clinic before you start. No more back-and-forth emails — one click sends your schedule.',
-    placement: 'bottom',
-    icon: CheckSquare,
-  },
-  {
     targetSelector: '[data-tour="schedule-sync"]',
     title: 'Calendar Sync',
     description: 'Sync shifts to Google Calendar or export an ICS feed. Your personal calendar stays up to date automatically.',
