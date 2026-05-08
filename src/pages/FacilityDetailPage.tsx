@@ -546,6 +546,7 @@ function ShiftsTab({ shifts, allShifts, facilityId, facilities, terms, onAdd, on
         shifts={allShifts}
         terms={terms}
         onSave={handleSave}
+        lockedFacilityId={facilityId}
       />
 
       {editShift && (
@@ -559,6 +560,7 @@ function ShiftsTab({ shifts, allShifts, facilityId, facilities, terms, onAdd, on
           existing={editShift}
           onSave={handleSave}
           onDelete={(id) => { onDelete(id); setEditShift(null); toast.success('Shift deleted'); }}
+          lockedFacilityId={facilityId}
         />
       )}
     </TabSection>
