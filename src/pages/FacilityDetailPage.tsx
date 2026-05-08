@@ -400,7 +400,7 @@ function ContractTab({ facility, facilityTerms, onSaveRates, onUpdateTerms, onUp
       </div>
 
       <div className="space-y-4">
-        {engagementType === 'direct' && (
+        {engagementType === 'direct' && facility.generates_invoices !== false && (
           <>
             <InvoicingPreferencesCard facility={facility} onUpdate={onUpdateFacility} />
             <FacilityConfirmationSettingsCard
@@ -409,6 +409,16 @@ function ContractTab({ facility, facilityTerms, onSaveRates, onUpdateTerms, onUp
               onSave={onSaveConfirmationSettings}
             />
           </>
+        )}
+
+        {engagementType === 'direct' && facility.generates_invoices === false && (
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-sm text-muted-foreground">
+                Invoicing is off for this clinic. They pay you directly and will issue a 1099 at year-end. Shifts here still count toward your income and tax projections. Switch this in the engagement section if that changes.
+              </p>
+            </CardContent>
+          </Card>
         )}
 
         {engagementType !== 'direct' && (
