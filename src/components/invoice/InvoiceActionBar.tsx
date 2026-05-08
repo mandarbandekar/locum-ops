@@ -368,20 +368,26 @@ export function InvoiceActionBar({
         {/* PAID */}
         {isPaid && (
           <div className="flex w-full sm:w-auto items-center justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={handleDownloadPdf} disabled={pdfLoading} className="shrink-0 hidden sm:inline-flex">
-              {pdfLoading ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-1.5 h-3.5 w-3.5" />}
-              <span>Download Invoice PDF</span>
-            </Button>
+            {wrapMissing(
+              <Button variant="outline" size="sm" onClick={handleDownloadPdf} disabled={pdfLoading || missingBusinessInfo} className="shrink-0 hidden sm:inline-flex">
+                {pdfLoading ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-1.5 h-3.5 w-3.5" />}
+                <span>Download Invoice PDF</span>
+              </Button>
+            )}
             {hasShareLink ? (
-              <Button variant="outline" size="sm" onClick={handleCopyShareLink} className="shrink-0 hidden sm:inline-flex" aria-label="Copy share link">
-                <Copy className="mr-1.5 h-3.5 w-3.5" />
-                <span>Copy link</span>
-              </Button>
+              wrapMissing(
+                <Button variant="outline" size="sm" onClick={handleCopyShareLink} disabled={missingBusinessInfo} className="shrink-0 hidden sm:inline-flex" aria-label="Copy share link">
+                  <Copy className="mr-1.5 h-3.5 w-3.5" />
+                  <span>Copy link</span>
+                </Button>
+              )
             ) : (
-              <Button variant="outline" size="sm" onClick={handleCreateShareLink} disabled={shareLoading} className="shrink-0 hidden sm:inline-flex" aria-label="Create share link">
-                <Link2 className="mr-1.5 h-3.5 w-3.5" />
-                <span>Share link</span>
-              </Button>
+              wrapMissing(
+                <Button variant="outline" size="sm" onClick={handleCreateShareLink} disabled={shareLoading || missingBusinessInfo} className="shrink-0 hidden sm:inline-flex" aria-label="Create share link">
+                  <Link2 className="mr-1.5 h-3.5 w-3.5" />
+                  <span>Share link</span>
+                </Button>
+              )
             )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
