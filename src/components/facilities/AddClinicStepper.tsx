@@ -300,7 +300,7 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
 
   // Step 1 (identity) is required: name. Step 2 (engagement): required for non-direct (source).
   // Step 3 (rates): skippable. Step 4 (billing): skippable; defaults applied.
-  const canSkip = step === 3 || (step === 4 && isDirect);
+  const canSkip = step === 3 || (step === 4 && directInvoicing);
   const canBack = currentVisibleIndex > 0;
 
   const isLastStep = currentVisibleIndex === visibleSteps.length - 1;
