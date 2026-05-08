@@ -1,0 +1,2 @@
+update public.facilities set timezone = 'America/New_York' where user_id = '0b603772-6bb5-4e43-9d32-7c601fadd6ab' and timezone = 'America/Los_Angeles' and id in ('8e605ef0-7b7d-4f54-ae79-0af1594f5958','b97472e8-4a82-4ca9-b218-9df539fa47f2','7aa6e051-1a7d-40fe-90ae-a2674b242d93');
+update public.facilities set timezone = 'America/Chicago' where user_id = '0b603772-6bb5-4e43-9d32-7c601fadd6ab' and id = '938ace34-6f48-4d02-8f46-64ae111b635b';
