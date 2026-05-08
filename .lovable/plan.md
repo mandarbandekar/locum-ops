@@ -1,90 +1,66 @@
+
 ## Goal
 
-Let users add **overtime charges per shift** when reviewing an invoice. The overtime amount flows back to the shift so the calendar, dashboard, and business revenue reflect the higher total — without breaking any existing shifts, invoices, or auto-generation logic.
+When you mark a facility as **Direct / Independent**, ask one follow-up: *"Do you send this clinic invoices?"*
 
-## Design overview
+- **Yes** (default) → today's behavior. LocumOps generates invoices.
+- **No** → clinic pays you directly and issues a 1099. No invoices generated, but shifts still count as 1099 income in revenue, YTD, and tax projections.
 
-We already have an `invoice_line_items` table with a `line_kind` column (`'regular' | 'flat'`). We extend that with a third kind, **`'overtime'`**, instead of inventing a parallel table. This keeps invoice math, PDF rendering, payment allocation, and totals in one well-tested place.
+## UX changes
 
-On the shift side, we add two optional fields — **`overtime_hours`** and **`overtime_rate`** — so the shift itself remembers the extra time/charge. That's what the calendar, shift detail, dashboard "anticipated income", and tax/business revenue read from.
+**Engagement selector** (`EngagementSelector.tsx`, used in Add Clinic stepper and Facility detail):
+- When "Direct / Independent" is selected, reveal a sub-question with two radios:
+  - "Yes — I send invoices" (default)
+  - "No — clinic pays me directly and issues a 1099"
+- Helper text under "No": *"We won't generate invoices for these shifts. They'll still count toward your 1099 income and tax projections."*
 
-A small bi-directional sync (mirroring the existing `shiftInvoiceSync`) keeps the two in lockstep on draft invoices.
+**Facility card / detail pill**:
+- Direct + invoicing → existing green "Direct" pill.
+- Direct + no invoicing → new pill "Direct — 1099" (amber tone) so it's visible on the Facilities list and facility detail header.
 
-```text
-┌────────────────────┐   add overtime line   ┌────────────────────────┐
-│  Invoice Edit      │ ────────────────────▶ │ invoice_line_items      │
-│  Panel (per shift) │                        │  line_kind = 'overtime' │
-└────────────────────┘ ◀──── totals ─────────┴────────────────────────┘
-          │                                              │
-          │ sync (draft only)                            │
-          ▼                                              ▼
-┌────────────────────┐                        ┌────────────────────────┐
-│ shifts.overtime_*  │ ─── reads ───────────▶ │ Calendar / Shift card  │
-│                    │                        │ Dashboard revenue      │
-│                    │                        │ Tax & business reports │
-└────────────────────┘                        └────────────────────────┘
-```
+**Invoicing Preferences card** (`InvoicingPreferencesCard.tsx`):
+- When the facility is Direct + no-invoicing, replace the card body with a calm explainer: *"Invoicing is off for this clinic. They pay you directly and will issue a 1099 at year-end. Switch this in the engagement section if that changes."* No billing-contact / cadence fields shown.
 
-## UX
+**Shift form helper line** (`getShiftEngagementHelperText`):
+- Add a branch for direct + no-invoicing: *"Direct booking — no invoice will be generated. A 1099 is expected from {clinic} at year-end."*
 
-In `InvoiceEditPanel`, under each shift-linked line, add a small **"+ Add overtime"** action. It inserts a second line item attached to the same `shift_id` with:
+## Data model
 
-- Description prefilled: *"Overtime — {date}"* (editable)
-- Qty = hours (default 1, quarter-hour steps, matching regular lines)
-- Unit rate = prefilled from the shift's hourly rate (or blank for flat-rate shifts so the user enters their own number)
-- A subtle "Overtime" tag pill on the row so it's visually distinct from the base line
-- Remove (×) button, same as today
+New field on `facilities`:
+- `generates_invoices boolean NOT NULL DEFAULT true`
 
-On the **shift detail / calendar tooltip / shift card**, when `overtime_hours > 0` show a single line: *"+2.0 h overtime · $300"* under the base rate, and include it in the shift total displayed.
+Semantics:
+- `engagement_type = 'third_party'` → always treated as no-invoicing (existing behavior, driven by tax_form_type for copy).
+- `engagement_type = 'direct' AND generates_invoices = false` → new "direct, no invoice" mode. Treated as 1099 income.
+- `engagement_type = 'direct' AND generates_invoices = true` → today's default.
 
-The dashboard "Needs attention" / revenue widgets and the Business Insights YTD numbers already sum from shifts + invoices — they pick up the new overtime automatically once the data model is wired (see Technical section).
+`auto_generate_invoices` continues to control the cron behavior and is forced to `false` whenever `generates_invoices = false`.
 
-## Backwards compatibility
+## Behavior changes
 
-- New shift columns are **nullable with default `0`** — existing shifts read as "no overtime", behavior unchanged.
-- New `line_kind = 'overtime'` is additive; existing UI branches on `'regular'` vs `'flat'` and falls through safely. We add explicit handling rather than changing existing branches.
-- Auto-generation (`buildAutoInvoiceDraft`) **also emits an overtime line** when the shift has `overtime_hours > 0`, so re-generating a draft for a shift that already had overtime preserves it. Shifts without overtime are unaffected.
-- `syncShiftFromLineItems` keeps current behavior for the regular line and additionally writes back overtime fields — no behavior change for shifts with no overtime line.
-- Sent/paid invoices remain immutable as today (the "+ Add overtime" button is hidden unless `invoice.status === 'draft'`).
-- Invoice PDF and payment allocation already iterate `line_items` generically, so overtime lines render and contribute to totals with no template change.
+- **Auto-invoice cron** (`generate-auto-invoices/index.ts`): already keys off `auto_generate_invoices`. We just need the form/save logic to set it to `false` when invoicing is off — no cron change required.
+- **Manual invoice creation**: hide/disable "Create invoice" entry points (BulkInvoiceDialog, single-shift "Generate invoice", facility "New invoice") for direct-no-invoice facilities, with a small inline note explaining why.
+- **Revenue / tax / business hub**: shifts continue to be summed into income regardless of invoice status, so no changes needed for tax projections, YTD income, or CPA prep — the existing aggregations are shift-based, not invoice-based. We'll add a quick test verifying a direct-no-invoice shift contributes to YTD income and to 1099 totals.
+- **Engagement pill helper** (`getEngagementPill`): add `Direct — 1099` variant.
 
-## Technical section
+## Migration plan for existing data
 
-**Migration (additive, non-breaking):**
+Default `generates_invoices = true` for every existing facility. No behavior change for any current user; the new mode is opt-in per clinic.
 
-```sql
-ALTER TABLE public.shifts
-  ADD COLUMN overtime_hours numeric NOT NULL DEFAULT 0,
-  ADD COLUMN overtime_rate  numeric NOT NULL DEFAULT 0;
-```
+## Files to touch
 
-`invoice_line_items.line_kind` is already `text`, so `'overtime'` is accepted with no schema change.
+- `supabase/migrations/...` — add `generates_invoices` column with default true.
+- `src/types/index.ts` — add field to `Facility` type.
+- `src/lib/engagementOptions.ts` — extend pill + helper text logic.
+- `src/components/facilities/EngagementSelector.tsx` — add the sub-question.
+- `src/components/facilities/AddClinicStepper.tsx` — persist `generates_invoices` and `auto_generate_invoices=false` accordingly.
+- `src/components/facilities/InvoicingPreferencesCard.tsx` — collapsed explainer state when invoicing is off.
+- `src/pages/FacilityDetailPage.tsx` — update header pill.
+- Manual invoice entry points (`InvoicesPage`, BulkInvoiceDialog, shift detail "Generate invoice") — guard against direct-no-invoice clinics.
+- New test in `src/test/` covering: facility flagged no-invoice → cron skips it, revenue still counts the shifts, manual invoice action is blocked.
 
-**Types (`src/types/index.ts`):**
+## Out of scope
 
-- `InvoiceLineKind`: add `'overtime'`.
-- `Shift`: add `overtime_hours?: number; overtime_rate?: number;`.
-
-**Files to touch:**
-
-1. `src/components/invoice/InvoiceEditPanel.tsx` — render overtime rows with a tag, add "+ Add overtime" button per shift group, hide on non-draft.
-2. `src/lib/shiftInvoiceSync.ts` — extend `syncShiftFromLineItems` to also pick the `'overtime'` line for the shift and emit `overtime_hours` / `overtime_rate` in the patch. Update `canSyncShiftForLine` to allow `'overtime'`.
-3. `src/lib/invoiceAutoGeneration.ts` — after the regular/flat line, push an extra `'overtime'` line when `s.overtime_hours > 0`. Include it in the `total` reduce (already generic).
-4. `src/components/schedule/ShiftFormDialog.tsx` and shift detail/calendar cards — display overtime read-only summary; do **not** add overtime editing here (single source of truth = invoice). Show a small inline note "Edit overtime on the invoice" with a link.
-5. Revenue/insights surfaces (`FinancialHealthTab`, `DashboardPage`, `useCPAPrepData`, `BusinessInsights`) — replace any `sum(rate_applied)` with `sum(rate_applied + overtime_hours * overtime_rate)`. One small helper `getShiftTotalRevenue(shift)` keeps it consistent.
-6. Tests: extend `invoiceAutoGeneration.test.ts`, `invoiceDraftTotals.test.ts`, and add a focused test for `shiftInvoiceSync` with an overtime line.
-
-**Sync rules (important):**
-
-- Overtime only syncs while the invoice is `draft` (same rule as regular lines).
-- Deleting the overtime line on a draft → sets `overtime_hours = 0`, `overtime_rate = 0` on the shift.
-- Editing qty or unit_rate on the overtime line → mirrors to `overtime_hours` / `overtime_rate`.
-- Shift-side has no editor for overtime in v1 (avoids two-writer conflicts). Source of truth = the invoice line.
-
-**Memory note (after implementation):** Add a Core rule — *"Overtime is captured as a per-shift invoice line (`line_kind='overtime'`); shift fields `overtime_hours` / `overtime_rate` are derived from it and feed revenue."*
-
-## Out of scope (call out for later)
-
-- Auto-detecting overtime from clock-in/clock-out (we don't track actuals yet).
-- Per-facility overtime rate defaults (could later read from `contract_terms`).
-- Surcharges other than overtime (holiday premium, callback fee). The same `line_kind` extension pattern would apply.
+- Changing how `third_party` engagements work.
+- Any change to tax entity (1099 vs S-Corp) handling — that stays in Tax Intelligence.
+- Retroactively deleting invoices that were already generated for a clinic before toggling invoicing off; we'll show a one-time toast pointing the user to the existing per-invoice delete flow if drafts exist.
