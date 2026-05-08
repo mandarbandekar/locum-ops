@@ -579,6 +579,7 @@ export function InvoiceEditPanel({
                   readOnly={readOnly}
                   showSyncHint={syncEligible}
                   hasOvertime={hasOvertime}
+                  clinicOvertimeRate={shift ? (terms.find(t => t.facility_id === shift.facility_id)?.overtime_rate ?? null) : null}
                   onAddOvertime={shift && !readOnly && onAddLineItem ? async () => {
                     const clinicTerms = terms.find(t => t.facility_id === shift.facility_id);
                     const clinicOtRate = clinicTerms?.overtime_rate != null ? Number(clinicTerms.overtime_rate) : 0;
