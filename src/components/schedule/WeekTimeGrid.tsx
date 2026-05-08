@@ -195,6 +195,10 @@ export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, o
               const leftCalc = `calc(${GUTTER_WIDTH}px + (100% - ${GUTTER_WIDTH}px) * ${dayIndex} / 7 + 2px)`;
               const widthCalc = `calc((100% - ${GUTTER_WIDTH}px) / 7 - 4px)`;
 
+              const clinicTz = facilityTzMap[s.facility_id] || undefined;
+              const display = getShiftDisplay(s, clinicTz, deviceTz);
+              const showSecondary = !!display.secondary;
+
               return (
                 <div
                   key={s.id}
@@ -208,15 +212,23 @@ export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, o
                     width: widthCalc,
                   }}
                   onClick={() => onEditShift(s.id)}
-                  title={`${getFacilityName(s.facility_id)}\n${format(start, 'h:mm a')} – ${format(end, 'h:mm a')}\nDrag to reschedule`}
+                  title={`${getFacilityName(s.facility_id)}\n${display.primaryStart} – ${display.primaryEnd} ${display.tzAbbr}${display.secondary ? `\n${display.secondary}` : ''}\nDrag to reschedule`}
                 >
                   <div className="font-semibold truncate">{getFacilityName(s.facility_id)}</div>
                   {height >= 40 && (
-                    <div className="opacity-80 truncate text-[10px]">
-                      {format(start, 'h:mm a')} – {format(end, 'h:mm a')}
+                    <div className="truncate text-[11px] flex items-center gap-1">
+                      <span>{display.primaryStart} – {display.primaryEnd}</span>
+                      {display.tzAbbr && (
+                        <span className="text-[9px] opacity-75 font-medium">{display.tzAbbr}</span>
+                      )}
                     </div>
                   )}
-                  {height >= 60 && (
+                  {height >= 56 && showSecondary && (
+                    <div className="opacity-60 truncate text-[9px] italic">
+                      {display.secondary}
+                    </div>
+                  )}
+                  {height >= 72 && (
                     <div className="opacity-70 truncate text-[10px] mt-0.5 flex items-center gap-1">
                       <span>${s.rate_applied?.toLocaleString?.() ?? s.rate_applied}</span>
                       {s.rate_kind === 'hourly' && s.hourly_rate ? (
