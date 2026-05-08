@@ -9,6 +9,7 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMont
 import { CalendarPlus, Clock, DollarSign, TrendingUp } from 'lucide-react';
 import { SHIFT_COLORS, Shift, BLOCK_TYPES, BLOCK_COLORS, TimeBlock, getShiftTotalRevenue, formatHoursDisplay } from '@/types';
 import { detectShiftConflicts } from '@/lib/businessLogic';
+import { formatInClinicTz, getTimezoneAbbr } from '@/lib/shiftTimezone';
 import { toast } from 'sonner';
 import { ShiftFormDialog } from '@/components/schedule/ShiftFormDialog';
 import { BlockTimeDialog } from '@/components/schedule/BlockTimeDialog';
