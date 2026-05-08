@@ -247,6 +247,14 @@ function ShiftLineItemCard({
                 <>
                   <span className="tabular-nums">{formatHours(item.qty)} × {fmtMoney(item.unit_rate)}/hr</span>
                   <span className="inline-flex items-center rounded-full bg-[hsl(var(--warning))]/15 text-[hsl(var(--warning))] text-[10px] font-medium px-1.5 py-0.5">Overtime</span>
+                  {isOtOverride && (
+                    <span
+                      className="inline-flex items-center rounded-full bg-[hsl(var(--warning))]/25 text-[hsl(var(--warning))] text-[10px] font-semibold px-1.5 py-0.5"
+                      title={`Clinic rate is ${fmtMoney(Number(clinicOvertimeRate))}/hr`}
+                    >
+                      Rate override
+                    </span>
+                  )}
                 </>
               ) : isShift && (item.line_kind === 'regular' || (item.qty !== 1 && !item.line_kind)) ? (
                 <>
