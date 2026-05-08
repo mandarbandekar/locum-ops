@@ -167,7 +167,7 @@ export function ClinicConfirmationsTab({ facilityId }: ClinicConfirmationsTabPro
           </CardContent>
         </Card>
       ) : (
-        <Accordion type="multiple" className="space-y-2">
+        <Accordion type="multiple" className="space-y-2" defaultValue={scoped && facilityId ? [facilityId] : undefined}>
           {queue.map((item) => {
             const sc = statusConfig[item.status] || statusConfig.not_sent;
             const msg = getEditableMessage(item.facilityId);
