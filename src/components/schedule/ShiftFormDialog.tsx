@@ -144,10 +144,14 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   useEffect(() => {
     if (!open) return;
     if (existing) {
-      setFacilityId(existing.facility_id || facilities[0]?.id || '');
-      setSelectedDates([new Date(existing.start_datetime)]);
-      setStartTime(format(new Date(existing.start_datetime), 'HH:mm'));
-      setEndTime(format(new Date(existing.end_datetime), 'HH:mm'));
+      const fid = existing.facility_id || facilities[0]?.id || '';
+      const ftz = facilities.find(f => f.id === fid)?.timezone || getDeviceTimezone();
+      setFacilityId(fid);
+      const ymd = formatInClinicTz(existing.start_datetime, ftz, 'yyyy-MM-dd');
+      const [y, m, d] = ymd.split('-').map(Number);
+      setSelectedDates([new Date(y, m - 1, d)]);
+      setStartTime(formatInClinicTz(existing.start_datetime, ftz, 'HH:mm'));
+      setEndTime(formatInClinicTz(existing.end_datetime, ftz, 'HH:mm'));
       setRate(existing.rate_applied?.toString() || '');
       setNotes(existing.notes || '');
       setColor(existing.color || 'blue');
