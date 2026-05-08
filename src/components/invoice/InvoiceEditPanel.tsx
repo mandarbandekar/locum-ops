@@ -588,11 +588,10 @@ export function InvoiceEditPanel({
                     const defaultRate = clinicOtRate > 0 ? clinicOtRate : (savedOtRate > 0 ? savedOtRate : shiftHourly);
                     const otQty = 0.25;
                     const otTotal = Math.round(otQty * defaultRate * 100) / 100;
-                    const dateLabel = format(new Date(shift.start_datetime), 'MMM d, yyyy');
                     await onAddLineItem({
                       invoice_id: invoice.id,
                       shift_id: shift.id,
-                      description: `Overtime — ${dateLabel}`,
+                      description: `Overtime`,
                       service_date: li.service_date || new Date(shift.start_datetime).toISOString().split('T')[0],
                       qty: otQty,
                       unit_rate: defaultRate,
