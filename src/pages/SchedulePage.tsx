@@ -573,6 +573,9 @@ export default function SchedulePage() {
               </>
             ) : view === 'week' ? (
               <>
+                {showMixedTzLegend && (
+                  <MixedTzLegend tzs={visibleClinicTzs} onDismiss={dismissMixedTzLegend} />
+                )}
                 <WeekTimeGrid
                   weekDays={weekDays}
                   shifts={calendarFilters.shifts ? shifts : []}
@@ -584,6 +587,7 @@ export default function SchedulePage() {
                   getEventsForDay={getEventsForDay}
                   timeBlocks={timeBlocks}
                   onEditBlock={setEditBlock}
+                  facilityTzMap={facilityTzMap}
                 />
                 {totalShiftsInRange === 0 && (
                   <div className="flex flex-col items-center justify-center py-16 text-center">
