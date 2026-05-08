@@ -170,6 +170,32 @@ export default function SchedulePage() {
 
   const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
 
+  const facilityTzMap = useMemo(
+    () => Object.fromEntries(facilities.map(f => [f.id, f.timezone])),
+    [facilities],
+  );
+
+  // Mixed-tz legend: show only when visible range contains 2+ distinct clinic tzs.
+  const visibleClinicTzs = useMemo(() => {
+    const set = new Set<string>();
+    activeRangeShifts.forEach(s => {
+      const tz = facilityTzMap[s.facility_id];
+      if (tz) set.add(tz);
+    });
+    return Array.from(set);
+  }, [activeRangeShifts, facilityTzMap]);
+  const [mixedTzDismissed, setMixedTzDismissed] = useState(
+    () => typeof window !== 'undefined' && localStorage.getItem('schedule-mixed-tz-legend-dismissed') === '1',
+  );
+  const showMixedTzLegend =
+    (view === 'week' || view === 'day') &&
+    visibleClinicTzs.length >= 2 &&
+    !mixedTzDismissed;
+  const dismissMixedTzLegend = () => {
+    localStorage.setItem('schedule-mixed-tz-legend-dismissed', '1');
+    setMixedTzDismissed(true);
+  };
+
   const handleSaveShift = async (s: any) => {
     if (s.id) {
       await updateShift(s as any);
