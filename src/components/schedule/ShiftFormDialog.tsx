@@ -728,6 +728,13 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
       subtitle={`Tap one or more dates for ${facilityName || 'this clinic'}, then set your start and end time.`}
       icon={CalendarDays}
     >
+      {lockedFacilityId && facilityName && (
+        <div className="flex items-center gap-2 rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-xs">
+          <Building2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          <span className="text-muted-foreground">Clinic</span>
+          <span className="font-medium text-foreground truncate">{facilityName}</span>
+        </div>
+      )}
       {/* Calendar with selected count */}
       <div className="flex flex-col items-center gap-1.5">
         <div className="border border-border rounded-xl overflow-hidden">
