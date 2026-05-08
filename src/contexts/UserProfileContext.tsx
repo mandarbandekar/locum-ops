@@ -177,6 +177,20 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
     loadProfile();
   }, [isDemo, user?.id]);
 
+  // Silently re-sync the profile timezone with the device on each session.
+  // Skipped when the user has manually pinned a timezone.
+  useEffect(() => {
+    if (isDemo || !profile || profile.timezone_pinned) return;
+    const deviceTz = (() => {
+      try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return ''; }
+    })();
+    if (!deviceTz || deviceTz === profile.timezone) return;
+    db('user_profiles').update({ timezone: deviceTz }).eq('id', profile.id).then(({ error }: any) => {
+      if (!error) setProfile(prev => prev ? { ...prev, timezone: deviceTz } : prev);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDemo, profile?.id, profile?.timezone_pinned]);
+
   async function loadProfile() {
     try {
       const { data, error } = await db('user_profiles')
