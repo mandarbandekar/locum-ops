@@ -153,7 +153,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
       );
       setSourceOverride(existing.source_name_override ?? fac?.source_name ?? '');
     } else {
-      setFacilityId(facilities[0]?.id || '');
+      setFacilityId(lockedFacilityId || facilities[0]?.id || '');
       setSelectedDates(defaultDate ? [defaultDate] : []);
       setStartTime(defaultStartTime || '');
       setEndTime('');
