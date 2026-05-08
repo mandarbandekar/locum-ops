@@ -190,9 +190,8 @@ export default function SchedulePage() {
     const newEnd = new Date(newStart.getTime() + duration);
     if (newStart.getTime() === oldStart.getTime()) return;
     const otherShifts = shifts.filter(s => s.id !== shiftId);
-    const conflicts = detectShiftConflicts(otherShifts, { start_datetime: newStart.toISOString(), end_datetime: newEnd.toISOString() });
-    if (conflicts.length > 0) {
-      toast.warning(`Scheduling conflict on ${format(newStart, 'EEE, MMM d')} with ${getFacilityName(conflicts[0].facility_id)}`);
+    const tzMap = Object.fromEntries(facilities.map(f => [f.id, f.timezone]));
+    const conflicts = detectShiftConflicts(otherShifts, { start_datetime: newStart.toISOString(), end_datetime: newEnd.toISOString(), facility_id: shift.facility_id }, tzMap);
     }
     updateShift({ ...shift, start_datetime: newStart.toISOString(), end_datetime: newEnd.toISOString() } as any);
     toast.success(`Shift moved to ${format(newStart, 'EEE, MMM d')}`);
