@@ -25,7 +25,12 @@ const statusConfig: Record<string, { dot: string; label: string; className: stri
   failed: { dot: 'bg-destructive', label: 'Failed', className: 'border-destructive/30 text-destructive bg-destructive/10' },
 };
 
-export function ClinicConfirmationsTab() {
+interface ClinicConfirmationsTabProps {
+  /** When set, scope the view to a single facility (used on the Clinic Detail page). */
+  facilityId?: string;
+}
+
+export function ClinicConfirmationsTab({ facilityId }: ClinicConfirmationsTabProps = {}) {
   const [currentMonth, setCurrentMonth] = useState(() => addMonths(new Date(), 1));
   const [settingsDialogFacilityId, setSettingsDialogFacilityId] = useState<string | null>(null);
   const [editingMessages, setEditingMessages] = useState<Record<string, { subject: string; body: string }>>({});
@@ -38,7 +43,10 @@ export function ClinicConfirmationsTab() {
   const { getMonthQueue, getStatusCounts, loading, saveSettings, getSettings, sendConfirmationEmail, markConfirmed, generateMonthlyBody, getHistory } = useClinicConfirmations();
   const { facilities } = useData();
   const counts = getStatusCounts(monthKey);
-  const queue = getMonthQueue(monthKey);
+  const fullQueue = getMonthQueue(monthKey);
+  const queue = facilityId ? fullQueue.filter(q => q.facilityId === facilityId) : fullQueue;
+  const scoped = !!facilityId;
+  const scopedFacilityName = scoped ? facilities.find(f => f.id === facilityId)?.name : null;
 
   // Get or initialize editable message for a facility
   const getEditableMessage = useCallback((facilityId: string) => {
@@ -103,12 +111,22 @@ export function ClinicConfirmationsTab() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h2 className="text-xl font-semibold">Clinic Confirmations</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          Confirm your upcoming schedule with each clinic before the month starts.
-        </p>
-      </div>
+      {!scoped && (
+        <div>
+          <h2 className="text-xl font-semibold">Clinic Confirmations</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Confirm your upcoming schedule with each clinic before the month starts.
+          </p>
+        </div>
+      )}
+      {scoped && (
+        <div>
+          <h2 className="text-lg font-semibold">Schedule Confirmations</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Confirm {scopedFacilityName ? scopedFacilityName + "'s" : 'this clinic\u2019s'} upcoming schedule before the month starts.
+          </p>
+        </div>
+      )}
 
       {/* Month nav + summary + bulk send */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 flex-wrap">
@@ -126,7 +144,7 @@ export function ClinicConfirmationsTab() {
           <p className="text-sm text-muted-foreground">{summaryParts.join(' · ')}</p>
         )}
 
-        {unsentWithContact.length > 0 && (
+        {!scoped && unsentWithContact.length > 0 && (
           <Button size="sm" className="ml-auto h-8 text-xs" onClick={handleSendAll} disabled={sendingAll}>
             <Send className="h-3 w-3 mr-1" /> Send All Unsent ({unsentWithContact.length})
           </Button>
@@ -142,12 +160,14 @@ export function ClinicConfirmationsTab() {
             <CalendarDays className="h-10 w-10 text-muted-foreground/40 mx-auto" />
             <h3 className="font-semibold text-foreground">No booked shifts to confirm</h3>
             <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              Once you book shifts for a practice in {format(currentMonth, 'MMMM yyyy')}, they'll appear here for confirmation.
+              {scoped
+                ? `Once you book shifts at ${scopedFacilityName || 'this clinic'} for ${format(currentMonth, 'MMMM yyyy')}, they'll appear here for confirmation.`
+                : `Once you book shifts for a practice in ${format(currentMonth, 'MMMM yyyy')}, they'll appear here for confirmation.`}
             </p>
           </CardContent>
         </Card>
       ) : (
-        <Accordion type="multiple" className="space-y-2">
+        <Accordion type="multiple" className="space-y-2" defaultValue={scoped && facilityId ? [facilityId] : undefined}>
           {queue.map((item) => {
             const sc = statusConfig[item.status] || statusConfig.not_sent;
             const msg = getEditableMessage(item.facilityId);

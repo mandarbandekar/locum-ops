@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge } from '@/components/StatusBadge';
-import { ArrowLeft, Plus, Trash2, Edit2, Save, Pencil, Check, X, Car, Users, FileText, CalendarDays, Receipt, Mail, Phone } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Edit2, Save, Pencil, Check, X, Car, Users, FileText, CalendarDays, Receipt, Mail, Phone, CheckSquare } from 'lucide-react';
 import { FacilityContact, TermsSnapshot } from '@/types';
 import { generateId } from '@/lib/businessLogic';
 import { format } from 'date-fns';
@@ -19,6 +19,7 @@ import { ContractsTab } from '@/components/contracts/ContractsTab';
 import { RatesEditor, termsToRates, ratesToTermsFields, RateEntry } from '@/components/facilities/RatesEditor';
 import { ShiftFormDialog } from '@/components/schedule/ShiftFormDialog';
 import { FacilityConfirmationSettingsCard } from '@/components/schedule/FacilityConfirmationSettingsCard';
+import { ClinicConfirmationsTab } from '@/components/schedule/ClinicConfirmationsTab';
 import { useClinicConfirmations } from '@/hooks/useClinicConfirmations';
 import { InvoicingPreferencesCard } from '@/components/facilities/InvoicingPreferencesCard';
 import { ClinicNotesCard } from '@/components/facilities/ClinicNotesCard';
@@ -71,6 +72,7 @@ export default function FacilityDetailPage() {
           <TabsTrigger value="contract" className="gap-1.5"><FileText className="h-3.5 w-3.5" /> Clinic Overview</TabsTrigger>
           <TabsTrigger value="people" className="gap-1.5"><Users className="h-3.5 w-3.5" /> People & Access ({facilityContacts.length})</TabsTrigger>
           <TabsTrigger value="shifts" className="gap-1.5"><CalendarDays className="h-3.5 w-3.5" /> Shifts ({facilityShifts.length})</TabsTrigger>
+          <TabsTrigger value="confirmations" className="gap-1.5"><CheckSquare className="h-3.5 w-3.5" /> Confirmations</TabsTrigger>
           <TabsTrigger value="invoices" className="gap-1.5"><Receipt className="h-3.5 w-3.5" /> Invoices ({facilityInvoices.length})</TabsTrigger>
         </TabsList>
 
@@ -100,6 +102,10 @@ export default function FacilityDetailPage() {
 
         <TabsContent value="shifts" className="mt-4">
           <ShiftsTab shifts={facilityShifts} allShifts={shifts} facilityId={facility.id} facilities={facilities} terms={terms} onAdd={addShift} onUpdate={updateShift} onDelete={deleteShift} />
+        </TabsContent>
+
+        <TabsContent value="confirmations" className="mt-4">
+          <ClinicConfirmationsTab facilityId={facility.id} />
         </TabsContent>
 
         <TabsContent value="invoices" className="mt-4">
