@@ -1361,12 +1361,13 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   );
 
   /* ─── New shift: guided stepper ─── */
-  const totalSteps = 4;
+  const totalSteps = lockedFacilityId ? 3 : 4;
+  const displayStep = lockedFacilityId ? Math.max(1, step - 1) : step;
   const renderGuidedForm = () => (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       <div className="flex items-center justify-between">
         <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Step {step} of {totalSteps}
+          Step {displayStep} of {totalSteps}
         </p>
         <div className="flex gap-1">
           {Array.from({ length: totalSteps }).map((_, i) => (
@@ -1374,7 +1375,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
               key={i}
               className={cn(
                 'h-1 w-8 rounded-full transition-colors',
-                i + 1 <= step ? 'bg-primary' : 'bg-muted',
+                i + 1 <= displayStep ? 'bg-primary' : 'bg-muted',
               )}
             />
           ))}
