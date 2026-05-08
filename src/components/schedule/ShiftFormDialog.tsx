@@ -339,17 +339,16 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     };
   };
 
-  // Build start/end ISO timestamps for a given date, rolling end into the next
-  // day when end time is on/before start time (overnight shift).
+  // Build start/end ISO timestamps for a given date in the **clinic's
+  // timezone**, rolling end into the next day for overnight shifts. This is
+  // what makes "9am at PA clinic" save as 9am EST regardless of where the
+  // user lives.
+  const facilityForTz = facilities.find(f => f.id === facilityId);
+  const clinicTz: string | undefined = facilityForTz?.timezone || undefined;
   const buildStartEndIso = useCallback((d: Date) => {
     const dateStr = format(d, 'yyyy-MM-dd');
-    const start = new Date(`${dateStr}T${startTime}:00`);
-    let end = new Date(`${dateStr}T${endTime}:00`);
-    if (end.getTime() <= start.getTime()) {
-      end = new Date(end.getTime() + 24 * 60 * 60 * 1000);
-    }
-    return { startIso: start.toISOString(), endIso: end.toISOString() };
-  }, [startTime, endTime]);
+    return buildShiftIso(dateStr, startTime, endTime, clinicTz);
+  }, [startTime, endTime, clinicTz]);
 
   const isOvernight = useMemo(() => {
     if (!startTime || !endTime) return false;
@@ -357,6 +356,11 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     const [eh, em] = endTime.split(':').map(Number);
     return (eh * 60 + em) <= (sh * 60 + sm);
   }, [startTime, endTime]);
+
+  const facilityTzMap = useMemo(
+    () => Object.fromEntries(facilities.map(f => [f.id, f.timezone])),
+    [facilities],
+  );
 
   const conflicts = useMemo(() => {
     if (isSubmitting || selectedDates.length === 0 || !facilityId || !startTime || !endTime) return [];
@@ -368,9 +372,10 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
         start_datetime: startIso,
         end_datetime: endIso,
         id: existing?.id,
+        facility_id: facilityId,
         break_minutes: breakMinutes,
         worked_through_break: workedThroughBreak,
-      })) {
+      }, facilityTzMap)) {
         if (!seen.has(c.id)) {
           seen.add(c.id);
           allConflicts.push(c);
@@ -378,7 +383,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
       }
     }
     return allConflicts;
-  }, [shifts, selectedDates, startTime, endTime, existing?.id, facilityId, isSubmitting, buildStartEndIso, breakMinutes, workedThroughBreak]);
+  }, [shifts, selectedDates, startTime, endTime, existing?.id, facilityId, isSubmitting, buildStartEndIso, breakMinutes, workedThroughBreak, facilityTzMap]);
 
   const saveCustomRateToTerms = useCallback(async () => {
     if (!isCustomRate || !saveCustomRate || !rate || Number(rate) <= 0) return;
