@@ -434,6 +434,18 @@ export default function SchedulePage() {
                 <TooltipContent>{view === 'list' ? 'Switch to calendar' : 'Switch to list'}</TooltipContent>
               </Tooltip>
 
+              {/* Confirmations */}
+              <Button
+                variant={view === 'confirmations' ? 'default' : 'ghost'}
+                size="sm"
+                className="gap-1.5"
+                onClick={() => setView('confirmations')}
+                data-tour="schedule-confirmations"
+              >
+                <CheckSquare className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Clinic Confirmations</span>
+              </Button>
+
               {/* Sync */}
               <Button
                 variant={view === 'sync' ? 'default' : 'ghost'}

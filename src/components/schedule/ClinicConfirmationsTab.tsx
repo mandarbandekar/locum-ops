@@ -31,6 +31,7 @@ export function ClinicConfirmationsTab() {
   const [editingMessages, setEditingMessages] = useState<Record<string, { subject: string; body: string }>>({});
   const [showHistory, setShowHistory] = useState<Record<string, boolean>>({});
   const [sendingAll, setSendingAll] = useState(false);
+  const [comingSoonOpen, setComingSoonOpen] = useState(false);
   const settingsSaveRef = useRef<(() => void) | null>(null);
 
   const monthKey = format(currentMonth, 'yyyy-MM');
@@ -53,21 +54,12 @@ export function ClinicConfirmationsTab() {
     });
   };
 
-  const handleSend = async (facilityId: string) => {
-    const msg = getEditableMessage(facilityId);
-    await sendConfirmationEmail(facilityId, 'monthly', monthKey, null, msg.body, msg.subject);
+  const handleSend = async (_facilityId: string) => {
+    setComingSoonOpen(true);
   };
 
   const handleSendAll = async () => {
-    const unsent = queue.filter(q => q.status === 'not_sent' && q.contactEmail);
-    if (unsent.length === 0) return;
-    setSendingAll(true);
-    for (const item of unsent) {
-      const msg = getEditableMessage(item.facilityId);
-      await sendConfirmationEmail(item.facilityId, 'monthly', monthKey, null, msg.body, msg.subject);
-    }
-    setSendingAll(false);
-    toast.success(`Sent ${unsent.length} confirmation${unsent.length > 1 ? 's' : ''}`);
+    setComingSoonOpen(true);
   };
 
   const handleCopy = (facilityId: string) => {
@@ -322,6 +314,21 @@ export function ClinicConfirmationsTab() {
           <DialogFooter>
             <Button variant="ghost" onClick={() => setSettingsDialogFacilityId(null)}>Cancel</Button>
             <Button onClick={() => settingsSaveRef.current?.()}>Save Contact</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Coming soon dialog */}
+      <Dialog open={comingSoonOpen} onOpenChange={setComingSoonOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Email Functionality coming soon</DialogTitle>
+            <DialogDescription>
+              Sending confirmations directly from LocumOps is on the way. In the meantime, use "Copy to Clipboard" to paste the message into your email.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => setComingSoonOpen(false)}>Got it</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
