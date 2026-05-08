@@ -70,6 +70,19 @@ export function InvoiceActionBar({
   const shareUrl = hasShareLink ? `${window.location.origin}/invoice/public/${invoice.share_token}` : '';
   const draftTotal = items.reduce((s: number, li: any) => s + li.line_total, 0);
 
+  const requireBusinessInfo = (): boolean => {
+    const hasName = !!(profile?.company_name && String(profile.company_name).trim());
+    const hasAddress = !!(profile?.company_address && String(profile.company_address).trim());
+    if (!hasName || !hasAddress) {
+      const missing = [!hasName && 'business name', !hasAddress && 'business address'].filter(Boolean).join(' and ');
+      toast.error(`Add your ${missing} first`, {
+        description: 'Your business name and address are required on invoices. Update them in Settings → Profile.',
+      });
+      return false;
+    }
+    return true;
+  };
+
   const handleProceedAlreadySent = async () => {
     const checklist = buildChecklistItems(profile, { ...invoice, due_date: dueDate || invoice.due_date }, items, facility);
     const incomplete = checklist.filter((i: any) => i.required && !i.complete);
