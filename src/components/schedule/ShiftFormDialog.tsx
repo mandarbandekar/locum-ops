@@ -513,6 +513,8 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
       engagement_type: (fac.engagement_type || 'direct') as EngagementType,
       source_name: fac.source_name ?? null,
       tax_form_type: (fac.tax_form_type ?? null) as 'w2' | '1099' | null,
+      generates_invoices: fac.generates_invoices,
+      name: fac.name,
     });
     const presets =
       engagementOverride === 'third_party'
