@@ -500,6 +500,7 @@ function PoliciesSection({ facilityTerms, facilityId, onUpdateTerms }: {
       overtime_policy_text: overtime,
       late_payment_policy_text: latePayment,
       special_notes: specialNotes,
+      overtime_rate: facilityTerms?.overtime_rate ?? null,
     });
     toast.success('Policies saved');
   };
