@@ -429,12 +429,36 @@ function ClinicRatesSection({ facilityTerms, facilityId, onUpdateTerms }: {
     toast.success('Clinic rates updated');
   };
 
+  const validateOvertime = (raw: string): { ok: boolean; value: number | null; error?: string } => {
+    const trimmed = raw.trim();
+    if (trimmed === '') return { ok: true, value: null };
+    const n = Number(trimmed);
+    if (!Number.isFinite(n)) return { ok: false, value: null, error: 'Enter a valid number, or leave blank.' };
+    if (n < 0) return { ok: false, value: null, error: 'Overtime rate can\u2019t be negative.' };
+    if (n === 0) return { ok: false, value: null, error: 'Enter a rate above $0, or leave blank.' };
+    if (n > 10000) return { ok: false, value: null, error: 'That looks too high. Enter an hourly rate under $10,000.' };
+    return { ok: true, value: Math.round(n * 100) / 100 };
+  };
+
+  const overtimeError = (() => {
+    const r = validateOvertime(overtimeRate);
+    return r.ok ? null : r.error || 'Invalid value';
+  })();
+
   const handleOvertimeBlur = () => {
     if (!onUpdateTerms) return;
-    const prev = facilityTerms?.overtime_rate != null ? String(facilityTerms.overtime_rate) : '';
-    if (prev === overtimeRate) return;
-    onUpdateTerms(buildTerms(rates, overtimeRate));
-    toast.success('Overtime rate updated');
+    const r = validateOvertime(overtimeRate);
+    if (!r.ok) {
+      toast.error(r.error || 'Invalid overtime rate');
+      return;
+    }
+    const prev = facilityTerms?.overtime_rate ?? null;
+    if (prev === r.value) return;
+    // Normalize input display to canonical value
+    setOvertimeRate(r.value == null ? '' : String(r.value));
+    const next = buildTerms(rates, r.value == null ? '' : String(r.value));
+    onUpdateTerms(next);
+    toast.success(r.value == null ? 'Overtime rate cleared' : 'Overtime rate updated');
   };
 
   return (
@@ -459,14 +483,20 @@ function ClinicRatesSection({ facilityTerms, facilityId, onUpdateTerms }: {
             <Input
               type="number"
               min={0}
+              step="0.01"
               value={overtimeRate}
               onChange={e => setOvertimeRate(e.target.value)}
               onBlur={handleOvertimeBlur}
               placeholder="0"
-              className="pl-7 pr-10"
+              aria-invalid={!!overtimeError}
+              aria-describedby={overtimeError ? 'clinic-ot-rate-error' : undefined}
+              className={`pl-7 pr-10 ${overtimeError ? 'border-destructive focus-visible:border-destructive' : ''}`}
             />
             <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground pointer-events-none">/hr</span>
           </div>
+          {overtimeError && (
+            <p id="clinic-ot-rate-error" className="mt-1 text-[11px] text-destructive">{overtimeError}</p>
+          )}
         </div>
       </CardContent>
     </Card>

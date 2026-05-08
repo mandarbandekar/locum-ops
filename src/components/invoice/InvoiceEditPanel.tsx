@@ -52,6 +52,7 @@ function parseShiftMeta(item: any): { dateStr: string | null; timeStr: string | 
 
 function ShiftLineItemCard({
   item, readOnly, onUpdate, onDelete, showSyncHint, onAddOvertime, hasOvertime,
+  clinicOvertimeRate,
 }: {
   item: any;
   readOnly?: boolean;
@@ -60,6 +61,8 @@ function ShiftLineItemCard({
   showSyncHint?: boolean;
   onAddOvertime?: () => void;
   hasOvertime?: boolean;
+  /** Clinic-saved overtime rate (or null when none). Used to flag overrides. */
+  clinicOvertimeRate?: number | null;
 }) {
   const [editing, setEditing] = useState(false);
   const [desc, setDesc] = useState(item.description);
@@ -90,6 +93,10 @@ function ShiftLineItemCard({
 
   const meta = parseShiftMeta(item);
   const isShift = !!item.shift_id;
+  // Overtime override = clinic has a saved overtime rate AND this line uses a different rate.
+  const hasClinicOt = isOvertime && clinicOvertimeRate != null && Number(clinicOvertimeRate) > 0;
+  const isOtOverride = hasClinicOt && Math.abs(Number(item.unit_rate || 0) - Number(clinicOvertimeRate)) > 0.001;
+  const editMatchesClinic = hasClinicOt && Math.abs(rateNum - Number(clinicOvertimeRate)) < 0.001;
   const Icon = isShift ? CalendarClock : FileText;
 
   if (editing) {
@@ -153,8 +160,29 @@ function ShiftLineItemCard({
           <div>
             <Label htmlFor={`li-rate-${item.id}`} className="text-[10px] text-muted-foreground uppercase">Rate{isOvertime ? ' / hr' : ''}</Label>
             <Input id={`li-rate-${item.id}`} type="number" inputMode="decimal" value={rate} onChange={e => setRate(e.target.value)} className="h-9 text-sm mt-1" min={0} step="0.01" aria-label="Rate" />
+            {hasClinicOt && (
+              <div className="mt-1 flex items-center justify-between gap-2">
+                <span className="text-[10px] text-muted-foreground">
+                  Clinic rate: {fmtMoney(Number(clinicOvertimeRate))}/hr
+                </span>
+                {!editMatchesClinic && (
+                  <button
+                    type="button"
+                    onClick={() => setRate(String(clinicOvertimeRate))}
+                    className="text-[10px] font-medium text-primary hover:underline"
+                  >
+                    Reset to clinic rate
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
+        {isOvertime && rateNum > 0 && hasClinicOt && !editMatchesClinic && (
+          <p className="text-[11px] text-[hsl(var(--warning))] italic">
+            Override applied: this overtime line uses {fmtMoney(rateNum)}/hr instead of the clinic's saved {fmtMoney(Number(clinicOvertimeRate))}/hr.
+          </p>
+        )}
         {showSyncHint && (
           <p className="text-[11px] text-muted-foreground italic">Editing this updates the shift on your schedule.</p>
         )}
@@ -219,6 +247,14 @@ function ShiftLineItemCard({
                 <>
                   <span className="tabular-nums">{formatHours(item.qty)} × {fmtMoney(item.unit_rate)}/hr</span>
                   <span className="inline-flex items-center rounded-full bg-[hsl(var(--warning))]/15 text-[hsl(var(--warning))] text-[10px] font-medium px-1.5 py-0.5">Overtime</span>
+                  {isOtOverride && (
+                    <span
+                      className="inline-flex items-center rounded-full bg-[hsl(var(--warning))]/25 text-[hsl(var(--warning))] text-[10px] font-semibold px-1.5 py-0.5"
+                      title={`Clinic rate is ${fmtMoney(Number(clinicOvertimeRate))}/hr`}
+                    >
+                      Rate override
+                    </span>
+                  )}
                 </>
               ) : isShift && (item.line_kind === 'regular' || (item.qty !== 1 && !item.line_kind)) ? (
                 <>
@@ -543,6 +579,7 @@ export function InvoiceEditPanel({
                   readOnly={readOnly}
                   showSyncHint={syncEligible}
                   hasOvertime={hasOvertime}
+                  clinicOvertimeRate={shift ? (terms.find(t => t.facility_id === shift.facility_id)?.overtime_rate ?? null) : null}
                   onAddOvertime={shift && !readOnly && onAddLineItem ? async () => {
                     const clinicTerms = terms.find(t => t.facility_id === shift.facility_id);
                     const clinicOtRate = clinicTerms?.overtime_rate != null ? Number(clinicTerms.overtime_rate) : 0;
