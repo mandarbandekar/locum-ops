@@ -244,14 +244,18 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   const isHoursValid = hoursInvalidReason === null;
 
   // Compute total for live preview / save payload.
+  // For hourly: subtract unpaid break (unless user worked through it) so the
+  // preview matches what gets saved in `buildRatePayload`.
   const computedRateApplied = useMemo(() => {
     const rateNum = Number(rate) || 0;
     if (activeRateKind === 'hourly') {
-      const hours = Math.max(0, calculatedHours ?? 0);
-      return Math.round(hours * rateNum * 100) / 100;
+      const scheduled = Math.max(0, calculatedHours ?? 0);
+      const unpaidBreak = workedThroughBreak ? 0 : Math.max(0, breakMinutes ?? 0);
+      const billableHours = Math.max(0, scheduled - unpaidBreak / 60);
+      return Math.round(billableHours * rateNum * 100) / 100;
     }
     return rateNum;
-  }, [rate, activeRateKind, calculatedHours]);
+  }, [rate, activeRateKind, calculatedHours, workedThroughBreak, breakMinutes]);
 
   // Display helper: format hours dropping trailing zeros (e.g. 8 / 8.5 / 8.25).
   const formatHours = (h: number | null) => {
