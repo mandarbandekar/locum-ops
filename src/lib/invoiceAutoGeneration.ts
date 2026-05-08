@@ -220,7 +220,7 @@ export function buildAutoInvoiceDraft(
           const hourlyRate = Number(s.hourly_rate);
           return {
             shift_id: s.id,
-            description: `${dateLabel} — ${coverageLabel} (${timeLabel})${breakSuffix}`,
+            description: `${coverageLabel} (${timeLabel})${breakSuffix}`,
             service_date: serviceDate,
             qty: totalHours,
             unit_rate: hourlyRate,
@@ -230,7 +230,7 @@ export function buildAutoInvoiceDraft(
         })()
       : {
           shift_id: s.id,
-          description: `${dateLabel} — ${coverageLabel} (${timeLabel})${breakSuffix}`,
+          description: `${coverageLabel} (${timeLabel})${breakSuffix}`,
           service_date: serviceDate,
           qty: 1,
           unit_rate: s.rate_applied,
@@ -243,7 +243,7 @@ export function buildAutoInvoiceDraft(
     if (otHours > 0 && otRate > 0) {
       const otLine: LineDraft = {
         shift_id: s.id,
-        description: `Overtime — ${dateLabel}`,
+        description: `Overtime`,
         service_date: serviceDate,
         qty: otHours,
         unit_rate: otRate,

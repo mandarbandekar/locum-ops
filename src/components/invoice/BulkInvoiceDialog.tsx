@@ -98,7 +98,7 @@ export function BulkInvoiceDialog({ open, onOpenChange, preselectedFacilityId }:
     if (!isHourly) {
       return [{
         shift_id: s.id,
-        description: `${dateLabel} — ${coverageLabel} (${timeLabel})`,
+        description: `${coverageLabel} (${timeLabel})`,
         service_date: new Date(s.start_datetime).toISOString().split('T')[0],
         qty: 1,
         unit_rate: s.rate_applied,
@@ -112,7 +112,7 @@ export function BulkInvoiceDialog({ open, onOpenChange, preselectedFacilityId }:
 
     return [{
       shift_id: s.id,
-      description: `${dateLabel} — ${coverageLabel} (${timeLabel})`,
+      description: `${coverageLabel} (${timeLabel})`,
       service_date: new Date(s.start_datetime).toISOString().split('T')[0],
       qty: totalHours,
       unit_rate: hourlyRate,
