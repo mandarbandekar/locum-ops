@@ -307,10 +307,12 @@ function ContractTab({ facility, facilityTerms, onSaveRates, onUpdateTerms, onUp
   const [engagementType, setEngagementType] = useState<EngagementType>((facility.engagement_type || 'direct') as EngagementType);
   const [sourceName, setSourceName] = useState<string>(facility.source_name || '');
   const [taxFormType, setTaxFormType] = useState<TaxFormType>((facility.tax_form_type as TaxFormType) || '1099');
+  const [generatesInvoices, setGeneratesInvoices] = useState<boolean>(facility.generates_invoices !== false);
   const [rates, setRates] = useState<RateEntry[]>(termsToRates(facilityTerms || {}));
 
   const handleSaveDetails = () => {
     const isDirect = engagementType === 'direct';
+    const directInvoicing = isDirect && generatesInvoices;
     const effectiveTaxForm = engagementType === 'third_party' ? taxFormType : null;
     onUpdateFacility({
       ...facility,
@@ -318,7 +320,8 @@ function ContractTab({ facility, facilityTerms, onSaveRates, onUpdateTerms, onUp
       engagement_type: engagementType,
       source_name: isDirect ? null : (sourceName.trim() || null),
       tax_form_type: effectiveTaxForm,
-      auto_generate_invoices: isDirect ? facility.auto_generate_invoices : false,
+      generates_invoices: directInvoicing,
+      auto_generate_invoices: directInvoicing ? facility.auto_generate_invoices : false,
     });
     setEditingDetails(false);
     toast.success('Engagement updated');
