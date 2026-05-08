@@ -25,7 +25,12 @@ const statusConfig: Record<string, { dot: string; label: string; className: stri
   failed: { dot: 'bg-destructive', label: 'Failed', className: 'border-destructive/30 text-destructive bg-destructive/10' },
 };
 
-export function ClinicConfirmationsTab() {
+interface ClinicConfirmationsTabProps {
+  /** When set, scope the view to a single facility (used on the Clinic Detail page). */
+  facilityId?: string;
+}
+
+export function ClinicConfirmationsTab({ facilityId }: ClinicConfirmationsTabProps = {}) {
   const [currentMonth, setCurrentMonth] = useState(() => addMonths(new Date(), 1));
   const [settingsDialogFacilityId, setSettingsDialogFacilityId] = useState<string | null>(null);
   const [editingMessages, setEditingMessages] = useState<Record<string, { subject: string; body: string }>>({});
@@ -38,7 +43,10 @@ export function ClinicConfirmationsTab() {
   const { getMonthQueue, getStatusCounts, loading, saveSettings, getSettings, sendConfirmationEmail, markConfirmed, generateMonthlyBody, getHistory } = useClinicConfirmations();
   const { facilities } = useData();
   const counts = getStatusCounts(monthKey);
-  const queue = getMonthQueue(monthKey);
+  const fullQueue = getMonthQueue(monthKey);
+  const queue = facilityId ? fullQueue.filter(q => q.facilityId === facilityId) : fullQueue;
+  const scoped = !!facilityId;
+  const scopedFacilityName = scoped ? facilities.find(f => f.id === facilityId)?.name : null;
 
   // Get or initialize editable message for a facility
   const getEditableMessage = useCallback((facilityId: string) => {
