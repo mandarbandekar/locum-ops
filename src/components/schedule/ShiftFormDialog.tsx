@@ -18,7 +18,7 @@ import { BreakPolicySelector } from '@/components/facilities/BreakPolicySelector
 import { getBreakPolicyLabel, formatBillableHours, formatHoursMinutes, getScheduledMinutes, getBillableMinutes, isBreakFeatureNew } from '@/lib/shiftBreak';
 import { Switch } from '@/components/ui/switch';
 import { detectShiftConflicts, generateId } from '@/lib/businessLogic';
-import { buildShiftIso, getTimezoneAbbr, getDeviceTimezone } from '@/lib/shiftTimezone';
+import { buildShiftIso, getTimezoneAbbr, getDeviceTimezone, formatInClinicTz } from '@/lib/shiftTimezone';
 import { cn } from '@/lib/utils';
 import { termsToRates, RateEntry } from '@/components/facilities/RatesEditor';
 import { useData } from '@/contexts/DataContext';
@@ -91,12 +91,17 @@ function buildRateOptions(
 
 
 export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms, existing, onSave, onDelete, embedded, defaultDate, defaultStartTime, defaultMonth, lockedFacilityId }: ShiftFormDialogProps) {
-  const [facilityId, setFacilityId] = useState(existing?.facility_id || lockedFacilityId || facilities[0]?.id || '');
+  const initialFacilityId = existing?.facility_id || lockedFacilityId || facilities[0]?.id || '';
+  const initialClinicTz: string | undefined =
+    facilities.find(f => f.id === initialFacilityId)?.timezone || undefined;
+  const [facilityId, setFacilityId] = useState(initialFacilityId);
   const [selectedDates, setSelectedDates] = useState<Date[]>(
-    existing ? [new Date(existing.start_datetime)] : defaultDate ? [defaultDate] : []
+    existing
+      ? [new Date(initialClinicTz ? `${formatInClinicTz(existing.start_datetime, initialClinicTz, 'yyyy-MM-dd')}T00:00:00` : existing.start_datetime)]
+      : defaultDate ? [defaultDate] : []
   );
-  const [startTime, setStartTime] = useState(existing ? format(new Date(existing.start_datetime), 'HH:mm') : (defaultStartTime || ''));
-  const [endTime, setEndTime] = useState(existing ? format(new Date(existing.end_datetime), 'HH:mm') : '');
+  const [startTime, setStartTime] = useState(existing ? formatInClinicTz(existing.start_datetime, initialClinicTz || getDeviceTimezone(), 'HH:mm') : (defaultStartTime || ''));
+  const [endTime, setEndTime] = useState(existing ? formatInClinicTz(existing.end_datetime, initialClinicTz || getDeviceTimezone(), 'HH:mm') : '');
   const [rate, setRate] = useState(existing?.rate_applied?.toString() || '');
   const [selectedRateKey, setSelectedRateKey] = useState<string>('');
   const [isCustomRate, setIsCustomRate] = useState(false);
