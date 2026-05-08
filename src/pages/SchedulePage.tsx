@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 import { ShiftFormDialog } from '@/components/schedule/ShiftFormDialog';
 import { BlockTimeDialog } from '@/components/schedule/BlockTimeDialog';
 import { WeekTimeGrid } from '@/components/schedule/WeekTimeGrid';
-import { ClinicConfirmationsTab } from '@/components/schedule/ClinicConfirmationsTab';
+
 import { getMarkersForDay } from '@/lib/calendarMarkers';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { CalendarFilters, CalendarLayerFilters } from '@/components/schedule/CalendarFilters';
@@ -104,7 +104,7 @@ export default function SchedulePage() {
     return computeEffectiveSetAsideRate(taxProfile, totalIncome || 1);
   }, [taxProfile, hasTaxProfile, invoices, shifts]);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [view, setView] = useState<'month' | 'week' | 'day' | 'list' | 'confirmations' | 'sync'>('month');
+  const [view, setView] = useState<'month' | 'week' | 'day' | 'list' | 'sync'>('month');
   const [lastTimeframe, setLastTimeframe] = useState<'month' | 'week' | 'day'>('month');
   const [showAdd, setShowAdd] = useState(false);
   const [showBlockTime, setShowBlockTime] = useState(false);
@@ -128,7 +128,7 @@ export default function SchedulePage() {
   // Always default to Month view on mount; only persist non-timeframe views (list/confirmations/sync)
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
-    const persistable = ['list', 'confirmations', 'sync'];
+    const persistable = ['list', 'sync'];
     if (stored && persistable.includes(stored)) {
       setView(stored as typeof view);
     }
@@ -434,18 +434,6 @@ export default function SchedulePage() {
                 <TooltipContent>{view === 'list' ? 'Switch to calendar' : 'Switch to list'}</TooltipContent>
               </Tooltip>
 
-              {/* Confirmations */}
-              <Button
-                variant={view === 'confirmations' ? 'default' : 'ghost'}
-                size="sm"
-                className="gap-1.5"
-                onClick={() => setView('confirmations')}
-                data-tour="schedule-confirmations"
-              >
-                <CheckSquare className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Clinic Confirmations</span>
-              </Button>
-
               {/* Sync */}
               <Button
                 variant={view === 'sync' ? 'default' : 'ghost'}
@@ -524,8 +512,6 @@ export default function SchedulePage() {
       <div className="flex-1 overflow-auto px-4 py-3">
         {view === 'sync' ? (
           <CalendarSyncPanel />
-        ) : view === 'confirmations' ? (
-          <ClinicConfirmationsTab />
         ) : (
           <>
             {view === 'month' ? (
