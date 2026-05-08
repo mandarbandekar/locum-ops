@@ -36,9 +36,12 @@ export function EngagementSelector({
   onSourceNameChange,
   taxFormType,
   onTaxFormTypeChange,
+  generatesInvoices = true,
+  onGeneratesInvoicesChange,
   compact,
 }: Props) {
   const isThird = engagementType === 'third_party';
+  const isDirect = engagementType === 'direct';
 
   const presets = THIRD_PARTY_PRESETS;
   const isOther = !!sourceName && !(presets as readonly string[]).includes(sourceName);
