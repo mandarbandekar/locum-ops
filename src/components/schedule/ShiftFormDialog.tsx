@@ -1067,7 +1067,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
         icon={Eye}
       >
         <div className="rounded-lg border border-border bg-muted/20 px-3 py-1">
-          <Row icon={Building2} label="Clinic" onEdit={() => setStep(1)}>
+          <Row icon={Building2} label="Clinic" onEdit={lockedFacilityId ? undefined : () => setStep(1)}>
             {facilityName || <span className="text-muted-foreground">—</span>}
           </Row>
           <Row icon={CalendarDays} label={sortedDates.length > 1 ? `Dates (${sortedDates.length})` : 'Date'} onEdit={() => setStep(2)}>
