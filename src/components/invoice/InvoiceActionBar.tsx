@@ -147,21 +147,6 @@ export function InvoiceActionBar({
     });
   };
 
-  const handleCreateShareLink = async () => {
-    setShareLoading(true);
-    const token = crypto.randomUUID();
-    await onUpdateInvoice({ ...invoice, share_token: token, share_token_created_at: new Date().toISOString(), share_token_revoked_at: null });
-    await onAddActivity({ invoice_id: invoice.id, action: 'share_link_created', description: 'Share link created' });
-    setShareLoading(false);
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      navigator.clipboard.writeText(`${window.location.origin}/invoice/public/${token}`);
-    }
-    toast.success('Share link created and copied to clipboard', {
-      description: isDraft
-        ? 'Paste it into your email or text, then click "I already sent this" to mark it as Sent.'
-        : 'Paste it into your email or text to share with your clinic.',
-    });
-  };
 
   const handleShareLinkClick = hasShareLink ? handleCopyShareLink : handleCreateShareLink;
 
