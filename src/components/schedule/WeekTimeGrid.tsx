@@ -25,9 +25,11 @@ interface WeekTimeGridProps {
   timeBlocks?: TimeBlock[];
   onEditBlock?: (id: string) => void;
   fullDay?: boolean;
+  facilityTzMap?: Record<string, string | null | undefined>;
 }
 
-export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, onDropOnTime, onCellClick, calendarFilters, getEventsForDay, timeBlocks = [], onEditBlock, fullDay = false }: WeekTimeGridProps) {
+export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, onDropOnTime, onCellClick, calendarFilters, getEventsForDay, timeBlocks = [], onEditBlock, fullDay = false, facilityTzMap = {} }: WeekTimeGridProps) {
+  const deviceTz = getDeviceTimezone();
   const HOURS = fullDay ? FULL_DAY_HOURS : DEFAULT_HOURS;
   const [dragOverCell, setDragOverCell] = useState<string | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
