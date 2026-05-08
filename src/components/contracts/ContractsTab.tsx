@@ -397,9 +397,13 @@ function ClinicRatesSection({ facilityTerms, facilityId, onUpdateTerms }: {
   onUpdateTerms?: (t: TermsSnapshot) => void;
 }) {
   const [rates, setRates] = useState<RateEntry[]>(() => facilityTerms ? termsToRates(facilityTerms) : []);
+  const [overtimeRate, setOvertimeRate] = useState<string>(
+    facilityTerms?.overtime_rate != null ? String(facilityTerms.overtime_rate) : ''
+  );
 
-  const buildTerms = (next: RateEntry[]): TermsSnapshot => {
+  const buildTerms = (next: RateEntry[], otRate: string): TermsSnapshot => {
     const fields = ratesToTermsFields(next);
+    const otNum = otRate.trim() === '' ? null : Number(otRate);
     return {
       id: facilityTerms?.id || generateId(),
       facility_id: facilityId,
@@ -415,13 +419,22 @@ function ClinicRatesSection({ facilityTerms, facilityId, onUpdateTerms }: {
       overtime_policy_text: facilityTerms?.overtime_policy_text || '',
       late_payment_policy_text: facilityTerms?.late_payment_policy_text || '',
       special_notes: facilityTerms?.special_notes || '',
+      overtime_rate: otNum != null && !Number.isNaN(otNum) ? otNum : null,
     };
   };
 
   const handleSave = (next: RateEntry[]) => {
     if (!onUpdateTerms) return;
-    onUpdateTerms(buildTerms(next));
+    onUpdateTerms(buildTerms(next, overtimeRate));
     toast.success('Clinic rates updated');
+  };
+
+  const handleOvertimeBlur = () => {
+    if (!onUpdateTerms) return;
+    const prev = facilityTerms?.overtime_rate != null ? String(facilityTerms.overtime_rate) : '';
+    if (prev === overtimeRate) return;
+    onUpdateTerms(buildTerms(rates, overtimeRate));
+    toast.success('Overtime rate updated');
   };
 
   return (
@@ -434,8 +447,27 @@ function ClinicRatesSection({ facilityTerms, facilityId, onUpdateTerms }: {
           These rates are pre-filled from onboarding and used as suggestions when adding shifts at this clinic. Edit anytime.
         </p>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
         <RatesEditor rates={rates} onChange={setRates} onSave={handleSave} showCard={false} />
+        <div className="border-t border-border pt-3">
+          <Label className="text-xs font-medium">Overtime rate (per hour)</Label>
+          <p className="text-[11px] text-muted-foreground mb-1.5">
+            Used as the default when adding overtime to invoices for this clinic. Leave blank to fall back to your Rate Card.
+          </p>
+          <div className="relative w-40">
+            <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              type="number"
+              min={0}
+              value={overtimeRate}
+              onChange={e => setOvertimeRate(e.target.value)}
+              onBlur={handleOvertimeBlur}
+              placeholder="0"
+              className="pl-7 pr-10"
+            />
+            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground pointer-events-none">/hr</span>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
