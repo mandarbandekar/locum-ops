@@ -477,6 +477,8 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
             onSourceNameChange={setSourceName}
             taxFormType={taxFormType}
             onTaxFormTypeChange={setTaxFormType}
+            generatesInvoices={generatesInvoices}
+            onGeneratesInvoicesChange={setGeneratesInvoices}
             compact
           />
         </GuidedStep>
