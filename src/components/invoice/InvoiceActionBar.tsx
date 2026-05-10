@@ -491,6 +491,24 @@ export function InvoiceActionBar({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Mark as sent after share-link prompt */}
+      <AlertDialog open={confirmMarkSentAfterShareOpen} onOpenChange={setConfirmMarkSentAfterShareOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Mark this invoice as sent?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You just shared this invoice link. If you've sent it to the clinic, mark it as sent to start tracking payment.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Not yet</AlertDialogCancel>
+            <AlertDialogAction onClick={async () => { setConfirmMarkSentAfterShareOpen(false); await handleProceedAlreadySent('share_link'); }}>
+              Mark as sent
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
