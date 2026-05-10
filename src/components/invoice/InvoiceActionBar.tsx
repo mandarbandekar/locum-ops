@@ -138,6 +138,7 @@ export function InvoiceActionBar({
       toast.success('PDF downloaded', {
         description: `${invoice.invoice_number}.pdf saved to your Downloads folder.`,
       });
+      if (isDraft) setConfirmMarkSentAfterDownloadOpen(true);
     } catch {
       toast.error('PDF generation failed', {
         description: 'Please try again in a moment.',
