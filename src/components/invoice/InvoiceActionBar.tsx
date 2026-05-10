@@ -170,6 +170,7 @@ export function InvoiceActionBar({
         ? 'Paste it into your email or text, then click "I already sent this" to mark it as Sent.'
         : 'Paste it into your email or text to share with your clinic.',
     });
+    if (isDraft) setConfirmMarkSentAfterShareOpen(true);
   };
 
   const handleCreateShareLink = async () => {
@@ -187,6 +188,7 @@ export function InvoiceActionBar({
         ? 'Paste it into your email or text, then click "I already sent this" to mark it as Sent.'
         : 'Paste it into your email or text to share with your clinic.',
     });
+    if (isDraft) setConfirmMarkSentAfterShareOpen(true);
   };
 
 
