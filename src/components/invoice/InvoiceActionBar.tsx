@@ -110,7 +110,14 @@ export function InvoiceActionBar({
     return true;
   };
 
-  const handleProceedAlreadySent = async () => {
+  type SentSource = 'manual' | 'pdf_download' | 'share_link';
+  const handleProceedAlreadySent = async (source: SentSource = 'manual') => {
+    if (invoice.status !== 'draft') {
+      toast.error('Invoice status changed', {
+        description: 'This invoice is no longer a draft. Refresh to see the latest status.',
+      });
+      return;
+    }
     const checklist = buildChecklistItems(profile, { ...invoice, due_date: dueDate || invoice.due_date }, items, facility);
     const incomplete = checklist.filter((i: any) => i.required && !i.complete);
     if (incomplete.length > 0) {
@@ -126,10 +133,17 @@ export function InvoiceActionBar({
       status: 'sent',
       sent_at: new Date().toISOString(),
     });
-    await onAddActivity({ invoice_id: invoice.id, action: 'marked_sent_manually', description: 'Invoice marked as sent manually (sent outside Locum Ops)' });
+    const description =
+      source === 'pdf_download'
+        ? 'Marked as sent after downloading the PDF'
+        : source === 'share_link'
+          ? 'Marked as sent after sharing the public link'
+          : 'Invoice marked as sent manually (sent outside Locum Ops)';
+    await onAddActivity({ invoice_id: invoice.id, action: 'marked_sent_manually', description });
     setSending(false);
     toast.success('Invoice marked as sent');
   };
+
 
   const handleDownloadPdf = async () => {
     if (!requireBusinessInfo()) return;
