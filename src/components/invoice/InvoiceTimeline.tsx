@@ -12,6 +12,8 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   saved: Eye,
   share_link_created: Link,
   marked_sent: Send,
+  marked_sent_manually: Send,
+  reverted_to_draft: FileText,
   payment_recorded: DollarSign,
   paid_in_full: CheckCircle,
 };
