@@ -1,32 +1,31 @@
 ## Goal
 
-When a user clicks **Add Shift** from a Clinic Detail page, the clinic is already known — they shouldn't have to confirm it as Step 1 of a 4-step wizard.
+After a user downloads an invoice PDF from a **Draft** invoice OR Ready for Review section, prompt them with a confirmation dialog asking if they want to mark it as Sent. Clicking "Mark as sent" runs the same flow as the existing "I already sent this" button.
 
-## Behavior change
+## Scope
 
-- Opening `ShiftFormDialog` from `FacilityDetailPage` skips the "Choose a clinic" step entirely.
-- The wizard becomes a **3-step flow**: Schedule → Details → Review.
-- Stepper shows "Step X of 3"; the progress dots collapse to 3.
-- The Review screen still shows the clinic row, but its "Edit" affordance is hidden (since clinic is locked to this page's facility).
-- Behavior from the global Schedule page is unchanged — still 4 steps with clinic selection first.
+Single file: `src/components/invoice/InvoiceActionBar.tsx`
 
-## Implementation
+## Behavior
 
-1. **`ShiftFormDialog.tsx`**
-   - Add an optional prop `lockedFacilityId?: string`.
-   - If provided:
-     - Initialize `facilityId` to that value, `step` to `2`.
-     - Compute `totalSteps = 3` and remap the stepper display: render Steps 2/3/4 as 1/2/3.
-     - Don't render `renderStep1`; "Back" buttons that previously went to Step 1 instead either disable or close the dialog (Step 2's Back button becomes hidden).
-     - In Step 4 (Review), drop the clinic row's "Edit" link (clinic is locked).
+1. **Trigger** — Only when invoice status is `draft` and the PDF download succeeds (`handleDownloadPdf`). Skip for Sent / Paid / Overdue invoices (no value in re-marking).
+2. **Dialog** — New `AlertDialog` titled *"Mark this invoice as sent?"* with body *"You just downloaded this invoice. If you've shared it with the clinic, mark it as sent to start tracking payment."*
+  - Cancel button: *"Not yet"*
+  - Primary CTA: *"Mark as sent"*
+3. **Action** — On confirm, run the existing `handleProceedAlreadySent()` (same checklist validation + status flip + activity log as the "I already sent this" button).
+4. **Toast** — Keep existing "PDF downloaded" success toast; the dialog opens right after.
 
-2. **`FacilityDetailPage.tsx` (`ShiftsTab`)**
-   - Pass `lockedFacilityId={facilityId}` to both `ShiftFormDialog` instances (add and edit). For edit, the dialog already shows a single screen, so this is a no-op safety net.
+## Implementation details
 
-3. **No backend, schema, or business-logic changes.** Pure UX.
+- Add state: `const [confirmMarkSentAfterDownloadOpen, setConfirmMarkSentAfterDownloadOpen] = useState(false);`
+- In `handleDownloadPdf`, after the successful download toast, add:
+  ```ts
+  if (isDraft) setConfirmMarkSentAfterDownloadOpen(true);
+  ```
+- Add a third `AlertDialog` block alongside the existing two, wired to `handleProceedAlreadySent`.
+- No changes to overdue/paid flows, no changes to Share Link flow (out of scope per request).
 
 ## Out of scope
 
-- Editing flow (already single-screen).
-- Global Schedule page entry point (keeps the clinic picker as Step 1).
-- Renaming or restructuring steps beyond hiding Step 1.
+- Triggering the same prompt after copying the share link (not requested).
+- Persisting "don't ask again" preference (not requested).

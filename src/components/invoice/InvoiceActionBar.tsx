@@ -61,6 +61,7 @@ export function InvoiceActionBar({
   const [shareLoading, setShareLoading] = useState(false);
   const [confirmAlreadySentOpen, setConfirmAlreadySentOpen] = useState(false);
   const [confirmRevertOpen, setConfirmRevertOpen] = useState(false);
+  const [confirmMarkSentAfterDownloadOpen, setConfirmMarkSentAfterDownloadOpen] = useState(false);
   
 
   const computedStatus = computeInvoiceStatus(invoice);
@@ -137,6 +138,7 @@ export function InvoiceActionBar({
       toast.success('PDF downloaded', {
         description: `${invoice.invoice_number}.pdf saved to your Downloads folder.`,
       });
+      if (isDraft) setConfirmMarkSentAfterDownloadOpen(true);
     } catch {
       toast.error('PDF generation failed', {
         description: 'Please try again in a moment.',
@@ -450,6 +452,24 @@ export function InvoiceActionBar({
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={async () => { setConfirmRevertOpen(false); await handleRevertToDraft(); }}>
               Revert to Draft
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Mark as sent after download prompt */}
+      <AlertDialog open={confirmMarkSentAfterDownloadOpen} onOpenChange={setConfirmMarkSentAfterDownloadOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Mark this invoice as sent?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You just downloaded this invoice. If you've shared it with the clinic, mark it as sent to start tracking payment.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Not yet</AlertDialogCancel>
+            <AlertDialogAction onClick={async () => { setConfirmMarkSentAfterDownloadOpen(false); await handleProceedAlreadySent(); }}>
+              Mark as sent
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
