@@ -485,7 +485,7 @@ export function InvoiceActionBar({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Not yet</AlertDialogCancel>
-            <AlertDialogAction onClick={async () => { setConfirmMarkSentAfterDownloadOpen(false); await handleProceedAlreadySent(); }}>
+            <AlertDialogAction onClick={async () => { setConfirmMarkSentAfterDownloadOpen(false); await handleProceedAlreadySent('pdf_download'); }}>
               Mark as sent
             </AlertDialogAction>
           </AlertDialogFooter>
