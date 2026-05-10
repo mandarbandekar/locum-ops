@@ -62,6 +62,7 @@ export function InvoiceActionBar({
   const [confirmAlreadySentOpen, setConfirmAlreadySentOpen] = useState(false);
   const [confirmRevertOpen, setConfirmRevertOpen] = useState(false);
   const [confirmMarkSentAfterDownloadOpen, setConfirmMarkSentAfterDownloadOpen] = useState(false);
+  const [confirmMarkSentAfterShareOpen, setConfirmMarkSentAfterShareOpen] = useState(false);
   
 
   const computedStatus = computeInvoiceStatus(invoice);
