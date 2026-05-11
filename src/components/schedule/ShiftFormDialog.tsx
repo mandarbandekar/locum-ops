@@ -976,8 +976,8 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
                 onClick={() => setColor(c.value)}
                 className={cn(
                   "w-7 h-7 rounded-full border border-border transition-all",
-                  c.bg,
-                  color === c.value ? 'ring-2 ring-foreground ring-offset-2 ring-offset-background scale-110' : 'opacity-70 hover:opacity-100 hover:scale-105'
+                  c.swatchBg,
+                  color === c.value ? 'ring-2 ring-foreground ring-offset-2 ring-offset-background scale-110' : 'opacity-90 hover:opacity-100 hover:scale-105'
                 )}
                 title={c.label}
                 aria-label={c.label}
