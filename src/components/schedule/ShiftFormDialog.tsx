@@ -516,6 +516,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
         }
       }
       onOpenChange(false);
+      setPreferredShiftColor(color);
     } catch (error) {
       console.error('Failed to save shift(s):', error);
     } finally {
