@@ -36,6 +36,20 @@ import {
   type EngagementType,
 } from '@/lib/engagementOptions';
 
+const SHIFT_COLOR_PREF_KEY = 'locumops:lastShiftColor';
+function getPreferredShiftColor(): ShiftColor {
+  if (typeof window === 'undefined') return 'blue';
+  try {
+    const v = window.localStorage.getItem(SHIFT_COLOR_PREF_KEY);
+    if (v && SHIFT_COLORS.some(c => c.value === v)) return v as ShiftColor;
+  } catch { /* ignore */ }
+  return 'blue';
+}
+function setPreferredShiftColor(c: ShiftColor) {
+  if (typeof window === 'undefined') return;
+  try { window.localStorage.setItem(SHIFT_COLOR_PREF_KEY, c); } catch { /* ignore */ }
+}
+
 interface ShiftFormDialogProps {
   open: boolean;
   onOpenChange: (o: boolean) => void;
