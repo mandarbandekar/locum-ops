@@ -93,15 +93,15 @@ export interface TermsSnapshot {
 }
 
 export type ShiftColor = 'blue' | 'green' | 'red' | 'orange' | 'purple' | 'pink' | 'teal' | 'yellow';
-export const SHIFT_COLORS: { value: ShiftColor; label: string; bg: string; text: string }[] = [
-  { value: 'blue',   label: 'Blue',   bg: 'bg-[#DBEAFE] dark:bg-[#1E3A5F]', text: 'text-[#1E3A8A] dark:text-[#BFDBFE]' },
-  { value: 'green',  label: 'Green',  bg: 'bg-[#DCFCE7] dark:bg-[#1E4D2B]', text: 'text-[#166534] dark:text-[#BBF7D0]' },
-  { value: 'red',    label: 'Red',    bg: 'bg-[#FEE2E2] dark:bg-[#5C1E1E]', text: 'text-[#991B1B] dark:text-[#FECACA]' },
-  { value: 'orange', label: 'Orange', bg: 'bg-[#FFEDD5] dark:bg-[#5C3A1E]', text: 'text-[#9A3412] dark:text-[#FED7AA]' },
-  { value: 'purple', label: 'Purple', bg: 'bg-[#EDE9FE] dark:bg-[#3D2E5C]', text: 'text-[#5B21B6] dark:text-[#DDD6FE]' },
-  { value: 'pink',   label: 'Pink',   bg: 'bg-[#FCE7F3] dark:bg-[#5C1E45]', text: 'text-[#9D174D] dark:text-[#FBCFE8]' },
-  { value: 'teal',   label: 'Teal',   bg: 'bg-[#CCFBF1] dark:bg-[#1E4D47]', text: 'text-[#115E59] dark:text-[#99F6E4]' },
-  { value: 'yellow', label: 'Yellow', bg: 'bg-[#FEF3C7] dark:bg-[#5C4A1E]', text: 'text-[#854D0E] dark:text-[#FDE68A]' },
+export const SHIFT_COLORS: { value: ShiftColor; label: string; bg: string; swatchBg: string; text: string }[] = [
+  { value: 'blue',   label: 'Blue',   bg: 'bg-[#DBEAFE] dark:bg-[#1E3A5F]', swatchBg: 'bg-[#93C5FD] dark:bg-[#2C5282]', text: 'text-[#1E3A8A] dark:text-[#BFDBFE]' },
+  { value: 'green',  label: 'Green',  bg: 'bg-[#DCFCE7] dark:bg-[#1E4D2B]', swatchBg: 'bg-[#86EFAC] dark:bg-[#2F6B41]', text: 'text-[#166534] dark:text-[#BBF7D0]' },
+  { value: 'red',    label: 'Red',    bg: 'bg-[#FEE2E2] dark:bg-[#5C1E1E]', swatchBg: 'bg-[#FCA5A5] dark:bg-[#7A2A2A]', text: 'text-[#991B1B] dark:text-[#FECACA]' },
+  { value: 'orange', label: 'Orange', bg: 'bg-[#FFEDD5] dark:bg-[#5C3A1E]', swatchBg: 'bg-[#FDBA74] dark:bg-[#7A4F2A]', text: 'text-[#9A3412] dark:text-[#FED7AA]' },
+  { value: 'purple', label: 'Purple', bg: 'bg-[#EDE9FE] dark:bg-[#3D2E5C]', swatchBg: 'bg-[#C4B5FD] dark:bg-[#553F7A]', text: 'text-[#5B21B6] dark:text-[#DDD6FE]' },
+  { value: 'pink',   label: 'Pink',   bg: 'bg-[#FCE7F3] dark:bg-[#5C1E45]', swatchBg: 'bg-[#F9A8D4] dark:bg-[#7A2A5E]', text: 'text-[#9D174D] dark:text-[#FBCFE8]' },
+  { value: 'teal',   label: 'Teal',   bg: 'bg-[#CCFBF1] dark:bg-[#1E4D47]', swatchBg: 'bg-[#5EEAD4] dark:bg-[#2A6B62]', text: 'text-[#115E59] dark:text-[#99F6E4]' },
+  { value: 'yellow', label: 'Yellow', bg: 'bg-[#FEF3C7] dark:bg-[#5C4A1E]', swatchBg: 'bg-[#FDE047] dark:bg-[#7A642A]', text: 'text-[#854D0E] dark:text-[#FDE68A]' },
 ];
 export interface Shift {
   id: string;
