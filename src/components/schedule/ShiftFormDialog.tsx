@@ -15,7 +15,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { format } from 'date-fns';
 import { SHIFT_COLORS, ShiftColor, TermsSnapshot, Shift, BLOCK_TYPES, BlockType, RateKind } from '@/types';
 import { BreakPolicySelector } from '@/components/facilities/BreakPolicySelector';
-import { getBreakPolicyLabel, formatBillableHours, formatHoursMinutes, getScheduledMinutes, getBillableMinutes, isBreakFeatureNew } from '@/lib/shiftBreak';
+import { formatBillableHours, formatHoursMinutes, getScheduledMinutes, getBillableMinutes } from '@/lib/shiftBreak';
 import { Switch } from '@/components/ui/switch';
 import { detectShiftConflicts, generateId } from '@/lib/businessLogic';
 import { cn } from '@/lib/utils';
@@ -623,24 +623,11 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
         helper = `Billable: ${billH} hours`;
       }
     }
-    const showNew = isBreakFeatureNew();
     return (
       <div className="space-y-2">
-        <div className="flex items-center gap-2 flex-wrap">
-          <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-            <Clock className="h-3.5 w-3.5" /> Shift break
-          </Label>
-          {showNew && (
-            <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-[#E1ECEF] text-[#1A5C6B] border border-[#1A5C6B]/30 dark:bg-[#1A5C6B]/30 dark:text-[#BFE0E8] uppercase tracking-wider">
-              New
-            </span>
-          )}
-          {facilityForBreak && (
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#E1ECEF] text-[#1A5C6B] border border-[#1A5C6B]/20 dark:bg-[#1A5C6B]/20 dark:text-[#BFE0E8]">
-              From clinic: {getBreakPolicyLabel(clinicDefaultBreak)}
-            </span>
-          )}
-        </div>
+        <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+          <Clock className="h-3.5 w-3.5" /> Shift break
+        </Label>
         <div className={cn(workedThroughBreak && 'opacity-50 pointer-events-none')}>
           <BreakPolicySelector value={breakMinutes} onChange={setBreakMinutes} compact />
         </div>
@@ -1160,12 +1147,11 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   /* ─── Edit mode: flat layout (unchanged) ─── */
   const renderEditForm = () => (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-      <div className="flex flex-col sm:flex-row gap-6">
-        {/* Left column: Date picker */}
-        <div className="sm:w-[280px] shrink-0 flex flex-col">
-          <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
-            <CalendarDays className="h-3.5 w-3.5" />
-            Date
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-4">
+        {/* Date */}
+        <div>
+          <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+            <CalendarDays className="h-3.5 w-3.5" /> Date
           </Label>
           <Popover>
             <PopoverTrigger asChild>
@@ -1187,163 +1173,166 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
               />
             </PopoverContent>
           </Popover>
-          {conflicts.length > 0 && (
-            <div className="mt-2 flex items-start gap-1.5 p-2 rounded-md bg-destructive/10 text-destructive">
-              <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-              <div className="text-[11px] leading-snug">
-                <p className="font-semibold">Scheduling conflict{conflicts.length > 1 ? 's' : ''}:</p>
-                {conflicts.map(c => (
-                  <p key={c.id} className="mt-0.5">
-                    {facilities.find((f: any) => f.id === c.facility_id)?.name || 'Unknown'} — {format(new Date(c.start_datetime), 'MMM d, h:mm a')} to {format(new Date(c.end_datetime), 'h:mm a')}
-                  </p>
-                ))}
-              </div>
+        </div>
+
+        {/* Facility */}
+        <div>
+          <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+            <Building2 className="h-3.5 w-3.5" /> Facility
+          </Label>
+          <Select value={facilityId} onValueChange={(v) => {
+            if (v === '__add_new__') { setShowAddFacility(true); return; }
+            handleFacilityChange(v);
+          }}>
+            <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {facilities.map(c => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              ))}
+              <SelectItem value="__add_new__" className="text-primary font-medium">
+                <span className="flex items-center gap-1.5"><Plus className="h-3.5 w-3.5" /> Add New Facility</span>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          <AddFacilityDialog open={showAddFacility} onOpenChange={setShowAddFacility} onCreated={(newId) => handleFacilityChange(newId)} />
+          {renderEngagementHelper()}
+        </div>
+
+        {/* Conflict warning (full width) */}
+        {conflicts.length > 0 && (
+          <div className="md:col-span-2 flex items-start gap-1.5 p-2 rounded-md bg-destructive/10 text-destructive">
+            <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+            <div className="text-[11px] leading-snug">
+              <p className="font-semibold">Scheduling conflict{conflicts.length > 1 ? 's' : ''}:</p>
+              {conflicts.map(c => (
+                <p key={c.id} className="mt-0.5">
+                  {facilities.find((f: any) => f.id === c.facility_id)?.name || 'Unknown'} — {format(new Date(c.start_datetime), 'MMM d, h:mm a')} to {format(new Date(c.end_datetime), 'h:mm a')}
+                </p>
+              ))}
             </div>
+          </div>
+        )}
+
+        {/* Time (full width, two pickers side-by-side) */}
+        <div className="md:col-span-2">
+          <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+            <Clock className="h-3.5 w-3.5" /> Time
+          </Label>
+          <div className="grid grid-cols-2 gap-3">
+            <TimePicker value={startTime} onChange={setStartTime} placeholder="Select start" label="Start time" />
+            <TimePicker value={endTime} onChange={setEndTime} placeholder="Select end" label="End time" />
+          </div>
+          {activeRateKind === 'hourly' && hoursInvalidReason && (
+            <p className="mt-1.5 text-[11px] text-destructive flex items-center gap-1">
+              <AlertTriangle className="h-3 w-3" /> {hoursInvalidReason}
+            </p>
           )}
         </div>
 
-        {/* Right column */}
-        <div className="flex-1 flex flex-col gap-4 min-w-0">
-          <div>
-            <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-              <Building2 className="h-3.5 w-3.5" />
-              Facility
-            </Label>
-            <Select value={facilityId} onValueChange={(v) => {
-              if (v === '__add_new__') { setShowAddFacility(true); return; }
-              handleFacilityChange(v);
-            }}>
-              <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {facilities.map(c => (
-                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                ))}
-                <SelectItem value="__add_new__" className="text-primary font-medium">
-                  <span className="flex items-center gap-1.5"><Plus className="h-3.5 w-3.5" /> Add New Facility</span>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-            <AddFacilityDialog open={showAddFacility} onOpenChange={setShowAddFacility} onCreated={(newId) => handleFacilityChange(newId)} />
-            {renderEngagementHelper()}
-          </div>
-
-          <div>
-            <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-              <Clock className="h-3.5 w-3.5" /> Time
-            </Label>
-            <div className="grid grid-cols-2 gap-3">
-              <TimePicker value={startTime} onChange={setStartTime} placeholder="Select start" label="Start time" />
-              <TimePicker value={endTime} onChange={setEndTime} placeholder="Select end" label="End time" />
-            </div>
-            {activeRateKind === 'hourly' && hoursInvalidReason && (
-              <p className="mt-1.5 text-[11px] text-destructive flex items-center gap-1">
-                <AlertTriangle className="h-3 w-3" /> {hoursInvalidReason}
-              </p>
-            )}
-          </div>
-
-          {/* Shift break */}
+        {/* Shift break (full width) */}
+        <div className="md:col-span-2">
           {renderBreakSection()}
+        </div>
 
-          <div>
-            <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-              <DollarSign className="h-3.5 w-3.5" /> Rate
-            </Label>
-            {rateOptions.length > 0 && !isCustomRate ? (
-              <RateSourcePicker
-                rateOptions={rateOptions}
-                selectedRateKey={selectedRateKey}
-                rate={rate}
-                preferRateCardOnly={preferRateCardOnly}
-                onSelect={(key, opt) => {
-                  setRate(opt.amount.toString());
-                  setSelectedRateKey(key);
-                  setIsCustomRate(false);
-                }}
-                onCustom={() => {
-                  setIsCustomRate(true);
-                  setSelectedRateKey('');
-                  setRate('');
-                }}
-              />
-            ) : (
-              <div className="space-y-2">
-                <Input type="text" value={customRateLabel} onChange={e => setCustomRateLabel(e.target.value)} placeholder="Rate label" className="h-9 text-sm" />
-                <div className="flex items-center gap-2">
-                  <div className="inline-flex rounded-md border border-border overflow-hidden h-10" role="group">
-                    {(['flat', 'hourly'] as RateKind[]).map(k => (
-                      <button
-                        key={k}
-                        type="button"
-                        onClick={() => setCustomRateKind(k)}
-                        className={cn(
-                          'px-3 text-xs font-medium transition-colors',
-                          customRateKind === k
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-background text-muted-foreground hover:bg-muted',
-                        )}
-                      >
-                        {k === 'flat' ? 'Flat' : 'Hourly'}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="relative flex-1">
-                    <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                    <Input type="number" value={rate} onChange={e => setRate(e.target.value)} placeholder="0" min={0} className="pl-7 pr-10 h-10" />
-                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground pointer-events-none">
-                      {customRateKind === 'hourly' ? '/hr' : '/day'}
-                    </span>
-                  </div>
+        {/* Rate (full width, no header — picker provides its own) */}
+        <div className="md:col-span-2">
+          {rateOptions.length > 0 && !isCustomRate ? (
+            <RateSourcePicker
+              rateOptions={rateOptions}
+              selectedRateKey={selectedRateKey}
+              rate={rate}
+              preferRateCardOnly={preferRateCardOnly}
+              onSelect={(key, opt) => {
+                setRate(opt.amount.toString());
+                setSelectedRateKey(key);
+                setIsCustomRate(false);
+              }}
+              onCustom={() => {
+                setIsCustomRate(true);
+                setSelectedRateKey('');
+                setRate('');
+              }}
+            />
+          ) : (
+            <div className="space-y-2">
+              <Input type="text" value={customRateLabel} onChange={e => setCustomRateLabel(e.target.value)} placeholder="Rate label" className="h-9 text-sm" />
+              <div className="flex items-center gap-2">
+                <div className="inline-flex rounded-md border border-border overflow-hidden h-10" role="group">
+                  {(['flat', 'hourly'] as RateKind[]).map(k => (
+                    <button
+                      key={k}
+                      type="button"
+                      onClick={() => setCustomRateKind(k)}
+                      className={cn(
+                        'px-3 text-xs font-medium transition-colors',
+                        customRateKind === k
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-background text-muted-foreground hover:bg-muted',
+                      )}
+                    >
+                      {k === 'flat' ? 'Flat' : 'Hourly'}
+                    </button>
+                  ))}
                 </div>
-                {customRateKind === 'hourly' && Number(rate) > 0 && isHoursValid && (
-                  <p className="text-[11px] text-muted-foreground">
-                    {formatHours(calculatedHours)} hrs × ${Number(rate).toLocaleString()}/hr ={' '}
-                    <span className="font-semibold text-foreground">${computedRateApplied.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  </p>
-                )}
-                {customRateKind === 'hourly' && hoursInvalidReason && (
-                  <p className="text-[11px] text-destructive flex items-center gap-1">
-                    <AlertTriangle className="h-3 w-3" /> {hoursInvalidReason}
-                  </p>
-                )}
-                <div className="flex items-center gap-2">
-                  <Checkbox id="save-custom-rate-edit" checked={saveCustomRate} onCheckedChange={(v) => setSaveCustomRate(!!v)} />
-                  <label htmlFor="save-custom-rate-edit" className="text-xs text-muted-foreground cursor-pointer">Save to facility rates</label>
+                <div className="relative flex-1">
+                  <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input type="number" value={rate} onChange={e => setRate(e.target.value)} placeholder="0" min={0} className="pl-7 pr-10 h-10" />
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground pointer-events-none">
+                    {customRateKind === 'hourly' ? '/hr' : '/day'}
+                  </span>
                 </div>
-                {rateOptions.length > 0 && isCustomRate && (
-                  <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => { setIsCustomRate(false); setCustomRateLabel(''); setSelectedRateKey('rate-0'); setRate(rateOptions[0]?.amount.toString() || ''); }}>
-                    ← Back to preset rates
-                  </Button>
-                )}
               </div>
-            )}
-          </div>
-
-          <div>
-            <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
-              <Palette className="h-3.5 w-3.5" /> Color
-            </Label>
-            <div className="flex items-center gap-2">
-              <div className="flex gap-2 flex-wrap">
-                {SHIFT_COLORS.map(c => (
-                  <button key={c.value} type="button" onClick={() => setColor(c.value)}
-                    className={cn("w-7 h-7 rounded-full border border-border transition-all", c.bg,
-                      color === c.value ? 'ring-2 ring-foreground ring-offset-2 ring-offset-background scale-110' : 'opacity-70 hover:opacity-100 hover:scale-105'
-                    )} title={c.label} aria-label={c.label} />
-                ))}
+              {customRateKind === 'hourly' && Number(rate) > 0 && isHoursValid && (
+                <p className="text-[11px] text-muted-foreground">
+                  {formatHours(calculatedHours)} hrs × ${Number(rate).toLocaleString()}/hr ={' '}
+                  <span className="font-semibold text-foreground">${computedRateApplied.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </p>
+              )}
+              {customRateKind === 'hourly' && hoursInvalidReason && (
+                <p className="text-[11px] text-destructive flex items-center gap-1">
+                  <AlertTriangle className="h-3 w-3" /> {hoursInvalidReason}
+                </p>
+              )}
+              <div className="flex items-center gap-2">
+                <Checkbox id="save-custom-rate-edit" checked={saveCustomRate} onCheckedChange={(v) => setSaveCustomRate(!!v)} />
+                <label htmlFor="save-custom-rate-edit" className="text-xs text-muted-foreground cursor-pointer">Save to facility rates</label>
               </div>
-              {!showNotes && (
-                <Button type="button" variant="ghost" size="sm" className="text-xs text-muted-foreground shrink-0 h-7 px-2 ml-auto" onClick={() => setShowNotes(true)}>
-                  <StickyNote className="h-3.5 w-3.5 mr-1" /> Add note
+              {rateOptions.length > 0 && isCustomRate && (
+                <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => { setIsCustomRate(false); setCustomRateLabel(''); setSelectedRateKey('rate-0'); setRate(rateOptions[0]?.amount.toString() || ''); }}>
+                  ← Back to preset rates
                 </Button>
               )}
             </div>
-          </div>
-
-          {showNotes && (
-            <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Shift notes..." className="resize-none text-sm" />
           )}
         </div>
+
+        {/* Color (full width) */}
+        <div className="md:col-span-2">
+          <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <Palette className="h-3.5 w-3.5" /> Color
+          </Label>
+          <div className="flex items-center gap-2">
+            <div className="flex gap-2 flex-wrap">
+              {SHIFT_COLORS.map(c => (
+                <button key={c.value} type="button" onClick={() => setColor(c.value)}
+                  className={cn("w-7 h-7 rounded-full border border-border transition-all", c.bg,
+                    color === c.value ? 'ring-2 ring-foreground ring-offset-2 ring-offset-background scale-110' : 'opacity-70 hover:opacity-100 hover:scale-105'
+                  )} title={c.label} aria-label={c.label} />
+              ))}
+            </div>
+            {!showNotes && (
+              <Button type="button" variant="ghost" size="sm" className="text-xs text-muted-foreground shrink-0 h-7 px-2 ml-auto" onClick={() => setShowNotes(true)}>
+                <StickyNote className="h-3.5 w-3.5 mr-1" /> Add note
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {showNotes && (
+          <div className="md:col-span-2">
+            <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Shift notes..." className="resize-none text-sm" />
+          </div>
+        )}
       </div>
 
       <div className="flex gap-2">
