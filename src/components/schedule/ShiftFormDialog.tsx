@@ -36,6 +36,20 @@ import {
   type EngagementType,
 } from '@/lib/engagementOptions';
 
+const SHIFT_COLOR_PREF_KEY = 'locumops:lastShiftColor';
+function getPreferredShiftColor(): ShiftColor {
+  if (typeof window === 'undefined') return 'blue';
+  try {
+    const v = window.localStorage.getItem(SHIFT_COLOR_PREF_KEY);
+    if (v && SHIFT_COLORS.some(c => c.value === v)) return v as ShiftColor;
+  } catch { /* ignore */ }
+  return 'blue';
+}
+function setPreferredShiftColor(c: ShiftColor) {
+  if (typeof window === 'undefined') return;
+  try { window.localStorage.setItem(SHIFT_COLOR_PREF_KEY, c); } catch { /* ignore */ }
+}
+
 interface ShiftFormDialogProps {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -103,7 +117,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   const [customRateKind, setCustomRateKind] = useState<RateKind>(existing?.rate_kind === 'hourly' ? 'hourly' : 'flat');
   const [saveCustomRate, setSaveCustomRate] = useState(true);
   const [notes, setNotes] = useState(existing?.notes || '');
-  const [color, setColor] = useState<ShiftColor>(existing?.color || 'blue');
+  const [color, setColor] = useState<ShiftColor>(existing?.color || getPreferredShiftColor());
   const [showNotes, setShowNotes] = useState(!!existing?.notes);
   const [showAddFacility, setShowAddFacility] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -159,7 +173,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
       setEndTime('');
       setRate('');
       setNotes('');
-      setColor('blue');
+      setColor(getPreferredShiftColor());
       setShowNotes(false);
       const fac = facilities.find(f => f.id === (facilities[0]?.id || ''));
       setShowEngagementOverride(false);
@@ -502,6 +516,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
         }
       }
       onOpenChange(false);
+      setPreferredShiftColor(color);
     } catch (error) {
       console.error('Failed to save shift(s):', error);
     } finally {
