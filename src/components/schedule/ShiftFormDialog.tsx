@@ -173,7 +173,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
       setEndTime('');
       setRate('');
       setNotes('');
-      setColor('blue');
+      setColor(getPreferredShiftColor());
       setShowNotes(false);
       const fac = facilities.find(f => f.id === (facilities[0]?.id || ''));
       setShowEngagementOverride(false);
