@@ -33,7 +33,7 @@ interface Props {
 }
 
 const OPTIONS: { value: BreakOption; label: string }[] = [
-  { value: 'paid', label: 'Paid (no deduction)' },
+  { value: 'paid', label: 'Paid' },
   { value: 'unpaid_30', label: 'Unpaid 30 min' },
   { value: 'unpaid_60', label: 'Unpaid 60 min' },
   { value: 'custom', label: 'Custom' },

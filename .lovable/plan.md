@@ -1,44 +1,55 @@
-## Goal
-Three related improvements to the Draft → Sent flow in `src/components/invoice/InvoiceActionBar.tsx` (plus a small icon/label addition in `src/components/invoice/InvoiceTimeline.tsx`).
+## Edit Shift dialog — layout cleanup & mobile polish
 
-## 1. Guard "Mark as sent" against stale state
+Scope: `src/components/schedule/ShiftFormDialog.tsx` (edit-mode `renderEditForm` + shared `renderBreakSection`). No business logic changes — visual structure only.
 
-Wrap the actual flip inside `handleProceedAlreadySent()` with a re-check of `invoice.status`:
+### 1. Remove visual clutter
 
-- If `invoice.status !== 'draft'` at the moment the user confirms (e.g. another tab moved it to Sent, or it was reverted), abort and show:
-  - `toast.error('Invoice status changed', { description: 'This invoice is no longer a draft. Refresh to see the latest status.' })`
-- This single guard protects all three confirm dialogs (existing "I already sent this", new post-download prompt, new post-share-link prompt) since they all funnel through `handleProceedAlreadySent`.
+- **Drop the `NEW` pill** next to "Shift break" in `renderBreakSection` (delete the `showNew` block).
+- **Drop the "From clinic: …" chip** next to the Shift break label. The selected segmented option already conveys the value; the inherited default still applies silently when nothing is overridden.
+- **Drop the standalone `$ RATE` section header** in edit mode. The RateSourcePicker already has its own "Choose a rate" header — the duplicate uppercase label is what makes the form feel busy.
 
-## 2. Prompt after copying / creating a share link on a Draft invoice
+### 2. Uniform section styling
 
-Reuse the same `AlertDialog` pattern. Add one prompt with two trigger points:
+Today the edit form mixes three different label treatments (uppercase mini-label with icon for Date/Facility/Time, no label for break's BreakPolicySelector, big `$ Rate` label, etc.). Standardize on one pattern:
 
-- After `handleCreateShareLink` succeeds and `isDraft === true` → open prompt.
-- After `handleCopyShareLink` runs and `isDraft === true` → open prompt.
+- Every section uses the same compact uppercase label row: `<icon> LABEL` at `text-[11px]` muted, `mb-1.5`.
+- Sections: **Date · Facility · Time · Shift break · Rate · Color**. (Rate gets its label back as part of the uniform pattern, but compact like the others — replacing the oversized `$ Rate` heading with the same `<DollarSign/> Rate` mini-label.)
+- All inputs/selectors stay at `h-10` for desktop, full-width on mobile.
 
-Dialog copy:
-- Title: *"Mark this invoice as sent?"*
-- Body: *"You just shared this invoice link. If you've sent it to the clinic, mark it as sent to start tracking payment."*
-- Cancel: *"Not yet"* · CTA: *"Mark as sent"*
-- Confirm runs `handleProceedAlreadySent` with source `'share_link'`.
+### 3. Responsive grid that doesn't break at 815px
 
-State: `confirmMarkSentAfterShareOpen`.
+Current edit form uses `flex-col sm:flex-row` with a fixed `sm:w-[280px]` left column. At the user's 815px viewport that leaves the right column ~470px wide and the BreakPolicySelector's 4-button row wraps awkwardly to 2x2 with multi-line labels (the cause of the broken-looking screenshot).
 
-## 3. Record the source of a manual "Mark as sent"
+Replace the two-column flex with a single responsive grid:
 
-No DB schema change. Encode the source through the existing `invoice_activities` row written by `handleProceedAlreadySent`:
+```text
+mobile (default)     | tablet/desktop (md:)
+─────────────────────|───────────────────────────────────
+[ Date            ]  | [ Date            ][ Facility    ]
+[ Facility        ]  | [ Time start ][ Time end ]  (col-span-2)
+[ Time s ][ Time e]  | [ Shift break  ............... ]
+[ Shift break    ]   | [ Rate  ........................ ]
+[ Rate           ]   | [ Color ......................... ]
+[ Color          ]   |
+```
 
-- Refactor `handleProceedAlreadySent(source: 'manual' | 'pdf_download' | 'share_link' = 'manual')`.
-- Action stays `'marked_sent_manually'` (back-compat for existing rows / timeline icon).
-- Description varies by source:
-  - manual → `'Invoice marked as sent manually (sent outside Locum Ops)'` (unchanged)
-  - pdf_download → `'Marked as sent after downloading the PDF'`
-  - share_link → `'Marked as sent after sharing the public link'`
-- The post-download dialog passes `'pdf_download'`; the post-share dialog passes `'share_link'`; the original "I already sent this" dialog passes `'manual'` (default).
+Implementation: `grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-4`, with Shift break / Rate / Color set to `md:col-span-2`. Drops the rigid 280px Date column and the wrapped break-pill mess.
 
-The Activity timeline (`InvoiceTimeline.tsx`) already renders `description` verbatim, so the source surfaces automatically. Add an `marked_sent_manually` entry to the `ICONS` map (currently missing — falls back to FileText) so all three variants render the `Send` icon consistently.
+### 4. BreakPolicySelector mobile fit
 
-## Out of scope
-- DB column for `sent_source` on `invoices` (the activity log is the canonical source-of-truth for status changes; adding a column would duplicate data).
-- Realtime subscription to detect status changes while the dialog is open — the on-confirm re-check covers the requested behavior.
-- Changing the existing `InvoiceStatusTimeline` stepper (it's a status visualization, not an audit trail; the audit trail is `InvoiceTimeline`).
+Inside `BreakPolicySelector` the grid is `grid-cols-2 sm:grid-cols-4`. On the new full-width row this works, but to prevent the "Paid (no deduction)" two-line label that's visible in the screenshot, shorten the option label to "Paid" (the `helper` line below already explains "no deduction"). Same component; only the label string in `OPTIONS[0]` changes.
+
+### 5. Footer
+
+Keep the `Update Shift` + delete trash button row; on mobile the trash icon stays as `h-11 w-11` next to the full-width primary button. No change.
+
+### Out of scope
+
+- Add-shift guided stepper (`renderStep1–4`) untouched.
+- Rate logic, break math, conflict detection, save flow — unchanged.
+- The clinic-default break still applies under the hood; we just stop displaying the chip.
+
+### Files touched
+
+- `src/components/schedule/ShiftFormDialog.tsx` — restructure `renderEditForm`; trim `renderBreakSection` (remove NEW pill + From-clinic chip).
+- `src/components/facilities/BreakPolicySelector.tsx` — change `'Paid (no deduction)'` label to `'Paid'`.
