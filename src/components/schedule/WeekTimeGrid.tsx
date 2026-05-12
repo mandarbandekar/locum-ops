@@ -82,6 +82,10 @@ export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, o
     return result;
   }, [weekDays, shifts, tzForFacility]);
 
+  // shiftId → list of overlapping shifts (cross-clinic). Used to outline the
+  // chip in red and surface which shift(s) overlap in the tooltip.
+  const overlapMap = useMemo(() => buildShiftOverlapMap(shifts as any), [shifts]);
+
   return (
     <div className="rounded-lg border bg-card overflow-x-auto -mx-3 sm:mx-0">
       {/* Day headers */}
