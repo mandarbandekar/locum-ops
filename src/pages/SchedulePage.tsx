@@ -163,6 +163,7 @@ export default function SchedulePage() {
   const totalRevenueInRange = activeRangeShifts.reduce((sum, s) => sum + getShiftTotalRevenue(s), 0);
 
   const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
+  const tzForFacility = (id: string) => facilities.find(f => f.id === id)?.timezone || BROWSER_TZ;
 
   const handleSaveShift = async (s: any) => {
     if (s.id) {
