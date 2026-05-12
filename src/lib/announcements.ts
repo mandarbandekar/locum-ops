@@ -56,6 +56,7 @@ export interface Announcement {
 }
 
 export const ANNOUNCEMENT_DISMISS_PREFIX = 'announcement:';
+export const ANNOUNCEMENT_HIDE_PREFIX = 'announcement-hidden:';
 
 /**
  * Registry — newest entries at the top.
