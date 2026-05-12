@@ -1386,7 +1386,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
       </div>
 
       <div className="flex gap-2">
-        <Button type="submit" className="flex-1 h-11" disabled={!canFinalize || isSubmitting}>
+        <Button type="submit" className="flex-1 h-11" disabled={!canFinalize || isSubmitting || hasBlockingConflict}>
           {isSubmitting ? 'Saving...' : 'Update Shift'}
         </Button>
         {onDelete && (
