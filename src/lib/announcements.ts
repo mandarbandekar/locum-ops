@@ -103,6 +103,11 @@ export function isAnnouncementDismissed(profile: UserProfile | null, id: string)
   return !!profile.dismissed_prompts?.[`${ANNOUNCEMENT_DISMISS_PREFIX}${id}`];
 }
 
+export function isAnnouncementHidden(profile: UserProfile | null, id: string): boolean {
+  if (!profile) return false;
+  return !!profile.dismissed_prompts?.[`${ANNOUNCEMENT_HIDE_PREFIX}${id}`];
+}
+
 export function isAnnouncementExpired(a: Announcement, now: Date = new Date()): boolean {
   if (!a.expiresAfterDays) return false;
   const published = new Date(a.publishedAt).getTime();
