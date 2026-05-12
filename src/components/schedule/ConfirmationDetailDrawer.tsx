@@ -174,7 +174,7 @@ ${clinicianName}`;
                     <TableCell className="text-sm py-2">{format(new Date(s.start_datetime), 'MMM d')}</TableCell>
                     <TableCell className="text-sm py-2">{format(new Date(s.start_datetime), 'EEE')}</TableCell>
                     <TableCell className="text-sm py-2">
-                      {format(new Date(s.start_datetime), 'h:mm a')} – {format(new Date(s.end_datetime), 'h:mm a')}
+                      {formatTimeInTz(s.start_datetime, facility?.timezone || BROWSER_TZ)} – {formatTimeInTz(s.end_datetime, facility?.timezone || BROWSER_TZ)}
                     </TableCell>
                     <TableCell className="text-sm py-2 text-muted-foreground">{s.notes || '—'}</TableCell>
                   </TableRow>
