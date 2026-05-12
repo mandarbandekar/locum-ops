@@ -8,7 +8,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, getDay, startOfWeek, endOfWeek, addWeeks, subWeeks, addDays, subDays, differenceInMilliseconds, differenceInHours } from 'date-fns';
 import { CalendarPlus, Clock, DollarSign, TrendingUp } from 'lucide-react';
 import { SHIFT_COLORS, Shift, BLOCK_TYPES, BLOCK_COLORS, TimeBlock, getShiftTotalRevenue, formatHoursDisplay } from '@/types';
-import { detectShiftConflicts } from '@/lib/businessLogic';
+import { detectShiftConflicts, buildShiftOverlapMap } from '@/lib/businessLogic';
 import { toast } from 'sonner';
 import { ShiftFormDialog } from '@/components/schedule/ShiftFormDialog';
 import { formatTimeInTz, isSameDayInTz } from '@/lib/tzTime';
@@ -273,6 +273,19 @@ export default function SchedulePage() {
     return false;
   }, []);
 
+  // Map shiftId → overlapping shifts (cross-clinic). Used to outline conflicting
+  // shift chips and surface which shift(s) overlap in the tooltip.
+  const overlapMap = useMemo(() => buildShiftOverlapMap(shifts as any), [shifts]);
+  const formatOverlapTitle = useCallback((s: any) => {
+    const others = overlapMap.get(s.id);
+    if (!others || others.length === 0) return null;
+    const lines = others.map(o => {
+      const tz = tzForFacility(o.facility_id);
+      return `• ${getFacilityName(o.facility_id)} ${formatTimeInTz(o.start_datetime, tz)}–${formatTimeInTz(o.end_datetime, tz)}`;
+    });
+    return `Overlaps with:\n${lines.join('\n')}`;
+  }, [overlapMap, getFacilityName, tzForFacility]);
+
   const renderDayCell = (day: Date, minHeight: string) => {
     const dayShifts = calendarFilters.shifts ? shifts.filter(s => isSameDayInTz(s.start_datetime, day, tzForFacility(s.facility_id))) : [];
     const dayBlocks = timeBlocks.filter(b => {
@@ -332,14 +345,16 @@ export default function SchedulePage() {
             end = new Date(end.getTime() + 24 * 60 * 60 * 1000);
           }
           const hrs = Math.max(0, differenceInHours(end, start));
+          const overlapTitle = formatOverlapTitle(s);
+          const isConflicting = !!overlapTitle;
           return (
             <div
               key={s.id}
               draggable
               onDragStart={(e) => onDragStart(e, s.id)}
-              className={`text-[10px] p-1 rounded mb-0.5 cursor-grab active:cursor-grabbing ${colorDef.bg} ${colorDef.text} hover:opacity-80 transition-opacity select-none`}
+              className={`text-[10px] p-1 rounded mb-0.5 cursor-grab active:cursor-grabbing ${colorDef.bg} ${colorDef.text} hover:opacity-80 transition-opacity select-none ${isConflicting ? 'ring-1 ring-destructive ring-offset-1 ring-offset-background' : ''}`}
               onClick={(e) => { e.stopPropagation(); setEditShift(s.id); }}
-              title={`${getFacilityName(s.facility_id)} — drag to reschedule`}
+              title={isConflicting ? `${getFacilityName(s.facility_id)}\n${overlapTitle}` : `${getFacilityName(s.facility_id)} — drag to reschedule`}
             >
               <div className="font-semibold truncate leading-tight">{getFacilityName(s.facility_id)}</div>
               <div className="truncate opacity-80">{formatTimeInTz(s.start_datetime, tzForFacility(s.facility_id)).toLowerCase().replace(' ', '')}–{formatTimeInTz(s.end_datetime, tzForFacility(s.facility_id)).toLowerCase().replace(' ', '')}</div>
