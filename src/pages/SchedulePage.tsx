@@ -273,6 +273,19 @@ export default function SchedulePage() {
     return false;
   }, []);
 
+  // Map shiftId → overlapping shifts (cross-clinic). Used to outline conflicting
+  // shift chips and surface which shift(s) overlap in the tooltip.
+  const overlapMap = useMemo(() => buildShiftOverlapMap(shifts as any), [shifts]);
+  const formatOverlapTitle = useCallback((s: any) => {
+    const others = overlapMap.get(s.id);
+    if (!others || others.length === 0) return null;
+    const lines = others.map(o => {
+      const tz = tzForFacility(o.facility_id);
+      return `• ${getFacilityName(o.facility_id)} ${formatTimeInTz(o.start_datetime, tz)}–${formatTimeInTz(o.end_datetime, tz)}`;
+    });
+    return `Overlaps with:\n${lines.join('\n')}`;
+  }, [overlapMap, getFacilityName, tzForFacility]);
+
   const renderDayCell = (day: Date, minHeight: string) => {
     const dayShifts = calendarFilters.shifts ? shifts.filter(s => isSameDayInTz(s.start_datetime, day, tzForFacility(s.facility_id))) : [];
     const dayBlocks = timeBlocks.filter(b => {
