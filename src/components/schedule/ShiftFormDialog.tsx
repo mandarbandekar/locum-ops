@@ -1148,16 +1148,26 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
         </div>
 
         {conflicts.length > 0 && (
-          <div className="flex items-start gap-1.5 p-2 rounded-md bg-destructive/10 text-destructive">
-            <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-            <div className="text-[11px] leading-snug">
-              <p className="font-semibold">Heads up — scheduling conflict{conflicts.length > 1 ? 's' : ''}:</p>
-              {conflicts.map(c => (
-                <p key={c.id} className="mt-0.5">
-                  {facilities.find((f: any) => f.id === c.facility_id)?.name || 'Unknown'} — {format(new Date(c.start_datetime), 'MMM d, h:mm a')} to {format(new Date(c.end_datetime), 'h:mm a')}
-                </p>
-              ))}
+          <div className="space-y-2 p-2 rounded-md bg-destructive/10 text-destructive">
+            <div className="flex items-start gap-1.5">
+              <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+              <div className="text-[11px] leading-snug">
+                <p className="font-semibold">Heads up — scheduling conflict{conflicts.length > 1 ? 's' : ''}:</p>
+                {conflicts.map(c => (
+                  <p key={c.id} className="mt-0.5">
+                    {facilities.find((f: any) => f.id === c.facility_id)?.name || 'Unknown'} — {format(new Date(c.start_datetime), 'MMM d, h:mm a')} to {format(new Date(c.end_datetime), 'h:mm a')}
+                  </p>
+                ))}
+              </div>
             </div>
+            <label className="flex items-center gap-2 pl-5 cursor-pointer">
+              <Checkbox
+                id="ack-conflict-step4"
+                checked={acknowledgeConflict}
+                onCheckedChange={(v) => setAcknowledgeConflict(!!v)}
+              />
+              <span className="text-[11px] font-medium">Save anyway — I know this overlaps another shift.</span>
+            </label>
           </div>
         )}
 
@@ -1165,7 +1175,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
           <Button type="button" variant="outline" onClick={() => setStep(3)} className="h-11 min-w-[100px]">
             <ChevronLeft className="h-4 w-4 mr-1" /> Back
           </Button>
-          <Button type="submit" className="flex-1 h-11" disabled={!canFinalize || isSubmitting}>
+          <Button type="submit" className="flex-1 h-11" disabled={!canFinalize || isSubmitting || hasBlockingConflict}>
             <Check className="h-4 w-4 mr-1" />
             {isSubmitting ? 'Saving...' : sortedDates.length > 1 ? `Confirm & add ${sortedDates.length} shifts` : 'Confirm & add shift'}
           </Button>
