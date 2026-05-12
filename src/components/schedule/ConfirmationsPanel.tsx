@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { ChevronLeft, ChevronRight, Send, CheckCircle, AlertTriangle, Eye } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, addMonths, subMonths } from 'date-fns';
+import { formatTimeInTz } from '@/lib/tzTime';
+const BROWSER_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
 import { getConfirmationTemplate } from '@/data/templates';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { toast } from 'sonner';
