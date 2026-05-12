@@ -342,7 +342,7 @@ export default function SchedulePage() {
               title={`${getFacilityName(s.facility_id)} — drag to reschedule`}
             >
               <div className="font-semibold truncate leading-tight">{getFacilityName(s.facility_id)}</div>
-              <div className="truncate opacity-80">{format(start, 'h:mma').toLowerCase()}–{format(end, 'h:mma').toLowerCase()}</div>
+              <div className="truncate opacity-80">{formatTimeInTz(s.start_datetime, tzForFacility(s.facility_id)).toLowerCase().replace(' ', '')}–{formatTimeInTz(s.end_datetime, tzForFacility(s.facility_id)).toLowerCase().replace(' ', '')}</div>
               <div className="truncate opacity-70">
                 {s.rate_kind === 'hourly' && s.hourly_rate
                   ? <>${s.hourly_rate}/hr · {hrs}h = ${s.rate_applied}</>
