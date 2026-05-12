@@ -189,6 +189,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     setShowAddFacility(false);
     setIsSubmitting(false);
     setStep(lockedFacilityId ? 2 : 1);
+    setAcknowledgeConflict(false);
     if (existing) {
       setBreakMinutes(existing.break_minutes !== undefined ? existing.break_minutes : null);
       setWorkedThroughBreak(!!existing.worked_through_break);
