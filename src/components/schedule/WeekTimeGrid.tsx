@@ -7,6 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { CalendarEventStack } from '@/components/schedule/CalendarEventChip';
 import { getHoursInTz, getMinutesInTz, isSameDayInTz, formatTimeInTz } from '@/lib/tzTime';
+import { buildShiftOverlapMap } from '@/lib/businessLogic';
 
 const BROWSER_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
