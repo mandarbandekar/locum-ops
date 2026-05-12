@@ -13,6 +13,8 @@ import {
   X, User, CalendarDays,
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { formatTimeInTz } from '@/lib/tzTime';
+const BROWSER_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
 import { toast } from 'sonner';
 
 interface Props {
