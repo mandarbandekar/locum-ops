@@ -80,9 +80,10 @@ export function ConfirmationsPanel() {
     const fShifts = facilityGroups[facilityId] || [];
     const tone = (profile?.email_tone as any) || 'neutral';
 
+    const tz = facility?.timezone || BROWSER_TZ;
     const shiftList = fShifts
       .sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime())
-      .map(s => `  • ${format(new Date(s.start_datetime), 'EEE, MMM d')}: ${format(new Date(s.start_datetime), 'h:mm a')} - ${format(new Date(s.end_datetime), 'h:mm a')}`)
+      .map(s => `  • ${format(new Date(s.start_datetime), 'EEE, MMM d')}: ${formatTimeInTz(s.start_datetime, tz)} - ${formatTimeInTz(s.end_datetime, tz)}`)
       .join('\n');
 
     return getConfirmationTemplate(tone)
