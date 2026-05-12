@@ -8,7 +8,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, getDay, startOfWeek, endOfWeek, addWeeks, subWeeks, addDays, subDays, differenceInMilliseconds, differenceInHours } from 'date-fns';
 import { CalendarPlus, Clock, DollarSign, TrendingUp } from 'lucide-react';
 import { SHIFT_COLORS, Shift, BLOCK_TYPES, BLOCK_COLORS, TimeBlock, getShiftTotalRevenue, formatHoursDisplay } from '@/types';
-import { detectShiftConflicts } from '@/lib/businessLogic';
+import { detectShiftConflicts, buildShiftOverlapMap } from '@/lib/businessLogic';
 import { toast } from 'sonner';
 import { ShiftFormDialog } from '@/components/schedule/ShiftFormDialog';
 import { formatTimeInTz, isSameDayInTz } from '@/lib/tzTime';
