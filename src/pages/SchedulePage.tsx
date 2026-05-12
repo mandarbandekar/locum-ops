@@ -11,6 +11,8 @@ import { SHIFT_COLORS, Shift, BLOCK_TYPES, BLOCK_COLORS, TimeBlock, getShiftTota
 import { detectShiftConflicts } from '@/lib/businessLogic';
 import { toast } from 'sonner';
 import { ShiftFormDialog } from '@/components/schedule/ShiftFormDialog';
+import { formatTimeInTz, isSameDayInTz } from '@/lib/tzTime';
+const BROWSER_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
 import { BlockTimeDialog } from '@/components/schedule/BlockTimeDialog';
 import { WeekTimeGrid } from '@/components/schedule/WeekTimeGrid';
 
