@@ -71,6 +71,16 @@ export function WhatsNewButton() {
     await updateProfile({ dismissed_prompts: updates });
   };
 
+  const dismiss = async (id: string) => {
+    await updateProfile({
+      dismissed_prompts: {
+        ...(profile.dismissed_prompts || {}),
+        [`${ANNOUNCEMENT_DISMISS_PREFIX}${id}`]: true,
+        [`${ANNOUNCEMENT_HIDE_PREFIX}${id}`]: true,
+      },
+    });
+  };
+
   const handleCta = async (a: Announcement) => {
     await markRead(a.id);
     if (a.cta) navigate(a.cta.to);
