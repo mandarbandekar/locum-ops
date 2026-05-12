@@ -220,7 +220,7 @@ export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, o
 
               return (
                 <div
-                  key={s.id}
+                  key={`${s.id}-${isHead ? 'h' : 't'}`}
                   draggable
                   onDragStart={(e) => onDragStart(e, s.id)}
                   className={`absolute rounded-md cursor-grab active:cursor-grabbing px-1.5 py-1 overflow-hidden text-xs leading-tight z-20 border border-background/20 shadow-sm hover:shadow-md hover:z-30 transition-all select-none ${colorDef.bg} ${colorDef.text}`}
