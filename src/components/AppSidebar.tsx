@@ -63,7 +63,7 @@ function useBadgeCounts() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const totalInvoiceBadge = draftInvoices + overdueInvoices;
+  const totalInvoiceBadge = awaitingPaymentInvoices + overdueInvoices;
   const invoiceBadgeVariant: NavItem['badgeVariant'] = overdueInvoices > 0 ? 'destructive' : 'secondary';
   const credentialBadgeVariant: NavItem['badgeVariant'] = expiringCredentials > 0 ? 'warning' : 'secondary';
 
