@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { ChevronLeft, ChevronRight, Send, CheckCircle, AlertTriangle, Eye } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, addMonths, subMonths } from 'date-fns';
+import { formatTimeInTz } from '@/lib/tzTime';
+const BROWSER_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
 import { getConfirmationTemplate } from '@/data/templates';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { toast } from 'sonner';
@@ -78,9 +80,10 @@ export function ConfirmationsPanel() {
     const fShifts = facilityGroups[facilityId] || [];
     const tone = (profile?.email_tone as any) || 'neutral';
 
+    const tz = facility?.timezone || BROWSER_TZ;
     const shiftList = fShifts
       .sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime())
-      .map(s => `  • ${format(new Date(s.start_datetime), 'EEE, MMM d')}: ${format(new Date(s.start_datetime), 'h:mm a')} - ${format(new Date(s.end_datetime), 'h:mm a')}`)
+      .map(s => `  • ${format(new Date(s.start_datetime), 'EEE, MMM d')}: ${formatTimeInTz(s.start_datetime, tz)} - ${formatTimeInTz(s.end_datetime, tz)}`)
       .join('\n');
 
     return getConfirmationTemplate(tone)
@@ -172,7 +175,7 @@ export function ConfirmationsPanel() {
                     {sortedShifts.map(s => (
                       <div key={s.id} className="text-xs flex justify-between text-muted-foreground">
                         <span>{format(new Date(s.start_datetime), 'EEE, MMM d')}</span>
-                        <span>{format(new Date(s.start_datetime), 'h:mma')}–{format(new Date(s.end_datetime), 'h:mma')}</span>
+                        <span>{formatTimeInTz(s.start_datetime, facility?.timezone || BROWSER_TZ).replace(' ', '').toLowerCase()}–{formatTimeInTz(s.end_datetime, facility?.timezone || BROWSER_TZ).replace(' ', '').toLowerCase()}</span>
                       </div>
                     ))}
                   </div>

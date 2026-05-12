@@ -11,6 +11,8 @@ import { SHIFT_COLORS, Shift, BLOCK_TYPES, BLOCK_COLORS, TimeBlock, getShiftTota
 import { detectShiftConflicts } from '@/lib/businessLogic';
 import { toast } from 'sonner';
 import { ShiftFormDialog } from '@/components/schedule/ShiftFormDialog';
+import { formatTimeInTz, isSameDayInTz } from '@/lib/tzTime';
+const BROWSER_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
 import { BlockTimeDialog } from '@/components/schedule/BlockTimeDialog';
 import { WeekTimeGrid } from '@/components/schedule/WeekTimeGrid';
 
@@ -161,6 +163,7 @@ export default function SchedulePage() {
   const totalRevenueInRange = activeRangeShifts.reduce((sum, s) => sum + getShiftTotalRevenue(s), 0);
 
   const getFacilityName = (id: string) => facilities.find(c => c.id === id)?.name || 'Unknown';
+  const tzForFacility = (id: string) => facilities.find(f => f.id === id)?.timezone || BROWSER_TZ;
 
   const handleSaveShift = async (s: any) => {
     if (s.id) {
@@ -271,7 +274,7 @@ export default function SchedulePage() {
   }, []);
 
   const renderDayCell = (day: Date, minHeight: string) => {
-    const dayShifts = calendarFilters.shifts ? shifts.filter(s => isSameDay(new Date(s.start_datetime), day)) : [];
+    const dayShifts = calendarFilters.shifts ? shifts.filter(s => isSameDayInTz(s.start_datetime, day, tzForFacility(s.facility_id))) : [];
     const dayBlocks = timeBlocks.filter(b => {
       const bs = new Date(b.start_datetime);
       const be = new Date(b.end_datetime);
@@ -339,7 +342,7 @@ export default function SchedulePage() {
               title={`${getFacilityName(s.facility_id)} — drag to reschedule`}
             >
               <div className="font-semibold truncate leading-tight">{getFacilityName(s.facility_id)}</div>
-              <div className="truncate opacity-80">{format(start, 'h:mma').toLowerCase()}–{format(end, 'h:mma').toLowerCase()}</div>
+              <div className="truncate opacity-80">{formatTimeInTz(s.start_datetime, tzForFacility(s.facility_id)).toLowerCase().replace(' ', '')}–{formatTimeInTz(s.end_datetime, tzForFacility(s.facility_id)).toLowerCase().replace(' ', '')}</div>
               <div className="truncate opacity-70">
                 {s.rate_kind === 'hourly' && s.hourly_rate
                   ? <>${s.hourly_rate}/hr · {hrs}h = ${s.rate_applied}</>
@@ -604,7 +607,7 @@ export default function SchedulePage() {
                           <tr className="border-b last:border-0 hover:bg-muted/30 cursor-pointer" onClick={() => setEditShift(s.id)}>
                             <td className="p-3">{format(new Date(s.start_datetime), 'EEE, MMM d')}</td>
                             <td className="p-3 font-medium">{getFacilityName(s.facility_id)}</td>
-                            <td className="p-3 text-muted-foreground hidden md:table-cell">{format(new Date(s.start_datetime), 'h:mm a')} – {format(new Date(s.end_datetime), 'h:mm a')}</td>
+                            <td className="p-3 text-muted-foreground hidden md:table-cell">{formatTimeInTz(s.start_datetime, tzForFacility(s.facility_id))} – {formatTimeInTz(s.end_datetime, tzForFacility(s.facility_id))}</td>
                             <td className="p-3 text-muted-foreground hidden md:table-cell">{hrs}h</td>
                             <td className="p-3 font-medium">
                               <div className="flex items-center gap-1.5 flex-wrap">

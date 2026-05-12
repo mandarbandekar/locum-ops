@@ -13,6 +13,8 @@ import {
   X, User, CalendarDays,
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { formatTimeInTz } from '@/lib/tzTime';
+const BROWSER_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
 import { toast } from 'sonner';
 
 interface Props {
@@ -42,8 +44,9 @@ export function ConfirmationDetailDrawer({ facilityId, monthKey, open, onClose }
   // Generate default message body
   const clinicianName = profile ? `${profile.first_name} ${profile.last_name}` : 'Your Locum Clinician';
   const defaultBody = useMemo(() => {
+    const tz = facility?.timezone || BROWSER_TZ;
     const shiftList = bookedShifts
-      .map(s => `  - ${format(new Date(s.start_datetime), 'EEE, MMM d')} — ${format(new Date(s.start_datetime), 'h:mm a')} – ${format(new Date(s.end_datetime), 'h:mm a')}`)
+      .map(s => `  - ${format(new Date(s.start_datetime), 'EEE, MMM d')} — ${formatTimeInTz(s.start_datetime, tz)} – ${formatTimeInTz(s.end_datetime, tz)}`)
       .join('\n');
 
     return `Hi ${contact?.name || 'Team'},
@@ -171,7 +174,7 @@ ${clinicianName}`;
                     <TableCell className="text-sm py-2">{format(new Date(s.start_datetime), 'MMM d')}</TableCell>
                     <TableCell className="text-sm py-2">{format(new Date(s.start_datetime), 'EEE')}</TableCell>
                     <TableCell className="text-sm py-2">
-                      {format(new Date(s.start_datetime), 'h:mm a')} – {format(new Date(s.end_datetime), 'h:mm a')}
+                      {formatTimeInTz(s.start_datetime, facility?.timezone || BROWSER_TZ)} – {formatTimeInTz(s.end_datetime, facility?.timezone || BROWSER_TZ)}
                     </TableCell>
                     <TableCell className="text-sm py-2 text-muted-foreground">{s.notes || '—'}</TableCell>
                   </TableRow>
