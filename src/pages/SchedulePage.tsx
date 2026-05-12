@@ -607,7 +607,7 @@ export default function SchedulePage() {
                           <tr className="border-b last:border-0 hover:bg-muted/30 cursor-pointer" onClick={() => setEditShift(s.id)}>
                             <td className="p-3">{format(new Date(s.start_datetime), 'EEE, MMM d')}</td>
                             <td className="p-3 font-medium">{getFacilityName(s.facility_id)}</td>
-                            <td className="p-3 text-muted-foreground hidden md:table-cell">{format(new Date(s.start_datetime), 'h:mm a')} – {format(new Date(s.end_datetime), 'h:mm a')}</td>
+                            <td className="p-3 text-muted-foreground hidden md:table-cell">{formatTimeInTz(s.start_datetime, tzForFacility(s.facility_id))} – {formatTimeInTz(s.end_datetime, tzForFacility(s.facility_id))}</td>
                             <td className="p-3 text-muted-foreground hidden md:table-cell">{hrs}h</td>
                             <td className="p-3 font-medium">
                               <div className="flex items-center gap-1.5 flex-wrap">
