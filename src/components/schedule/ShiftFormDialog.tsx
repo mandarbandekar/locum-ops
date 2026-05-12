@@ -399,6 +399,13 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     return allConflicts;
   }, [shifts, selectedDates, startTime, endTime, existing?.id, facilityId, isSubmitting, buildStartEndIso, breakMinutes, workedThroughBreak]);
 
+  // Clear stale "save anyway" acknowledgement whenever the conflict set changes,
+  // so the user must re-confirm if they tweak time/date and a new overlap appears.
+  const conflictFingerprint = conflicts.map(c => c.id).sort().join('|');
+  useEffect(() => {
+    setAcknowledgeConflict(false);
+  }, [conflictFingerprint]);
+
   const saveCustomRateToTerms = useCallback(async () => {
     if (!isCustomRate || !saveCustomRate || !rate || Number(rate) <= 0) return;
     if (!facilityId) return;
