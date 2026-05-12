@@ -110,12 +110,8 @@ export function mapDefaultRatesToRateEntries(defaults: DefaultRate[]): RateEntry
   const hourly = active.filter(r => r.basis === 'hourly').sort((a, b) => a.sort_order - b.sort_order);
   const out: RateEntry[] = [];
 
-  daily.forEach((r, i) => {
-    if (i === 0) {
-      out.push({ type: 'weekday', label: 'Weekday Rate', amount: r.amount, kind: 'flat', shift_type: r.shift_type });
-    } else {
-      out.push({ type: 'custom', label: r.name.trim(), amount: r.amount, kind: 'flat', shift_type: r.shift_type });
-    }
+  daily.forEach((r) => {
+    out.push({ type: 'custom', label: r.name.trim(), amount: r.amount, kind: 'flat', shift_type: r.shift_type });
   });
   hourly.forEach(r => {
     out.push({ type: 'custom', label: r.name.trim(), amount: r.amount, kind: 'hourly', shift_type: r.shift_type });
