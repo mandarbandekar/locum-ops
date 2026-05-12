@@ -1,11 +1,14 @@
 import { useState, useRef, useCallback, useMemo, DragEvent } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { format, isSameDay, getHours, getMinutes } from 'date-fns';
-import { SHIFT_COLORS, BLOCK_COLORS, BLOCK_TYPES, TimeBlock } from '@/types';
+import { SHIFT_COLORS, BLOCK_COLORS, BLOCK_TYPES, TimeBlock, Facility } from '@/types';
 import { getMarkersForDay } from '@/lib/calendarMarkers';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { CalendarEventStack } from '@/components/schedule/CalendarEventChip';
+import { getHoursInTz, getMinutesInTz, isSameDayInTz, formatTimeInTz } from '@/lib/tzTime';
+
+const BROWSER_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 const DEFAULT_HOURS = Array.from({ length: 18 }, (_, i) => i + 5); // 5 AM – 10 PM
 const FULL_DAY_HOURS = Array.from({ length: 24 }, (_, i) => i); // 12 AM – 11 PM
@@ -24,10 +27,12 @@ interface WeekTimeGridProps {
   timeBlocks?: TimeBlock[];
   onEditBlock?: (id: string) => void;
   fullDay?: boolean;
+  facilities?: Facility[];
 }
 
-export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, onDropOnTime, onCellClick, calendarFilters, getEventsForDay, timeBlocks = [], onEditBlock, fullDay = false }: WeekTimeGridProps) {
+export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, onDropOnTime, onCellClick, calendarFilters, getEventsForDay, timeBlocks = [], onEditBlock, fullDay = false, facilities = [] }: WeekTimeGridProps) {
   const HOURS = fullDay ? FULL_DAY_HOURS : DEFAULT_HOURS;
+  const tzForFacility = useCallback((id: string) => facilities.find(f => f.id === id)?.timezone || BROWSER_TZ, [facilities]);
   const [dragOverCell, setDragOverCell] = useState<string | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 
@@ -61,7 +66,7 @@ export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, o
   const doubleBookedDays = useMemo(() => {
     const result = new Set<number>();
     weekDays.forEach((day, di) => {
-      const dayShifts = shifts.filter(s => isSameDay(new Date(s.start_datetime), day) && s.status !== 'canceled');
+      const dayShifts = shifts.filter(s => isSameDayInTz(s.start_datetime, day, tzForFacility(s.facility_id)) && s.status !== 'canceled');
       for (let i = 0; i < dayShifts.length; i++) {
         for (let j = i + 1; j < dayShifts.length; j++) {
           const aS = new Date(dayShifts[i].start_datetime).getTime();
@@ -74,7 +79,7 @@ export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, o
       }
     });
     return result;
-  }, [weekDays, shifts]);
+  }, [weekDays, shifts, tzForFacility]);
 
   return (
     <div className="rounded-lg border bg-card overflow-x-auto -mx-3 sm:mx-0">
@@ -179,18 +184,23 @@ export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, o
 
           {/* Shift blocks – absolutely positioned over the grid */}
           {weekDays.map((day, dayIndex) => {
-            const dayShifts = shifts.filter(s => isSameDay(new Date(s.start_datetime), day));
+            const dayShifts = shifts.filter(s => isSameDayInTz(s.start_datetime, day, tzForFacility(s.facility_id)));
             return dayShifts.map(s => {
-              const start = new Date(s.start_datetime);
-              const end = new Date(s.end_datetime);
-              const startHour = getHours(start) + getMinutes(start) / 60;
-              const endHour = getHours(end) + getMinutes(end) / 60;
+              const tz = tzForFacility(s.facility_id);
+              const startHour = getHoursInTz(s.start_datetime, tz) + getMinutesInTz(s.start_datetime, tz) / 60;
+              // For end, if it crosses past midnight in clinic tz, clamp to end of day for rendering.
+              const endSameDay = isSameDayInTz(s.end_datetime, day, tz);
+              const endHourRaw = getHoursInTz(s.end_datetime, tz) + getMinutesInTz(s.end_datetime, tz) / 60;
+              const endHour = endSameDay ? (endHourRaw === 0 ? 24 : endHourRaw) : 24;
               const topOffset = (startHour - HOURS[0]) * HOUR_HEIGHT;
               const height = Math.max((endHour - startHour) * HOUR_HEIGHT, 24);
               const colorDef = SHIFT_COLORS.find(c => c.value === (s.color || 'blue')) || SHIFT_COLORS[0];
 
               const leftCalc = `calc(${GUTTER_WIDTH}px + (100% - ${GUTTER_WIDTH}px) * ${dayIndex} / 7 + 2px)`;
               const widthCalc = `calc((100% - ${GUTTER_WIDTH}px) / 7 - 4px)`;
+
+              const startLabel = formatTimeInTz(s.start_datetime, tz);
+              const endLabel = formatTimeInTz(s.end_datetime, tz);
 
               return (
                 <div
@@ -205,12 +215,12 @@ export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, o
                     width: widthCalc,
                   }}
                   onClick={() => onEditShift(s.id)}
-                  title={`${getFacilityName(s.facility_id)}\n${format(start, 'h:mm a')} – ${format(end, 'h:mm a')}\nDrag to reschedule`}
+                  title={`${getFacilityName(s.facility_id)}\n${startLabel} – ${endLabel}\nDrag to reschedule`}
                 >
                   <div className="font-semibold truncate">{getFacilityName(s.facility_id)}</div>
                   {height >= 40 && (
                     <div className="opacity-80 truncate text-[10px]">
-                      {format(start, 'h:mm a')} – {format(end, 'h:mm a')}
+                      {startLabel} – {endLabel}
                     </div>
                   )}
                   {height >= 60 && (
