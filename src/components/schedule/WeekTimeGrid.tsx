@@ -66,7 +66,7 @@ export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, o
   const doubleBookedDays = useMemo(() => {
     const result = new Set<number>();
     weekDays.forEach((day, di) => {
-      const dayShifts = shifts.filter(s => isSameDay(new Date(s.start_datetime), day) && s.status !== 'canceled');
+      const dayShifts = shifts.filter(s => isSameDayInTz(s.start_datetime, day, tzForFacility(s.facility_id)) && s.status !== 'canceled');
       for (let i = 0; i < dayShifts.length; i++) {
         for (let j = i + 1; j < dayShifts.length; j++) {
           const aS = new Date(dayShifts[i].start_datetime).getTime();
@@ -79,7 +79,7 @@ export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, o
       }
     });
     return result;
-  }, [weekDays, shifts]);
+  }, [weekDays, shifts, tzForFacility]);
 
   return (
     <div className="rounded-lg border bg-card overflow-x-auto -mx-3 sm:mx-0">
