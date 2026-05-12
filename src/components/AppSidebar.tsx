@@ -35,8 +35,8 @@ function useBadgeCounts() {
   const { invoices } = useData();
   const { user, isDemo } = useAuth();
 
-  const draftInvoices = useMemo(
-    () => invoices.filter(inv => computeInvoiceStatus(inv) === 'draft').length,
+  const awaitingPaymentInvoices = useMemo(
+    () => invoices.filter(inv => computeInvoiceStatus(inv) === 'sent').length,
     [invoices],
   );
 
