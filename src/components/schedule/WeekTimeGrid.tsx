@@ -1,11 +1,14 @@
 import { useState, useRef, useCallback, useMemo, DragEvent } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { format, isSameDay, getHours, getMinutes } from 'date-fns';
-import { SHIFT_COLORS, BLOCK_COLORS, BLOCK_TYPES, TimeBlock } from '@/types';
+import { SHIFT_COLORS, BLOCK_COLORS, BLOCK_TYPES, TimeBlock, Facility } from '@/types';
 import { getMarkersForDay } from '@/lib/calendarMarkers';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { CalendarEventStack } from '@/components/schedule/CalendarEventChip';
+import { getHoursInTz, getMinutesInTz, isSameDayInTz, formatTimeInTz } from '@/lib/tzTime';
+
+const BROWSER_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 const DEFAULT_HOURS = Array.from({ length: 18 }, (_, i) => i + 5); // 5 AM – 10 PM
 const FULL_DAY_HOURS = Array.from({ length: 24 }, (_, i) => i); // 12 AM – 11 PM
