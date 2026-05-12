@@ -445,6 +445,8 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   if (!rateIsValid) missingFields.push('a rate');
   const canFinalize = !missingFields.length && !hoursInvalidReason;
 
+  const hasBlockingConflict = conflicts.length > 0 && !acknowledgeConflict;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (hoursInvalidReason) {
@@ -453,6 +455,10 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     }
     if (!canFinalize) {
       toast.error(`Please add ${missingFields.join(', ')} before saving.`);
+      return;
+    }
+    if (hasBlockingConflict) {
+      toast.error('This shift overlaps another. Tick "Save anyway" to confirm the double-booking.');
       return;
     }
     setIsSubmitting(true);
