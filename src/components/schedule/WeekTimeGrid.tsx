@@ -182,16 +182,32 @@ export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, o
             </div>
           ))}
 
-          {/* Shift blocks – absolutely positioned over the grid */}
+          {/* Shift blocks – absolutely positioned over the grid.
+              Overnight shifts render as two segments: head on the start day (start → 24:00),
+              tail on the next day (0:00 → end). */}
           {weekDays.map((day, dayIndex) => {
-            const dayShifts = shifts.filter(s => isSameDayInTz(s.start_datetime, day, tzForFacility(s.facility_id)));
+            const dayShifts = shifts.filter(s => {
+              const tz = tzForFacility(s.facility_id);
+              if (isSameDayInTz(s.start_datetime, day, tz)) return true;
+              // Tail of an overnight shift that started the previous day.
+              if (isSameDayInTz(s.end_datetime, day, tz)) {
+                const startsBefore = !isSameDayInTz(s.start_datetime, day, tz);
+                const endHourRaw = getHoursInTz(s.end_datetime, tz) + getMinutesInTz(s.end_datetime, tz) / 60;
+                return startsBefore && endHourRaw > 0;
+              }
+              return false;
+            });
             return dayShifts.map(s => {
               const tz = tzForFacility(s.facility_id);
-              const startHour = getHoursInTz(s.start_datetime, tz) + getMinutesInTz(s.start_datetime, tz) / 60;
-              // For end, if it crosses past midnight in clinic tz, clamp to end of day for rendering.
+              const isHead = isSameDayInTz(s.start_datetime, day, tz);
               const endSameDay = isSameDayInTz(s.end_datetime, day, tz);
+              const startHour = isHead
+                ? getHoursInTz(s.start_datetime, tz) + getMinutesInTz(s.start_datetime, tz) / 60
+                : 0;
               const endHourRaw = getHoursInTz(s.end_datetime, tz) + getMinutesInTz(s.end_datetime, tz) / 60;
-              const endHour = endSameDay ? (endHourRaw === 0 ? 24 : endHourRaw) : 24;
+              const endHour = isHead
+                ? (endSameDay ? (endHourRaw === 0 ? 24 : endHourRaw) : 24)
+                : (endHourRaw === 0 ? 24 : endHourRaw);
               const topOffset = (startHour - HOURS[0]) * HOUR_HEIGHT;
               const height = Math.max((endHour - startHour) * HOUR_HEIGHT, 24);
               const colorDef = SHIFT_COLORS.find(c => c.value === (s.color || 'blue')) || SHIFT_COLORS[0];
