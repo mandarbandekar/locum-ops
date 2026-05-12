@@ -56,6 +56,7 @@ export interface Announcement {
 }
 
 export const ANNOUNCEMENT_DISMISS_PREFIX = 'announcement:';
+export const ANNOUNCEMENT_HIDE_PREFIX = 'announcement-hidden:';
 
 /**
  * Registry — newest entries at the top.
@@ -102,6 +103,11 @@ export function isAnnouncementDismissed(profile: UserProfile | null, id: string)
   return !!profile.dismissed_prompts?.[`${ANNOUNCEMENT_DISMISS_PREFIX}${id}`];
 }
 
+export function isAnnouncementHidden(profile: UserProfile | null, id: string): boolean {
+  if (!profile) return false;
+  return !!profile.dismissed_prompts?.[`${ANNOUNCEMENT_HIDE_PREFIX}${id}`];
+}
+
 export function isAnnouncementExpired(a: Announcement, now: Date = new Date()): boolean {
   if (!a.expiresAfterDays) return false;
   const published = new Date(a.publishedAt).getTime();
@@ -122,6 +128,7 @@ function audienceMatches(a: Announcement, ctx: AnnouncementContext): boolean {
 export function getVisibleAnnouncements(ctx: AnnouncementContext, now: Date = new Date()): Announcement[] {
   return announcements
     .filter(a => !isAnnouncementExpired(a, now))
+    .filter(a => !isAnnouncementHidden(ctx.profile, a.id))
     .filter(a => audienceMatches(a, ctx))
     .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
 }

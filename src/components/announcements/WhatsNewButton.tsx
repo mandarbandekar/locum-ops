@@ -13,6 +13,7 @@ import {
   getUnreadAnnouncements,
   isAnnouncementDismissed,
   ANNOUNCEMENT_DISMISS_PREFIX,
+  ANNOUNCEMENT_HIDE_PREFIX,
   type Announcement,
 } from '@/lib/announcements';
 import { cn } from '@/lib/utils';
@@ -68,6 +69,16 @@ export function WhatsNewButton() {
     const updates = { ...(profile.dismissed_prompts || {}) };
     for (const a of visible) updates[`${ANNOUNCEMENT_DISMISS_PREFIX}${a.id}`] = true;
     await updateProfile({ dismissed_prompts: updates });
+  };
+
+  const dismiss = async (id: string) => {
+    await updateProfile({
+      dismissed_prompts: {
+        ...(profile.dismissed_prompts || {}),
+        [`${ANNOUNCEMENT_DISMISS_PREFIX}${id}`]: true,
+        [`${ANNOUNCEMENT_HIDE_PREFIX}${id}`]: true,
+      },
+    });
   };
 
   const handleCta = async (a: Announcement) => {
@@ -136,16 +147,15 @@ export function WhatsNewButton() {
                       <p className="text-[13px] font-semibold text-foreground leading-snug">
                         {a.title}
                       </p>
-                      {unreadItem && (
-                        <button
-                          type="button"
-                          onClick={() => markRead(a.id)}
-                          className="shrink-0 text-muted-foreground hover:text-foreground"
-                          aria-label="Mark as read"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => dismiss(a.id)}
+                        className="shrink-0 text-muted-foreground hover:text-foreground"
+                        aria-label="Dismiss"
+                        title="Dismiss"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
                     </div>
                     <p className="text-[12px] text-muted-foreground leading-relaxed mt-0.5">
                       {a.body}
