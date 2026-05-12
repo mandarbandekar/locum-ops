@@ -223,12 +223,21 @@ export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, o
               const startLabel = formatTimeInTz(s.start_datetime, tz);
               const endLabel = formatTimeInTz(s.end_datetime, tz);
 
+              const overlaps = overlapMap.get(s.id);
+              const isConflicting = !!overlaps && overlaps.length > 0;
+              const overlapTooltip = isConflicting
+                ? `\nOverlaps with:\n${overlaps!.map(o => {
+                    const otz = tzForFacility(o.facility_id);
+                    return `• ${getFacilityName(o.facility_id)} ${formatTimeInTz(o.start_datetime, otz)}–${formatTimeInTz(o.end_datetime, otz)}`;
+                  }).join('\n')}`
+                : '';
+
               return (
                 <div
                   key={`${s.id}-${isHead ? 'h' : 't'}`}
                   draggable
                   onDragStart={(e) => onDragStart(e, s.id)}
-                  className={`absolute rounded-md cursor-grab active:cursor-grabbing px-1.5 py-1 overflow-hidden text-xs leading-tight z-20 border border-background/20 shadow-sm hover:shadow-md hover:z-30 transition-all select-none ${colorDef.bg} ${colorDef.text}`}
+                  className={`absolute rounded-md cursor-grab active:cursor-grabbing px-1.5 py-1 overflow-hidden text-xs leading-tight z-20 border border-background/20 shadow-sm hover:shadow-md hover:z-30 transition-all select-none ${colorDef.bg} ${colorDef.text} ${isConflicting ? 'ring-1 ring-destructive ring-offset-1 ring-offset-background' : ''}`}
                   style={{
                     top: `${topOffset}px`,
                     height: `${height}px`,
@@ -236,7 +245,7 @@ export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, o
                     width: widthCalc,
                   }}
                   onClick={() => onEditShift(s.id)}
-                  title={`${getFacilityName(s.facility_id)}\n${startLabel} – ${endLabel}\nDrag to reschedule`}
+                  title={`${getFacilityName(s.facility_id)}\n${startLabel} – ${endLabel}${overlapTooltip}\nDrag to reschedule`}
                 >
                   <div className="font-semibold truncate">{getFacilityName(s.facility_id)}</div>
                   {height >= 40 && (
