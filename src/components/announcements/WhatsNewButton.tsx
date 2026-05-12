@@ -13,6 +13,7 @@ import {
   getUnreadAnnouncements,
   isAnnouncementDismissed,
   ANNOUNCEMENT_DISMISS_PREFIX,
+  ANNOUNCEMENT_HIDE_PREFIX,
   type Announcement,
 } from '@/lib/announcements';
 import { cn } from '@/lib/utils';
