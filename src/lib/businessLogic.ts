@@ -68,6 +68,22 @@ export function detectShiftConflictsDetailed(
   return out;
 }
 
+/**
+ * Build a map of shiftId → list of shifts it overlaps with (cross-clinic).
+ * Excludes break-absorbable overlaps so it matches what the form treats as a
+ * real conflict. Use to outline conflicting shifts on the calendar.
+ */
+export function buildShiftOverlapMap(shifts: Shift[]): Map<string, Shift[]> {
+  const map = new Map<string, Shift[]>();
+  for (const s of shifts) {
+    const others = detectShiftConflictsDetailed(shifts, s)
+      .filter(c => !c.isBreakAbsorbable)
+      .map(c => c.shift);
+    if (others.length > 0) map.set(s.id, others);
+  }
+  return map;
+}
+
 export function computeInvoiceStatus(invoice: Invoice): InvoiceStatus | 'overdue' {
   if (invoice.status === 'paid' || invoice.status === 'draft') return invoice.status;
   if (isInvoiceOverdue(invoice)) return 'overdue';
