@@ -13,6 +13,8 @@ import {
   CalendarDays, Copy, User, UserPlus, History, Building,
 } from 'lucide-react';
 import { format, addMonths, subMonths } from 'date-fns';
+import { formatTimeInTz } from '@/lib/tzTime';
+const BROWSER_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
 import { FacilityConfirmationSettingsCard } from './FacilityConfirmationSettingsCard';
 import { toast } from 'sonner';
 
