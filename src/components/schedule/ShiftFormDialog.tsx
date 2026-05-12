@@ -128,6 +128,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     existing?.break_minutes !== undefined ? existing.break_minutes : clinicDefaultBreak,
   );
   const [workedThroughBreak, setWorkedThroughBreak] = useState<boolean>(!!existing?.worked_through_break);
+  const [acknowledgeConflict, setAcknowledgeConflict] = useState(false);
 
   const isMobile = useIsMobile();
   const { updateTerms, timeBlocks } = useData();
