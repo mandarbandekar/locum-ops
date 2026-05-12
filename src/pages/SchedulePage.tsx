@@ -538,6 +538,7 @@ export default function SchedulePage() {
                 <WeekTimeGrid
                   weekDays={weekDays}
                   shifts={calendarFilters.shifts ? shifts : []}
+                  facilities={facilities}
                   getFacilityName={getFacilityName}
                   onEditShift={setEditShift}
                   onDropOnTime={handleDropOnTime}
