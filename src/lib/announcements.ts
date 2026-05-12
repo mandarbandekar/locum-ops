@@ -128,6 +128,7 @@ function audienceMatches(a: Announcement, ctx: AnnouncementContext): boolean {
 export function getVisibleAnnouncements(ctx: AnnouncementContext, now: Date = new Date()): Announcement[] {
   return announcements
     .filter(a => !isAnnouncementExpired(a, now))
+    .filter(a => !isAnnouncementHidden(ctx.profile, a.id))
     .filter(a => audienceMatches(a, ctx))
     .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
 }
