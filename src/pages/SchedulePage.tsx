@@ -274,7 +274,7 @@ export default function SchedulePage() {
   }, []);
 
   const renderDayCell = (day: Date, minHeight: string) => {
-    const dayShifts = calendarFilters.shifts ? shifts.filter(s => isSameDay(new Date(s.start_datetime), day)) : [];
+    const dayShifts = calendarFilters.shifts ? shifts.filter(s => isSameDayInTz(s.start_datetime, day, tzForFacility(s.facility_id))) : [];
     const dayBlocks = timeBlocks.filter(b => {
       const bs = new Date(b.start_datetime);
       const be = new Date(b.end_datetime);
