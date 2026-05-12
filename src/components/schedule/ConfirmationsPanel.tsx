@@ -175,7 +175,7 @@ export function ConfirmationsPanel() {
                     {sortedShifts.map(s => (
                       <div key={s.id} className="text-xs flex justify-between text-muted-foreground">
                         <span>{format(new Date(s.start_datetime), 'EEE, MMM d')}</span>
-                        <span>{format(new Date(s.start_datetime), 'h:mma')}–{format(new Date(s.end_datetime), 'h:mma')}</span>
+                        <span>{formatTimeInTz(s.start_datetime, facility?.timezone || BROWSER_TZ).replace(' ', '').toLowerCase()}–{formatTimeInTz(s.end_datetime, facility?.timezone || BROWSER_TZ).replace(' ', '').toLowerCase()}</span>
                       </div>
                     ))}
                   </div>
