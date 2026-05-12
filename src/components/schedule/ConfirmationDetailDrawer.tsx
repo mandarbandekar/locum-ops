@@ -44,8 +44,9 @@ export function ConfirmationDetailDrawer({ facilityId, monthKey, open, onClose }
   // Generate default message body
   const clinicianName = profile ? `${profile.first_name} ${profile.last_name}` : 'Your Locum Clinician';
   const defaultBody = useMemo(() => {
+    const tz = facility?.timezone || BROWSER_TZ;
     const shiftList = bookedShifts
-      .map(s => `  - ${format(new Date(s.start_datetime), 'EEE, MMM d')} — ${format(new Date(s.start_datetime), 'h:mm a')} – ${format(new Date(s.end_datetime), 'h:mm a')}`)
+      .map(s => `  - ${format(new Date(s.start_datetime), 'EEE, MMM d')} — ${formatTimeInTz(s.start_datetime, tz)} – ${formatTimeInTz(s.end_datetime, tz)}`)
       .join('\n');
 
     return `Hi ${contact?.name || 'Team'},
