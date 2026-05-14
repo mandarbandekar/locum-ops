@@ -593,6 +593,8 @@ function ShiftsTab({ shifts, allShifts, facilityId, facilities, terms, onAdd, on
 // ─── Invoices Tab ──────────────────────────────────────────
 
 function InvoicesTab({ invoices, onNavigate }: { invoices: any[]; onNavigate: (id: string) => void }) {
+  const { profile } = useUserProfile();
+  const profileTz = profile?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
   return (
     <TabSection title="Invoices for this clinic">
       {invoices.length === 0 ? (
