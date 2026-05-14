@@ -178,11 +178,14 @@ export default function SchedulePage() {
   const handleDropOnDay = useCallback((shiftId: string, targetDate: Date) => {
     const shift = shifts.find(s => s.id === shiftId);
     if (!shift) return;
+    const tz = tzForFacility(shift.facility_id);
     const oldStart = new Date(shift.start_datetime);
     const oldEnd = new Date(shift.end_datetime);
     const duration = differenceInMilliseconds(oldEnd, oldStart);
-    const newStart = new Date(targetDate);
-    newStart.setHours(oldStart.getHours(), oldStart.getMinutes(), oldStart.getSeconds(), 0);
+    // Preserve clinic-local time-of-day; only the calendar date changes.
+    const hhmm = formatHHMMInTz(oldStart, tz);
+    const ymd = format(targetDate, 'yyyy-MM-dd');
+    const newStart = zonedWallClockToUtc(ymd, hhmm, tz);
     const newEnd = new Date(newStart.getTime() + duration);
     if (newStart.getTime() === oldStart.getTime()) return;
     const otherShifts = shifts.filter(s => s.id !== shiftId);
@@ -198,22 +201,26 @@ export default function SchedulePage() {
   const handleDropOnTime = useCallback((shiftId: string, targetDate: Date, targetHour: number) => {
     const shift = shifts.find(s => s.id === shiftId);
     if (!shift) return;
+    const tz = tzForFacility(shift.facility_id);
     const oldStart = new Date(shift.start_datetime);
     const oldEnd = new Date(shift.end_datetime);
     const duration = differenceInMilliseconds(oldEnd, oldStart);
-    const newStart = new Date(targetDate);
     const fullHours = Math.floor(targetHour);
     const minutes = Math.round((targetHour - fullHours) * 60 / 15) * 15;
-    newStart.setHours(fullHours, minutes, 0, 0);
+    const hhmm = `${String(fullHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+    const ymd = format(targetDate, 'yyyy-MM-dd');
+    // Grid columns are clinic-tz; interpret the drop in clinic tz so it lands
+    // on the visible cell, regardless of the user's current browser tz.
+    const newStart = zonedWallClockToUtc(ymd, hhmm, tz);
     const newEnd = new Date(newStart.getTime() + duration);
     if (newStart.getTime() === oldStart.getTime()) return;
     const otherShifts = shifts.filter(s => s.id !== shiftId);
     const conflicts = detectShiftConflicts(otherShifts, { start_datetime: newStart.toISOString(), end_datetime: newEnd.toISOString() });
     if (conflicts.length > 0) {
-      toast.warning(`Scheduling conflict at ${format(newStart, 'h:mm a')} with ${getFacilityName(conflicts[0].facility_id)}`);
+      toast.warning(`Scheduling conflict at ${formatTimeInTz(newStart, tz)} with ${getFacilityName(conflicts[0].facility_id)}`);
     }
     updateShift({ ...shift, start_datetime: newStart.toISOString(), end_datetime: newEnd.toISOString() } as any);
-    toast.success(`Shift moved to ${format(newStart, 'EEE, MMM d h:mm a')}`);
+    toast.success(`Shift moved to ${format(newStart, 'EEE, MMM d')} ${formatTimeInTz(newStart, tz)}`);
   }, [shifts, updateShift, getFacilityName]);
 
   const navigateBack = () => {
