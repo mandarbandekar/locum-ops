@@ -12,6 +12,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, ArrowRight, FileText, AlertTriangle } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks, subMonths } from 'date-fns';
+import { useUserProfile } from '@/contexts/UserProfileContext';
+import { formatDateInTz } from '@/lib/tzTime';
 import { generateInvoiceNumber } from '@/lib/businessLogic';
 import { getEligibleShiftsForBulkInvoice } from '@/lib/bulkInvoiceHelpers';
 import { toast } from 'sonner';
