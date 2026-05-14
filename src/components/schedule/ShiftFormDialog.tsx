@@ -388,19 +388,21 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   };
 
   // Build start/end ISO timestamps for a given date, interpreting the picked
-  // wall-clock time *in the clinic's timezone* (not the browser's). This keeps
-  // shifts stable when the user travels — "8 AM" always means 8 AM at the
-  // clinic. Overnight shifts roll end into the next day.
+  // wall-clock time *in the active input tz* — defaulting to the clinic's tz so
+  // shifts stay stable when the user travels. The user can override per-shift
+  // to their profile tz via the "Enter times in" toggle below the time row.
+  const profileTz = profile?.timezone || BROWSER_TZ;
+  const clinicTz = facilities.find(f => f.id === facilityId)?.timezone || BROWSER_TZ;
+  const activeInputTz = inputTzMode === 'profile' ? profileTz : clinicTz;
   const buildStartEndIso = useCallback((d: Date) => {
     const dateStr = format(d, 'yyyy-MM-dd');
-    const tz = facilities.find(f => f.id === facilityId)?.timezone || BROWSER_TZ;
-    const start = zonedWallClockToUtc(dateStr, startTime, tz);
-    let end = zonedWallClockToUtc(dateStr, endTime, tz);
+    const start = zonedWallClockToUtc(dateStr, startTime, activeInputTz);
+    let end = zonedWallClockToUtc(dateStr, endTime, activeInputTz);
     if (end.getTime() <= start.getTime()) {
       end = new Date(end.getTime() + 24 * 60 * 60 * 1000);
     }
     return { startIso: start.toISOString(), endIso: end.toISOString() };
-  }, [startTime, endTime, facilityId, facilities]);
+  }, [startTime, endTime, activeInputTz]);
 
   const isOvernight = useMemo(() => {
     if (!startTime || !endTime) return false;
