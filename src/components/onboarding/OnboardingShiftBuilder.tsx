@@ -10,6 +10,7 @@ import { BreakPolicySelector } from '@/components/facilities/BreakPolicySelector
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { mapDefaultRatesToRateEntries } from '@/lib/onboardingRateMapping';
 import type { Facility, Shift, TermsSnapshot } from '@/types';
+import { zonedWallClockToUtc } from '@/lib/tzTime';
 
 interface Props {
   facilities: Facility[];
