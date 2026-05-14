@@ -18,6 +18,14 @@ import { getCombinedMarginalRate, getAnnualizedIncome } from '@/lib/taxStrategie
 import { STATE_TAX_DATA } from '@/lib/stateTaxData';
 import type { FilingStatus } from '@/lib/taxConstants2026';
 
+/** Parse a 'YYYY-MM-DD' string as a local-tz Date (avoids the UTC-midnight
+ *  off-by-one when the browser is west of UTC). */
+function parseLocalYMD(ymd: string): Date {
+  if (!ymd) return new Date(NaN);
+  const [y, m, d] = ymd.split('-').map(Number);
+  return new Date(y, (m || 1) - 1, d || 1);
+}
+
 function getStateTaxRate(stateCode: string | undefined): number {
   if (!stateCode) return 0.05;
   const entry = STATE_TAX_DATA[stateCode];
