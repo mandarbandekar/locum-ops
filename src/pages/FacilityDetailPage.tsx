@@ -369,13 +369,9 @@ function ContractTab({ facility, facilityTerms, onSaveRates, onUpdateTerms, onUp
                 <Select value={timezone} onValueChange={setTimezone}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="America/New_York">Eastern (New York)</SelectItem>
-                    <SelectItem value="America/Chicago">Central (Chicago)</SelectItem>
-                    <SelectItem value="America/Denver">Mountain (Denver)</SelectItem>
-                    <SelectItem value="America/Phoenix">Mountain — no DST (Phoenix)</SelectItem>
-                    <SelectItem value="America/Los_Angeles">Pacific (Los Angeles)</SelectItem>
-                    <SelectItem value="America/Anchorage">Alaska (Anchorage)</SelectItem>
-                    <SelectItem value="Pacific/Honolulu">Hawaii (Honolulu)</SelectItem>
+                    {US_TIMEZONES.map(tz => (
+                      <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               ) : (
