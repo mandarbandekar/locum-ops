@@ -18,6 +18,14 @@ import { getCombinedMarginalRate, getAnnualizedIncome } from '@/lib/taxStrategie
 import { STATE_TAX_DATA } from '@/lib/stateTaxData';
 import type { FilingStatus } from '@/lib/taxConstants2026';
 
+/** Parse a 'YYYY-MM-DD' string as a local-tz Date (avoids the UTC-midnight
+ *  off-by-one when the browser is west of UTC). */
+function parseLocalYMD(ymd: string): Date {
+  if (!ymd) return new Date(NaN);
+  const [y, m, d] = ymd.split('-').map(Number);
+  return new Date(y, (m || 1) - 1, d || 1);
+}
+
 function getStateTaxRate(stateCode: string | undefined): number {
   if (!stateCode) return 0.05;
   const entry = STATE_TAX_DATA[stateCode];
@@ -245,7 +253,7 @@ export default function ExpenseLogTab({
                         )}
                       </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                        <span>{new Date(exp.expense_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                        <span>{parseLocalYMD(exp.expense_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                         {exp.description && <span className="truncate">· {exp.description}</span>}
                         {exp.facility_id && facilityMap[exp.facility_id] && (
                           <span className="truncate">· {facilityMap[exp.facility_id]}</span>
@@ -306,7 +314,7 @@ export default function ExpenseLogTab({
               {deleteTarget && (
                 <>
                   <span className="font-medium">{findSubcategory(deleteTarget.subcategory)?.label || deleteTarget.subcategory}</span>
-                  {' — '}${(deleteTarget.amount_cents / 100).toFixed(2)} on {new Date(deleteTarget.expense_date).toLocaleDateString()}
+                  {' — '}${(deleteTarget.amount_cents / 100).toFixed(2)} on {parseLocalYMD(deleteTarget.expense_date).toLocaleDateString()}
                 </>
               )}
               <br />This action cannot be undone.
