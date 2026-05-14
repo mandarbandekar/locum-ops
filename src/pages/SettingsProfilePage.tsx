@@ -35,6 +35,8 @@ export default function SettingsProfilePage() {
   const [invoiceEmail, setInvoiceEmail] = useState(profile?.invoice_email || '');
   const [invoicePhone, setInvoicePhone] = useState(profile?.invoice_phone || '');
   const [timezone, setTimezone] = useState(profile?.timezone || '');
+  const [timezonePinned, setTimezonePinned] = useState(!!profile?.timezone_pinned);
+  const deviceTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const [currency, setCurrency] = useState(profile?.currency || 'USD');
   const [profession, setProfession] = useState<Profession>(profile?.profession || 'other');
 
