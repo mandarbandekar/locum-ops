@@ -153,6 +153,9 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   );
   const [workedThroughBreak, setWorkedThroughBreak] = useState<boolean>(!!existing?.worked_through_break);
   const [acknowledgeConflict, setAcknowledgeConflict] = useState(false);
+  // Per-shift toggle: which timezone do the wall-clock inputs represent?
+  // 'clinic' (default, project rule) or 'profile' (user's tz override).
+  const [inputTzMode, setInputTzMode] = useState<'clinic' | 'profile'>('clinic');
 
   const isMobile = useIsMobile();
   const { updateTerms, timeBlocks } = useData();
@@ -215,6 +218,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     setIsSubmitting(false);
     setStep(lockedFacilityId ? 2 : 1);
     setAcknowledgeConflict(false);
+    setInputTzMode('clinic');
     if (existing) {
       setBreakMinutes(existing.break_minutes !== undefined ? existing.break_minutes : null);
       setWorkedThroughBreak(!!existing.worked_through_break);
@@ -384,19 +388,21 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   };
 
   // Build start/end ISO timestamps for a given date, interpreting the picked
-  // wall-clock time *in the clinic's timezone* (not the browser's). This keeps
-  // shifts stable when the user travels — "8 AM" always means 8 AM at the
-  // clinic. Overnight shifts roll end into the next day.
+  // wall-clock time *in the active input tz* — defaulting to the clinic's tz so
+  // shifts stay stable when the user travels. The user can override per-shift
+  // to their profile tz via the "Enter times in" toggle below the time row.
+  const profileTz = profile?.timezone || BROWSER_TZ;
+  const clinicTz = facilities.find(f => f.id === facilityId)?.timezone || BROWSER_TZ;
+  const activeInputTz = inputTzMode === 'profile' ? profileTz : clinicTz;
   const buildStartEndIso = useCallback((d: Date) => {
     const dateStr = format(d, 'yyyy-MM-dd');
-    const tz = facilities.find(f => f.id === facilityId)?.timezone || BROWSER_TZ;
-    const start = zonedWallClockToUtc(dateStr, startTime, tz);
-    let end = zonedWallClockToUtc(dateStr, endTime, tz);
+    const start = zonedWallClockToUtc(dateStr, startTime, activeInputTz);
+    let end = zonedWallClockToUtc(dateStr, endTime, activeInputTz);
     if (end.getTime() <= start.getTime()) {
       end = new Date(end.getTime() + 24 * 60 * 60 * 1000);
     }
     return { startIso: start.toISOString(), endIso: end.toISOString() };
-  }, [startTime, endTime, facilityId, facilities]);
+  }, [startTime, endTime, activeInputTz]);
 
   const isOvernight = useMemo(() => {
     if (!startTime || !endTime) return false;
@@ -858,17 +864,63 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
           </div>
         </div>
         {(() => {
-          const facTz = facilities.find(f => f.id === facilityId)?.timezone || BROWSER_TZ;
-          const userTz = profile?.timezone || BROWSER_TZ;
           const refDate = selectedDates[0] || new Date();
-          const short = tzShortName(refDate, facTz);
-          const traveling = userTz && userTz !== facTz;
+          const traveling = !!profile?.timezone && profile.timezone !== clinicTz;
+          const clinicShort = tzShortName(refDate, clinicTz);
+          const profileShort = tzShortName(refDate, profileTz);
+          const reproject = (next: 'clinic' | 'profile') => {
+            if (next === inputTzMode) return;
+            const fromTz = inputTzMode === 'profile' ? profileTz : clinicTz;
+            const toTz = next === 'profile' ? profileTz : clinicTz;
+            const dateStr = format(refDate, 'yyyy-MM-dd');
+            if (startTime) {
+              const startUtc = zonedWallClockToUtc(dateStr, startTime, fromTz);
+              setStartTime(formatHHMMInTz(startUtc, toTz));
+            }
+            if (endTime) {
+              const endUtc = zonedWallClockToUtc(dateStr, endTime, fromTz);
+              setEndTime(formatHHMMInTz(endUtc, toTz));
+            }
+            setInputTzMode(next);
+          };
           return (
-            <p className="mt-1.5 text-[11px] text-muted-foreground">
-              Times saved as <span className="font-medium text-foreground">clinic-local</span>
-              {short ? ` (${facTz}, ${short})` : ` (${facTz})`}
-              {traveling ? ` — your device is in ${userTz}.` : '.'}
-            </p>
+            <>
+              {traveling && (
+                <div className="mt-2 inline-flex items-center rounded-md border border-border bg-muted/40 p-0.5 text-[11px]">
+                  <button
+                    type="button"
+                    onClick={() => reproject('clinic')}
+                    className={cn(
+                      'px-2 py-0.5 rounded-sm transition-colors',
+                      inputTzMode === 'clinic'
+                        ? 'bg-background text-foreground font-medium shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground',
+                    )}
+                  >
+                    Clinic time {clinicShort ? `(${clinicShort})` : ''}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => reproject('profile')}
+                    className={cn(
+                      'px-2 py-0.5 rounded-sm transition-colors',
+                      inputTzMode === 'profile'
+                        ? 'bg-background text-foreground font-medium shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground',
+                    )}
+                  >
+                    My time {profileShort ? `(${profileShort})` : ''}
+                  </button>
+                </div>
+              )}
+              <p className="mt-1.5 text-[11px] text-muted-foreground">
+                {inputTzMode === 'profile' ? (
+                  <>Entering in <span className="font-medium text-foreground">your timezone</span> ({profileTz}{profileShort ? `, ${profileShort}` : ''}). Saved as the equivalent clinic-local instant.</>
+                ) : (
+                  <>Times saved as <span className="font-medium text-foreground">clinic-local</span>{clinicShort ? ` (${clinicTz}, ${clinicShort})` : ` (${clinicTz})`}{traveling ? ` — your device is in ${profileTz}.` : '.'}</>
+                )}
+              </p>
+            </>
           );
         })()}
         {activeRateKind === 'hourly' && hoursInvalidReason && (

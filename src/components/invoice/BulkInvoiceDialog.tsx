@@ -12,6 +12,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, ArrowRight, FileText, AlertTriangle } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks, subMonths } from 'date-fns';
+import { useUserProfile } from '@/contexts/UserProfileContext';
+import { formatDateInTz } from '@/lib/tzTime';
 import { generateInvoiceNumber } from '@/lib/businessLogic';
 import { getEligibleShiftsForBulkInvoice } from '@/lib/bulkInvoiceHelpers';
 import { toast } from 'sonner';
@@ -38,6 +40,9 @@ interface Props {
 
 export function BulkInvoiceDialog({ open, onOpenChange, preselectedFacilityId }: Props) {
   const { facilities, shifts, invoices, lineItems, addInvoice } = useData();
+  const { profile } = useUserProfile();
+  const profileTz = profile?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const fmtPeriod = (d: Date, pattern: string) => formatDateInTz(d.toISOString(), profileTz, pattern);
   const navigate = useNavigate();
 
   const [step, setStep] = useState(1);
@@ -262,7 +267,7 @@ export function BulkInvoiceDialog({ open, onOpenChange, preselectedFacilityId }:
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
               Completed shifts for <span className="font-medium text-foreground">{facility?.name}</span> from{' '}
-              {format(period.start, 'MMM d')} – {format(period.end, 'MMM d, yyyy')}
+              {fmtPeriod(period.start, 'MMM d')} – {fmtPeriod(period.end, 'MMM d, yyyy')}
             </p>
 
             {draftExcluded.length > 0 && (
@@ -335,7 +340,7 @@ export function BulkInvoiceDialog({ open, onOpenChange, preselectedFacilityId }:
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Billing Period</span>
-                <span>{format(period.start, 'MMM d')} – {format(period.end, 'MMM d, yyyy')}</span>
+                <span>{fmtPeriod(period.start, 'MMM d')} – {fmtPeriod(period.end, 'MMM d, yyyy')}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Shifts Included</span>
