@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useUserProfile, type Profession } from '@/contexts/UserProfileContext';
 import { GooglePlacesAutocomplete } from '@/components/GooglePlacesAutocomplete';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
+import { US_TIMEZONES } from '@/lib/usTimezones';
 import { toast } from 'sonner';
 import { Save, MapPin } from 'lucide-react';
 
