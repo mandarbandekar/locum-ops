@@ -30,10 +30,12 @@ interface WeekTimeGridProps {
   onEditBlock?: (id: string) => void;
   fullDay?: boolean;
   facilities?: Facility[];
+  profileTz?: string;
 }
 
-export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, onDropOnTime, onCellClick, calendarFilters, getEventsForDay, timeBlocks = [], onEditBlock, fullDay = false, facilities = [] }: WeekTimeGridProps) {
+export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, onDropOnTime, onCellClick, calendarFilters, getEventsForDay, timeBlocks = [], onEditBlock, fullDay = false, facilities = [], profileTz }: WeekTimeGridProps) {
   const HOURS = fullDay ? FULL_DAY_HOURS : DEFAULT_HOURS;
+  const blockTz = profileTz || BROWSER_TZ;
   const tzForFacility = useCallback((id: string) => facilities.find(f => f.id === id)?.timezone || BROWSER_TZ, [facilities]);
   const [dragOverCell, setDragOverCell] = useState<string | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
