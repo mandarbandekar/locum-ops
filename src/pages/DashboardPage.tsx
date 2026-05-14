@@ -509,17 +509,33 @@ export default function DashboardPage() {
 
   // ── Upcoming shifts strip (next 5 by date asc, future only) ──
   const upcomingShiftsForStrip = useMemo<UpcomingShiftItem[]>(() => {
+    const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const tzOf = (id: string) => facilities.find(f => f.id === id)?.timezone || browserTz;
     return shifts
       .filter(s => parseISO(s.start_datetime) >= now)
       .sort((a, b) => parseISO(a.start_datetime).getTime() - parseISO(b.start_datetime).getTime())
       .slice(0, 5)
-      .map(s => ({
-        id: s.id,
-        date: parseISO(s.start_datetime),
-        clinicName: getFacilityName(s.facility_id),
-        startTime: format(parseISO(s.start_datetime), 'h:mm a'),
-        endTime: format(parseISO(s.end_datetime), 'h:mm a'),
-      }));
+      .map(s => {
+        const tz = tzOf(s.facility_id);
+        // Build a wall-clock-equivalent local Date so downstream `format(date, 'EEE, MMM d')`
+        // shows the *clinic-local* day even when the user is traveling.
+        const p = new Intl.DateTimeFormat('en-US', {
+          timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+          hour: '2-digit', minute: '2-digit', hour12: false,
+        }).formatToParts(parseISO(s.start_datetime));
+        const get = (t: string) => parts => parts.find((x: any) => x.type === t)?.value || '0';
+        const yr = parseInt(get('year')(p), 10);
+        const mo = parseInt(get('month')(p), 10);
+        const dy = parseInt(get('day')(p), 10);
+        const localDate = new Date(yr, mo - 1, dy);
+        return {
+          id: s.id,
+          date: localDate,
+          clinicName: getFacilityName(s.facility_id),
+          startTime: new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: true }).format(parseISO(s.start_datetime)),
+          endTime: new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: true }).format(parseISO(s.end_datetime)),
+        };
+      });
   }, [shifts, facilities, now]);
 
   // ── Attention items (existing logic preserved) ──
