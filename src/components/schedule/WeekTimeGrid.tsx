@@ -8,7 +8,6 @@ import { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { CalendarEventStack } from '@/components/schedule/CalendarEventChip';
 import { getHoursInTz, getMinutesInTz, isSameDayInTz, formatTimeInTz, formatYMDInTz } from '@/lib/tzTime';
 import { buildShiftOverlapMap } from '@/lib/businessLogic';
-import { format as dfFormat } from 'date-fns';
 
 const BROWSER_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
