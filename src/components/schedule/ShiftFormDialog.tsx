@@ -108,11 +108,18 @@ function buildRateOptions(
 
 export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms, existing, onSave, onDelete, embedded, defaultDate, defaultStartTime, defaultMonth, lockedFacilityId }: ShiftFormDialogProps) {
   const [facilityId, setFacilityId] = useState(existing?.facility_id || lockedFacilityId || facilities[0]?.id || '');
+  const initialTz = (existing
+    ? facilities.find(f => f.id === existing.facility_id)?.timezone
+    : facilities.find(f => f.id === (lockedFacilityId || facilities[0]?.id))?.timezone) || BROWSER_TZ;
+  const ymdToLocalDate = (ymd: string) => {
+    const [y, m, d] = ymd.split('-').map(Number);
+    return new Date(y, (m || 1) - 1, d || 1);
+  };
   const [selectedDates, setSelectedDates] = useState<Date[]>(
-    existing ? [new Date(existing.start_datetime)] : defaultDate ? [defaultDate] : []
+    existing ? [ymdToLocalDate(formatYMDInTz(existing.start_datetime, initialTz))] : defaultDate ? [defaultDate] : []
   );
-  const [startTime, setStartTime] = useState(existing ? format(new Date(existing.start_datetime), 'HH:mm') : (defaultStartTime || ''));
-  const [endTime, setEndTime] = useState(existing ? format(new Date(existing.end_datetime), 'HH:mm') : '');
+  const [startTime, setStartTime] = useState(existing ? formatHHMMInTz(existing.start_datetime, initialTz) : (defaultStartTime || ''));
+  const [endTime, setEndTime] = useState(existing ? formatHHMMInTz(existing.end_datetime, initialTz) : '');
   const [rate, setRate] = useState(existing?.rate_applied?.toString() || '');
   const [selectedRateKey, setSelectedRateKey] = useState<string>('');
   const [isCustomRate, setIsCustomRate] = useState(false);
