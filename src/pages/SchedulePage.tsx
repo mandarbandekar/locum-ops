@@ -88,10 +88,11 @@ export default function SchedulePage() {
 
   const ytdPaidIncome = useMemo(() => {
     const yr = new Date().getFullYear();
+    const tzOf = (id: string) => facilities.find(f => f.id === id)?.timezone || BROWSER_TZ;
     return shifts
-      .filter(s => paidShiftIds.has(s.id) && new Date(s.start_datetime).getFullYear() === yr)
+      .filter(s => paidShiftIds.has(s.id) && getYearInTz(s.start_datetime, tzOf(s.facility_id)) === yr)
       .reduce((sum, s) => sum + getShiftTotalRevenue(s), 0);
-  }, [shifts, paidShiftIds]);
+  }, [shifts, paidShiftIds, facilities]);
 
   const effectiveRate = useMemo(() => {
     if (!hasTaxProfile || !taxProfile) return 0.25;
