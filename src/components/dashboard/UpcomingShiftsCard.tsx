@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { useData } from '@/contexts/DataContext';
+import { formatTimeInTz, formatDateInTz, getPartsInTz } from '@/lib/tzTime';
 
 interface Shift {
   id: string;
@@ -22,10 +24,13 @@ interface UpcomingShiftsCardProps {
   firstName: string;
 }
 
-function getRelativeDay(date: Date): string {
-  if (isToday(date)) return 'Today';
-  if (isTomorrow(date)) return 'Tomorrow';
-  return format(date, 'EEE, MMM d');
+function getRelativeDayInTz(iso: string, tz: string): string {
+  const parts = getPartsInTz(iso, tz);
+  const today = getPartsInTz(new Date().toISOString(), tz);
+  const tomorrow = getPartsInTz(addDays(new Date(), 1).toISOString(), tz);
+  if (parts.year === today.year && parts.month === today.month && parts.day === today.day) return 'Today';
+  if (parts.year === tomorrow.year && parts.month === tomorrow.month && parts.day === tomorrow.day) return 'Tomorrow';
+  return formatDateInTz(iso, tz, 'EEE, MMM d');
 }
 
 const ACCENT_COLORS = [
@@ -38,6 +43,8 @@ const ACCENT_COLORS = [
 
 export function UpcomingShiftsCard({ shifts, getFacilityName, greeting, firstName }: UpcomingShiftsCardProps) {
   const navigate = useNavigate();
+  const { facilities } = useData();
+  const tzFor = (fid: string) => facilities.find((f: any) => f.id === fid)?.timezone || 'America/Los_Angeles';
   const now = new Date();
   const in7Days = addDays(now, 7);
   const [shiftsOpen, setShiftsOpen] = useState(false);
@@ -68,7 +75,7 @@ export function UpcomingShiftsCard({ shifts, getFacilityName, greeting, firstNam
           {nextShift ? (
             <div className="space-y-0.5 text-sm text-muted-foreground">
               <p>
-                Next shift: <span className="font-semibold text-foreground">{getRelativeDay(new Date(nextShift.start_datetime))}</span>
+                Next shift: <span className="font-semibold text-foreground">{getRelativeDayInTz(nextShift.start_datetime, tzFor(nextShift.facility_id))}</span>
               </p>
             </div>
           ) : (
@@ -107,9 +114,8 @@ export function UpcomingShiftsCard({ shifts, getFacilityName, greeting, firstNam
               ) : (
                 <div className="space-y-1.5">
                   {upcoming.map((shift, idx) => {
-                    const startDate = new Date(shift.start_datetime);
-                    const endDate = new Date(shift.end_datetime);
                     const facilityName = getFacilityName(shift.facility_id);
+                    const tz = tzFor(shift.facility_id);
                     const initials = facilityName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
                     return (
@@ -126,10 +132,10 @@ export function UpcomingShiftsCard({ shifts, getFacilityName, greeting, firstNam
                         <div className="flex-1 min-w-0">
                           <p className="text-[12px] font-semibold truncate leading-tight">{facilityName}</p>
                           <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-0.5">
-                            <span className="font-medium">{getRelativeDay(startDate)}</span>
+                            <span className="font-medium">{getRelativeDayInTz(shift.start_datetime, tz)}</span>
                             <span className="opacity-50">•</span>
                             <Clock className="h-2.5 w-2.5 opacity-60" />
-                            <span>{format(startDate, 'h:mm a')} - {format(endDate, 'h:mm a')}</span>
+                            <span>{formatTimeInTz(shift.start_datetime, tz)} - {formatTimeInTz(shift.end_datetime, tz)}</span>
                           </div>
                         </div>
                         {shift.agency && (

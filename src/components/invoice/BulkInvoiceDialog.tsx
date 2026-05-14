@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, ArrowRight, FileText, AlertTriangle } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks, subMonths } from 'date-fns';
 import { useUserProfile } from '@/contexts/UserProfileContext';
-import { formatDateInTz } from '@/lib/tzTime';
+import { formatDateInTz, formatTimeInTz, formatYMDInTz } from '@/lib/tzTime';
 import { generateInvoiceNumber } from '@/lib/businessLogic';
 import { getEligibleShiftsForBulkInvoice } from '@/lib/bulkInvoiceHelpers';
 import { toast } from 'sonner';
@@ -98,8 +98,8 @@ export function BulkInvoiceDialog({ open, onOpenChange, preselectedFacilityId }:
 
   type LineDraft = Omit<InvoiceLineItem, 'id' | 'invoice_id'>;
   const buildLineItemsForShift = (s: Shift): LineDraft[] => {
-    
-    const timeLabel = `${format(new Date(s.start_datetime), 'h:mm a')} – ${format(new Date(s.end_datetime), 'h:mm a')}`;
+    const tz = facility?.timezone || 'America/Los_Angeles';
+    const timeLabel = `${formatTimeInTz(s.start_datetime, tz)} – ${formatTimeInTz(s.end_datetime, tz)}`;
     const isHourly = s.rate_kind === 'hourly' && s.hourly_rate != null && s.hourly_rate > 0;
     const typeLabel = getShiftTypeLabel(s.shift_type);
     const coverageLabel = typeLabel ? `${typeLabel} relief coverage` : 'Relief coverage';
@@ -108,7 +108,7 @@ export function BulkInvoiceDialog({ open, onOpenChange, preselectedFacilityId }:
       return [{
         shift_id: s.id,
         description: `${coverageLabel} (${timeLabel})`,
-        service_date: new Date(s.start_datetime).toISOString().split('T')[0],
+        service_date: formatYMDInTz(s.start_datetime, tz),
         qty: 1,
         unit_rate: s.rate_applied,
         line_total: s.rate_applied,
@@ -122,7 +122,7 @@ export function BulkInvoiceDialog({ open, onOpenChange, preselectedFacilityId }:
     return [{
       shift_id: s.id,
       description: `${coverageLabel} (${timeLabel})`,
-      service_date: new Date(s.start_datetime).toISOString().split('T')[0],
+      service_date: formatYMDInTz(s.start_datetime, tz),
       qty: totalHours,
       unit_rate: hourlyRate,
       line_total: Math.round(totalHours * hourlyRate * 100) / 100,
@@ -304,9 +304,9 @@ export function BulkInvoiceDialog({ open, onOpenChange, preselectedFacilityId }:
                       <label key={s.id} className="flex items-center gap-3 px-3 py-2 hover:bg-muted/30 cursor-pointer text-sm">
                         <Checkbox checked={selectedShiftIds.has(s.id)} onCheckedChange={() => toggleShift(s.id)} />
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium">{format(new Date(s.start_datetime), 'MMM d, yyyy')}</div>
+                          <div className="font-medium">{formatDateInTz(s.start_datetime, facility?.timezone || 'America/Los_Angeles', 'MMM d, yyyy')}</div>
                           <div className="text-xs text-muted-foreground">
-                            {format(new Date(s.start_datetime), 'h:mm a')} – {format(new Date(s.end_datetime), 'h:mm a')}
+                            {formatTimeInTz(s.start_datetime, facility?.timezone || 'America/Los_Angeles')} – {formatTimeInTz(s.end_datetime, facility?.timezone || 'America/Los_Angeles')}
                             {isHourly && (
                               <span className="ml-2">· {hoursLabel}h × ${Number(s.hourly_rate).toLocaleString()}/hr</span>
                             )}
