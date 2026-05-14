@@ -218,6 +218,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     setIsSubmitting(false);
     setStep(lockedFacilityId ? 2 : 1);
     setAcknowledgeConflict(false);
+    setInputTzMode('clinic');
     if (existing) {
       setBreakMinutes(existing.break_minutes !== undefined ? existing.break_minutes : null);
       setWorkedThroughBreak(!!existing.worked_through_break);
