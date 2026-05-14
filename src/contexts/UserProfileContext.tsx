@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { shouldAutoSyncTz } from '@/lib/usTimezones';
 
 export type Profession = 'vet' | 'nurse' | 'physician' | 'pharmacist' | 'pt_ot' | 'other';
 export type FacilitiesCountBand = 'band_1_3' | 'band_4_8' | 'band_9_plus';
