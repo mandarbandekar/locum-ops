@@ -104,6 +104,7 @@ export const DEFAULT_PROFILE: Omit<UserProfile, 'id' | 'user_id'> = {
   profession: 'other',
   work_style_label: '',
   timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  timezone_pinned: false,
   currency: 'USD',
   current_tools: [],
   facilities_count_band: 'band_1_3',
