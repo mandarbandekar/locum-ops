@@ -637,7 +637,7 @@ export default function SchedulePage() {
                       return (
                         <React.Fragment key={s.id}>
                           <tr className="border-b last:border-0 hover:bg-muted/30 cursor-pointer" onClick={() => setEditShift(s.id)}>
-                            <td className="p-3">{format(new Date(s.start_datetime), 'EEE, MMM d')}</td>
+                            <td className="p-3">{formatDateInTz(s.start_datetime, tzForFacility(s.facility_id), 'EEE, MMM d')}</td>
                             <td className="p-3 font-medium">{getFacilityName(s.facility_id)}</td>
                             <td className="p-3 text-muted-foreground hidden md:table-cell">{formatTimeInTz(s.start_datetime, tzForFacility(s.facility_id))} – {formatTimeInTz(s.end_datetime, tzForFacility(s.facility_id))}</td>
                             <td className="p-3 text-muted-foreground hidden md:table-cell">{hrs}h</td>
@@ -670,7 +670,7 @@ export default function SchedulePage() {
                                 <AlertDialogContent>
                                   <AlertDialogHeader>
                                     <AlertDialogTitle>Delete this shift?</AlertDialogTitle>
-                                    <AlertDialogDescription>{getFacilityName(s.facility_id)} — {format(new Date(s.start_datetime), 'MMM d, yyyy')}</AlertDialogDescription>
+                                    <AlertDialogDescription>{getFacilityName(s.facility_id)} — {formatDateInTz(s.start_datetime, tzForFacility(s.facility_id), 'MMM d, yyyy')}</AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
