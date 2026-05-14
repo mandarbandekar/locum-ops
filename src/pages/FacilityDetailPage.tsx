@@ -27,6 +27,7 @@ import { EngagementSelector } from '@/components/facilities/EngagementSelector';
 import { BreakPolicySelector } from '@/components/facilities/BreakPolicySelector';
 import { getBreakPolicyLabel } from '@/lib/shiftBreak';
 import type { EngagementType, TaxFormType } from '@/lib/engagementOptions';
+import { US_TIMEZONES } from '@/lib/usTimezones';
 
 export default function FacilityDetailPage() {
   const { id } = useParams<{ id: string }>();
