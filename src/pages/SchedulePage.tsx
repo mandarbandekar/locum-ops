@@ -200,10 +200,10 @@ export default function SchedulePage() {
     const otherShifts = shifts.filter(s => s.id !== shiftId);
     const conflicts = detectShiftConflicts(otherShifts, { start_datetime: newStart.toISOString(), end_datetime: newEnd.toISOString() });
     if (conflicts.length > 0) {
-      toast.warning(`Scheduling conflict on ${format(newStart, 'EEE, MMM d')} with ${getFacilityName(conflicts[0].facility_id)}`);
+      toast.warning(`Scheduling conflict on ${formatDateInTz(newStart, tz, 'EEE, MMM d')} with ${getFacilityName(conflicts[0].facility_id)}`);
     }
     updateShift({ ...shift, start_datetime: newStart.toISOString(), end_datetime: newEnd.toISOString() } as any);
-    toast.success(`Shift moved to ${format(newStart, 'EEE, MMM d')}`);
+    toast.success(`Shift moved to ${formatDateInTz(newStart, tz, 'EEE, MMM d')}`);
     setDragOverDay(null);
   }, [shifts, updateShift, getFacilityName]);
 
