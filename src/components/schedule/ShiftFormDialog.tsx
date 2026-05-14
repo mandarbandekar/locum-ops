@@ -369,17 +369,20 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     };
   };
 
-  // Build start/end ISO timestamps for a given date, rolling end into the next
-  // day when end time is on/before start time (overnight shift).
+  // Build start/end ISO timestamps for a given date, interpreting the picked
+  // wall-clock time *in the clinic's timezone* (not the browser's). This keeps
+  // shifts stable when the user travels — "8 AM" always means 8 AM at the
+  // clinic. Overnight shifts roll end into the next day.
   const buildStartEndIso = useCallback((d: Date) => {
     const dateStr = format(d, 'yyyy-MM-dd');
-    const start = new Date(`${dateStr}T${startTime}:00`);
-    let end = new Date(`${dateStr}T${endTime}:00`);
+    const tz = facilities.find(f => f.id === facilityId)?.timezone || BROWSER_TZ;
+    const start = zonedWallClockToUtc(dateStr, startTime, tz);
+    let end = zonedWallClockToUtc(dateStr, endTime, tz);
     if (end.getTime() <= start.getTime()) {
       end = new Date(end.getTime() + 24 * 60 * 60 * 1000);
     }
     return { startIso: start.toISOString(), endIso: end.toISOString() };
-  }, [startTime, endTime]);
+  }, [startTime, endTime, facilityId, facilities]);
 
   const isOvernight = useMemo(() => {
     if (!startTime || !endTime) return false;
