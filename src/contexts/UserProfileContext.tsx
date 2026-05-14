@@ -226,6 +226,7 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
           profession,
           work_style_label: d.work_style_label,
           timezone: d.timezone,
+          timezone_pinned: !!d.timezone_pinned,
           currency: d.currency,
           current_tools: (d.current_tools as CurrentTool[]) || [],
           facilities_count_band: d.facilities_count_band,
