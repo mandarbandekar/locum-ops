@@ -13,6 +13,7 @@ import { AddFacilityDialog } from '@/components/AddFacilityDialog';
 import { TimePicker } from '@/components/ui/time-picker';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { termsToRates } from '@/components/facilities/RatesEditor';
+import { zonedWallClockToUtc } from '@/lib/tzTime';
 import { mapDefaultRatesToRateEntries } from '@/lib/onboardingRateMapping';
 
 interface Props {
