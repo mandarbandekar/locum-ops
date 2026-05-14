@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DollarSign } from 'lucide-react';
-import { format } from 'date-fns';
+import { useData } from '@/contexts/DataContext';
+import { formatDateInTz, formatTimeInTz } from '@/lib/tzTime';
 import { Separator } from '@/components/ui/separator';
 
 interface Payment {
@@ -23,7 +24,16 @@ interface ThisWeekCardProps {
   getFacilityName: (id: string) => string;
 }
 
+// Parse YYYY-MM-DD as local date to avoid UTC off-by-one
+function parseLocalYMD(d: string): Date {
+  const m = d.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return new Date(+m[1], +m[2] - 1, +m[3]);
+  return new Date(d);
+}
+
 export function ThisWeekCard({ paidThisMonth, recentPayments, nextShift, getFacilityName }: ThisWeekCardProps) {
+  const { facilities } = useData();
+  const tzFor = (fid: string) => facilities.find((f: any) => f.id === fid)?.timezone || 'America/Los_Angeles';
   return (
     <Card className="h-fit" data-testid="this-week-card">
       <CardHeader className="pb-1.5 pt-4 px-5">
@@ -50,12 +60,15 @@ export function ThisWeekCard({ paidThisMonth, recentPayments, nextShift, getFaci
             <p className="text-xs text-muted-foreground">No recent payments</p>
           ) : (
             <div className="space-y-1.5">
-              {recentPayments.slice(0, 3).map(p => (
-                <div key={p.id} className="flex items-center justify-between text-[13px]">
-                  <span className="text-muted-foreground truncate">{format(new Date(p.payment_date), 'MMM d')}</span>
-                  <span className="font-semibold">${p.amount.toLocaleString()}</span>
-                </div>
-              ))}
+              {recentPayments.slice(0, 3).map(p => {
+                const d = parseLocalYMD(p.payment_date);
+                return (
+                  <div key={p.id} className="flex items-center justify-between text-[13px]">
+                    <span className="text-muted-foreground truncate">{d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                    <span className="font-semibold">${p.amount.toLocaleString()}</span>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -69,7 +82,7 @@ export function ThisWeekCard({ paidThisMonth, recentPayments, nextShift, getFaci
             <div className="text-[13px]">
               <p className="font-semibold">{getFacilityName(nextShift.facility_id)}</p>
               <p className="text-muted-foreground">
-                {format(new Date(nextShift.start_datetime), 'EEE, MMM d · h:mm a')}
+                {formatDateInTz(nextShift.start_datetime, tzFor(nextShift.facility_id), 'EEE, MMM d')} · {formatTimeInTz(nextShift.start_datetime, tzFor(nextShift.facility_id))}
               </p>
             </div>
           ) : (
