@@ -31,6 +31,20 @@ import { toast } from 'sonner';
 import { zonedWallClockToUtc, formatHHMMInTz, formatYMDInTz, formatDateInTz } from '@/lib/tzTime';
 
 const BROWSER_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+/** Short tz label for a given instant + IANA zone, e.g. "PDT" or "EST". */
+function tzShortName(date: Date, timeZone: string): string {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      timeZoneName: 'short',
+      hour: '2-digit',
+    }).formatToParts(date);
+    return parts.find(p => p.type === 'timeZoneName')?.value || '';
+  } catch {
+    return '';
+  }
+}
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
   ENGAGEMENT_LABELS,
