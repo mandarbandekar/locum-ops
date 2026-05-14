@@ -305,9 +305,10 @@ export default function SchedulePage() {
   const renderDayCell = (day: Date, minHeight: string) => {
     const dayShifts = calendarFilters.shifts ? shifts.filter(s => isSameDayInTz(s.start_datetime, day, tzForFacility(s.facility_id))) : [];
     const dayBlocks = timeBlocks.filter(b => {
-      const bs = new Date(b.start_datetime);
-      const be = new Date(b.end_datetime);
-      return day >= new Date(bs.getFullYear(), bs.getMonth(), bs.getDate()) && day <= new Date(be.getFullYear(), be.getMonth(), be.getDate());
+      const startYmd = formatYMDInTz(b.start_datetime, profileTz);
+      const endYmd = formatYMDInTz(b.end_datetime, profileTz);
+      const dayYmd = format(day, 'yyyy-MM-dd');
+      return dayYmd >= startYmd && dayYmd <= endYmd;
     });
     const isToday = isSameDay(day, new Date());
     const markers = getMarkersForDay(day);
