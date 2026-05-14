@@ -43,6 +43,8 @@ const ACCENT_COLORS = [
 
 export function UpcomingShiftsCard({ shifts, getFacilityName, greeting, firstName }: UpcomingShiftsCardProps) {
   const navigate = useNavigate();
+  const { facilities } = useData();
+  const tzFor = (fid: string) => facilities.find((f: any) => f.id === fid)?.timezone || 'America/Los_Angeles';
   const now = new Date();
   const in7Days = addDays(now, 7);
   const [shiftsOpen, setShiftsOpen] = useState(false);
@@ -73,7 +75,7 @@ export function UpcomingShiftsCard({ shifts, getFacilityName, greeting, firstNam
           {nextShift ? (
             <div className="space-y-0.5 text-sm text-muted-foreground">
               <p>
-                Next shift: <span className="font-semibold text-foreground">{getRelativeDay(new Date(nextShift.start_datetime))}</span>
+                Next shift: <span className="font-semibold text-foreground">{getRelativeDayInTz(nextShift.start_datetime, tzFor(nextShift.facility_id))}</span>
               </p>
             </div>
           ) : (
