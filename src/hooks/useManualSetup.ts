@@ -146,8 +146,12 @@ export function useManualSetup() {
     if (!user) return null;
     setSaving(true);
     try {
-      const startDt = new Date(`${input.date}T${input.start_time}:00`);
-      let endDt = new Date(`${input.date}T${input.end_time}:00`);
+      // Interpret the picked wall-clock time in the *facility's* timezone so
+      // shifts created from anywhere in the world land on the right clinic-local day.
+      const { data: facRow } = await db('facilities').select('timezone').eq('id', input.facility_id).maybeSingle();
+      const tz = (facRow as any)?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const startDt = zonedWallClockToUtc(input.date, input.start_time, tz);
+      let endDt = zonedWallClockToUtc(input.date, input.end_time, tz);
       if (endDt.getTime() <= startDt.getTime()) {
         // Overnight shift — roll end into next day.
         endDt = new Date(endDt.getTime() + 24 * 60 * 60 * 1000);
