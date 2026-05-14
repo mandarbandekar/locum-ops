@@ -179,8 +179,35 @@ export default function SettingsProfilePage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label>Timezone</Label>
-                <Input value={timezone} onChange={e => setTimezone(e.target.value)} />
-                <p className="text-xs text-muted-foreground mt-1">Used for schedule display.</p>
+                <Select value={timezone} onValueChange={setTimezone}>
+                  <SelectTrigger><SelectValue placeholder="Select timezone" /></SelectTrigger>
+                  <SelectContent>
+                    {US_TIMEZONES.map(tz => (
+                      <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="flex items-center justify-between gap-2 mt-2">
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      id="tz-pinned"
+                      checked={timezonePinned}
+                      onCheckedChange={(v) => {
+                        setTimezonePinned(v);
+                        if (!v) setTimezone(deviceTz);
+                      }}
+                    />
+                    <Label htmlFor="tz-pinned" className="text-xs cursor-pointer">Pin this timezone</Label>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {timezonePinned
+                    ? 'Pinned. Stays the same across devices.'
+                    : 'Follows the device you sign in from.'}
+                  {deviceTz && deviceTz !== timezone && (
+                    <> Your device is currently in {deviceTz}.</>
+                  )}
+                </p>
               </div>
               <div>
                 <Label>Currency</Label>
