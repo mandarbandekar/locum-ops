@@ -314,7 +314,7 @@ export default function ExpenseLogTab({
               {deleteTarget && (
                 <>
                   <span className="font-medium">{findSubcategory(deleteTarget.subcategory)?.label || deleteTarget.subcategory}</span>
-                  {' — '}${(deleteTarget.amount_cents / 100).toFixed(2)} on {new Date(deleteTarget.expense_date).toLocaleDateString()}
+                  {' — '}${(deleteTarget.amount_cents / 100).toFixed(2)} on {parseLocalYMD(deleteTarget.expense_date).toLocaleDateString()}
                 </>
               )}
               <br />This action cannot be undone.
