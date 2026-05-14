@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useMemo, DragEvent } from 'react';
 import { AlertTriangle } from 'lucide-react';
-import { format, isSameDay, getHours, getMinutes } from 'date-fns';
+import { format, isSameDay } from 'date-fns';
 import { SHIFT_COLORS, BLOCK_COLORS, BLOCK_TYPES, TimeBlock, Facility } from '@/types';
 import { getMarkersForDay } from '@/lib/calendarMarkers';
 import { ScrollArea } from '@/components/ui/scroll-area';
