@@ -164,9 +164,10 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
     if (!open) return;
     if (existing) {
       setFacilityId(existing.facility_id || facilities[0]?.id || '');
-      setSelectedDates([new Date(existing.start_datetime)]);
-      setStartTime(format(new Date(existing.start_datetime), 'HH:mm'));
-      setEndTime(format(new Date(existing.end_datetime), 'HH:mm'));
+      const tz = facilities.find(f => f.id === existing.facility_id)?.timezone || BROWSER_TZ;
+      setSelectedDates([ymdToLocalDate(formatYMDInTz(existing.start_datetime, tz))]);
+      setStartTime(formatHHMMInTz(existing.start_datetime, tz));
+      setEndTime(formatHHMMInTz(existing.end_datetime, tz));
       setRate(existing.rate_applied?.toString() || '');
       setNotes(existing.notes || '');
       setColor(existing.color || 'blue');
