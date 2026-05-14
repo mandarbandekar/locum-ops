@@ -114,9 +114,8 @@ export function UpcomingShiftsCard({ shifts, getFacilityName, greeting, firstNam
               ) : (
                 <div className="space-y-1.5">
                   {upcoming.map((shift, idx) => {
-                    const startDate = new Date(shift.start_datetime);
-                    const endDate = new Date(shift.end_datetime);
                     const facilityName = getFacilityName(shift.facility_id);
+                    const tz = tzFor(shift.facility_id);
                     const initials = facilityName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
                     return (
@@ -133,10 +132,10 @@ export function UpcomingShiftsCard({ shifts, getFacilityName, greeting, firstNam
                         <div className="flex-1 min-w-0">
                           <p className="text-[12px] font-semibold truncate leading-tight">{facilityName}</p>
                           <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-0.5">
-                            <span className="font-medium">{getRelativeDay(startDate)}</span>
+                            <span className="font-medium">{getRelativeDayInTz(shift.start_datetime, tz)}</span>
                             <span className="opacity-50">•</span>
                             <Clock className="h-2.5 w-2.5 opacity-60" />
-                            <span>{format(startDate, 'h:mm a')} - {format(endDate, 'h:mm a')}</span>
+                            <span>{formatTimeInTz(shift.start_datetime, tz)} - {formatTimeInTz(shift.end_datetime, tz)}</span>
                           </div>
                         </div>
                         {shift.agency && (
