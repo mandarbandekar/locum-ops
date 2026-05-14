@@ -267,7 +267,7 @@ export function BulkInvoiceDialog({ open, onOpenChange, preselectedFacilityId }:
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
               Completed shifts for <span className="font-medium text-foreground">{facility?.name}</span> from{' '}
-              {format(period.start, 'MMM d')} – {format(period.end, 'MMM d, yyyy')}
+              {fmtPeriod(period.start, 'MMM d')} – {fmtPeriod(period.end, 'MMM d, yyyy')}
             </p>
 
             {draftExcluded.length > 0 && (
@@ -340,7 +340,7 @@ export function BulkInvoiceDialog({ open, onOpenChange, preselectedFacilityId }:
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Billing Period</span>
-                <span>{format(period.start, 'MMM d')} – {format(period.end, 'MMM d, yyyy')}</span>
+                <span>{fmtPeriod(period.start, 'MMM d')} – {fmtPeriod(period.end, 'MMM d, yyyy')}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Shifts Included</span>
