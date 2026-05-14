@@ -864,17 +864,63 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
           </div>
         </div>
         {(() => {
-          const facTz = facilities.find(f => f.id === facilityId)?.timezone || BROWSER_TZ;
-          const userTz = profile?.timezone || BROWSER_TZ;
           const refDate = selectedDates[0] || new Date();
-          const short = tzShortName(refDate, facTz);
-          const traveling = userTz && userTz !== facTz;
+          const traveling = !!profile?.timezone && profile.timezone !== clinicTz;
+          const clinicShort = tzShortName(refDate, clinicTz);
+          const profileShort = tzShortName(refDate, profileTz);
+          const reproject = (next: 'clinic' | 'profile') => {
+            if (next === inputTzMode) return;
+            const fromTz = inputTzMode === 'profile' ? profileTz : clinicTz;
+            const toTz = next === 'profile' ? profileTz : clinicTz;
+            const dateStr = format(refDate, 'yyyy-MM-dd');
+            if (startTime) {
+              const startUtc = zonedWallClockToUtc(dateStr, startTime, fromTz);
+              setStartTime(formatHHMMInTz(startUtc, toTz));
+            }
+            if (endTime) {
+              const endUtc = zonedWallClockToUtc(dateStr, endTime, fromTz);
+              setEndTime(formatHHMMInTz(endUtc, toTz));
+            }
+            setInputTzMode(next);
+          };
           return (
-            <p className="mt-1.5 text-[11px] text-muted-foreground">
-              Times saved as <span className="font-medium text-foreground">clinic-local</span>
-              {short ? ` (${facTz}, ${short})` : ` (${facTz})`}
-              {traveling ? ` — your device is in ${userTz}.` : '.'}
-            </p>
+            <>
+              {traveling && (
+                <div className="mt-2 inline-flex items-center rounded-md border border-border bg-muted/40 p-0.5 text-[11px]">
+                  <button
+                    type="button"
+                    onClick={() => reproject('clinic')}
+                    className={cn(
+                      'px-2 py-0.5 rounded-sm transition-colors',
+                      inputTzMode === 'clinic'
+                        ? 'bg-background text-foreground font-medium shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground',
+                    )}
+                  >
+                    Clinic time {clinicShort ? `(${clinicShort})` : ''}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => reproject('profile')}
+                    className={cn(
+                      'px-2 py-0.5 rounded-sm transition-colors',
+                      inputTzMode === 'profile'
+                        ? 'bg-background text-foreground font-medium shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground',
+                    )}
+                  >
+                    My time {profileShort ? `(${profileShort})` : ''}
+                  </button>
+                </div>
+              )}
+              <p className="mt-1.5 text-[11px] text-muted-foreground">
+                {inputTzMode === 'profile' ? (
+                  <>Entering in <span className="font-medium text-foreground">your timezone</span> ({profileTz}{profileShort ? `, ${profileShort}` : ''}). Saved as the equivalent clinic-local instant.</>
+                ) : (
+                  <>Times saved as <span className="font-medium text-foreground">clinic-local</span>{clinicShort ? ` (${clinicTz}, ${clinicShort})` : ` (${clinicTz})`}{traveling ? ` — your device is in ${profileTz}.` : '.'}</>
+                )}
+              </p>
+            </>
           );
         })()}
         {activeRateKind === 'hourly' && hoursInvalidReason && (
