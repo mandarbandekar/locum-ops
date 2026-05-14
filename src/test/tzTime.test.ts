@@ -4,6 +4,9 @@ import {
   getMinutesInTz,
   isSameDayInTz,
   formatTimeInTz,
+  formatHHMMInTz,
+  formatYMDInTz,
+  zonedWallClockToUtc,
 } from '@/lib/tzTime';
 
 describe('tzTime helpers', () => {
@@ -47,5 +50,34 @@ describe('tzTime helpers', () => {
 
   it('accepts a Date instance as well as ISO string', () => {
     expect(getHoursInTz(new Date(iso), 'America/Los_Angeles')).toBe(8);
+  });
+
+  describe('zonedWallClockToUtc — the "traveler" fix', () => {
+    it('interprets the wall clock in the given tz, not the runtime tz', () => {
+      // "May 27, 8:00 AM in Los Angeles" -> 15:00 UTC during PDT
+      const d = zonedWallClockToUtc('2026-05-27', '08:00', 'America/Los_Angeles');
+      expect(d.toISOString()).toBe('2026-05-27T15:00:00.000Z');
+    });
+
+    it('round-trips: format(zonedWallClockToUtc(...)) returns the same wall clock', () => {
+      const tz = 'America/Los_Angeles';
+      const d = zonedWallClockToUtc('2026-05-27', '08:00', tz);
+      expect(formatHHMMInTz(d, tz)).toBe('08:00');
+      expect(formatYMDInTz(d, tz)).toBe('2026-05-27');
+    });
+
+    it('Praadnya bug: Italy user picking "May 27, 8 AM" for an LA clinic now stores May 27 in LA, not May 26', () => {
+      // Before the fix, this got stored as 2026-05-27T06:00:00Z (= May 26, 11pm LA).
+      const d = zonedWallClockToUtc('2026-05-27', '08:00', 'America/Los_Angeles');
+      expect(formatYMDInTz(d, 'America/Los_Angeles')).toBe('2026-05-27');
+      expect(getHoursInTz(d, 'America/Los_Angeles')).toBe(8);
+    });
+
+    it('handles DST forward in America/Los_Angeles (spring forward March 8 2026)', () => {
+      // 2:30 AM PST doesn't exist on the DST jump day; engines collapse it.
+      // We just verify the round-trip is stable on a non-skipped time.
+      const d = zonedWallClockToUtc('2026-03-08', '04:00', 'America/Los_Angeles');
+      expect(formatHHMMInTz(d, 'America/Los_Angeles')).toBe('04:00');
+    });
   });
 });

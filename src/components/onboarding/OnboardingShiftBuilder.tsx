@@ -10,6 +10,7 @@ import { BreakPolicySelector } from '@/components/facilities/BreakPolicySelector
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { mapDefaultRatesToRateEntries } from '@/lib/onboardingRateMapping';
 import type { Facility, Shift, TermsSnapshot } from '@/types';
+import { zonedWallClockToUtc } from '@/lib/tzTime';
 
 interface Props {
   facilities: Facility[];
@@ -90,8 +91,12 @@ export function OnboardingShiftBuilder({
     if (!selectedFacility || submitting) return;
     setSubmitting(true);
     try {
-      const startDt = new Date(`${shiftDate}T${startTime}:00`);
-      const endDt = new Date(`${shiftDate}T${endTime}:00`);
+      const tz = selectedFacility.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const startDt = zonedWallClockToUtc(shiftDate, startTime, tz);
+      let endDt = zonedWallClockToUtc(shiftDate, endTime, tz);
+      if (endDt.getTime() <= startDt.getTime()) {
+        endDt = new Date(endDt.getTime() + 24 * 60 * 60 * 1000);
+      }
       const created = await addShift({
         facility_id: selectedFacility.id,
         start_datetime: startDt.toISOString(),
