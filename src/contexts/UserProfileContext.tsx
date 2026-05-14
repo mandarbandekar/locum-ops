@@ -178,6 +178,21 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
     loadProfile();
   }, [isDemo, user?.id]);
 
+  // Auto-sync the saved profile timezone to the current device tz, but only
+  // when the user hasn't pinned it. Runs once per profile load.
+  const autoSyncedRef = useRef(false);
+  useEffect(() => {
+    if (isDemo || !profile || autoSyncedRef.current) return;
+    const deviceTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (shouldAutoSyncTz({ pinned: profile.timezone_pinned, profileTz: profile.timezone, deviceTz })) {
+      autoSyncedRef.current = true;
+      // fire-and-forget; updateProfile handles the optimistic state update
+      updateProfile({ timezone: deviceTz });
+    } else {
+      autoSyncedRef.current = true;
+    }
+  }, [isDemo, profile?.id, profile?.timezone, profile?.timezone_pinned]);
+
   async function loadProfile() {
     try {
       const { data, error } = await db('user_profiles')
