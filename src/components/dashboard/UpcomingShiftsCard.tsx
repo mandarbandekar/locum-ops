@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { useData } from '@/contexts/DataContext';
+import { formatTimeInTz, formatDateInTz, getPartsInTz } from '@/lib/tzTime';
 
 interface Shift {
   id: string;
@@ -22,10 +24,13 @@ interface UpcomingShiftsCardProps {
   firstName: string;
 }
 
-function getRelativeDay(date: Date): string {
-  if (isToday(date)) return 'Today';
-  if (isTomorrow(date)) return 'Tomorrow';
-  return format(date, 'EEE, MMM d');
+function getRelativeDayInTz(iso: string, tz: string): string {
+  const parts = getPartsInTz(iso, tz);
+  const today = getPartsInTz(new Date().toISOString(), tz);
+  const tomorrow = getPartsInTz(addDays(new Date(), 1).toISOString(), tz);
+  if (parts.year === today.year && parts.month === today.month && parts.day === today.day) return 'Today';
+  if (parts.year === tomorrow.year && parts.month === tomorrow.month && parts.day === tomorrow.day) return 'Tomorrow';
+  return formatDateInTz(iso, tz, 'EEE, MMM d');
 }
 
 const ACCENT_COLORS = [
