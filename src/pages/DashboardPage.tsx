@@ -8,6 +8,7 @@ import {
   ShieldAlert, CheckSquare, Zap, Clock, Calculator, TrendingUp, X,
 } from 'lucide-react';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
+import { formatYMDInTz, formatTimeInTz } from '@/lib/tzTime';
 import { GettingStartedChecklist } from '@/components/dashboard/GettingStartedChecklist';
 import { AddFacilityDialog } from '@/components/AddFacilityDialog';
 import { ShiftFormDialog } from '@/components/schedule/ShiftFormDialog';
@@ -509,17 +510,27 @@ export default function DashboardPage() {
 
   // ── Upcoming shifts strip (next 5 by date asc, future only) ──
   const upcomingShiftsForStrip = useMemo<UpcomingShiftItem[]>(() => {
+    const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const tzOf = (id: string) => facilities.find(f => f.id === id)?.timezone || browserTz;
     return shifts
       .filter(s => parseISO(s.start_datetime) >= now)
       .sort((a, b) => parseISO(a.start_datetime).getTime() - parseISO(b.start_datetime).getTime())
       .slice(0, 5)
-      .map(s => ({
-        id: s.id,
-        date: parseISO(s.start_datetime),
-        clinicName: getFacilityName(s.facility_id),
-        startTime: format(parseISO(s.start_datetime), 'h:mm a'),
-        endTime: format(parseISO(s.end_datetime), 'h:mm a'),
-      }));
+      .map(s => {
+        const tz = tzOf(s.facility_id);
+        const ymd = formatYMDInTz(s.start_datetime, tz);
+        const [yr, mo, dy] = ymd.split('-').map(Number);
+        // Local Date whose wall-clock matches clinic-local day; downstream
+        // `format(date, 'EEE, MMM d')` then renders the clinic-local label.
+        const localDate = new Date(yr, mo - 1, dy);
+        return {
+          id: s.id,
+          date: localDate,
+          clinicName: getFacilityName(s.facility_id),
+          startTime: formatTimeInTz(s.start_datetime, tz),
+          endTime: formatTimeInTz(s.end_datetime, tz),
+        };
+      });
   }, [shifts, facilities, now]);
 
   // ── Attention items (existing logic preserved) ──

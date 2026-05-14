@@ -1,6 +1,7 @@
 // Helpers for rendering datetimes in a specific IANA timezone (e.g. clinic tz)
 // instead of the browser's local timezone. Used by the week/day grid so a
 // traveling user still sees shifts at their correct clinic-local hours.
+import { format as dfFormat } from 'date-fns';
 
 function getParts(iso: string | Date, timeZone: string) {
   const d = typeof iso === 'string' ? new Date(iso) : iso;
@@ -66,6 +67,22 @@ export function formatHHMMInTz(iso: string | Date, timeZone: string): string {
 export function formatYMDInTz(iso: string | Date, timeZone: string): string {
   const p = getPartsInTz(iso, timeZone);
   return `${p.year}-${String(p.month).padStart(2, '0')}-${String(p.day).padStart(2, '0')}`;
+}
+
+/** Year (number) of the instant when observed in `timeZone`. */
+export function getYearInTz(iso: string | Date, timeZone: string): number {
+  return getPartsInTz(iso, timeZone).year;
+}
+
+/** Format an instant as a calendar date *in `timeZone`* using a date-fns
+ *  pattern. Internally we read the wall-clock parts in tz, build a UTC Date
+ *  with those parts, and format with `formatInUtc` so date-fns sees the
+ *  intended Y/M/D/H/M without re-applying the browser offset. */
+export function formatDateInTz(iso: string | Date, timeZone: string, pattern: string): string {
+  const p = getPartsInTz(iso, timeZone);
+  // Construct a Date whose *local* wall-clock matches the tz-observed parts.
+  const local = new Date(p.year, p.month - 1, p.day, p.hour, p.minute, p.second);
+  return dfFormat(local, pattern);
 }
 
 // Exposed wrapper around the internal getParts so other modules can read the

@@ -1,12 +1,12 @@
 import { useState, useRef, useCallback, useMemo, DragEvent } from 'react';
 import { AlertTriangle } from 'lucide-react';
-import { format, isSameDay, getHours, getMinutes } from 'date-fns';
+import { format, isSameDay } from 'date-fns';
 import { SHIFT_COLORS, BLOCK_COLORS, BLOCK_TYPES, TimeBlock, Facility } from '@/types';
 import { getMarkersForDay } from '@/lib/calendarMarkers';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { CalendarEventStack } from '@/components/schedule/CalendarEventChip';
-import { getHoursInTz, getMinutesInTz, isSameDayInTz, formatTimeInTz } from '@/lib/tzTime';
+import { getHoursInTz, getMinutesInTz, isSameDayInTz, formatTimeInTz, formatYMDInTz } from '@/lib/tzTime';
 import { buildShiftOverlapMap } from '@/lib/businessLogic';
 
 const BROWSER_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -29,10 +29,12 @@ interface WeekTimeGridProps {
   onEditBlock?: (id: string) => void;
   fullDay?: boolean;
   facilities?: Facility[];
+  profileTz?: string;
 }
 
-export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, onDropOnTime, onCellClick, calendarFilters, getEventsForDay, timeBlocks = [], onEditBlock, fullDay = false, facilities = [] }: WeekTimeGridProps) {
+export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, onDropOnTime, onCellClick, calendarFilters, getEventsForDay, timeBlocks = [], onEditBlock, fullDay = false, facilities = [], profileTz }: WeekTimeGridProps) {
   const HOURS = fullDay ? FULL_DAY_HOURS : DEFAULT_HOURS;
+  const blockTz = profileTz || BROWSER_TZ;
   const tzForFacility = useCallback((id: string) => facilities.find(f => f.id === id)?.timezone || BROWSER_TZ, [facilities]);
   const [dragOverCell, setDragOverCell] = useState<string | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
@@ -268,10 +270,11 @@ export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, o
 
           {/* Time blocks – semi-transparent striped overlay bars */}
           {weekDays.map((day, dayIndex) => {
+            const dayYmd = format(day, 'yyyy-MM-dd');
             const dayBlocks = timeBlocks.filter(b => {
-              const bs = new Date(b.start_datetime);
-              const be = new Date(b.end_datetime);
-              return day >= new Date(bs.getFullYear(), bs.getMonth(), bs.getDate()) && day <= new Date(be.getFullYear(), be.getMonth(), be.getDate());
+              const startYmd = formatYMDInTz(b.start_datetime, blockTz);
+              const endYmd = formatYMDInTz(b.end_datetime, blockTz);
+              return dayYmd >= startYmd && dayYmd <= endYmd;
             });
             return dayBlocks.map(b => {
               const bStart = new Date(b.start_datetime);
@@ -281,8 +284,10 @@ export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, o
                 startHour = HOURS[0];
                 endHour = HOURS[HOURS.length - 1] + 1;
               } else {
-                startHour = isSameDay(bStart, day) ? getHours(bStart) + getMinutes(bStart) / 60 : HOURS[0];
-                endHour = isSameDay(bEnd, day) ? getHours(bEnd) + getMinutes(bEnd) / 60 : HOURS[HOURS.length - 1] + 1;
+                const startsToday = formatYMDInTz(b.start_datetime, blockTz) === dayYmd;
+                const endsToday = formatYMDInTz(b.end_datetime, blockTz) === dayYmd;
+                startHour = startsToday ? getHoursInTz(b.start_datetime, blockTz) + getMinutesInTz(b.start_datetime, blockTz) / 60 : HOURS[0];
+                endHour = endsToday ? getHoursInTz(b.end_datetime, blockTz) + getMinutesInTz(b.end_datetime, blockTz) / 60 : HOURS[HOURS.length - 1] + 1;
               }
               const topOffset = Math.max((startHour - HOURS[0]) * HOUR_HEIGHT, 0);
               const bottomOffset = Math.min((endHour - HOURS[0]) * HOUR_HEIGHT, HOURS.length * HOUR_HEIGHT);

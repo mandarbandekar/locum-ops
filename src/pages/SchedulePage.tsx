@@ -11,7 +11,8 @@ import { SHIFT_COLORS, Shift, BLOCK_TYPES, BLOCK_COLORS, TimeBlock, getShiftTota
 import { detectShiftConflicts, buildShiftOverlapMap } from '@/lib/businessLogic';
 import { toast } from 'sonner';
 import { ShiftFormDialog } from '@/components/schedule/ShiftFormDialog';
-import { formatTimeInTz, isSameDayInTz, formatHHMMInTz, zonedWallClockToUtc } from '@/lib/tzTime';
+import { formatTimeInTz, isSameDayInTz, formatHHMMInTz, zonedWallClockToUtc, formatDateInTz, formatYMDInTz, getYearInTz } from '@/lib/tzTime';
+import { useUserProfile } from '@/contexts/UserProfileContext';
 const BROWSER_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
 import { BlockTimeDialog } from '@/components/schedule/BlockTimeDialog';
 import { WeekTimeGrid } from '@/components/schedule/WeekTimeGrid';
@@ -69,6 +70,8 @@ const SCHEDULE_TOUR_STEPS: TourStep[] = [
 
 export default function SchedulePage() {
   const { shifts, facilities, terms, addShift, updateShift, deleteShift, updateFacility, timeBlocks, addTimeBlock, updateTimeBlock, deleteTimeBlock, invoices, lineItems } = useData();
+  const { profile } = useUserProfile();
+  const profileTz = profile?.timezone || BROWSER_TZ;
   const { getEventsForDay } = useCalendarEvents();
   const { profile: taxProfile, hasProfile: hasTaxProfile } = useTaxIntelligence();
   const scheduleTour = useSpotlightTour('locumops_tour_schedule');
@@ -85,10 +88,11 @@ export default function SchedulePage() {
 
   const ytdPaidIncome = useMemo(() => {
     const yr = new Date().getFullYear();
+    const tzOf = (id: string) => facilities.find(f => f.id === id)?.timezone || BROWSER_TZ;
     return shifts
-      .filter(s => paidShiftIds.has(s.id) && new Date(s.start_datetime).getFullYear() === yr)
+      .filter(s => paidShiftIds.has(s.id) && getYearInTz(s.start_datetime, tzOf(s.facility_id)) === yr)
       .reduce((sum, s) => sum + getShiftTotalRevenue(s), 0);
-  }, [shifts, paidShiftIds]);
+  }, [shifts, paidShiftIds, facilities]);
 
   const effectiveRate = useMemo(() => {
     if (!hasTaxProfile || !taxProfile) return 0.25;
@@ -151,9 +155,14 @@ export default function SchedulePage() {
   const rangeStart = view === 'week' ? weekStart : view === 'day' ? new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate()) : monthStart;
   const rangeEnd = view === 'week' ? weekEnd : view === 'day' ? new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), 23, 59, 59, 999) : monthEnd;
 
+  // Bucket shifts into the visible range using their *clinic-local* date so a
+  // traveling user sees the same set of shifts regardless of browser tz.
+  const rangeStartYmd = format(rangeStart, 'yyyy-MM-dd');
+  const rangeEndYmd = format(rangeEnd, 'yyyy-MM-dd');
   const rangeShifts = shifts.filter(s => {
-    const d = new Date(s.start_datetime);
-    return d >= rangeStart && d <= rangeEnd;
+    const tz = facilities.find(f => f.id === s.facility_id)?.timezone || BROWSER_TZ;
+    const ymd = formatYMDInTz(s.start_datetime, tz);
+    return ymd >= rangeStartYmd && ymd <= rangeEndYmd;
   }).sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime());
 
   const activeRangeShifts = rangeShifts;
@@ -191,10 +200,10 @@ export default function SchedulePage() {
     const otherShifts = shifts.filter(s => s.id !== shiftId);
     const conflicts = detectShiftConflicts(otherShifts, { start_datetime: newStart.toISOString(), end_datetime: newEnd.toISOString() });
     if (conflicts.length > 0) {
-      toast.warning(`Scheduling conflict on ${format(newStart, 'EEE, MMM d')} with ${getFacilityName(conflicts[0].facility_id)}`);
+      toast.warning(`Scheduling conflict on ${formatDateInTz(newStart, tz, 'EEE, MMM d')} with ${getFacilityName(conflicts[0].facility_id)}`);
     }
     updateShift({ ...shift, start_datetime: newStart.toISOString(), end_datetime: newEnd.toISOString() } as any);
-    toast.success(`Shift moved to ${format(newStart, 'EEE, MMM d')}`);
+    toast.success(`Shift moved to ${formatDateInTz(newStart, tz, 'EEE, MMM d')}`);
     setDragOverDay(null);
   }, [shifts, updateShift, getFacilityName]);
 
@@ -220,7 +229,7 @@ export default function SchedulePage() {
       toast.warning(`Scheduling conflict at ${formatTimeInTz(newStart, tz)} with ${getFacilityName(conflicts[0].facility_id)}`);
     }
     updateShift({ ...shift, start_datetime: newStart.toISOString(), end_datetime: newEnd.toISOString() } as any);
-    toast.success(`Shift moved to ${format(newStart, 'EEE, MMM d')} ${formatTimeInTz(newStart, tz)}`);
+    toast.success(`Shift moved to ${formatDateInTz(newStart, tz, 'EEE, MMM d')} ${formatTimeInTz(newStart, tz)}`);
   }, [shifts, updateShift, getFacilityName]);
 
   const navigateBack = () => {
@@ -296,9 +305,10 @@ export default function SchedulePage() {
   const renderDayCell = (day: Date, minHeight: string) => {
     const dayShifts = calendarFilters.shifts ? shifts.filter(s => isSameDayInTz(s.start_datetime, day, tzForFacility(s.facility_id))) : [];
     const dayBlocks = timeBlocks.filter(b => {
-      const bs = new Date(b.start_datetime);
-      const be = new Date(b.end_datetime);
-      return day >= new Date(bs.getFullYear(), bs.getMonth(), bs.getDate()) && day <= new Date(be.getFullYear(), be.getMonth(), be.getDate());
+      const startYmd = formatYMDInTz(b.start_datetime, profileTz);
+      const endYmd = formatYMDInTz(b.end_datetime, profileTz);
+      const dayYmd = format(day, 'yyyy-MM-dd');
+      return dayYmd >= startYmd && dayYmd <= endYmd;
     });
     const isToday = isSameDay(day, new Date());
     const markers = getMarkersForDay(day);
@@ -572,6 +582,7 @@ export default function SchedulePage() {
                   getEventsForDay={getEventsForDay}
                   timeBlocks={timeBlocks}
                   onEditBlock={setEditBlock}
+                  profileTz={profileTz}
                 />
                 {totalShiftsInRange === 0 && (
                   <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -597,6 +608,7 @@ export default function SchedulePage() {
                   timeBlocks={timeBlocks}
                   onEditBlock={setEditBlock}
                   fullDay
+                  profileTz={profileTz}
                 />
                 {totalShiftsInRange === 0 && (
                   <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -627,7 +639,7 @@ export default function SchedulePage() {
                       return (
                         <React.Fragment key={s.id}>
                           <tr className="border-b last:border-0 hover:bg-muted/30 cursor-pointer" onClick={() => setEditShift(s.id)}>
-                            <td className="p-3">{format(new Date(s.start_datetime), 'EEE, MMM d')}</td>
+                            <td className="p-3">{formatDateInTz(s.start_datetime, tzForFacility(s.facility_id), 'EEE, MMM d')}</td>
                             <td className="p-3 font-medium">{getFacilityName(s.facility_id)}</td>
                             <td className="p-3 text-muted-foreground hidden md:table-cell">{formatTimeInTz(s.start_datetime, tzForFacility(s.facility_id))} – {formatTimeInTz(s.end_datetime, tzForFacility(s.facility_id))}</td>
                             <td className="p-3 text-muted-foreground hidden md:table-cell">{hrs}h</td>
@@ -660,7 +672,7 @@ export default function SchedulePage() {
                                 <AlertDialogContent>
                                   <AlertDialogHeader>
                                     <AlertDialogTitle>Delete this shift?</AlertDialogTitle>
-                                    <AlertDialogDescription>{getFacilityName(s.facility_id)} — {format(new Date(s.start_datetime), 'MMM d, yyyy')}</AlertDialogDescription>
+                                    <AlertDialogDescription>{getFacilityName(s.facility_id)} — {formatDateInTz(s.start_datetime, tzForFacility(s.facility_id), 'MMM d, yyyy')}</AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
