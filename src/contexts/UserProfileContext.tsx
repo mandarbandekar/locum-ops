@@ -297,6 +297,7 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
             profession: nd.profession || 'other',
             work_style_label: nd.work_style_label || '',
             timezone: nd.timezone,
+            timezone_pinned: !!nd.timezone_pinned,
             currency: nd.currency || 'USD',
             current_tools: [],
             facilities_count_band: nd.facilities_count_band || 'band_1_3',
