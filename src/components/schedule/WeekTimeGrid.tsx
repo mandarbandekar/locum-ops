@@ -271,10 +271,11 @@ export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, o
 
           {/* Time blocks – semi-transparent striped overlay bars */}
           {weekDays.map((day, dayIndex) => {
+            const dayYmd = dfFormat(day, 'yyyy-MM-dd');
             const dayBlocks = timeBlocks.filter(b => {
-              const bs = new Date(b.start_datetime);
-              const be = new Date(b.end_datetime);
-              return day >= new Date(bs.getFullYear(), bs.getMonth(), bs.getDate()) && day <= new Date(be.getFullYear(), be.getMonth(), be.getDate());
+              const startYmd = formatYMDInTz(b.start_datetime, blockTz);
+              const endYmd = formatYMDInTz(b.end_datetime, blockTz);
+              return dayYmd >= startYmd && dayYmd <= endYmd;
             });
             return dayBlocks.map(b => {
               const bStart = new Date(b.start_datetime);
@@ -284,8 +285,10 @@ export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, o
                 startHour = HOURS[0];
                 endHour = HOURS[HOURS.length - 1] + 1;
               } else {
-                startHour = isSameDay(bStart, day) ? getHours(bStart) + getMinutes(bStart) / 60 : HOURS[0];
-                endHour = isSameDay(bEnd, day) ? getHours(bEnd) + getMinutes(bEnd) / 60 : HOURS[HOURS.length - 1] + 1;
+                const startsToday = formatYMDInTz(b.start_datetime, blockTz) === dayYmd;
+                const endsToday = formatYMDInTz(b.end_datetime, blockTz) === dayYmd;
+                startHour = startsToday ? getHoursInTz(b.start_datetime, blockTz) + getMinutesInTz(b.start_datetime, blockTz) / 60 : HOURS[0];
+                endHour = endsToday ? getHoursInTz(b.end_datetime, blockTz) + getMinutesInTz(b.end_datetime, blockTz) / 60 : HOURS[HOURS.length - 1] + 1;
               }
               const topOffset = Math.max((startHour - HOURS[0]) * HOUR_HEIGHT, 0);
               const bottomOffset = Math.min((endHour - HOURS[0]) * HOUR_HEIGHT, HOURS.length * HOUR_HEIGHT);
