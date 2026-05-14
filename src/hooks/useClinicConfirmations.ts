@@ -165,9 +165,10 @@ export function useClinicConfirmations() {
     const monthName = format(new Date(year, month - 1), 'MMMM');
     const contactName = facilitySettings?.primary_contact_name || 'Team';
     const clinicianName = profile ? `${profile.first_name} ${profile.last_name}` : 'Your Locum Clinician';
+    const tz = facility?.timezone || 'America/Los_Angeles';
 
     const shiftList = bookedShifts
-      .map(s => `  - ${format(new Date(s.start_datetime), 'EEE, MMM d')} — ${format(new Date(s.start_datetime), 'h:mm a')} – ${format(new Date(s.end_datetime), 'h:mm a')}`)
+      .map(s => `  - ${formatDateInTz(s.start_datetime, tz, 'EEE, MMM d')} — ${formatTimeInTz(s.start_datetime, tz)} – ${formatTimeInTz(s.end_datetime, tz)}`)
       .join('\n');
 
     return {
@@ -184,11 +185,12 @@ export function useClinicConfirmations() {
 
     const contactName = facilitySettings?.primary_contact_name || 'Team';
     const clinicianName = profile ? `${profile.first_name} ${profile.last_name}` : 'Your Locum Clinician';
-    const dateLabel = format(new Date(shift.start_datetime), 'EEEE, MMMM d, yyyy');
-    const timeLabel = `${format(new Date(shift.start_datetime), 'h:mm a')} – ${format(new Date(shift.end_datetime), 'h:mm a')}`;
+    const tz = facility?.timezone || 'America/Los_Angeles';
+    const dateLabel = formatDateInTz(shift.start_datetime, tz, 'EEEE, MMMM d, yyyy');
+    const timeLabel = `${formatTimeInTz(shift.start_datetime, tz)} – ${formatTimeInTz(shift.end_datetime, tz)}`;
 
     return {
-      subject: `Upcoming Relief Shift Reminder — ${format(new Date(shift.start_datetime), 'MMM d')}`,
+      subject: `Upcoming Relief Shift Reminder — ${formatDateInTz(shift.start_datetime, tz, 'MMM d')}`,
       body: `Hi ${contactName},\n\nJust confirming my upcoming relief shift at ${facility?.name || 'your practice'}:\n\n  - ${dateLabel}\n  - ${timeLabel}\n\nPlease let me know if anything has changed.\n\nThank you,\n${clinicianName}`,
     };
   }, [facilities, settings, shifts, profile]);
