@@ -187,6 +187,23 @@ export default function SettingsProfilePage() {
                     ))}
                   </SelectContent>
                 </Select>
+                {(() => {
+                  const deviceInUs = US_TIMEZONES.some(tz => tz.value === deviceTz);
+                  const mismatch = !!deviceTz && deviceTz !== timezone;
+                  if (!deviceInUs || !mismatch) return null;
+                  const deviceLabel = US_TIMEZONES.find(tz => tz.value === deviceTz)?.label || deviceTz;
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => { setTimezone(deviceTz); setTimezonePinned(true); }}
+                      className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/50 hover:bg-muted px-2.5 py-1 text-[11px] text-foreground transition-colors"
+                    >
+                      <span className="text-muted-foreground">Device detected:</span>
+                      <span className="font-medium">{deviceLabel}</span>
+                      <span className="text-primary font-medium">· Use this</span>
+                    </button>
+                  );
+                })()}
                 <div className="flex items-center justify-between gap-2 mt-2">
                   <div className="flex items-center gap-2">
                     <Switch
@@ -204,8 +221,8 @@ export default function SettingsProfilePage() {
                   {timezonePinned
                     ? 'Pinned. Stays the same across devices.'
                     : 'Follows the device you sign in from.'}
-                  {deviceTz && deviceTz !== timezone && (
-                    <> Your device is currently in {deviceTz}.</>
+                  {deviceTz && deviceTz !== timezone && !US_TIMEZONES.some(tz => tz.value === deviceTz) && (
+                    <> Your device is currently in {deviceTz} (outside US).</>
                   )}
                 </p>
               </div>
