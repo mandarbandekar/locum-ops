@@ -28,7 +28,7 @@ import { getBillingPeriod } from '@/lib/invoiceAutoGeneration';
 import type { BillingCadence } from '@/lib/invoiceBillingDefaults';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { zonedWallClockToUtc, formatHHMMInTz, formatYMDInTz } from '@/lib/tzTime';
+import { zonedWallClockToUtc, formatHHMMInTz, formatYMDInTz, formatDateInTz } from '@/lib/tzTime';
 
 const BROWSER_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
 import { useIsMobile } from '@/hooks/use-mobile';
