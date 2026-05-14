@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { friendlyDbError } from '@/lib/errorUtils';
 import type { Facility, Shift } from '@/types';
+import { zonedWallClockToUtc } from '@/lib/tzTime';
 
 const db = (table: string) => supabase.from(table as any);
 
