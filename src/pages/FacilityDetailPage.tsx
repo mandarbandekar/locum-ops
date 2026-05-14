@@ -616,7 +616,7 @@ function InvoicesTab({ invoices, onNavigate }: { invoices: any[]; onNavigate: (i
               {invoices.map(i => (
                 <tr key={i.id} className="border-b last:border-0 hover:bg-muted/30 cursor-pointer" onClick={() => onNavigate(i.id)}>
                   <td className="p-3 font-medium">{i.invoice_number}</td>
-                  <td className="p-3 text-muted-foreground hidden sm:table-cell">{format(new Date(i.period_start), 'MMM d')} - {format(new Date(i.period_end), 'MMM d')}</td>
+                  <td className="p-3 text-muted-foreground hidden sm:table-cell">{formatDateInTz(i.period_start, profileTz, 'MMM d')} - {formatDateInTz(i.period_end, profileTz, 'MMM d')}</td>
                   <td className="p-3">${i.total_amount.toLocaleString()}</td>
                   <td className="p-3"><StatusBadge status={i.status} /></td>
                 </tr>
