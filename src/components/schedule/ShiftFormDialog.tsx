@@ -28,9 +28,23 @@ import { getBillingPeriod } from '@/lib/invoiceAutoGeneration';
 import type { BillingCadence } from '@/lib/invoiceBillingDefaults';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { zonedWallClockToUtc, formatHHMMInTz, formatYMDInTz } from '@/lib/tzTime';
+import { zonedWallClockToUtc, formatHHMMInTz, formatYMDInTz, formatDateInTz } from '@/lib/tzTime';
 
 const BROWSER_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+/** Short tz label for a given instant + IANA zone, e.g. "PDT" or "EST". */
+function tzShortName(date: Date, timeZone: string): string {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      timeZoneName: 'short',
+      hour: '2-digit',
+    }).formatToParts(date);
+    return parts.find(p => p.type === 'timeZoneName')?.value || '';
+  } catch {
+    return '';
+  }
+}
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
   ENGAGEMENT_LABELS,
@@ -843,6 +857,20 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
             <TimePicker value={endTime} onChange={setEndTime} placeholder="Select end" label="End time" />
           </div>
         </div>
+        {(() => {
+          const facTz = facilities.find(f => f.id === facilityId)?.timezone || BROWSER_TZ;
+          const userTz = profile?.timezone || BROWSER_TZ;
+          const refDate = selectedDates[0] || new Date();
+          const short = tzShortName(refDate, facTz);
+          const traveling = userTz && userTz !== facTz;
+          return (
+            <p className="mt-1.5 text-[11px] text-muted-foreground">
+              Times saved as <span className="font-medium text-foreground">clinic-local</span>
+              {short ? ` (${facTz}, ${short})` : ` (${facTz})`}
+              {traveling ? ` — your device is in ${userTz}.` : '.'}
+            </p>
+          );
+        })()}
         {activeRateKind === 'hourly' && hoursInvalidReason && (
           <p className="mt-1.5 text-[11px] text-destructive flex items-center gap-1">
             <AlertTriangle className="h-3 w-3" /> {hoursInvalidReason}
@@ -863,7 +891,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
             <p className="font-semibold">Scheduling conflict{conflicts.length > 1 ? 's' : ''}:</p>
             {conflicts.map(c => (
               <p key={c.id} className="mt-0.5">
-                {facilities.find((f: any) => f.id === c.facility_id)?.name || 'Unknown'} — {format(new Date(c.start_datetime), 'MMM d, h:mm a')} to {format(new Date(c.end_datetime), 'h:mm a')}
+                {(() => { const cf = facilities.find((f: any) => f.id === c.facility_id); const cTz = cf?.timezone || BROWSER_TZ; return (<>{cf?.name || 'Unknown'} — {formatDateInTz(c.start_datetime, cTz, 'MMM d, h:mm a')} to {formatDateInTz(c.end_datetime, cTz, 'h:mm a')}</>); })()}
               </p>
             ))}
           </div>
@@ -1169,7 +1197,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
                 <p className="font-semibold">Heads up — scheduling conflict{conflicts.length > 1 ? 's' : ''}:</p>
                 {conflicts.map(c => (
                   <p key={c.id} className="mt-0.5">
-                    {facilities.find((f: any) => f.id === c.facility_id)?.name || 'Unknown'} — {format(new Date(c.start_datetime), 'MMM d, h:mm a')} to {format(new Date(c.end_datetime), 'h:mm a')}
+                    {(() => { const cf = facilities.find((f: any) => f.id === c.facility_id); const cTz = cf?.timezone || BROWSER_TZ; return (<>{cf?.name || 'Unknown'} — {formatDateInTz(c.start_datetime, cTz, 'MMM d, h:mm a')} to {formatDateInTz(c.end_datetime, cTz, 'h:mm a')}</>); })()}
                   </p>
                 ))}
               </div>
@@ -1261,7 +1289,7 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
                 <p className="font-semibold">Scheduling conflict{conflicts.length > 1 ? 's' : ''}:</p>
                 {conflicts.map(c => (
                   <p key={c.id} className="mt-0.5">
-                    {facilities.find((f: any) => f.id === c.facility_id)?.name || 'Unknown'} — {format(new Date(c.start_datetime), 'MMM d, h:mm a')} to {format(new Date(c.end_datetime), 'h:mm a')}
+                    {(() => { const cf = facilities.find((f: any) => f.id === c.facility_id); const cTz = cf?.timezone || BROWSER_TZ; return (<>{cf?.name || 'Unknown'} — {formatDateInTz(c.start_datetime, cTz, 'MMM d, h:mm a')} to {formatDateInTz(c.end_datetime, cTz, 'h:mm a')}</>); })()}
                   </p>
                 ))}
               </div>
