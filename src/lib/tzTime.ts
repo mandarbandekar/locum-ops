@@ -1,6 +1,7 @@
 // Helpers for rendering datetimes in a specific IANA timezone (e.g. clinic tz)
 // instead of the browser's local timezone. Used by the week/day grid so a
 // traveling user still sees shifts at their correct clinic-local hours.
+import { format as dfFormat } from 'date-fns';
 
 function getParts(iso: string | Date, timeZone: string) {
   const d = typeof iso === 'string' ? new Date(iso) : iso;
