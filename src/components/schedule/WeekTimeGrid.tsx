@@ -270,7 +270,7 @@ export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, o
 
           {/* Time blocks – semi-transparent striped overlay bars */}
           {weekDays.map((day, dayIndex) => {
-            const dayYmd = dfFormat(day, 'yyyy-MM-dd');
+            const dayYmd = format(day, 'yyyy-MM-dd');
             const dayBlocks = timeBlocks.filter(b => {
               const startYmd = formatYMDInTz(b.start_datetime, blockTz);
               const endYmd = formatYMDInTz(b.end_datetime, blockTz);
