@@ -79,13 +79,10 @@ export function getYearInTz(iso: string | Date, timeZone: string): number {
  *  with those parts, and format with `formatInUtc` so date-fns sees the
  *  intended Y/M/D/H/M without re-applying the browser offset. */
 export function formatDateInTz(iso: string | Date, timeZone: string, pattern: string): string {
-  // Lazy import to keep tzTime tree-shakeable for non-format callers.
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { format } = require('date-fns') as typeof import('date-fns');
   const p = getPartsInTz(iso, timeZone);
   // Construct a Date whose *local* wall-clock matches the tz-observed parts.
   const local = new Date(p.year, p.month - 1, p.day, p.hour, p.minute, p.second);
-  return format(local, pattern);
+  return dfFormat(local, pattern);
 }
 
 // Exposed wrapper around the internal getParts so other modules can read the
