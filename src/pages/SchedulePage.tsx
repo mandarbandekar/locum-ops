@@ -229,7 +229,7 @@ export default function SchedulePage() {
       toast.warning(`Scheduling conflict at ${formatTimeInTz(newStart, tz)} with ${getFacilityName(conflicts[0].facility_id)}`);
     }
     updateShift({ ...shift, start_datetime: newStart.toISOString(), end_datetime: newEnd.toISOString() } as any);
-    toast.success(`Shift moved to ${format(newStart, 'EEE, MMM d')} ${formatTimeInTz(newStart, tz)}`);
+    toast.success(`Shift moved to ${formatDateInTz(newStart, tz, 'EEE, MMM d')} ${formatTimeInTz(newStart, tz)}`);
   }, [shifts, updateShift, getFacilityName]);
 
   const navigateBack = () => {
