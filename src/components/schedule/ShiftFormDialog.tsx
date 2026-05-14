@@ -153,6 +153,9 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
   );
   const [workedThroughBreak, setWorkedThroughBreak] = useState<boolean>(!!existing?.worked_through_break);
   const [acknowledgeConflict, setAcknowledgeConflict] = useState(false);
+  // Per-shift toggle: which timezone do the wall-clock inputs represent?
+  // 'clinic' (default, project rule) or 'profile' (user's tz override).
+  const [inputTzMode, setInputTzMode] = useState<'clinic' | 'profile'>('clinic');
 
   const isMobile = useIsMobile();
   const { updateTerms, timeBlocks } = useData();
