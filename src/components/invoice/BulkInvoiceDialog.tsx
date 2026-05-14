@@ -40,6 +40,9 @@ interface Props {
 
 export function BulkInvoiceDialog({ open, onOpenChange, preselectedFacilityId }: Props) {
   const { facilities, shifts, invoices, lineItems, addInvoice } = useData();
+  const { profile } = useUserProfile();
+  const profileTz = profile?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const fmtPeriod = (d: Date, pattern: string) => formatDateInTz(d.toISOString(), profileTz, pattern);
   const navigate = useNavigate();
 
   const [step, setStep] = useState(1);
