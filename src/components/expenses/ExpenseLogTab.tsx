@@ -245,7 +245,7 @@ export default function ExpenseLogTab({
                         )}
                       </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                        <span>{new Date(exp.expense_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                        <span>{parseLocalYMD(exp.expense_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                         {exp.description && <span className="truncate">· {exp.description}</span>}
                         {exp.facility_id && facilityMap[exp.facility_id] && (
                           <span className="truncate">· {facilityMap[exp.facility_id]}</span>
