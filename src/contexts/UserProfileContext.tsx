@@ -35,6 +35,9 @@ export interface UserProfile {
   profession: Profession;
   work_style_label: string;
   timezone: string;
+  /** When true, profile timezone stays fixed across devices. When false, it
+   *  auto-syncs to the device's tz on each session load. */
+  timezone_pinned: boolean;
   currency: string;
   current_tools: CurrentTool[];
   facilities_count_band: FacilitiesCountBand;
