@@ -70,6 +70,8 @@ const SCHEDULE_TOUR_STEPS: TourStep[] = [
 
 export default function SchedulePage() {
   const { shifts, facilities, terms, addShift, updateShift, deleteShift, updateFacility, timeBlocks, addTimeBlock, updateTimeBlock, deleteTimeBlock, invoices, lineItems } = useData();
+  const { profile } = useUserProfile();
+  const profileTz = profile?.timezone || BROWSER_TZ;
   const { getEventsForDay } = useCalendarEvents();
   const { profile: taxProfile, hasProfile: hasTaxProfile } = useTaxIntelligence();
   const scheduleTour = useSpotlightTour('locumops_tour_schedule');
