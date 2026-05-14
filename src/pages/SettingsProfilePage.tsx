@@ -61,6 +61,7 @@ export default function SettingsProfilePage() {
       invoice_email: invoiceEmail.trim() || null,
       invoice_phone: invoicePhone.trim() || null,
       timezone,
+      timezone_pinned: timezonePinned,
       currency,
       profession,
       
