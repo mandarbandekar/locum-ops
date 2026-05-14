@@ -582,6 +582,7 @@ export default function SchedulePage() {
                   getEventsForDay={getEventsForDay}
                   timeBlocks={timeBlocks}
                   onEditBlock={setEditBlock}
+                  profileTz={profileTz}
                 />
                 {totalShiftsInRange === 0 && (
                   <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -607,6 +608,7 @@ export default function SchedulePage() {
                   timeBlocks={timeBlocks}
                   onEditBlock={setEditBlock}
                   fullDay
+                  profileTz={profileTz}
                 />
                 {totalShiftsInRange === 0 && (
                   <div className="flex flex-col items-center justify-center py-16 text-center">
