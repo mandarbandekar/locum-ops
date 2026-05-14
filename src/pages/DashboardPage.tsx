@@ -517,23 +517,17 @@ export default function DashboardPage() {
       .slice(0, 5)
       .map(s => {
         const tz = tzOf(s.facility_id);
-        // Build a wall-clock-equivalent local Date so downstream `format(date, 'EEE, MMM d')`
-        // shows the *clinic-local* day even when the user is traveling.
-        const p = new Intl.DateTimeFormat('en-US', {
-          timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
-          hour: '2-digit', minute: '2-digit', hour12: false,
-        }).formatToParts(parseISO(s.start_datetime));
-        const get = (t: string) => parts => parts.find((x: any) => x.type === t)?.value || '0';
-        const yr = parseInt(get('year')(p), 10);
-        const mo = parseInt(get('month')(p), 10);
-        const dy = parseInt(get('day')(p), 10);
+        const ymd = formatYMDInTz(s.start_datetime, tz);
+        const [yr, mo, dy] = ymd.split('-').map(Number);
+        // Local Date whose wall-clock matches clinic-local day; downstream
+        // `format(date, 'EEE, MMM d')` then renders the clinic-local label.
         const localDate = new Date(yr, mo - 1, dy);
         return {
           id: s.id,
           date: localDate,
           clinicName: getFacilityName(s.facility_id),
-          startTime: new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: true }).format(parseISO(s.start_datetime)),
-          endTime: new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: true }).format(parseISO(s.end_datetime)),
+          startTime: formatTimeInTz(s.start_datetime, tz),
+          endTime: formatTimeInTz(s.end_datetime, tz),
         };
       });
   }, [shifts, facilities, now]);
