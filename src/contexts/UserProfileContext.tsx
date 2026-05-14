@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { shouldAutoSyncTz } from '@/lib/usTimezones';
 
 export type Profession = 'vet' | 'nurse' | 'physician' | 'pharmacist' | 'pt_ot' | 'other';
 export type FacilitiesCountBand = 'band_1_3' | 'band_4_8' | 'band_9_plus';
@@ -35,6 +36,9 @@ export interface UserProfile {
   profession: Profession;
   work_style_label: string;
   timezone: string;
+  /** When true, profile timezone stays fixed across devices. When false, it
+   *  auto-syncs to the device's tz on each session load. */
+  timezone_pinned: boolean;
   currency: string;
   current_tools: CurrentTool[];
   facilities_count_band: FacilitiesCountBand;
@@ -101,6 +105,7 @@ export const DEFAULT_PROFILE: Omit<UserProfile, 'id' | 'user_id'> = {
   profession: 'other',
   work_style_label: '',
   timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  timezone_pinned: false,
   currency: 'USD',
   current_tools: [],
   facilities_count_band: 'band_1_3',
@@ -174,6 +179,21 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
     loadProfile();
   }, [isDemo, user?.id]);
 
+  // Auto-sync the saved profile timezone to the current device tz, but only
+  // when the user hasn't pinned it. Runs once per profile load.
+  const autoSyncedRef = useRef(false);
+  useEffect(() => {
+    if (isDemo || !profile || autoSyncedRef.current) return;
+    const deviceTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (shouldAutoSyncTz({ pinned: profile.timezone_pinned, profileTz: profile.timezone, deviceTz })) {
+      autoSyncedRef.current = true;
+      // fire-and-forget; updateProfile handles the optimistic state update
+      updateProfile({ timezone: deviceTz });
+    } else {
+      autoSyncedRef.current = true;
+    }
+  }, [isDemo, profile?.id, profile?.timezone, profile?.timezone_pinned]);
+
   async function loadProfile() {
     try {
       const { data, error } = await db('user_profiles')
@@ -222,6 +242,7 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
           profession,
           work_style_label: d.work_style_label,
           timezone: d.timezone,
+          timezone_pinned: !!d.timezone_pinned,
           currency: d.currency,
           current_tools: (d.current_tools as CurrentTool[]) || [],
           facilities_count_band: d.facilities_count_band,
@@ -292,6 +313,7 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
             profession: nd.profession || 'other',
             work_style_label: nd.work_style_label || '',
             timezone: nd.timezone,
+            timezone_pinned: !!nd.timezone_pinned,
             currency: nd.currency || 'USD',
             current_tools: [],
             facilities_count_band: nd.facilities_count_band || 'band_1_3',

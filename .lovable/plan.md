@@ -1,56 +1,58 @@
-## Timezone-aware shift form
+## Profile timezone setting (UI + persistence only)
 
-### Current state
+Surface the existing `user_profiles.timezone` and `user_profiles.timezone_pinned` columns in **Settings → Profile**, with a proper US-only dropdown and a "Pin this timezone" toggle. No behavior changes to calendar/dashboard rendering — those keep today's rules. A follow-up task will wire surfaces.
 
-`ShiftFormDialog` already saves via `zonedWallClockToUtc(date, time, facility.timezone)` and reads back via `formatYMDInTz` / `formatHHMMInTz`. So the **persistence path is correct** today: a "May 27, 8:00 AM" entry for an LA clinic is stored as the right UTC instant whether you're in San Francisco or Rome.
+### Why this is small
 
-What's missing are the **defaults, affordances, and conflict-list rendering** inside the dialog itself, so a traveling vet has no doubt which timezone they're typing in and never sees a stray browser-tz date.
-
-### Gaps to close
-
-1. **Time inputs have no tz label.** Vet in Italy editing an LA shift sees "08:00" with no indication it means LA-local.
-2. **Switching facility silently re-anchors the wall-clock to the new clinic's tz** with no notice. If they typed 8 AM for LA then pick NY, it now means 8 AM NY.
-3. **Default start time on calendar-slot clicks** (`defaultStartTime`) is computed in browser tz upstream — wrong when traveling.
-4. **Conflict pills inside the dialog** (3 spots: ~lines 866, 1172, 1264) use `format(new Date(c.start_datetime), 'MMM d, h:mm a')` — render in browser tz, can show wrong day.
-5. **Default date for new shift** (`defaultDate`) is a JS `Date` built upstream from browser-local day — same dateline risk.
+- DB already has `timezone` (not null, default `America/New_York`) and `timezone_pinned` (not null, default `false`).
+- `UserProfile` interface already carries `timezone`. Just need to add `timezone_pinned`.
+- Auto-sync on login is already the de facto behavior per memory; we'll formalize it: write device tz to profile on session load **only when `timezone_pinned = false`**.
 
 ### Changes
 
-**A. Tz label + helper text on time fields** (`ShiftFormDialog.tsx`)
-- Show "Clinic time · America/Los_Angeles (PDT)" next to start/end inputs. Use `Intl.DateTimeFormat(...).formatToParts` to get the short tz name for the selected date.
-- If the user's profile tz ≠ clinic tz, add a one-line subtle note: "You're in Europe/Rome — these times are saved as clinic-local."
+**1. `src/lib/usTimezones.ts` (new)** — single source of truth so Settings and `FacilityDetailPage` share the list:
+```ts
+export const US_TIMEZONES = [
+  { value: 'America/New_York',    label: 'Eastern (New York)' },
+  { value: 'America/Chicago',     label: 'Central (Chicago)' },
+  { value: 'America/Denver',      label: 'Mountain (Denver)' },
+  { value: 'America/Phoenix',     label: 'Mountain — no DST (Phoenix)' },
+  { value: 'America/Los_Angeles', label: 'Pacific (Los Angeles)' },
+  { value: 'America/Anchorage',   label: 'Alaska (Anchorage)' },
+  { value: 'Pacific/Honolulu',    label: 'Hawaii (Honolulu)' },
+];
+```
 
-**B. Facility-switch tz reconciliation**
-- When `facilityId` changes and the dialog isn't editing an existing shift's original facility, keep the wall-clock as typed but show an inline notice: "Times now interpreted as <new tz>." No silent conversion (matches current behavior, just makes it visible).
-- When editing an `existing` shift and the user changes facility, offer a single toggle: *Keep wall-clock time* (default) vs *Keep absolute instant* (re-derive HH:mm in new tz from existing UTC). Default to keep wall-clock to match today's behavior.
+**2. `src/contexts/UserProfileContext.tsx`**
+- Add `timezone_pinned: boolean` to `UserProfile` interface and `DEFAULT_PROFILE`.
+- Hydrate it from the row read; include it in update payloads.
+- On profile load, if `timezone_pinned === false` and `Intl…resolvedOptions().timeZone !== profile.timezone`, fire-and-forget update of `timezone` to the device value (no toast). Guarded by a one-shot ref so it doesn't loop.
 
-**C. Tz-aware defaults from calendar**
-- In `SchedulePage` callers that open the dialog with `defaultDate`/`defaultStartTime`, derive both from the **clicked day's clinic-local context**:
-  - For day/week grid clicks, the slot already knows its date + hour in clinic tz — pass `defaultDateYMD: string` (YYYY-MM-DD) and `defaultStartTime: 'HH:mm'` instead of a `Date`.
-  - Update `ShiftFormDialog` props: add `defaultDateYMD?: string`; keep `defaultDate` as a deprecated fallback. Initialize `selectedDates` via `ymdToLocalDate(defaultDateYMD)` first.
-- For "+ Add shift" from dashboard / global, default date = today in **selected facility's tz** via `formatYMDInTz(new Date(), tz)`; default start time blank (current behavior).
+**3. `src/pages/SettingsProfilePage.tsx`**
+- Replace the free-text Timezone `Input` with:
+  - `Select` populated from `US_TIMEZONES`.
+  - Below it, a `Switch` + label: **"Pin this timezone"** with helper copy: *"When off, your timezone follows the device you're using. Pin it if you want to keep one timezone while traveling."*
+  - When the switch flips on, save `{ timezone, timezone_pinned: true }`. When flipped off, save `{ timezone_pinned: false }` and immediately re-sync to device tz.
+- Show the device tz in muted text under the dropdown when it differs from the saved value: *"Your device is currently in Europe/Rome."*
+- Save button persists both fields together.
 
-**D. Fix conflict-pill rendering inside the dialog**
-- Replace the 3 occurrences of `format(new Date(c.start_datetime), …)` with `formatDateInTz(c.start_datetime, conflictFacilityTz, 'MMM d, h:mm a')` where `conflictFacilityTz = facilities.find(f => f.id === c.facility_id)?.timezone ?? BROWSER_TZ`.
+**4. `src/pages/FacilityDetailPage.tsx`**
+- Replace inline tz `<SelectItem>` block with `US_TIMEZONES.map(...)` so we have one list.
 
-**E. Tests** (`src/test/shiftFormTz.test.ts`)
-- Render dialog with `TZ=Europe/Rome`, facility tz `America/Los_Angeles`, fill date 2026-05-27, time 08:00, submit → assert `start_datetime === '2026-05-27T15:00:00.000Z'` (PDT).
-- Edit existing shift stored as `2026-05-27T15:00Z`, dialog displays `08:00` and date `May 27` regardless of `TZ`.
-- DST: 2026-03-08 02:30 LA → assert documented behavior (resolves to 03:30 PDT) and round-trip is stable.
-- Switching facility from LA to NY: wall-clock stays `08:00`, saved instant changes to `2026-05-27T12:00Z`.
-- Conflict pill renders the conflicting shift's date/time in **its** facility tz, not browser tz.
+**5. Tests** — `src/test/profileTimezone.test.ts` (light)
+- US_TIMEZONES contains exactly 7 entries and includes `Pacific/Honolulu`.
+- Pinning logic helper: `shouldAutoSyncTz({ pinned: false, profileTz, deviceTz })` returns `true` only when unpinned and tzs differ.
 
-### Out of scope
+### Out of scope (explicit follow-ups)
 
-- Changing the "wall-clock vs absolute instant" default on facility switch (keeping today's behavior).
-- Backfilling historic shifts.
-- Other surfaces (dashboard, list view, time-grid) — already fixed in the prior phase.
+- No changes to calendar grid, dashboard "Coming Up", time-block bucketing, or any rendering surface. Those still follow the existing rule ("shifts always in clinic tz; profile tz only used for personal anchors today").
+- No migrations (columns already exist).
+- No iCal/sync changes.
 
 ### Files touched
 
-- `src/components/schedule/ShiftFormDialog.tsx` — tz labels, facility-switch notice, conflict-pill formatting, accept `defaultDateYMD`.
-- `src/pages/SchedulePage.tsx` — pass `defaultDateYMD` + clinic-tz `defaultStartTime` to the dialog.
-- `src/components/schedule/WeekTimeGrid.tsx` (or wherever slot clicks originate) — emit clinic-tz YMD/HHmm.
-- `src/test/shiftFormTz.test.ts` — new.
-
-No DB migration. No business-logic changes outside the form.
+- `src/lib/usTimezones.ts` (new)
+- `src/contexts/UserProfileContext.tsx`
+- `src/pages/SettingsProfilePage.tsx`
+- `src/pages/FacilityDetailPage.tsx`
+- `src/test/profileTimezone.test.ts` (new)

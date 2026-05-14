@@ -27,6 +27,7 @@ import { EngagementSelector } from '@/components/facilities/EngagementSelector';
 import { BreakPolicySelector } from '@/components/facilities/BreakPolicySelector';
 import { getBreakPolicyLabel } from '@/lib/shiftBreak';
 import type { EngagementType, TaxFormType } from '@/lib/engagementOptions';
+import { US_TIMEZONES } from '@/lib/usTimezones';
 
 export default function FacilityDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -369,13 +370,9 @@ function ContractTab({ facility, facilityTerms, onSaveRates, onUpdateTerms, onUp
                 <Select value={timezone} onValueChange={setTimezone}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="America/New_York">Eastern (New York)</SelectItem>
-                    <SelectItem value="America/Chicago">Central (Chicago)</SelectItem>
-                    <SelectItem value="America/Denver">Mountain (Denver)</SelectItem>
-                    <SelectItem value="America/Phoenix">Mountain — no DST (Phoenix)</SelectItem>
-                    <SelectItem value="America/Los_Angeles">Pacific (Los Angeles)</SelectItem>
-                    <SelectItem value="America/Anchorage">Alaska (Anchorage)</SelectItem>
-                    <SelectItem value="Pacific/Honolulu">Hawaii (Honolulu)</SelectItem>
+                    {US_TIMEZONES.map(tz => (
+                      <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               ) : (

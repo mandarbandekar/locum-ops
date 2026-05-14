@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useUserProfile, type Profession } from '@/contexts/UserProfileContext';
 import { GooglePlacesAutocomplete } from '@/components/GooglePlacesAutocomplete';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
+import { US_TIMEZONES } from '@/lib/usTimezones';
 import { toast } from 'sonner';
 import { Save, MapPin } from 'lucide-react';
 
@@ -33,6 +35,8 @@ export default function SettingsProfilePage() {
   const [invoiceEmail, setInvoiceEmail] = useState(profile?.invoice_email || '');
   const [invoicePhone, setInvoicePhone] = useState(profile?.invoice_phone || '');
   const [timezone, setTimezone] = useState(profile?.timezone || '');
+  const [timezonePinned, setTimezonePinned] = useState(!!profile?.timezone_pinned);
+  const deviceTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const [currency, setCurrency] = useState(profile?.currency || 'USD');
   const [profession, setProfession] = useState<Profession>(profile?.profession || 'other');
 
@@ -57,6 +61,7 @@ export default function SettingsProfilePage() {
       invoice_email: invoiceEmail.trim() || null,
       invoice_phone: invoicePhone.trim() || null,
       timezone,
+      timezone_pinned: timezonePinned,
       currency,
       profession,
       
@@ -174,8 +179,35 @@ export default function SettingsProfilePage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label>Timezone</Label>
-                <Input value={timezone} onChange={e => setTimezone(e.target.value)} />
-                <p className="text-xs text-muted-foreground mt-1">Used for schedule display.</p>
+                <Select value={timezone} onValueChange={setTimezone}>
+                  <SelectTrigger><SelectValue placeholder="Select timezone" /></SelectTrigger>
+                  <SelectContent>
+                    {US_TIMEZONES.map(tz => (
+                      <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="flex items-center justify-between gap-2 mt-2">
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      id="tz-pinned"
+                      checked={timezonePinned}
+                      onCheckedChange={(v) => {
+                        setTimezonePinned(v);
+                        if (!v) setTimezone(deviceTz);
+                      }}
+                    />
+                    <Label htmlFor="tz-pinned" className="text-xs cursor-pointer">Pin this timezone</Label>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {timezonePinned
+                    ? 'Pinned. Stays the same across devices.'
+                    : 'Follows the device you sign in from.'}
+                  {deviceTz && deviceTz !== timezone && (
+                    <> Your device is currently in {deviceTz}.</>
+                  )}
+                </p>
               </div>
               <div>
                 <Label>Currency</Label>
