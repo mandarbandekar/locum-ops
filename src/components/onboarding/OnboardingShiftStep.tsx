@@ -69,8 +69,12 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
     if (!selectedFacility || submitting || !canSave) return;
     setSubmitting(true);
     try {
-      const startDt = new Date(`${shiftDate}T${startTime}:00`);
-      const endDt = new Date(`${shiftDate}T${endTime}:00`);
+      const tz = selectedFacility.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const startDt = zonedWallClockToUtc(shiftDate, startTime, tz);
+      let endDt = zonedWallClockToUtc(shiftDate, endTime, tz);
+      if (endDt.getTime() <= startDt.getTime()) {
+        endDt = new Date(endDt.getTime() + 24 * 60 * 60 * 1000);
+      }
       const shift = await addShift({
         facility_id: selectedFacility.id,
         start_datetime: startDt.toISOString(),
