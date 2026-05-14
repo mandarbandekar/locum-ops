@@ -155,9 +155,14 @@ export default function SchedulePage() {
   const rangeStart = view === 'week' ? weekStart : view === 'day' ? new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate()) : monthStart;
   const rangeEnd = view === 'week' ? weekEnd : view === 'day' ? new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), 23, 59, 59, 999) : monthEnd;
 
+  // Bucket shifts into the visible range using their *clinic-local* date so a
+  // traveling user sees the same set of shifts regardless of browser tz.
+  const rangeStartYmd = format(rangeStart, 'yyyy-MM-dd');
+  const rangeEndYmd = format(rangeEnd, 'yyyy-MM-dd');
   const rangeShifts = shifts.filter(s => {
-    const d = new Date(s.start_datetime);
-    return d >= rangeStart && d <= rangeEnd;
+    const tz = facilities.find(f => f.id === s.facility_id)?.timezone || BROWSER_TZ;
+    const ymd = formatYMDInTz(s.start_datetime, tz);
+    return ymd >= rangeStartYmd && ymd <= rangeEndYmd;
   }).sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime());
 
   const activeRangeShifts = rangeShifts;
