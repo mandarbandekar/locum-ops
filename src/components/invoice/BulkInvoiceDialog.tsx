@@ -304,9 +304,9 @@ export function BulkInvoiceDialog({ open, onOpenChange, preselectedFacilityId }:
                       <label key={s.id} className="flex items-center gap-3 px-3 py-2 hover:bg-muted/30 cursor-pointer text-sm">
                         <Checkbox checked={selectedShiftIds.has(s.id)} onCheckedChange={() => toggleShift(s.id)} />
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium">{format(new Date(s.start_datetime), 'MMM d, yyyy')}</div>
+                          <div className="font-medium">{formatDateInTz(s.start_datetime, facility?.timezone || 'America/Los_Angeles', 'MMM d, yyyy')}</div>
                           <div className="text-xs text-muted-foreground">
-                            {format(new Date(s.start_datetime), 'h:mm a')} – {format(new Date(s.end_datetime), 'h:mm a')}
+                            {formatTimeInTz(s.start_datetime, facility?.timezone || 'America/Los_Angeles')} – {formatTimeInTz(s.end_datetime, facility?.timezone || 'America/Los_Angeles')}
                             {isHourly && (
                               <span className="ml-2">· {hoursLabel}h × ${Number(s.hourly_rate).toLocaleString()}/hr</span>
                             )}
