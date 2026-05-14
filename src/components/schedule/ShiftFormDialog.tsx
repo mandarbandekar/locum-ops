@@ -857,6 +857,20 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
             <TimePicker value={endTime} onChange={setEndTime} placeholder="Select end" label="End time" />
           </div>
         </div>
+        {(() => {
+          const facTz = facilities.find(f => f.id === facilityId)?.timezone || BROWSER_TZ;
+          const userTz = profile?.timezone || BROWSER_TZ;
+          const refDate = selectedDates[0] || new Date();
+          const short = tzShortName(refDate, facTz);
+          const traveling = userTz && userTz !== facTz;
+          return (
+            <p className="mt-1.5 text-[11px] text-muted-foreground">
+              Times saved as <span className="font-medium text-foreground">clinic-local</span>
+              {short ? ` (${facTz}, ${short})` : ` (${facTz})`}
+              {traveling ? ` — your device is in ${userTz}.` : '.'}
+            </p>
+          );
+        })()}
         {activeRateKind === 'hourly' && hoursInvalidReason && (
           <p className="mt-1.5 text-[11px] text-destructive flex items-center gap-1">
             <AlertTriangle className="h-3 w-3" /> {hoursInvalidReason}
