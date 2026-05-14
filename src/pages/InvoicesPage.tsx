@@ -131,7 +131,11 @@ export default function InvoicesPage() {
       ...inv,
       balance_due: newBalance,
       status: isFullPayment ? 'paid' : 'partial',
-      paid_at: isFullPayment ? new Date().toISOString() : inv.paid_at,
+      paid_at: isFullPayment
+        ? (payment.payment_date
+            ? new Date(`${payment.payment_date}T12:00:00Z`).toISOString()
+            : new Date().toISOString())
+        : inv.paid_at,
     });
 
     await addActivity({

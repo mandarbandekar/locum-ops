@@ -470,7 +470,11 @@ export function InvoiceEditPanel({
       ...invoice,
       balance_due: newBalance,
       status: isPaidNow ? 'paid' : 'partial',
-      paid_at: isPaidNow ? new Date().toISOString() : invoice.paid_at,
+      paid_at: isPaidNow
+        ? (payment?.payment_date
+            ? new Date(`${payment.payment_date}T12:00:00Z`).toISOString()
+            : new Date().toISOString())
+        : invoice.paid_at,
     });
     await onAddActivity({
       invoice_id: invoice.id,
