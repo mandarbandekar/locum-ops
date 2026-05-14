@@ -10,7 +10,7 @@ import { BreakPolicySelector } from '@/components/facilities/BreakPolicySelector
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { mapDefaultRatesToRateEntries } from '@/lib/onboardingRateMapping';
 import type { Facility, Shift, TermsSnapshot } from '@/types';
-import { zonedWallClockToUtc } from '@/lib/tzTime';
+import { zonedWallClockToUtc, formatDateInTz, formatTimeInTz } from '@/lib/tzTime';
 
 interface Props {
   facilities: Facility[];
@@ -128,11 +128,11 @@ export function OnboardingShiftBuilder({
   };
 
   const formatShiftRow = (s: Shift) => {
-    const start = new Date(s.start_datetime);
-    const end = new Date(s.end_datetime);
+    const facility = facilities.find(f => f.id === s.facility_id);
+    const tz = facility?.timezone || 'America/Los_Angeles';
     return {
-      date: format(start, 'MMM d'),
-      time: `${format(start, 'h:mm a')} – ${format(end, 'h:mm a')}`,
+      date: formatDateInTz(s.start_datetime, tz, 'MMM d'),
+      time: `${formatTimeInTz(s.start_datetime, tz)} – ${formatTimeInTz(s.end_datetime, tz)}`,
       amount: `$${(s.rate_applied || 0).toLocaleString()}`,
     };
   };
