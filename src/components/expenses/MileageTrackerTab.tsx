@@ -212,7 +212,7 @@ export default function MileageTrackerTab({
         onConfirm={confirmMileage}
         onDismiss={dismissMileage}
         onConfirmAll={confirmAllMileage}
-        onEdit={() => {}}
+        onEdit={(exp) => setEditingExpense(exp)}
       />
 
       {/* Backfill Past Shifts */}
