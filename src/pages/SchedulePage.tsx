@@ -820,6 +820,33 @@ export default function SchedulePage() {
         />
       )}
 
+      <ShiftPeekPopover
+        shift={peekShiftId ? shifts.find(s => s.id === peekShiftId) : null}
+        facilities={facilities}
+        invoices={invoices}
+        lineItems={lineItems}
+        open={!!peekShiftId}
+        onOpenChange={(o) => { if (!o) setPeekShiftId(null); }}
+        onEdit={() => { if (peekShiftId) { setEditShift(peekShiftId); setPeekShiftId(null); } }}
+        onDelete={() => {
+          if (!peekShiftId) return;
+          deleteShift(peekShiftId);
+          toast.success('Shift deleted');
+          setPeekShiftId(null);
+        }}
+      />
+
+      <MobileScheduleFab
+        onAddShift={() => setShowAdd(true)}
+        onBlockTime={() => { setBlockTimeDefaultDate(undefined); setShowBlockTime(true); }}
+        onJumpToToday={() => {
+          setCurrentDate(new Date());
+          if (view !== 'agenda' && view !== 'day' && view !== 'week' && view !== 'month') {
+            setView('agenda');
+          }
+        }}
+      />
+
       <SpotlightTour steps={SCHEDULE_TOUR_STEPS} isOpen={scheduleTour.isOpen} onClose={scheduleTour.closeTour} />
     </div>
   );
