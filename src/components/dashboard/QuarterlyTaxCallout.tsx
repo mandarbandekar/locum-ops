@@ -23,6 +23,8 @@ export function QuarterlyTaxCallout({
   estimatedTax,
   hasTaxProfile,
 }: QuarterlyTaxCalloutProps) {
+  const isMobile = useIsMobile();
+  const [chipExpanded, setChipExpanded] = useState(false);
   const SANDY = '#C9941E';
   const BURNT = '#A07D3E';
   const isPastDue = daysUntilDeadline < 0;
