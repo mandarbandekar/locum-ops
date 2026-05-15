@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
-import { Clock } from 'lucide-react';
+import { Clock, ChevronRight } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface QuarterlyTaxCalloutProps {
   quarter: number;
