@@ -320,6 +320,7 @@ export default function ExpenseLogTab({
         config={config}
         editingExpense={editingExpense}
         initialSubcategory={initialSubcategory}
+        expenses={expenses}
       />
 
       {/* Delete confirmation */}
