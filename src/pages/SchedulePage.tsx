@@ -397,7 +397,7 @@ export default function SchedulePage() {
               draggable
               onDragStart={(e) => onDragStart(e, s.id)}
               className={`text-[10px] p-1 rounded mb-0.5 cursor-grab active:cursor-grabbing ${colorDef.bg} ${colorDef.text} hover:opacity-80 transition-opacity select-none ${isConflicting ? 'ring-1 ring-destructive ring-offset-1 ring-offset-background' : ''}`}
-              onClick={(e) => { e.stopPropagation(); setEditShift(s.id); }}
+              onClick={(e) => { e.stopPropagation(); setPeekShiftId(s.id); }}
               title={isConflicting ? `${getFacilityName(s.facility_id)}\n${overlapTitle}` : `${getFacilityName(s.facility_id)} — drag to reschedule`}
             >
               <div className="font-semibold truncate leading-tight">{getFacilityName(s.facility_id)}</div>
