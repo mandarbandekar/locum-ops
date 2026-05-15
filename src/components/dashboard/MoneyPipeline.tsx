@@ -76,7 +76,7 @@ export function MoneyPipeline({
                 tabIndex={onStageClick ? 0 : undefined}
                 onClick={onStageClick ? () => onStageClick(s.key) : undefined}
                 onKeyDown={onStageClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onStageClick(s.key); } } : undefined}
-                className={`relative snap-start shrink-0 md:shrink min-w-[160px] md:min-w-0 bg-card rounded-lg shadow-sm border-t-4 p-5 flex flex-col transition-all duration-150 ${onStageClick ? 'cursor-pointer hover:shadow-md md:hover:scale-[1.02]' : ''}`}
+                className={`relative snap-start shrink-0 md:shrink min-w-[240px] md:min-w-0 bg-card rounded-lg shadow-sm border-t-4 p-5 flex flex-col transition-all duration-150 ${onStageClick ? 'cursor-pointer hover:shadow-md md:hover:scale-[1.02]' : ''}`}
                 style={{
                   borderTopColor: s.topBorderColor,
                   backgroundColor: s.tintBg && s.amount > 0 ? `${s.tintColor}0D` : undefined,
