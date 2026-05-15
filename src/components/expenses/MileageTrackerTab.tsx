@@ -9,13 +9,14 @@ import { MileageOnboarding } from './MileageOnboarding';
 import { MileageReviewBanner } from './MileageReviewBanner';
 import MileageBackfillCard from './MileageBackfillCard';
 import MileageStartingBalanceDialog from './MileageStartingBalanceDialog';
+import AddExpenseDialog from './AddExpenseDialog';
 import type { Expense } from '@/hooks/useExpenses';
 
 const MILEAGE_ONBOARDING_KEY = 'locumops_mileage_tab_onboarding_dismissed';
 
 interface Props {
   expenses: Expense[];
-  config: { irs_mileage_rate_cents: number; tax_year: number };
+  config: { irs_mileage_rate_cents: number; home_office_rate_cents: number; tax_year: number };
   draftMileageExpenses: Expense[];
   confirmedMileageExpenses: Expense[];
   ytdMileageMiles: number;
@@ -27,7 +28,9 @@ interface Props {
   confirmMileage: (id: string) => Promise<void>;
   dismissMileage: (id: string) => Promise<void>;
   confirmAllMileage: () => Promise<void>;
+  addExpense: (data: Partial<Expense>) => Promise<Expense | null>;
   editExpense: (id: string, data: Partial<Expense>) => Promise<any>;
+  uploadReceipt: (file: File) => Promise<string | null>;
   reload: () => void;
 }
 
@@ -35,12 +38,14 @@ export default function MileageTrackerTab({
   config, draftMileageExpenses, confirmedMileageExpenses,
   ytdMileageMiles, ytdMileageDeductionCents,
   startingMiles, startingMilesNote, updateMileageStartingBalance,
-  confirmMileage, dismissMileage, confirmAllMileage, reload,
+  confirmMileage, dismissMileage, confirmAllMileage,
+  addExpense, editExpense, uploadReceipt, reload,
 }: Props) {
   const navigate = useNavigate();
   const { profile: userProfile } = useUserProfile();
   const { facilities } = useData();
   const [showStartingDialog, setShowStartingDialog] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(
     () => !localStorage.getItem(MILEAGE_ONBOARDING_KEY)
   );
@@ -207,7 +212,7 @@ export default function MileageTrackerTab({
         onConfirm={confirmMileage}
         onDismiss={dismissMileage}
         onConfirmAll={confirmAllMileage}
-        onEdit={() => {}}
+        onEdit={(exp) => setEditingExpense(exp)}
       />
 
       {/* Backfill Past Shifts */}
@@ -302,6 +307,21 @@ export default function MileageTrackerTab({
         initialNote={startingMilesNote}
         taxYear={config.tax_year}
         onSave={updateMileageStartingBalance}
+      />
+
+      <AddExpenseDialog
+        open={!!editingExpense}
+        onOpenChange={(o) => { if (!o) setEditingExpense(null); }}
+        onSubmit={addExpense}
+        onEdit={async (id, data) => {
+          // Confirm draft on save so it leaves the review queue
+          const result = await editExpense(id, { ...data, mileage_status: 'confirmed' });
+          setEditingExpense(null);
+          return result;
+        }}
+        uploadReceipt={uploadReceipt}
+        config={config}
+        editingExpense={editingExpense}
       />
     </div>
   );
