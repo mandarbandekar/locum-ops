@@ -322,6 +322,7 @@ export default function MileageTrackerTab({
         uploadReceipt={uploadReceipt}
         config={config}
         editingExpense={editingExpense}
+        expenses={expenses}
       />
     </div>
   );
