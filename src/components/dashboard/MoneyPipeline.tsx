@@ -39,6 +39,14 @@ export function MoneyPipeline({
   stages, quarter, quarterEarnings, shiftsThisQuarter, avgPerShift, onStageClick,
   hideHeader, highlightStageKey, zeroSuffix, stageFootnoteKey, stageFootnoteText,
 }: MoneyPipelineProps) {
+  const isMobile = useIsMobile();
+  // On mobile, hide $0 stages to reduce noise. Always keep at least one card visible.
+  const visibleStages = isMobile
+    ? (() => {
+        const nonEmpty = stages.filter(s => !(s.amount === 0 && s.count === 0));
+        return nonEmpty.length > 0 ? nonEmpty : stages.slice(0, 1);
+      })()
+    : stages;
   return (
     <section>
       {/* Header */}
@@ -57,8 +65,8 @@ export function MoneyPipeline({
       )}
 
       {/* Pipeline cards */}
-      <div className="flex md:grid md:grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr_auto_1fr] gap-3 md:gap-2 items-stretch overflow-x-auto md:overflow-visible snap-x snap-mandatory pb-2 md:pb-0">
-        {stages.map((s, i) => {
+      <div className="flex md:grid md:grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr_auto_1fr] gap-3 md:gap-2 items-stretch overflow-x-auto md:overflow-visible snap-x snap-mandatory pb-2 md:pb-0 -mx-4 px-4 md:mx-0 md:px-0">
+        {visibleStages.map((s, i) => {
           const isEmpty = s.amount === 0 && s.count === 0;
           const isHighlighted = highlightStageKey === s.key;
           return (
