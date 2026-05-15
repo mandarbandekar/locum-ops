@@ -218,12 +218,12 @@ export default function ExpenseLogTab({
         <div className="space-y-3">
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Expense Log</h3>
           <div className="flex flex-wrap items-center gap-2">
-            <div className="relative flex-1 min-w-[200px]">
+            <div className="relative flex-1 min-w-[160px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search expenses…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
             </div>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-[140px] sm:w-[180px]">
                 <SelectValue placeholder="All categories" />
               </SelectTrigger>
               <SelectContent>
