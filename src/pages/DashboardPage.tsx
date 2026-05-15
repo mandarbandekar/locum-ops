@@ -51,6 +51,7 @@ import { EmptyDashboardPrompt } from '@/components/dashboard/EmptyDashboardPromp
 import { QuarterlyTaxCallout } from '@/components/dashboard/QuarterlyTaxCallout';
 import { FirstTimeDashboard } from '@/components/dashboard/FirstTimeDashboard';
 import { OnboardingHandoffBanner } from '@/components/dashboard/OnboardingHandoffBanner';
+import { MobileQuickActionsFab } from '@/components/dashboard/MobileQuickActionsFab';
 import { HighlightBanner } from '@/components/announcements/HighlightBanner';
 import { generateDashboardBriefing, getNextQuarterlyDeadline, BriefingInput } from '@/lib/dashboardBriefing';
 
@@ -863,8 +864,8 @@ export default function DashboardPage() {
           />
         </div>
       ) : (
-        <div className="mt-4 space-y-5 animate-in fade-in duration-200">
-          <div data-tour="briefing">
+        <div className="mt-4 flex flex-col gap-5 animate-in fade-in duration-200">
+          <div data-tour="briefing" className="order-1 md:order-none">
             <BriefingBanner
               greeting={`${greeting}, ${profile?.first_name || 'there'}`}
               sentences={briefing.sentences}
@@ -872,7 +873,7 @@ export default function DashboardPage() {
             />
           </div>
 
-          <div data-tour="pipeline">
+          <div data-tour="pipeline" className="order-4 md:order-none">
             <MoneyPipeline
               stages={pipeline.stages}
               quarter={quarterStats.quarter}
@@ -890,25 +891,45 @@ export default function DashboardPage() {
           </div>
 
           {showTaxCallout && (
-            <QuarterlyTaxCallout
-              quarter={briefingShared.nextTaxQuarter}
-              deadline={briefingShared.nextTaxDeadline}
-              daysUntilDeadline={briefingShared.daysUntilNextTax}
-              quarterEarnings={briefingShared.earnedThisQuarter}
-              estimatedTax={briefingShared.estimatedQuarterlyTax}
-              hasTaxProfile={hasTaxProfile}
-            />
+            <div className="order-5 md:order-none">
+              <QuarterlyTaxCallout
+                quarter={briefingShared.nextTaxQuarter}
+                deadline={briefingShared.nextTaxDeadline}
+                daysUntilDeadline={briefingShared.daysUntilNextTax}
+                quarterEarnings={briefingShared.earnedThisQuarter}
+                estimatedTax={briefingShared.estimatedQuarterlyTax}
+                hasTaxProfile={hasTaxProfile}
+              />
+            </div>
           )}
 
-          <UpcomingShiftsStrip shifts={upcomingShiftsForStrip} />
+          <div className="order-2 md:order-none">
+            <UpcomingShiftsStrip shifts={upcomingShiftsForStrip} />
+          </div>
+
+          {attentionItems.length > 0 && (
+            <div data-tour="attention" className="order-3 md:order-none">
+              <AttentionGroupedList items={attentionItems} />
+            </div>
+          )}
         </div>
       )}
 
-      {/* ZONE 2: Action Items (only when items exist) */}
-      {attentionItems.length > 0 && (
-        <div data-tour="attention" className="mt-5">
-          <AttentionGroupedList items={attentionItems} />
-        </div>
+      {/* ZONE 2: Action Items for empty / first-time branches (standard branch already renders inline) */}
+      {(facilities.length === 0 && shifts.length === 0) || showFirstTimeDashboard ? (
+        attentionItems.length > 0 && (
+          <div data-tour="attention" className="mt-5">
+            <AttentionGroupedList items={attentionItems} />
+          </div>
+        )
+      ) : null}
+
+      {/* Mobile thumb-zone quick actions (hidden in onboarding/empty states) */}
+      {!(facilities.length === 0 && shifts.length === 0) && !showFirstTimeDashboard && (
+        <MobileQuickActionsFab
+          onAddShift={() => setAddShiftOpen(true)}
+          onAddClinic={() => setAddClinicOpen(true)}
+        />
       )}
 
       {/* Tour */}

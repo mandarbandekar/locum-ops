@@ -1,4 +1,5 @@
 import { ChevronRight } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export interface PipelineStage {
   key: string;
@@ -38,6 +39,14 @@ export function MoneyPipeline({
   stages, quarter, quarterEarnings, shiftsThisQuarter, avgPerShift, onStageClick,
   hideHeader, highlightStageKey, zeroSuffix, stageFootnoteKey, stageFootnoteText,
 }: MoneyPipelineProps) {
+  const isMobile = useIsMobile();
+  // On mobile, hide $0 stages to reduce noise. Always keep at least one card visible.
+  const visibleStages = isMobile
+    ? (() => {
+        const nonEmpty = stages.filter(s => !(s.amount === 0 && s.count === 0));
+        return nonEmpty.length > 0 ? nonEmpty : stages.slice(0, 1);
+      })()
+    : stages;
   return (
     <section>
       {/* Header */}
@@ -56,8 +65,8 @@ export function MoneyPipeline({
       )}
 
       {/* Pipeline cards */}
-      <div className="flex md:grid md:grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr_auto_1fr] gap-3 md:gap-2 items-stretch overflow-x-auto md:overflow-visible snap-x snap-mandatory pb-2 md:pb-0">
-        {stages.map((s, i) => {
+      <div className="flex md:grid md:grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr_auto_1fr] gap-3 md:gap-2 items-stretch overflow-x-auto md:overflow-visible snap-x snap-mandatory pb-2 md:pb-0 -mx-4 px-4 md:mx-0 md:px-0">
+        {visibleStages.map((s, i) => {
           const isEmpty = s.amount === 0 && s.count === 0;
           const isHighlighted = highlightStageKey === s.key;
           return (
@@ -67,7 +76,7 @@ export function MoneyPipeline({
                 tabIndex={onStageClick ? 0 : undefined}
                 onClick={onStageClick ? () => onStageClick(s.key) : undefined}
                 onKeyDown={onStageClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onStageClick(s.key); } } : undefined}
-                className={`relative snap-start shrink-0 md:shrink min-w-[160px] md:min-w-0 bg-card rounded-lg shadow-sm border-t-4 p-5 flex flex-col transition-all duration-150 ${onStageClick ? 'cursor-pointer hover:shadow-md md:hover:scale-[1.02]' : ''}`}
+                className={`relative snap-start shrink-0 md:shrink min-w-[240px] md:min-w-0 bg-card rounded-lg shadow-sm border-t-4 p-5 flex flex-col transition-all duration-150 ${onStageClick ? 'cursor-pointer hover:shadow-md md:hover:scale-[1.02]' : ''}`}
                 style={{
                   borderTopColor: s.topBorderColor,
                   backgroundColor: s.tintBg && s.amount > 0 ? `${s.tintColor}0D` : undefined,
@@ -114,7 +123,7 @@ export function MoneyPipeline({
                   </p>
                 )}
               </div>
-              {i < stages.length - 1 && (
+              {i < visibleStages.length - 1 && (
                 <div className="hidden md:flex items-center justify-center">
                   <ChevronRight className="h-5 w-5" style={{ color: '#D1D5DB' }} />
                 </div>
