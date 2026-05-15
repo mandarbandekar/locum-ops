@@ -76,8 +76,11 @@ function useBadgeCounts() {
 }
 
 export function AppSidebar() {
-  const { state } = useSidebar();
+  const { state, isMobile, setOpenMobile } = useSidebar();
   const collapsed = state === 'collapsed';
+  const handleNavClick = () => {
+    if (isMobile) setOpenMobile(false);
+  };
   const { user } = useAuth();
   const showFounder = isFounderAdmin(user?.email);
 
