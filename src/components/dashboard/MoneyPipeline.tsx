@@ -1,4 +1,5 @@
 import { ChevronRight } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export interface PipelineStage {
   key: string;
