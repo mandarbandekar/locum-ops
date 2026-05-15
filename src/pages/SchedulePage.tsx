@@ -23,6 +23,9 @@ import { CalendarFilters, CalendarLayerFilters } from '@/components/schedule/Cal
 import { useCalendarEvents } from '@/hooks/useCalendarEvents';
 import { CalendarEventStack } from '@/components/schedule/CalendarEventChip';
 import { CalendarSyncPanel } from '@/components/schedule/CalendarSyncPanel';
+import { AgendaView } from '@/components/schedule/AgendaView';
+import { ShiftPeekPopover } from '@/components/schedule/ShiftPeekPopover';
+import { MobileScheduleFab } from '@/components/schedule/MobileScheduleFab';
 import { useTaxIntelligence } from '@/hooks/useTaxIntelligence';
 import { computeEffectiveSetAsideRate } from '@/lib/taxNudge';
 import { ShiftTaxNudge, ShiftTaxSummaryFooter } from '@/components/schedule/ShiftTaxNudge';
