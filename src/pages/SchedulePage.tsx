@@ -516,7 +516,7 @@ export default function SchedulePage() {
               )}
             </div>
 
-            <div className="flex-1 flex items-center justify-end">
+            <div className="flex-1 flex items-center justify-end min-w-0">
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="ghost" size="sm" className="gap-1.5 relative">
