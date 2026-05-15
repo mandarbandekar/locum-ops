@@ -420,9 +420,9 @@ export default function SchedulePage() {
     );
   };
 
-  const isCalendarView = view === 'month' || view === 'week' || view === 'day' || view === 'list';
+  const isCalendarView = view === 'month' || view === 'week' || view === 'day' || view === 'list' || view === 'agenda';
   const isTimeframeView = view === 'month' || view === 'week' || view === 'day';
-  const timeframeLabel = view === 'week' ? 'Week' : view === 'day' ? 'Day' : view === 'month' ? 'Month' : (lastTimeframe === 'week' ? 'Week' : lastTimeframe === 'day' ? 'Day' : 'Month');
+  const timeframeLabel = view === 'week' ? 'Week' : view === 'day' ? 'Day' : view === 'month' ? 'Month' : view === 'agenda' ? 'Agenda' : (lastTimeframe === 'week' ? 'Week' : lastTimeframe === 'day' ? 'Day' : lastTimeframe === 'agenda' ? 'Agenda' : 'Month');
   const TimeframeIcon = (view === 'week' || (view === 'list' && lastTimeframe === 'week')) ? CalendarIcon
     : (view === 'day' || (view === 'list' && lastTimeframe === 'day')) ? CalendarIcon
     : CalendarDays;
