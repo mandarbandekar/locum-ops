@@ -331,6 +331,30 @@ export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, o
               );
             });
           })}
+
+          {/* Now line — red horizontal line + dot at current time on today's column */}
+          {showNowLine && (
+            <div
+              className="absolute left-0 right-0 z-30 pointer-events-none"
+              style={{ top: `${nowTop}px` }}
+            >
+              <div
+                className="absolute h-0.5 bg-destructive"
+                style={{
+                  left: `calc(${GUTTER_WIDTH}px + (100% - ${GUTTER_WIDTH}px) * ${todayIndex} / ${weekDays.length})`,
+                  width: `calc((100% - ${GUTTER_WIDTH}px) / ${weekDays.length})`,
+                  top: '-1px',
+                }}
+              />
+              <div
+                className="absolute h-2 w-2 rounded-full bg-destructive"
+                style={{
+                  left: `calc(${GUTTER_WIDTH}px + (100% - ${GUTTER_WIDTH}px) * ${todayIndex} / ${weekDays.length} - 4px)`,
+                  top: '-4px',
+                }}
+              />
+            </div>
+          )}
         </div>
       </ScrollArea>
     </div>
