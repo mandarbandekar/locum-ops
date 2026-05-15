@@ -23,6 +23,9 @@ import { CalendarFilters, CalendarLayerFilters } from '@/components/schedule/Cal
 import { useCalendarEvents } from '@/hooks/useCalendarEvents';
 import { CalendarEventStack } from '@/components/schedule/CalendarEventChip';
 import { CalendarSyncPanel } from '@/components/schedule/CalendarSyncPanel';
+import { AgendaView } from '@/components/schedule/AgendaView';
+import { ShiftPeekPopover } from '@/components/schedule/ShiftPeekPopover';
+import { MobileScheduleFab } from '@/components/schedule/MobileScheduleFab';
 import { useTaxIntelligence } from '@/hooks/useTaxIntelligence';
 import { computeEffectiveSetAsideRate } from '@/lib/taxNudge';
 import { ShiftTaxNudge, ShiftTaxSummaryFooter } from '@/components/schedule/ShiftTaxNudge';
@@ -103,8 +106,9 @@ export default function SchedulePage() {
     return computeEffectiveSetAsideRate(taxProfile, totalIncome || 1);
   }, [taxProfile, hasTaxProfile, invoices, shifts]);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [view, setView] = useState<'month' | 'week' | 'day' | 'list' | 'sync'>('month');
-  const [lastTimeframe, setLastTimeframe] = useState<'month' | 'week' | 'day'>('month');
+  const [view, setView] = useState<'month' | 'week' | 'day' | 'list' | 'sync' | 'agenda'>('month');
+  const [lastTimeframe, setLastTimeframe] = useState<'month' | 'week' | 'day' | 'agenda'>('month');
+  const [peekShiftId, setPeekShiftId] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [showBlockTime, setShowBlockTime] = useState(false);
   const [editBlock, setEditBlock] = useState<string | null>(null);
@@ -124,20 +128,25 @@ export default function SchedulePage() {
 
   const hasNonDefaultLayers = calendarFilters.credentials || calendarFilters.subscriptions;
 
-  // Always default to Month view on mount; only persist non-timeframe views (list/confirmations/sync)
+  // Default view: Month on desktop, Agenda on mobile (when nothing persisted).
+  // Persist list/sync/agenda explicitly chosen by the user.
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
-    const persistable = ['list', 'sync'];
+    const persistable = ['list', 'sync', 'agenda'];
     if (stored && persistable.includes(stored)) {
       setView(stored as typeof view);
+      return;
+    }
+    if (typeof window !== 'undefined' && window.innerWidth < 768 && !stored) {
+      setView('agenda');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, view);
-    if (view === 'month' || view === 'week' || view === 'day') {
-      setLastTimeframe(view);
+    if (view === 'month' || view === 'week' || view === 'day' || view === 'agenda') {
+      setLastTimeframe(view as typeof lastTimeframe);
     }
   }, [view]);
 
@@ -391,7 +400,7 @@ export default function SchedulePage() {
               draggable
               onDragStart={(e) => onDragStart(e, s.id)}
               className={`text-[10px] p-1 rounded mb-0.5 cursor-grab active:cursor-grabbing ${colorDef.bg} ${colorDef.text} hover:opacity-80 transition-opacity select-none ${isConflicting ? 'ring-1 ring-destructive ring-offset-1 ring-offset-background' : ''}`}
-              onClick={(e) => { e.stopPropagation(); setEditShift(s.id); }}
+              onClick={(e) => { e.stopPropagation(); setPeekShiftId(s.id); }}
               title={isConflicting ? `${getFacilityName(s.facility_id)}\n${overlapTitle}` : `${getFacilityName(s.facility_id)} — drag to reschedule`}
             >
               <div className="font-semibold truncate leading-tight">{getFacilityName(s.facility_id)}</div>
@@ -414,9 +423,9 @@ export default function SchedulePage() {
     );
   };
 
-  const isCalendarView = view === 'month' || view === 'week' || view === 'day' || view === 'list';
+  const isCalendarView = view === 'month' || view === 'week' || view === 'day' || view === 'list' || view === 'agenda';
   const isTimeframeView = view === 'month' || view === 'week' || view === 'day';
-  const timeframeLabel = view === 'week' ? 'Week' : view === 'day' ? 'Day' : view === 'month' ? 'Month' : (lastTimeframe === 'week' ? 'Week' : lastTimeframe === 'day' ? 'Day' : 'Month');
+  const timeframeLabel = view === 'week' ? 'Week' : view === 'day' ? 'Day' : view === 'month' ? 'Month' : view === 'agenda' ? 'Agenda' : (lastTimeframe === 'week' ? 'Week' : lastTimeframe === 'day' ? 'Day' : lastTimeframe === 'agenda' ? 'Agenda' : 'Month');
   const TimeframeIcon = (view === 'week' || (view === 'list' && lastTimeframe === 'week')) ? CalendarIcon
     : (view === 'day' || (view === 'list' && lastTimeframe === 'day')) ? CalendarIcon
     : CalendarDays;
@@ -458,6 +467,9 @@ export default function SchedulePage() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
+                  <DropdownMenuItem onClick={() => setView('agenda')}>
+                    <List className="mr-2 h-4 w-4" /> Agenda
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setView('month')}>
                     <CalendarDays className="mr-2 h-4 w-4" /> Month
                   </DropdownMenuItem>
@@ -561,6 +573,13 @@ export default function SchedulePage() {
       <div className="flex-1 overflow-auto px-4 py-3" onTouchStart={isTimeframeView ? onTouchStart : undefined} onTouchEnd={isTimeframeView ? onTouchEnd : undefined}>
         {view === 'sync' ? (
           <CalendarSyncPanel />
+        ) : view === 'agenda' ? (
+          <AgendaView
+            shifts={calendarFilters.shifts ? shifts : []}
+            facilities={facilities}
+            onShiftClick={setPeekShiftId}
+            onAddShift={() => setShowAdd(true)}
+          />
         ) : (
           <>
             {view === 'month' ? (
@@ -596,7 +615,7 @@ export default function SchedulePage() {
                   shifts={calendarFilters.shifts ? shifts : []}
                   facilities={facilities}
                   getFacilityName={getFacilityName}
-                  onEditShift={setEditShift}
+                  onEditShift={setPeekShiftId}
                   onDropOnTime={handleDropOnTime}
                   onCellClick={openAddShiftAt}
                   calendarFilters={{ credentials: calendarFilters.credentials, subscriptions: calendarFilters.subscriptions }}
@@ -621,7 +640,7 @@ export default function SchedulePage() {
                   shifts={calendarFilters.shifts ? shifts : []}
                   facilities={facilities}
                   getFacilityName={getFacilityName}
-                  onEditShift={setEditShift}
+                  onEditShift={setPeekShiftId}
                   onDropOnTime={handleDropOnTime}
                   onCellClick={openAddShiftAt}
                   calendarFilters={{ credentials: calendarFilters.credentials, subscriptions: calendarFilters.subscriptions }}
@@ -800,6 +819,33 @@ export default function SchedulePage() {
           onDelete={async (id) => { await deleteTimeBlock(id); setEditBlock(null); toast.success('Time block deleted'); }}
         />
       )}
+
+      <ShiftPeekPopover
+        shift={peekShiftId ? shifts.find(s => s.id === peekShiftId) : null}
+        facilities={facilities}
+        invoices={invoices}
+        lineItems={lineItems}
+        open={!!peekShiftId}
+        onOpenChange={(o) => { if (!o) setPeekShiftId(null); }}
+        onEdit={() => { if (peekShiftId) { setEditShift(peekShiftId); setPeekShiftId(null); } }}
+        onDelete={() => {
+          if (!peekShiftId) return;
+          deleteShift(peekShiftId);
+          toast.success('Shift deleted');
+          setPeekShiftId(null);
+        }}
+      />
+
+      <MobileScheduleFab
+        onAddShift={() => setShowAdd(true)}
+        onBlockTime={() => { setBlockTimeDefaultDate(undefined); setShowBlockTime(true); }}
+        onJumpToToday={() => {
+          setCurrentDate(new Date());
+          if (view !== 'agenda' && view !== 'day' && view !== 'week' && view !== 'month') {
+            setView('agenda');
+          }
+        }}
+      />
 
       <SpotlightTour steps={SCHEDULE_TOUR_STEPS} isOpen={scheduleTour.isOpen} onClose={scheduleTour.closeTour} />
     </div>
