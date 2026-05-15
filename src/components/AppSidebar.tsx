@@ -209,6 +209,7 @@ export function AppSidebar() {
             <SidebarMenuButton asChild size="lg" tooltip={collapsed ? 'Settings' : undefined}>
               <NavLink
                 to="/settings/profile"
+                onClick={handleNavClick}
                 className="sidebar-nav-item sidebar-settings-item group/navitem"
                 activeClassName="sidebar-nav-item--active"
               >
