@@ -125,20 +125,25 @@ export default function SchedulePage() {
 
   const hasNonDefaultLayers = calendarFilters.credentials || calendarFilters.subscriptions;
 
-  // Always default to Month view on mount; only persist non-timeframe views (list/confirmations/sync)
+  // Default view: Month on desktop, Agenda on mobile (when nothing persisted).
+  // Persist list/sync/agenda explicitly chosen by the user.
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
-    const persistable = ['list', 'sync'];
+    const persistable = ['list', 'sync', 'agenda'];
     if (stored && persistable.includes(stored)) {
       setView(stored as typeof view);
+      return;
+    }
+    if (typeof window !== 'undefined' && window.innerWidth < 768 && !stored) {
+      setView('agenda');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, view);
-    if (view === 'month' || view === 'week' || view === 'day') {
-      setLastTimeframe(view);
+    if (view === 'month' || view === 'week' || view === 'day' || view === 'agenda') {
+      setLastTimeframe(view as typeof lastTimeframe);
     }
   }, [view]);
 
