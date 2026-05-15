@@ -308,6 +308,21 @@ export default function MileageTrackerTab({
         taxYear={config.tax_year}
         onSave={updateMileageStartingBalance}
       />
+
+      <AddExpenseDialog
+        open={!!editingExpense}
+        onOpenChange={(o) => { if (!o) setEditingExpense(null); }}
+        onSubmit={addExpense}
+        onEdit={async (id, data) => {
+          // Confirm draft on save so it leaves the review queue
+          const result = await editExpense(id, { ...data, status: 'confirmed' });
+          setEditingExpense(null);
+          return result;
+        }}
+        uploadReceipt={uploadReceipt}
+        config={config}
+        editingExpense={editingExpense}
+      />
     </div>
   );
 }
