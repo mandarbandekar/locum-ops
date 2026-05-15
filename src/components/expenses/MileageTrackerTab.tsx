@@ -35,6 +35,7 @@ interface Props {
 }
 
 export default function MileageTrackerTab({
+  expenses,
   config, draftMileageExpenses, confirmedMileageExpenses,
   ytdMileageMiles, ytdMileageDeductionCents,
   startingMiles, startingMilesNote, updateMileageStartingBalance,
@@ -322,6 +323,7 @@ export default function MileageTrackerTab({
         uploadReceipt={uploadReceipt}
         config={config}
         editingExpense={editingExpense}
+        expenses={expenses}
       />
     </div>
   );

@@ -9,7 +9,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { HelpCircle, Repeat } from 'lucide-react';
+import { HelpCircle, Repeat, AlertTriangle } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
 import { MultiFileDropzone } from '@/components/ui/multi-file-dropzone';
 import { supabase } from '@/integrations/supabase/client';
@@ -33,9 +33,10 @@ interface Props {
   config: { irs_mileage_rate_cents: number; home_office_rate_cents: number };
   editingExpense?: Expense | null;
   initialSubcategory?: string;
+  expenses?: Expense[];
 }
 
-export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit, uploadReceipt, config, editingExpense, initialSubcategory }: Props) {
+export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit, uploadReceipt, config, editingExpense, initialSubcategory, expenses = [] }: Props) {
   const { facilities } = useData();
   const today = new Date().toISOString().split('T')[0];
   const isEditing = !!editingExpense;
@@ -77,6 +78,18 @@ export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit,
       setAmountStr(calculatedCents !== null ? (calculatedCents / 100).toFixed(2) : '');
     }
   }, [calculatedCents, isMileage, isHomeOffice]);
+
+  // Duplicate-shift-mileage detection: another mileage entry tied to a shift on the same date
+  const duplicateShiftMileage = useMemo(() => {
+    if (!isMileage || !date) return null;
+    const match = expenses.find(e =>
+      e.subcategory === 'mileage' &&
+      e.expense_date === date &&
+      (e.is_auto_mileage || !!e.shift_id) &&
+      e.id !== editingExpense?.id
+    );
+    return match || null;
+  }, [isMileage, date, expenses, editingExpense?.id]);
 
   // Reset / pre-fill form when opening
   useEffect(() => {
@@ -256,6 +269,19 @@ export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit,
                   IRS rate: ${(config.irs_mileage_rate_cents / 100).toFixed(2)}/mile
                   {milesStr && ` → $${(calculatedCents! / 100).toFixed(2)}`}
                 </p>
+                {duplicateShiftMileage && (
+                  <div className="mt-2 flex gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2.5 text-xs text-amber-900 dark:text-amber-200">
+                    <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium">Possible duplicate</p>
+                      <p className="opacity-90">
+                        A shift-linked mileage entry already exists for {date}
+                        {duplicateShiftMileage.mileage_miles ? ` (${Math.round(duplicateShiftMileage.mileage_miles)} mi, ${duplicateShiftMileage.mileage_status})` : ''}.
+                        Logging this manually may double-count your deduction.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
