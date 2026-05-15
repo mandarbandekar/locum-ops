@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useMemo, DragEvent } from 'react';
+import { useState, useRef, useCallback, useMemo, useEffect, DragEvent } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { format, isSameDay } from 'date-fns';
 import { SHIFT_COLORS, BLOCK_COLORS, BLOCK_TYPES, TimeBlock, Facility } from '@/types';
