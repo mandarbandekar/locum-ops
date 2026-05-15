@@ -77,6 +77,84 @@ function getDueBadge(dueDate: string | null, status: string) {
   return <span className="text-[11px] text-muted-foreground">Due in {days}d</span>;
 }
 
+function InvoiceMobileList({ invoices, onDelete, getFacilityName, navigate, onMarkAsPaid, onSendFollowup, onReview }: {
+  invoices: InvoiceWithStatus[];
+  onDelete: (id: string) => Promise<void>;
+  getFacilityName: (id: string) => string;
+  navigate: (path: string) => void;
+  onMarkAsPaid?: (invoice: InvoiceWithStatus) => void;
+  onSendFollowup?: (invoice: InvoiceWithStatus) => void;
+  onReview?: (invoice: InvoiceWithStatus) => void;
+}) {
+  return (
+    <ul className="divide-y">
+      {invoices.map(inv => (
+        <li
+          key={inv.id}
+          className="px-4 py-3 hover:bg-muted/30 cursor-pointer transition-colors"
+          onClick={() => navigate(`/invoices/${inv.id}`)}
+        >
+          {/* Row 1: Facility (primary) + Total */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <div className="font-semibold text-sm truncate">{getFacilityName(inv.facility_id)}</div>
+              <div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-muted-foreground">
+                <span className="font-medium truncate">{inv.invoice_number}</span>
+                {inv.generation_type === 'automatic' && (
+                  <Badge variant="outline" className="text-[9px] px-1 py-0 text-primary border-primary/30 h-4">
+                    <Zap className="h-2 w-2 mr-0.5" />Auto
+                  </Badge>
+                )}
+              </div>
+            </div>
+            <div className="text-right shrink-0">
+              <div className="font-semibold text-sm tabular-nums">${(inv.total_amount ?? 0).toLocaleString()}</div>
+              {inv.due_date && (
+                <div className="text-[11px] text-muted-foreground mt-0.5">Due {formatDateSafe(inv.due_date)}</div>
+              )}
+            </div>
+          </div>
+          {/* Row 2: Status + Actions */}
+          <div className="flex items-center justify-between gap-2 mt-2.5">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <Badge className={`${statusStyles[inv.computedStatus] || statusStyles.draft} text-[11px] font-medium`}>
+                {statusLabels[inv.computedStatus] || inv.computedStatus}
+              </Badge>
+              {inv.due_date && getDueBadge(inv.due_date, inv.computedStatus)}
+            </div>
+            <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
+              {onReview && inv.computedStatus === 'draft' && (
+                <Button size="sm" variant="outline" className="h-8 px-2.5 text-xs border-amber-500/40 text-amber-700 dark:text-amber-400" onClick={() => onReview(inv)}>
+                  <FileEdit className="h-3.5 w-3.5 mr-1" />Review
+                </Button>
+              )}
+              {onMarkAsPaid && ['sent', 'partial', 'overdue'].includes(inv.computedStatus) && (
+                <Button size="sm" variant="outline" className="h-8 px-2.5 text-xs border-primary/40 text-primary" onClick={() => onMarkAsPaid(inv)}>
+                  <DollarSign className="h-3.5 w-3.5 mr-1" />Mark Paid
+                </Button>
+              )}
+              {onSendFollowup && inv.computedStatus === 'overdue' && (
+                <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground" onClick={() => onSendFollowup(inv)} aria-label="Send follow-up">
+                  <Mail className="h-4 w-4" />
+                </Button>
+              )}
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                onClick={async () => { await onDelete(inv.id); toast.success('Invoice deleted'); }}
+                aria-label="Delete"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function InvoiceTable({ invoices, onDelete, getFacilityName, navigate, showFacility = true, onMarkAsPaid, onSendFollowup, onReview }: {
   invoices: InvoiceWithStatus[];
   onDelete: (id: string) => Promise<void>;
@@ -88,14 +166,14 @@ function InvoiceTable({ invoices, onDelete, getFacilityName, navigate, showFacil
   onReview?: (invoice: InvoiceWithStatus) => void;
 }) {
   return (
-    <table className="w-full text-[13px] min-w-[600px] sm:min-w-0 table-fixed">
+    <table className="w-full text-[13px] table-fixed">
       <colgroup>
         <col className="w-[16%]" />
         {showFacility && <col className="w-[22%]" />}
-        <col className="w-[12%] hidden sm:table-column" />
-        <col className="w-[14%] hidden md:table-column" />
+        <col className="w-[12%] hidden lg:table-column" />
+        <col className="w-[14%] hidden lg:table-column" />
         <col className="w-[10%]" />
-        <col className="w-[10%] hidden sm:table-column" />
+        <col className="w-[10%] hidden lg:table-column" />
         <col className="w-[10%]" />
         <col className="w-[16%]" />
       </colgroup>
@@ -103,10 +181,10 @@ function InvoiceTable({ invoices, onDelete, getFacilityName, navigate, showFacil
         <tr className="bg-muted/30">
           <th className="text-left p-3 font-semibold text-muted-foreground text-xs">Invoice #</th>
           {showFacility && <th className="text-left p-3 font-semibold text-muted-foreground text-xs">Facility</th>}
-          <th className="text-left p-3 font-semibold text-muted-foreground text-xs hidden sm:table-cell">Invoice Date</th>
-          <th className="text-left p-3 font-semibold text-muted-foreground text-xs hidden md:table-cell">Due Date</th>
+          <th className="text-left p-3 font-semibold text-muted-foreground text-xs hidden lg:table-cell">Invoice Date</th>
+          <th className="text-left p-3 font-semibold text-muted-foreground text-xs hidden lg:table-cell">Due Date</th>
           <th className="text-right p-3 font-semibold text-muted-foreground text-xs">Total</th>
-          <th className="text-right p-3 font-semibold text-muted-foreground text-xs hidden sm:table-cell">Balance</th>
+          <th className="text-right p-3 font-semibold text-muted-foreground text-xs hidden lg:table-cell">Balance</th>
           <th className="text-left p-3 font-semibold text-muted-foreground text-xs">Status</th>
           <th className="text-right p-3 font-semibold text-muted-foreground text-xs">Actions</th>
         </tr>
@@ -136,17 +214,17 @@ function InvoiceTable({ invoices, onDelete, getFacilityName, navigate, showFacil
                 )}
               </td>
             )}
-            <td className="p-3 text-muted-foreground hidden sm:table-cell">
+            <td className="p-3 text-muted-foreground hidden lg:table-cell">
               {formatDateSafe(inv.invoice_date)}
             </td>
-            <td className="p-3 hidden md:table-cell">
+            <td className="p-3 hidden lg:table-cell">
               <div className="text-muted-foreground">
                 {formatDateSafe(inv.due_date)}
               </div>
               {inv.due_date && getDueBadge(inv.due_date, inv.computedStatus)}
             </td>
             <td className="p-3 text-right font-medium tabular-nums">${(inv.total_amount ?? 0).toLocaleString()}</td>
-            <td className="p-3 text-right hidden sm:table-cell tabular-nums">
+            <td className="p-3 text-right hidden lg:table-cell tabular-nums">
               {(inv.balance_due ?? 0) > 0 ? <span className="font-medium">${(inv.balance_due ?? 0).toLocaleString()}</span> : <span className="text-muted-foreground">—</span>}
             </td>
             <td className="p-3">
@@ -272,16 +350,29 @@ export function InvoiceStatusGroup({
             ))}
           </div>
         ) : (
-          <div className="overflow-x-auto border-t">
-            <InvoiceTable
-              invoices={invoices}
-              onDelete={onDelete}
-              getFacilityName={getFacilityName}
-              navigate={navigate}
-              onMarkAsPaid={onMarkAsPaid}
-              onSendFollowup={onSendFollowup}
-              onReview={onReview}
-            />
+          <div className="border-t">
+            <div className="md:hidden">
+              <InvoiceMobileList
+                invoices={invoices}
+                onDelete={onDelete}
+                getFacilityName={getFacilityName}
+                navigate={navigate}
+                onMarkAsPaid={onMarkAsPaid}
+                onSendFollowup={onSendFollowup}
+                onReview={onReview}
+              />
+            </div>
+            <div className="hidden md:block overflow-x-auto">
+              <InvoiceTable
+                invoices={invoices}
+                onDelete={onDelete}
+                getFacilityName={getFacilityName}
+                navigate={navigate}
+                onMarkAsPaid={onMarkAsPaid}
+                onSendFollowup={onSendFollowup}
+                onReview={onReview}
+              />
+            </div>
           </div>
         )}
       </CollapsibleContent>
@@ -313,7 +404,18 @@ function FacilitySubGroup({ name, invoices, onDelete, getFacilityName, navigate,
         <span className="text-sm font-bold text-amber-700 dark:text-amber-400 bg-amber-100/80 dark:bg-amber-900/30 px-2 py-0.5 rounded-md">${total.toLocaleString()}</span>
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <div className="overflow-x-auto">
+        <div className="md:hidden">
+          <InvoiceMobileList
+            invoices={invoices}
+            onDelete={onDelete}
+            getFacilityName={getFacilityName}
+            navigate={navigate}
+            onMarkAsPaid={onMarkAsPaid}
+            onSendFollowup={onSendFollowup}
+            onReview={onReview}
+          />
+        </div>
+        <div className="hidden md:block overflow-x-auto">
           <InvoiceTable
             invoices={invoices}
             onDelete={onDelete}
