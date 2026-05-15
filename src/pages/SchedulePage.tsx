@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, DragEvent } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, DragEvent } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -242,6 +242,27 @@ export default function SchedulePage() {
     if (view === 'week') setCurrentDate(addWeeks(currentDate, 1));
     else if (view === 'day') setCurrentDate(addDays(currentDate, 1));
     else setCurrentDate(addMonths(currentDate, 1));
+  };
+
+  // Swipe gesture for mobile month/week/day navigation
+  const touchRef = useRef<{ x: number; y: number; t: number } | null>(null);
+  const onTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    touchRef.current = { x: t.clientX, y: t.clientY, t: Date.now() };
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    const start = touchRef.current;
+    touchRef.current = null;
+    if (!start) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    const dt = Date.now() - start.t;
+    if (dt > 600) return;
+    if (Math.abs(dx) < 60) return;
+    if (Math.abs(dy) > Math.abs(dx)) return;
+    if (dx < 0) navigateForward();
+    else navigateBack();
   };
 
   const headerLabel = view === 'week'
@@ -537,7 +558,7 @@ export default function SchedulePage() {
       )}
 
       {/* Content area - fills remaining space */}
-      <div className="flex-1 overflow-auto px-4 py-3">
+      <div className="flex-1 overflow-auto px-4 py-3" onTouchStart={isTimeframeView ? onTouchStart : undefined} onTouchEnd={isTimeframeView ? onTouchEnd : undefined}>
         {view === 'sync' ? (
           <CalendarSyncPanel />
         ) : (
