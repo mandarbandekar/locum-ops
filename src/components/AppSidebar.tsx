@@ -195,6 +195,7 @@ export function AppSidebar() {
               <SidebarMenuButton asChild size="lg" tooltip={collapsed ? 'Founder' : undefined}>
                 <NavLink
                   to="/founder"
+                  onClick={handleNavClick}
                   className="sidebar-nav-item group/navitem"
                   activeClassName="sidebar-nav-item--active"
                 >
