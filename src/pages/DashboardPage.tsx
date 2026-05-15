@@ -51,6 +51,7 @@ import { EmptyDashboardPrompt } from '@/components/dashboard/EmptyDashboardPromp
 import { QuarterlyTaxCallout } from '@/components/dashboard/QuarterlyTaxCallout';
 import { FirstTimeDashboard } from '@/components/dashboard/FirstTimeDashboard';
 import { OnboardingHandoffBanner } from '@/components/dashboard/OnboardingHandoffBanner';
+import { MobileQuickActionsFab } from '@/components/dashboard/MobileQuickActionsFab';
 import { HighlightBanner } from '@/components/announcements/HighlightBanner';
 import { generateDashboardBriefing, getNextQuarterlyDeadline, BriefingInput } from '@/lib/dashboardBriefing';
 
