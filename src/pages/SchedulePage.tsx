@@ -464,6 +464,9 @@ export default function SchedulePage() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
+                  <DropdownMenuItem onClick={() => setView('agenda')}>
+                    <List className="mr-2 h-4 w-4" /> Agenda
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setView('month')}>
                     <CalendarDays className="mr-2 h-4 w-4" /> Month
                   </DropdownMenuItem>
