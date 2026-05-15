@@ -76,8 +76,11 @@ function useBadgeCounts() {
 }
 
 export function AppSidebar() {
-  const { state } = useSidebar();
+  const { state, isMobile, setOpenMobile } = useSidebar();
   const collapsed = state === 'collapsed';
+  const handleNavClick = () => {
+    if (isMobile) setOpenMobile(false);
+  };
   const { user } = useAuth();
   const showFounder = isFounderAdmin(user?.email);
 
@@ -156,6 +159,7 @@ export function AppSidebar() {
                         <NavLink
                           to={item.url}
                           end={item.url === '/'}
+                          onClick={handleNavClick}
                           className="sidebar-nav-item group/navitem"
                           activeClassName="sidebar-nav-item--active"
                         >
@@ -191,6 +195,7 @@ export function AppSidebar() {
               <SidebarMenuButton asChild size="lg" tooltip={collapsed ? 'Founder' : undefined}>
                 <NavLink
                   to="/founder"
+                  onClick={handleNavClick}
                   className="sidebar-nav-item group/navitem"
                   activeClassName="sidebar-nav-item--active"
                 >
@@ -204,6 +209,7 @@ export function AppSidebar() {
             <SidebarMenuButton asChild size="lg" tooltip={collapsed ? 'Settings' : undefined}>
               <NavLink
                 to="/settings/profile"
+                onClick={handleNavClick}
                 className="sidebar-nav-item sidebar-settings-item group/navitem"
                 activeClassName="sidebar-nav-item--active"
               >
