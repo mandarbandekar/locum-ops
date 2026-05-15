@@ -45,6 +45,7 @@ export default function MileageTrackerTab({
   const { profile: userProfile } = useUserProfile();
   const { facilities } = useData();
   const [showStartingDialog, setShowStartingDialog] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(
     () => !localStorage.getItem(MILEAGE_ONBOARDING_KEY)
   );
