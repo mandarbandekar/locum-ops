@@ -492,16 +492,16 @@ export default function SchedulePage() {
       {/* Row 2: Date Nav | Stats | Layers (calendar views only) */}
       {isCalendarView && (
         <div className="flex-none border-y border-border/60 px-4 sm:px-6 py-2 bg-muted/20">
-          <div className="flex items-center gap-3" data-tour="schedule-calendar">
-            <div className="flex-1 flex items-center justify-start gap-1.5 min-w-0">
-              <Button variant="ghost" size="icon" onClick={navigateBack} className="h-8 w-8">
+          <div className="flex items-center gap-2 sm:gap-3" data-tour="schedule-calendar">
+            <div className="flex items-center gap-0.5 sm:gap-1.5 min-w-0 shrink-0">
+              <Button variant="ghost" size="icon" onClick={navigateBack} className="h-9 w-9 sm:h-8 sm:w-8 shrink-0" aria-label="Previous">
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <span className="text-sm font-semibold min-w-[150px] text-center">{headerLabel}</span>
-              <Button variant="ghost" size="icon" onClick={navigateForward} className="h-8 w-8">
+              <span className="text-sm font-semibold text-center px-1 truncate min-w-[110px] sm:min-w-[150px]">{headerLabel}</span>
+              <Button variant="ghost" size="icon" onClick={navigateForward} className="h-9 w-9 sm:h-8 sm:w-8 shrink-0" aria-label="Next">
                 <ChevronRight className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="sm" className="ml-1" onClick={() => setCurrentDate(new Date())}>
+              <Button variant="outline" size="sm" className="ml-1 shrink-0 h-9 sm:h-8 px-2 sm:px-3" onClick={() => setCurrentDate(new Date())}>
                 Today
               </Button>
             </div>
