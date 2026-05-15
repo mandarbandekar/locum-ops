@@ -165,19 +165,19 @@ export default function ExpenseLogTab({
           </CardContent>
         </Card>
       ) : hasExpenses ? (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
           {[
             { label: 'YTD Spent', value: fmt(ytdTotalCents), icon: DollarSign, color: 'text-primary' },
-            { label: 'Est. Tax Savings YTD', value: fmt(estimatedTaxSavingsCents), icon: PiggyBank, color: 'text-green-600' },
+            { label: 'Est. Tax Savings', value: fmt(estimatedTaxSavingsCents), icon: PiggyBank, color: 'text-green-600' },
             { label: 'YTD Write-Offs', value: fmt(ytdDeductibleCents), icon: TrendingUp, color: 'text-blue-600' },
             { label: 'This Month', value: fmt(thisMonthCents), icon: CalendarDays, color: 'text-muted-foreground' },
           ].map(stat => (
             <Card key={stat.label}>
-              <CardContent className="py-3 px-4 flex items-center gap-2.5">
+              <CardContent className="py-2.5 px-3 sm:py-3 sm:px-4 flex items-center gap-2 sm:gap-2.5">
                 <stat.icon className={`h-4 w-4 ${stat.color} shrink-0`} />
                 <div className="min-w-0">
-                  <p className="text-[11px] text-muted-foreground truncate">{stat.label}</p>
-                  <p className="font-semibold text-sm">{stat.value}</p>
+                  <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate leading-tight">{stat.label}</p>
+                  <p className="font-semibold text-[13px] sm:text-sm tabular-nums">{stat.value}</p>
                 </div>
               </CardContent>
             </Card>
@@ -186,18 +186,32 @@ export default function ExpenseLogTab({
       ) : null}
 
       {/* Primary Log Expense Button */}
-      <Button className="w-full gap-2 h-12 text-base" onClick={() => setSheetOpen(true)}>
+      <Button className="w-full gap-2 h-11 sm:h-12 text-sm sm:text-base" onClick={() => setSheetOpen(true)}>
         <Plus className="h-5 w-5" />
         Log Expense
       </Button>
 
-      {/* IRS Receipt Reminder */}
-      <Alert className="border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20">
-        <Receipt className="h-4 w-4 text-amber-600" />
-        <AlertDescription className="text-xs text-amber-800 dark:text-amber-300">
-          <span className="font-medium">IRS Receipt Rule:</span> The IRS requires documentation for all business expenses over $75. Upload receipts when logging expenses to protect your deductions in case of audit.
-        </AlertDescription>
-      </Alert>
+      {/* IRS Receipt Reminder — dismissible */}
+      {showIrsRule && (
+        <Alert className="border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20 relative pr-9">
+          <Receipt className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="text-xs text-amber-800 dark:text-amber-300">
+            <span className="font-medium">IRS Receipt Rule:</span> The IRS requires documentation for all business expenses over $75. Upload receipts to protect your deductions in case of audit.
+          </AlertDescription>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute top-1 right-1 h-6 w-6 text-amber-700/70 hover:text-amber-900 dark:text-amber-400/70"
+            onClick={() => {
+              setShowIrsRule(false);
+              localStorage.setItem('expense-irs-rule-dismissed', 'true');
+            }}
+            aria-label="Dismiss"
+          >
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        </Alert>
+      )}
 
       {/* Expense Log — only when there are expenses */}
       {hasExpenses && (
