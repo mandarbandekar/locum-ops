@@ -9,6 +9,7 @@ import { MileageOnboarding } from './MileageOnboarding';
 import { MileageReviewBanner } from './MileageReviewBanner';
 import MileageBackfillCard from './MileageBackfillCard';
 import MileageStartingBalanceDialog from './MileageStartingBalanceDialog';
+import AddExpenseDialog from './AddExpenseDialog';
 import type { Expense } from '@/hooks/useExpenses';
 
 const MILEAGE_ONBOARDING_KEY = 'locumops_mileage_tab_onboarding_dismissed';
