@@ -630,7 +630,7 @@ export default function SchedulePage() {
                   shifts={calendarFilters.shifts ? shifts : []}
                   facilities={facilities}
                   getFacilityName={getFacilityName}
-                  onEditShift={setEditShift}
+                  onEditShift={setPeekShiftId}
                   onDropOnTime={handleDropOnTime}
                   onCellClick={openAddShiftAt}
                   calendarFilters={{ credentials: calendarFilters.credentials, subscriptions: calendarFilters.subscriptions }}
