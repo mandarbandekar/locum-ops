@@ -1,58 +1,84 @@
-## Profile timezone setting (UI + persistence only)
+## Mobile Dashboard UX Pass
 
-Surface the existing `user_profiles.timezone` and `user_profiles.timezone_pinned` columns in **Settings → Profile**, with a proper US-only dropdown and a "Pin this timezone" toggle. No behavior changes to calendar/dashboard rendering — those keep today's rules. A follow-up task will wire surfaces.
+Goal: at ≤768px, prioritize what a relief vet actually opens the dashboard for (todos + next shift), make every section thumb-friendly, and stop forcing users to scroll past dense financial widgets to reach their action list. Desktop layout unchanged.
 
-### Why this is small
+### 1. Reorder the dashboard stack on mobile
 
-- DB already has `timezone` (not null, default `America/New_York`) and `timezone_pinned` (not null, default `false`).
-- `UserProfile` interface already carries `timezone`. Just need to add `timezone_pinned`.
-- Auto-sync on login is already the de facto behavior per memory; we'll formalize it: write device tz to profile on session load **only when `timezone_pinned = false`**.
+Current order (mobile + desktop): Briefing → Money Pipeline → Tax Callout → Upcoming Shifts → Needs Attention.
 
-### Changes
-
-**1. `src/lib/usTimezones.ts` (new)** — single source of truth so Settings and `FacilityDetailPage` share the list:
-```ts
-export const US_TIMEZONES = [
-  { value: 'America/New_York',    label: 'Eastern (New York)' },
-  { value: 'America/Chicago',     label: 'Central (Chicago)' },
-  { value: 'America/Denver',      label: 'Mountain (Denver)' },
-  { value: 'America/Phoenix',     label: 'Mountain — no DST (Phoenix)' },
-  { value: 'America/Los_Angeles', label: 'Pacific (Los Angeles)' },
-  { value: 'America/Anchorage',   label: 'Alaska (Anchorage)' },
-  { value: 'Pacific/Honolulu',    label: 'Hawaii (Honolulu)' },
-];
+New order on mobile only (`md:` breakpoint controls desktop):
+```text
+1. Briefing (condensed, see §3)
+2. Upcoming Shifts strip
+3. Needs Attention (the to-do list users came for)
+4. Money Pipeline (compact, see §2)
+5. Quarterly Tax Callout (chip, see §4)
 ```
 
-**2. `src/contexts/UserProfileContext.tsx`**
-- Add `timezone_pinned: boolean` to `UserProfile` interface and `DEFAULT_PROFILE`.
-- Hydrate it from the row read; include it in update payloads.
-- On profile load, if `timezone_pinned === false` and `Intl…resolvedOptions().timeZone !== profile.timezone`, fire-and-forget update of `timezone` to the device value (no toast). Guarded by a one-shot ref so it doesn't loop.
+Implementation: in `DashboardPage.tsx`, wrap each section in an ordered fragment with Tailwind `order-*` classes, or render two stacks (mobile vs desktop) gated by a `useIsMobile` hook (already exists in the project). Reuse the same component instances — only rearrange.
 
-**3. `src/pages/SettingsProfilePage.tsx`**
-- Replace the free-text Timezone `Input` with:
-  - `Select` populated from `US_TIMEZONES`.
-  - Below it, a `Switch` + label: **"Pin this timezone"** with helper copy: *"When off, your timezone follows the device you're using. Pin it if you want to keep one timezone while traveling."*
-  - When the switch flips on, save `{ timezone, timezone_pinned: true }`. When flipped off, save `{ timezone_pinned: false }` and immediately re-sync to device tz.
-- Show the device tz in muted text under the dropdown when it differs from the saved value: *"Your device is currently in Europe/Rome."*
-- Save button persists both fields together.
+### 2. Compact Money Pipeline on mobile
 
-**4. `src/pages/FacilityDetailPage.tsx`**
-- Replace inline tz `<SelectItem>` block with `US_TIMEZONES.map(...)` so we have one list.
+Current: 5 stages (Completed, Invoiced, Due Soon, Overdue, Collected) rendered in a row → squeezed at 390px.
 
-**5. Tests** — `src/test/profileTimezone.test.ts` (light)
-- US_TIMEZONES contains exactly 7 entries and includes `Pacific/Honolulu`.
-- Pinning logic helper: `shouldAutoSyncTz({ pinned: false, profileTz, deviceTz })` returns `true` only when unpinned and tzs differ.
+Mobile behavior:
+- **Hide stages with $0** (e.g. no Overdue this month → don't render the card).
+- **Horizontal snap-scroll carousel** of stage cards (`overflow-x-auto snap-x snap-mandatory`), each card `min-w-[240px]` so two peek at a time signaling "scroll for more."
+- Keep the quarter-summary footer (Q earnings + shifts) full-width below the carousel.
+- Desktop (`md:` and up) keeps the existing grid layout.
 
-### Out of scope (explicit follow-ups)
+File: `src/components/dashboard/MoneyPipeline.tsx`.
 
-- No changes to calendar grid, dashboard "Coming Up", time-block bucketing, or any rendering surface. Those still follow the existing rule ("shifts always in clinic tz; profile tz only used for personal anchors today").
-- No migrations (columns already exist).
-- No iCal/sync changes.
+### 3. Condense Briefing on mobile
+
+Current: `BriefingBanner` renders all sentences as a paragraph block.
+
+Mobile behavior:
+- Show greeting + first 2 sentences only.
+- If more sentences exist, render a "Show more" inline toggle that expands the rest in place.
+- Desktop unchanged (full briefing visible).
+
+File: `src/components/dashboard/BriefingBanner.tsx`.
+
+### 4. Collapse Quarterly Tax Callout into a chip on mobile
+
+Current: full card with quarter, deadline, days, earnings, estimated tax.
+
+Mobile behavior:
+- Render as a single-line chip: `Q3 tax due in 12 days · ~$2,400` with chevron.
+- Tap expands inline (or routes to `/tax-center`).
+- Desktop keeps the full callout.
+
+File: `src/components/dashboard/QuarterlyTaxCallout.tsx`.
+
+### 5. Thumb-zone FAB for quick actions
+
+Add a floating action button visible only on mobile (`md:hidden`), pinned `fixed bottom-4 right-4 z-40`.
+
+- Primary "+" button opens a small popover with: Add Shift, Add Clinic, Mark Invoice Paid.
+- Hooks into existing `setAddShiftOpen`, `setAddClinicOpen`, and navigates to `/invoices?filter=sent` for Mark Paid.
+- Hidden when any modal/dialog is open to avoid overlap.
+- Hidden in onboarding states (empty dashboard, FirstTimeDashboard).
+
+New component: `src/components/dashboard/MobileQuickActionsFab.tsx`. Wire it from `DashboardPage.tsx`.
+
+### Non-goals
+
+- No business logic, calculation, or data-shape changes.
+- No desktop layout changes.
+- No new routes or backend work.
+- Reminders, briefing copy, and stage definitions stay as-is.
+
+### Verification
+
+- Resize preview to 390px and confirm: new order, pipeline scrolls horizontally, briefing collapses, tax chip renders, FAB appears.
+- Resize to ≥768px and confirm desktop is visually unchanged.
+- Empty state and FirstTimeDashboard paths still render without the FAB.
 
 ### Files touched
 
-- `src/lib/usTimezones.ts` (new)
-- `src/contexts/UserProfileContext.tsx`
-- `src/pages/SettingsProfilePage.tsx`
-- `src/pages/FacilityDetailPage.tsx`
-- `src/test/profileTimezone.test.ts` (new)
+- `src/pages/DashboardPage.tsx` — reorder + mount FAB
+- `src/components/dashboard/MoneyPipeline.tsx` — mobile carousel + hide $0
+- `src/components/dashboard/BriefingBanner.tsx` — mobile collapse
+- `src/components/dashboard/QuarterlyTaxCallout.tsx` — mobile chip variant
+- `src/components/dashboard/MobileQuickActionsFab.tsx` — new
