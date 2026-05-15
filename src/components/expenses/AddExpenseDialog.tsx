@@ -33,9 +33,10 @@ interface Props {
   config: { irs_mileage_rate_cents: number; home_office_rate_cents: number };
   editingExpense?: Expense | null;
   initialSubcategory?: string;
+  expenses?: Expense[];
 }
 
-export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit, uploadReceipt, config, editingExpense, initialSubcategory }: Props) {
+export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit, uploadReceipt, config, editingExpense, initialSubcategory, expenses = [] }: Props) {
   const { facilities } = useData();
   const today = new Date().toISOString().split('T')[0];
   const isEditing = !!editingExpense;
