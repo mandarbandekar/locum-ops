@@ -159,6 +159,7 @@ export function AppSidebar() {
                         <NavLink
                           to={item.url}
                           end={item.url === '/'}
+                          onClick={handleNavClick}
                           className="sidebar-nav-item group/navitem"
                           activeClassName="sidebar-nav-item--active"
                         >
