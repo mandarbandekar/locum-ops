@@ -123,7 +123,7 @@ export function MoneyPipeline({
                   </p>
                 )}
               </div>
-              {i < stages.length - 1 && (
+              {i < visibleStages.length - 1 && (
                 <div className="hidden md:flex items-center justify-center">
                   <ChevronRight className="h-5 w-5" style={{ color: '#D1D5DB' }} />
                 </div>
