@@ -558,7 +558,7 @@ export default function SchedulePage() {
       )}
 
       {/* Content area - fills remaining space */}
-      <div className="flex-1 overflow-auto px-4 py-3">
+      <div className="flex-1 overflow-auto px-4 py-3" onTouchStart={isTimeframeView ? onTouchStart : undefined} onTouchEnd={isTimeframeView ? onTouchEnd : undefined}>
         {view === 'sync' ? (
           <CalendarSyncPanel />
         ) : (
