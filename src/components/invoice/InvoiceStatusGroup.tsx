@@ -404,7 +404,18 @@ function FacilitySubGroup({ name, invoices, onDelete, getFacilityName, navigate,
         <span className="text-sm font-bold text-amber-700 dark:text-amber-400 bg-amber-100/80 dark:bg-amber-900/30 px-2 py-0.5 rounded-md">${total.toLocaleString()}</span>
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <div className="overflow-x-auto">
+        <div className="md:hidden">
+          <InvoiceMobileList
+            invoices={invoices}
+            onDelete={onDelete}
+            getFacilityName={getFacilityName}
+            navigate={navigate}
+            onMarkAsPaid={onMarkAsPaid}
+            onSendFollowup={onSendFollowup}
+            onReview={onReview}
+          />
+        </div>
+        <div className="hidden md:block overflow-x-auto">
           <InvoiceTable
             invoices={invoices}
             onDelete={onDelete}
