@@ -88,6 +88,17 @@ export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, o
   // chip in red and surface which shift(s) overlap in the tooltip.
   const overlapMap = useMemo(() => buildShiftOverlapMap(shifts as any), [shifts]);
 
+  // Live "now" indicator — refresh every minute.
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+  const todayIndex = weekDays.findIndex(d => isSameDay(d, now));
+  const nowHour = now.getHours() + now.getMinutes() / 60;
+  const showNowLine = todayIndex >= 0 && nowHour >= HOURS[0] && nowHour <= HOURS[HOURS.length - 1] + 1;
+  const nowTop = (nowHour - HOURS[0]) * HOUR_HEIGHT;
+
   return (
     <div className="rounded-lg border bg-card overflow-x-auto -mx-3 sm:mx-0">
       {/* Day headers */}
