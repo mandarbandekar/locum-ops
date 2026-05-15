@@ -269,6 +269,19 @@ export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit,
                   IRS rate: ${(config.irs_mileage_rate_cents / 100).toFixed(2)}/mile
                   {milesStr && ` → $${(calculatedCents! / 100).toFixed(2)}`}
                 </p>
+                {duplicateShiftMileage && (
+                  <div className="mt-2 flex gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2.5 text-xs text-amber-900 dark:text-amber-200">
+                    <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium">Possible duplicate</p>
+                      <p className="opacity-90">
+                        A shift-linked mileage entry already exists for {date}
+                        {duplicateShiftMileage.mileage_miles ? ` (${Math.round(duplicateShiftMileage.mileage_miles)} mi, ${duplicateShiftMileage.mileage_status})` : ''}.
+                        Logging this manually may double-count your deduction.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
