@@ -315,7 +315,7 @@ export default function MileageTrackerTab({
         onSubmit={addExpense}
         onEdit={async (id, data) => {
           // Confirm draft on save so it leaves the review queue
-          const result = await editExpense(id, { ...data, status: 'confirmed' });
+          const result = await editExpense(id, { ...data, mileage_status: 'confirmed' });
           setEditingExpense(null);
           return result;
         }}
