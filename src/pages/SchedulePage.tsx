@@ -570,6 +570,13 @@ export default function SchedulePage() {
       <div className="flex-1 overflow-auto px-4 py-3" onTouchStart={isTimeframeView ? onTouchStart : undefined} onTouchEnd={isTimeframeView ? onTouchEnd : undefined}>
         {view === 'sync' ? (
           <CalendarSyncPanel />
+        ) : view === 'agenda' ? (
+          <AgendaView
+            shifts={calendarFilters.shifts ? shifts : []}
+            facilities={facilities}
+            onShiftClick={setPeekShiftId}
+            onAddShift={() => setShowAdd(true)}
+          />
         ) : (
           <>
             {view === 'month' ? (
