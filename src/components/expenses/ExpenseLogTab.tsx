@@ -73,6 +73,9 @@ export default function ExpenseLogTab({
   const [showOnboarding, setShowOnboarding] = useState(() => {
     return localStorage.getItem('expense-onboarding-dismissed') !== 'true';
   });
+  const [showIrsRule, setShowIrsRule] = useState(() => {
+    return localStorage.getItem('expense-irs-rule-dismissed') !== 'true';
+  });
 
   // Calculate estimated tax savings
   const estimatedTaxSavingsCents = useMemo(() => {
