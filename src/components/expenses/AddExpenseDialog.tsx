@@ -9,7 +9,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { HelpCircle, Repeat } from 'lucide-react';
+import { HelpCircle, Repeat, AlertTriangle } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
 import { MultiFileDropzone } from '@/components/ui/multi-file-dropzone';
 import { supabase } from '@/integrations/supabase/client';
