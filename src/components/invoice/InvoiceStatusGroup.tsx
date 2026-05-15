@@ -350,16 +350,29 @@ export function InvoiceStatusGroup({
             ))}
           </div>
         ) : (
-          <div className="overflow-x-auto border-t">
-            <InvoiceTable
-              invoices={invoices}
-              onDelete={onDelete}
-              getFacilityName={getFacilityName}
-              navigate={navigate}
-              onMarkAsPaid={onMarkAsPaid}
-              onSendFollowup={onSendFollowup}
-              onReview={onReview}
-            />
+          <div className="border-t">
+            <div className="md:hidden">
+              <InvoiceMobileList
+                invoices={invoices}
+                onDelete={onDelete}
+                getFacilityName={getFacilityName}
+                navigate={navigate}
+                onMarkAsPaid={onMarkAsPaid}
+                onSendFollowup={onSendFollowup}
+                onReview={onReview}
+              />
+            </div>
+            <div className="hidden md:block overflow-x-auto">
+              <InvoiceTable
+                invoices={invoices}
+                onDelete={onDelete}
+                getFacilityName={getFacilityName}
+                navigate={navigate}
+                onMarkAsPaid={onMarkAsPaid}
+                onSendFollowup={onSendFollowup}
+                onReview={onReview}
+              />
+            </div>
           </div>
         )}
       </CollapsibleContent>
