@@ -79,6 +79,18 @@ export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit,
     }
   }, [calculatedCents, isMileage, isHomeOffice]);
 
+  // Duplicate-shift-mileage detection: another mileage entry tied to a shift on the same date
+  const duplicateShiftMileage = useMemo(() => {
+    if (!isMileage || !date) return null;
+    const match = expenses.find(e =>
+      e.subcategory === 'mileage' &&
+      e.expense_date === date &&
+      (e.is_auto_mileage || !!e.shift_id) &&
+      e.id !== editingExpense?.id
+    );
+    return match || null;
+  }, [isMileage, date, expenses, editingExpense?.id]);
+
   // Reset / pre-fill form when opening
   useEffect(() => {
     if (!open) return;
