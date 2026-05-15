@@ -75,6 +75,27 @@ export function QuarterlyTaxCallout({
   const ctaLabel = hasTaxProfile ? 'View Tax Strategy →' : 'Set Up Tax Profile →';
   const ctaLink = hasTaxProfile ? '/tax-center' : '/tax-center';
 
+  // Mobile chip variant: collapsed one-liner that expands inline
+  if (isMobile && !chipExpanded) {
+    const chipSummary = hasTaxProfile
+      ? `Q${quarter} tax ${dueText} · ~${fmtCurrency(estimatedTax)}`
+      : `Q${quarter} tax ${dueText} · Set up profile`;
+    return (
+      <button
+        type="button"
+        onClick={() => setChipExpanded(true)}
+        className="w-full flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2.5 text-left animate-in fade-in duration-200"
+        style={{ borderLeftWidth: '3px', borderLeftColor: borderColor }}
+      >
+        {showClock && <Clock className="h-4 w-4 shrink-0" style={{ color: borderColor }} />}
+        <span className="flex-1 min-w-0 text-[13px] font-medium text-foreground truncate">
+          {chipSummary}
+        </span>
+        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+      </button>
+    );
+  }
+
   return (
     <div
       className="relative bg-card rounded-lg shadow-sm overflow-hidden animate-in fade-in duration-200"
