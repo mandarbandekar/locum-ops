@@ -3,7 +3,8 @@ import { SettingsNav } from '@/components/SettingsNav';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { LogOut, Trash2, AlertTriangle, Shield, Lock, Eye } from 'lucide-react';
+import { LogOut, Trash2, AlertTriangle, Shield, ChevronRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import {
   Dialog,
   DialogContent,
