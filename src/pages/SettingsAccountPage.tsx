@@ -19,6 +19,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { TaxDocumentsCard } from '@/components/settings/TaxDocumentsCard';
 
 const DELETE_REASONS = [
   { value: 'no_longer_doing_locum', label: "I'm no longer doing locum work" },
@@ -128,6 +129,8 @@ export default function SettingsAccountPage() {
             </Button>
           </CardContent>
         </Card>
+
+        <TaxDocumentsCard />
 
         <Card>
           <CardHeader><CardTitle className="text-base">Delete My Account</CardTitle></CardHeader>
