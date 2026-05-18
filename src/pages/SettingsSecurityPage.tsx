@@ -1,6 +1,6 @@
 import { SettingsNav } from '@/components/SettingsNav';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Shield, Lock, Database, KeyRound, Server, Eye, ArrowLeft, FileText } from 'lucide-react';
+import { Shield, Lock, Database, KeyRound, Server, Eye, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 
@@ -83,26 +83,6 @@ export default function SettingsSecurityPage() {
             <div className="flex items-start gap-2 rounded-md border border-border bg-muted/30 p-3 text-xs">
               <Eye className="h-3.5 w-3.5 mt-0.5 shrink-0" />
               <span>Even our own engineers cannot read your portal passwords from the raw database — only your signed-in session can decrypt them.</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Tax documents */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <FileText className="h-4 w-4 text-primary" /> Tax Documents (W-9)
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm text-muted-foreground">
-            <p>
-              When you upload a W-9 from <Link to="/settings/account" className="text-primary hover:underline">Your Account</Link>, the file is stored as an <span className="text-foreground font-medium">opaque, encrypted document</span> in private storage — protected by the same AES-256 at-rest encryption as the rest of your data.
-            </p>
-            <p>
-              We <span className="text-foreground font-medium">never read, parse, or extract</span> any information from the file — including your SSN. The contents are shown back only to you, and only through short-lived (5-minute) secure links generated for your signed-in session.
-            </p>
-            <div className="rounded-md border border-border bg-muted/30 p-3 text-xs">
-              If you'd rather not store your W-9 at all, you can skip the upload — it's entirely optional.
             </div>
           </CardContent>
         </Card>

@@ -2946,45 +2946,6 @@ export type Database = {
         }
         Relationships: []
       }
-      tax_documents: {
-        Row: {
-          created_at: string
-          doc_type: string
-          file_path: string
-          file_size: number
-          id: string
-          mime_type: string | null
-          original_filename: string
-          updated_at: string
-          uploaded_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          doc_type?: string
-          file_path: string
-          file_size?: number
-          id?: string
-          mime_type?: string | null
-          original_filename: string
-          updated_at?: string
-          uploaded_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          doc_type?: string
-          file_path?: string
-          file_size?: number
-          id?: string
-          mime_type?: string | null
-          original_filename?: string
-          updated_at?: string
-          uploaded_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       tax_intelligence_profiles: {
         Row: {
           annual_business_expenses: number
