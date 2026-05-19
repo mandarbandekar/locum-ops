@@ -54,13 +54,14 @@ Deno.serve(async (req) => {
   const includeAddress = prefs?.include_facility_address ?? true;
   const includeNotes = prefs?.include_notes ?? false;
 
-  // Load booked future shifts
-  const now = new Date().toISOString();
+  // Include past 90 days + all future shifts so older events don't disappear
+  // from subscribed calendars when they refresh.
+  const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
   const { data: shifts, error: shiftsError } = await supabase
     .from('shifts')
     .select('*')
     .eq('user_id', userId)
-    .gte('start_datetime', now)
+    .gte('start_datetime', ninetyDaysAgo)
     .order('start_datetime', { ascending: true });
 
   if (shiftsError) {
