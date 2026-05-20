@@ -251,6 +251,7 @@ export default function FounderDashboardPage() {
                   <Th onClick={() => toggleSort('downloaded_invoice_count')} align="right">Downloads</Th>
                   <Th onClick={() => toggleSort('credential_count')} align="right">Credentials</Th>
                   <Th onClick={() => toggleSort('expense_count')} align="right">Expenses</Th>
+                  <Th onClick={() => toggleSort('last_device')}>Last device</Th>
                   <Th onClick={() => toggleSort('activation_status')}>Status</Th>
                 </tr>
               </thead>
