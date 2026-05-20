@@ -187,12 +187,50 @@ export default function FounderDashboardPage() {
       </div>
 
       {/* Hero metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-4">
         <MetricCard label="Total testers" value={total} sub={loading && !total ? 'Loading…' : `${total} total`} />
         <MetricCard label="Active (7d)" value={activeCount} sub={`${pct(activeCount, total)} of testers`} />
         <MetricCard label="Activated" value={activatedCount} sub={`${pct(activatedCount, total)} have a shift`} />
         <MetricCard label="Invoicing" value={invoicingCount} sub={`${pct(invoicingCount, total)} have an invoice`} />
       </div>
+
+      {/* Device usage */}
+      <Card className="mb-6">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Monitor className="h-4 w-4 text-muted-foreground" />
+            Sign-in device usage
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+            <DeviceStat
+              icon={<Monitor className="h-4 w-4" />}
+              label="Desktop / Laptop"
+              signIns={deviceTotals.desktop}
+              signInsPct={pct(deviceTotals.desktop, totalDeviceSignIns)}
+              users={desktopUsers}
+            />
+            <DeviceStat
+              icon={<Smartphone className="h-4 w-4" />}
+              label="Mobile"
+              signIns={deviceTotals.mobile}
+              signInsPct={pct(deviceTotals.mobile, totalDeviceSignIns)}
+              users={rows.filter((r) => r.last_device === 'mobile').length}
+            />
+            <DeviceStat
+              icon={<Tablet className="h-4 w-4" />}
+              label="Tablet"
+              signIns={deviceTotals.tablet}
+              signInsPct={pct(deviceTotals.tablet, totalDeviceSignIns)}
+              users={rows.filter((r) => r.last_device === 'tablet').length}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground mt-3">
+            Tracked from sign-in events. Recorded going forward — older sessions won't appear until users sign in again.
+          </p>
+        </CardContent>
+      </Card>
 
       {/* Per-user table */}
       <Card>
