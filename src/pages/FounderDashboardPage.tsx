@@ -259,11 +259,11 @@ export default function FounderDashboardPage() {
                 {loading && rows.length === 0 ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <tr key={i} className="border-t">
-                      <td colSpan={10} className="px-4 py-3"><Skeleton className="h-5 w-full" /></td>
+                      <td colSpan={11} className="px-4 py-3"><Skeleton className="h-5 w-full" /></td>
                     </tr>
                   ))
                 ) : sorted.length === 0 ? (
-                  <tr><td colSpan={10} className="px-4 py-10 text-center text-muted-foreground">No users yet.</td></tr>
+                  <tr><td colSpan={11} className="px-4 py-10 text-center text-muted-foreground">No users yet.</td></tr>
                 ) : (
                   sorted.map((r) => (
                     <tr key={r.user_id} className="border-t hover:bg-muted/30">
