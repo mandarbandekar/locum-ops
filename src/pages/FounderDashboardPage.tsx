@@ -85,7 +85,7 @@ export default function FounderDashboardPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase.rpc('get_founder_overview');
+    const { data, error } = await (supabase as any).rpc('get_founder_overview');
     if (error) {
       toast.error(error.message || 'Failed to load founder overview');
       setRows([]);
