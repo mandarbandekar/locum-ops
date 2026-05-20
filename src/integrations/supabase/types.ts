@@ -3660,15 +3660,19 @@ export type Database = {
           activation_status: string
           clinic_count: number
           credential_count: number
+          desktop_sign_ins: number
           display_name: string
           downloaded_invoice_count: number
           email: string
           expense_count: number
           invoice_count: number
           last_activity_at: string
+          last_device: string
           last_sign_in_at: string
+          mobile_sign_ins: number
           shift_count: number
           signed_up_at: string
+          tablet_sign_ins: number
           user_id: string
         }[]
       }
