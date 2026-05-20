@@ -122,6 +122,20 @@ export default function FounderDashboardPage() {
   const activatedCount = rows.filter((r) => r.shift_count >= 1).length;
   const invoicingCount = rows.filter((r) => r.invoice_count >= 1).length;
 
+  // Device totals across all testers
+  const deviceTotals = rows.reduce(
+    (acc, r) => {
+      acc.desktop += r.desktop_sign_ins || 0;
+      acc.mobile += r.mobile_sign_ins || 0;
+      acc.tablet += r.tablet_sign_ins || 0;
+      return acc;
+    },
+    { desktop: 0, mobile: 0, tablet: 0 },
+  );
+  const totalDeviceSignIns = deviceTotals.desktop + deviceTotals.mobile + deviceTotals.tablet;
+  const desktopUsers = rows.filter((r) => r.last_device === 'desktop').length;
+  const mobileUsers = rows.filter((r) => r.last_device === 'mobile' || r.last_device === 'tablet').length;
+
   const toggleSort = (k: SortKey) => {
     if (sortKey === k) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
     else { setSortKey(k); setSortDir('desc'); }
