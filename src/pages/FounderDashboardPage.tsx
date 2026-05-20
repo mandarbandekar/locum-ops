@@ -25,11 +25,15 @@ interface FounderRow {
   expense_count: number;
   last_activity_at: string | null;
   activation_status: 'active' | 'dormant' | 'never';
+  last_device: 'mobile' | 'tablet' | 'desktop' | 'unknown' | null;
+  desktop_sign_ins: number;
+  mobile_sign_ins: number;
+  tablet_sign_ins: number;
 }
 
 type SortKey = keyof Pick<
   FounderRow,
-  'email' | 'signed_up_at' | 'last_sign_in_at' | 'clinic_count' | 'shift_count' | 'invoice_count' | 'downloaded_invoice_count' | 'credential_count' | 'expense_count' | 'activation_status'
+  'email' | 'signed_up_at' | 'last_sign_in_at' | 'clinic_count' | 'shift_count' | 'invoice_count' | 'downloaded_invoice_count' | 'credential_count' | 'expense_count' | 'activation_status' | 'last_device'
 >;
 
 function formatDate(d?: string | null) {
