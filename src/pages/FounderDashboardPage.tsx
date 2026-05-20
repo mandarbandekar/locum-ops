@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { RefreshCw, Crown, ArrowUpDown, BarChart3, ExternalLink } from 'lucide-react';
+import { RefreshCw, Crown, ArrowUpDown, BarChart3, ExternalLink, Smartphone, Monitor, Tablet, HelpCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { isFounderAdmin } from '@/lib/founderAccess';
@@ -25,11 +25,15 @@ interface FounderRow {
   expense_count: number;
   last_activity_at: string | null;
   activation_status: 'active' | 'dormant' | 'never';
+  last_device: 'mobile' | 'tablet' | 'desktop' | 'unknown' | null;
+  desktop_sign_ins: number;
+  mobile_sign_ins: number;
+  tablet_sign_ins: number;
 }
 
 type SortKey = keyof Pick<
   FounderRow,
-  'email' | 'signed_up_at' | 'last_sign_in_at' | 'clinic_count' | 'shift_count' | 'invoice_count' | 'downloaded_invoice_count' | 'credential_count' | 'expense_count' | 'activation_status'
+  'email' | 'signed_up_at' | 'last_sign_in_at' | 'clinic_count' | 'shift_count' | 'invoice_count' | 'downloaded_invoice_count' | 'credential_count' | 'expense_count' | 'activation_status' | 'last_device'
 >;
 
 function formatDate(d?: string | null) {
@@ -81,7 +85,7 @@ export default function FounderDashboardPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase.rpc('get_founder_overview');
+    const { data, error } = await (supabase as any).rpc('get_founder_overview');
     if (error) {
       toast.error(error.message || 'Failed to load founder overview');
       setRows([]);
@@ -117,6 +121,20 @@ export default function FounderDashboardPage() {
   const activeCount = rows.filter((r) => r.activation_status === 'active').length;
   const activatedCount = rows.filter((r) => r.shift_count >= 1).length;
   const invoicingCount = rows.filter((r) => r.invoice_count >= 1).length;
+
+  // Device totals across all testers
+  const deviceTotals = rows.reduce(
+    (acc, r) => {
+      acc.desktop += r.desktop_sign_ins || 0;
+      acc.mobile += r.mobile_sign_ins || 0;
+      acc.tablet += r.tablet_sign_ins || 0;
+      return acc;
+    },
+    { desktop: 0, mobile: 0, tablet: 0 },
+  );
+  const totalDeviceSignIns = deviceTotals.desktop + deviceTotals.mobile + deviceTotals.tablet;
+  const desktopUsers = rows.filter((r) => r.last_device === 'desktop').length;
+  const mobileUsers = rows.filter((r) => r.last_device === 'mobile' || r.last_device === 'tablet').length;
 
   const toggleSort = (k: SortKey) => {
     if (sortKey === k) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
@@ -169,12 +187,50 @@ export default function FounderDashboardPage() {
       </div>
 
       {/* Hero metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-4">
         <MetricCard label="Total testers" value={total} sub={loading && !total ? 'Loading…' : `${total} total`} />
         <MetricCard label="Active (7d)" value={activeCount} sub={`${pct(activeCount, total)} of testers`} />
         <MetricCard label="Activated" value={activatedCount} sub={`${pct(activatedCount, total)} have a shift`} />
         <MetricCard label="Invoicing" value={invoicingCount} sub={`${pct(invoicingCount, total)} have an invoice`} />
       </div>
+
+      {/* Device usage */}
+      <Card className="mb-6">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Monitor className="h-4 w-4 text-muted-foreground" />
+            Sign-in device usage
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+            <DeviceStat
+              icon={<Monitor className="h-4 w-4" />}
+              label="Desktop / Laptop"
+              signIns={deviceTotals.desktop}
+              signInsPct={pct(deviceTotals.desktop, totalDeviceSignIns)}
+              users={desktopUsers}
+            />
+            <DeviceStat
+              icon={<Smartphone className="h-4 w-4" />}
+              label="Mobile"
+              signIns={deviceTotals.mobile}
+              signInsPct={pct(deviceTotals.mobile, totalDeviceSignIns)}
+              users={rows.filter((r) => r.last_device === 'mobile').length}
+            />
+            <DeviceStat
+              icon={<Tablet className="h-4 w-4" />}
+              label="Tablet"
+              signIns={deviceTotals.tablet}
+              signInsPct={pct(deviceTotals.tablet, totalDeviceSignIns)}
+              users={rows.filter((r) => r.last_device === 'tablet').length}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground mt-3">
+            Tracked from sign-in events. Recorded going forward — older sessions won't appear until users sign in again.
+          </p>
+        </CardContent>
+      </Card>
 
       {/* Per-user table */}
       <Card>
@@ -195,6 +251,7 @@ export default function FounderDashboardPage() {
                   <Th onClick={() => toggleSort('downloaded_invoice_count')} align="right">Downloads</Th>
                   <Th onClick={() => toggleSort('credential_count')} align="right">Credentials</Th>
                   <Th onClick={() => toggleSort('expense_count')} align="right">Expenses</Th>
+                  <Th onClick={() => toggleSort('last_device')}>Last device</Th>
                   <Th onClick={() => toggleSort('activation_status')}>Status</Th>
                 </tr>
               </thead>
@@ -202,11 +259,11 @@ export default function FounderDashboardPage() {
                 {loading && rows.length === 0 ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <tr key={i} className="border-t">
-                      <td colSpan={10} className="px-4 py-3"><Skeleton className="h-5 w-full" /></td>
+                      <td colSpan={11} className="px-4 py-3"><Skeleton className="h-5 w-full" /></td>
                     </tr>
                   ))
                 ) : sorted.length === 0 ? (
-                  <tr><td colSpan={10} className="px-4 py-10 text-center text-muted-foreground">No users yet.</td></tr>
+                  <tr><td colSpan={11} className="px-4 py-10 text-center text-muted-foreground">No users yet.</td></tr>
                 ) : (
                   sorted.map((r) => (
                     <tr key={r.user_id} className="border-t hover:bg-muted/30">
@@ -224,6 +281,7 @@ export default function FounderDashboardPage() {
                       <td className="px-4 py-2.5 text-right tabular-nums">{r.downloaded_invoice_count}</td>
                       <td className="px-4 py-2.5 text-right tabular-nums">{r.credential_count}</td>
                       <td className="px-4 py-2.5 text-right tabular-nums">{r.expense_count}</td>
+                      <td className="px-4 py-2.5"><DeviceCell row={r} /></td>
                       <td className="px-4 py-2.5"><StatusPill status={r.activation_status} /></td>
                     </tr>
                   ))
@@ -266,3 +324,46 @@ function Th({
     </th>
   );
 }
+
+function DeviceStat({
+  icon, label, signIns, signInsPct, users,
+}: { icon: React.ReactNode; label: string; signIns: number; signInsPct: string; users: number }) {
+  return (
+    <div className="rounded-lg border border-border p-3">
+      <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
+        {icon}
+        <span>{label}</span>
+      </div>
+      <div className="flex items-baseline gap-2 mt-1.5">
+        <div className="text-2xl font-semibold text-amber-500 tabular-nums">{signIns}</div>
+        <div className="text-xs text-muted-foreground">sign-ins · {signInsPct}</div>
+      </div>
+      <div className="text-xs text-muted-foreground mt-0.5">{users} {users === 1 ? 'user' : 'users'} last used this</div>
+    </div>
+  );
+}
+
+function DeviceCell({ row }: { row: FounderRow }) {
+  const ld = row.last_device;
+  const Icon =
+    ld === 'mobile' ? Smartphone :
+    ld === 'tablet' ? Tablet :
+    ld === 'desktop' ? Monitor :
+    HelpCircle;
+  const label =
+    ld === 'mobile' ? 'Mobile' :
+    ld === 'tablet' ? 'Tablet' :
+    ld === 'desktop' ? 'Desktop' :
+    '—';
+  const totals = `${row.desktop_sign_ins}D · ${row.mobile_sign_ins}M · ${row.tablet_sign_ins}T`;
+  return (
+    <div className="flex items-center gap-2">
+      <Icon className="h-4 w-4 text-muted-foreground" />
+      <div className="leading-tight">
+        <div className="text-foreground">{label}</div>
+        <div className="text-[10px] text-muted-foreground tabular-nums">{totals}</div>
+      </div>
+    </div>
+  );
+}
+

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { posthog } from '@/lib/posthog';
+import { detectDeviceType } from '@/lib/deviceType';
 import type { User, Session } from '@supabase/supabase-js';
 
 interface AuthContextType {
@@ -37,6 +38,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (typeof posthog !== 'undefined') {
           if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED')) {
             const u = session.user;
+            // Log sign-in device once per SIGNED_IN event
+            if (event === 'SIGNED_IN') {
+              setTimeout(() => {
+                const device = detectDeviceType();
+                const ua = typeof navigator !== 'undefined' ? navigator.userAgent : null;
+                (supabase as any).from('user_sign_in_events').insert({
+                  user_id: u.id,
+                  device_type: device,
+                  user_agent: ua,
+                }).then(() => {}, () => {});
+              }, 0);
+            }
             const meta: any = u.user_metadata || {};
             const name = meta.display_name
               || [meta.first_name, meta.last_name].filter(Boolean).join(' ').trim()
