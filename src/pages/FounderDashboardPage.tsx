@@ -324,3 +324,46 @@ function Th({
     </th>
   );
 }
+
+function DeviceStat({
+  icon, label, signIns, signInsPct, users,
+}: { icon: React.ReactNode; label: string; signIns: number; signInsPct: string; users: number }) {
+  return (
+    <div className="rounded-lg border border-border p-3">
+      <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
+        {icon}
+        <span>{label}</span>
+      </div>
+      <div className="flex items-baseline gap-2 mt-1.5">
+        <div className="text-2xl font-semibold text-amber-500 tabular-nums">{signIns}</div>
+        <div className="text-xs text-muted-foreground">sign-ins · {signInsPct}</div>
+      </div>
+      <div className="text-xs text-muted-foreground mt-0.5">{users} {users === 1 ? 'user' : 'users'} last used this</div>
+    </div>
+  );
+}
+
+function DeviceCell({ row }: { row: FounderRow }) {
+  const ld = row.last_device;
+  const Icon =
+    ld === 'mobile' ? Smartphone :
+    ld === 'tablet' ? Tablet :
+    ld === 'desktop' ? Monitor :
+    HelpCircle;
+  const label =
+    ld === 'mobile' ? 'Mobile' :
+    ld === 'tablet' ? 'Tablet' :
+    ld === 'desktop' ? 'Desktop' :
+    '—';
+  const totals = `${row.desktop_sign_ins}D · ${row.mobile_sign_ins}M · ${row.tablet_sign_ins}T`;
+  return (
+    <div className="flex items-center gap-2">
+      <Icon className="h-4 w-4 text-muted-foreground" />
+      <div className="leading-tight">
+        <div className="text-foreground">{label}</div>
+        <div className="text-[10px] text-muted-foreground tabular-nums">{totals}</div>
+      </div>
+    </div>
+  );
+}
+
