@@ -43,7 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               setTimeout(() => {
                 const device = detectDeviceType();
                 const ua = typeof navigator !== 'undefined' ? navigator.userAgent : null;
-                supabase.from('user_sign_in_events').insert({
+                (supabase as any).from('user_sign_in_events').insert({
                   user_id: u.id,
                   device_type: device,
                   user_agent: ua,
