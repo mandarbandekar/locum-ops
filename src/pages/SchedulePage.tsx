@@ -116,17 +116,9 @@ export default function SchedulePage() {
   const [editShift, setEditShift] = useState<string | null>(null);
   const [blockTimeDefaultDate, setBlockTimeDefaultDate] = useState<Date | undefined>(undefined);
   const [dragOverDay, setDragOverDay] = useState<string | null>(null);
-  const [calendarFilters, setCalendarFilters] = useState<CalendarLayerFilters>({
-    shifts: true,
-    credentials: false,
-    subscriptions: false,
-  });
-
-  const toggleFilter = (key: keyof CalendarLayerFilters) => {
-    setCalendarFilters(prev => ({ ...prev, [key]: !prev[key] }));
-  };
-
-  const hasNonDefaultLayers = calendarFilters.credentials || calendarFilters.subscriptions;
+  // Credentials and subscriptions are always shown on the calendar so users
+  // automatically see license/subscription expiry dates alongside their shifts.
+  const calendarFilters = { shifts: true, credentials: true, subscriptions: true } as const;
 
   // Default view: Month on desktop, Agenda on mobile (when nothing persisted).
   // Persist list/sync/agenda explicitly chosen by the user.
