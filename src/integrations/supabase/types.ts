@@ -3572,6 +3572,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_sign_in_events: {
+        Row: {
+          created_at: string
+          device_type: string
+          id: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_type?: string
+          id?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_type?: string
+          id?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       waitlist_leads: {
         Row: {
           created_at: string
