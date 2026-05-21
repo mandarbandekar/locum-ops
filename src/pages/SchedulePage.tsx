@@ -3,7 +3,7 @@ import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { StatusBadge } from '@/components/StatusBadge';
-import { Plus, ChevronLeft, ChevronRight, List, CalendarDays, Trash2, Calendar as CalendarIcon, RefreshCw, AlertTriangle, Ban, Layers, ChevronDown } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, List, CalendarDays, Trash2, Calendar as CalendarIcon, RefreshCw, AlertTriangle, Ban, ChevronDown } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, getDay, startOfWeek, endOfWeek, addWeeks, subWeeks, addDays, subDays, differenceInMilliseconds, differenceInHours } from 'date-fns';
 import { CalendarPlus, Clock, DollarSign, TrendingUp } from 'lucide-react';
@@ -19,7 +19,7 @@ import { WeekTimeGrid } from '@/components/schedule/WeekTimeGrid';
 
 import { getMarkersForDay } from '@/lib/calendarMarkers';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { CalendarFilters, CalendarLayerFilters } from '@/components/schedule/CalendarFilters';
+
 import { useCalendarEvents } from '@/hooks/useCalendarEvents';
 import { CalendarEventStack } from '@/components/schedule/CalendarEventChip';
 import { CalendarSyncPanel } from '@/components/schedule/CalendarSyncPanel';
@@ -32,7 +32,7 @@ import { ShiftTaxNudge, ShiftTaxSummaryFooter } from '@/components/schedule/Shif
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { SpotlightTour, TourStep } from '@/components/SpotlightTour';
 import { useSpotlightTour } from '@/hooks/useSpotlightTour';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -116,17 +116,9 @@ export default function SchedulePage() {
   const [editShift, setEditShift] = useState<string | null>(null);
   const [blockTimeDefaultDate, setBlockTimeDefaultDate] = useState<Date | undefined>(undefined);
   const [dragOverDay, setDragOverDay] = useState<string | null>(null);
-  const [calendarFilters, setCalendarFilters] = useState<CalendarLayerFilters>({
-    shifts: true,
-    credentials: false,
-    subscriptions: false,
-  });
-
-  const toggleFilter = (key: keyof CalendarLayerFilters) => {
-    setCalendarFilters(prev => ({ ...prev, [key]: !prev[key] }));
-  };
-
-  const hasNonDefaultLayers = calendarFilters.credentials || calendarFilters.subscriptions;
+  // Credentials and subscriptions are always shown on the calendar so users
+  // automatically see license/subscription expiry dates alongside their shifts.
+  const calendarFilters = { shifts: true, credentials: true, subscriptions: true } as const;
 
   // Default view: Month on desktop, Agenda on mobile (when nothing persisted).
   // Persist list/sync/agenda explicitly chosen by the user.
@@ -549,22 +541,8 @@ export default function SchedulePage() {
               )}
             </div>
 
-            <div className="flex-1 flex items-center justify-end min-w-0">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="ghost" size="sm" className="gap-1.5 relative">
-                    <Layers className="h-4 w-4" />
-                    <span className="hidden sm:inline">Layers</span>
-                    {hasNonDefaultLayers && (
-                      <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-primary" />
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent align="end" className="w-auto p-3">
-                  <CalendarFilters filters={calendarFilters} onToggle={toggleFilter} />
-                </PopoverContent>
-              </Popover>
-            </div>
+            <div className="flex-1 flex items-center justify-end min-w-0" />
+
           </div>
         </div>
       )}

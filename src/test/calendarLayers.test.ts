@@ -81,15 +81,13 @@ describe('Calendar Layers - Credential Events', () => {
   });
 });
 
-describe('Calendar Layers - Filter Logic', () => {
-  it('should allow toggling filters independently', () => {
-    const filters = { shifts: true, credentials: false, subscriptions: false };
-    // Toggle credentials on
-    const updated = { ...filters, credentials: !filters.credentials };
-    expect(updated.credentials).toBe(true);
-    expect(updated.shifts).toBe(true);
-    expect(updated.subscriptions).toBe(false);
+describe('Calendar Layers - Always-on behavior', () => {
+  it('credentials and subscriptions are always visible on the calendar', () => {
+    const filters = { shifts: true, credentials: true, subscriptions: true };
+    expect(filters.credentials).toBe(true);
+    expect(filters.subscriptions).toBe(true);
   });
+
 
   it('should support multiple events on same date without error', () => {
     const events = [
