@@ -3718,6 +3718,14 @@ export type Database = {
         }
         Returns: number
       }
+      next_invoice_number: {
+        Args: { _prefix: string; _year: number }
+        Returns: string
+      }
+      next_invoice_number_for_user: {
+        Args: { _prefix: string; _user_id: string; _year: number }
+        Returns: string
+      }
       owns_ce_entry: {
         Args: { _ce_entry_id: string; _user_id: string }
         Returns: boolean
