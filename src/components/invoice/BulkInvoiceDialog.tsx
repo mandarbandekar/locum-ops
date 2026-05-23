@@ -15,6 +15,7 @@ import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks, sub
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { formatDateInTz, formatTimeInTz, formatYMDInTz } from '@/lib/tzTime';
 import { generateInvoiceNumber } from '@/lib/businessLogic';
+import { supabase } from '@/integrations/supabase/client';
 import { getEligibleShiftsForBulkInvoice } from '@/lib/bulkInvoiceHelpers';
 import { toast } from 'sonner';
 import type { Shift, InvoiceLineItem } from '@/types';
