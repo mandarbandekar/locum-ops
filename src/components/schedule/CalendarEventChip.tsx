@@ -24,37 +24,30 @@ const TYPE_ICONS: Record<string, string> = {
 interface CalendarEventChipProps {
   event: CalendarEvent;
   compact?: boolean;
+  onSelect?: (event: CalendarEvent) => void;
 }
 
-export function CalendarEventChip({ event, compact = false }: CalendarEventChipProps) {
+export function CalendarEventChip({ event, compact = false, onSelect }: CalendarEventChipProps) {
   const navigate = useNavigate();
 
   const style = STATUS_STYLES[event.status]?.[event.type] || STATUS_STYLES.active[event.type];
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (event.type === 'credential') {
-      navigate('/credentials');
+    if (onSelect) {
+      onSelect(event);
     } else {
       navigate('/credentials');
     }
   };
 
-  if (compact) {
-    return (
-      <div
-        className={`text-[9px] px-1 py-0.5 rounded border truncate cursor-pointer hover:opacity-80 transition-opacity ${style}`}
-        onClick={handleClick}
-        title={`${event.label}${event.sublabel ? ` — ${event.sublabel}` : ''} (${event.status.replace('_', ' ')})`}
-      >
-        {TYPE_ICONS[event.type]} {event.label}
-      </div>
-    );
-  }
+  const className = compact
+    ? `text-[9px] px-1 py-0.5 rounded border truncate cursor-pointer hover:opacity-80 transition-opacity ${style}`
+    : `text-[10px] px-1.5 py-0.5 rounded border truncate cursor-pointer hover:opacity-80 transition-opacity ${style}`;
 
   return (
     <div
-      className={`text-[10px] px-1.5 py-0.5 rounded border truncate cursor-pointer hover:opacity-80 transition-opacity ${style}`}
+      className={className}
       onClick={handleClick}
       title={`${event.label}${event.sublabel ? ` — ${event.sublabel}` : ''} (${event.status.replace('_', ' ')})`}
     >
@@ -66,9 +59,10 @@ export function CalendarEventChip({ event, compact = false }: CalendarEventChipP
 interface CalendarEventStackProps {
   events: CalendarEvent[];
   maxVisible?: number;
+  onSelect?: (event: CalendarEvent) => void;
 }
 
-export function CalendarEventStack({ events, maxVisible = 2 }: CalendarEventStackProps) {
+export function CalendarEventStack({ events, maxVisible = 2, onSelect }: CalendarEventStackProps) {
   if (events.length === 0) return null;
 
   const visible = events.slice(0, maxVisible);
@@ -77,7 +71,7 @@ export function CalendarEventStack({ events, maxVisible = 2 }: CalendarEventStac
   return (
     <div className="space-y-0.5">
       {visible.map(event => (
-        <CalendarEventChip key={`${event.type}-${event.id}`} event={event} compact />
+        <CalendarEventChip key={`${event.type}-${event.id}`} event={event} compact onSelect={onSelect} />
       ))}
       {remaining > 0 && (
         <div className="text-[9px] text-muted-foreground pl-1">
