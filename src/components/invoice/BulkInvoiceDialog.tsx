@@ -139,10 +139,21 @@ export function BulkInvoiceDialog({ open, onOpenChange, preselectedFacilityId }:
       const lineItemsData = selectedShifts.flatMap(buildLineItemsForShift);
       const computedTotal = lineItemsData.reduce((sum, li) => sum + li.line_total, 0);
 
+      // Reserve invoice number atomically (with in-memory fallback)
+      const prefix = facility.invoice_prefix || 'INV';
+      let invoiceNumber = generateInvoiceNumber(invoices, prefix);
+      try {
+        const { data: rpcNum, error: rpcErr } = await supabase.rpc(
+          'next_invoice_number' as any,
+          { _prefix: prefix, _year: new Date().getFullYear() }
+        );
+        if (!rpcErr && typeof rpcNum === 'string' && rpcNum) invoiceNumber = rpcNum;
+      } catch (_e) { /* keep fallback */ }
+
       const invoice = await addInvoice(
         {
           facility_id: facilityId,
-          invoice_number: generateInvoiceNumber(invoices, facility.invoice_prefix || 'INV'),
+          invoice_number: invoiceNumber,
           invoice_date: new Date().toISOString(),
           period_start: period.start.toISOString(),
           period_end: period.end.toISOString(),
