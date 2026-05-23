@@ -719,7 +719,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
               // Period suppressed — skip auto-generation silently
             } else {
             // Create new draft
-            const invoiceNumber = generateInvoiceNumber(invoices, facility.invoice_prefix);
+            const invoiceNumber = await reserveInvoiceNumber(invoices, facility.invoice_prefix);
             const { invoice: invData, lineItems: newItems } = buildAutoInvoiceDraft(
               facility, eligible, period.start, period.end, invoiceNumber
             );
