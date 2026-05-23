@@ -354,20 +354,31 @@ Deno.serve(async (req) => {
             period: `${periodStartStr} to ${periodEndStr}`,
           });
         } else {
-          // Generate invoice number
-          const { data: allFacInvoices } = await supabase
-            .from("invoices")
-            .select("invoice_number")
-            .eq("user_id", facility.user_id);
-
+          // Atomically reserve the next invoice number via RPC (advisory-locked
+          // per user+prefix+year) to prevent duplicate numbers under concurrent
+          // runs. Falls back to MAX+1 only if the RPC errors.
           const prefix = facility.invoice_prefix || "INV";
           const year = now.getFullYear();
-          const existing = (allFacInvoices || [])
-            .map((i: { invoice_number: string }) => i.invoice_number)
-            .filter((n: string) => n.startsWith(`${prefix}-${year}`))
-            .map((n: string) => parseInt(n.split("-")[2]) || 0);
-          const next = existing.length > 0 ? Math.max(...existing) + 1 : 1;
-          const invoiceNumber = `${prefix}-${year}-${String(next).padStart(3, "0")}`;
+          let invoiceNumber: string;
+          const { data: rpcNum, error: rpcErr } = await supabase.rpc(
+            "next_invoice_number_for_user",
+            { _user_id: facility.user_id, _prefix: prefix, _year: year }
+          );
+          if (rpcErr || !rpcNum) {
+            console.error("next_invoice_number_for_user failed, falling back:", rpcErr);
+            const { data: allFacInvoices } = await supabase
+              .from("invoices")
+              .select("invoice_number")
+              .eq("user_id", facility.user_id);
+            const existing = (allFacInvoices || [])
+              .map((i: { invoice_number: string }) => i.invoice_number)
+              .filter((n: string) => n.startsWith(`${prefix}-${year}`))
+              .map((n: string) => parseInt(n.split("-")[2]) || 0);
+            const next = existing.length > 0 ? Math.max(...existing) + 1 : 1;
+            invoiceNumber = `${prefix}-${year}-${String(next).padStart(3, "0")}`;
+          } else {
+            invoiceNumber = rpcNum as string;
+          }
 
           // Build line items
           const lineItems = allEligibleForPeriod.map((s) => ({
