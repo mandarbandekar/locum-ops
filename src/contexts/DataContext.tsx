@@ -550,7 +550,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
         });
         if (isSuppressed) return;
 
-        const invoiceNumber = generateInvoiceNumber(invoices, facility.invoice_prefix);
+        const invoiceNumber = await reserveInvoiceNumber(invoices, facility.invoice_prefix);
         const { invoice: invData, lineItems: newItems } = buildAutoInvoiceDraft(
           facility, eligible, period.start, period.end, invoiceNumber
         );
