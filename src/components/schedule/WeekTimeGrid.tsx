@@ -25,6 +25,7 @@ interface WeekTimeGridProps {
   onCellClick?: (date: Date, hour: number) => void;
   calendarFilters?: { credentials: boolean; subscriptions: boolean };
   getEventsForDay?: (day: Date, filters: { credentials: boolean; subscriptions: boolean }) => CalendarEvent[];
+  onSelectCalEvent?: (event: CalendarEvent) => void;
   timeBlocks?: TimeBlock[];
   onEditBlock?: (id: string) => void;
   fullDay?: boolean;
@@ -32,7 +33,7 @@ interface WeekTimeGridProps {
   profileTz?: string;
 }
 
-export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, onDropOnTime, onCellClick, calendarFilters, getEventsForDay, timeBlocks = [], onEditBlock, fullDay = false, facilities = [], profileTz }: WeekTimeGridProps) {
+export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, onDropOnTime, onCellClick, calendarFilters, getEventsForDay, onSelectCalEvent, timeBlocks = [], onEditBlock, fullDay = false, facilities = [], profileTz }: WeekTimeGridProps) {
   const HOURS = fullDay ? FULL_DAY_HOURS : DEFAULT_HOURS;
   const blockTz = profileTz || BROWSER_TZ;
   const tzForFacility = useCallback((id: string) => facilities.find(f => f.id === id)?.timezone || BROWSER_TZ, [facilities]);
@@ -136,7 +137,7 @@ export function WeekTimeGrid({ weekDays, shifts, getFacilityName, onEditShift, o
             const events = getEventsForDay(d, calendarFilters);
             return (
               <div key={d.toISOString()} className="p-0.5 border-r last:border-r-0 min-h-[24px]">
-                <CalendarEventStack events={events} maxVisible={2} />
+                <CalendarEventStack events={events} maxVisible={2} onSelect={onSelectCalEvent} />
               </div>
             );
           })}
