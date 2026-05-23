@@ -830,6 +830,12 @@ export default function SchedulePage() {
         }}
       />
 
+      <CalendarEventDetailDrawer
+        event={selectedCalEvent}
+        open={!!selectedCalEvent}
+        onOpenChange={(o) => { if (!o) setSelectedCalEvent(null); }}
+      />
+
       <SpotlightTour steps={SCHEDULE_TOUR_STEPS} isOpen={scheduleTour.isOpen} onClose={scheduleTour.closeTour} />
     </div>
   );
