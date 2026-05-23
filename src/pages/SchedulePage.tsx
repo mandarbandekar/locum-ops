@@ -22,6 +22,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 
 import { useCalendarEvents } from '@/hooks/useCalendarEvents';
 import { CalendarEventStack } from '@/components/schedule/CalendarEventChip';
+import { CalendarEventDetailDrawer } from '@/components/schedule/CalendarEventDetailDrawer';
+import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { CalendarSyncPanel } from '@/components/schedule/CalendarSyncPanel';
 import { AgendaView } from '@/components/schedule/AgendaView';
 import { ShiftPeekPopover } from '@/components/schedule/ShiftPeekPopover';
@@ -116,6 +118,7 @@ export default function SchedulePage() {
   const [editShift, setEditShift] = useState<string | null>(null);
   const [blockTimeDefaultDate, setBlockTimeDefaultDate] = useState<Date | undefined>(undefined);
   const [dragOverDay, setDragOverDay] = useState<string | null>(null);
+  const [selectedCalEvent, setSelectedCalEvent] = useState<CalendarEvent | null>(null);
   // Credentials and subscriptions are always shown on the calendar so users
   // automatically see license/subscription expiry dates alongside their shifts.
   const calendarFilters = { shifts: true, credentials: true, subscriptions: true } as const;
@@ -410,7 +413,7 @@ export default function SchedulePage() {
             </div>
           );
         })}
-        <CalendarEventStack events={calEvents} maxVisible={2} />
+        <CalendarEventStack events={calEvents} maxVisible={2} onSelect={setSelectedCalEvent} />
       </div>
     );
   };
@@ -598,6 +601,7 @@ export default function SchedulePage() {
                   onCellClick={openAddShiftAt}
                   calendarFilters={{ credentials: calendarFilters.credentials, subscriptions: calendarFilters.subscriptions }}
                   getEventsForDay={getEventsForDay}
+                  onSelectCalEvent={setSelectedCalEvent}
                   timeBlocks={timeBlocks}
                   onEditBlock={setEditBlock}
                   profileTz={profileTz}
@@ -623,6 +627,7 @@ export default function SchedulePage() {
                   onCellClick={openAddShiftAt}
                   calendarFilters={{ credentials: calendarFilters.credentials, subscriptions: calendarFilters.subscriptions }}
                   getEventsForDay={getEventsForDay}
+                  onSelectCalEvent={setSelectedCalEvent}
                   timeBlocks={timeBlocks}
                   onEditBlock={setEditBlock}
                   fullDay
