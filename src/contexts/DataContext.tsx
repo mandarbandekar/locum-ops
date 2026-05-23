@@ -24,6 +24,28 @@ import { posthog } from '@/lib/posthog';
 // Helper for tables not yet in auto-generated types
 const db = (table: string) => supabase.from(table as any);
 
+/**
+ * Atomically reserve the next invoice number from the DB (advisory-locked per
+ * user+prefix+year) to prevent duplicate numbers under concurrent generation.
+ * Falls back to the in-memory computation if the RPC fails.
+ */
+async function reserveInvoiceNumber(
+  invoices: Invoice[],
+  prefix: string = 'INV',
+): Promise<string> {
+  const year = new Date().getFullYear();
+  try {
+    const { data, error } = await supabase.rpc('next_invoice_number' as any, {
+      _prefix: prefix,
+      _year: year,
+    });
+    if (!error && typeof data === 'string' && data) return data;
+  } catch (_err) {
+    // fall through
+  }
+  return generateInvoiceNumber(invoices, prefix);
+}
+
 function stripDbFields(row: any): any {
   if (!row) return row;
   const { user_id, created_at, updated_at, ...rest } = row;
