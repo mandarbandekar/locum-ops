@@ -412,7 +412,18 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
   const needsOnboarding = !profileLoading && (!profile || !profile.onboarding_completed_at);
 
   return (
-    <UserProfileContext.Provider value={{ profile, profileLoading, updateProfile, completeOnboarding, needsOnboarding }}>
+    <UserProfileContext.Provider value={{
+      profile,
+      profileLoading,
+      updateProfile,
+      completeOnboarding,
+      needsOnboarding,
+      tzPromptOpen,
+      devicePromptTz: tzPromptOpen ? deviceTz : null,
+      acceptTzChange,
+      dismissTzChange,
+      neverAskTzChange,
+    }}>
       {children}
     </UserProfileContext.Provider>
   );
