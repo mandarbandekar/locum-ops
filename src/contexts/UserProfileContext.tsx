@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { shouldPromptTzChange } from '@/lib/usTimezones';
+import { shouldAutoSyncTz } from '@/lib/usTimezones';
 
 export type Profession = 'vet' | 'nurse' | 'physician' | 'pharmacist' | 'pt_ot' | 'other';
 export type FacilitiesCountBand = 'band_1_3' | 'band_4_8' | 'band_9_plus';
@@ -141,23 +141,9 @@ interface UserProfileContextType {
   updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
   completeOnboarding: () => Promise<void>;
   needsOnboarding: boolean;
-  /** When true, prompt the user to switch profile tz to device tz. */
-  tzPromptOpen: boolean;
-  /** Device tz to offer in the prompt (null when no prompt is pending). */
-  devicePromptTz: string | null;
-  /** Accept the device tz; updates profile and closes the prompt. */
-  acceptTzChange: () => Promise<void>;
-  /** Dismiss for this session only. */
-  dismissTzChange: () => void;
-  /** Pin the profile tz so we stop asking. */
-  neverAskTzChange: () => Promise<void>;
 }
 
 const UserProfileContext = createContext<UserProfileContextType | null>(null);
-
-function tzDismissKey(userId: string, deviceTz: string) {
-  return `tz-prompt-dismissed:${userId}:${deviceTz}`;
-}
 
 const db = (table: string) => supabase.from(table as any);
 
@@ -193,48 +179,20 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
     loadProfile();
   }, [isDemo, user?.id]);
 
-  // Show a non-blocking prompt when the device tz differs from the saved
-  // profile tz (Google-Calendar style). Dismissals are scoped to the session.
-  const deviceTz = useMemo(() => {
-    try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return ''; }
-  }, []);
-  const [sessionDismissed, setSessionDismissed] = useState(false);
-
+  // Auto-sync the saved profile timezone to the current device tz, but only
+  // when the user hasn't pinned it. Runs once per profile load.
+  const autoSyncedRef = useRef(false);
   useEffect(() => {
-    // Reset dismissal flag when user/device changes so a fresh session can re-prompt.
-    if (!profile || isDemo) return;
-    try {
-      const dismissed = sessionStorage.getItem(tzDismissKey(profile.user_id, deviceTz)) === '1';
-      setSessionDismissed(dismissed);
-    } catch {}
-  }, [profile?.user_id, deviceTz, isDemo]);
-
-  const tzPromptOpen = !!profile
-    && !isDemo
-    && !sessionDismissed
-    && shouldPromptTzChange({
-      pinned: profile.timezone_pinned,
-      profileTz: profile.timezone,
-      deviceTz,
-    });
-
-  const acceptTzChange = useCallback(async () => {
-    if (!profile || !deviceTz) return;
-    await updateProfile({ timezone: deviceTz });
-    setSessionDismissed(true);
-  }, [profile, deviceTz]);
-
-  const dismissTzChange = useCallback(() => {
-    if (!profile) return;
-    try { sessionStorage.setItem(tzDismissKey(profile.user_id, deviceTz), '1'); } catch {}
-    setSessionDismissed(true);
-  }, [profile, deviceTz]);
-
-  const neverAskTzChange = useCallback(async () => {
-    if (!profile) return;
-    await updateProfile({ timezone_pinned: true });
-    setSessionDismissed(true);
-  }, [profile]);
+    if (isDemo || !profile || autoSyncedRef.current) return;
+    const deviceTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (shouldAutoSyncTz({ pinned: profile.timezone_pinned, profileTz: profile.timezone, deviceTz })) {
+      autoSyncedRef.current = true;
+      // fire-and-forget; updateProfile handles the optimistic state update
+      updateProfile({ timezone: deviceTz });
+    } else {
+      autoSyncedRef.current = true;
+    }
+  }, [isDemo, profile?.id, profile?.timezone, profile?.timezone_pinned]);
 
   async function loadProfile() {
     try {
@@ -412,18 +370,7 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
   const needsOnboarding = !profileLoading && (!profile || !profile.onboarding_completed_at);
 
   return (
-    <UserProfileContext.Provider value={{
-      profile,
-      profileLoading,
-      updateProfile,
-      completeOnboarding,
-      needsOnboarding,
-      tzPromptOpen,
-      devicePromptTz: tzPromptOpen ? deviceTz : null,
-      acceptTzChange,
-      dismissTzChange,
-      neverAskTzChange,
-    }}>
+    <UserProfileContext.Provider value={{ profile, profileLoading, updateProfile, completeOnboarding, needsOnboarding }}>
       {children}
     </UserProfileContext.Provider>
   );

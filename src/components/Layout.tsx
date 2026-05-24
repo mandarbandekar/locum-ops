@@ -9,7 +9,6 @@ import { Compass } from 'lucide-react';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { FeedbackButton } from '@/components/feedback/FeedbackButton';
 import { WhatsNewButton } from '@/components/announcements/WhatsNewButton';
-import { TimezoneChangePrompt } from '@/components/TimezoneChangePrompt';
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { isDemo } = useAuth();
@@ -62,7 +61,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </main>
         </div>
       </div>
-      <TimezoneChangePrompt />
     </SidebarProvider>
   );
 }
