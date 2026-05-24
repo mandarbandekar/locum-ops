@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { US_TIMEZONES, shouldAutoSyncTz } from '@/lib/usTimezones';
+import { US_TIMEZONES, shouldAutoSyncTz, shouldPromptTzChange, formatTzLabel } from '@/lib/usTimezones';
 
 describe('US_TIMEZONES', () => {
   it('contains exactly the 7 supported US zones', () => {
