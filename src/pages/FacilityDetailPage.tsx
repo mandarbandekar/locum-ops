@@ -30,7 +30,7 @@ import type { EngagementType, TaxFormType } from '@/lib/engagementOptions';
 import { US_TIMEZONES } from '@/lib/usTimezones';
 import { FacilityTimezoneChangeDialog } from '@/components/facilities/FacilityTimezoneChangeDialog';
 import { useUserProfile } from '@/contexts/UserProfileContext';
-import { formatDateInTz } from '@/lib/tzTime';
+import { formatDateInTz, zonedWallClockToUtc, formatYMDInTz, formatHHMMInTz } from '@/lib/tzTime';
 
 export default function FacilityDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -84,9 +84,11 @@ export default function FacilityDetailPage() {
           <ContractTab
             facility={facility}
             facilityTerms={facilityTerms}
+            facilityShifts={facilityShifts}
             onSaveRates={handleSaveRates}
             onUpdateTerms={updateTerms}
             onUpdateFacility={updateFacility}
+            onUpdateShift={updateShift}
             confirmationSettings={getSettings(facility.id)}
             onSaveConfirmationSettings={saveSettings}
           />
@@ -303,12 +305,14 @@ function ContactFormDialog({ open, onOpenChange, form, onChange, onSave, isEdit 
 
 // ─── Contract Tab ──────────────────────────────────────────
 
-function ContractTab({ facility, facilityTerms, onSaveRates, onUpdateTerms, onUpdateFacility, confirmationSettings, onSaveConfirmationSettings }: {
+function ContractTab({ facility, facilityTerms, facilityShifts, onSaveRates, onUpdateTerms, onUpdateFacility, onUpdateShift, confirmationSettings, onSaveConfirmationSettings }: {
   facility: any;
   facilityTerms?: TermsSnapshot;
+  facilityShifts: any[];
   onSaveRates: (rates: RateEntry[]) => void;
   onUpdateTerms: (t: TermsSnapshot) => void;
   onUpdateFacility: (f: any) => void;
+  onUpdateShift: (s: any) => void | Promise<any>;
   confirmationSettings: import('@/types/clinicConfirmations').FacilityConfirmationSettings | null;
   onSaveConfirmationSettings: (s: import('@/types/clinicConfirmations').FacilityConfirmationSettings) => void;
 }) {
@@ -474,10 +478,39 @@ function ContractTab({ facility, facilityTerms, onSaveRates, onUpdateTerms, onUp
         open={tzConfirmOpen}
         oldTz={facility.timezone || 'America/New_York'}
         newTz={timezone}
+        existingShiftCount={facilityShifts.length}
         onCancel={() => setTzConfirmOpen(false)}
-        onConfirm={() => {
+        onConfirm={async ({ rebaseExisting }) => {
           setTzConfirmOpen(false);
+          const oldTz = facility.timezone || 'America/New_York';
           commitSave(timezone);
+          if (rebaseExisting && oldTz !== timezone) {
+            // Keep the wall-clock the user typed; reinterpret it in the new tz.
+            let updated = 0;
+            for (const s of facilityShifts) {
+              try {
+                const stampTz = s.timezone_at_creation || oldTz;
+                const ymd = formatYMDInTz(s.start_datetime, stampTz);
+                const startHHMM = formatHHMMInTz(s.start_datetime, stampTz);
+                const endHHMM = formatHHMMInTz(s.end_datetime, stampTz);
+                const newStart = zonedWallClockToUtc(ymd, startHHMM, timezone);
+                let newEnd = zonedWallClockToUtc(ymd, endHHMM, timezone);
+                if (newEnd.getTime() <= newStart.getTime()) {
+                  newEnd = new Date(newEnd.getTime() + 24 * 60 * 60 * 1000);
+                }
+                await onUpdateShift({
+                  ...s,
+                  start_datetime: newStart.toISOString(),
+                  end_datetime: newEnd.toISOString(),
+                  timezone_at_creation: timezone,
+                });
+                updated += 1;
+              } catch (err) {
+                console.error('Failed to rebase shift', s.id, err);
+              }
+            }
+            toast.success(`Rebased ${updated} shift${updated === 1 ? '' : 's'} to ${timezone}`);
+          }
         }}
       />
     </div>

@@ -24,6 +24,8 @@ import { BreakPolicySelector } from '@/components/facilities/BreakPolicySelector
 import { EngagementSelector } from '@/components/facilities/EngagementSelector';
 import type { EngagementType, TaxFormType } from '@/lib/engagementOptions';
 import { GuidedStep } from '@/components/onboarding/GuidedStep';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { US_TIMEZONES, isSupportedUsTz } from '@/lib/usTimezones';
 import { format, addDays, endOfMonth } from 'date-fns';
 
 export interface AddClinicStepperHandle {
@@ -95,6 +97,18 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
   const [clinicSearchValue, setClinicSearchValue] = useState('');
   const [manualEntry, setManualEntry] = useState(false);
   const [clinicSelected, setClinicSelected] = useState(false);
+  // Clinic timezone is explicit at creation. Default to the user's profile tz
+  // if it's a supported US zone, else the browser tz if supported, else ET.
+  // The user MUST be able to override this before saving so a CT-based vet
+  // adding a CT clinic from a PT device doesn't end up with a PT-stamped clinic.
+  const initialTz = (() => {
+    const prof = profile?.timezone;
+    if (prof && isSupportedUsTz(prof)) return prof;
+    const browser = typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : '';
+    if (browser && isSupportedUsTz(browser)) return browser;
+    return 'America/New_York';
+  })();
+  const [timezone, setTimezone] = useState<string>(initialTz);
 
   // ── Step 2: Engagement ──
   const [engagementType, setEngagementType] = useState<EngagementType>('direct');
@@ -197,7 +211,7 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
         name: name.trim(),
         status: 'active',
         address,
-        timezone: profile?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York',
+        timezone,
         notes: '',
         outreach_last_sent_at: null,
         tech_computer_info: '',
@@ -464,10 +478,26 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
                 <Label>Address</Label>
                 <GooglePlacesAutocomplete value={address} onChange={setAddress} placeholder="Full address" />
               </div>
+              <div className="space-y-1.5">
+                <Label>Clinic timezone <span className="text-destructive">*</span></Label>
+                <Select value={timezone} onValueChange={setTimezone}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {US_TIMEZONES.map(tz => (
+                      <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-muted-foreground">
+                  Shift times you log for this clinic are saved and displayed in this timezone. Set it to the clinic's local time, not yours.
+                </p>
+              </div>
             </>
           )}
         </GuidedStep>
       )}
+
+
 
       {/* ── Step 2: How You Work With Them ── */}
       {step === 2 && (
