@@ -25,6 +25,31 @@ export function generateInvoiceReminders(
 ): GeneratedReminder[] {
   const items: GeneratedReminder[] = [];
 
+  // Draft invoices ready to send (mirrors useGeneratedReminders behavior)
+  const drafts = invoices.filter(i => i.status === 'draft');
+  if (drafts.length === 1) {
+    const inv = drafts[0];
+    items.push({
+      module: 'invoices',
+      reminder_type: 'invoice_draft_unsent',
+      title: `Send invoice draft ${inv.invoice_number}`,
+      body: `$${inv.total_amount.toLocaleString()} ready to bill · ${getFacilityName(inv.facility_id)}`,
+      link: `/invoices/${inv.id}`,
+      urgency: 2,
+      related_entity_type: 'invoice',
+      related_entity_id: inv.id,
+    });
+  } else if (drafts.length > 1) {
+    items.push({
+      module: 'invoices',
+      reminder_type: 'invoice_draft_unsent',
+      title: `You have ${drafts.length} invoice drafts ready to review and send`,
+      body: `$${drafts.reduce((s, i) => s + i.total_amount, 0).toLocaleString()} total`,
+      link: '/invoices',
+      urgency: 2,
+    });
+  }
+
   // Overdue invoices
   invoices.filter(i => computeInvoiceStatus(i) === 'overdue').forEach(inv => {
     items.push({
