@@ -63,8 +63,18 @@ const US_VTIMEZONE_BLOCKS: Record<string, string> = {
   ].join('\r\n'),
 };
 
-function vtimezoneBlockFor(tz: string): string {
-  return US_VTIMEZONE_BLOCKS[tz] || US_VTIMEZONE_BLOCKS['America/New_York'];
+function vtimezoneBlockFor(tz: string): string | null {
+  return US_VTIMEZONE_BLOCKS[tz] ?? null;
+}
+
+function isValidIanaTz(tz: string | null | undefined): boolean {
+  if (!tz) return false;
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function clean(tz: string | null | undefined): string | null {
