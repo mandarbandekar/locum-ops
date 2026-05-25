@@ -478,6 +478,28 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
                 <Label>Address</Label>
                 <GooglePlacesAutocomplete value={address} onChange={setAddress} placeholder="Full address" />
               </div>
+              <div className="space-y-1.5">
+                <Label>Clinic timezone <span className="text-destructive">*</span></Label>
+                <Select value={timezone} onValueChange={setTimezone}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {US_TIMEZONES.map(tz => (
+                      <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-muted-foreground">
+                  Shift times you log for this clinic are saved and displayed in this timezone. Set it to the clinic's local time, not yours.
+                </p>
+              </div>
+            </>
+          )}
+        </GuidedStep>
+      )}
+
+      {/* spacer to preserve indentation */}
+      {false && (
+        <></>
             </>
           )}
         </GuidedStep>
