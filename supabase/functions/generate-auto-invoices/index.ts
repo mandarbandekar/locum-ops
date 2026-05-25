@@ -50,6 +50,7 @@ interface Shift {
   status: string;
   rate_applied: number;
   shift_type?: string | null;
+  timezone_at_creation?: string | null;
 }
 
 const SHIFT_TYPE_SHORT: Record<string, string> = {
