@@ -1,10 +1,32 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  periodLocalBounds,
+  periodBoundsUtc,
+  localYMDInTz,
+  zonedWallClockToUtc,
+} from "../_shared/tzTime.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
 };
+
+const FALLBACK_TZ = "America/New_York";
+
+function resolveShiftTz(
+  shift: { timezone_at_creation?: string | null } | null | undefined,
+  facility: { timezone?: string | null } | null | undefined,
+  profileTz?: string | null,
+): string {
+  const snap = shift?.timezone_at_creation?.trim();
+  if (snap) return snap;
+  const fac = facility?.timezone?.trim();
+  if (fac) return fac;
+  const prof = profileTz?.trim();
+  if (prof) return prof;
+  return FALLBACK_TZ;
+}
 
 interface Facility {
   id: string;
