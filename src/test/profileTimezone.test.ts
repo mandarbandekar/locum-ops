@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { US_TIMEZONES, shouldAutoSyncTz } from '@/lib/usTimezones';
+import {
+  US_TIMEZONES,
+  shouldPromptTzMismatch,
+  isSupportedUsTz,
+  labelForTz,
+} from '@/lib/usTimezones';
 
 describe('US_TIMEZONES', () => {
   it('contains exactly the 7 supported US zones', () => {
@@ -13,30 +18,32 @@ describe('US_TIMEZONES', () => {
   });
 });
 
-describe('shouldAutoSyncTz', () => {
-  it('does not sync when pinned, even if device tz differs', () => {
-    expect(
-      shouldAutoSyncTz({
-        pinned: true,
-        profileTz: 'America/Los_Angeles',
-        deviceTz: 'Europe/Rome',
-      }),
-    ).toBe(false);
+describe('isSupportedUsTz', () => {
+  it('accepts supported US zones', () => {
+    expect(isSupportedUsTz('America/New_York')).toBe(true);
+    expect(isSupportedUsTz('Pacific/Honolulu')).toBe(true);
   });
-
-  it('syncs when unpinned and device tz differs from saved', () => {
-    expect(
-      shouldAutoSyncTz({
-        pinned: false,
-        profileTz: 'America/Los_Angeles',
-        deviceTz: 'America/New_York',
-      }),
-    ).toBe(true);
+  it('rejects non-US / empty / unknown', () => {
+    expect(isSupportedUsTz('Europe/Rome')).toBe(false);
+    expect(isSupportedUsTz('')).toBe(false);
+    expect(isSupportedUsTz(null)).toBe(false);
+    expect(isSupportedUsTz('Not/A_Zone')).toBe(false);
   });
+});
 
-  it('does not sync when unpinned but tzs already match', () => {
+describe('labelForTz', () => {
+  it('returns the friendly label for known zones', () => {
+    expect(labelForTz('America/Los_Angeles')).toBe('Pacific (Los Angeles)');
+  });
+  it('falls back to the raw IANA string when unknown', () => {
+    expect(labelForTz('Europe/Rome')).toBe('Europe/Rome');
+  });
+});
+
+describe('shouldPromptTzMismatch', () => {
+  it('does NOT prompt when device tz equals saved profile tz', () => {
     expect(
-      shouldAutoSyncTz({
+      shouldPromptTzMismatch({
         pinned: false,
         profileTz: 'America/Los_Angeles',
         deviceTz: 'America/Los_Angeles',
@@ -44,9 +51,39 @@ describe('shouldAutoSyncTz', () => {
     ).toBe(false);
   });
 
-  it('does not sync when device tz is unknown', () => {
+  it('prompts when unpinned and device tz differs (both supported)', () => {
     expect(
-      shouldAutoSyncTz({
+      shouldPromptTzMismatch({
+        pinned: false,
+        profileTz: 'America/Los_Angeles',
+        deviceTz: 'America/New_York',
+      }),
+    ).toBe(true);
+  });
+
+  it('does NOT prompt when timezone_pinned is true, even if tzs differ', () => {
+    expect(
+      shouldPromptTzMismatch({
+        pinned: true,
+        profileTz: 'America/Los_Angeles',
+        deviceTz: 'America/New_York',
+      }),
+    ).toBe(false);
+  });
+
+  it('does NOT prompt when device tz is unsupported / non-US', () => {
+    expect(
+      shouldPromptTzMismatch({
+        pinned: false,
+        profileTz: 'America/Los_Angeles',
+        deviceTz: 'Europe/Rome',
+      }),
+    ).toBe(false);
+  });
+
+  it('does NOT prompt when device tz is empty / missing', () => {
+    expect(
+      shouldPromptTzMismatch({
         pinned: false,
         profileTz: 'America/Los_Angeles',
         deviceTz: '',
