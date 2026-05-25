@@ -14,7 +14,7 @@
 import type { Shift, Facility } from '@/types';
 import { getPartsInTz } from '@/lib/tzTime';
 import { resolveShiftTz, resolveFacilityTz } from '@/lib/resolveTimezone';
-import { vtimezoneBlockFor } from '@/lib/icsTimezones';
+import { vtimezoneBlockFor, isValidIanaTz } from '@/lib/icsTimezones';
 
 interface IcsEventInput {
   shift: Shift;
