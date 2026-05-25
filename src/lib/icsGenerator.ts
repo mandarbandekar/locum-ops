@@ -55,7 +55,11 @@ export function shiftToIcsEvent(input: IcsEventInput): string {
     includeAddress = true, includeNotes = false,
   } = input;
 
-  const tz = timezone || resolveShiftTz(shift as any, facility as any, profile as any);
+  const resolved = timezone || resolveShiftTz(shift as any, facility as any, profile as any);
+  // If the resolved tz is not a valid IANA zone in this runtime, fall the
+  // entire event back to America/New_York rather than emit a TZID a calendar
+  // client can't resolve. We never substitute mismatched VTIMEZONE rules.
+  const tz = isValidIanaTz(resolved) ? resolved : 'America/New_York';
   const dtstart = formatLocalIcsDate(shift.start_datetime, tz);
   const dtend = formatLocalIcsDate(shift.end_datetime, tz);
 
