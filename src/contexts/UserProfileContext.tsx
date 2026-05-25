@@ -178,20 +178,12 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
     loadProfile();
   }, [isDemo, user?.id]);
 
-  // Auto-sync the saved profile timezone to the current device tz, but only
-  // when the user hasn't pinned it. Runs once per profile load.
-  const autoSyncedRef = useRef(false);
-  useEffect(() => {
-    if (isDemo || !profile || autoSyncedRef.current) return;
-    const deviceTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    if (shouldAutoSyncTz({ pinned: profile.timezone_pinned, profileTz: profile.timezone, deviceTz })) {
-      autoSyncedRef.current = true;
-      // fire-and-forget; updateProfile handles the optimistic state update
-      updateProfile({ timezone: deviceTz });
-    } else {
-      autoSyncedRef.current = true;
-    }
-  }, [isDemo, profile?.id, profile?.timezone, profile?.timezone_pinned]);
+  // NOTE: Profile timezone auto-sync from the device tz has been intentionally
+  // removed. Traveling users should not have their saved business timezone
+  // silently rewritten. The <TimezoneMismatchDialog /> mounted in Layout now
+  // offers the user an explicit choice instead. See src/lib/usTimezones.ts
+  // (`shouldPromptTzMismatch`) and src/components/TimezoneMismatchDialog.tsx.
+
 
   async function loadProfile() {
     try {
