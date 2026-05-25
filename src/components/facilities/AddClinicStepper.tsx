@@ -228,7 +228,7 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
         facilityId: facility.id,
       });
 
-      if (isDirect && rates.length > 0) {
+      if (rates.length > 0) {
         try {
           await updateTerms({
             id: generateId(),
