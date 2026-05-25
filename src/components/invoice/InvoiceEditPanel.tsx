@@ -14,6 +14,8 @@ import { computeEffectiveSetAsideRate, getShiftTaxNudge } from '@/lib/taxNudge';
 import { useData } from '@/contexts/DataContext';
 import { syncShiftFromLineItems, canSyncShiftForLine } from '@/lib/shiftInvoiceSync';
 import { termsToRates } from '@/components/facilities/RatesEditor';
+import { resolveShiftTz } from '@/lib/resolveTimezone';
+import { formatYMDInTz } from '@/lib/tzTime';
 
 /** Convert any date value to a timezone-safe YYYY-MM-DD string for storage. */
 function toDateOnlyISO(v: string | Date | null | undefined): string {
@@ -596,7 +598,7 @@ export function InvoiceEditPanel({
                       invoice_id: invoice.id,
                       shift_id: shift.id,
                       description: `Overtime`,
-                      service_date: li.service_date || new Date(shift.start_datetime).toISOString().split('T')[0],
+                      service_date: li.service_date || formatYMDInTz(shift.start_datetime, resolveShiftTz(shift as any, facility as any, profile as any)),
                       qty: otQty,
                       unit_rate: defaultRate,
                       line_total: otTotal,
