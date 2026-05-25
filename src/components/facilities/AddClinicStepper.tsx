@@ -19,6 +19,7 @@ import { GooglePlacesAutocomplete } from '@/components/GooglePlacesAutocomplete'
 import type { PlaceSelection } from '@/components/GooglePlacesAutocomplete';
 import type { BillingCadence } from '@/lib/invoiceBillingDefaults';
 import { RatesEditor, ratesToTermsFields, type RateEntry } from '@/components/facilities/RatesEditor';
+import { buildDefaultRatesFromRateEntries, inferBillingPreference } from '@/lib/onboardingRateMapping';
 import { BreakPolicySelector } from '@/components/facilities/BreakPolicySelector';
 import { EngagementSelector } from '@/components/facilities/EngagementSelector';
 import type { EngagementType, TaxFormType } from '@/lib/engagementOptions';
@@ -85,7 +86,7 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
   ref,
 ) {
   const { addFacility, updateTerms, facilities } = useData();
-  const { profile } = useUserProfile();
+  const { profile, updateProfile } = useUserProfile();
   const { saveSettings: saveConfirmationSettings } = useClinicConfirmations();
 
   // ── Step 1: Identity ──
@@ -122,16 +123,17 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
 
   const isDirect = engagementType === 'direct';
   const directInvoicing = isDirect && generatesInvoices;
-  // Visible step list. The Rates step (#3) can be hidden via `hideRatesStep`,
-  // and the Billing step (#4) is direct-only.
+  // Visible step list. The Rates step (#3) can be hidden via `hideRatesStep`.
+  // The Billing step (#4) is direct-only.
+  // Rates are collected for every engagement type so the user can save reusable
+  // rates (mirrored to their Rate Card on first clinic) even when invoicing is
+  // handled by a platform/agency.
   const visibleSteps: number[] = useMemo(() => {
     const arr = [1, 2];
-    // Rates step only applies to direct-billed clinics. Platform/agency and W-2
-    // clinics enter rates per-shift since they vary every time.
-    if (!hideRatesStep && isDirect) arr.push(3);
+    if (!hideRatesStep) arr.push(3);
     if (directInvoicing) arr.push(4);
     return arr;
-  }, [hideRatesStep, isDirect, directInvoicing]);
+  }, [hideRatesStep, directInvoicing]);
   const totalSteps = visibleSteps.length;
   const currentVisibleIndex = visibleSteps.indexOf(step); // 0-based; -1 if step not visible
 
@@ -227,7 +229,7 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
         facilityId: facility.id,
       });
 
-      if (isDirect && rates.length > 0) {
+      if (rates.length > 0) {
         try {
           await updateTerms({
             id: generateId(),
@@ -262,6 +264,23 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
           // silently advancing to "Add Shifts" with no rates persisted.
           setStep(3);
           return null;
+        }
+      }
+
+      // Seed the user's reusable Rate Card from this clinic's rates when the
+      // user has not yet set one up. This prevents the ShiftFormDialog from
+      // asking the user to "add a rate" later when rates are clearly already
+      // configured at the clinic level. Non-destructive: only fires when
+      // `profile.default_rates` is empty.
+      if (rates.length > 0 && (profile?.default_rates?.length ?? 0) === 0) {
+        try {
+          await updateProfile({
+            default_rates: buildDefaultRatesFromRateEntries(rates),
+            default_billing_preference: inferBillingPreference(rates),
+          });
+        } catch (e) {
+          // Non-fatal: clinic + terms were saved. Log only.
+          console.warn('Failed to seed default Rate Card from clinic rates', e);
         }
       }
 
