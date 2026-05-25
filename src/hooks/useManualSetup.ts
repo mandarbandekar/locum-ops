@@ -71,7 +71,7 @@ export function useManualSetup() {
         name: input.name,
         status: 'active',
         address: input.address || '',
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        timezone: profile?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || TIMEZONE_SAFETY_FALLBACK,
         notes: input.notes || '',
         outreach_last_sent_at: null,
         tech_computer_info: '',
