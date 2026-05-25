@@ -24,6 +24,8 @@ import { BreakPolicySelector } from '@/components/facilities/BreakPolicySelector
 import { EngagementSelector } from '@/components/facilities/EngagementSelector';
 import type { EngagementType, TaxFormType } from '@/lib/engagementOptions';
 import { GuidedStep } from '@/components/onboarding/GuidedStep';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { US_TIMEZONES, isSupportedUsTz } from '@/lib/usTimezones';
 import { format, addDays, endOfMonth } from 'date-fns';
 
 export interface AddClinicStepperHandle {
