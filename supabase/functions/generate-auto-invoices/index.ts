@@ -1,10 +1,32 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  periodLocalBounds,
+  periodBoundsUtc,
+  localYMDInTz,
+  zonedWallClockToUtc,
+} from "../_shared/tzTime.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
 };
+
+const FALLBACK_TZ = "America/New_York";
+
+function resolveShiftTz(
+  shift: { timezone_at_creation?: string | null } | null | undefined,
+  facility: { timezone?: string | null } | null | undefined,
+  profileTz?: string | null,
+): string {
+  const snap = shift?.timezone_at_creation?.trim();
+  if (snap) return snap;
+  const fac = facility?.timezone?.trim();
+  if (fac) return fac;
+  const prof = profileTz?.trim();
+  if (prof) return prof;
+  return FALLBACK_TZ;
+}
 
 interface Facility {
   id: string;
@@ -18,6 +40,7 @@ interface Facility {
   invoice_email_to: string;
   invoice_name_to: string;
   user_id: string;
+  timezone: string | null;
 }
 
 interface Shift {
@@ -28,6 +51,7 @@ interface Shift {
   status: string;
   rate_applied: number;
   shift_type?: string | null;
+  timezone_at_creation?: string | null;
 }
 
 const SHIFT_TYPE_SHORT: Record<string, string> = {
@@ -234,39 +258,61 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Group uninvoiced shifts by billing period
-      const periodMap = new Map<string, { period: { start: Date; end: Date }; shifts: Shift[] }>();
+      // Group uninvoiced shifts by billing period — IN THE CLINIC'S LOCAL TZ.
+      // Each shift's resolved tz (snapshot > facility > NY) drives the period
+      // it belongs to, so a 11 PM May 31 Pacific shift sits in the May period
+      // even though its UTC stamp is June 1.
+      const facilityTz = facility.timezone?.trim() || FALLBACK_TZ;
+      type PeriodBucket = {
+        startYMD: string;
+        endYMD: string;
+        startUtc: Date;
+        endUtcExclusive: Date;
+        shifts: Shift[];
+        tz: string; // tz used to compute these bounds (facility-level, for storage)
+      };
+      const periodMap = new Map<string, PeriodBucket>();
       for (const shift of uninvoicedShifts) {
-        const shiftDate = new Date(shift.start_datetime);
-        const period = getBillingPeriod(cadence, shiftDate, facility.billing_cycle_anchor_date);
-        const key = `${formatDate(period.start)}|${formatDate(period.end)}`;
+        const shiftTz = resolveShiftTz(shift, facility);
+        const bounds = periodBoundsUtc(
+          cadence,
+          shift.start_datetime,
+          shiftTz,
+          facility.billing_cycle_anchor_date,
+        );
+        const key = `${bounds.startYMD}|${bounds.endYMD}`;
         if (!periodMap.has(key)) {
-          periodMap.set(key, { period, shifts: [] });
+          // Store period bounds using the facility-level tz for stable invoice
+          // rows (snapshot is per-shift, but invoice periods are facility-wide).
+          const facBounds = periodBoundsUtc(
+            cadence,
+            shift.start_datetime,
+            facilityTz,
+            facility.billing_cycle_anchor_date,
+          );
+          periodMap.set(key, {
+            startYMD: bounds.startYMD,
+            endYMD: bounds.endYMD,
+            startUtc: facBounds.startUtc,
+            endUtcExclusive: facBounds.endUtcExclusive,
+            shifts: [],
+            tz: facilityTz,
+          });
         }
         periodMap.get(key)!.shifts.push(shift);
       }
 
       // Process each billing period that has uninvoiced shifts
-      for (const [periodKey, { period, shifts: periodShifts }] of periodMap) {
-        const periodStartStr = formatDate(period.start);
-        const periodEndStr = formatDate(period.end);
+      for (const [, bucket] of periodMap) {
+        const periodStartStr = bucket.startYMD;
+        const periodEndStr = bucket.endYMD;
+        const periodShifts = bucket.shifts;
 
-        // Check if this period has been suppressed by the user
-        // Use overlap check to handle timezone differences in stored timestamps
-        const isSuppressed = suppressedPeriods.some(sp => {
-          const spStart = new Date(sp.period_start);
-          const spEnd = new Date(sp.period_end);
-          // Periods overlap if they share any time range — but for billing periods
-          // we check if the date portions match within a 1-day tolerance
-          const spStartStr = formatDate(spStart);
-          const spEndStr = formatDate(spEnd);
-          // Direct match
-          if (spStartStr === periodStartStr && spEndStr === periodEndStr) return true;
-          // Off-by-one from timezone: suppressed end may be +1 day due to UTC conversion
-          const periodEndDate = new Date(periodEndStr + "T00:00:00Z");
-          const spEndDate = new Date(spEndStr + "T00:00:00Z");
-          const diffMs = Math.abs(spEndDate.getTime() - periodEndDate.getTime());
-          return spStartStr === periodStartStr && diffMs <= 86400000;
+        // Suppression check — compare on clinic-local YMD, no UTC tolerance hack.
+        const isSuppressed = suppressedPeriods.some((sp) => {
+          const spStartYMD = localYMDInTz(sp.period_start, facilityTz);
+          const spEndYMD = localYMDInTz(sp.period_end, facilityTz);
+          return spStartYMD === periodStartStr && spEndYMD === periodEndStr;
         });
         if (isSuppressed) {
           results.push({ facility: facility.name, action: "period_suppressed", period: `${periodStartStr} to ${periodEndStr}` });
@@ -279,38 +325,56 @@ Deno.serve(async (req) => {
             inv.status === "draft" &&
             inv.generation_type === "automatic" &&
             inv.facility_id === facility.id &&
-            formatDate(new Date(inv.period_start)) === periodStartStr &&
-            formatDate(new Date(inv.period_end)) === periodEndStr
+            localYMDInTz(inv.period_start, facilityTz) === periodStartStr &&
+            localYMDInTz(inv.period_end, facilityTz) === periodEndStr
         );
 
         // Combine: uninvoiced shifts for this period + shifts already on draft (minus protected)
         let allEligibleForPeriod = [...periodShifts];
         if (existingDraft) {
-          // Get shifts already on this draft
           const draftLineItems = allLineItems.filter(li => li.invoice_id === existingDraft.id && li.shift_id);
           const draftShiftIds = new Set(draftLineItems.map(li => li.shift_id!));
-          // Add existing draft shifts that aren't protected
           const existingDraftShifts = (allShifts as Shift[]).filter(
             s => draftShiftIds.has(s.id) && !protectedShiftIds.has(s.id)
           );
-          // Merge without duplicates
           const mergedIds = new Set(allEligibleForPeriod.map(s => s.id));
           for (const s of existingDraftShifts) {
-            if (!mergedIds.has(s.id)) {
-              allEligibleForPeriod.push(s);
-            }
+            if (!mergedIds.has(s.id)) allEligibleForPeriod.push(s);
           }
         }
 
-        // Sort by start_datetime
+        // Sort by start_datetime (absolute UTC order is fine here)
         allEligibleForPeriod.sort(
           (a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime()
         );
 
         if (allEligibleForPeriod.length === 0) continue;
 
+        // Helper: local YMD for a shift in its own tz (snapshot > facility).
+        const shiftLocalYMD = (s: Shift) =>
+          localYMDInTz(s.start_datetime, resolveShiftTz(s, facility));
+        const shiftLocalShortDate = (s: Shift): string => {
+          const ymd = shiftLocalYMD(s);
+          const [y, m, d] = ymd.split('-').map(Number);
+          return `${MONTHS[m - 1]} ${d}, ${y}`;
+        };
+
+        const buildLineItem = (s: Shift) => ({
+          shift_id: s.id,
+          description: `${shiftLocalShortDate(s)} — ${coverageLabel(s.shift_type)}`,
+          service_date: shiftLocalYMD(s),
+          qty: 1,
+          unit_rate: s.rate_applied,
+          line_total: s.rate_applied,
+        });
+
+        // Invoice date = last shift's clinic-local date at 12:00 in facility tz.
+        const lastShift = allEligibleForPeriod[allEligibleForPeriod.length - 1];
+        const lastShiftLocalYMD = shiftLocalYMD(lastShift);
+        const invoiceDate = zonedWallClockToUtc(lastShiftLocalYMD, '12:00', facilityTz);
+        const dueDate = addDays(invoiceDate, facility.invoice_due_days || 15);
+
         if (existingDraft) {
-          // Update existing draft: rebuild line items
           await supabase
             .from("invoice_line_items")
             .delete()
@@ -319,23 +383,11 @@ Deno.serve(async (req) => {
           const newLineItems = allEligibleForPeriod.map((s) => ({
             user_id: facility.user_id,
             invoice_id: existingDraft.id,
-            shift_id: s.id,
-            description: `${formatShortDate(new Date(s.start_datetime))} — ${coverageLabel(s.shift_type)}`,
-            service_date: formatDate(new Date(s.start_datetime)),
-            qty: 1,
-            unit_rate: s.rate_applied,
-            line_total: s.rate_applied,
+            ...buildLineItem(s),
           }));
 
           await supabase.from("invoice_line_items").insert(newLineItems);
-
           const total = newLineItems.reduce((sum, li) => sum + li.line_total, 0);
-
-          // Invoice date = last shift date in period
-          const lastShift = allEligibleForPeriod[allEligibleForPeriod.length - 1];
-          const lastShiftDate = new Date(lastShift.start_datetime);
-          const invoiceDate = new Date(lastShiftDate.getFullYear(), lastShiftDate.getMonth(), lastShiftDate.getDate(), 12, 0, 0);
-          const dueDate = addDays(invoiceDate, facility.invoice_due_days || 15);
 
           await supabase
             .from("invoices")
@@ -354,9 +406,6 @@ Deno.serve(async (req) => {
             period: `${periodStartStr} to ${periodEndStr}`,
           });
         } else {
-          // Atomically reserve the next invoice number via RPC (advisory-locked
-          // per user+prefix+year) to prevent duplicate numbers under concurrent
-          // runs. Falls back to MAX+1 only if the RPC errors.
           const prefix = facility.invoice_prefix || "INV";
           const year = now.getFullYear();
           let invoiceNumber: string;
@@ -380,25 +429,14 @@ Deno.serve(async (req) => {
             invoiceNumber = rpcNum as string;
           }
 
-          // Build line items
-          const lineItems = allEligibleForPeriod.map((s) => ({
-            shift_id: s.id,
-            description: `${formatShortDate(new Date(s.start_datetime))} — ${coverageLabel(s.shift_type)}`,
-            service_date: formatDate(new Date(s.start_datetime)),
-            qty: 1,
-            unit_rate: s.rate_applied,
-            line_total: s.rate_applied,
-          }));
-
+          const lineItems = allEligibleForPeriod.map(buildLineItem);
           const total = lineItems.reduce((sum, li) => sum + li.line_total, 0);
 
-          // Invoice date = last shift date in period
-          const lastShift = allEligibleForPeriod[allEligibleForPeriod.length - 1];
-          const lastShiftDate = new Date(lastShift.start_datetime);
-          const invoiceDate = new Date(lastShiftDate.getFullYear(), lastShiftDate.getMonth(), lastShiftDate.getDate(), 12, 0, 0);
-          const dueDate = addDays(invoiceDate, facility.invoice_due_days || 15);
+          // Store period_end as last-instant-of-period in facility tz
+          // (one ms before the next day's midnight) so the row reads as
+          // "May 31 23:59:59 Pacific" not "Jun 1 00:00 Pacific".
+          const periodEndStored = new Date(bucket.endUtcExclusive.getTime() - 1);
 
-          // Create invoice
           const { data: invData, error: invErr } = await supabase
             .from("invoices")
             .insert({
@@ -406,8 +444,8 @@ Deno.serve(async (req) => {
               facility_id: facility.id,
               invoice_number: invoiceNumber,
               invoice_date: invoiceDate.toISOString(),
-              period_start: period.start.toISOString(),
-              period_end: period.end.toISOString(),
+              period_start: bucket.startUtc.toISOString(),
+              period_end: periodEndStored.toISOString(),
               total_amount: total,
               balance_due: total,
               status: "draft",
@@ -428,7 +466,6 @@ Deno.serve(async (req) => {
             continue;
           }
 
-          // Insert line items
           const toInsert = lineItems.map((li) => ({
             user_id: facility.user_id,
             invoice_id: invData.id,
@@ -445,6 +482,7 @@ Deno.serve(async (req) => {
         }
       }
     }
+
 
     // Fix stale invoice dates on existing drafts where invoice_date != last shift date
     try {

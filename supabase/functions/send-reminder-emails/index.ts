@@ -5,6 +5,27 @@ import { InvoiceReminderEmail } from '../_shared/email-templates/invoice-reminde
 import { InvoiceDigestEmail } from '../_shared/email-templates/invoice-digest.tsx'
 import { ShiftReminderEmail } from '../_shared/email-templates/shift-reminder.tsx'
 import { CredentialDigestEmail } from '../_shared/email-templates/credential-digest.tsx'
+import { getPartsInTz, zonedWallClockToUtc, localYMDInTz } from '../_shared/tzTime.ts'
+
+const PROFILE_TZ_FALLBACK = 'America/New_York'
+
+function resolveProfileTz(tz?: string | null): string {
+  const t = tz?.trim()
+  return t && t.length > 0 ? t : PROFILE_TZ_FALLBACK
+}
+
+function resolveShiftReminderTz(
+  shift: { timezone_at_creation?: string | null } | null | undefined,
+  facility: { timezone?: string | null } | null | undefined,
+  profileTz?: string | null,
+): string {
+  const snap = shift?.timezone_at_creation?.trim()
+  if (snap) return snap
+  const fac = facility?.timezone?.trim()
+  if (fac) return fac
+  return resolveProfileTz(profileTz)
+}
+
 
 const SITE_NAME = 'LocumOps'
 const SENDER_DOMAIN = 'notify.locum-ops.com'
@@ -98,7 +119,7 @@ Deno.serve(async (req) => {
   let totalEnqueued = 0
 
   for (const userId of userIds) {
-    // ── Resolve recipient email (shared across invoice + credential reminders) ──
+    // ── Resolve recipient email + profile timezone ──
     const { data: prefs } = await supabase
       .from('reminder_preferences')
       .select('reminder_email, email_enabled, phone_number, sms_enabled, quiet_hours_start, quiet_hours_end')
@@ -107,12 +128,18 @@ Deno.serve(async (req) => {
 
     if (!prefs?.email_enabled) continue
 
-    // Check quiet hours
+    const { data: userProfileRow } = await supabase
+      .from('user_profiles')
+      .select('invoice_email, timezone')
+      .eq('user_id', userId)
+      .maybeSingle()
+    const profileTz = resolveProfileTz(userProfileRow?.timezone)
+
+    // Check quiet hours — in the USER's profile timezone, not server UTC.
     const now = new Date()
     if (prefs?.quiet_hours_start && prefs?.quiet_hours_end) {
-      const h = now.getHours()
-      const m = now.getMinutes()
-      const sendMin = h * 60 + m
+      const p = getPartsInTz(now, profileTz)
+      const sendMin = p.hour * 60 + p.minute
       const [sh, sm] = prefs.quiet_hours_start.split(':').map(Number)
       const [eh, em] = prefs.quiet_hours_end.split(':').map(Number)
       const startMin = sh * 60 + sm
@@ -123,20 +150,13 @@ Deno.serve(async (req) => {
       if (inQuiet) continue
     }
 
-    let recipientEmail = prefs.reminder_email
-    if (!recipientEmail) {
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('invoice_email')
-        .eq('user_id', userId)
-        .maybeSingle()
-      recipientEmail = profile?.invoice_email
-    }
+    let recipientEmail = prefs.reminder_email || userProfileRow?.invoice_email
     if (!recipientEmail) {
       const { data: { user } } = await supabase.auth.admin.getUserById(userId)
       recipientEmail = user?.email
     }
     if (!recipientEmail) continue
+
 
     // Get unsubscribe token for this recipient (reused across all reminders)
     const unsubscribeToken = await getOrCreateUnsubscribeToken(supabase, recipientEmail)
@@ -157,9 +177,9 @@ Deno.serve(async (req) => {
     // ═══════════════════════════════════════════
     const invoiceCat = getCatSetting('invoices')
     if (!invoiceCat || (invoiceCat.enabled && invoiceCat.email_enabled)) {
-      // Dedup: check if already sent today
-      const todayStart = new Date()
-      todayStart.setHours(0, 0, 0, 0)
+      // Dedup: check if already sent today — "today" = user's profile-local day.
+      const todayLocalYMD = localYMDInTz(now, profileTz)
+      const todayStart = zonedWallClockToUtc(todayLocalYMD, '00:00', profileTz)
       const { data: sentToday } = await supabase
         .from('reminders')
         .select('id')
@@ -181,19 +201,24 @@ Deno.serve(async (req) => {
           const facilityIds = [...new Set(invoices.map((i: any) => i.facility_id))]
           const { data: facilities } = await supabase
             .from('facilities')
-            .select('id, name')
+            .select('id, name, timezone')
             .in('id', facilityIds)
 
-          const getFacName = (id: string) => facilities?.find((f: any) => f.id === id)?.name || 'Unknown'
+          const getFac = (id: string) => facilities?.find((f: any) => f.id === id)
+          const getFacName = (id: string) => getFac(id)?.name || 'Unknown'
 
-          // Collect drafts — only "ready to review" (invoice_date <= today), exclude upcoming
-          const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999)
+          // "Ready to review" drafts — end of today in PROFILE tz, not server UTC.
+          const todayEnd = new Date(
+            zonedWallClockToUtc(todayLocalYMD, '00:00', profileTz).getTime()
+            + 24 * 60 * 60 * 1000 - 1,
+          )
           const drafts = invoices.filter((i: any) => {
             if (i.status !== 'draft') return false
             const refDate = i.invoice_date || i.period_end
             if (!refDate) return true
             return new Date(refDate) <= todayEnd
           })
+
 
           // Collect overdue
           const overdue = invoices.filter((i: any) => {
@@ -282,10 +307,12 @@ Deno.serve(async (req) => {
             }
           }
 
-          // 1c) Uninvoiced shifts (stays unchanged — already grouped by facility)
+          // 1c) Uninvoiced shifts — "ended before today" in the shift's own tz
+          // (snapshot > facility), so an 11 PM Pacific shift on May 31 is not
+          // classified as "tomorrow" just because UTC has rolled to June 1.
           const { data: allShifts } = await supabase
             .from('shifts')
-            .select('id, facility_id, start_datetime, end_datetime, rate_applied')
+            .select('id, facility_id, start_datetime, end_datetime, rate_applied, timezone_at_creation')
             .eq('user_id', userId)
 
           const { data: allLineItems } = await supabase
@@ -297,12 +324,17 @@ Deno.serve(async (req) => {
             const invoicedShiftIds = new Set(
               (allLineItems as any[]).filter(li => li.shift_id).map(li => li.shift_id)
             )
-            const cutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000)
 
             const uninvoiced = (allShifts as any[]).filter(s => {
-              const endDate = new Date(s.end_datetime)
-              return endDate < cutoff && !invoicedShiftIds.has(s.id)
+              if (invoicedShiftIds.has(s.id)) return false
+              const fac = getFac(s.facility_id)
+              const shiftTz = resolveShiftReminderTz(s, fac, profileTz)
+              // Local YMD of shift end vs. local YMD of "now" in same tz.
+              const shiftEndYMD = localYMDInTz(s.end_datetime, shiftTz)
+              const todayInShiftTz = localYMDInTz(now, shiftTz)
+              return shiftEndYMD < todayInShiftTz
             })
+
 
             const byFacility = new Map<string, typeof uninvoiced>()
             uninvoiced.forEach(s => {
