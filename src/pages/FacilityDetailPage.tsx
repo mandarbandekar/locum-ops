@@ -470,6 +470,16 @@ function ContractTab({ facility, facilityTerms, onSaveRates, onUpdateTerms, onUp
 
         <ContractsTab facilityId={facility.id} facilityTerms={facilityTerms} onUpdateTerms={onUpdateTerms} />
       </div>
+      <FacilityTimezoneChangeDialog
+        open={tzConfirmOpen}
+        oldTz={facility.timezone || 'America/New_York'}
+        newTz={timezone}
+        onCancel={() => setTzConfirmOpen(false)}
+        onConfirm={() => {
+          setTzConfirmOpen(false);
+          commitSave(timezone);
+        }}
+      />
     </div>
   );
 }
