@@ -177,9 +177,9 @@ Deno.serve(async (req) => {
     // ═══════════════════════════════════════════
     const invoiceCat = getCatSetting('invoices')
     if (!invoiceCat || (invoiceCat.enabled && invoiceCat.email_enabled)) {
-      // Dedup: check if already sent today
-      const todayStart = new Date()
-      todayStart.setHours(0, 0, 0, 0)
+      // Dedup: check if already sent today — "today" = user's profile-local day.
+      const todayLocalYMD = localYMDInTz(now, profileTz)
+      const todayStart = zonedWallClockToUtc(todayLocalYMD, '00:00', profileTz)
       const { data: sentToday } = await supabase
         .from('reminders')
         .select('id')
@@ -201,19 +201,24 @@ Deno.serve(async (req) => {
           const facilityIds = [...new Set(invoices.map((i: any) => i.facility_id))]
           const { data: facilities } = await supabase
             .from('facilities')
-            .select('id, name')
+            .select('id, name, timezone')
             .in('id', facilityIds)
 
-          const getFacName = (id: string) => facilities?.find((f: any) => f.id === id)?.name || 'Unknown'
+          const getFac = (id: string) => facilities?.find((f: any) => f.id === id)
+          const getFacName = (id: string) => getFac(id)?.name || 'Unknown'
 
-          // Collect drafts — only "ready to review" (invoice_date <= today), exclude upcoming
-          const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999)
+          // "Ready to review" drafts — end of today in PROFILE tz, not server UTC.
+          const todayEnd = new Date(
+            zonedWallClockToUtc(todayLocalYMD, '00:00', profileTz).getTime()
+            + 24 * 60 * 60 * 1000 - 1,
+          )
           const drafts = invoices.filter((i: any) => {
             if (i.status !== 'draft') return false
             const refDate = i.invoice_date || i.period_end
             if (!refDate) return true
             return new Date(refDate) <= todayEnd
           })
+
 
           // Collect overdue
           const overdue = invoices.filter((i: any) => {
