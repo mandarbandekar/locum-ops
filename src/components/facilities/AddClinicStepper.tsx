@@ -267,6 +267,23 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
         }
       }
 
+      // Seed the user's reusable Rate Card from this clinic's rates when the
+      // user has not yet set one up. This prevents the ShiftFormDialog from
+      // asking the user to "add a rate" later when rates are clearly already
+      // configured at the clinic level. Non-destructive: only fires when
+      // `profile.default_rates` is empty.
+      if (rates.length > 0 && (profile?.default_rates?.length ?? 0) === 0) {
+        try {
+          await updateProfile({
+            default_rates: buildDefaultRatesFromRateEntries(rates),
+            default_billing_preference: inferBillingPreference(rates),
+          });
+        } catch (e) {
+          // Non-fatal: clinic + terms were saved. Log only.
+          console.warn('Failed to seed default Rate Card from clinic rates', e);
+        }
+      }
+
       if (isDirect && schedulingContactName.trim() && schedulingContactEmail.trim()) {
         await saveConfirmationSettings({
           id: '',
