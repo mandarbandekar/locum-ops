@@ -73,7 +73,40 @@ describe('FacilityTimezoneChangeDialog', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: 'Confirm timezone change' }));
     expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(onConfirm).toHaveBeenCalledWith({ rebaseExisting: false });
     expect(onCancel).not.toHaveBeenCalled();
+  });
+
+  it('shows rebase checkbox when existingShiftCount > 0 and passes rebaseExisting: true on confirm', () => {
+    const onConfirm = vi.fn();
+    render(
+      <FacilityTimezoneChangeDialog
+        open
+        oldTz="America/Los_Angeles"
+        newTz="America/Chicago"
+        existingShiftCount={4}
+        onCancel={() => {}}
+        onConfirm={onConfirm}
+      />,
+    );
+    const cb = screen.getByLabelText(/Also rebase 4 existing shifts/i);
+    fireEvent.click(cb);
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm timezone change' }));
+    expect(onConfirm).toHaveBeenCalledWith({ rebaseExisting: true });
+  });
+
+  it('hides rebase checkbox when there are no existing shifts', () => {
+    render(
+      <FacilityTimezoneChangeDialog
+        open
+        oldTz="America/Los_Angeles"
+        newTz="America/Chicago"
+        existingShiftCount={0}
+        onCancel={() => {}}
+        onConfirm={() => {}}
+      />,
+    );
+    expect(screen.queryByLabelText(/Also rebase/i)).toBeNull();
   });
 });
 
