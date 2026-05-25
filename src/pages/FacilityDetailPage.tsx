@@ -28,6 +28,7 @@ import { BreakPolicySelector } from '@/components/facilities/BreakPolicySelector
 import { getBreakPolicyLabel } from '@/lib/shiftBreak';
 import type { EngagementType, TaxFormType } from '@/lib/engagementOptions';
 import { US_TIMEZONES } from '@/lib/usTimezones';
+import { FacilityTimezoneChangeDialog } from '@/components/facilities/FacilityTimezoneChangeDialog';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { formatDateInTz } from '@/lib/tzTime';
 
