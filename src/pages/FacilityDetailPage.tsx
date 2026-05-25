@@ -305,12 +305,14 @@ function ContactFormDialog({ open, onOpenChange, form, onChange, onSave, isEdit 
 
 // ─── Contract Tab ──────────────────────────────────────────
 
-function ContractTab({ facility, facilityTerms, onSaveRates, onUpdateTerms, onUpdateFacility, confirmationSettings, onSaveConfirmationSettings }: {
+function ContractTab({ facility, facilityTerms, facilityShifts, onSaveRates, onUpdateTerms, onUpdateFacility, onUpdateShift, confirmationSettings, onSaveConfirmationSettings }: {
   facility: any;
   facilityTerms?: TermsSnapshot;
+  facilityShifts: any[];
   onSaveRates: (rates: RateEntry[]) => void;
   onUpdateTerms: (t: TermsSnapshot) => void;
   onUpdateFacility: (f: any) => void;
+  onUpdateShift: (s: any) => void | Promise<any>;
   confirmationSettings: import('@/types/clinicConfirmations').FacilityConfirmationSettings | null;
   onSaveConfirmationSettings: (s: import('@/types/clinicConfirmations').FacilityConfirmationSettings) => void;
 }) {
