@@ -18,7 +18,7 @@ describe('FacilityTimezoneChangeDialog', () => {
     );
     expect(screen.getByText('Change clinic timezone?')).toBeInTheDocument();
     expect(
-      screen.getByText(/Existing shifts and invoices will keep their original timezone/i),
+      screen.getByText(/By default, existing shifts and invoices keep their original timezone/i),
     ).toBeInTheDocument();
     expect(screen.getByText(/Future shifts for this clinic will use the new timezone/i)).toBeInTheDocument();
     expect(screen.getByText('Pacific (Los Angeles)')).toBeInTheDocument();
