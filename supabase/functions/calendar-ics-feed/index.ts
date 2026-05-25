@@ -217,7 +217,12 @@ Deno.serve(async (req) => {
   const primaryTz = usedTzs.size > 0
     ? Array.from(usedTzs)[0]
     : (clean(profile?.timezone) || FALLBACK_TZ);
-  const vtimezones = Array.from(usedTzs).map(vtimezoneBlockFor);
+  // Only include VTIMEZONE blocks we have matching rules for. For other
+  // valid IANA zones, the bare TZID is correct; mismatched rules would be
+  // worse than none.
+  const vtimezones = Array.from(usedTzs)
+    .map(vtimezoneBlockFor)
+    .filter((b): b is string => b !== null);
 
   const ics = [
     'BEGIN:VCALENDAR',
