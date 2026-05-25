@@ -12,7 +12,6 @@ import { RecordPaymentDialog } from '@/components/invoice/RecordPaymentDialog';
 import { useTaxIntelligence } from '@/hooks/useTaxIntelligence';
 import { computeEffectiveSetAsideRate, getShiftTaxNudge } from '@/lib/taxNudge';
 import { useData } from '@/contexts/DataContext';
-import { useUserProfile } from '@/contexts/UserProfileContext';
 import { syncShiftFromLineItems, canSyncShiftForLine } from '@/lib/shiftInvoiceSync';
 import { termsToRates } from '@/components/facilities/RatesEditor';
 import { resolveShiftTz } from '@/lib/resolveTimezone';
@@ -599,7 +598,7 @@ export function InvoiceEditPanel({
                       invoice_id: invoice.id,
                       shift_id: shift.id,
                       description: `Overtime`,
-                      service_date: li.service_date || new Date(shift.start_datetime).toISOString().split('T')[0],
+                      service_date: li.service_date || formatYMDInTz(shift.start_datetime, resolveShiftTz(shift as any, facility as any, profile as any)),
                       qty: otQty,
                       unit_rate: defaultRate,
                       line_total: otTotal,
