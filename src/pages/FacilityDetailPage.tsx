@@ -84,9 +84,11 @@ export default function FacilityDetailPage() {
           <ContractTab
             facility={facility}
             facilityTerms={facilityTerms}
+            facilityShifts={facilityShifts}
             onSaveRates={handleSaveRates}
             onUpdateTerms={updateTerms}
             onUpdateFacility={updateFacility}
+            onUpdateShift={updateShift}
             confirmationSettings={getSettings(facility.id)}
             onSaveConfirmationSettings={saveSettings}
           />
