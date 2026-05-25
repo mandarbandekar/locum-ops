@@ -478,10 +478,39 @@ function ContractTab({ facility, facilityTerms, facilityShifts, onSaveRates, onU
         open={tzConfirmOpen}
         oldTz={facility.timezone || 'America/New_York'}
         newTz={timezone}
+        existingShiftCount={facilityShifts.length}
         onCancel={() => setTzConfirmOpen(false)}
-        onConfirm={() => {
+        onConfirm={async ({ rebaseExisting }) => {
           setTzConfirmOpen(false);
+          const oldTz = facility.timezone || 'America/New_York';
           commitSave(timezone);
+          if (rebaseExisting && oldTz !== timezone) {
+            // Keep the wall-clock the user typed; reinterpret it in the new tz.
+            let updated = 0;
+            for (const s of facilityShifts) {
+              try {
+                const stampTz = s.timezone_at_creation || oldTz;
+                const ymd = formatYMDInTz(s.start_datetime, stampTz);
+                const startHHMM = formatHHMMInTz(s.start_datetime, stampTz);
+                const endHHMM = formatHHMMInTz(s.end_datetime, stampTz);
+                const newStart = zonedWallClockToUtc(ymd, startHHMM, timezone);
+                let newEnd = zonedWallClockToUtc(ymd, endHHMM, timezone);
+                if (newEnd.getTime() <= newStart.getTime()) {
+                  newEnd = new Date(newEnd.getTime() + 24 * 60 * 60 * 1000);
+                }
+                await onUpdateShift({
+                  ...s,
+                  start_datetime: newStart.toISOString(),
+                  end_datetime: newEnd.toISOString(),
+                  timezone_at_creation: timezone,
+                });
+                updated += 1;
+              } catch (err) {
+                console.error('Failed to rebase shift', s.id, err);
+              }
+            }
+            toast.success(`Rebased ${updated} shift${updated === 1 ? '' : 's'} to ${timezone}`);
+          }
         }}
       />
     </div>
