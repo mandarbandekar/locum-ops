@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useData } from '@/contexts/DataContext';
 import { formatTimeInTz, formatDateInTz, getPartsInTz } from '@/lib/tzTime';
+import { resolveShiftTz } from '@/lib/resolveTimezone';
 
 interface Shift {
   id: string;
