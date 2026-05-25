@@ -40,6 +40,7 @@ interface Facility {
   invoice_email_to: string;
   invoice_name_to: string;
   user_id: string;
+  timezone: string | null;
 }
 
 interface Shift {
