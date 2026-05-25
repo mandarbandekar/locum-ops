@@ -1,12 +1,97 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { getPartsInTz } from '../_shared/tzTime.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-function formatIcsDate(dateStr: string): string {
-  const d = new Date(dateStr);
+const FALLBACK_TZ = 'America/New_York';
+
+const US_VTIMEZONE_BLOCKS: Record<string, string> = {
+  'America/Los_Angeles': [
+    'BEGIN:VTIMEZONE', 'TZID:America/Los_Angeles',
+    'BEGIN:DAYLIGHT', 'TZOFFSETFROM:-0800', 'TZOFFSETTO:-0700', 'TZNAME:PDT',
+    'DTSTART:19700308T020000', 'RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU', 'END:DAYLIGHT',
+    'BEGIN:STANDARD', 'TZOFFSETFROM:-0700', 'TZOFFSETTO:-0800', 'TZNAME:PST',
+    'DTSTART:19701101T020000', 'RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU', 'END:STANDARD',
+    'END:VTIMEZONE',
+  ].join('\r\n'),
+  'America/Denver': [
+    'BEGIN:VTIMEZONE', 'TZID:America/Denver',
+    'BEGIN:DAYLIGHT', 'TZOFFSETFROM:-0700', 'TZOFFSETTO:-0600', 'TZNAME:MDT',
+    'DTSTART:19700308T020000', 'RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU', 'END:DAYLIGHT',
+    'BEGIN:STANDARD', 'TZOFFSETFROM:-0600', 'TZOFFSETTO:-0700', 'TZNAME:MST',
+    'DTSTART:19701101T020000', 'RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU', 'END:STANDARD',
+    'END:VTIMEZONE',
+  ].join('\r\n'),
+  'America/Chicago': [
+    'BEGIN:VTIMEZONE', 'TZID:America/Chicago',
+    'BEGIN:DAYLIGHT', 'TZOFFSETFROM:-0600', 'TZOFFSETTO:-0500', 'TZNAME:CDT',
+    'DTSTART:19700308T020000', 'RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU', 'END:DAYLIGHT',
+    'BEGIN:STANDARD', 'TZOFFSETFROM:-0500', 'TZOFFSETTO:-0600', 'TZNAME:CST',
+    'DTSTART:19701101T020000', 'RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU', 'END:STANDARD',
+    'END:VTIMEZONE',
+  ].join('\r\n'),
+  'America/New_York': [
+    'BEGIN:VTIMEZONE', 'TZID:America/New_York',
+    'BEGIN:DAYLIGHT', 'TZOFFSETFROM:-0500', 'TZOFFSETTO:-0400', 'TZNAME:EDT',
+    'DTSTART:19700308T020000', 'RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU', 'END:DAYLIGHT',
+    'BEGIN:STANDARD', 'TZOFFSETFROM:-0400', 'TZOFFSETTO:-0500', 'TZNAME:EST',
+    'DTSTART:19701101T020000', 'RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU', 'END:STANDARD',
+    'END:VTIMEZONE',
+  ].join('\r\n'),
+  'America/Anchorage': [
+    'BEGIN:VTIMEZONE', 'TZID:America/Anchorage',
+    'BEGIN:DAYLIGHT', 'TZOFFSETFROM:-0900', 'TZOFFSETTO:-0800', 'TZNAME:AKDT',
+    'DTSTART:19700308T020000', 'RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU', 'END:DAYLIGHT',
+    'BEGIN:STANDARD', 'TZOFFSETFROM:-0800', 'TZOFFSETTO:-0900', 'TZNAME:AKST',
+    'DTSTART:19701101T020000', 'RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU', 'END:STANDARD',
+    'END:VTIMEZONE',
+  ].join('\r\n'),
+  'America/Phoenix': [
+    'BEGIN:VTIMEZONE', 'TZID:America/Phoenix',
+    'BEGIN:STANDARD', 'TZOFFSETFROM:-0700', 'TZOFFSETTO:-0700', 'TZNAME:MST',
+    'DTSTART:19700101T000000', 'END:STANDARD',
+    'END:VTIMEZONE',
+  ].join('\r\n'),
+  'Pacific/Honolulu': [
+    'BEGIN:VTIMEZONE', 'TZID:Pacific/Honolulu',
+    'BEGIN:STANDARD', 'TZOFFSETFROM:-1000', 'TZOFFSETTO:-1000', 'TZNAME:HST',
+    'DTSTART:19700101T000000', 'END:STANDARD',
+    'END:VTIMEZONE',
+  ].join('\r\n'),
+};
+
+function vtimezoneBlockFor(tz: string): string {
+  return US_VTIMEZONE_BLOCKS[tz] || US_VTIMEZONE_BLOCKS['America/New_York'];
+}
+
+function clean(tz: string | null | undefined): string | null {
+  if (!tz) return null;
+  const t = String(tz).trim();
+  return t.length > 0 ? t : null;
+}
+
+function resolveShiftTz(
+  shift: { timezone_at_creation?: string | null },
+  facility: { timezone?: string | null } | null | undefined,
+  profile: { timezone?: string | null } | null | undefined,
+): string {
+  return clean(shift?.timezone_at_creation)
+    || clean(facility?.timezone)
+    || clean(profile?.timezone)
+    || FALLBACK_TZ;
+}
+
+function formatLocalIcsDate(iso: string, tz: string): string {
+  const p = getPartsInTz(iso, tz);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${p.year}${pad(p.month)}${pad(p.day)}T${pad(p.hour)}${pad(p.minute)}${pad(p.second)}`;
+}
+
+function formatUtcIcsDate(iso: string): string {
+  const d = new Date(iso);
   return d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
 }
 
@@ -30,7 +115,6 @@ Deno.serve(async (req) => {
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-  // Validate token
   const { data: tokenRecord, error: tokenError } = await supabase
     .from('calendar_feed_tokens')
     .select('*')
@@ -44,7 +128,6 @@ Deno.serve(async (req) => {
 
   const userId = tokenRecord.user_id;
 
-  // Load user preferences
   const { data: prefs } = await supabase
     .from('calendar_sync_preferences')
     .select('*')
@@ -54,8 +137,12 @@ Deno.serve(async (req) => {
   const includeAddress = prefs?.include_facility_address ?? true;
   const includeNotes = prefs?.include_notes ?? false;
 
-  // Include past 90 days + all future shifts so older events don't disappear
-  // from subscribed calendars when they refresh.
+  const { data: profile } = await supabase
+    .from('user_profiles')
+    .select('timezone')
+    .eq('user_id', userId)
+    .maybeSingle();
+
   const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
   const { data: shifts, error: shiftsError } = await supabase
     .from('shifts')
@@ -69,29 +156,32 @@ Deno.serve(async (req) => {
     return new Response('Internal error', { status: 500, headers: corsHeaders });
   }
 
-  // Load facilities for names and addresses
   const facilityIds = [...new Set((shifts || []).map((s: any) => s.facility_id))];
   let facilityMap: Record<string, any> = {};
   if (facilityIds.length > 0) {
     const { data: facilities } = await supabase
       .from('facilities')
-      .select('id, name, address')
+      .select('id, name, address, timezone')
       .in('id', facilityIds);
     if (facilities) {
       facilityMap = Object.fromEntries(facilities.map((f: any) => [f.id, f]));
     }
   }
 
-  // Generate ICS
+  const usedTzs = new Set<string>();
+
   const events = (shifts || []).map((shift: any) => {
     const facility = facilityMap[shift.facility_id] || {};
+    const tz = resolveShiftTz(shift, facility, profile);
+    usedTzs.add(tz);
+
     const lines = [
       'BEGIN:VEVENT',
       `UID:${shift.id}@locumops.app`,
-      `DTSTART:${formatIcsDate(shift.start_datetime)}`,
-      `DTEND:${formatIcsDate(shift.end_datetime)}`,
+      `DTSTART;TZID=${tz}:${formatLocalIcsDate(shift.start_datetime, tz)}`,
+      `DTEND;TZID=${tz}:${formatLocalIcsDate(shift.end_datetime, tz)}`,
       `SUMMARY:${escapeIcsText(`Relief Shift — ${facility.name || 'Unknown'}`)}`,
-      `DTSTAMP:${formatIcsDate(new Date().toISOString())}`,
+      `DTSTAMP:${formatUtcIcsDate(new Date().toISOString())}`,
     ];
 
     if (includeAddress && facility.address) {
@@ -101,12 +191,20 @@ Deno.serve(async (req) => {
     const descParts = [`Facility: ${facility.name || 'Unknown'}`];
     if (shift.rate_applied > 0) descParts.push(`Rate: $${shift.rate_applied}`);
     if (includeNotes && shift.notes) descParts.push(`Notes: ${shift.notes}`);
+    descParts.push('');
+    descParts.push('Times shown are clinic local time.');
+    descParts.push(`Clinic timezone: ${tz}`);
     lines.push(`DESCRIPTION:${escapeIcsText(descParts.join('\\n'))}`);
     lines.push('STATUS:CONFIRMED');
     lines.push('END:VEVENT');
 
     return lines.join('\r\n');
   });
+
+  const primaryTz = usedTzs.size > 0
+    ? Array.from(usedTzs)[0]
+    : (clean(profile?.timezone) || FALLBACK_TZ);
+  const vtimezones = Array.from(usedTzs).map(vtimezoneBlockFor);
 
   const ics = [
     'BEGIN:VCALENDAR',
@@ -115,7 +213,8 @@ Deno.serve(async (req) => {
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     'X-WR-CALNAME:LocumOps Shifts',
-    'X-WR-TIMEZONE:UTC',
+    `X-WR-TIMEZONE:${primaryTz}`,
+    ...vtimezones,
     ...events,
     'END:VCALENDAR',
   ].join('\r\n');
