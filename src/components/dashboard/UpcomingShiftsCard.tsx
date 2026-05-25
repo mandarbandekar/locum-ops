@@ -16,6 +16,7 @@ interface Shift {
   end_datetime: string;
   facility_id: string;
   agency?: string;
+  timezone_at_creation?: string | null;
 }
 
 interface UpcomingShiftsCardProps {
@@ -79,7 +80,7 @@ export function UpcomingShiftsCard({ shifts, getFacilityName, greeting, firstNam
           {nextShift ? (
             <div className="space-y-0.5 text-sm text-muted-foreground">
               <p>
-                Next shift: <span className="font-semibold text-foreground">{getRelativeDayInTz(nextShift.start_datetime, tzFor(nextShift.facility_id))}</span>
+                Next shift: <span className="font-semibold text-foreground">{getRelativeDayInTz(nextShift.start_datetime, tzFor(nextShift.facility_id, nextShift))}</span>
               </p>
             </div>
           ) : (
@@ -119,7 +120,7 @@ export function UpcomingShiftsCard({ shifts, getFacilityName, greeting, firstNam
                 <div className="space-y-1.5">
                   {upcoming.map((shift, idx) => {
                     const facilityName = getFacilityName(shift.facility_id);
-                    const tz = tzFor(shift.facility_id);
+                    const tz = tzFor(shift.facility_id, shift);
                     const initials = facilityName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
                     return (

@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DollarSign } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
 import { formatDateInTz, formatTimeInTz } from '@/lib/tzTime';
+import { resolveShiftTz } from '@/lib/resolveTimezone';
 import { Separator } from '@/components/ui/separator';
 
 interface Payment {
@@ -15,6 +16,7 @@ interface ShiftPreview {
   id: string;
   start_datetime: string;
   facility_id: string;
+  timezone_at_creation?: string | null;
 }
 
 interface ThisWeekCardProps {
@@ -33,7 +35,10 @@ function parseLocalYMD(d: string): Date {
 
 export function ThisWeekCard({ paidThisMonth, recentPayments, nextShift, getFacilityName }: ThisWeekCardProps) {
   const { facilities } = useData();
-  const tzFor = (fid: string) => facilities.find((f: any) => f.id === fid)?.timezone || 'America/Los_Angeles';
+  const tzFor = (fid: string, shift?: ShiftPreview | null) => {
+    const fac = facilities.find((f: any) => f.id === fid);
+    return resolveShiftTz(shift as any, fac as any, null);
+  };
   return (
     <Card className="h-fit" data-testid="this-week-card">
       <CardHeader className="pb-1.5 pt-4 px-5">
@@ -82,7 +87,7 @@ export function ThisWeekCard({ paidThisMonth, recentPayments, nextShift, getFaci
             <div className="text-[13px]">
               <p className="font-semibold">{getFacilityName(nextShift.facility_id)}</p>
               <p className="text-muted-foreground">
-                {formatDateInTz(nextShift.start_datetime, tzFor(nextShift.facility_id), 'EEE, MMM d')} · {formatTimeInTz(nextShift.start_datetime, tzFor(nextShift.facility_id))}
+                {formatDateInTz(nextShift.start_datetime, tzFor(nextShift.facility_id, nextShift), 'EEE, MMM d')} · {formatTimeInTz(nextShift.start_datetime, tzFor(nextShift.facility_id, nextShift))}
               </p>
             </div>
           ) : (
