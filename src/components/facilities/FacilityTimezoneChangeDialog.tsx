@@ -34,7 +34,7 @@ export function FacilityTimezoneChangeDialog({
   onConfirm: () => void;
 }) {
   return (
-    <AlertDialog open={open} onOpenChange={(v) => { if (!v) onCancel(); }}>
+    <AlertDialog open={open}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Change clinic timezone?</AlertDialogTitle>
