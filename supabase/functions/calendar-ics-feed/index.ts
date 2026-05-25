@@ -63,8 +63,18 @@ const US_VTIMEZONE_BLOCKS: Record<string, string> = {
   ].join('\r\n'),
 };
 
-function vtimezoneBlockFor(tz: string): string {
-  return US_VTIMEZONE_BLOCKS[tz] || US_VTIMEZONE_BLOCKS['America/New_York'];
+function vtimezoneBlockFor(tz: string): string | null {
+  return US_VTIMEZONE_BLOCKS[tz] ?? null;
+}
+
+function isValidIanaTz(tz: string | null | undefined): boolean {
+  if (!tz) return false;
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function clean(tz: string | null | undefined): string | null {
@@ -172,7 +182,10 @@ Deno.serve(async (req) => {
 
   const events = (shifts || []).map((shift: any) => {
     const facility = facilityMap[shift.facility_id] || {};
-    const tz = resolveShiftTz(shift, facility, profile);
+    const resolved = resolveShiftTz(shift, facility, profile);
+    // Unknown/invalid IANA → fall the whole event back to ET. Never emit a
+    // TZID a calendar client can't resolve.
+    const tz = isValidIanaTz(resolved) ? resolved : FALLBACK_TZ;
     usedTzs.add(tz);
 
     const lines = [
@@ -204,7 +217,12 @@ Deno.serve(async (req) => {
   const primaryTz = usedTzs.size > 0
     ? Array.from(usedTzs)[0]
     : (clean(profile?.timezone) || FALLBACK_TZ);
-  const vtimezones = Array.from(usedTzs).map(vtimezoneBlockFor);
+  // Only include VTIMEZONE blocks we have matching rules for. For other
+  // valid IANA zones, the bare TZID is correct; mismatched rules would be
+  // worse than none.
+  const vtimezones = Array.from(usedTzs)
+    .map(vtimezoneBlockFor)
+    .filter((b): b is string => b !== null);
 
   const ics = [
     'BEGIN:VCALENDAR',

@@ -14,7 +14,7 @@
 import type { Shift, Facility } from '@/types';
 import { getPartsInTz } from '@/lib/tzTime';
 import { resolveShiftTz, resolveFacilityTz } from '@/lib/resolveTimezone';
-import { vtimezoneBlockFor } from '@/lib/icsTimezones';
+import { vtimezoneBlockFor, isValidIanaTz } from '@/lib/icsTimezones';
 
 interface IcsEventInput {
   shift: Shift;
@@ -55,7 +55,11 @@ export function shiftToIcsEvent(input: IcsEventInput): string {
     includeAddress = true, includeNotes = false,
   } = input;
 
-  const tz = timezone || resolveShiftTz(shift as any, facility as any, profile as any);
+  const resolved = timezone || resolveShiftTz(shift as any, facility as any, profile as any);
+  // If the resolved tz is not a valid IANA zone in this runtime, fall the
+  // entire event back to America/New_York rather than emit a TZID a calendar
+  // client can't resolve. We never substitute mismatched VTIMEZONE rules.
+  const tz = isValidIanaTz(resolved) ? resolved : 'America/New_York';
   const dtstart = formatLocalIcsDate(shift.start_datetime, tz);
   const dtend = formatLocalIcsDate(shift.end_datetime, tz);
 
@@ -106,7 +110,8 @@ export function generateIcsCalendar(
   const usedTzs = new Set<string>();
   const events = shifts.map(shift => {
     const facility = facilityMap.get(shift.facility_id) || null;
-    const tz = resolveShiftTz(shift as any, facility as any, profile as any);
+    const resolved = resolveShiftTz(shift as any, facility as any, profile as any);
+    const tz = isValidIanaTz(resolved) ? resolved : 'America/New_York';
     usedTzs.add(tz);
     return shiftToIcsEvent({
       shift,
@@ -120,12 +125,17 @@ export function generateIcsCalendar(
     });
   });
 
-  // X-WR-TIMEZONE is informational; pick the most common tz or profile fallback.
+  // X-WR-TIMEZONE is informational; pick the first tz used or profile fallback.
   const primaryTz = usedTzs.size > 0
     ? Array.from(usedTzs)[0]
     : resolveFacilityTz(null as any, profile as any);
 
-  const vtimezones = Array.from(usedTzs).map(vtimezoneBlockFor);
+  // Only emit VTIMEZONE blocks we actually have rules for. For zones outside
+  // the registry, emit DTSTART;TZID=<zone> with NO VTIMEZONE — a mismatched
+  // block (e.g. ET rules under a Europe TZID) would mislead strict parsers.
+  const vtimezones = Array.from(usedTzs)
+    .map(vtimezoneBlockFor)
+    .filter((b): b is string => b !== null);
 
   const lines = [
     'BEGIN:VCALENDAR',

@@ -131,7 +131,23 @@ export const US_VTIMEZONE_BLOCKS: Record<string, string> = {
   ].join('\r\n'),
 };
 
-/** Return a VTIMEZONE block for the given IANA tz, falling back to ET. */
-export function vtimezoneBlockFor(tz: string): string {
-  return US_VTIMEZONE_BLOCKS[tz] || US_VTIMEZONE_BLOCKS['America/New_York'];
+/**
+ * Return a VTIMEZONE block for the given IANA tz, or `null` if we do not have
+ * a registered block whose rules actually match. Callers must NOT substitute
+ * a mismatched block — emitting only `DTSTART;TZID=<unknown>` (with no
+ * VTIMEZONE) is safer than emitting wrong DST rules.
+ */
+export function vtimezoneBlockFor(tz: string): string | null {
+  return US_VTIMEZONE_BLOCKS[tz] ?? null;
+}
+
+/** True if the IANA tz string resolves in this runtime's Intl tz database. */
+export function isValidIanaTz(tz: string | null | undefined): boolean {
+  if (!tz) return false;
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
 }

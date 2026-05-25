@@ -141,6 +141,26 @@ describe('ICS timezone labeling', () => {
     expect(azBlock).not.toContain('RRULE');
   });
 
+  it('emits TZID for valid non-US zone but omits VTIMEZONE block (no mismatched rules)', () => {
+    const facEU = baseFacility({ id: 'eu', timezone: 'Europe/Berlin' });
+    const shifts = [makeShift({ facility_id: 'eu' })];
+    const ics = generateIcsCalendar(shifts, [facEU]);
+    expect(ics).toContain('TZID=Europe/Berlin');
+    // Must NOT substitute America/New_York rules under a Berlin TZID
+    expect(ics).not.toContain('TZID:America/New_York');
+    expect(ics).not.toContain('BEGIN:VTIMEZONE\r\nTZID:Europe/Berlin');
+  });
+
+  it('falls the whole event back to America/New_York when tz is invalid', () => {
+    const facBad = baseFacility({ id: 'bad', timezone: 'Not/A_Zone' });
+    const shifts = [makeShift({ facility_id: 'bad' })];
+    const ics = generateIcsCalendar(shifts, [facBad]);
+    // Event TZID and the (matching) VTIMEZONE block both ET
+    expect(ics).toContain('TZID=America/New_York');
+    expect(ics).toContain('BEGIN:VTIMEZONE\r\nTZID:America/New_York');
+    expect(ics).not.toContain('TZID=Not/A_Zone');
+  });
+
   it('underlying instant is preserved across timezones', () => {
     // Same UTC instant rendered in two zones should produce different local
     // wall-clock strings but each should round-trip back to the same UTC.
