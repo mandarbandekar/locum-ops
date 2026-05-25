@@ -5,6 +5,27 @@ import { InvoiceReminderEmail } from '../_shared/email-templates/invoice-reminde
 import { InvoiceDigestEmail } from '../_shared/email-templates/invoice-digest.tsx'
 import { ShiftReminderEmail } from '../_shared/email-templates/shift-reminder.tsx'
 import { CredentialDigestEmail } from '../_shared/email-templates/credential-digest.tsx'
+import { getPartsInTz, zonedWallClockToUtc, localYMDInTz } from '../_shared/tzTime.ts'
+
+const PROFILE_TZ_FALLBACK = 'America/New_York'
+
+function resolveProfileTz(tz?: string | null): string {
+  const t = tz?.trim()
+  return t && t.length > 0 ? t : PROFILE_TZ_FALLBACK
+}
+
+function resolveShiftReminderTz(
+  shift: { timezone_at_creation?: string | null } | null | undefined,
+  facility: { timezone?: string | null } | null | undefined,
+  profileTz?: string | null,
+): string {
+  const snap = shift?.timezone_at_creation?.trim()
+  if (snap) return snap
+  const fac = facility?.timezone?.trim()
+  if (fac) return fac
+  return resolveProfileTz(profileTz)
+}
+
 
 const SITE_NAME = 'LocumOps'
 const SENDER_DOMAIN = 'notify.locum-ops.com'
