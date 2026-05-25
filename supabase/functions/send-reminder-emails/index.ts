@@ -307,10 +307,12 @@ Deno.serve(async (req) => {
             }
           }
 
-          // 1c) Uninvoiced shifts (stays unchanged — already grouped by facility)
+          // 1c) Uninvoiced shifts — "ended before today" in the shift's own tz
+          // (snapshot > facility), so an 11 PM Pacific shift on May 31 is not
+          // classified as "tomorrow" just because UTC has rolled to June 1.
           const { data: allShifts } = await supabase
             .from('shifts')
-            .select('id, facility_id, start_datetime, end_datetime, rate_applied')
+            .select('id, facility_id, start_datetime, end_datetime, rate_applied, timezone_at_creation')
             .eq('user_id', userId)
 
           const { data: allLineItems } = await supabase
@@ -322,12 +324,17 @@ Deno.serve(async (req) => {
             const invoicedShiftIds = new Set(
               (allLineItems as any[]).filter(li => li.shift_id).map(li => li.shift_id)
             )
-            const cutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000)
 
             const uninvoiced = (allShifts as any[]).filter(s => {
-              const endDate = new Date(s.end_datetime)
-              return endDate < cutoff && !invoicedShiftIds.has(s.id)
+              if (invoicedShiftIds.has(s.id)) return false
+              const fac = getFac(s.facility_id)
+              const shiftTz = resolveShiftReminderTz(s, fac, profileTz)
+              // Local YMD of shift end vs. local YMD of "now" in same tz.
+              const shiftEndYMD = localYMDInTz(s.end_datetime, shiftTz)
+              const todayInShiftTz = localYMDInTz(now, shiftTz)
+              return shiftEndYMD < todayInShiftTz
             })
+
 
             const byFacility = new Map<string, typeof uninvoiced>()
             uninvoiced.forEach(s => {
