@@ -44,7 +44,10 @@ const ACCENT_COLORS = [
 export function UpcomingShiftsCard({ shifts, getFacilityName, greeting, firstName }: UpcomingShiftsCardProps) {
   const navigate = useNavigate();
   const { facilities } = useData();
-  const tzFor = (fid: string) => facilities.find((f: any) => f.id === fid)?.timezone || 'America/Los_Angeles';
+  const tzFor = (fid: string, shift?: Shift) => {
+    const fac = facilities.find((f: any) => f.id === fid);
+    return resolveShiftTz(shift as any, fac as any, null);
+  };
   const now = new Date();
   const in7Days = addDays(now, 7);
   const [shiftsOpen, setShiftsOpen] = useState(false);
