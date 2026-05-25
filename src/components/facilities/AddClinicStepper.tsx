@@ -497,13 +497,7 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
         </GuidedStep>
       )}
 
-      {/* spacer to preserve indentation */}
-      {false && (
-        <></>
-            </>
-          )}
-        </GuidedStep>
-      )}
+
 
       {/* ── Step 2: How You Work With Them ── */}
       {step === 2 && (
