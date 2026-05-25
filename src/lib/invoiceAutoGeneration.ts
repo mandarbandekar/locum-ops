@@ -206,7 +206,6 @@ export function buildAutoInvoiceDraft(
   const lineItems: LineDraft[] = eligibleShifts.flatMap((s): LineDraft[] => {
     const isHourly = s.rate_kind === 'hourly' && s.hourly_rate != null && s.hourly_rate > 0;
     
-    const timeLabel = `${format(new Date(s.start_datetime), 'h:mm a')} – ${format(new Date(s.end_datetime), 'h:mm a')}`;
     const hasBreakDeduction = !s.worked_through_break && (s.break_minutes ?? 0) > 0;
     const breakSuffix = hasBreakDeduction ? ` (incl. ${s.break_minutes} min unpaid break)` : '';
     const typeLabel = getShiftTypeLabel(s.shift_type);
@@ -220,7 +219,7 @@ export function buildAutoInvoiceDraft(
           const hourlyRate = Number(s.hourly_rate);
           return {
             shift_id: s.id,
-            description: `${coverageLabel} (${timeLabel})${breakSuffix}`,
+            description: `${coverageLabel}${breakSuffix}`,
             service_date: serviceDate,
             qty: totalHours,
             unit_rate: hourlyRate,
@@ -230,7 +229,8 @@ export function buildAutoInvoiceDraft(
         })()
       : {
           shift_id: s.id,
-          description: `${coverageLabel} (${timeLabel})${breakSuffix}`,
+          description: `${coverageLabel}${breakSuffix}`,
+
           service_date: serviceDate,
           qty: 1,
           unit_rate: s.rate_applied,
