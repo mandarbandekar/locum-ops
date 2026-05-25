@@ -122,16 +122,17 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
 
   const isDirect = engagementType === 'direct';
   const directInvoicing = isDirect && generatesInvoices;
-  // Visible step list. The Rates step (#3) can be hidden via `hideRatesStep`,
-  // and the Billing step (#4) is direct-only.
+  // Visible step list. The Rates step (#3) can be hidden via `hideRatesStep`.
+  // The Billing step (#4) is direct-only.
+  // Rates are collected for every engagement type so the user can save reusable
+  // rates (mirrored to their Rate Card on first clinic) even when invoicing is
+  // handled by a platform/agency.
   const visibleSteps: number[] = useMemo(() => {
     const arr = [1, 2];
-    // Rates step only applies to direct-billed clinics. Platform/agency and W-2
-    // clinics enter rates per-shift since they vary every time.
-    if (!hideRatesStep && isDirect) arr.push(3);
+    if (!hideRatesStep) arr.push(3);
     if (directInvoicing) arr.push(4);
     return arr;
-  }, [hideRatesStep, isDirect, directInvoicing]);
+  }, [hideRatesStep, directInvoicing]);
   const totalSteps = visibleSteps.length;
   const currentVisibleIndex = visibleSteps.indexOf(step); // 0-based; -1 if step not visible
 
