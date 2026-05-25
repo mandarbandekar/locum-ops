@@ -128,6 +128,12 @@ export interface Shift {
   overtime_hours?: number | null;
   /** Hourly rate charged for overtime (mirrored from invoice overtime line). */
   overtime_rate?: number | null;
+  /**
+   * IANA timezone the wall-clock start/end were entered in when this shift
+   * was created. Preserved so display/invoicing remain stable even if the
+   * facility's `timezone` is later edited. Nullable for legacy rows.
+   */
+  timezone_at_creation?: string | null;
 }
 
 /** Total billable revenue for a shift, including any overtime. */

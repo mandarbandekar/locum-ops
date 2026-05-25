@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useData } from '@/contexts/DataContext';
 import { formatTimeInTz, formatDateInTz, getPartsInTz } from '@/lib/tzTime';
+import { resolveShiftTz } from '@/lib/resolveTimezone';
 
 interface Shift {
   id: string;
@@ -15,6 +16,7 @@ interface Shift {
   end_datetime: string;
   facility_id: string;
   agency?: string;
+  timezone_at_creation?: string | null;
 }
 
 interface UpcomingShiftsCardProps {
@@ -44,7 +46,10 @@ const ACCENT_COLORS = [
 export function UpcomingShiftsCard({ shifts, getFacilityName, greeting, firstName }: UpcomingShiftsCardProps) {
   const navigate = useNavigate();
   const { facilities } = useData();
-  const tzFor = (fid: string) => facilities.find((f: any) => f.id === fid)?.timezone || 'America/Los_Angeles';
+  const tzFor = (fid: string, shift?: Shift) => {
+    const fac = facilities.find((f: any) => f.id === fid);
+    return resolveShiftTz(shift as any, fac as any, null);
+  };
   const now = new Date();
   const in7Days = addDays(now, 7);
   const [shiftsOpen, setShiftsOpen] = useState(false);
@@ -75,7 +80,7 @@ export function UpcomingShiftsCard({ shifts, getFacilityName, greeting, firstNam
           {nextShift ? (
             <div className="space-y-0.5 text-sm text-muted-foreground">
               <p>
-                Next shift: <span className="font-semibold text-foreground">{getRelativeDayInTz(nextShift.start_datetime, tzFor(nextShift.facility_id))}</span>
+                Next shift: <span className="font-semibold text-foreground">{getRelativeDayInTz(nextShift.start_datetime, tzFor(nextShift.facility_id, nextShift))}</span>
               </p>
             </div>
           ) : (
@@ -115,7 +120,7 @@ export function UpcomingShiftsCard({ shifts, getFacilityName, greeting, firstNam
                 <div className="space-y-1.5">
                   {upcoming.map((shift, idx) => {
                     const facilityName = getFacilityName(shift.facility_id);
-                    const tz = tzFor(shift.facility_id);
+                    const tz = tzFor(shift.facility_id, shift);
                     const initials = facilityName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
                     return (

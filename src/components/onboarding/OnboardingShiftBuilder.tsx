@@ -129,7 +129,7 @@ export function OnboardingShiftBuilder({
 
   const formatShiftRow = (s: Shift) => {
     const facility = facilities.find(f => f.id === s.facility_id);
-    const tz = facility?.timezone || 'America/Los_Angeles';
+    const tz = (s as any).timezone_at_creation || facility?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York';
     return {
       date: formatDateInTz(s.start_datetime, tz, 'MMM d'),
       time: `${formatTimeInTz(s.start_datetime, tz)} – ${formatTimeInTz(s.end_datetime, tz)}`,

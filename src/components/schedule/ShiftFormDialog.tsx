@@ -537,6 +537,9 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
           ...shiftTypePayload,
         };
       };
+      // Stamp the clinic tz used to convert the wall-clock so this shift keeps
+      // displaying consistently even if the facility's tz is later changed.
+      const tzSnapshot = clinicTz;
       if (existing) {
         const { startIso, endIso } = buildStartEndIso(selectedDates[0] || new Date());
         await onSave({
@@ -544,11 +547,12 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
           facility_id: facilityId,
           start_datetime: startIso,
           end_datetime: endIso,
+          timezone_at_creation: (existing as any).timezone_at_creation || tzSnapshot,
           ...buildRatePayload(startIso, endIso),
           notes, color,
           ...overridePayload,
           ...breakPayload,
-        });
+        } as any);
       } else {
         const orderedDates = [...selectedDates].sort((a, b) => a.getTime() - b.getTime());
         for (const d of orderedDates) {
@@ -557,11 +561,12 @@ export function ShiftFormDialog({ open, onOpenChange, facilities, shifts, terms,
             facility_id: facilityId,
             start_datetime: startIso,
             end_datetime: endIso,
+            timezone_at_creation: tzSnapshot,
             ...buildRatePayload(startIso, endIso),
             notes, color,
             ...overridePayload,
             ...breakPayload,
-          });
+          } as any);
         }
       }
       onOpenChange(false);

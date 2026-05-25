@@ -13,6 +13,7 @@ import { computeShiftHash } from '@/types/confirmations';
 import { startOfMonth, endOfMonth, format, subDays, addMonths } from 'date-fns';
 import { toast } from 'sonner';
 import { friendlyDbError } from '@/lib/errorUtils';
+import { resolveFacilityTz, resolveShiftTz } from '@/lib/resolveTimezone';
 import { formatDateInTz, formatTimeInTz } from '@/lib/tzTime';
 
 const db = (table: string) => supabase.from(table as any);
@@ -165,7 +166,7 @@ export function useClinicConfirmations() {
     const monthName = format(new Date(year, month - 1), 'MMMM');
     const contactName = facilitySettings?.primary_contact_name || 'Team';
     const clinicianName = profile ? `${profile.first_name} ${profile.last_name}` : 'Your Locum Clinician';
-    const tz = facility?.timezone || 'America/Los_Angeles';
+    const tz = resolveFacilityTz(facility as any, profile as any);
 
     const shiftList = bookedShifts
       .map(s => `  - ${formatDateInTz(s.start_datetime, tz, 'EEE, MMM d')} — ${formatTimeInTz(s.start_datetime, tz)} – ${formatTimeInTz(s.end_datetime, tz)}`)
@@ -185,7 +186,7 @@ export function useClinicConfirmations() {
 
     const contactName = facilitySettings?.primary_contact_name || 'Team';
     const clinicianName = profile ? `${profile.first_name} ${profile.last_name}` : 'Your Locum Clinician';
-    const tz = facility?.timezone || 'America/Los_Angeles';
+    const tz = resolveShiftTz(shift as any, facility as any, profile as any);
     const dateLabel = formatDateInTz(shift.start_datetime, tz, 'EEEE, MMMM d, yyyy');
     const timeLabel = `${formatTimeInTz(shift.start_datetime, tz)} – ${formatTimeInTz(shift.end_datetime, tz)}`;
 
