@@ -19,6 +19,7 @@ import { GooglePlacesAutocomplete } from '@/components/GooglePlacesAutocomplete'
 import type { PlaceSelection } from '@/components/GooglePlacesAutocomplete';
 import type { BillingCadence } from '@/lib/invoiceBillingDefaults';
 import { RatesEditor, ratesToTermsFields, type RateEntry } from '@/components/facilities/RatesEditor';
+import { buildDefaultRatesFromRateEntries, inferBillingPreference } from '@/lib/onboardingRateMapping';
 import { BreakPolicySelector } from '@/components/facilities/BreakPolicySelector';
 import { EngagementSelector } from '@/components/facilities/EngagementSelector';
 import type { EngagementType, TaxFormType } from '@/lib/engagementOptions';
