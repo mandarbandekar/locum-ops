@@ -46,29 +46,32 @@ const makeShift = (
 // ──────────────────────────────────────────────────────────────────────────
 
 describe('Overnight shift — iCal export', () => {
-  it('emits DTSTART/DTEND with the next-day end (DTEND > DTSTART)', () => {
+  it('emits DTSTART/DTEND with TZID and the next-day end (DTEND > DTSTART)', () => {
+    // 22:00 UTC May 31 → 15:00 LA (PDT). 06:00 UTC Jun 1 → 23:00 LA May 31.
+    // For a true overnight in LA we want 22:00 LA → 06:00 LA next day,
+    // which in UTC is May 31 05:00Z → May 31 13:00Z. Use that instead so the
+    // local wall-clock genuinely straddles midnight.
     const overnight = makeShift(
-      's-on', '2026-05-31T22:00:00.000Z', '2026-06-01T06:00:00.000Z',
+      's-on', '2026-06-01T05:00:00.000Z', '2026-06-01T13:00:00.000Z',
     );
     const ev = shiftToIcsEvent({
-      shift: overnight, facilityName: facility.name,
+      shift: overnight, facility, facilityName: facility.name,
     });
-    const dtstart = /DTSTART:(\d{8}T\d{6}Z)/.exec(ev)?.[1];
-    const dtend = /DTEND:(\d{8}T\d{6}Z)/.exec(ev)?.[1];
-    expect(dtstart).toBe('20260531T220000Z');
-    expect(dtend).toBe('20260601T060000Z');
-    // Lexicographic compare is correct for UTC ICS basic format
+    const dtstart = /DTSTART;TZID=America\/Los_Angeles:(\d{8}T\d{6})/.exec(ev)?.[1];
+    const dtend = /DTEND;TZID=America\/Los_Angeles:(\d{8}T\d{6})/.exec(ev)?.[1];
+    expect(dtstart).toBe('20260531T220000');
+    expect(dtend).toBe('20260601T060000');
     expect(dtend!.localeCompare(dtstart!)).toBeGreaterThan(0);
   });
 
   it('full calendar contains exactly one VEVENT for an overnight shift (no split)', () => {
     const overnight = makeShift(
-      's-on', '2026-05-31T22:00:00.000Z', '2026-06-01T06:00:00.000Z',
+      's-on', '2026-06-01T05:00:00.000Z', '2026-06-01T13:00:00.000Z',
     );
     const ics = generateIcsCalendar([overnight], [facility]);
     const begins = ics.match(/BEGIN:VEVENT/g) ?? [];
     expect(begins).toHaveLength(1);
-    expect(ics).toContain('DTEND:20260601T060000Z');
+    expect(ics).toContain('DTEND;TZID=America/Los_Angeles:20260601T060000');
   });
 });
 
