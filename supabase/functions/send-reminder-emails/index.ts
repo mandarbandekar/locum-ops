@@ -119,7 +119,7 @@ Deno.serve(async (req) => {
   let totalEnqueued = 0
 
   for (const userId of userIds) {
-    // ── Resolve recipient email (shared across invoice + credential reminders) ──
+    // ── Resolve recipient email + profile timezone ──
     const { data: prefs } = await supabase
       .from('reminder_preferences')
       .select('reminder_email, email_enabled, phone_number, sms_enabled, quiet_hours_start, quiet_hours_end')
@@ -128,12 +128,18 @@ Deno.serve(async (req) => {
 
     if (!prefs?.email_enabled) continue
 
-    // Check quiet hours
+    const { data: userProfileRow } = await supabase
+      .from('user_profiles')
+      .select('invoice_email, timezone')
+      .eq('user_id', userId)
+      .maybeSingle()
+    const profileTz = resolveProfileTz(userProfileRow?.timezone)
+
+    // Check quiet hours — in the USER's profile timezone, not server UTC.
     const now = new Date()
     if (prefs?.quiet_hours_start && prefs?.quiet_hours_end) {
-      const h = now.getHours()
-      const m = now.getMinutes()
-      const sendMin = h * 60 + m
+      const p = getPartsInTz(now, profileTz)
+      const sendMin = p.hour * 60 + p.minute
       const [sh, sm] = prefs.quiet_hours_start.split(':').map(Number)
       const [eh, em] = prefs.quiet_hours_end.split(':').map(Number)
       const startMin = sh * 60 + sm
@@ -144,20 +150,13 @@ Deno.serve(async (req) => {
       if (inQuiet) continue
     }
 
-    let recipientEmail = prefs.reminder_email
-    if (!recipientEmail) {
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('invoice_email')
-        .eq('user_id', userId)
-        .maybeSingle()
-      recipientEmail = profile?.invoice_email
-    }
+    let recipientEmail = prefs.reminder_email || userProfileRow?.invoice_email
     if (!recipientEmail) {
       const { data: { user } } = await supabase.auth.admin.getUserById(userId)
       recipientEmail = user?.email
     }
     if (!recipientEmail) continue
+
 
     // Get unsubscribe token for this recipient (reused across all reminders)
     const unsubscribeToken = await getOrCreateUnsubscribeToken(supabase, recipientEmail)
