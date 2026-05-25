@@ -182,7 +182,10 @@ Deno.serve(async (req) => {
 
   const events = (shifts || []).map((shift: any) => {
     const facility = facilityMap[shift.facility_id] || {};
-    const tz = resolveShiftTz(shift, facility, profile);
+    const resolved = resolveShiftTz(shift, facility, profile);
+    // Unknown/invalid IANA → fall the whole event back to ET. Never emit a
+    // TZID a calendar client can't resolve.
+    const tz = isValidIanaTz(resolved) ? resolved : FALLBACK_TZ;
     usedTzs.add(tz);
 
     const lines = [
