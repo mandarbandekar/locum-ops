@@ -152,7 +152,7 @@ export function useManualSetup() {
       // Interpret the picked wall-clock time in the *facility's* timezone so
       // shifts created from anywhere in the world land on the right clinic-local day.
       const { data: facRow } = await db('facilities').select('timezone').eq('id', input.facility_id).maybeSingle();
-      const tz = (facRow as any)?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const tz = (facRow as any)?.timezone || profile?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || TIMEZONE_SAFETY_FALLBACK;
       const startDt = zonedWallClockToUtc(input.date, input.start_time, tz);
       let endDt = zonedWallClockToUtc(input.date, input.end_time, tz);
       if (endDt.getTime() <= startDt.getTime()) {
@@ -167,6 +167,7 @@ export function useManualSetup() {
         facility_id: input.facility_id,
         start_datetime: startIso,
         end_datetime: endIso,
+        timezone_at_creation: tz,
         status: 'booked',
         rate_applied: input.rate || 0,
         notes: input.notes || '',
