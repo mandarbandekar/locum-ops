@@ -54,6 +54,7 @@ export interface ManualShiftInput {
 
 export function useManualSetup() {
   const { user } = useAuth();
+  const { profile } = useUserProfile();
   const [facilities, setFacilities] = useState<Facility[]>([]);
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [saving, setSaving] = useState(false);
