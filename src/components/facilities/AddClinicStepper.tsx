@@ -97,6 +97,18 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
   const [clinicSearchValue, setClinicSearchValue] = useState('');
   const [manualEntry, setManualEntry] = useState(false);
   const [clinicSelected, setClinicSelected] = useState(false);
+  // Clinic timezone is explicit at creation. Default to the user's profile tz
+  // if it's a supported US zone, else the browser tz if supported, else ET.
+  // The user MUST be able to override this before saving so a CT-based vet
+  // adding a CT clinic from a PT device doesn't end up with a PT-stamped clinic.
+  const initialTz = (() => {
+    const prof = profile?.timezone;
+    if (prof && isSupportedUsTz(prof)) return prof;
+    const browser = typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : '';
+    if (browser && isSupportedUsTz(browser)) return browser;
+    return 'America/New_York';
+  })();
+  const [timezone, setTimezone] = useState<string>(initialTz);
 
   // ── Step 2: Engagement ──
   const [engagementType, setEngagementType] = useState<EngagementType>('direct');
