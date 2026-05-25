@@ -28,6 +28,7 @@ import { BreakPolicySelector } from '@/components/facilities/BreakPolicySelector
 import { getBreakPolicyLabel } from '@/lib/shiftBreak';
 import type { EngagementType, TaxFormType } from '@/lib/engagementOptions';
 import { US_TIMEZONES } from '@/lib/usTimezones';
+import { FacilityTimezoneChangeDialog } from '@/components/facilities/FacilityTimezoneChangeDialog';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { formatDateInTz } from '@/lib/tzTime';
 
@@ -314,20 +315,21 @@ function ContractTab({ facility, facilityTerms, onSaveRates, onUpdateTerms, onUp
   const [editingDetails, setEditingDetails] = useState(false);
   const [status, setStatus] = useState(facility.status);
   const [timezone, setTimezone] = useState<string>(facility.timezone || 'America/New_York');
+  const [tzConfirmOpen, setTzConfirmOpen] = useState(false);
   const [engagementType, setEngagementType] = useState<EngagementType>((facility.engagement_type || 'direct') as EngagementType);
   const [sourceName, setSourceName] = useState<string>(facility.source_name || '');
   const [taxFormType, setTaxFormType] = useState<TaxFormType>((facility.tax_form_type as TaxFormType) || '1099');
   const [generatesInvoices, setGeneratesInvoices] = useState<boolean>(facility.generates_invoices !== false);
   const [rates, setRates] = useState<RateEntry[]>(termsToRates(facilityTerms || {}));
 
-  const handleSaveDetails = () => {
+  const commitSave = (tzToSave: string) => {
     const isDirect = engagementType === 'direct';
     const directInvoicing = isDirect && generatesInvoices;
     const effectiveTaxForm = engagementType === 'third_party' ? taxFormType : null;
     onUpdateFacility({
       ...facility,
       status,
-      timezone,
+      timezone: tzToSave,
       engagement_type: engagementType,
       source_name: isDirect ? null : (sourceName.trim() || null),
       tax_form_type: effectiveTaxForm,
@@ -337,6 +339,16 @@ function ContractTab({ facility, facilityTerms, onSaveRates, onUpdateTerms, onUp
     setEditingDetails(false);
     toast.success('Engagement updated');
   };
+
+  const handleSaveDetails = () => {
+    const tzChanged = timezone !== (facility.timezone || 'America/New_York');
+    if (tzChanged) {
+      setTzConfirmOpen(true);
+      return;
+    }
+    commitSave(timezone);
+  };
+
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
@@ -458,6 +470,16 @@ function ContractTab({ facility, facilityTerms, onSaveRates, onUpdateTerms, onUp
 
         <ContractsTab facilityId={facility.id} facilityTerms={facilityTerms} onUpdateTerms={onUpdateTerms} />
       </div>
+      <FacilityTimezoneChangeDialog
+        open={tzConfirmOpen}
+        oldTz={facility.timezone || 'America/New_York'}
+        newTz={timezone}
+        onCancel={() => setTzConfirmOpen(false)}
+        onConfirm={() => {
+          setTzConfirmOpen(false);
+          commitSave(timezone);
+        }}
+      />
     </div>
   );
 }
