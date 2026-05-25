@@ -101,7 +101,6 @@ export function BulkInvoiceDialog({ open, onOpenChange, preselectedFacilityId }:
   type LineDraft = Omit<InvoiceLineItem, 'id' | 'invoice_id'>;
   const buildLineItemsForShift = (s: Shift): LineDraft[] => {
     const tz = resolveShiftTz(s as any, facility as any, profile as any);
-    const timeLabel = `${formatTimeInTz(s.start_datetime, tz)} – ${formatTimeInTz(s.end_datetime, tz)}`;
     const isHourly = s.rate_kind === 'hourly' && s.hourly_rate != null && s.hourly_rate > 0;
     const typeLabel = getShiftTypeLabel(s.shift_type);
     const coverageLabel = typeLabel ? `${typeLabel} relief coverage` : 'Relief coverage';
@@ -109,7 +108,7 @@ export function BulkInvoiceDialog({ open, onOpenChange, preselectedFacilityId }:
     if (!isHourly) {
       return [{
         shift_id: s.id,
-        description: `${coverageLabel} (${timeLabel})`,
+        description: coverageLabel,
         service_date: formatYMDInTz(s.start_datetime, tz),
         qty: 1,
         unit_rate: s.rate_applied,
@@ -123,7 +122,7 @@ export function BulkInvoiceDialog({ open, onOpenChange, preselectedFacilityId }:
 
     return [{
       shift_id: s.id,
-      description: `${coverageLabel} (${timeLabel})`,
+      description: coverageLabel,
       service_date: formatYMDInTz(s.start_datetime, tz),
       qty: totalHours,
       unit_rate: hourlyRate,
@@ -131,6 +130,7 @@ export function BulkInvoiceDialog({ open, onOpenChange, preselectedFacilityId }:
       line_kind: 'regular' as const,
     }];
   };
+
 
   const handleCreate = async () => {
     if (selectedShiftIds.size === 0 || !facility) return;
