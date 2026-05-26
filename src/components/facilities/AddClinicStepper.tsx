@@ -110,6 +110,24 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
     return 'America/New_York';
   })();
   const [timezone, setTimezone] = useState<string>(initialTz);
+  // When we pre-fill the timezone from a place's coordinates, remember the
+  // address-derived tz so we can show a soft "address suggests X" warning if
+  // the user later picks something different in the Select.
+  const [addressDerivedTz, setAddressDerivedTz] = useState<string | null>(null);
+  const [tzAutoFilled, setTzAutoFilled] = useState(false);
+
+  // Resolve a clinic timezone from an address selection. Uses the offline
+  // tz-lookup table (no API call) and collapses sub-zones to one of our 7
+  // supported US zones. Returns null if the address is outside the US.
+  const tzFromCoords = (lat: number | null | undefined, lng: number | null | undefined): string | null => {
+    if (typeof lat !== 'number' || typeof lng !== 'number') return null;
+    try {
+      const iana = tzlookup(lat, lng);
+      return coerceToUsTz(iana);
+    } catch {
+      return null;
+    }
+  };
 
   // ── Step 2: Engagement ──
   const [engagementType, setEngagementType] = useState<EngagementType>('direct');
