@@ -78,13 +78,18 @@ export function GooglePlacesAutocomplete({
     }
   }, [searchType]);
 
-  const fetchPlaceDetails = useCallback(async (placeId: string): Promise<{ name: string; formatted_address: string } | null> => {
+  const fetchPlaceDetails = useCallback(async (placeId: string): Promise<{ name: string; formatted_address: string; lat: number | null; lng: number | null } | null> => {
     try {
       const { data, error } = await supabase.functions.invoke('places-autocomplete', {
         body: { place_id: placeId },
       });
       if (!error && data) {
-        return { name: data.name || '', formatted_address: data.formatted_address || '' };
+        return {
+          name: data.name || '',
+          formatted_address: data.formatted_address || '',
+          lat: typeof data.lat === 'number' ? data.lat : null,
+          lng: typeof data.lng === 'number' ? data.lng : null,
+        };
       }
     } catch { /* ignore */ }
     return null;
