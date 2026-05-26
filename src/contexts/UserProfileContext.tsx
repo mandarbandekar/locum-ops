@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { coerceToUsTz } from '@/lib/usTimezones';
 
 export type Profession = 'vet' | 'nurse' | 'physician' | 'pharmacist' | 'pt_ot' | 'other';
 export type FacilitiesCountBand = 'band_1_3' | 'band_4_8' | 'band_9_plus';
@@ -224,6 +225,23 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
               profession,
               invoice_email: d.invoice_email || authUser?.email || null,
             }).eq('id', d.id);
+          }
+        }
+
+        // Timezone safety net: any user landing here without a stored timezone
+        // (legacy accounts, OAuth signups that skipped onboarding, etc.) gets
+        // their device tz persisted now. This is the root-cause guard against
+        // clinics inheriting a wrong default tz at creation time.
+        if (!d.timezone) {
+          try {
+            const deviceTz = typeof Intl !== 'undefined'
+              ? Intl.DateTimeFormat().resolvedOptions().timeZone
+              : '';
+            const resolved = coerceToUsTz(deviceTz) || 'America/New_York';
+            await db('user_profiles').update({ timezone: resolved }).eq('id', d.id);
+            d.timezone = resolved;
+          } catch (e) {
+            console.warn('[tz] Failed to backfill profile timezone', e);
           }
         }
 

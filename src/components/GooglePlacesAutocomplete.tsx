@@ -15,6 +15,10 @@ export interface PlaceSelection {
   name: string;
   description: string;
   formatted_address?: string;
+  // Coordinates are returned for establishment selections so callers (e.g.
+  // AddClinicStepper) can derive the clinic's local timezone from its address.
+  lat?: number | null;
+  lng?: number | null;
 }
 
 interface Props {
@@ -74,13 +78,18 @@ export function GooglePlacesAutocomplete({
     }
   }, [searchType]);
 
-  const fetchPlaceDetails = useCallback(async (placeId: string): Promise<{ name: string; formatted_address: string } | null> => {
+  const fetchPlaceDetails = useCallback(async (placeId: string): Promise<{ name: string; formatted_address: string; lat: number | null; lng: number | null } | null> => {
     try {
       const { data, error } = await supabase.functions.invoke('places-autocomplete', {
         body: { place_id: placeId },
       });
       if (!error && data) {
-        return { name: data.name || '', formatted_address: data.formatted_address || '' };
+        return {
+          name: data.name || '',
+          formatted_address: data.formatted_address || '',
+          lat: typeof data.lat === 'number' ? data.lat : null,
+          lng: typeof data.lng === 'number' ? data.lng : null,
+        };
       }
     } catch { /* ignore */ }
     return null;
@@ -116,6 +125,8 @@ export function GooglePlacesAutocomplete({
         name: details?.name || prediction.description.split(',')[0],
         description: prediction.description,
         formatted_address: details?.formatted_address || prediction.description,
+        lat: details?.lat ?? null,
+        lng: details?.lng ?? null,
       });
     }
   };

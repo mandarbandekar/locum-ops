@@ -29,6 +29,49 @@ export function labelForTz(tz: string | null | undefined): string {
 }
 
 /**
+ * Collapse any IANA tz (including sub-zones like America/Indiana/Indianapolis
+ * or America/Kentucky/Louisville) onto one of our 7 supported US selector
+ * values. Returns null if the input is not US-based — callers should then
+ * fall back to the user's profile tz rather than silently picking ET.
+ *
+ * This is the single source of truth used by:
+ *  - onboarding device-tz detection
+ *  - clinic create flow (address → tz pre-fill via tz-lookup)
+ */
+export function coerceToUsTz(tz: string | null | undefined): string | null {
+  if (!tz) return null;
+  if (isSupportedUsTz(tz)) return tz;
+  // Common sub-zone aliases. Anything else America/* that isn't supported
+  // falls through to null so the caller doesn't silently misclassify.
+  const map: Record<string, string> = {
+    'America/Detroit': 'America/New_York',
+    'America/Indiana/Indianapolis': 'America/New_York',
+    'America/Indiana/Marengo': 'America/New_York',
+    'America/Indiana/Petersburg': 'America/New_York',
+    'America/Indiana/Vevay': 'America/New_York',
+    'America/Indiana/Vincennes': 'America/New_York',
+    'America/Indiana/Winamac': 'America/New_York',
+    'America/Kentucky/Louisville': 'America/New_York',
+    'America/Kentucky/Monticello': 'America/New_York',
+    'America/Indiana/Knox': 'America/Chicago',
+    'America/Indiana/Tell_City': 'America/Chicago',
+    'America/Menominee': 'America/Chicago',
+    'America/North_Dakota/Beulah': 'America/Chicago',
+    'America/North_Dakota/Center': 'America/Chicago',
+    'America/North_Dakota/New_Salem': 'America/Chicago',
+    'America/Boise': 'America/Denver',
+    'America/Juneau': 'America/Anchorage',
+    'America/Metlakatla': 'America/Anchorage',
+    'America/Nome': 'America/Anchorage',
+    'America/Sitka': 'America/Anchorage',
+    'America/Yakutat': 'America/Anchorage',
+    'America/Adak': 'Pacific/Honolulu',
+  };
+  return map[tz] ?? null;
+}
+
+
+/**
  * Decide whether to show the "your device tz differs from your saved business
  * tz" prompt. Replaces the older silent auto-sync. We only prompt when:
  *  - the profile tz is NOT pinned,

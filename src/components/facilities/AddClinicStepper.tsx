@@ -25,7 +25,8 @@ import { EngagementSelector } from '@/components/facilities/EngagementSelector';
 import type { EngagementType, TaxFormType } from '@/lib/engagementOptions';
 import { GuidedStep } from '@/components/onboarding/GuidedStep';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { US_TIMEZONES, isSupportedUsTz } from '@/lib/usTimezones';
+import { US_TIMEZONES, isSupportedUsTz, coerceToUsTz, labelForTz } from '@/lib/usTimezones';
+import tzlookup from 'tz-lookup';
 import { format, addDays, endOfMonth } from 'date-fns';
 
 export interface AddClinicStepperHandle {
@@ -109,6 +110,24 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
     return 'America/New_York';
   })();
   const [timezone, setTimezone] = useState<string>(initialTz);
+  // When we pre-fill the timezone from a place's coordinates, remember the
+  // address-derived tz so we can show a soft "address suggests X" warning if
+  // the user later picks something different in the Select.
+  const [addressDerivedTz, setAddressDerivedTz] = useState<string | null>(null);
+  const [tzAutoFilled, setTzAutoFilled] = useState(false);
+
+  // Resolve a clinic timezone from an address selection. Uses the offline
+  // tz-lookup table (no API call) and collapses sub-zones to one of our 7
+  // supported US zones. Returns null if the address is outside the US.
+  const tzFromCoords = (lat: number | null | undefined, lng: number | null | undefined): string | null => {
+    if (typeof lat !== 'number' || typeof lng !== 'number') return null;
+    try {
+      const iana = tzlookup(lat, lng);
+      return coerceToUsTz(iana);
+    } catch {
+      return null;
+    }
+  };
 
   // ── Step 2: Engagement ──
   const [engagementType, setEngagementType] = useState<EngagementType>('direct');
@@ -156,6 +175,26 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
     setAddress(selection.formatted_address || selection.description);
     setClinicSelected(true);
     setClinicSearchValue(selection.name);
+
+    // Auto-resolve the clinic's timezone from its address. This stops
+    // wrong-region clinics from inheriting the user's profile tz silently
+    // (which is what caused the April PT-default bug for non-PT users).
+    const derived = tzFromCoords(selection.lat, selection.lng);
+    if (derived) {
+      setAddressDerivedTz(derived);
+      setTimezone(derived);
+      setTzAutoFilled(true);
+    }
+  };
+
+  const handleAddressPlaceSelect = (selection: PlaceSelection) => {
+    setAddress(selection.formatted_address || selection.description);
+    const derived = tzFromCoords(selection.lat, selection.lng);
+    if (derived) {
+      setAddressDerivedTz(derived);
+      setTimezone(derived);
+      setTzAutoFilled(true);
+    }
   };
 
   const effectiveBillingName = sameAsScheduling ? schedulingContactName : invoiceNameTo;
@@ -476,11 +515,19 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
               </div>
               <div className="space-y-1.5">
                 <Label>Address</Label>
-                <GooglePlacesAutocomplete value={address} onChange={setAddress} placeholder="Full address" />
+                <GooglePlacesAutocomplete
+                  value={address}
+                  onChange={setAddress}
+                  placeholder="Full address"
+                  onPlaceSelect={handleAddressPlaceSelect}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Clinic timezone <span className="text-destructive">*</span></Label>
-                <Select value={timezone} onValueChange={setTimezone}>
+                <Select
+                  value={timezone}
+                  onValueChange={(v) => { setTimezone(v); setTzAutoFilled(false); }}
+                >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {US_TIMEZONES.map(tz => (
@@ -488,9 +535,19 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-[11px] text-muted-foreground">
-                  Shift times you log for this clinic are saved and displayed in this timezone. Set it to the clinic's local time, not yours.
-                </p>
+                {tzAutoFilled && addressDerivedTz === timezone ? (
+                  <p className="text-[11px] text-muted-foreground">
+                    Set from the clinic's address ({labelForTz(addressDerivedTz)}). Change it if this isn't right.
+                  </p>
+                ) : addressDerivedTz && addressDerivedTz !== timezone ? (
+                  <p className="text-[11px] text-amber-600 dark:text-amber-500">
+                    The clinic's address suggests {labelForTz(addressDerivedTz)}. Double-check before saving.
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-muted-foreground">
+                    Shift times you log for this clinic are saved and displayed in this timezone. Set it to the clinic's local time, not yours.
+                  </p>
+                )}
               </div>
             </>
           )}
