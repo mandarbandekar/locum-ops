@@ -515,11 +515,19 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
               </div>
               <div className="space-y-1.5">
                 <Label>Address</Label>
-                <GooglePlacesAutocomplete value={address} onChange={setAddress} placeholder="Full address" />
+                <GooglePlacesAutocomplete
+                  value={address}
+                  onChange={setAddress}
+                  placeholder="Full address"
+                  onPlaceSelect={handleAddressPlaceSelect}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Clinic timezone <span className="text-destructive">*</span></Label>
-                <Select value={timezone} onValueChange={setTimezone}>
+                <Select
+                  value={timezone}
+                  onValueChange={(v) => { setTimezone(v); setTzAutoFilled(false); }}
+                >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {US_TIMEZONES.map(tz => (
@@ -527,9 +535,19 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-[11px] text-muted-foreground">
-                  Shift times you log for this clinic are saved and displayed in this timezone. Set it to the clinic's local time, not yours.
-                </p>
+                {tzAutoFilled && addressDerivedTz === timezone ? (
+                  <p className="text-[11px] text-muted-foreground">
+                    Set from the clinic's address ({labelForTz(addressDerivedTz)}). Change it if this isn't right.
+                  </p>
+                ) : addressDerivedTz && addressDerivedTz !== timezone ? (
+                  <p className="text-[11px] text-amber-600 dark:text-amber-500">
+                    The clinic's address suggests {labelForTz(addressDerivedTz)}. Double-check before saving.
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-muted-foreground">
+                    Shift times you log for this clinic are saved and displayed in this timezone. Set it to the clinic's local time, not yours.
+                  </p>
+                )}
               </div>
             </>
           )}
