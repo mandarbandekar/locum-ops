@@ -53,12 +53,12 @@ const PHASE_BACK: Record<Phase, Phase | null> = {
   business_map: 'invoice_reveal',
 };
 
-const US_TIMEZONES = new Set([
-  'America/New_York', 'America/Chicago', 'America/Denver', 'America/Phoenix',
-  'America/Los_Angeles', 'America/Anchorage', 'Pacific/Honolulu',
-]);
+import { coerceToUsTz } from '@/lib/usTimezones';
+
+// Collapse any browser tz onto our 7 US zones; fall back to ET only as a
+// last resort. Anything outside the US gets ET (we're US-only per product rules).
 function normalizeTimezone(tz: string): string {
-  return US_TIMEZONES.has(tz) ? tz : 'America/New_York';
+  return coerceToUsTz(tz) ?? 'America/New_York';
 }
 
 export default function OnboardingPage() {
