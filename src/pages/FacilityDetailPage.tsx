@@ -66,7 +66,19 @@ export default function FacilityDetailPage() {
         <Button variant="ghost" size="icon" onClick={() => navigate('/facilities')} className="shrink-0">
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <EditableFacilityName facility={facility} onSave={(newName, newAddress) => { updateFacility({ ...facility, name: newName, address: newAddress }); toast.success('Clinic updated'); }} />
+        <EditableFacilityName
+          facility={facility}
+          onSave={(newName, newAddress, extras) => {
+            updateFacility({
+              ...facility,
+              name: newName,
+              address: newAddress,
+              ...(extras?.coords ? { facility_coordinates: extras.coords } : {}),
+              ...(extras?.timezone ? { timezone: extras.timezone } : {}),
+            });
+            toast.success(extras?.timezone ? `Clinic updated · timezone set to ${extras.timezone}` : 'Clinic updated');
+          }}
+        />
         <StatusBadge status={facility.status} className="ml-1 sm:ml-3 shrink-0" />
         <div className="flex-1" />
       </div>
