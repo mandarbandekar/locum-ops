@@ -257,7 +257,7 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
         tech_wifi_info: '',
         tech_pims_info: '',
         clinic_access_info: '',
-        invoice_prefix: prefix,
+        invoice_prefix: (prefix || 'INV').replace(/\s+/g, '') || 'INV',
         invoice_due_days: invoiceDueDays,
         invoice_name_to: directInvoicing ? effectiveBillingName.trim() : '',
         invoice_email_to: directInvoicing ? effectiveBillingEmail.trim() : '',
