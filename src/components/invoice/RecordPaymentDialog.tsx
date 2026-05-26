@@ -24,6 +24,15 @@ export function RecordPaymentDialog({ open, onOpenChange, balanceDue, onRecord }
   const [account, setAccount] = useState('Business Checking');
   const [memo, setMemo] = useState('');
 
+  // Reset amount to the current balance whenever the dialog opens or the
+  // balance changes (e.g. invoice was edited before "Mark Paid" was clicked).
+  useEffect(() => {
+    if (open) {
+      setAmount(String(balanceDue ?? ''));
+      setPaymentDate(format(new Date(), 'yyyy-MM-dd'));
+    }
+  }, [open, balanceDue]);
+
   const amountNum = parseFloat(amount) || 0;
   const isFullPayment = amountNum >= balanceDue;
 
