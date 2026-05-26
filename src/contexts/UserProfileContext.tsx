@@ -227,6 +227,23 @@ export function UserProfileProvider({ children, isDemo = false }: { children: Re
           }
         }
 
+        // Timezone safety net: any user landing here without a stored timezone
+        // (legacy accounts, OAuth signups that skipped onboarding, etc.) gets
+        // their device tz persisted now. This is the root-cause guard against
+        // clinics inheriting a wrong default tz at creation time.
+        if (!d.timezone) {
+          try {
+            const deviceTz = typeof Intl !== 'undefined'
+              ? Intl.DateTimeFormat().resolvedOptions().timeZone
+              : '';
+            const resolved = coerceToUsTz(deviceTz) || 'America/New_York';
+            await db('user_profiles').update({ timezone: resolved }).eq('id', d.id);
+            d.timezone = resolved;
+          } catch (e) {
+            console.warn('[tz] Failed to backfill profile timezone', e);
+          }
+        }
+
         setProfile({
           id: d.id,
           user_id: d.user_id,
