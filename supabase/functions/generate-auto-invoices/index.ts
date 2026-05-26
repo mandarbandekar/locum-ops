@@ -319,15 +319,26 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // Also include any shifts already on a draft for this period (to rebuild correctly)
+        // Also include any shifts already on a draft for this period (to rebuild correctly).
+        // Compare on absolute UTC timestamps (what's stored) so a facility timezone change
+        // can't make us miss an existing draft and create a second one for the same period.
+        const bucketStartMs = bucket.startUtc.getTime();
+        const bucketEndMs = new Date(bucket.endUtcExclusive.getTime() - 1).getTime();
         const existingDraft = allInvoices.find(
           (inv) =>
             inv.status === "draft" &&
             inv.generation_type === "automatic" &&
             inv.facility_id === facility.id &&
-            localYMDInTz(inv.period_start, facilityTz) === periodStartStr &&
-            localYMDInTz(inv.period_end, facilityTz) === periodEndStr
+            (
+              // Primary: absolute UTC match (resilient to tz changes).
+              new Date(inv.period_start).getTime() === bucketStartMs ||
+              // Fallback: clinic-local YMD match for legacy drafts written with
+              // slightly different bounds (e.g. older anchor handling).
+              (localYMDInTz(inv.period_start, facilityTz) === periodStartStr &&
+                localYMDInTz(inv.period_end, facilityTz) === periodEndStr)
+            )
         );
+        void bucketEndMs;
 
         // Combine: uninvoiced shifts for this period + shifts already on draft (minus protected)
         let allEligibleForPeriod = [...periodShifts];
