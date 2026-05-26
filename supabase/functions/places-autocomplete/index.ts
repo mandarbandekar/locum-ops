@@ -23,24 +23,29 @@ Deno.serve(async (req) => {
     if (body.place_id && typeof body.place_id === 'string') {
       const detailsUrl = new URL('https://maps.googleapis.com/maps/api/place/details/json');
       detailsUrl.searchParams.set('place_id', body.place_id);
-      detailsUrl.searchParams.set('fields', 'name,formatted_address');
+      // geometry adds lat/lng so the client can resolve the location's timezone
+      // offline (tz-lookup) and pre-fill the clinic timezone correctly.
+      detailsUrl.searchParams.set('fields', 'name,formatted_address,geometry/location');
       detailsUrl.searchParams.set('key', GOOGLE_MAPS_API_KEY);
 
       const res = await fetch(detailsUrl.toString());
       const data = await res.json();
 
       if (data.result) {
+        const loc = data.result.geometry?.location;
         return new Response(
           JSON.stringify({
             name: data.result.name || '',
             formatted_address: data.result.formatted_address || '',
+            lat: typeof loc?.lat === 'number' ? loc.lat : null,
+            lng: typeof loc?.lng === 'number' ? loc.lng : null,
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
       return new Response(
-        JSON.stringify({ name: '', formatted_address: '' }),
+        JSON.stringify({ name: '', formatted_address: '', lat: null, lng: null }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
