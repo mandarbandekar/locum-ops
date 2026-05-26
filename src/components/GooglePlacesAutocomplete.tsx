@@ -125,6 +125,8 @@ export function GooglePlacesAutocomplete({
         name: details?.name || prediction.description.split(',')[0],
         description: prediction.description,
         formatted_address: details?.formatted_address || prediction.description,
+        lat: details?.lat ?? null,
+        lng: details?.lng ?? null,
       });
     }
   };
