@@ -15,6 +15,10 @@ export interface PlaceSelection {
   name: string;
   description: string;
   formatted_address?: string;
+  // Coordinates are returned for establishment selections so callers (e.g.
+  // AddClinicStepper) can derive the clinic's local timezone from its address.
+  lat?: number | null;
+  lng?: number | null;
 }
 
 interface Props {
