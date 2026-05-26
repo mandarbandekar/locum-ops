@@ -100,6 +100,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string, meta: { firstName: string; lastName: string; company: string; profession: string }) => {
     const displayName = `${meta.firstName} ${meta.lastName}`.trim();
+    // Capture the device timezone at signup so the DB trigger can stamp a
+    // sensible profile.timezone immediately, instead of falling back to the
+    // hard-coded America/New_York default and waiting for the client backfill.
+    // The trigger validates this against the supported US zone list.
+    let deviceTz = '';
+    try {
+      deviceTz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+    } catch { /* noop */ }
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -110,6 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           last_name: meta.lastName,
           company: meta.company,
           profession: meta.profession,
+          timezone: deviceTz,
         },
         emailRedirectTo: `${window.location.origin}/onboarding`,
       },
