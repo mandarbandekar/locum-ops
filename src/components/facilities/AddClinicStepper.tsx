@@ -175,6 +175,26 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
     setAddress(selection.formatted_address || selection.description);
     setClinicSelected(true);
     setClinicSearchValue(selection.name);
+
+    // Auto-resolve the clinic's timezone from its address. This stops
+    // wrong-region clinics from inheriting the user's profile tz silently
+    // (which is what caused the April PT-default bug for non-PT users).
+    const derived = tzFromCoords(selection.lat, selection.lng);
+    if (derived) {
+      setAddressDerivedTz(derived);
+      setTimezone(derived);
+      setTzAutoFilled(true);
+    }
+  };
+
+  const handleAddressPlaceSelect = (selection: PlaceSelection) => {
+    setAddress(selection.formatted_address || selection.description);
+    const derived = tzFromCoords(selection.lat, selection.lng);
+    if (derived) {
+      setAddressDerivedTz(derived);
+      setTimezone(derived);
+      setTzAutoFilled(true);
+    }
   };
 
   const effectiveBillingName = sameAsScheduling ? schedulingContactName : invoiceNameTo;
