@@ -531,21 +531,52 @@ function ContractTab({ facility, facilityTerms, facilityShifts, onSaveRates, onU
 
 // ─── Editable Name ─────────────────────────────────────────
 
-function EditableFacilityName({ facility, onSave }: { facility: any; onSave: (name: string, address: string) => void }) {
+type AddressExtras = { coords?: { lat: number; lng: number } | null; timezone?: string | null };
+
+function EditableFacilityName({ facility, onSave }: { facility: any; onSave: (name: string, address: string, extras?: AddressExtras) => void }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(facility.name);
   const [address, setAddress] = useState(facility.address);
+  // Coords + derived tz from the latest Google Places selection (if any).
+  const [pendingCoords, setPendingCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [derivedTz, setDerivedTz] = useState<string | null>(null);
+  const [acceptTzSuggestion, setAcceptTzSuggestion] = useState(true);
+
+  const currentTz = facility.timezone || 'America/New_York';
+  const tzMismatch = !!derivedTz && derivedTz !== currentTz;
+
+  const handlePlaceSelect = (sel: { formatted_address?: string; lat?: number | null; lng?: number | null }) => {
+    if (sel.formatted_address) setAddress(sel.formatted_address);
+    if (typeof sel.lat === 'number' && typeof sel.lng === 'number') {
+      setPendingCoords({ lat: sel.lat, lng: sel.lng });
+      try {
+        const iana = tzlookup(sel.lat, sel.lng);
+        const us = coerceToUsTz(iana);
+        setDerivedTz(us);
+        setAcceptTzSuggestion(true);
+      } catch {
+        setDerivedTz(null);
+      }
+    }
+  };
 
   const handleSave = () => {
-    if (name.trim()) {
-      onSave(name.trim(), address.trim());
-      setEditing(false);
-    }
+    if (!name.trim()) return;
+    const extras: AddressExtras = {
+      coords: pendingCoords,
+      timezone: tzMismatch && acceptTzSuggestion ? derivedTz : null,
+    };
+    onSave(name.trim(), address.trim(), extras);
+    setEditing(false);
+    setPendingCoords(null);
+    setDerivedTz(null);
   };
 
   const handleCancel = () => {
     setName(facility.name);
     setAddress(facility.address);
+    setPendingCoords(null);
+    setDerivedTz(null);
     setEditing(false);
   };
 
@@ -571,8 +602,40 @@ function EditableFacilityName({ facility, onSave }: { facility: any; onSave: (na
         <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={handleSave}><Check className="h-4 w-4" /></Button>
         <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={handleCancel}><X className="h-4 w-4" /></Button>
       </div>
-      <Input value={address} onChange={e => setAddress(e.target.value)} placeholder="Address" className="text-sm h-8 w-full max-w-sm text-muted-foreground"
-        onKeyDown={e => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') handleCancel(); }} />
+      <div className="w-full max-w-sm">
+        <GooglePlacesAutocomplete
+          value={address}
+          onChange={(v) => {
+            setAddress(v);
+            // Free-text edits invalidate the previous coord-derived tz suggestion.
+            if (pendingCoords) { setPendingCoords(null); setDerivedTz(null); }
+          }}
+          placeholder="Address"
+          searchType="address"
+          onPlaceSelect={handlePlaceSelect}
+          className="text-sm h-8"
+        />
+      </div>
+      {tzMismatch && (
+        <div className="max-w-sm rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs">
+          <div className="flex items-start gap-2">
+            <input
+              id="accept-tz-suggestion"
+              type="checkbox"
+              className="mt-0.5"
+              checked={acceptTzSuggestion}
+              onChange={(e) => setAcceptTzSuggestion(e.target.checked)}
+            />
+            <label htmlFor="accept-tz-suggestion" className="leading-snug">
+              This address is in <strong>{labelForTz(derivedTz!)}</strong>. The clinic's saved timezone is <strong>{labelForTz(currentTz)}</strong>.
+              <br />Update timezone to match the new address?
+            </label>
+          </div>
+          <p className="mt-1 text-[11px] text-muted-foreground pl-6">
+            Existing shifts keep their original timezone snapshot; only new shifts use the updated zone.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
