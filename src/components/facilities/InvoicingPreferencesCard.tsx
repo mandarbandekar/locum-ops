@@ -59,7 +59,7 @@ export function InvoicingPreferencesCard({ facility, onUpdate }: InvoicingPrefer
       billing_cadence: billingCadence,
       auto_generate_invoices: true,
       invoice_due_days: dueDays,
-      invoice_prefix: prefix,
+      invoice_prefix: (prefix || 'INV').replace(/\s+/g, '') || 'INV',
       billing_week_end_day: facility.billing_week_end_day,
       billing_cycle_anchor_date: null,
       invoice_name_to: nameTo.trim(),
