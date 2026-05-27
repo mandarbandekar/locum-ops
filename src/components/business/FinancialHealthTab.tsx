@@ -132,8 +132,13 @@ export default function FinancialHealthTab() {
   const cumulativeEarningsConfig = { total: { label: 'Cumulative Earnings', color: 'hsl(var(--primary))' } };
 
   const cumulativeData = useMemo(() => {
+    let lastIdx = -1;
+    revenueData.forEach((d, i) => {
+      if (d.collected + d.outstanding + d.anticipated > 0) lastIdx = i;
+    });
+    const trimmed = lastIdx >= 0 ? revenueData.slice(0, lastIdx + 1) : revenueData;
     let running = 0;
-    return revenueData.map(d => {
+    return trimmed.map(d => {
       running += d.collected + d.outstanding + d.anticipated;
       return { month: d.month, total: Math.round(running * 100) / 100 };
     });
