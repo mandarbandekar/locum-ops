@@ -24,7 +24,7 @@ interface FounderRow {
   credential_count: number;
   expense_count: number;
   last_activity_at: string | null;
-  activation_status: 'active' | 'dormant' | 'never';
+  activation_status: 'active' | 'never';
   last_device: 'mobile' | 'tablet' | 'desktop' | 'unknown' | null;
   desktop_sign_ins: number;
   mobile_sign_ins: number;
@@ -66,7 +66,6 @@ function pct(n: number, total: number) {
 function StatusPill({ status }: { status: FounderRow['activation_status'] }) {
   const map: Record<FounderRow['activation_status'], { label: string; cls: string }> = {
     active: { label: 'Active', cls: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
-    dormant: { label: 'Dormant', cls: 'bg-amber-100 text-amber-700 border-amber-200' },
     never: { label: 'Never logged in', cls: 'bg-muted text-muted-foreground border-border' },
   };
   const m = map[status];
@@ -189,7 +188,7 @@ export default function FounderDashboardPage() {
       {/* Hero metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-4">
         <MetricCard label="Total testers" value={total} sub={loading && !total ? 'Loading…' : `${total} total`} />
-        <MetricCard label="Active (7d)" value={activeCount} sub={`${pct(activeCount, total)} of testers`} />
+        <MetricCard label="Active" value={activeCount} sub={`${pct(activeCount, total)} of testers`} />
         <MetricCard label="Activated" value={activatedCount} sub={`${pct(activatedCount, total)} have a shift`} />
         <MetricCard label="Invoicing" value={invoicingCount} sub={`${pct(invoicingCount, total)} have an invoice`} />
       </div>
