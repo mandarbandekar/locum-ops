@@ -66,7 +66,6 @@ function pct(n: number, total: number) {
 function StatusPill({ status }: { status: FounderRow['activation_status'] }) {
   const map: Record<FounderRow['activation_status'], { label: string; cls: string }> = {
     active: { label: 'Active', cls: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
-    dormant: { label: 'Dormant', cls: 'bg-amber-100 text-amber-700 border-amber-200' },
     never: { label: 'Never logged in', cls: 'bg-muted text-muted-foreground border-border' },
   };
   const m = map[status];
