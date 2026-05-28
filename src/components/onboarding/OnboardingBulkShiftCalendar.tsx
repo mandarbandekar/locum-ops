@@ -14,6 +14,7 @@ import { termsToRates, ratesToTermsFields, type RateEntry } from '@/components/f
 import { buildBulkRateOptions, type DefaultRate, type BulkRateOption } from '@/lib/onboardingRateMapping';
 import { trackOnboarding } from '@/lib/onboardingAnalytics';
 import { generateId } from '@/lib/businessLogic';
+import { zonedWallClockToUtc } from '@/lib/tzTime';
 
 interface Props {
   facility: Facility;
