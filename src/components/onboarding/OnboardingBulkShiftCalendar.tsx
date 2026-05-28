@@ -40,11 +40,10 @@ function ymd(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-function buildIso(date: Date, time: string): string {
-  const [hh, mm] = time.split(':').map(Number);
-  const d = new Date(date);
-  d.setHours(hh || 0, mm || 0, 0, 0);
-  return d.toISOString();
+function buildIso(date: Date, time: string, tz: string): string {
+  // Interpret the wall-clock time in the clinic's tz so a traveling user
+  // doesn't end up with browser-local times stored as if they were clinic-local.
+  return zonedWallClockToUtc(ymd(date), time, tz).toISOString();
 }
 
 function hoursBetween(start: string, end: string): number {
