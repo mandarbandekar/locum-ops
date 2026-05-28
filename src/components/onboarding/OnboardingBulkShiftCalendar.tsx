@@ -247,9 +247,10 @@ export function OnboardingBulkShiftCalendar({
         );
       }
 
+      const facilityTz = facility.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York';
       for (const date of newDates) {
-        const start = buildIso(date, startTime);
-        const end = buildIso(date, endTime);
+        const start = buildIso(date, startTime, facilityTz);
+        const end = buildIso(date, endTime, facilityTz);
         const rateApplied = selectedRate.basis === 'daily'
           ? selectedRate.amount
           : selectedRate.amount * hours;
@@ -266,7 +267,9 @@ export function OnboardingBulkShiftCalendar({
           hourly_rate: selectedRate.basis === 'hourly' ? selectedRate.amount : null,
           engagement_type_override: null,
           source_name_override: null,
-        };
+          // Snapshot tz so display stays stable if the clinic's tz is later edited.
+          timezone_at_creation: facilityTz,
+        } as any;
         const created = await addShift(newShift);
         newIds.push(created.id);
         totalAdded += rateApplied;
