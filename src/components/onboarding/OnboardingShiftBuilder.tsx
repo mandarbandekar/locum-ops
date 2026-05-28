@@ -101,11 +101,14 @@ export function OnboardingShiftBuilder({
         facility_id: selectedFacility.id,
         start_datetime: startDt.toISOString(),
         end_datetime: endDt.toISOString(),
+        // Snapshot the tz used for the wall-clock → UTC conversion so display
+        // stays stable if the clinic's tz is later edited.
+        timezone_at_creation: tz,
         rate_applied: parseFloat(rate) || 650,
         notes: '',
         color: 'blue',
         break_minutes: breakMinutes,
-      });
+      } as any);
       onShiftAdded(created.id);
       // Reset just the date forward; keep rate/time so users rapid-fire.
       const nextDate = format(subDays(parseISO(shiftDate), 1), 'yyyy-MM-dd');

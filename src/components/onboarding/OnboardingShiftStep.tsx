@@ -80,10 +80,13 @@ export function OnboardingShiftStep({ facilities, shifts, terms, invoices, lineI
         facility_id: selectedFacility.id,
         start_datetime: startDt.toISOString(),
         end_datetime: endDt.toISOString(),
+        // Snapshot the tz we just used to convert the wall-clock so the shift
+        // keeps displaying correctly even if the clinic's tz is later edited.
+        timezone_at_creation: tz,
         rate_applied: rateNum,
         notes: '',
         color: 'blue',
-      });
+      } as any);
       setSavedShift(shift);
       setSubmitted(true);
     } catch (e) {

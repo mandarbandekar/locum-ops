@@ -14,6 +14,7 @@ import { termsToRates, ratesToTermsFields, type RateEntry } from '@/components/f
 import { buildBulkRateOptions, type DefaultRate, type BulkRateOption } from '@/lib/onboardingRateMapping';
 import { trackOnboarding } from '@/lib/onboardingAnalytics';
 import { generateId } from '@/lib/businessLogic';
+import { zonedWallClockToUtc } from '@/lib/tzTime';
 
 interface Props {
   facility: Facility;
@@ -39,11 +40,10 @@ function ymd(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-function buildIso(date: Date, time: string): string {
-  const [hh, mm] = time.split(':').map(Number);
-  const d = new Date(date);
-  d.setHours(hh || 0, mm || 0, 0, 0);
-  return d.toISOString();
+function buildIso(date: Date, time: string, tz: string): string {
+  // Interpret the wall-clock time in the clinic's tz so a traveling user
+  // doesn't end up with browser-local times stored as if they were clinic-local.
+  return zonedWallClockToUtc(ymd(date), time, tz).toISOString();
 }
 
 function hoursBetween(start: string, end: string): number {
@@ -247,9 +247,10 @@ export function OnboardingBulkShiftCalendar({
         );
       }
 
+      const facilityTz = facility.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York';
       for (const date of newDates) {
-        const start = buildIso(date, startTime);
-        const end = buildIso(date, endTime);
+        const start = buildIso(date, startTime, facilityTz);
+        const end = buildIso(date, endTime, facilityTz);
         const rateApplied = selectedRate.basis === 'daily'
           ? selectedRate.amount
           : selectedRate.amount * hours;
@@ -266,7 +267,9 @@ export function OnboardingBulkShiftCalendar({
           hourly_rate: selectedRate.basis === 'hourly' ? selectedRate.amount : null,
           engagement_type_override: null,
           source_name_override: null,
-        };
+          // Snapshot tz so display stays stable if the clinic's tz is later edited.
+          timezone_at_creation: facilityTz,
+        } as any;
         const created = await addShift(newShift);
         newIds.push(created.id);
         totalAdded += rateApplied;

@@ -575,12 +575,20 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
   }, [user, invoices, suppressedPeriods]);
 
   const addShift = useCallback(async (s: Omit<Shift, 'id'>): Promise<Shift> => {
+    // Defense-in-depth: every shift MUST carry a tz snapshot so display stays
+    // stable if the clinic's tz is later edited. If a caller forgot, fall back
+    // to the facility's current tz, then the browser tz, then ET.
+    const snapshot = (s as any).timezone_at_creation
+      || facilities.find(f => f.id === s.facility_id)?.timezone
+      || (typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : '')
+      || 'America/New_York';
+    const payload = { ...s, timezone_at_creation: snapshot } as Omit<Shift, 'id'>;
     if (isDemo) {
-      const shift = { ...s, id: generateId() };
+      const shift = { ...payload, id: generateId() };
       setShifts(prev => [...prev, shift]);
       return shift;
     }
-    const { data, error } = await db('shifts').insert({ user_id: user!.id, ...s }).select().single();
+    const { data, error } = await db('shifts').insert({ user_id: user!.id, ...payload }).select().single();
     if (error) { console.error(error); toast.error(friendlyDbError(error)); throw error; }
     const shift = stripDbFields(data) as Shift;
     setShifts(prev => [...prev, shift]);
