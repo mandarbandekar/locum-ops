@@ -32,6 +32,7 @@ export const EXPENSE_CATEGORIES: ExpenseCategoryGroup[] = [
       { key: 'dea_registration', label: 'DEA Registration & Renewal', deductibilityType: 'full', tooltip: 'DEA registration for prescribing controlled substances' },
       { key: 'usda_accreditation', label: 'USDA Accreditation Fee', deductibilityType: 'full', tooltip: 'National Veterinary Accreditation fee for USDA work' },
       { key: 'board_certification', label: 'Board Certification Fees', deductibilityType: 'full', tooltip: 'Specialty board certification and maintenance fees' },
+      { key: 'professional_membership_dues', label: 'Professional Membership Dues', deductibilityType: 'full', tooltip: 'AVMA, state VMA, and other professional association membership dues' },
     ],
   },
   {
