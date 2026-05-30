@@ -639,9 +639,24 @@ export function InvoiceEditPanel({
       {/* Line Items as card list */}
       <Card data-line-items-section>
         <CardHeader className="pb-1.5 pt-3 px-3">
-          <CardTitle className="text-xs text-muted-foreground uppercase tracking-wider">
-            {readOnly ? 'Line Items' : 'Shifts on this invoice'} ({items.length})
-          </CardTitle>
+          <div className="flex items-center justify-between gap-2">
+            <CardTitle className="text-xs text-muted-foreground uppercase tracking-wider">
+              {readOnly ? 'Line Items' : 'Shifts on this invoice'} ({items.length})
+            </CardTitle>
+            {!readOnly && undoStack.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs gap-1"
+                onClick={handleUndo}
+                disabled={isUndoing}
+                title={`Undo: ${undoStack[undoStack.length - 1].label}`}
+              >
+                <Undo2 className="h-3.5 w-3.5" />
+                Undo
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="px-3 pb-3 space-y-2">
           {items.length === 0 ? (
