@@ -672,6 +672,7 @@ export function InvoiceEditPanel({
                   hasOvertime={hasOvertime}
                   clinicOvertimeRate={shift ? (terms.find(t => t.facility_id === shift.facility_id)?.overtime_rate ?? null) : null}
                   onAddOvertime={shift && !readOnly && onAddLineItem ? async () => {
+                    pushUndo('Add overtime');
                     const clinicTerms = terms.find(t => t.facility_id === shift.facility_id);
                     const clinicOtRate = clinicTerms?.overtime_rate != null ? Number(clinicTerms.overtime_rate) : 0;
                     const savedOtRate = profile?.default_overtime_rate != null ? Number(profile.default_overtime_rate) : 0;
