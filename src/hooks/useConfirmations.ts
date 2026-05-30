@@ -2,11 +2,14 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
+import { useUserProfile } from '@/contexts/UserProfileContext';
 import { ConfirmationRecord, ConfirmationActivity, ConfirmationShiftLink, computeShiftHash } from '@/types/confirmations';
 import { generateSecureToken } from '@/lib/businessLogic';
-import { startOfMonth, endOfMonth, format } from 'date-fns';
+import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { friendlyDbError } from '@/lib/errorUtils';
+import { formatYMDInTz } from '@/lib/tzTime';
+import { resolveShiftTz, resolveFacilityTz } from '@/lib/resolveTimezone';
 
 const db = (table: string) => supabase.from(table as any);
 
