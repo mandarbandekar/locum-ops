@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
     const { data: recurring, error: fetchErr } = await supabase
       .from("expenses")
       .select("*")
-      .in("recurrence_type", ["monthly", "yearly"])
+      .in("recurrence_type", ["monthly", "quarterly", "yearly"])
       .is("recurrence_parent_id", null);
 
     if (fetchErr) throw fetchErr;
@@ -50,6 +50,9 @@ Deno.serve(async (req) => {
         if (exp.recurrence_type === "monthly") {
           cursor = new Date(cursor);
           cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+        } else if (exp.recurrence_type === "quarterly") {
+          cursor = new Date(cursor);
+          cursor.setUTCMonth(cursor.getUTCMonth() + 3);
         } else {
           cursor = new Date(cursor);
           cursor.setUTCFullYear(cursor.getUTCFullYear() + 1);

@@ -256,10 +256,10 @@ export default function ExpenseLogTab({
                             Receipt
                           </Badge>
                         )}
-                        {(exp.recurrence_type === 'monthly' || exp.recurrence_type === 'yearly') && (
+                        {(exp.recurrence_type === 'monthly' || exp.recurrence_type === 'quarterly' || exp.recurrence_type === 'yearly') && (
                           <Badge variant="outline" className="text-[10px] gap-1 text-blue-700 border-blue-300 bg-blue-50 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800 shrink-0">
                             <Repeat className="h-3 w-3" />
-                            {exp.recurrence_type === 'monthly' ? 'Monthly' : 'Yearly'}
+                            {exp.recurrence_type === 'monthly' ? 'Monthly' : exp.recurrence_type === 'quarterly' ? 'Quarterly' : 'Yearly'}
                           </Badge>
                         )}
                         {exp.recurrence_parent_id && (

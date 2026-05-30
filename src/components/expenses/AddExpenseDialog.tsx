@@ -371,6 +371,10 @@ export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit,
                 <Label htmlFor="rec-monthly" className="text-sm font-normal cursor-pointer">Monthly</Label>
               </div>
               <div className="flex items-center space-x-2">
+                <RadioGroupItem value="quarterly" id="rec-quarterly" />
+                <Label htmlFor="rec-quarterly" className="text-sm font-normal cursor-pointer">Quarterly</Label>
+              </div>
+              <div className="flex items-center space-x-2">
                 <RadioGroupItem value="yearly" id="rec-yearly" />
                 <Label htmlFor="rec-yearly" className="text-sm font-normal cursor-pointer">Yearly</Label>
               </div>
@@ -380,7 +384,7 @@ export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit,
                 <Label className="text-xs text-muted-foreground">End date (optional)</Label>
                 <Input type="date" value={recurrenceEndDate} onChange={e => setRecurrenceEndDate(e.target.value)} className="mt-1" />
                 <p className="text-xs text-muted-foreground mt-1">
-                  This expense will automatically repeat {recurrenceType === 'monthly' ? 'every month' : 'every year'} on the same day. Leave end date blank for indefinite.
+                  This expense will automatically repeat {recurrenceType === 'monthly' ? 'every month' : recurrenceType === 'quarterly' ? 'every 3 months' : 'every year'} on the same day. Leave end date blank for indefinite.
                 </p>
               </div>
             )}
