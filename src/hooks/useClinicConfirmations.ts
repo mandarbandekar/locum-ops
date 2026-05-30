@@ -352,7 +352,7 @@ export function useClinicConfirmations() {
       const order: Record<string, number> = { needs_update: 0, scheduled: 1, not_sent: 2, sent: 3, confirmed: 4, failed: 5 };
       return (order[a.status] ?? 6) - (order[b.status] ?? 6);
     });
-  }, [shifts, facilities, contacts, settings, emailsWithStatus, getBookedShifts]);
+  }, [shifts, facilities, contacts, settings, emailsWithStatus, getBookedShifts, profile]);
 
   const getStatusCounts = useCallback((monthKey: string) => {
     const queue = getMonthQueue(monthKey);
