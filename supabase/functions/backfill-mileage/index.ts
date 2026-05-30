@@ -139,10 +139,14 @@ Deno.serve(async (req) => {
       const roundTripMiles = oneWayMiles * 2;
       const deductionCents = Math.round(roundTripMiles * irsMileageRateCents);
 
+      // Use the clinic-tz wall date so a late-night PT shift starting at
+      // 11pm doesn't file the mileage expense under the next calendar day.
+      const shiftDate = localYMDForShift(shift, facility.timezone || "America/New_York");
+
       previewShifts.push({
         id: shift.id,
         facility_name: facility.name,
-        shift_date: shift.start_datetime.split("T")[0],
+        shift_date: shiftDate,
         estimated_miles: roundTripMiles,
         estimated_deduction_cents: deductionCents,
       });
