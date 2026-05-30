@@ -10,11 +10,11 @@ import {
   ConfirmationDeliveryMode,
 } from '@/types/clinicConfirmations';
 import { computeShiftHash } from '@/types/confirmations';
-import { startOfMonth, endOfMonth, format, subDays, addMonths } from 'date-fns';
+import { format, subDays, addMonths } from 'date-fns';
 import { toast } from 'sonner';
 import { friendlyDbError } from '@/lib/errorUtils';
 import { resolveFacilityTz, resolveShiftTz } from '@/lib/resolveTimezone';
-import { formatDateInTz, formatTimeInTz } from '@/lib/tzTime';
+import { formatDateInTz, formatTimeInTz, formatYMDInTz } from '@/lib/tzTime';
 
 const db = (table: string) => supabase.from(table as any);
 
