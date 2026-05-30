@@ -363,6 +363,19 @@ export function InvoiceEditPanel({
   const [paymentHistoryOpen, setPaymentHistoryOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(!!(invoice.notes && invoice.notes.length > 0));
 
+  // ─── Undo stack for line-item mutations ───
+  // Each entry holds a snapshot of items + invoice totals taken BEFORE the action.
+  type UndoEntry = {
+    label: string;
+    items: any[];
+    total_amount: number;
+    balance_due: number;
+  };
+  const [undoStack, setUndoStack] = useState<UndoEntry[]>([]);
+  const [isUndoing, setIsUndoing] = useState(false);
+  // Reset stack when switching invoices
+  useEffect(() => { setUndoStack([]); }, [invoice.id]);
+
   const { profile: taxProfile, hasProfile: hasTaxProfile } = useTaxIntelligence();
   const { invoices: allInvoices, shifts, terms, updateShift } = useData();
 
