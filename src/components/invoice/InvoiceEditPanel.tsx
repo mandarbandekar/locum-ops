@@ -703,6 +703,7 @@ export function InvoiceEditPanel({
                   } : undefined}
                   onUpdate={async (updated) => {
                     if (!onUpdateLineItem) return;
+                    if (!isUndoing) pushUndo('Edit line item');
                     await onUpdateLineItem(updated);
                     const nextItems = items.map((x: any) => x.id === updated.id ? updated : x);
                     const newTotal = Math.round(nextItems.reduce((s: number, x: any) => s + (Number(x.line_total) || 0), 0) * 100) / 100;
