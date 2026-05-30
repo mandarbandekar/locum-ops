@@ -141,3 +141,37 @@ export function zonedWallClockToUtc(
   }
   return new Date(utcMs);
 }
+
+/**
+ * Parse a date-only `YYYY-MM-DD` string as a Date at local midnight, avoiding
+ * the `new Date('2026-06-15')` trap (that parses as UTC midnight and shifts
+ * to the previous calendar day for any tz west of UTC).
+ *
+ * Use this for date-only columns: invoice due_date, credential expiration_date,
+ * contract effective_date/end_date, expense_date.
+ *
+ * Returns null for null/empty/invalid input.
+ */
+export function parseDateOnly(ymd: string | null | undefined): Date | null {
+  if (!ymd) return null;
+  const s = String(ymd).trim();
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return null;
+  const y = parseInt(m[1], 10);
+  const mo = parseInt(m[2], 10);
+  const d = parseInt(m[3], 10);
+  if (!y || !mo || !d) return null;
+  return new Date(y, mo - 1, d);
+}
+
+/**
+ * Days between `ymd` (date-only) and today, both interpreted as local-midnight
+ * calendar dates. Positive = future, negative = past, 0 = today.
+ */
+export function daysUntilDateOnly(ymd: string | null | undefined): number | null {
+  const d = parseDateOnly(ymd);
+  if (!d) return null;
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.round((d.getTime() - today.getTime()) / 86400000);
+}

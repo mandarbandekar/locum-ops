@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
+import { localYMDForShift } from "../_shared/tzTime.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -19,7 +20,7 @@ Deno.serve(async (req) => {
     // Find shifts that ended in the last 60 minutes
     const { data: recentShifts, error: shiftErr } = await supabase
       .from("shifts")
-      .select("id, user_id, facility_id, start_datetime, end_datetime")
+      .select("id, user_id, facility_id, start_datetime, end_datetime, timezone_at_creation")
       .gte("end_datetime", sixtyMinsAgo.toISOString())
       .lte("end_datetime", now.toISOString());
 
@@ -62,7 +63,7 @@ Deno.serve(async (req) => {
     // Fetch user profiles (home address) and expense configs
     const [profilesRes, facilitiesRes, configsRes] = await Promise.all([
       supabase.from("user_profiles").select("user_id, home_address, company_address").in("user_id", userIds),
-      supabase.from("facilities").select("id, name, address, mileage_override_miles, facility_coordinates").in("id", facilityIds),
+      supabase.from("facilities").select("id, name, address, mileage_override_miles, facility_coordinates, timezone").in("id", facilityIds),
       supabase.from("expense_config").select("user_id, irs_mileage_rate_cents").in("user_id", userIds),
     ]);
 
@@ -113,7 +114,8 @@ Deno.serve(async (req) => {
 
       const roundTripMiles = oneWayMiles * 2;
       const amountCents = Math.round(roundTripMiles * irsMileageRateCents);
-      const shiftDate = shift.start_datetime.split("T")[0];
+      // Clinic-tz wall date so late-night shifts don't file under next day.
+      const shiftDate = localYMDForShift(shift, facility.timezone || "America/New_York");
 
       expensesToInsert.push({
         user_id: shift.user_id,

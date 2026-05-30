@@ -2,11 +2,14 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
+import { useUserProfile } from '@/contexts/UserProfileContext';
 import { ConfirmationRecord, ConfirmationActivity, ConfirmationShiftLink, computeShiftHash } from '@/types/confirmations';
 import { generateSecureToken } from '@/lib/businessLogic';
-import { startOfMonth, endOfMonth, format } from 'date-fns';
+import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { friendlyDbError } from '@/lib/errorUtils';
+import { formatYMDInTz } from '@/lib/tzTime';
+import { resolveShiftTz, resolveFacilityTz } from '@/lib/resolveTimezone';
 
 const db = (table: string) => supabase.from(table as any);
 
@@ -19,6 +22,7 @@ function stripDbFields(row: any): any {
 export function useConfirmations() {
   const { user, isDemo } = useAuth();
   const { shifts, facilities, contacts } = useData();
+  const { profile } = useUserProfile();
   const [records, setRecords] = useState<ConfirmationRecord[]>([]);
   const [activities, setActivities] = useState<ConfirmationActivity[]>([]);
   const [shiftLinks, setShiftLinks] = useState<ConfirmationShiftLink[]>([]);
@@ -47,16 +51,19 @@ export function useConfirmations() {
     }
   }
 
-  // Get booked shifts for a facility in a month
+  // Get booked shifts for a facility in a month. Bucket by the shift's
+  // clinic-tz wall date so an overnight Pacific shift on the last day of the
+  // month doesn't slip into the next month's queue (UTC-bucketing bug).
   const getBookedShifts = useCallback((facilityId: string, monthKey: string) => {
-    const [year, month] = monthKey.split('-').map(Number);
-    const mStart = startOfMonth(new Date(year, month - 1));
-    const mEnd = endOfMonth(new Date(year, month - 1));
+    const facility = facilities.find(f => f.id === facilityId);
+    const facilityTz = resolveFacilityTz(facility as any, profile as any);
     return shifts.filter(s => {
-      const d = new Date(s.start_datetime);
-      return s.facility_id === facilityId && d >= mStart && d <= mEnd;
+      if (s.facility_id !== facilityId) return false;
+      const tz = resolveShiftTz(s as any, facility as any, profile as any) || facilityTz;
+      const ymd = formatYMDInTz(s.start_datetime, tz);
+      return ymd.startsWith(monthKey);
     }).sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime());
-  }, [shifts]);
+  }, [shifts, facilities, profile]);
 
   // Get or create a confirmation record for a facility/month
   const getOrCreateRecord = useCallback(async (facilityId: string, monthKey: string): Promise<ConfirmationRecord> => {
@@ -219,15 +226,14 @@ export function useConfirmations() {
 
   // Build queue for a month
   const getMonthQueue = useCallback((monthKey: string) => {
-    // Find all facilities with booked shifts in this month
-    const [year, month] = monthKey.split('-').map(Number);
-    const mStart = startOfMonth(new Date(year, month - 1));
-    const mEnd = endOfMonth(new Date(year, month - 1));
-
+    // Find all facilities with booked shifts in this month, bucketed by
+    // each shift's clinic-tz wall date (not UTC) so overnight shifts stay put.
     const facilityIds = new Set<string>();
     shifts.forEach(s => {
-      const d = new Date(s.start_datetime);
-      if (d >= mStart && d <= mEnd) {
+      const facility = facilities.find(f => f.id === s.facility_id);
+      const tz = resolveShiftTz(s as any, facility as any, profile as any)
+        || resolveFacilityTz(facility as any, profile as any);
+      if (formatYMDInTz(s.start_datetime, tz).startsWith(monthKey)) {
         facilityIds.add(s.facility_id);
       }
     });
@@ -252,7 +258,7 @@ export function useConfirmations() {
       const order = { needs_update: 0, not_sent: 1, sent: 2, confirmed: 3 };
       return (order[a.status] ?? 4) - (order[b.status] ?? 4);
     });
-  }, [shifts, facilities, contacts, recordsWithStatus, getBookedShifts]);
+  }, [shifts, facilities, contacts, recordsWithStatus, getBookedShifts, profile]);
 
   // Status counts for a month
   const getStatusCounts = useCallback((monthKey: string) => {

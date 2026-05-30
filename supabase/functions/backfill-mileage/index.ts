@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
+import { localYMDForShift } from "../_shared/tzTime.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -70,7 +71,7 @@ Deno.serve(async (req) => {
     // Fetch all user shifts
     const { data: allShifts, error: shiftErr } = await supabase
       .from("shifts")
-      .select("id, facility_id, start_datetime, end_datetime")
+      .select("id, facility_id, start_datetime, end_datetime, timezone_at_creation")
       .eq("user_id", userId)
       .lte("end_datetime", new Date().toISOString())
       .order("start_datetime", { ascending: false });
@@ -104,7 +105,7 @@ Deno.serve(async (req) => {
     const facilityIds = [...new Set(eligibleShifts.map((s: any) => s.facility_id))];
     const [profileRes, facilitiesRes, configRes] = await Promise.all([
       supabase.from("user_profiles").select("home_address, company_address").eq("user_id", userId).maybeSingle(),
-      supabase.from("facilities").select("id, name, address, mileage_override_miles, facility_coordinates").in("id", facilityIds),
+      supabase.from("facilities").select("id, name, address, mileage_override_miles, facility_coordinates, timezone").in("id", facilityIds),
       supabase.from("expense_config").select("irs_mileage_rate_cents").eq("user_id", userId).maybeSingle(),
     ]);
 
@@ -138,10 +139,14 @@ Deno.serve(async (req) => {
       const roundTripMiles = oneWayMiles * 2;
       const deductionCents = Math.round(roundTripMiles * irsMileageRateCents);
 
+      // Use the clinic-tz wall date so a late-night PT shift starting at
+      // 11pm doesn't file the mileage expense under the next calendar day.
+      const shiftDate = localYMDForShift(shift, facility.timezone || "America/New_York");
+
       previewShifts.push({
         id: shift.id,
         facility_name: facility.name,
-        shift_date: shift.start_datetime.split("T")[0],
+        shift_date: shiftDate,
         estimated_miles: roundTripMiles,
         estimated_deduction_cents: deductionCents,
       });
