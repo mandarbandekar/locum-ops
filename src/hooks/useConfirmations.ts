@@ -22,6 +22,7 @@ function stripDbFields(row: any): any {
 export function useConfirmations() {
   const { user, isDemo } = useAuth();
   const { shifts, facilities, contacts } = useData();
+  const { profile } = useUserProfile();
   const [records, setRecords] = useState<ConfirmationRecord[]>([]);
   const [activities, setActivities] = useState<ConfirmationActivity[]>([]);
   const [shiftLinks, setShiftLinks] = useState<ConfirmationShiftLink[]>([]);
