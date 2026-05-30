@@ -510,13 +510,31 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
         const { invoice: rebuiltInv, lineItems: newItems } = buildAutoInvoiceDraft(
           facility, eligible, period.start, period.end, existingDraft.invoice_number
         );
-        const total = newItems.reduce((sum, li) => sum + li.line_total, 0);
+
+        // Preserve manual lines the auto-builder doesn't produce:
+        //  - custom lines with no shift_id
+        //  - overtime lines for a shift, when the builder didn't already emit
+        //    one for that shift (manual overtime wins; avoids duplicates).
+        const builderShiftsWithOvertime = new Set(
+          newItems.filter(li => li.line_kind === 'overtime' && li.shift_id).map(li => li.shift_id as string)
+        );
+        const preserved = facilityLineItems.filter(li => {
+          if (li.invoice_id !== existingDraft.id) return false;
+          if (!li.shift_id) return true; // custom line
+          if (li.line_kind === 'overtime' && !builderShiftsWithOvertime.has(li.shift_id)) return true;
+          return false;
+        });
+
+        const builderRows = newItems.map(item => ({ user_id: user!.id, invoice_id: existingDraft.id, ...item }));
+        const preservedRows = preserved.map(({ id: _id, ...rest }: any) => ({ ...rest, invoice_id: existingDraft.id }));
+        const toInsert = [...builderRows, ...preservedRows];
+
+        const total = toInsert.reduce((sum, li: any) => sum + (Number(li.line_total) || 0), 0);
 
         const { error: deleteLineItemsError } = await db('invoice_line_items').delete().eq('invoice_id', existingDraft.id);
         if (deleteLineItemsError) throw deleteLineItemsError;
         setLineItems(prev => prev.filter(li => li.invoice_id !== existingDraft.id));
 
-        const toInsert = newItems.map(item => ({ user_id: user!.id, invoice_id: existingDraft.id, ...item }));
         const { data: liData, error: insertLineItemsError } = await db('invoice_line_items').insert(toInsert).select();
         if (insertLineItemsError) throw insertLineItemsError;
         if (liData) {
