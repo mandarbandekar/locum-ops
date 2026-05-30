@@ -111,13 +111,16 @@ describe('Dashboard Overdue Invoices card', () => {
     expect(deriveOverdueCard(invoices)).toMatchObject({ count: 1, total: 500 });
   });
 
-  it('advancing due_date to exactly tomorrow removes from card; today keeps it', () => {
+  it('advancing due_date to exactly tomorrow removes from card; today also removes; yesterday keeps it', () => {
     let invoices = [inv({ id: 'a', due_date: '2026-04-01', balance_due: 500 })];
 
     invoices = setDueDate(invoices, 'a', '2026-05-07'); // tomorrow
     expect(deriveOverdueCard(invoices).count).toBe(0);
 
-    invoices = setDueDate(invoices, 'a', '2026-05-06'); // today midnight < noon now → overdue
+    invoices = setDueDate(invoices, 'a', '2026-05-06'); // today → not overdue anymore
+    expect(deriveOverdueCard(invoices).count).toBe(0);
+
+    invoices = setDueDate(invoices, 'a', '2026-05-05'); // yesterday → overdue
     expect(deriveOverdueCard(invoices).count).toBe(1);
   });
 });

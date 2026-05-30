@@ -59,10 +59,8 @@ describe('isInvoiceOverdue', () => {
     expect(isInvoiceOverdue(baseInv({ due_date: '2026-06-01' }))).toBe(false);
   });
 
-  it('edge: due_date equals today (midnight) — not overdue (not strictly less than now)', () => {
-    // due_date '2026-05-06' parses to 00:00 on May 6; now is noon May 6.
-    // Current logic: midnight < noon → overdue=true.
-    expect(isInvoiceOverdue(baseInv({ due_date: '2026-05-06' }))).toBe(true);
+  it('edge: due_date equals today — not overdue (overdue starts the next day)', () => {
+    expect(isInvoiceOverdue(baseInv({ due_date: '2026-05-06' }))).toBe(false);
   });
 
   it('edge: due_date is tomorrow — not overdue', () => {
@@ -74,9 +72,8 @@ describe('isInvoiceOverdue', () => {
     expect(isInvoiceOverdue(baseInv({ due_date: future }))).toBe(false);
   });
 
-  it('edge: due_date one second in the past — overdue', () => {
-    const past = new Date(NOW.getTime() - 1000).toISOString();
-    expect(isInvoiceOverdue(baseInv({ due_date: past }))).toBe(true);
+  it('edge: due_date was yesterday — overdue', () => {
+    expect(isInvoiceOverdue(baseInv({ due_date: '2026-05-05' }))).toBe(true);
   });
 });
 
