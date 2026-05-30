@@ -86,11 +86,13 @@ export function getStatusColor(status: string): string {
   }
 }
 
+import { daysUntilDateOnly } from '@/lib/tzTime';
+
 export function getDaysUntilExpiration(expirationDate: string | null): number | null {
-  if (!expirationDate) return null;
-  const now = new Date();
-  const exp = new Date(expirationDate);
-  return Math.ceil((exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  // `expiration_date` is a date-only column (YYYY-MM-DD). Parsing with
+  // `new Date(ymd)` returns UTC midnight, which makes credentials appear
+  // expired up to 8 hours early for Pacific users. Use the tz-safe helper.
+  return daysUntilDateOnly(expirationDate);
 }
 
 export function computeCredentialStatus(expirationDate: string | null, currentStatus: string): string {
