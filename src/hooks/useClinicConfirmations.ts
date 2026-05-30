@@ -10,7 +10,7 @@ import {
   ConfirmationDeliveryMode,
 } from '@/types/clinicConfirmations';
 import { computeShiftHash } from '@/types/confirmations';
-import { format, subDays, addMonths } from 'date-fns';
+import { startOfMonth, endOfMonth, format, subDays, addMonths } from 'date-fns';
 import { toast } from 'sonner';
 import { friendlyDbError } from '@/lib/errorUtils';
 import { resolveFacilityTz, resolveShiftTz } from '@/lib/resolveTimezone';
