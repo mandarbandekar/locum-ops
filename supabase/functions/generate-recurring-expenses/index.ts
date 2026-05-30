@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
     const { data: recurring, error: fetchErr } = await supabase
       .from("expenses")
       .select("*")
-      .in("recurrence_type", ["monthly", "yearly"])
+      .in("recurrence_type", ["monthly", "quarterly", "yearly"])
       .is("recurrence_parent_id", null);
 
     if (fetchErr) throw fetchErr;
