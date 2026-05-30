@@ -3711,6 +3711,7 @@ export type Database = {
           tax_form_type: string
         }[]
       }
+      get_shift_local_date: { Args: { _shift_id: string }; Returns: string }
       is_feedback_admin: { Args: never; Returns: boolean }
       move_to_dlq: {
         Args: {
