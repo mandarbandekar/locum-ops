@@ -570,13 +570,22 @@ export function InvoiceEditPanel({
         <CardContent className="px-3 pb-3 space-y-2">
           {items.length === 0 ? (
             <p className="py-3 text-center text-muted-foreground text-xs">No line items yet</p>
-          ) : (
-            items.map((li: any) => {
+          ) : (() => {
+            const baseLines = items.filter((x: any) => x.line_kind !== 'overtime');
+            const overtimeByShift = new Map<string, any>();
+            items.forEach((x: any) => {
+              if (x.line_kind === 'overtime' && x.shift_id) overtimeByShift.set(x.shift_id, x);
+            });
+            // Orphan overtime (no matching base line) renders standalone.
+            const baseShiftIds = new Set(baseLines.map((b: any) => b.shift_id).filter(Boolean));
+            const orphanOvertime = items.filter((x: any) =>
+              x.line_kind === 'overtime' && (!x.shift_id || !baseShiftIds.has(x.shift_id))
+            );
+
+            const renderCard = (li: any) => {
               const shift = li.shift_id ? shifts.find(s => s.id === li.shift_id) : null;
               const syncEligible = canSyncShiftForLine(invoice.status, li.line_kind, li.shift_id);
-              const hasOvertime = li.shift_id
-                ? items.some((x: any) => x.shift_id === li.shift_id && x.line_kind === 'overtime')
-                : false;
+              const hasOvertime = li.shift_id ? overtimeByShift.has(li.shift_id) : false;
 
               return (
                 <ShiftLineItemCard
@@ -656,8 +665,28 @@ export function InvoiceEditPanel({
                   }}
                 />
               );
-            })
-          )}
+            };
+
+            return (
+              <>
+                {baseLines.map((base: any) => {
+                  const ot = base.shift_id ? overtimeByShift.get(base.shift_id) : null;
+                  if (!ot) return renderCard(base);
+                  // Nest overtime visually under its shift card.
+                  return (
+                    <div key={base.id} className="space-y-1.5">
+                      {renderCard(base)}
+                      <div className="ml-4 pl-3 border-l-2 border-[hsl(var(--warning))]/40">
+                        {renderCard(ot)}
+                      </div>
+                    </div>
+                  );
+                })}
+                {orphanOvertime.map((ot: any) => renderCard(ot))}
+              </>
+            );
+          })()}
+
 
           {!readOnly && !showAddLine && (
             <div className="flex justify-start pt-1">
