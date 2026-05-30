@@ -418,7 +418,14 @@ Deno.serve(async (req) => {
           });
         } else {
           const prefix = facility.invoice_prefix || "INV";
-          const year = now.getFullYear();
+          // Use the facility-local year of the invoice date so a cron run that
+          // crosses the UTC year boundary (e.g. Jan 1 02:00 UTC for a PT Dec
+          // period) numbers the invoice under the clinic-local year (2025),
+          // not the runtime UTC year (2026).
+          const year = Number(
+            new Intl.DateTimeFormat('en-US', { timeZone: facilityTz, year: 'numeric' })
+              .format(invoiceDate)
+          );
           let invoiceNumber: string;
           const { data: rpcNum, error: rpcErr } = await supabase.rpc(
             "next_invoice_number_for_user",
