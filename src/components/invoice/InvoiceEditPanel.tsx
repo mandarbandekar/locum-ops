@@ -724,6 +724,7 @@ export function InvoiceEditPanel({
                   }}
                   onDelete={async () => {
                     if (!onDeleteLineItem) return;
+                    if (!isUndoing) pushUndo('Delete line item');
                     await onDeleteLineItem(li.id);
                     const nextItems = items.filter((x: any) => x.id !== li.id);
                     const newTotal = nextItems.reduce((s: number, x: any) => s + (x.line_total || 0), 0);
