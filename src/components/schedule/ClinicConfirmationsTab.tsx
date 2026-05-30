@@ -13,7 +13,7 @@ import {
   CalendarDays, Copy, User, UserPlus, History, Building,
 } from 'lucide-react';
 import { format, addMonths, subMonths } from 'date-fns';
-import { formatTimeInTz } from '@/lib/tzTime';
+import { formatTimeInTz, formatDateInTz } from '@/lib/tzTime';
 const BROWSER_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
 import { FacilityConfirmationSettingsCard } from './FacilityConfirmationSettingsCard';
 import { toast } from 'sonner';
@@ -215,7 +215,7 @@ export function ClinicConfirmationsTab({ facilityId }: ClinicConfirmationsTabPro
                           const tz = facilities.find(f => f.id === s.facility_id)?.timezone || BROWSER_TZ;
                           return (
                             <tr key={s.id} className="border-t">
-                              <td className="px-3 py-2 text-sm">{format(new Date(s.start_datetime), 'EEE, MMM d')}</td>
+                              <td className="px-3 py-2 text-sm">{formatDateInTz(s.start_datetime, tz, 'EEE, MMM d')}</td>
                               <td className="px-3 py-2 text-sm text-muted-foreground">
                                 {formatTimeInTz(s.start_datetime, tz)} – {formatTimeInTz(s.end_datetime, tz)}
                               </td>

@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
 
     // Fetch related data in parallel with explicit field selection
     const [facRes, profileRes, linksRes] = await Promise.all([
-      supabase.from('facilities').select('name').eq('id', record.facility_id).single(),
+      supabase.from('facilities').select('name, timezone').eq('id', record.facility_id).single(),
       supabase.from('user_profiles').select('first_name, last_name').eq('user_id', record.user_id).single(),
       supabase.from('confirmation_shift_links').select('shift_id').eq('confirmation_record_id', record.id),
     ]);
@@ -80,6 +80,7 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({
       facilityName,
       clinicianName,
+      timezone: facRes.data?.timezone || 'America/New_York',
       monthKey: record.month_key,
       generatedAt: record.sent_at || record.updated_at || record.created_at,
       shifts,

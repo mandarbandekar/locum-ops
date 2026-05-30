@@ -13,7 +13,7 @@ import {
   X, User, CalendarDays,
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { formatTimeInTz } from '@/lib/tzTime';
+import { formatTimeInTz, formatDateInTz } from '@/lib/tzTime';
 const BROWSER_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
 import { toast } from 'sonner';
 
@@ -46,7 +46,7 @@ export function ConfirmationDetailDrawer({ facilityId, monthKey, open, onClose }
   const defaultBody = useMemo(() => {
     const tz = facility?.timezone || BROWSER_TZ;
     const shiftList = bookedShifts
-      .map(s => `  - ${format(new Date(s.start_datetime), 'EEE, MMM d')} — ${formatTimeInTz(s.start_datetime, tz)} – ${formatTimeInTz(s.end_datetime, tz)}`)
+      .map(s => `  - ${formatDateInTz(s.start_datetime, tz, 'EEE, MMM d')} — ${formatTimeInTz(s.start_datetime, tz)} – ${formatTimeInTz(s.end_datetime, tz)}`)
       .join('\n');
 
     return `Hi ${contact?.name || 'Team'},
@@ -153,8 +153,8 @@ ${clinicianName}`;
           {/* Shift summary */}
           <div className="flex gap-4 text-xs text-muted-foreground">
             <span>{bookedShifts.length} booked shift{bookedShifts.length !== 1 ? 's' : ''}</span>
-            {firstShift && <span>First: {format(new Date(firstShift.start_datetime), 'MMM d')}</span>}
-            {lastShift && <span>Last: {format(new Date(lastShift.start_datetime), 'MMM d')}</span>}
+            {firstShift && <span>First: {formatDateInTz(firstShift.start_datetime, facility?.timezone || BROWSER_TZ, 'MMM d')}</span>}
+            {lastShift && <span>Last: {formatDateInTz(lastShift.start_datetime, facility?.timezone || BROWSER_TZ, 'MMM d')}</span>}
           </div>
 
           {/* Shifts table */}
@@ -171,8 +171,8 @@ ${clinicianName}`;
               <TableBody>
                 {bookedShifts.map(s => (
                   <TableRow key={s.id}>
-                    <TableCell className="text-sm py-2">{format(new Date(s.start_datetime), 'MMM d')}</TableCell>
-                    <TableCell className="text-sm py-2">{format(new Date(s.start_datetime), 'EEE')}</TableCell>
+                    <TableCell className="text-sm py-2">{formatDateInTz(s.start_datetime, facility?.timezone || BROWSER_TZ, 'MMM d')}</TableCell>
+                    <TableCell className="text-sm py-2">{formatDateInTz(s.start_datetime, facility?.timezone || BROWSER_TZ, 'EEE')}</TableCell>
                     <TableCell className="text-sm py-2">
                       {formatTimeInTz(s.start_datetime, facility?.timezone || BROWSER_TZ)} – {formatTimeInTz(s.end_datetime, facility?.timezone || BROWSER_TZ)}
                     </TableCell>
