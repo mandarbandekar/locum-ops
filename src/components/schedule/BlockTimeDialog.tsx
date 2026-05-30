@@ -57,7 +57,9 @@ export function BlockTimeDialog({ open, onOpenChange, onSave, onDelete, existing
       setStartDate(new Date(existing.start_datetime));
       setEndDate(new Date(existing.end_datetime));
       setAllDay(existing.all_day);
+      // eslint-disable-next-line no-restricted-syntax -- block-time tz source pending decision
       setStartTime(format(new Date(existing.start_datetime), 'HH:mm'));
+      // eslint-disable-next-line no-restricted-syntax -- block-time tz source pending decision
       setEndTime(format(new Date(existing.end_datetime), 'HH:mm'));
       setNotes(existing.notes);
       setColor(existing.color);

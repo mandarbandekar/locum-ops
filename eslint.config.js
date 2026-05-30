@@ -21,6 +21,10 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "@typescript-eslint/no-unused-vars": "off",
+      "no-restricted-syntax": ["error", {
+        "selector": "CallExpression[callee.name='format'] > NewExpression[callee.name='Date'] > MemberExpression[property.name=/^(start_datetime|end_datetime)$/]",
+        "message": "Do not render a shift instant with browser-local date/time. Use tzTime helpers (formatDateInTz/formatTimeInTz) with the clinic tz (snapshot-first)."
+      }],
     },
   },
 );
