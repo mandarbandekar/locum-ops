@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { ChevronLeft, ChevronRight, Send, CheckCircle, AlertTriangle, Eye } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, addMonths, subMonths } from 'date-fns';
-import { formatTimeInTz } from '@/lib/tzTime';
+import { formatTimeInTz, formatDateInTz } from '@/lib/tzTime';
 const BROWSER_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
 import { getConfirmationTemplate } from '@/data/templates';
 import { useUserProfile } from '@/contexts/UserProfileContext';
@@ -83,7 +83,7 @@ export function ConfirmationsPanel() {
     const tz = facility?.timezone || BROWSER_TZ;
     const shiftList = fShifts
       .sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime())
-      .map(s => `  • ${format(new Date(s.start_datetime), 'EEE, MMM d')}: ${formatTimeInTz(s.start_datetime, tz)} - ${formatTimeInTz(s.end_datetime, tz)}`)
+      .map(s => `  • ${formatDateInTz(s.start_datetime, tz, 'EEE, MMM d')}: ${formatTimeInTz(s.start_datetime, tz)} - ${formatTimeInTz(s.end_datetime, tz)}`)
       .join('\n');
 
     return getConfirmationTemplate(tone)
@@ -174,7 +174,7 @@ export function ConfirmationsPanel() {
                   <div className="space-y-0.5 mb-2">
                     {sortedShifts.map(s => (
                       <div key={s.id} className="text-xs flex justify-between text-muted-foreground">
-                        <span>{format(new Date(s.start_datetime), 'EEE, MMM d')}</span>
+                        <span>{formatDateInTz(s.start_datetime, facility?.timezone || BROWSER_TZ, 'EEE, MMM d')}</span>
                         <span>{formatTimeInTz(s.start_datetime, facility?.timezone || BROWSER_TZ).replace(' ', '').toLowerCase()}–{formatTimeInTz(s.end_datetime, facility?.timezone || BROWSER_TZ).replace(' ', '').toLowerCase()}</span>
                       </div>
                     ))}
