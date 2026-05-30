@@ -1,4 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { localYMDInTz } from "../_shared/tzTime.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,8 +19,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const today = new Date();
-    const todayStr = today.toISOString().split("T")[0];
+    const now = new Date();
 
     // Find all recurring expenses (parents only — no recurrence_parent_id)
     const { data: recurring, error: fetchErr } = await supabase
@@ -34,11 +35,31 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Batch-fetch each owner's profile timezone in a single query so "today"
+    // is computed in the user's local tz rather than UTC.
+    const userIds = Array.from(new Set(recurring.map((e: any) => e.user_id).filter(Boolean)));
+    const tzByUser = new Map<string, string>();
+    if (userIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from("user_profiles")
+        .select("user_id, timezone")
+        .in("user_id", userIds);
+      for (const p of profiles || []) {
+        const tz = (p as any).timezone && String((p as any).timezone).trim();
+        tzByUser.set((p as any).user_id, tz || "America/New_York");
+      }
+    }
+    const resolveTz = (uid: string) => tzByUser.get(uid) || "America/New_York";
+
     let created = 0;
 
     for (const exp of recurring) {
-      // Check if past end date
+      const userTz = resolveTz(exp.user_id);
+      const todayStr = localYMDInTz(now, userTz);
+
+      // Check if past end date (compared in the owner's local tz)
       if (exp.recurrence_end_date && exp.recurrence_end_date < todayStr) continue;
+
 
       // Determine the next expected date
       const baseDate = new Date(exp.expense_date + "T00:00:00Z");
