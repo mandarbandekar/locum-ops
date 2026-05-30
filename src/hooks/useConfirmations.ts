@@ -226,15 +226,14 @@ export function useConfirmations() {
 
   // Build queue for a month
   const getMonthQueue = useCallback((monthKey: string) => {
-    // Find all facilities with booked shifts in this month
-    const [year, month] = monthKey.split('-').map(Number);
-    const mStart = startOfMonth(new Date(year, month - 1));
-    const mEnd = endOfMonth(new Date(year, month - 1));
-
+    // Find all facilities with booked shifts in this month, bucketed by
+    // each shift's clinic-tz wall date (not UTC) so overnight shifts stay put.
     const facilityIds = new Set<string>();
     shifts.forEach(s => {
-      const d = new Date(s.start_datetime);
-      if (d >= mStart && d <= mEnd) {
+      const facility = facilities.find(f => f.id === s.facility_id);
+      const tz = resolveShiftTz(s as any, facility as any, profile as any)
+        || resolveFacilityTz(facility as any, profile as any);
+      if (formatYMDInTz(s.start_datetime, tz).startsWith(monthKey)) {
         facilityIds.add(s.facility_id);
       }
     });
