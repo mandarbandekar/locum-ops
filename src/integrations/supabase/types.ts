@@ -2726,7 +2726,7 @@ export type Database = {
           source_name_override: string | null
           start_datetime: string
           status: string
-          timezone_at_creation: string | null
+          timezone_at_creation: string
           updated_at: string
           user_id: string
           worked_through_break: boolean
@@ -2749,7 +2749,7 @@ export type Database = {
           source_name_override?: string | null
           start_datetime: string
           status?: string
-          timezone_at_creation?: string | null
+          timezone_at_creation: string
           updated_at?: string
           user_id: string
           worked_through_break?: boolean
@@ -2772,7 +2772,7 @@ export type Database = {
           source_name_override?: string | null
           start_datetime?: string
           status?: string
-          timezone_at_creation?: string | null
+          timezone_at_creation?: string
           updated_at?: string
           user_id?: string
           worked_through_break?: boolean
