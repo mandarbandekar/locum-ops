@@ -258,6 +258,7 @@ describe('Overnight shift — DST transitions (current ms-diff behavior)', () =>
 describe('Overnight shift — month-key formatting', () => {
   it("format(start, 'yyyy-MM') yields the start month", () => {
     const overnight = makeShift('s-on', '2026-05-31T22:00:00', '2026-06-01T06:00:00');
+    // eslint-disable-next-line no-restricted-syntax -- sanity test of date-fns format(), not a UI render
     expect(format(new Date(overnight.start_datetime), 'yyyy-MM')).toBe('2026-05');
   });
 });
