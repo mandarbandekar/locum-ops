@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
     // Find shifts that ended in the last 60 minutes
     const { data: recentShifts, error: shiftErr } = await supabase
       .from("shifts")
-      .select("id, user_id, facility_id, start_datetime, end_datetime")
+      .select("id, user_id, facility_id, start_datetime, end_datetime, timezone_at_creation")
       .gte("end_datetime", sixtyMinsAgo.toISOString())
       .lte("end_datetime", now.toISOString());
 
