@@ -123,16 +123,17 @@ export function useClinicConfirmations() {
     toast.success('Confirmation settings saved');
   }, [isDemo, settings, user]);
 
-  // Get booked shifts for a facility in a month
+  // Get booked shifts for a facility in a month. Bucket by clinic-tz wall date
+  // (not UTC) so overnight Pacific shifts don't slip months.
   const getBookedShifts = useCallback((facilityId: string, monthKey: string) => {
-    const [year, month] = monthKey.split('-').map(Number);
-    const mStart = startOfMonth(new Date(year, month - 1));
-    const mEnd = endOfMonth(new Date(year, month - 1));
+    const facility = facilities.find(f => f.id === facilityId);
+    const facilityTz = resolveFacilityTz(facility as any, profile as any);
     return shifts.filter(s => {
-      const d = new Date(s.start_datetime);
-      return s.facility_id === facilityId && d >= mStart && d <= mEnd;
+      if (s.facility_id !== facilityId) return false;
+      const tz = resolveShiftTz(s as any, facility as any, profile as any) || facilityTz;
+      return formatYMDInTz(s.start_datetime, tz).startsWith(monthKey);
     }).sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime());
-  }, [shifts]);
+  }, [shifts, facilities, profile]);
 
   // Get booked shifts for a facility in the future
   const getUpcomingBookedShifts = useCallback((facilityId: string) => {
