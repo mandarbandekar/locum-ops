@@ -258,7 +258,7 @@ export function useConfirmations() {
       const order = { needs_update: 0, not_sent: 1, sent: 2, confirmed: 3 };
       return (order[a.status] ?? 4) - (order[b.status] ?? 4);
     });
-  }, [shifts, facilities, contacts, recordsWithStatus, getBookedShifts]);
+  }, [shifts, facilities, contacts, recordsWithStatus, getBookedShifts, profile]);
 
   // Status counts for a month
   const getStatusCounts = useCallback((monthKey: string) => {
