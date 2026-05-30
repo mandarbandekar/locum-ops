@@ -105,7 +105,7 @@ Deno.serve(async (req) => {
     const facilityIds = [...new Set(eligibleShifts.map((s: any) => s.facility_id))];
     const [profileRes, facilitiesRes, configRes] = await Promise.all([
       supabase.from("user_profiles").select("home_address, company_address").eq("user_id", userId).maybeSingle(),
-      supabase.from("facilities").select("id, name, address, mileage_override_miles, facility_coordinates").in("id", facilityIds),
+      supabase.from("facilities").select("id, name, address, mileage_override_miles, facility_coordinates, timezone").in("id", facilityIds),
       supabase.from("expense_config").select("irs_mileage_rate_cents").eq("user_id", userId).maybeSingle(),
     ]);
 
