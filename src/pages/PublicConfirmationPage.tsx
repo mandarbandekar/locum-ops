@@ -5,12 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CalendarDays, ShieldCheck } from 'lucide-react';
 import { format } from 'date-fns';
+import { formatDateInTz, formatTimeInTz } from '@/lib/tzTime';
 
 interface ConfirmationData {
   facilityName: string;
   clinicianName: string;
   monthLabel: string;
   generatedAt: string;
+  timezone: string;
   shifts: { start_datetime: string; end_datetime: string; notes: string }[];
 }
 
@@ -53,6 +55,7 @@ export default function PublicConfirmationPage() {
         clinicianName: payload.clinicianName,
         monthLabel,
         generatedAt: payload.generatedAt,
+        timezone: payload.timezone || 'America/New_York',
         shifts: payload.shifts,
       });
     } catch {
@@ -116,10 +119,10 @@ export default function PublicConfirmationPage() {
               <TableBody>
                 {data.shifts.map((s, i) => (
                   <TableRow key={i}>
-                    <TableCell className="text-sm py-2.5">{format(new Date(s.start_datetime), 'MMM d, yyyy')}</TableCell>
-                    <TableCell className="text-sm py-2.5">{format(new Date(s.start_datetime), 'EEEE')}</TableCell>
+                    <TableCell className="text-sm py-2.5">{formatDateInTz(s.start_datetime, data.timezone, 'MMM d, yyyy')}</TableCell>
+                    <TableCell className="text-sm py-2.5">{formatDateInTz(s.start_datetime, data.timezone, 'EEEE')}</TableCell>
                     <TableCell className="text-sm py-2.5">
-                      {format(new Date(s.start_datetime), 'h:mm a')} – {format(new Date(s.end_datetime), 'h:mm a')}
+                      {formatTimeInTz(s.start_datetime, data.timezone)} – {formatTimeInTz(s.end_datetime, data.timezone)}
                     </TableCell>
                     <TableCell className="text-sm py-2.5 text-muted-foreground">{s.notes || '—'}</TableCell>
                   </TableRow>

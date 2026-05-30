@@ -1,51 +1,118 @@
-# Fix timezone bugs across the app
+# Tier 2 — Clinic-facing date displays in facility timezone
 
-The shift calendar machinery is already tz-aware, but a second tier of features parses date-only strings as UTC midnight or formats UTC instants in browser-local time. Users in Pacific/Mountain/Central time see wrong dates on credentials, invoices, mileage, confirmations, and clinic-facing pages.
+Surgical, display-only edits. No changes to sorts, filters, instant comparisons, schema, RLS, or write paths. No new deps.
 
-## Tier 1 — Data correctness (do first)
+## Pattern
+Replace `format(new Date(<instant>), PATTERN)` with `formatDateInTz(<instant>, TZ, PATTERN)` for shift instants; times use `formatTimeInTz(<instant>, TZ)`. `TZ` = the shift's facility timezone (with `BROWSER_TZ` fallback where the existing files already use one).
 
-1. **Credential expiration math** — `src/lib/credentialTypes.ts` `getDaysUntilExpiration` and friends. Switch to a shared `parseDateOnly(ymd)` helper that constructs a local-midnight Date from `YYYY-MM-DD`. Fix the date-only `format(new Date(expiration_date), …)` calls in `CredentialsList.tsx`, `CredentialsOverview.tsx`, `RenewalsTab.tsx`.
+---
 
-2. **Invoice overdue logic** — `src/lib/invoiceHelpers.ts` `isInvoiceOverdue` uses `new Date(due_date)`. Switch to `parseDateOnly`. This fixes the overdue badge, reminder triggers, and dashboard attention cards. Also fix display formatting in `InvoiceDetailPage.tsx`, `InvoiceEditPanel.tsx`, `InvoiceActionBar.tsx`.
+## 1. `src/pages/FacilityDetailPage.tsx`
+`formatDateInTz` is already imported (line 35). No new import.
 
-3. **Confirmation month bucketing** — `src/hooks/useConfirmations.ts` and `src/hooks/useClinicConfirmations.ts` compare UTC instants against browser-local month bounds. Switch to comparing `formatYMDInTz(shift.start_datetime, clinicTz)` against the target month's `YYYY-MM` prefix so overnight Pacific shifts stay in the right month.
+- **Line 684** — before:
+  ```tsx
+  {format(new Date(s.start_datetime), 'MMM d, yyyy')}
+  ```
+  after:
+  ```tsx
+  {formatDateInTz(s.start_datetime, facility.timezone, 'MMM d, yyyy')}
+  ```
+- **Line 687** — before:
+  ```tsx
+  <td className="p-3 text-muted-foreground hidden sm:table-cell">{format(new Date(s.start_datetime), 'h:mm a')} - {format(new Date(s.end_datetime), 'h:mm a')}</td>
+  ```
+  after:
+  ```tsx
+  <td className="p-3 text-muted-foreground hidden sm:table-cell">{formatTimeInTz(s.start_datetime, facility.timezone)} - {formatTimeInTz(s.end_datetime, facility.timezone)}</td>
+  ```
+  Add `formatTimeInTz` to the existing `@/lib/tzTime` import on line 35.
+- Line 48 sort is **left unchanged** (sorts by UTC instant — correct).
 
-4. **Mileage `expense_date`** — `supabase/functions/backfill-mileage/index.ts` and `auto-mileage-tracker/index.ts` use `start_datetime.split("T")[0]` (UTC date). Switch to clinic-tz wall date using the existing `_shared/tzTime.ts` helper.
+## 2. `src/components/schedule/ConfirmationDetailDrawer.tsx`
+Extend existing import on line 16: `import { formatTimeInTz, formatDateInTz } from '@/lib/tzTime';`. Reuse `tz = facility?.timezone || BROWSER_TZ` (already defined inline at line 47 inside `defaultBody`; for lines 156/157/174/175 it must be resolved at the call site since `tz` is scoped inside `useMemo`).
 
-## Tier 2 — Display in clinic timezone
+- **Line 49** (email body) — before:
+  ```ts
+  .map(s => `  - ${format(new Date(s.start_datetime), 'EEE, MMM d')} — ${formatTimeInTz(s.start_datetime, tz)} – ${formatTimeInTz(s.end_datetime, tz)}`)
+  ```
+  after:
+  ```ts
+  .map(s => `  - ${formatDateInTz(s.start_datetime, tz, 'EEE, MMM d')} — ${formatTimeInTz(s.start_datetime, tz)} – ${formatTimeInTz(s.end_datetime, tz)}`)
+  ```
+- **Line 156** — before:
+  ```tsx
+  {firstShift && <span>First: {format(new Date(firstShift.start_datetime), 'MMM d')}</span>}
+  ```
+  after:
+  ```tsx
+  {firstShift && <span>First: {formatDateInTz(firstShift.start_datetime, facility?.timezone || BROWSER_TZ, 'MMM d')}</span>}
+  ```
+- **Line 157** — same swap for `lastShift` with `'MMM d'`.
+- **Line 174** — before:
+  ```tsx
+  <TableCell className="text-sm py-2">{format(new Date(s.start_datetime), 'MMM d')}</TableCell>
+  ```
+  after:
+  ```tsx
+  <TableCell className="text-sm py-2">{formatDateInTz(s.start_datetime, facility?.timezone || BROWSER_TZ, 'MMM d')}</TableCell>
+  ```
+- **Line 175** — same swap with pattern `'EEE'`.
+- Line 273 (`a.created_at`) is **left unchanged** (audit timestamp).
 
-5. **FacilityDetailPage shift history** — `src/pages/FacilityDetailPage.tsx:684,687`. Use `formatDateInTz`/`formatTimeInTz` with the resolved shift tz.
+## 3. `src/components/schedule/ClinicConfirmationsTab.tsx`
+Extend existing import on line 16: `import { formatTimeInTz, formatDateInTz } from '@/lib/tzTime';`. `tz` is already resolved one line above at line 215.
 
-6. **PublicConfirmationPage** (clinic-facing) — `src/pages/PublicConfirmationPage.tsx:119-122`. Same fix. This is the externally sent confirmation doc, so highest visibility.
+- **Line 218** — before:
+  ```tsx
+  <td className="px-3 py-2 text-sm">{format(new Date(s.start_datetime), 'EEE, MMM d')}</td>
+  ```
+  after:
+  ```tsx
+  <td className="px-3 py-2 text-sm">{formatDateInTz(s.start_datetime, tz, 'EEE, MMM d')}</td>
+  ```
+- Lines 280 and 300 (`sent_at`) are **left unchanged** (send timestamps render fine locally).
 
-7. **ConfirmationsPanel, ConfirmationDetailDrawer, ClinicConfirmationsTab** — replace `format(new Date(s.start_datetime), 'EEE, MMM d')` with the tz-aware equivalent so date and time labels are consistent.
+## 4. `src/pages/PublicConfirmationPage.tsx` + `supabase/functions/public-confirmation/index.ts`
 
-8. **BlockTimeDialog edit pre-fill** — `src/components/schedule/BlockTimeDialog.tsx:60-61`. Use `formatHHMMInTz` so editing a block doesn't shift its times.
+### Edge function (read-only SELECT change, no writes)
+- **Line 56** — before:
+  ```ts
+  supabase.from('facilities').select('name').eq('id', record.facility_id).single(),
+  ```
+  after:
+  ```ts
+  supabase.from('facilities').select('name, timezone').eq('id', record.facility_id).single(),
+  ```
+- **Line 80–86** — extend the returned payload with `timezone: facRes.data?.timezone || 'America/New_York'` (safety fallback matches `TIMEZONE_SAFETY_FALLBACK`).
 
-## Tier 3 — Edge timing and dashboard
+### Page
+- Add `timezone: string;` to the `ConfirmationData` interface (line 9–15).
+- Add `import { formatDateInTz, formatTimeInTz } from '@/lib/tzTime';`.
+- In `loadConfirmation`, set `timezone: payload.timezone` on the `setData(...)` object.
+- **Line 119** — before:
+  ```tsx
+  <TableCell className="text-sm py-2.5">{format(new Date(s.start_datetime), 'MMM d, yyyy')}</TableCell>
+  ```
+  after:
+  ```tsx
+  <TableCell className="text-sm py-2.5">{formatDateInTz(s.start_datetime, data.timezone, 'MMM d, yyyy')}</TableCell>
+  ```
+- **Line 120** — same swap with pattern `'EEEE'`.
+- **Line 122** — before:
+  ```tsx
+  {format(new Date(s.start_datetime), 'h:mm a')} – {format(new Date(s.end_datetime), 'h:mm a')}
+  ```
+  after:
+  ```tsx
+  {formatTimeInTz(s.start_datetime, data.timezone)} – {formatTimeInTz(s.end_datetime, data.timezone)}
+  ```
+- Line 133 (`data.generatedAt`) is **left unchanged** (generation timestamp).
 
-9. **Recurring expenses "today"** — `supabase/functions/generate-recurring-expenses/index.ts:20`. Use the user's profile tz (already on `user_profiles.timezone`) instead of UTC midnight to decide what "today" means.
-
-10. **Auto-invoice year stamp** — `supabase/functions/generate-auto-invoices/index.ts:421`. Derive year from the billing period's facility-tz wall date, not server UTC.
-
-11. **Dashboard "today / this week"** — `src/pages/DashboardPage.tsx:749,756`. Use profile tz for the "today" check on shifts.
-
-## Out of scope (low severity, defer)
-
-- Quarterly earnings, tax payment quarter bucketing, contracts display, Reports page ranges, "today" highlight ring on the calendar. These are cosmetic or rarely cross a boundary; leave for a follow-up.
-
-## Approach
-
-- Add one shared helper `parseDateOnly(ymd: string): Date` in `src/lib/tzTime.ts` (and mirror in `supabase/functions/_shared/tzTime.ts`) so we have a single safe way to parse date-only columns.
-- Add `clinicWallDateFromUtc(iso, tz)` in `_shared/tzTime.ts` for the edge functions.
-- Reuse existing `formatYMDInTz`, `formatDateInTz`, `formatTimeInTz`, `resolveShiftTz`, `resolveProfileTz` everywhere else.
+---
 
 ## Verification
+After edits, output a per-file before/after report confirming only the lines above changed, and run `rg "format\(new Date\(" src/pages/FacilityDetailPage.tsx src/components/schedule/ConfirmationDetailDrawer.tsx src/components/schedule/ClinicConfirmationsTab.tsx src/pages/PublicConfirmationPage.tsx` to confirm no stray shift-instant `format(new Date(...))` calls remain (audit/send timestamps may still match — they're intentionally left).
 
-- Run existing vitest suite (`tzTime.test.ts`, `timezoneHardening.test.ts`, `timezoneRegression.test.ts`, `shiftFormTz.test.ts`, `invoiceOverdue.test.ts`, `confirmations.test.ts`, `clinicConfirmations.test.ts`).
-- Add new unit tests for `getDaysUntilExpiration`, `isInvoiceOverdue`, and `useConfirmations` month bucketing using a Pacific tz and a late-night overnight shift.
-- Run Deno tests for `backfill-mileage` and `auto-mileage-tracker` edge functions.
-
-## Suggested split
-
-Each tier can ship independently. Recommend tackling Tier 1 first (correctness), then Tier 2 (clinic-facing display), then Tier 3. Want me to start with all of Tier 1 in one pass, or one feature at a time?
+## Out of scope
+Tier 1 (done), Tier 3 (edge timing, dashboard "today"), `BlockTimeDialog`, schema, sorts/filters, write paths.
