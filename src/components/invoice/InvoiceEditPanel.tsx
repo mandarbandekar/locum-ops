@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Pencil, Check, X, Trash2, CheckCircle, PiggyBank, ChevronDown, CalendarClock, FileText, Pencil as PencilIcon } from 'lucide-react';
+import { Plus, Pencil, Check, X, Trash2, CheckCircle, PiggyBank, ChevronDown, CalendarClock, FileText, Pencil as PencilIcon, Undo2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -363,6 +363,19 @@ export function InvoiceEditPanel({
   const [paymentHistoryOpen, setPaymentHistoryOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(!!(invoice.notes && invoice.notes.length > 0));
 
+  // ─── Undo stack for line-item mutations ───
+  // Each entry holds a snapshot of items + invoice totals taken BEFORE the action.
+  type UndoEntry = {
+    label: string;
+    items: any[];
+    total_amount: number;
+    balance_due: number;
+  };
+  const [undoStack, setUndoStack] = useState<UndoEntry[]>([]);
+  const [isUndoing, setIsUndoing] = useState(false);
+  // Reset stack when switching invoices
+  useEffect(() => { setUndoStack([]); }, [invoice.id]);
+
   const { profile: taxProfile, hasProfile: hasTaxProfile } = useTaxIntelligence();
   const { invoices: allInvoices, shifts, terms, updateShift } = useData();
 
@@ -444,8 +457,71 @@ export function InvoiceEditPanel({
     onSaveRef.current = handleSave;
   }
 
+  // Capture a snapshot of the current line items + invoice totals BEFORE a mutation.
+  const pushUndo = (label: string) => {
+    setUndoStack(s => [
+      ...s,
+      {
+        label,
+        items: items.map((x: any) => ({ ...x })),
+        total_amount: invoice.total_amount,
+        balance_due: invoice.balance_due,
+      },
+    ].slice(-20)); // cap depth
+  };
+
+  const handleUndo = async () => {
+    if (undoStack.length === 0 || isUndoing) return;
+    const snap = undoStack[undoStack.length - 1];
+    setIsUndoing(true);
+    try {
+      const currentById = new Map(items.map((x: any) => [x.id, x]));
+      const snapById = new Map(snap.items.map((x: any) => [x.id, x]));
+
+      // Delete items that exist now but didn't in the snapshot.
+      for (const cur of items) {
+        if (!snapById.has(cur.id) && onDeleteLineItem) {
+          await onDeleteLineItem(cur.id);
+        }
+      }
+      // Re-add items that were in the snapshot but are missing now.
+      for (const prev of snap.items) {
+        if (!currentById.has(prev.id) && onAddLineItem) {
+          const { id, created_at, updated_at, user_id, ...rest } = prev;
+          await onAddLineItem(rest);
+        }
+      }
+      // Update items present in both whose contents changed.
+      for (const prev of snap.items) {
+        const cur = currentById.get(prev.id);
+        if (cur && onUpdateLineItem) {
+          const changed =
+            cur.description !== prev.description ||
+            cur.service_date !== prev.service_date ||
+            Number(cur.qty) !== Number(prev.qty) ||
+            Number(cur.unit_rate) !== Number(prev.unit_rate) ||
+            Number(cur.line_total) !== Number(prev.line_total);
+          if (changed) await onUpdateLineItem(prev);
+        }
+      }
+      await onUpdateInvoice({
+        ...invoice,
+        total_amount: snap.total_amount,
+        balance_due: snap.balance_due,
+      });
+      setUndoStack(s => s.slice(0, -1));
+      toast.success(`Undid: ${snap.label}`);
+    } catch (e) {
+      console.error('Undo failed', e);
+      toast.error('Could not undo that action');
+    } finally {
+      setIsUndoing(false);
+    }
+  };
+
   const handleAddLineItem = async () => {
     if (!newDesc.trim() || !onAddLineItem) return;
+    pushUndo('Add custom line');
     const qtyN = parseFloat(newQty) || 0;
     const rateN = parseFloat(newRate) || 0;
     const lineTotal = qtyN * rateN;
@@ -563,9 +639,24 @@ export function InvoiceEditPanel({
       {/* Line Items as card list */}
       <Card data-line-items-section>
         <CardHeader className="pb-1.5 pt-3 px-3">
-          <CardTitle className="text-xs text-muted-foreground uppercase tracking-wider">
-            {readOnly ? 'Line Items' : 'Shifts on this invoice'} ({items.length})
-          </CardTitle>
+          <div className="flex items-center justify-between gap-2">
+            <CardTitle className="text-xs text-muted-foreground uppercase tracking-wider">
+              {readOnly ? 'Line Items' : 'Shifts on this invoice'} ({items.length})
+            </CardTitle>
+            {!readOnly && undoStack.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs gap-1"
+                onClick={handleUndo}
+                disabled={isUndoing}
+                title={`Undo: ${undoStack[undoStack.length - 1].label}`}
+              >
+                <Undo2 className="h-3.5 w-3.5" />
+                Undo
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="px-3 pb-3 space-y-2">
           {items.length === 0 ? (
@@ -596,6 +687,7 @@ export function InvoiceEditPanel({
                   hasOvertime={hasOvertime}
                   clinicOvertimeRate={shift ? (terms.find(t => t.facility_id === shift.facility_id)?.overtime_rate ?? null) : null}
                   onAddOvertime={shift && !readOnly && onAddLineItem ? async () => {
+                    pushUndo('Add overtime');
                     const clinicTerms = terms.find(t => t.facility_id === shift.facility_id);
                     const clinicOtRate = clinicTerms?.overtime_rate != null ? Number(clinicTerms.overtime_rate) : 0;
                     const savedOtRate = profile?.default_overtime_rate != null ? Number(profile.default_overtime_rate) : 0;
@@ -626,6 +718,7 @@ export function InvoiceEditPanel({
                   } : undefined}
                   onUpdate={async (updated) => {
                     if (!onUpdateLineItem) return;
+                    if (!isUndoing) pushUndo('Edit line item');
                     await onUpdateLineItem(updated);
                     const nextItems = items.map((x: any) => x.id === updated.id ? updated : x);
                     const newTotal = Math.round(nextItems.reduce((s: number, x: any) => s + (Number(x.line_total) || 0), 0) * 100) / 100;
@@ -646,6 +739,7 @@ export function InvoiceEditPanel({
                   }}
                   onDelete={async () => {
                     if (!onDeleteLineItem) return;
+                    if (!isUndoing) pushUndo('Delete line item');
                     await onDeleteLineItem(li.id);
                     const nextItems = items.filter((x: any) => x.id !== li.id);
                     const newTotal = nextItems.reduce((s: number, x: any) => s + (x.line_total || 0), 0);
