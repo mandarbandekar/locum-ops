@@ -114,7 +114,8 @@ Deno.serve(async (req) => {
 
       const roundTripMiles = oneWayMiles * 2;
       const amountCents = Math.round(roundTripMiles * irsMileageRateCents);
-      const shiftDate = shift.start_datetime.split("T")[0];
+      // Clinic-tz wall date so late-night shifts don't file under next day.
+      const shiftDate = localYMDForShift(shift, facility.timezone || "America/New_York");
 
       expensesToInsert.push({
         user_id: shift.user_id,
