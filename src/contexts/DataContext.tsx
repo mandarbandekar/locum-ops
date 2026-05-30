@@ -526,7 +526,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
         });
 
         const builderRows = newItems.map(item => ({ user_id: user!.id, invoice_id: existingDraft.id, ...item }));
-        const preservedRows = preserved.map(({ id: _id, ...rest }: any) => ({ ...rest, invoice_id: existingDraft.id }));
+        const preservedRows = preserved.map(({ id: _id, ...rest }: any) => ({ ...rest, user_id: user!.id, invoice_id: existingDraft.id }));
         const toInsert = [...builderRows, ...preservedRows];
 
         const total = toInsert.reduce((sum, li: any) => sum + (Number(li.line_total) || 0), 0);
@@ -708,7 +708,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
             });
 
             const builderRows = newItems.map(item => ({ user_id: user!.id, invoice_id: existingDraft.id, ...item }));
-            const preservedRows = preserved.map(({ id: _id, ...rest }: any) => ({ ...rest, invoice_id: existingDraft.id }));
+            const preservedRows = preserved.map(({ id: _id, ...rest }: any) => ({ ...rest, user_id: user!.id, invoice_id: existingDraft.id }));
             const toInsert = [...builderRows, ...preservedRows];
             const total = toInsert.reduce((sum, li: any) => sum + (Number(li.line_total) || 0), 0);
 
