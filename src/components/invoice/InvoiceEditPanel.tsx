@@ -457,6 +457,68 @@ export function InvoiceEditPanel({
     onSaveRef.current = handleSave;
   }
 
+  // Capture a snapshot of the current line items + invoice totals BEFORE a mutation.
+  const pushUndo = (label: string) => {
+    setUndoStack(s => [
+      ...s,
+      {
+        label,
+        items: items.map((x: any) => ({ ...x })),
+        total_amount: invoice.total_amount,
+        balance_due: invoice.balance_due,
+      },
+    ].slice(-20)); // cap depth
+  };
+
+  const handleUndo = async () => {
+    if (undoStack.length === 0 || isUndoing) return;
+    const snap = undoStack[undoStack.length - 1];
+    setIsUndoing(true);
+    try {
+      const currentById = new Map(items.map((x: any) => [x.id, x]));
+      const snapById = new Map(snap.items.map((x: any) => [x.id, x]));
+
+      // Delete items that exist now but didn't in the snapshot.
+      for (const cur of items) {
+        if (!snapById.has(cur.id) && onDeleteLineItem) {
+          await onDeleteLineItem(cur.id);
+        }
+      }
+      // Re-add items that were in the snapshot but are missing now.
+      for (const prev of snap.items) {
+        if (!currentById.has(prev.id) && onAddLineItem) {
+          const { id, created_at, updated_at, user_id, ...rest } = prev;
+          await onAddLineItem(rest);
+        }
+      }
+      // Update items present in both whose contents changed.
+      for (const prev of snap.items) {
+        const cur = currentById.get(prev.id);
+        if (cur && onUpdateLineItem) {
+          const changed =
+            cur.description !== prev.description ||
+            cur.service_date !== prev.service_date ||
+            Number(cur.qty) !== Number(prev.qty) ||
+            Number(cur.unit_rate) !== Number(prev.unit_rate) ||
+            Number(cur.line_total) !== Number(prev.line_total);
+          if (changed) await onUpdateLineItem(prev);
+        }
+      }
+      await onUpdateInvoice({
+        ...invoice,
+        total_amount: snap.total_amount,
+        balance_due: snap.balance_due,
+      });
+      setUndoStack(s => s.slice(0, -1));
+      toast.success(`Undid: ${snap.label}`);
+    } catch (e) {
+      console.error('Undo failed', e);
+      toast.error('Could not undo that action');
+    } finally {
+      setIsUndoing(false);
+    }
+  };
+
   const handleAddLineItem = async () => {
     if (!newDesc.trim() || !onAddLineItem) return;
     const qtyN = parseFloat(newQty) || 0;
