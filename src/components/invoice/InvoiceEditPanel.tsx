@@ -521,6 +521,7 @@ export function InvoiceEditPanel({
 
   const handleAddLineItem = async () => {
     if (!newDesc.trim() || !onAddLineItem) return;
+    pushUndo('Add custom line');
     const qtyN = parseFloat(newQty) || 0;
     const rateN = parseFloat(newRate) || 0;
     const lineTotal = qtyN * rateN;
