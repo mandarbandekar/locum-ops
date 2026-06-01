@@ -329,7 +329,7 @@ export function renderFullPacketPdf(input: FullPacketInputs): jsPDF {
   doc.addPage(); appendClinicIncomeSection(doc, input.year, input.clinicIncome);
   doc.addPage(); appendReceivablesSection(doc, input.year, input.receivables);
   doc.addPage(); appendExpenseReviewSection(doc, input.year, input.expenseReview);
-  doc.addPage(); appendMileageSection(doc, input.year, input.irsRateCents, input.mileage.monthly, input.mileage.totals, input.mileage.byClinic, input.mileage.startingMiles, input.mileage.startingMilesNote);
+  doc.addPage(); appendMileageSection(doc, input.year, input.irsRateCents, input.mileage.monthly, input.mileage.totals, input.mileage.tripLog, input.mileage.startingMiles, input.mileage.startingMilesNote);
   doc.addPage(); appendReadinessSection(doc, input.year, input.readiness.items, input.readiness.agenda);
 
   footer(doc);
