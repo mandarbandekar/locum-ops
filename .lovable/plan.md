@@ -1,88 +1,68 @@
-## Goal
+# Monthly Mileage Report — Per-Trip Log + Monthly Totals
 
-Replace the single "Export CPA Packet" text dump with per-section, per-month **PDF + CSV** downloads. Every section under CPA Prep / Tax Intelligence gets its own monthly breakdown. Mileage gets a featured Monthly Mileage Report showing `miles × IRS rate = $`.
+Rework the Monthly Mileage Report (inline preview, PDF, and CSV) so every trip is listed with date, place, and miles, and rolled up into a 12-month summary.
 
-## What the user gets
+## Report structure
 
-Each section card in CPA Prep grows a small "Export" dropdown with two buttons: **PDF** and **CSV**. Both files are broken out by month (Jan → current month), with YTD totals.
+**1. Monthly Summary (always 12 rows: Jan–Dec of the selected year)**
 
-Sections covered:
-1. **Monthly Mileage Report** (the highlight) — month rollup + clinic detail
-2. Profit & Loss Summary
-3. Income by Clinic
-4. Accounts Receivable
-5. Expense Review by Tax Category
-6. CPA Readiness Checklist (PDF only — not numeric)
+| Month | Trips | Miles | IRS Rate | Deduction ($) |
+|---|---|---|---|---|
+| Jan 2026 | 0 | 0 | $0.70 | $0.00 |
+| Feb 2026 | 4 | 312 | $0.70 | $218.40 |
+| … | | | | |
+| **Total** | … | … | — | … |
 
-A top-level "Export Full CPA Packet" stays, but becomes a **single multi-page PDF** combining all sections (replacing the current .txt).
+Empty months show `0 / 0 / $0.00` so the year reads cleanly.
 
-## Monthly Mileage Report — structure
+**2. Trip Log (grouped by month, only months with activity)**
 
-**Header:** Tax year, IRS rate used (from `expense_config.irs_mileage_rate_cents`, e.g. `$0.70/mi`), generated date.
+```
+── February 2026 ─────────────────────────────────
+Date         Place                                          Miles
+2026-02-04   Taylor Animal Hospital                          78
+             1234 Main St, Columbus, OH 43215
+2026-02-11   Greenfield Medical Center                       52
+             88 Park Ave, Cleveland, OH 44106
+                                       Subtotal:  130 mi  /  $91.00
+```
 
-**Section A — Monthly Rollup table**
+Place column = **clinic name + full address** (address on a second line in PDF so the table doesn't wrap awkwardly; CSV uses a single combined cell).
 
-| Month | Business Miles | IRS Rate | Deduction ($) |
-|---|---|---|---|
-| Jan | 412 | $0.70 | $288.40 |
-| … | | | |
-| **YTD** | **4,820** | — | **$3,374.00** |
+## Data source
 
-**Section B — Clinic Detail (per month)**
-For each month with mileage, a sub-table:
+From `useCPAPrepData()` → `confirmedMileageExpenses` and `facilities`:
+- **Date** → `expense_date` (string-sliced YYYY-MM-DD, no UTC drift)
+- **Place** → `facilities[expense.facility_id]` → `name` + `address` (fallback: `vendor`, else `"Unlinked trip"`)
+- **Miles** → `mileage_miles`
+- **$** → `mileage_miles × irs_mileage_rate_cents / 100` (current rate from `expense_config`)
+- **Year** → derived from the active CPA Prep date range (uses the range's start year)
 
-| Clinic | Trips | Miles | Deduction ($) |
+## Files to change
 
-**Section C — Footer:** starting balance note (if `startingMiles > 0`), IRS-rate disclaimer.
+1. **`src/lib/cpaPrepExports.ts`**
+   - Add `buildMileageTripLog(expenses, facilitiesById)` → `{ monthKey, monthLabel, trips: [{date, place, address, miles, amount}], subtotalMiles, subtotalAmount }[]`
+   - Update `buildMonthlyMileageRows` to emit all 12 months (zero-filled) for the active year
+   - CSV builder emits: summary block → blank row → trip log grouped by month with subtotal rows
 
-Calculation: `deduction = round(miles × irs_mileage_rate_cents) / 100`, applied uniformly with the **current rate from `expense_config`** (per your choice). One italic line notes the assumption so the CPA can adjust if the rate changed mid-year.
+2. **`src/lib/cpaPrepPdf.ts`**
+   - Mileage section: render summary `autoTable` first, then one `autoTable` per active month for trips. Address renders as a smaller second line under the clinic name (custom `didDrawCell`).
 
-## Technical approach
+3. **`src/hooks/useCPAPrepData.ts`**
+   - Expose `facilitiesById` (id → `{name, address}`) alongside `confirmedMileageExpenses`.
 
-### New shared module: `src/lib/cpaPrepExports.ts`
-Pure functions that take `useCPAPrepData()` output + raw `confirmedMileageExpenses` and return:
-- `buildMonthlyMileageRows(expenses, year, irsRateCents)` → `{ month, miles, rateCents, deductionCents }[]`
-- `buildMonthlyMileageByClinic(expenses, facilities, year)` → `Record<month, ClinicRow[]>`
-- `buildMonthlyPnL`, `buildMonthlyClinicIncome`, `buildMonthlyExpenseReview`, `buildMonthlyReceivables` — each returns a normalized `{ columns, rows, totals }` shape.
+4. **`src/components/cpa-prep/MonthlyMileagePreview.tsx`**
+   - Show the 12-month summary table (current view).
+   - Add a collapsible **"Trip log"** section below it: one accordion per month listing every trip (date, place, miles), with the monthly subtotal in the header.
 
-This keeps export logic out of components and unit-testable.
-
-### CSV generation (client-side)
-Tiny helper `toCsv(rows, columns)` in the same module. Triggered via Blob download — same pattern as the existing `ExpenseSummaryTab.exportCSV`. No new deps.
-
-### PDF generation (client-side, no edge function)
-Use **`jspdf` + `jspdf-autotable`** (small, already common in this stack; add via `bun add`). Client-side keeps it instant and avoids spinning up an edge function for a read-only export.
-
-Helper `src/lib/cpaPrepPdf.ts`:
-- `renderSectionPdf(title, subtitle, tables[])` → returns a `jsPDF` doc
-- `renderFullPacketPdf(allSections)` → combines into a single multi-page doc with a cover page
-
-Branding: LocumOps wordmark in header, generated date + user name in footer, disclaimer block on last page. Uses the same disclaimer copy as today's `.txt`.
-
-### UI wiring
-- New small component `src/components/cpa-prep/SectionExportMenu.tsx` — a `DropdownMenu` with "Download PDF" and "Download CSV" items. Drop one into each `<Section>` header in `CPAPrepTab.tsx` (right-aligned next to the chevron).
-- Replace `ExportCPAPacket.tsx` body to call `renderFullPacketPdf` → PDF download instead of `.txt`. Keep the button placement.
-
-### Data flow
-`CPAPrepTab` already calls `useCPAPrepData()`. Pass the hook's result plus `confirmedMileageExpenses` and `config.irs_mileage_rate_cents` (already exposed by `useExpenses`) down into each section's export menu. No new queries, no schema changes.
-
-### Files touched
-- **New:** `src/lib/cpaPrepExports.ts`, `src/lib/cpaPrepPdf.ts`, `src/components/cpa-prep/SectionExportMenu.tsx`, `src/components/cpa-prep/MonthlyMileageReport.tsx` (optional in-app preview table — see "Open question" below), `src/test/cpaPrepExports.test.ts`
-- **Edit:** `src/hooks/useCPAPrepData.ts` (expose `monthlyMileage` + `irsRateCents`), `src/components/business/CPAPrepTab.tsx` (mount export menus), `src/components/cpa-prep/ExportCPAPacket.tsx` (swap .txt → PDF), `src/components/cpa-prep/MileageSummary.tsx` (add a small "Monthly breakdown" expandable preview)
-- **Deps:** `bun add jspdf jspdf-autotable`
-
-### Testing
-Vitest covering:
-- Monthly bucketing across timezone boundaries (dates use `expense_date` string — no UTC shift)
-- IRS rate × miles math with rounding
-- Empty-month rendering (zeros, not skipped)
-- CSV escaping for commas / quotes in clinic names
+## Edge cases
+- Unlinked expense (no `facility_id`, no `vendor`) → place = "Unlinked trip", address blank.
+- Months with zero trips → present in summary as $0 row; omitted from trip log.
+- Trips sorted ascending by date within each month; months ascending Jan→Dec.
+- Year boundary: only trips whose `expense_date` year matches the report year are included.
 
 ## Out of scope
-- Excel (.xlsx) output — you opted for PDF + CSV. Easy to add later via `xlsx` lib using the same row builders.
-- Multi-rate handling (rate change mid-year). Disclaimer flags it; CPA can adjust.
-- Server-side generation / emailing the packet.
-
-## Open question I'll proceed with unless you say otherwise
-
-Show the **Monthly Mileage rollup table inline in the Mileage section** (collapsible, default closed) so users see what the PDF will contain before downloading. Tell me if you'd rather keep the in-app UI unchanged and have the monthly view live only inside the downloaded files.
+- Trip purpose/notes column
+- Editing trips from the preview
+- Excel (.xlsx) export
+- Multi-rate handling (still single current IRS rate)

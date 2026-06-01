@@ -8,7 +8,7 @@ import {
   MONTH_LABELS,
   _fmt,
   type MonthlyMileageRow,
-  type MonthlyMileageClinicRow,
+  type MileageMonthLog,
   type MonthlyPnLRow,
   type MonthlyClinicIncomeRow,
   type MonthlyExpenseCategoryRow,
@@ -70,21 +70,29 @@ export function appendMileageSection(
   irsRateCents: number,
   monthly: MonthlyMileageRow[],
   totals: { miles: number; deductionCents: number },
-  byClinic: Record<number, MonthlyMileageClinicRow[]>,
+  tripLog: MileageMonthLog[],
   startingMiles?: number,
   startingMilesNote?: string,
 ): void {
   const startY = header(doc, `Monthly Mileage Report — ${year}`, `IRS standard rate applied: ${fmtRate(irsRateCents)} per mile`);
 
+  const tripsByMonth = new Map(tripLog.map(l => [l.monthIndex, l.trips.length]));
+
   autoTable(doc, {
     startY,
-    head: [['Month', 'Business Miles', 'IRS Rate', 'Deduction']],
-    body: monthly.map(r => [r.month, fmtMiles(r.miles), fmtRate(r.rateCents), fmt(r.deductionCents)]),
-    foot: [['YTD Total', fmtMiles(totals.miles), '', fmt(totals.deductionCents)]],
+    head: [['Month', 'Trips', 'Business Miles', 'IRS Rate', 'Deduction']],
+    body: monthly.map((r, i) => [
+      `${r.month} ${year}`,
+      String(tripsByMonth.get(i) ?? 0),
+      fmtMiles(r.miles),
+      fmtRate(r.rateCents),
+      fmt(r.deductionCents),
+    ]),
+    foot: [['YTD Total', String(tripLog.reduce((s, l) => s + l.trips.length, 0)), fmtMiles(totals.miles), '', fmt(totals.deductionCents)]],
     headStyles: { fillColor: [40, 40, 40] },
     footStyles: { fillColor: [240, 240, 240], textColor: 0, fontStyle: 'bold' },
     styles: { fontSize: 10, cellPadding: 6 },
-    columnStyles: { 1: { halign: 'right' }, 2: { halign: 'right' }, 3: { halign: 'right' } },
+    columnStyles: { 1: { halign: 'right' }, 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' } },
     margin: { left: 40, right: 40 },
   });
 
@@ -95,23 +103,42 @@ export function appendMileageSection(
     doc.setTextColor(0);
   }
 
-  const monthsWithDetail = Object.keys(byClinic).map(Number).sort((a, b) => a - b);
-  if (monthsWithDetail.length > 0) {
+  // Trip log: one table per month, with address as a second line under the place name.
+  if (tripLog.length > 0) {
     let y = lastY(doc) + 28;
     if (y > doc.internal.pageSize.getHeight() - 120) { doc.addPage(); y = 60; }
     doc.setFont('helvetica', 'bold'); doc.setFontSize(12);
-    doc.text('Clinic Detail by Month', 40, y);
+    doc.text('Trip Log', 40, y);
+    y += 6;
 
-    autoTable(doc, {
-      startY: y + 10,
-      head: [['Month', 'Clinic', 'Trips', 'Miles', 'Deduction']],
-      body: monthsWithDetail.flatMap(m =>
-        byClinic[m].map(c => [MONTH_LABELS[m], c.clinic, c.trips, fmtMiles(c.miles), fmt(c.deductionCents)])
-      ),
-      headStyles: { fillColor: [40, 40, 40] },
-      styles: { fontSize: 9, cellPadding: 5 },
-      columnStyles: { 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' } },
-      margin: { left: 40, right: 40 },
+    tripLog.forEach(month => {
+      y = lastY(doc) + 18;
+      if (y > doc.internal.pageSize.getHeight() - 140) { doc.addPage(); y = 60; }
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5); doc.setTextColor(40);
+      doc.text(month.monthLabel, 40, y);
+      doc.setTextColor(0);
+
+      autoTable(doc, {
+        startY: y + 6,
+        head: [['Date', 'Place', 'Miles', 'Deduction']],
+        body: month.trips.map(t => [
+          t.date,
+          t.address ? `${t.place}\n${t.address}` : t.place,
+          fmtMiles(t.miles),
+          fmt(t.amountCents),
+        ]),
+        foot: [['', 'Subtotal', fmtMiles(month.subtotalMiles), fmt(month.subtotalAmountCents)]],
+        headStyles: { fillColor: [60, 60, 60], fontSize: 9 },
+        footStyles: { fillColor: [245, 245, 245], textColor: 0, fontStyle: 'bold', fontSize: 9 },
+        styles: { fontSize: 9, cellPadding: 4, overflow: 'linebreak', valign: 'top' },
+        columnStyles: {
+          0: { cellWidth: 72 },
+          1: { cellWidth: 'auto' },
+          2: { cellWidth: 60, halign: 'right' },
+          3: { cellWidth: 70, halign: 'right' },
+        },
+        margin: { left: 40, right: 40 },
+      });
     });
   }
 
@@ -274,7 +301,7 @@ export function finalize(doc: jsPDF): jsPDF {
 export interface FullPacketInputs {
   year: number;
   irsRateCents: number;
-  mileage: { monthly: MonthlyMileageRow[]; totals: { miles: number; deductionCents: number }; byClinic: Record<number, MonthlyMileageClinicRow[]>; startingMiles?: number; startingMilesNote?: string };
+  mileage: { monthly: MonthlyMileageRow[]; totals: { miles: number; deductionCents: number }; tripLog: MileageMonthLog[]; startingMiles?: number; startingMilesNote?: string };
   pnl: { rows: MonthlyPnLRow[]; totals: { incomeCents: number; expenseCents: number; netCents: number } };
   clinicIncome: { rows: MonthlyClinicIncomeRow[]; totals: { billedCents: number; paidCents: number; unpaidCents: number } };
   expenseReview: { rows: MonthlyExpenseCategoryRow[]; totals: { totalCents: number; deductibleCents: number; monthly: number[] } };
@@ -302,7 +329,7 @@ export function renderFullPacketPdf(input: FullPacketInputs): jsPDF {
   doc.addPage(); appendClinicIncomeSection(doc, input.year, input.clinicIncome);
   doc.addPage(); appendReceivablesSection(doc, input.year, input.receivables);
   doc.addPage(); appendExpenseReviewSection(doc, input.year, input.expenseReview);
-  doc.addPage(); appendMileageSection(doc, input.year, input.irsRateCents, input.mileage.monthly, input.mileage.totals, input.mileage.byClinic, input.mileage.startingMiles, input.mileage.startingMilesNote);
+  doc.addPage(); appendMileageSection(doc, input.year, input.irsRateCents, input.mileage.monthly, input.mileage.totals, input.mileage.tripLog, input.mileage.startingMiles, input.mileage.startingMilesNote);
   doc.addPage(); appendReadinessSection(doc, input.year, input.readiness.items, input.readiness.agenda);
 
   footer(doc);

@@ -18,7 +18,7 @@ import ExportCPAPacket from '@/components/cpa-prep/ExportCPAPacket';
 import SectionExportMenu from '@/components/cpa-prep/SectionExportMenu';
 import { useCPAPrepData } from '@/hooks/useCPAPrepData';
 import {
-  buildMonthlyMileageRows, buildMonthlyMileageByClinic, buildMonthlyPnL,
+  buildMonthlyMileageRows, buildMileageTripLog, buildMonthlyPnL,
   buildMonthlyClinicIncome, buildMonthlyExpensesByCategory,
   mileageCsv, pnlCsv, clinicIncomeCsv, expenseReviewCsv, receivablesCsv,
 } from '@/lib/cpaPrepExports';
@@ -77,7 +77,7 @@ export default function CPAPrepTab({
 
   // Lazy builders shared across section + full-packet exports
   const mileage = useMemo(() => buildMonthlyMileageRows(cpd.confirmedMileageExpenses, year, cpd.irsRateCents), [cpd.confirmedMileageExpenses, year, cpd.irsRateCents]);
-  const mileageClinic = useMemo(() => buildMonthlyMileageByClinic(cpd.confirmedMileageExpenses, cpd.facilities, year, cpd.irsRateCents), [cpd.confirmedMileageExpenses, cpd.facilities, year, cpd.irsRateCents]);
+  const mileageTripLog = useMemo(() => buildMileageTripLog(cpd.confirmedMileageExpenses, cpd.facilities, year, cpd.irsRateCents), [cpd.confirmedMileageExpenses, cpd.facilities, year, cpd.irsRateCents]);
   const pnl = useMemo(() => buildMonthlyPnL(cpd.invoices, cpd.ytdExpenses, year), [cpd.invoices, cpd.ytdExpenses, year]);
   const clinicInc = useMemo(() => buildMonthlyClinicIncome(cpd.invoices, cpd.shifts, cpd.facilities, year), [cpd.invoices, cpd.shifts, cpd.facilities, year]);
   const expReview = useMemo(() => buildMonthlyExpensesByCategory(cpd.ytdExpenses, year), [cpd.ytdExpenses, year]);
@@ -89,10 +89,10 @@ export default function CPAPrepTab({
       disabled={mileage.totals.miles === 0}
       buildPdf={() => {
         const d = newDoc();
-        appendMileageSection(d, year, cpd.irsRateCents, mileage.rows, mileage.totals, mileageClinic, cpd.startingMiles, cpd.startingMilesNote);
+        appendMileageSection(d, year, cpd.irsRateCents, mileage.rows, mileage.totals, mileageTripLog, cpd.startingMiles, cpd.startingMilesNote);
         return finalize(d);
       }}
-      buildCsv={() => mileageCsv(mileage.rows, mileage.totals, mileageClinic, cpd.irsRateCents, year)}
+      buildCsv={() => mileageCsv(mileage.rows, mileage.totals, mileageTripLog, cpd.irsRateCents, year)}
     />
   );
   const pnlExport = (
@@ -186,9 +186,11 @@ export default function CPAPrepTab({
             <MileageSummary
               data={cpd.mileage}
               expenses={cpd.confirmedMileageExpenses}
+              facilities={cpd.facilities}
               irsRateCents={cpd.irsRateCents}
               year={year}
             />
+
           </Section>
 
           <Section title="✅ CPA Readiness Checklist" action={readinessExport}>

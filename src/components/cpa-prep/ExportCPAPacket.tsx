@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import {
   buildMonthlyMileageRows,
-  buildMonthlyMileageByClinic,
+  buildMileageTripLog,
   buildMonthlyPnL,
   buildMonthlyClinicIncome,
   buildMonthlyExpensesByCategory,
@@ -31,7 +31,7 @@ export default function ExportCPAPacket(props: Props) {
   const handleExport = () => {
     try {
       const mileageRows = buildMonthlyMileageRows(props.confirmedMileageExpenses, props.year, props.irsRateCents);
-      const mileageClinic = buildMonthlyMileageByClinic(props.confirmedMileageExpenses, props.facilities, props.year, props.irsRateCents);
+      const mileageTripLog = buildMileageTripLog(props.confirmedMileageExpenses, props.facilities, props.year, props.irsRateCents);
       const pnl = buildMonthlyPnL(props.invoices, props.ytdExpenses, props.year);
       const clinicIncome = buildMonthlyClinicIncome(props.invoices, props.shifts, props.facilities, props.year);
       const expenseReview = buildMonthlyExpensesByCategory(props.ytdExpenses, props.year);
@@ -39,7 +39,7 @@ export default function ExportCPAPacket(props: Props) {
       const doc = renderFullPacketPdf({
         year: props.year,
         irsRateCents: props.irsRateCents,
-        mileage: { monthly: mileageRows.rows, totals: mileageRows.totals, byClinic: mileageClinic, startingMiles: props.startingMiles, startingMilesNote: props.startingMilesNote },
+        mileage: { monthly: mileageRows.rows, totals: mileageRows.totals, tripLog: mileageTripLog, startingMiles: props.startingMiles, startingMilesNote: props.startingMilesNote },
         pnl,
         clinicIncome,
         expenseReview,
