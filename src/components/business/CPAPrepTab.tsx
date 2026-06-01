@@ -18,7 +18,7 @@ import ExportCPAPacket from '@/components/cpa-prep/ExportCPAPacket';
 import SectionExportMenu from '@/components/cpa-prep/SectionExportMenu';
 import { useCPAPrepData } from '@/hooks/useCPAPrepData';
 import {
-  buildMonthlyMileageRows, buildMonthlyMileageByClinic, buildMonthlyPnL,
+  buildMonthlyMileageRows, buildMileageTripLog, buildMonthlyPnL,
   buildMonthlyClinicIncome, buildMonthlyExpensesByCategory,
   mileageCsv, pnlCsv, clinicIncomeCsv, expenseReviewCsv, receivablesCsv,
 } from '@/lib/cpaPrepExports';
