@@ -1,6 +1,7 @@
 import { Car } from 'lucide-react';
 import type { MileageSummary as MileageData } from '@/hooks/useCPAPrepData';
 import type { Expense } from '@/hooks/useExpenses';
+import type { Facility } from '@/types';
 import MonthlyMileagePreview from './MonthlyMileagePreview';
 
 const fmt = (c: number) => `$${(c / 100).toLocaleString('en-US', { minimumFractionDigits: 0 })}`;
@@ -8,11 +9,12 @@ const fmt = (c: number) => `$${(c / 100).toLocaleString('en-US', { minimumFracti
 interface Props {
   data: MileageData;
   expenses?: Expense[];
+  facilities?: Facility[];
   irsRateCents?: number;
   year?: number;
 }
 
-export default function MileageSummary({ data, expenses, irsRateCents, year }: Props) {
+export default function MileageSummary({ data, expenses, facilities, irsRateCents, year }: Props) {
   if (data.totalMiles === 0) return <p className="text-sm text-muted-foreground py-4 text-center">No mileage tracked yet. Log commute miles in the Expense Tracker to see your travel deduction.</p>;
   return (
     <div className="space-y-4">
