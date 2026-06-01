@@ -89,10 +89,10 @@ export default function CPAPrepTab({
       disabled={mileage.totals.miles === 0}
       buildPdf={() => {
         const d = newDoc();
-        appendMileageSection(d, year, cpd.irsRateCents, mileage.rows, mileage.totals, mileageClinic, cpd.startingMiles, cpd.startingMilesNote);
+        appendMileageSection(d, year, cpd.irsRateCents, mileage.rows, mileage.totals, mileageTripLog, cpd.startingMiles, cpd.startingMilesNote);
         return finalize(d);
       }}
-      buildCsv={() => mileageCsv(mileage.rows, mileage.totals, mileageClinic, cpd.irsRateCents, year)}
+      buildCsv={() => mileageCsv(mileage.rows, mileage.totals, mileageTripLog, cpd.irsRateCents, year)}
     />
   );
   const pnlExport = (
