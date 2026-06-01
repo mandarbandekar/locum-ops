@@ -186,9 +186,11 @@ export default function CPAPrepTab({
             <MileageSummary
               data={cpd.mileage}
               expenses={cpd.confirmedMileageExpenses}
+              facilities={cpd.facilities}
               irsRateCents={cpd.irsRateCents}
               year={year}
             />
+
           </Section>
 
           <Section title="✅ CPA Readiness Checklist" action={readinessExport}>
