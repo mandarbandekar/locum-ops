@@ -8,7 +8,7 @@ import {
   MONTH_LABELS,
   _fmt,
   type MonthlyMileageRow,
-  type MonthlyMileageClinicRow,
+  type MileageMonthLog,
   type MonthlyPnLRow,
   type MonthlyClinicIncomeRow,
   type MonthlyExpenseCategoryRow,
