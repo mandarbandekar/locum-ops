@@ -275,7 +275,7 @@ export interface FullPacketInputs {
   year: number;
   irsRateCents: number;
   mileage: { monthly: MonthlyMileageRow[]; totals: { miles: number; deductionCents: number }; byClinic: Record<number, MonthlyMileageClinicRow[]>; startingMiles?: number; startingMilesNote?: string };
-  pnl: { monthly: MonthlyPnLRow[]; totals: { incomeCents: number; expenseCents: number; netCents: number } };
+  pnl: { rows: MonthlyPnLRow[]; totals: { incomeCents: number; expenseCents: number; netCents: number } };
   clinicIncome: { rows: MonthlyClinicIncomeRow[]; totals: { billedCents: number; paidCents: number; unpaidCents: number } };
   expenseReview: { rows: MonthlyExpenseCategoryRow[]; totals: { totalCents: number; deductibleCents: number; monthly: number[] } };
   receivables: { draft: { count: number; totalCents: number }; sent: { count: number; totalCents: number }; overdue: { count: number; totalCents: number }; paid: { count: number; totalCents: number }; aging: { label: string; count: number; totalCents: number }[] };
