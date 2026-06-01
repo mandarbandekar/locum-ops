@@ -80,7 +80,7 @@ export function buildMileageTripLog(
     .filter(e => yearOf(e.expense_date) === year && (e.mileage_miles || 0) > 0)
     .forEach(e => {
       const fac = e.facility_id ? facMap.get(e.facility_id) : undefined;
-      const place = fac?.name || e.vendor || 'Unlinked trip';
+      const place = fac?.name || e.route_description || e.description || 'Unlinked trip';
       const address = fac?.address || '';
       const miles = e.mileage_miles || 0;
       const amountCents = Math.round(miles * irsRateCents);
