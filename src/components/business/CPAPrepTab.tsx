@@ -77,7 +77,7 @@ export default function CPAPrepTab({
 
   // Lazy builders shared across section + full-packet exports
   const mileage = useMemo(() => buildMonthlyMileageRows(cpd.confirmedMileageExpenses, year, cpd.irsRateCents), [cpd.confirmedMileageExpenses, year, cpd.irsRateCents]);
-  const mileageClinic = useMemo(() => buildMonthlyMileageByClinic(cpd.confirmedMileageExpenses, cpd.facilities, year, cpd.irsRateCents), [cpd.confirmedMileageExpenses, cpd.facilities, year, cpd.irsRateCents]);
+  const mileageTripLog = useMemo(() => buildMileageTripLog(cpd.confirmedMileageExpenses, cpd.facilities, year, cpd.irsRateCents), [cpd.confirmedMileageExpenses, cpd.facilities, year, cpd.irsRateCents]);
   const pnl = useMemo(() => buildMonthlyPnL(cpd.invoices, cpd.ytdExpenses, year), [cpd.invoices, cpd.ytdExpenses, year]);
   const clinicInc = useMemo(() => buildMonthlyClinicIncome(cpd.invoices, cpd.shifts, cpd.facilities, year), [cpd.invoices, cpd.shifts, cpd.facilities, year]);
   const expReview = useMemo(() => buildMonthlyExpensesByCategory(cpd.ytdExpenses, year), [cpd.ytdExpenses, year]);
