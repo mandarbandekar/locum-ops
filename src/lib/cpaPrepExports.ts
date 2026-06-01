@@ -40,6 +40,60 @@ export interface MonthlyMileageClinicRow {
   deductionCents: number;
 }
 
+export interface MileageTrip {
+  date: string;          // YYYY-MM-DD
+  place: string;         // clinic name (or vendor / "Unlinked trip")
+  address: string;       // full address, may be ''
+  miles: number;
+  amountCents: number;
+}
+
+export interface MileageMonthLog {
+  monthIndex: number;    // 0-11
+  monthLabel: string;    // "January 2026"
+  trips: MileageTrip[];
+  subtotalMiles: number;
+  subtotalAmountCents: number;
+}
+
+const FULL_MONTH_LABELS = [
+  'January','February','March','April','May','June',
+  'July','August','September','October','November','December',
+];
+
+export function buildMileageTripLog(
+  expenses: Expense[],
+  facilities: Facility[],
+  year: number,
+  irsRateCents: number,
+): MileageMonthLog[] {
+  const facMap = new Map(facilities.map(f => [f.id, f]));
+  const buckets: MileageMonthLog[] = new Array(12).fill(0).map((_, i) => ({
+    monthIndex: i,
+    monthLabel: `${FULL_MONTH_LABELS[i]} ${year}`,
+    trips: [],
+    subtotalMiles: 0,
+    subtotalAmountCents: 0,
+  }));
+
+  expenses
+    .filter(e => yearOf(e.expense_date) === year && (e.mileage_miles || 0) > 0)
+    .forEach(e => {
+      const fac = e.facility_id ? facMap.get(e.facility_id) : undefined;
+      const place = fac?.name || e.vendor || 'Unlinked trip';
+      const address = fac?.address || '';
+      const miles = e.mileage_miles || 0;
+      const amountCents = Math.round(miles * irsRateCents);
+      const m = monthOf(e.expense_date);
+      buckets[m].trips.push({ date: e.expense_date, place, address, miles, amountCents });
+      buckets[m].subtotalMiles += miles;
+      buckets[m].subtotalAmountCents += amountCents;
+    });
+
+  buckets.forEach(b => b.trips.sort((a, b) => a.date.localeCompare(b.date)));
+  return buckets.filter(b => b.trips.length > 0);
+}
+
 export function buildMonthlyMileageRows(
   expenses: Expense[],
   year: number,
