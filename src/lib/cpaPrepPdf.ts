@@ -298,7 +298,7 @@ export function renderFullPacketPdf(input: FullPacketInputs): jsPDF {
     doc.text(line, 60, 282 + i * 18);
   });
 
-  doc.addPage(); appendPnLSection(doc, input.year, input.pnl.monthly, input.pnl.totals);
+  doc.addPage(); appendPnLSection(doc, input.year, input.pnl.rows, input.pnl.totals);
   doc.addPage(); appendClinicIncomeSection(doc, input.year, input.clinicIncome);
   doc.addPage(); appendReceivablesSection(doc, input.year, input.receivables);
   doc.addPage(); appendExpenseReviewSection(doc, input.year, input.expenseReview);
