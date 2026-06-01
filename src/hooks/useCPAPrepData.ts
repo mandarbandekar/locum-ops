@@ -70,6 +70,7 @@ export interface ReadinessItem { label: string; status: 'ok' | 'warning' | 'miss
 export function useCPAPrepData() {
   const { invoices, shifts, facilities, lineItems, payments } = useData();
   const { expenses, ytdDeductibleCents, ytdTotalCents, ytdExpenses, confirmedMileageExpenses, ytdMileageMiles, ytdMileageDeductionCents, startingMiles, startingMilesNote, config } = useExpenses();
+  const irsRateCents = config?.irs_mileage_rate_cents ?? 70;
   const { profile } = useTaxAdvisor();
   const { payments: taxPaymentLogs } = useTaxPaymentLogs();
 
