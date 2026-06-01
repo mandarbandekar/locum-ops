@@ -301,7 +301,7 @@ export function finalize(doc: jsPDF): jsPDF {
 export interface FullPacketInputs {
   year: number;
   irsRateCents: number;
-  mileage: { monthly: MonthlyMileageRow[]; totals: { miles: number; deductionCents: number }; byClinic: Record<number, MonthlyMileageClinicRow[]>; startingMiles?: number; startingMilesNote?: string };
+  mileage: { monthly: MonthlyMileageRow[]; totals: { miles: number; deductionCents: number }; tripLog: MileageMonthLog[]; startingMiles?: number; startingMilesNote?: string };
   pnl: { rows: MonthlyPnLRow[]; totals: { incomeCents: number; expenseCents: number; netCents: number } };
   clinicIncome: { rows: MonthlyClinicIncomeRow[]; totals: { billedCents: number; paidCents: number; unpaidCents: number } };
   expenseReview: { rows: MonthlyExpenseCategoryRow[]; totals: { totalCents: number; deductibleCents: number; monthly: number[] } };
