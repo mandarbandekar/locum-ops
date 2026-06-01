@@ -258,45 +258,12 @@ export function appendReadinessSection(
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// Section-only PDFs (one page each)
+// Doc factory + finalize
 // ────────────────────────────────────────────────────────────────────────────
-function newDoc(): jsPDF {
+export function newDoc(): jsPDF {
   return new jsPDF({ unit: 'pt', format: 'letter' });
 }
-
-export function renderMileagePdf(args: Parameters<typeof appendMileageSection> extends [unknown, ...infer R] ? R : never): jsPDF {
-  const doc = newDoc();
-  appendMileageSection(doc, ...args);
-  footer(doc);
-  return doc;
-}
-export function renderPnLPdf(...args: Parameters<typeof appendPnLSection> extends [unknown, ...infer R] ? R : never): jsPDF {
-  const doc = newDoc();
-  appendPnLSection(doc, ...args);
-  footer(doc);
-  return doc;
-}
-export function renderClinicIncomePdf(...args: Parameters<typeof appendClinicIncomeSection> extends [unknown, ...infer R] ? R : never): jsPDF {
-  const doc = newDoc();
-  appendClinicIncomeSection(doc, ...args);
-  footer(doc);
-  return doc;
-}
-export function renderExpenseReviewPdf(...args: Parameters<typeof appendExpenseReviewSection> extends [unknown, ...infer R] ? R : never): jsPDF {
-  const doc = newDoc();
-  appendExpenseReviewSection(doc, ...args);
-  footer(doc);
-  return doc;
-}
-export function renderReceivablesPdf(...args: Parameters<typeof appendReceivablesSection> extends [unknown, ...infer R] ? R : never): jsPDF {
-  const doc = newDoc();
-  appendReceivablesSection(doc, ...args);
-  footer(doc);
-  return doc;
-}
-export function renderReadinessPdf(...args: Parameters<typeof appendReadinessSection> extends [unknown, ...infer R] ? R : never): jsPDF {
-  const doc = newDoc();
-  appendReadinessSection(doc, ...args);
+export function finalize(doc: jsPDF): jsPDF {
   footer(doc);
   return doc;
 }
