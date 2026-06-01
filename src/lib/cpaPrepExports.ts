@@ -307,7 +307,7 @@ export function downloadBlob(content: string, filename: string, mime = 'text/pla
 export function mileageCsv(
   monthly: MonthlyMileageRow[],
   totals: { miles: number; deductionCents: number },
-  byClinic: Record<number, MonthlyMileageClinicRow[]>,
+  tripLog: MileageMonthLog[],
   irsRateCents: number,
   year: number,
 ): string {
@@ -315,17 +315,25 @@ export function mileageCsv(
   rows.push([`Monthly Mileage Report — ${year}`]);
   rows.push([`IRS standard rate: ${fmtRate(irsRateCents)} per mile`]);
   rows.push([]);
-  rows.push(['Month', 'Business Miles', 'IRS Rate', 'Deduction ($)']);
-  monthly.forEach(r => rows.push([r.month, fmtMiles(r.miles), fmtRate(r.rateCents), fmt(r.deductionCents)]));
-  rows.push(['YTD Total', fmtMiles(totals.miles), '', fmt(totals.deductionCents)]);
+  rows.push(['Month', 'Trips', 'Business Miles', 'IRS Rate', 'Deduction ($)']);
+  const tripsByMonth = new Map(tripLog.map(l => [l.monthIndex, l.trips.length]));
+  monthly.forEach((r, i) => rows.push([
+    `${r.month} ${year}`,
+    tripsByMonth.get(i) ?? 0,
+    fmtMiles(r.miles),
+    fmtRate(r.rateCents),
+    fmt(r.deductionCents),
+  ]));
+  rows.push(['YTD Total', tripLog.reduce((s, l) => s + l.trips.length, 0), fmtMiles(totals.miles), '', fmt(totals.deductionCents)]);
   rows.push([]);
-  rows.push(['Clinic Detail (per month)']);
-  rows.push(['Month', 'Clinic', 'Trips', 'Miles', 'Deduction ($)']);
-  for (let m = 0; m < 12; m++) {
-    const clinics = byClinic[m];
-    if (!clinics || clinics.length === 0) continue;
-    clinics.forEach(c => rows.push([MONTH_LABELS[m], c.clinic, c.trips, fmtMiles(c.miles), fmt(c.deductionCents)]));
-  }
+  rows.push(['Trip Log']);
+  rows.push(['Date', 'Place', 'Address', 'Miles', 'Deduction ($)']);
+  tripLog.forEach(month => {
+    rows.push([month.monthLabel]);
+    month.trips.forEach(t => rows.push([t.date, t.place, t.address, fmtMiles(t.miles), fmt(t.amountCents)]));
+    rows.push(['', '', 'Subtotal', fmtMiles(month.subtotalMiles), fmt(month.subtotalAmountCents)]);
+    rows.push([]);
+  });
   return toCsv(rows);
 }
 
