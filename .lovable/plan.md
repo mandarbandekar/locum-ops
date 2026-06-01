@@ -1,118 +1,88 @@
-# Tier 2 — Clinic-facing date displays in facility timezone
+## Goal
 
-Surgical, display-only edits. No changes to sorts, filters, instant comparisons, schema, RLS, or write paths. No new deps.
+Replace the single "Export CPA Packet" text dump with per-section, per-month **PDF + CSV** downloads. Every section under CPA Prep / Tax Intelligence gets its own monthly breakdown. Mileage gets a featured Monthly Mileage Report showing `miles × IRS rate = $`.
 
-## Pattern
-Replace `format(new Date(<instant>), PATTERN)` with `formatDateInTz(<instant>, TZ, PATTERN)` for shift instants; times use `formatTimeInTz(<instant>, TZ)`. `TZ` = the shift's facility timezone (with `BROWSER_TZ` fallback where the existing files already use one).
+## What the user gets
 
----
+Each section card in CPA Prep grows a small "Export" dropdown with two buttons: **PDF** and **CSV**. Both files are broken out by month (Jan → current month), with YTD totals.
 
-## 1. `src/pages/FacilityDetailPage.tsx`
-`formatDateInTz` is already imported (line 35). No new import.
+Sections covered:
+1. **Monthly Mileage Report** (the highlight) — month rollup + clinic detail
+2. Profit & Loss Summary
+3. Income by Clinic
+4. Accounts Receivable
+5. Expense Review by Tax Category
+6. CPA Readiness Checklist (PDF only — not numeric)
 
-- **Line 684** — before:
-  ```tsx
-  {format(new Date(s.start_datetime), 'MMM d, yyyy')}
-  ```
-  after:
-  ```tsx
-  {formatDateInTz(s.start_datetime, facility.timezone, 'MMM d, yyyy')}
-  ```
-- **Line 687** — before:
-  ```tsx
-  <td className="p-3 text-muted-foreground hidden sm:table-cell">{format(new Date(s.start_datetime), 'h:mm a')} - {format(new Date(s.end_datetime), 'h:mm a')}</td>
-  ```
-  after:
-  ```tsx
-  <td className="p-3 text-muted-foreground hidden sm:table-cell">{formatTimeInTz(s.start_datetime, facility.timezone)} - {formatTimeInTz(s.end_datetime, facility.timezone)}</td>
-  ```
-  Add `formatTimeInTz` to the existing `@/lib/tzTime` import on line 35.
-- Line 48 sort is **left unchanged** (sorts by UTC instant — correct).
+A top-level "Export Full CPA Packet" stays, but becomes a **single multi-page PDF** combining all sections (replacing the current .txt).
 
-## 2. `src/components/schedule/ConfirmationDetailDrawer.tsx`
-Extend existing import on line 16: `import { formatTimeInTz, formatDateInTz } from '@/lib/tzTime';`. Reuse `tz = facility?.timezone || BROWSER_TZ` (already defined inline at line 47 inside `defaultBody`; for lines 156/157/174/175 it must be resolved at the call site since `tz` is scoped inside `useMemo`).
+## Monthly Mileage Report — structure
 
-- **Line 49** (email body) — before:
-  ```ts
-  .map(s => `  - ${format(new Date(s.start_datetime), 'EEE, MMM d')} — ${formatTimeInTz(s.start_datetime, tz)} – ${formatTimeInTz(s.end_datetime, tz)}`)
-  ```
-  after:
-  ```ts
-  .map(s => `  - ${formatDateInTz(s.start_datetime, tz, 'EEE, MMM d')} — ${formatTimeInTz(s.start_datetime, tz)} – ${formatTimeInTz(s.end_datetime, tz)}`)
-  ```
-- **Line 156** — before:
-  ```tsx
-  {firstShift && <span>First: {format(new Date(firstShift.start_datetime), 'MMM d')}</span>}
-  ```
-  after:
-  ```tsx
-  {firstShift && <span>First: {formatDateInTz(firstShift.start_datetime, facility?.timezone || BROWSER_TZ, 'MMM d')}</span>}
-  ```
-- **Line 157** — same swap for `lastShift` with `'MMM d'`.
-- **Line 174** — before:
-  ```tsx
-  <TableCell className="text-sm py-2">{format(new Date(s.start_datetime), 'MMM d')}</TableCell>
-  ```
-  after:
-  ```tsx
-  <TableCell className="text-sm py-2">{formatDateInTz(s.start_datetime, facility?.timezone || BROWSER_TZ, 'MMM d')}</TableCell>
-  ```
-- **Line 175** — same swap with pattern `'EEE'`.
-- Line 273 (`a.created_at`) is **left unchanged** (audit timestamp).
+**Header:** Tax year, IRS rate used (from `expense_config.irs_mileage_rate_cents`, e.g. `$0.70/mi`), generated date.
 
-## 3. `src/components/schedule/ClinicConfirmationsTab.tsx`
-Extend existing import on line 16: `import { formatTimeInTz, formatDateInTz } from '@/lib/tzTime';`. `tz` is already resolved one line above at line 215.
+**Section A — Monthly Rollup table**
 
-- **Line 218** — before:
-  ```tsx
-  <td className="px-3 py-2 text-sm">{format(new Date(s.start_datetime), 'EEE, MMM d')}</td>
-  ```
-  after:
-  ```tsx
-  <td className="px-3 py-2 text-sm">{formatDateInTz(s.start_datetime, tz, 'EEE, MMM d')}</td>
-  ```
-- Lines 280 and 300 (`sent_at`) are **left unchanged** (send timestamps render fine locally).
+| Month | Business Miles | IRS Rate | Deduction ($) |
+|---|---|---|---|
+| Jan | 412 | $0.70 | $288.40 |
+| … | | | |
+| **YTD** | **4,820** | — | **$3,374.00** |
 
-## 4. `src/pages/PublicConfirmationPage.tsx` + `supabase/functions/public-confirmation/index.ts`
+**Section B — Clinic Detail (per month)**
+For each month with mileage, a sub-table:
 
-### Edge function (read-only SELECT change, no writes)
-- **Line 56** — before:
-  ```ts
-  supabase.from('facilities').select('name').eq('id', record.facility_id).single(),
-  ```
-  after:
-  ```ts
-  supabase.from('facilities').select('name, timezone').eq('id', record.facility_id).single(),
-  ```
-- **Line 80–86** — extend the returned payload with `timezone: facRes.data?.timezone || 'America/New_York'` (safety fallback matches `TIMEZONE_SAFETY_FALLBACK`).
+| Clinic | Trips | Miles | Deduction ($) |
 
-### Page
-- Add `timezone: string;` to the `ConfirmationData` interface (line 9–15).
-- Add `import { formatDateInTz, formatTimeInTz } from '@/lib/tzTime';`.
-- In `loadConfirmation`, set `timezone: payload.timezone` on the `setData(...)` object.
-- **Line 119** — before:
-  ```tsx
-  <TableCell className="text-sm py-2.5">{format(new Date(s.start_datetime), 'MMM d, yyyy')}</TableCell>
-  ```
-  after:
-  ```tsx
-  <TableCell className="text-sm py-2.5">{formatDateInTz(s.start_datetime, data.timezone, 'MMM d, yyyy')}</TableCell>
-  ```
-- **Line 120** — same swap with pattern `'EEEE'`.
-- **Line 122** — before:
-  ```tsx
-  {format(new Date(s.start_datetime), 'h:mm a')} – {format(new Date(s.end_datetime), 'h:mm a')}
-  ```
-  after:
-  ```tsx
-  {formatTimeInTz(s.start_datetime, data.timezone)} – {formatTimeInTz(s.end_datetime, data.timezone)}
-  ```
-- Line 133 (`data.generatedAt`) is **left unchanged** (generation timestamp).
+**Section C — Footer:** starting balance note (if `startingMiles > 0`), IRS-rate disclaimer.
 
----
+Calculation: `deduction = round(miles × irs_mileage_rate_cents) / 100`, applied uniformly with the **current rate from `expense_config`** (per your choice). One italic line notes the assumption so the CPA can adjust if the rate changed mid-year.
 
-## Verification
-After edits, output a per-file before/after report confirming only the lines above changed, and run `rg "format\(new Date\(" src/pages/FacilityDetailPage.tsx src/components/schedule/ConfirmationDetailDrawer.tsx src/components/schedule/ClinicConfirmationsTab.tsx src/pages/PublicConfirmationPage.tsx` to confirm no stray shift-instant `format(new Date(...))` calls remain (audit/send timestamps may still match — they're intentionally left).
+## Technical approach
+
+### New shared module: `src/lib/cpaPrepExports.ts`
+Pure functions that take `useCPAPrepData()` output + raw `confirmedMileageExpenses` and return:
+- `buildMonthlyMileageRows(expenses, year, irsRateCents)` → `{ month, miles, rateCents, deductionCents }[]`
+- `buildMonthlyMileageByClinic(expenses, facilities, year)` → `Record<month, ClinicRow[]>`
+- `buildMonthlyPnL`, `buildMonthlyClinicIncome`, `buildMonthlyExpenseReview`, `buildMonthlyReceivables` — each returns a normalized `{ columns, rows, totals }` shape.
+
+This keeps export logic out of components and unit-testable.
+
+### CSV generation (client-side)
+Tiny helper `toCsv(rows, columns)` in the same module. Triggered via Blob download — same pattern as the existing `ExpenseSummaryTab.exportCSV`. No new deps.
+
+### PDF generation (client-side, no edge function)
+Use **`jspdf` + `jspdf-autotable`** (small, already common in this stack; add via `bun add`). Client-side keeps it instant and avoids spinning up an edge function for a read-only export.
+
+Helper `src/lib/cpaPrepPdf.ts`:
+- `renderSectionPdf(title, subtitle, tables[])` → returns a `jsPDF` doc
+- `renderFullPacketPdf(allSections)` → combines into a single multi-page doc with a cover page
+
+Branding: LocumOps wordmark in header, generated date + user name in footer, disclaimer block on last page. Uses the same disclaimer copy as today's `.txt`.
+
+### UI wiring
+- New small component `src/components/cpa-prep/SectionExportMenu.tsx` — a `DropdownMenu` with "Download PDF" and "Download CSV" items. Drop one into each `<Section>` header in `CPAPrepTab.tsx` (right-aligned next to the chevron).
+- Replace `ExportCPAPacket.tsx` body to call `renderFullPacketPdf` → PDF download instead of `.txt`. Keep the button placement.
+
+### Data flow
+`CPAPrepTab` already calls `useCPAPrepData()`. Pass the hook's result plus `confirmedMileageExpenses` and `config.irs_mileage_rate_cents` (already exposed by `useExpenses`) down into each section's export menu. No new queries, no schema changes.
+
+### Files touched
+- **New:** `src/lib/cpaPrepExports.ts`, `src/lib/cpaPrepPdf.ts`, `src/components/cpa-prep/SectionExportMenu.tsx`, `src/components/cpa-prep/MonthlyMileageReport.tsx` (optional in-app preview table — see "Open question" below), `src/test/cpaPrepExports.test.ts`
+- **Edit:** `src/hooks/useCPAPrepData.ts` (expose `monthlyMileage` + `irsRateCents`), `src/components/business/CPAPrepTab.tsx` (mount export menus), `src/components/cpa-prep/ExportCPAPacket.tsx` (swap .txt → PDF), `src/components/cpa-prep/MileageSummary.tsx` (add a small "Monthly breakdown" expandable preview)
+- **Deps:** `bun add jspdf jspdf-autotable`
+
+### Testing
+Vitest covering:
+- Monthly bucketing across timezone boundaries (dates use `expense_date` string — no UTC shift)
+- IRS rate × miles math with rounding
+- Empty-month rendering (zeros, not skipped)
+- CSV escaping for commas / quotes in clinic names
 
 ## Out of scope
-Tier 1 (done), Tier 3 (edge timing, dashboard "today"), `BlockTimeDialog`, schema, sorts/filters, write paths.
+- Excel (.xlsx) output — you opted for PDF + CSV. Easy to add later via `xlsx` lib using the same row builders.
+- Multi-rate handling (rate change mid-year). Disclaimer flags it; CPA can adjust.
+- Server-side generation / emailing the packet.
+
+## Open question I'll proceed with unless you say otherwise
+
+Show the **Monthly Mileage rollup table inline in the Mileage section** (collapsible, default closed) so users see what the PDF will contain before downloading. Tell me if you'd rather keep the in-app UI unchanged and have the monthly view live only inside the downloaded files.

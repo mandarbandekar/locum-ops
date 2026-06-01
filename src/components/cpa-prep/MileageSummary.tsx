@@ -1,11 +1,18 @@
 import { Car } from 'lucide-react';
 import type { MileageSummary as MileageData } from '@/hooks/useCPAPrepData';
+import type { Expense } from '@/hooks/useExpenses';
+import MonthlyMileagePreview from './MonthlyMileagePreview';
 
 const fmt = (c: number) => `$${(c / 100).toLocaleString('en-US', { minimumFractionDigits: 0 })}`;
 
-interface Props { data: MileageData }
+interface Props {
+  data: MileageData;
+  expenses?: Expense[];
+  irsRateCents?: number;
+  year?: number;
+}
 
-export default function MileageSummary({ data }: Props) {
+export default function MileageSummary({ data, expenses, irsRateCents, year }: Props) {
   if (data.totalMiles === 0) return <p className="text-sm text-muted-foreground py-4 text-center">No mileage tracked yet. Log commute miles in the Expense Tracker to see your travel deduction.</p>;
   return (
     <div className="space-y-4">
@@ -40,6 +47,9 @@ export default function MileageSummary({ data }: Props) {
             )}
           </div>
         </div>
+      )}
+      {expenses && irsRateCents != null && year != null && (
+        <MonthlyMileagePreview expenses={expenses} irsRateCents={irsRateCents} year={year} />
       )}
     </div>
   );
