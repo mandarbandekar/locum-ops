@@ -50,8 +50,8 @@ export default function MileageSummary({ data, expenses, facilities, irsRateCent
           </div>
         </div>
       )}
-      {expenses && irsRateCents != null && year != null && (
-        <MonthlyMileagePreview expenses={expenses} irsRateCents={irsRateCents} year={year} />
+      {expenses && facilities && irsRateCents != null && year != null && (
+        <MonthlyMileagePreview expenses={expenses} facilities={facilities} irsRateCents={irsRateCents} year={year} />
       )}
     </div>
   );
