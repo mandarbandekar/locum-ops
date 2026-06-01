@@ -311,5 +311,14 @@ export function useCPAPrepData() {
     agenda,
     profile,
     taxPaymentLogs,
+    // Raw inputs for export builders
+    invoices,
+    shifts,
+    facilities,
+    ytdExpenses,
+    confirmedMileageExpenses,
+    irsRateCents,
+    startingMiles,
+    startingMilesNote,
   };
 }
