@@ -93,6 +93,7 @@ function previewDueDate(cadence: BillingCadence, netDays: number): string {
   let invoiceDate: Date;
   if (cadence === 'monthly') invoiceDate = endOfMonth(today);
   else if (cadence === 'weekly') invoiceDate = addDays(today, 7 - today.getDay());
+  else if (cadence === 'biweekly') invoiceDate = addDays(today, 14);
   else invoiceDate = today;
   return format(addDays(invoiceDate, netDays), 'MMM d, yyyy');
 }
