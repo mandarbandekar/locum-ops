@@ -287,7 +287,7 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
         invoice_name_bcc: '',
         invoice_email_bcc: '',
         billing_cadence: billingCadence,
-        billing_cycle_anchor_date: null,
+        billing_cycle_anchor_date: billingCadence === 'biweekly' ? anchorDate : null,
         billing_week_end_day: 'saturday',
         auto_generate_invoices: directInvoicing,
         generates_invoices: directInvoicing,
