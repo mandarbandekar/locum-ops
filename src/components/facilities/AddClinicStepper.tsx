@@ -13,7 +13,7 @@ import { trackOnboarding } from '@/lib/onboardingAnalytics';
 import { recordOnboardingStatusEvent } from '@/lib/onboardingStatusLog';
 import {
   Building2, DollarSign, UserCheck, CalendarClock,
-  Check, ArrowRight, ArrowLeft, SkipForward, Sparkles,
+  Check, ArrowRight, ArrowLeft, SkipForward, Sparkles, CalendarIcon,
 } from 'lucide-react';
 import { GooglePlacesAutocomplete } from '@/components/GooglePlacesAutocomplete';
 import type { PlaceSelection } from '@/components/GooglePlacesAutocomplete';
@@ -25,9 +25,21 @@ import { EngagementSelector } from '@/components/facilities/EngagementSelector';
 import type { EngagementType, TaxFormType } from '@/lib/engagementOptions';
 import { GuidedStep } from '@/components/onboarding/GuidedStep';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { US_TIMEZONES, isSupportedUsTz, coerceToUsTz, labelForTz } from '@/lib/usTimezones';
 import tzlookup from 'tz-lookup';
 import { format, addDays, endOfMonth } from 'date-fns';
+
+function parseDateOnly(s: string | null | undefined): Date | undefined {
+  if (!s) return undefined;
+  const [y, m, d] = s.split('-').map(Number);
+  if (!y || !m || !d) return undefined;
+  return new Date(y, m - 1, d);
+}
+function formatDateOnly(d: Date): string {
+  return format(d, 'yyyy-MM-dd');
+}
 
 export interface AddClinicStepperHandle {
   /** Returns the created facility id, or null on validation failure. */
