@@ -155,6 +155,7 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
 
   // ── Step 4: Billing & Contacts ──
   const [billingCadence, setBillingCadence] = useState<BillingCadence>('monthly');
+  const [anchorDate, setAnchorDate] = useState<string | null>(null);
   const [invoiceDueDays, setInvoiceDueDays] = useState(15);
   const [schedulingContactName, setSchedulingContactName] = useState('');
   const [schedulingContactEmail, setSchedulingContactEmail] = useState('');
