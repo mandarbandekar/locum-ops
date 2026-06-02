@@ -15,7 +15,7 @@
  */
 
 import type { LucideIcon } from 'lucide-react';
-import { MessageCircle, Tag, Zap } from 'lucide-react';
+import { CalendarDays, FileText, MessageCircle, Tag, Zap } from 'lucide-react';
 import type { UserProfile } from '@/contexts/UserProfileContext';
 import type { Shift, Facility } from '@/types';
 
@@ -63,6 +63,25 @@ export const ANNOUNCEMENT_HIDE_PREFIX = 'announcement-hidden:';
  * Audience predicates are evaluated with the live context object.
  */
 export const announcements: Announcement[] = [
+  {
+    id: 'biweekly-billing-2026-06',
+    title: 'Biweekly billing is here',
+    body: 'Set a 14-day billing cycle anchored to any pay-period start date. LocumOps now groups shifts into the correct two-week windows automatically when generating invoice drafts.',
+    publishedAt: '2026-06-02',
+    icon: CalendarDays,
+    cta: { label: 'Set cadence', to: '/settings/invoicing' },
+    priority: 'highlight',
+    audience: ctx => ctx.facilities.length > 0,
+  },
+  {
+    id: 'cpa-prep-2026-06',
+    title: 'Cleaner CPA prep packets',
+    body: 'Trip place labels now include the clinic name and full address, and the mileage summary grid displays all 12 months for a full-year review at a glance.',
+    publishedAt: '2026-06-02',
+    icon: FileText,
+    cta: { label: 'Review packet', to: '/business' },
+    audience: 'all',
+  },
   {
     id: 'shift-types-2026-05',
     title: 'Categorize your rates',
