@@ -9,7 +9,9 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, ArrowRight, Check, AlertTriangle, UserPlus, ExternalLink, CheckCircle2 } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { ArrowLeft, ArrowRight, Check, AlertTriangle, UserPlus, ExternalLink, CheckCircle2, CalendarIcon } from 'lucide-react';
 import {
   type BillingCadence,
   type FacilityBillingConfig,
@@ -18,7 +20,19 @@ import {
   validateSenderProfile,
 } from '@/lib/invoiceBillingDefaults';
 import { formatPaymentTerms } from '@/lib/invoiceHelpers';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+
+function parseDateOnly(s: string | null | undefined): Date | undefined {
+  if (!s) return undefined;
+  const [y, m, d] = s.split('-').map(Number);
+  if (!y || !m || !d) return undefined;
+  return new Date(y, m - 1, d);
+}
+function formatDateOnly(d: Date): string {
+  return format(d, 'yyyy-MM-dd');
+}
 
 const ONBOARDING_STEPS = [
   { key: 'facilities', label: 'Facility Billing Setup' },
@@ -110,6 +124,28 @@ export function InvoiceOnboardingStepper({ onComplete }: Props) {
     });
     toast.success('Billing contact saved');
     setEditingFacilityId(null);
+  };
+
+  const biweeklyMissingFacility = activeFacilities.find(f => {
+    const c = billingConfigs[f.id];
+    return c?.billing_cadence === 'biweekly' && !c?.biweekly_anchor_date;
+  });
+
+  const handleNextFromStep0 = () => {
+    if (biweeklyMissingFacility) {
+      toast.error(`Pick a first pay period date for ${biweeklyMissingFacility.name} (biweekly).`);
+      return;
+    }
+    setStep(1);
+  };
+
+  const handleCompleteGuarded = async () => {
+    if (biweeklyMissingFacility) {
+      toast.error(`Pick a first pay period date for ${biweeklyMissingFacility.name} (biweekly).`);
+      setStep(0);
+      return;
+    }
+    await handleComplete();
   };
 
   const handleComplete = async () => {
@@ -215,6 +251,41 @@ export function InvoiceOnboardingStepper({ onComplete }: Props) {
                         {config.billing_cadence === 'weekly' && (
                           <p className="text-[10px] text-muted-foreground mt-1">Weekly invoices default to Saturday billing close.</p>
                         )}
+                        {config.billing_cadence === 'biweekly' && (
+                          <div className="mt-1.5 space-y-1">
+                            <p className="text-[10px] text-muted-foreground">One invoice every two weeks, aligned to the clinic's payroll cycle. Draft generates on the morning of your last scheduled shift in each 14-day period.</p>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  className={cn(
+                                    'h-8 w-[180px] justify-start text-left font-normal text-xs',
+                                    !config.biweekly_anchor_date && 'text-muted-foreground',
+                                  )}
+                                >
+                                  <CalendarIcon className="mr-1.5 h-3 w-3" />
+                                  {config.biweekly_anchor_date
+                                    ? format(parseDateOnly(config.biweekly_anchor_date)!, 'MMM d, yyyy')
+                                    : <span>First pay period…</span>}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                  mode="single"
+                                  selected={parseDateOnly(config.biweekly_anchor_date)}
+                                  onSelect={(d) => updateConfig(fac.id, { biweekly_anchor_date: d ? formatDateOnly(d) : null })}
+                                  initialFocus
+                                  className={cn('p-3 pointer-events-auto')}
+                                />
+                              </PopoverContent>
+                            </Popover>
+                            <p className="text-[10px] text-muted-foreground">First pay period starts on — pick any one of this clinic's pay-period start dates. Invoices repeat every 14 days from this date.</p>
+                            {!config.biweekly_anchor_date && (
+                              <p className="text-[10px] text-destructive">Required for biweekly billing.</p>
+                            )}
+                          </div>
+                        )}
                       </td>
                       <td className="p-3">
                         {isEditing ? (
@@ -266,8 +337,15 @@ export function InvoiceOnboardingStepper({ onComplete }: Props) {
             </div>
           )}
 
+          {biweeklyMissingFacility && (
+            <div className="flex items-center gap-2 text-xs text-destructive bg-destructive/10 rounded-md px-3 py-2">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+              Pick a first pay period date for {biweeklyMissingFacility.name} (biweekly) to continue.
+            </div>
+          )}
+
           <div className="flex justify-end pt-2">
-            <Button onClick={() => setStep(1)}>
+            <Button onClick={handleNextFromStep0} disabled={!!biweeklyMissingFacility}>
               Next <ArrowRight className="ml-1 h-4 w-4" />
             </Button>
           </div>
@@ -368,7 +446,7 @@ export function InvoiceOnboardingStepper({ onComplete }: Props) {
             <Button variant="outline" onClick={() => setStep(1)}>
               <ArrowLeft className="mr-1 h-4 w-4" /> Back
             </Button>
-            <Button onClick={handleComplete}>
+            <Button onClick={handleCompleteGuarded} disabled={!!biweeklyMissingFacility}>
               Complete Setup <Check className="ml-1 h-4 w-4" />
             </Button>
           </div>

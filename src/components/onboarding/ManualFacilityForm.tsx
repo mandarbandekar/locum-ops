@@ -3,8 +3,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 
-import { ArrowRight, DollarSign, Loader2 } from 'lucide-react';
+import { ArrowRight, DollarSign, Loader2, CalendarIcon } from 'lucide-react';
 import { GooglePlacesAutocomplete } from '@/components/GooglePlacesAutocomplete';
 import type { PlaceSelection } from '@/components/GooglePlacesAutocomplete';
 import type { ManualFacilityInput } from '@/hooks/useManualSetup';
@@ -13,7 +15,18 @@ import { EngagementSelector } from '@/components/facilities/EngagementSelector';
 import type { EngagementType, TaxFormType } from '@/lib/engagementOptions';
 import type { RateKind } from '@/types';
 import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
 import { toast } from 'sonner';
+
+function parseDateOnly(s: string | null | undefined): Date | undefined {
+  if (!s) return undefined;
+  const [y, m, d] = s.split('-').map(Number);
+  if (!y || !m || !d) return undefined;
+  return new Date(y, m - 1, d);
+}
+function formatDateOnly(d: Date): string {
+  return format(d, 'yyyy-MM-dd');
+}
 
 interface Props {
   onSave: (input: ManualFacilityInput) => Promise<any>;
@@ -28,6 +41,7 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
   const [weekdayRate, setWeekdayRate] = useState('');
   const [weekdayRateKind, setWeekdayRateKind] = useState<RateKind>('flat');
   const [billingCadence, setBillingCadence] = useState<BillingCadence>('monthly');
+  const [anchorDate, setAnchorDate] = useState<string | null>(null);
   const [engagementType, setEngagementType] = useState<EngagementType>('direct');
   const [sourceName, setSourceName] = useState('');
   const [taxFormType, setTaxFormType] = useState<TaxFormType>('1099');
@@ -50,6 +64,10 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
       return;
     }
     const isDirect = engagementType === 'direct';
+    if (isDirect && billingCadence === 'biweekly' && !anchorDate) {
+      toast.error('Pick the first pay period start date for biweekly billing.');
+      return;
+    }
     const effectiveTaxForm: TaxFormType | null =
       engagementType === 'third_party' ? taxFormType : null;
     await onSave({
@@ -61,13 +79,15 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
       weekday_rate_kind: weekdayRate ? weekdayRateKind : undefined,
       billing_cadence: isDirect ? billingCadence : undefined,
       billing_week_end_day: undefined,
-      billing_anchor_date: undefined,
+      billing_anchor_date: isDirect && billingCadence === 'biweekly' ? (anchorDate ?? undefined) : undefined,
       auto_generate_invoices: isDirect,
       engagement_type: engagementType,
       source_name: isDirect ? null : sourceName.trim() || null,
       tax_form_type: effectiveTaxForm,
     });
   };
+
+  const biweeklyMissingAnchor = engagementType === 'direct' && billingCadence === 'biweekly' && !anchorDate;
 
   return (
     <div className="space-y-5">
@@ -219,6 +239,7 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
                 <SelectContent>
                   <SelectItem value="daily">Daily</SelectItem>
                   <SelectItem value="weekly">Weekly (Mon–Sun)</SelectItem>
+                  <SelectItem value="biweekly">Biweekly</SelectItem>
                   <SelectItem value="monthly">Monthly</SelectItem>
                 </SelectContent>
               </Select>
@@ -231,12 +252,48 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
               {billingCadence === 'daily' && (
                 <p className="text-xs text-muted-foreground mt-1">A draft invoice is generated each morning you have a scheduled shift.</p>
               )}
+              {billingCadence === 'biweekly' && (
+                <p className="text-xs text-muted-foreground mt-1">One invoice every two weeks, aligned to the clinic's payroll cycle. Draft generates on the morning of your last scheduled shift in each 14-day period.</p>
+              )}
             </div>
+            {billingCadence === 'biweekly' && (
+              <div>
+                <Label>First pay period starts on <span className="text-destructive">*</span></Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className={cn(
+                        'w-full justify-start text-left font-normal mt-1',
+                        !anchorDate && 'text-muted-foreground',
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {anchorDate ? format(parseDateOnly(anchorDate)!, 'PPP') : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={parseDateOnly(anchorDate)}
+                      onSelect={(d) => setAnchorDate(d ? formatDateOnly(d) : null)}
+                      initialFocus
+                      className={cn('p-3 pointer-events-auto')}
+                    />
+                  </PopoverContent>
+                </Popover>
+                <p className="text-xs text-muted-foreground mt-1">Pick the start date of any one of this clinic's pay periods — invoices repeat every 14 days from this date.</p>
+                {biweeklyMissingAnchor && (
+                  <p className="text-xs text-destructive mt-1">Required for biweekly billing.</p>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
 
-      <Button onClick={handleSubmit} disabled={!name.trim() || saving} className="w-full" size="lg">
+      <Button onClick={handleSubmit} disabled={!name.trim() || saving || biweeklyMissingAnchor} className="w-full" size="lg">
         {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
         Save and continue <ArrowRight className="ml-2 h-4 w-4" />
       </Button>

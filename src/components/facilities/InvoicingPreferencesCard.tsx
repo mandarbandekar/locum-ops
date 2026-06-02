@@ -9,11 +9,25 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Receipt, Edit2, Save, X, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Receipt, Edit2, Save, X, AlertTriangle, CheckCircle2, CalendarIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { useData } from '@/contexts/DataContext';
 import { formatPaymentTerms } from '@/lib/invoiceHelpers';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 import type { Facility, BillingCadence } from '@/types';
+
+function parseDateOnly(s: string | null | undefined): Date | undefined {
+  if (!s) return undefined;
+  const [y, m, d] = s.split('-').map(Number);
+  if (!y || !m || !d) return undefined;
+  return new Date(y, m - 1, d);
+}
+function formatDateOnly(d: Date): string {
+  return format(d, 'yyyy-MM-dd');
+}
 
 interface InvoicingPreferencesCardProps {
   facility: Facility;
@@ -30,6 +44,7 @@ const CADENCE_LABELS: Record<string, string> = {
 export function InvoicingPreferencesCard({ facility, onUpdate }: InvoicingPreferencesCardProps) {
   const [editing, setEditing] = useState(false);
   const [billingCadence, setBillingCadence] = useState<BillingCadence>(facility.billing_cadence || 'monthly');
+  const [anchorDate, setAnchorDate] = useState<string | null>(facility.billing_cycle_anchor_date || null);
   
   const [dueDays, setDueDays] = useState(facility.invoice_due_days ?? 15);
   const [prefix, setPrefix] = useState(facility.invoice_prefix || 'INV');
@@ -61,7 +76,7 @@ export function InvoicingPreferencesCard({ facility, onUpdate }: InvoicingPrefer
       invoice_due_days: dueDays,
       invoice_prefix: (prefix || 'INV').replace(/\s+/g, '') || 'INV',
       billing_week_end_day: facility.billing_week_end_day,
-      billing_cycle_anchor_date: null,
+      billing_cycle_anchor_date: billingCadence === 'biweekly' ? anchorDate : null,
       invoice_name_to: nameTo.trim(),
       invoice_email_to: emailTo.trim(),
       invoice_name_cc: nameCc.trim(),
@@ -74,6 +89,10 @@ export function InvoicingPreferencesCard({ facility, onUpdate }: InvoicingPrefer
   };
 
   const handleSave = () => {
+    if (billingCadence === 'biweekly' && !anchorDate) {
+      toast.error('Pick the first pay period start date for biweekly billing.');
+      return;
+    }
     if (cadenceChanged && autoDraftCount > 0) {
       setShowCadenceConfirm(true);
       return;
@@ -88,6 +107,7 @@ export function InvoicingPreferencesCard({ facility, onUpdate }: InvoicingPrefer
 
   const handleCancel = () => {
     setBillingCadence(facility.billing_cadence || 'monthly');
+    setAnchorDate(facility.billing_cycle_anchor_date || null);
     
     setDueDays(facility.invoice_due_days ?? 15);
     setPrefix(facility.invoice_prefix || 'INV');
@@ -215,6 +235,7 @@ export function InvoicingPreferencesCard({ facility, onUpdate }: InvoicingPrefer
               <SelectContent>
                 <SelectItem value="daily">Daily</SelectItem>
                 <SelectItem value="weekly">Weekly (Mon–Sun)</SelectItem>
+                <SelectItem value="biweekly">Biweekly</SelectItem>
                 <SelectItem value="monthly">Monthly</SelectItem>
               </SelectContent>
             </Select>
@@ -227,6 +248,9 @@ export function InvoicingPreferencesCard({ facility, onUpdate }: InvoicingPrefer
             {billingCadence === 'daily' && (
               <p className="text-[10px] text-muted-foreground mt-0.5">A draft invoice is generated each morning you have a scheduled shift.</p>
             )}
+            {billingCadence === 'biweekly' && (
+              <p className="text-[10px] text-muted-foreground mt-0.5">One invoice every two weeks, aligned to the clinic's payroll cycle. Draft generates on the morning of your last scheduled shift in each 14-day period.</p>
+            )}
           </div>
           <div>
             <Label className="text-xs">Invoice Prefix</Label>
@@ -234,6 +258,38 @@ export function InvoicingPreferencesCard({ facility, onUpdate }: InvoicingPrefer
             <p className="text-[10px] text-muted-foreground mt-0.5">e.g. {prefix}-2026-001</p>
           </div>
         </div>
+
+        {/* Biweekly anchor date */}
+        {billingCadence === 'biweekly' && (
+          <div>
+            <Label className="text-xs">First pay period starts on <span className="text-destructive">*</span></Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={cn(
+                    'h-9 w-full justify-start text-left font-normal mt-1',
+                    !anchorDate && 'text-muted-foreground',
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                  {anchorDate ? format(parseDateOnly(anchorDate)!, 'PPP') : <span>Pick a date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={parseDateOnly(anchorDate)}
+                  onSelect={(d) => setAnchorDate(d ? formatDateOnly(d) : null)}
+                  initialFocus
+                  className={cn('p-3 pointer-events-auto')}
+                />
+              </PopoverContent>
+            </Popover>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Pick the start date of any one of this clinic's pay periods — invoices repeat every 14 days from this date.</p>
+          </div>
+        )}
 
         {/* Payment terms */}
         <div>

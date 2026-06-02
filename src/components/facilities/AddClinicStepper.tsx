@@ -13,7 +13,7 @@ import { trackOnboarding } from '@/lib/onboardingAnalytics';
 import { recordOnboardingStatusEvent } from '@/lib/onboardingStatusLog';
 import {
   Building2, DollarSign, UserCheck, CalendarClock,
-  Check, ArrowRight, ArrowLeft, SkipForward, Sparkles,
+  Check, ArrowRight, ArrowLeft, SkipForward, Sparkles, CalendarIcon,
 } from 'lucide-react';
 import { GooglePlacesAutocomplete } from '@/components/GooglePlacesAutocomplete';
 import type { PlaceSelection } from '@/components/GooglePlacesAutocomplete';
@@ -25,9 +25,21 @@ import { EngagementSelector } from '@/components/facilities/EngagementSelector';
 import type { EngagementType, TaxFormType } from '@/lib/engagementOptions';
 import { GuidedStep } from '@/components/onboarding/GuidedStep';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { US_TIMEZONES, isSupportedUsTz, coerceToUsTz, labelForTz } from '@/lib/usTimezones';
 import tzlookup from 'tz-lookup';
 import { format, addDays, endOfMonth } from 'date-fns';
+
+function parseDateOnly(s: string | null | undefined): Date | undefined {
+  if (!s) return undefined;
+  const [y, m, d] = s.split('-').map(Number);
+  if (!y || !m || !d) return undefined;
+  return new Date(y, m - 1, d);
+}
+function formatDateOnly(d: Date): string {
+  return format(d, 'yyyy-MM-dd');
+}
 
 export interface AddClinicStepperHandle {
   /** Returns the created facility id, or null on validation failure. */
@@ -66,6 +78,7 @@ interface Props {
 const BILLING_CADENCES: { value: BillingCadence; label: string; example: string; recommended?: boolean }[] = [
   { value: 'daily', label: 'After each shift is completed', example: 'Receive a draft invoice the morning after each shift.' },
   { value: 'weekly', label: 'After all shifts for the week are completed', example: 'One invoice per week (Mon–Sun), drafted on your last shift of the week.' },
+  { value: 'biweekly', label: 'Every two weeks (aligned to clinic payroll)', example: 'One invoice every 14 days, drafted on your last shift of each period. Common for corporate clinics.' },
   { value: 'monthly', label: 'After all shifts for the month are completed', example: 'One invoice at the end of the month. This is the most common option for relief work.' },
 ];
 
@@ -80,6 +93,7 @@ function previewDueDate(cadence: BillingCadence, netDays: number): string {
   let invoiceDate: Date;
   if (cadence === 'monthly') invoiceDate = endOfMonth(today);
   else if (cadence === 'weekly') invoiceDate = addDays(today, 7 - today.getDay());
+  else if (cadence === 'biweekly') invoiceDate = addDays(today, 14);
   else invoiceDate = today;
   return format(addDays(invoiceDate, netDays), 'MMM d, yyyy');
 }
@@ -141,6 +155,7 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
 
   // ── Step 4: Billing & Contacts ──
   const [billingCadence, setBillingCadence] = useState<BillingCadence>('monthly');
+  const [anchorDate, setAnchorDate] = useState<string | null>(null);
   const [invoiceDueDays, setInvoiceDueDays] = useState(15);
   const [schedulingContactName, setSchedulingContactName] = useState('');
   const [schedulingContactEmail, setSchedulingContactEmail] = useState('');
@@ -203,8 +218,9 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
   const canSave = useMemo(() => {
     if (!name.trim()) return false;
     if (engagementType !== 'direct' && !sourceName.trim()) return false;
+    if (directInvoicing && billingCadence === 'biweekly' && !anchorDate) return false;
     return !saving;
-  }, [name, engagementType, sourceName, saving]);
+  }, [name, engagementType, sourceName, saving, directInvoicing, billingCadence, anchorDate]);
 
   const handleSave = async (): Promise<string | null> => {
     if (!name.trim()) {
@@ -215,6 +231,11 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
     if (engagementType !== 'direct' && !sourceName.trim()) {
       toast.error('Please select the platform or agency');
       setStep(2);
+      return null;
+    }
+    if (directInvoicing && billingCadence === 'biweekly' && !anchorDate) {
+      toast.error('Pick the first pay period start date for biweekly billing.');
+      setStep(4);
       return null;
     }
 
@@ -266,7 +287,7 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
         invoice_name_bcc: '',
         invoice_email_bcc: '',
         billing_cadence: billingCadence,
-        billing_cycle_anchor_date: null,
+        billing_cycle_anchor_date: billingCadence === 'biweekly' ? anchorDate : null,
         billing_week_end_day: 'saturday',
         auto_generate_invoices: directInvoicing,
         generates_invoices: directInvoicing,
@@ -446,7 +467,7 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
     canSkip,
     primaryLabel,
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [canSave, step, totalSteps, canBack, canSkip, primaryLabel, name, engagementType, sourceName, rates, billingCadence, invoiceDueDays, schedulingContactName, schedulingContactEmail, invoiceNameTo, invoiceEmailTo, sameAsScheduling, address, taxFormType, acknowledgedNoRates]);
+  }), [canSave, step, totalSteps, canBack, canSkip, primaryLabel, name, engagementType, sourceName, rates, billingCadence, anchorDate, invoiceDueDays, schedulingContactName, schedulingContactEmail, invoiceNameTo, invoiceEmailTo, sameAsScheduling, address, taxFormType, acknowledgedNoRates]);
 
   // Rendered step number depends on visibility (rates/billing steps may be hidden).
   const visibleStepNumber = currentVisibleIndex + 1;
@@ -648,7 +669,7 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
           {/* Section A — Cadence */}
           <div className="space-y-2">
             <Label className="text-sm font-semibold text-foreground normal-case tracking-normal">Billing cadence — How often do you want to bill this clinic?</Label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {BILLING_CADENCES.map(c => {
                 const selected = billingCadence === c.value;
                 return (
@@ -671,6 +692,39 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
                 );
               })}
             </div>
+            {billingCadence === 'biweekly' && (
+              <div className="pt-2 space-y-1.5">
+                <Label className="text-xs">First pay period starts on <span className="text-destructive">*</span></Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className={cn(
+                        'w-full justify-start text-left font-normal',
+                        !anchorDate && 'text-muted-foreground',
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {anchorDate ? format(parseDateOnly(anchorDate)!, 'PPP') : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={parseDateOnly(anchorDate)}
+                      onSelect={(d) => setAnchorDate(d ? formatDateOnly(d) : null)}
+                      initialFocus
+                      className={cn('p-3 pointer-events-auto')}
+                    />
+                  </PopoverContent>
+                </Popover>
+                <p className="text-[11px] text-muted-foreground">Pick the start date of any one of this clinic's pay periods — invoices repeat every 14 days from this date.</p>
+                {!anchorDate && (
+                  <p className="text-[11px] text-destructive">Required for biweekly billing.</p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Section B — Net terms */}
