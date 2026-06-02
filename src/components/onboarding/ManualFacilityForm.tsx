@@ -64,6 +64,10 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
       return;
     }
     const isDirect = engagementType === 'direct';
+    if (isDirect && billingCadence === 'biweekly' && !anchorDate) {
+      toast.error('Pick the first pay period start date for biweekly billing.');
+      return;
+    }
     const effectiveTaxForm: TaxFormType | null =
       engagementType === 'third_party' ? taxFormType : null;
     await onSave({
@@ -75,13 +79,15 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
       weekday_rate_kind: weekdayRate ? weekdayRateKind : undefined,
       billing_cadence: isDirect ? billingCadence : undefined,
       billing_week_end_day: undefined,
-      billing_anchor_date: undefined,
+      billing_anchor_date: isDirect && billingCadence === 'biweekly' ? (anchorDate ?? undefined) : undefined,
       auto_generate_invoices: isDirect,
       engagement_type: engagementType,
       source_name: isDirect ? null : sourceName.trim() || null,
       tax_form_type: effectiveTaxForm,
     });
   };
+
+  const biweeklyMissingAnchor = engagementType === 'direct' && billingCadence === 'biweekly' && !anchorDate;
 
   return (
     <div className="space-y-5">
