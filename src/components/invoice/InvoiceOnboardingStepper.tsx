@@ -126,6 +126,28 @@ export function InvoiceOnboardingStepper({ onComplete }: Props) {
     setEditingFacilityId(null);
   };
 
+  const biweeklyMissingFacility = activeFacilities.find(f => {
+    const c = billingConfigs[f.id];
+    return c?.billing_cadence === 'biweekly' && !c?.biweekly_anchor_date;
+  });
+
+  const handleNextFromStep0 = () => {
+    if (biweeklyMissingFacility) {
+      toast.error(`Pick a first pay period date for ${biweeklyMissingFacility.name} (biweekly).`);
+      return;
+    }
+    setStep(1);
+  };
+
+  const handleCompleteGuarded = async () => {
+    if (biweeklyMissingFacility) {
+      toast.error(`Pick a first pay period date for ${biweeklyMissingFacility.name} (biweekly).`);
+      setStep(0);
+      return;
+    }
+    await handleComplete();
+  };
+
   const handleComplete = async () => {
     // Persist billing configs to each facility
     for (const fac of activeFacilities) {
