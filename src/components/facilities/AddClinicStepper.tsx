@@ -78,6 +78,7 @@ interface Props {
 const BILLING_CADENCES: { value: BillingCadence; label: string; example: string; recommended?: boolean }[] = [
   { value: 'daily', label: 'After each shift is completed', example: 'Receive a draft invoice the morning after each shift.' },
   { value: 'weekly', label: 'After all shifts for the week are completed', example: 'One invoice per week (Mon–Sun), drafted on your last shift of the week.' },
+  { value: 'biweekly', label: 'Every two weeks (aligned to clinic payroll)', example: 'One invoice every 14 days, drafted on your last shift of each period. Common for corporate clinics.' },
   { value: 'monthly', label: 'After all shifts for the month are completed', example: 'One invoice at the end of the month. This is the most common option for relief work.' },
 ];
 
