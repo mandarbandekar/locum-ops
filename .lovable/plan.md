@@ -1,68 +1,58 @@
-# Monthly Mileage Report — Per-Trip Log + Monthly Totals
+# Expose Biweekly Billing Cadence (Frontend Only)
 
-Rework the Monthly Mileage Report (inline preview, PDF, and CSV) so every trip is listed with date, place, and miles, and rolled up into a 12-month summary.
+Backend already supports biweekly with `facilities.billing_cycle_anchor_date`. This plan adds biweekly as a selectable option in the 4 clinic-setup surfaces and captures the required anchor date. **No backend, migration, edge function, RLS, or `billing_week_end_day` changes.**
 
-## Report structure
+## Shared rules (all 4 files)
 
-**1. Monthly Summary (always 12 rows: Jan–Dec of the selected year)**
+- Anchor stored as `YYYY-MM-DD` string (no time, no tz).
+- Anchor date picker (shadcn `Popover` + `Calendar`, format → `YYYY-MM-DD`) appears **only** when cadence === `biweekly`.
+- Label: **"First pay period starts on"**
+- Helper: *"Pick the start date of any one of this clinic's pay periods — invoices repeat every 14 days from this date."*
+- Cadence helper (under control when biweekly): *"One invoice every two weeks, aligned to the clinic's payroll cycle. Draft generates on the morning of your last scheduled shift in each 14-day period."*
+- Save/Continue blocked with inline message if biweekly + no anchor.
 
-| Month | Trips | Miles | IRS Rate | Deduction ($) |
-|---|---|---|---|---|
-| Jan 2026 | 0 | 0 | $0.70 | $0.00 |
-| Feb 2026 | 4 | 312 | $0.70 | $218.40 |
-| … | | | | |
-| **Total** | … | … | — | … |
+## Per-file changes
 
-Empty months show `0 / 0 / $0.00` so the year reads cleanly.
+### 1. `src/components/facilities/InvoicingPreferencesCard.tsx`
+- Add `<SelectItem value="biweekly">Biweekly</SelectItem>` to cadence Select.
+- Local state `anchorDate`, initialized from `facility.billing_cycle_anchor_date`.
+- Render anchor picker + biweekly helper text when `billingCadence === 'biweekly'`.
+- In `persistChanges`, replace `billing_cycle_anchor_date: null` with `cadence === 'biweekly' ? anchorDate : null`.
+- Add anchor-required check inside `handleSave`; preserve existing `showCadenceConfirm` regrouping flow.
 
-**2. Trip Log (grouped by month, only months with activity)**
+### 2. `src/components/facilities/AddClinicStepper.tsx`
+- Add to `BILLING_CADENCES` array:
+  ```ts
+  { value: 'biweekly', label: 'Every two weeks (aligned to clinic payroll)',
+    example: 'One invoice every 14 days, drafted on your last shift of each period. Common for corporate clinics.' }
+  ```
+- Add `anchorDate` state; render picker in cadence section when biweekly.
+- Insert payload: `billing_cycle_anchor_date: billingCadence === 'biweekly' ? anchorDate : null`. Leave `billing_week_end_day: 'saturday'`.
+- `previewDueDate`: handle biweekly like other non-daily cases (~14 days out).
+- Add anchor to `canSave` and its `useMemo` deps.
 
-```
-── February 2026 ─────────────────────────────────
-Date         Place                                          Miles
-2026-02-04   Taylor Animal Hospital                          78
-             1234 Main St, Columbus, OH 43215
-2026-02-11   Greenfield Medical Center                       52
-             88 Park Ave, Cleveland, OH 44106
-                                       Subtotal:  130 mi  /  $91.00
-```
+### 3. `src/components/onboarding/ManualFacilityForm.tsx`
+- Add `<SelectItem value="biweekly">Biweekly</SelectItem>` to cadence Select.
+- Add `anchorDate` state; render picker when biweekly.
+- In `onSave` payload, set `billing_anchor_date: billingCadence === 'biweekly' ? anchorDate : undefined` (keep field name `billing_anchor_date` — mapped downstream in `useManualSetup`).
+- Block submit when biweekly + missing anchor (inline message + disable button).
 
-Place column = **clinic name + full address** (address on a second line in PDF so the table doesn't wrap awkwardly; CSV uses a single combined cell).
+### 4. `src/components/invoice/InvoiceOnboardingStepper.tsx`
+- `CADENCE_OPTIONS` & persist path already handle biweekly. Only the input is missing.
+- For each facility row where `config.billing_cadence === 'biweekly'`, render compact anchor date input wired to `updateConfig(fac.id, { biweekly_anchor_date: '<YYYY-MM-DD>' })`. Use exact field name `biweekly_anchor_date`.
+- Block step's continue/finish while any biweekly facility lacks an anchor; message names the facility.
 
-## Data source
+## Out of scope / guardrails
+- No changes to daily / weekly / monthly behavior.
+- No rename of existing fields (each file keeps its current anchor field name).
+- No `billing_week_end_day` work.
+- No backend, migration, edge function, RLS, or invoice-generation changes.
+- No reformatting of untouched lines.
 
-From `useCPAPrepData()` → `confirmedMileageExpenses` and `facilities`:
-- **Date** → `expense_date` (string-sliced YYYY-MM-DD, no UTC drift)
-- **Place** → `facilities[expense.facility_id]` → `name` + `address` (fallback: `vendor`, else `"Unlinked trip"`)
-- **Miles** → `mileage_miles`
-- **$** → `mileage_miles × irs_mileage_rate_cents / 100` (current rate from `expense_config`)
-- **Year** → derived from the active CPA Prep date range (uses the range's start year)
-
-## Files to change
-
-1. **`src/lib/cpaPrepExports.ts`**
-   - Add `buildMileageTripLog(expenses, facilitiesById)` → `{ monthKey, monthLabel, trips: [{date, place, address, miles, amount}], subtotalMiles, subtotalAmount }[]`
-   - Update `buildMonthlyMileageRows` to emit all 12 months (zero-filled) for the active year
-   - CSV builder emits: summary block → blank row → trip log grouped by month with subtotal rows
-
-2. **`src/lib/cpaPrepPdf.ts`**
-   - Mileage section: render summary `autoTable` first, then one `autoTable` per active month for trips. Address renders as a smaller second line under the clinic name (custom `didDrawCell`).
-
-3. **`src/hooks/useCPAPrepData.ts`**
-   - Expose `facilitiesById` (id → `{name, address}`) alongside `confirmedMileageExpenses`.
-
-4. **`src/components/cpa-prep/MonthlyMileagePreview.tsx`**
-   - Show the 12-month summary table (current view).
-   - Add a collapsible **"Trip log"** section below it: one accordion per month listing every trip (date, place, miles), with the monthly subtotal in the header.
-
-## Edge cases
-- Unlinked expense (no `facility_id`, no `vendor`) → place = "Unlinked trip", address blank.
-- Months with zero trips → present in summary as $0 row; omitted from trip log.
-- Trips sorted ascending by date within each month; months ascending Jan→Dec.
-- Year boundary: only trips whose `expense_date` year matches the report year are included.
-
-## Out of scope
-- Trip purpose/notes column
-- Editing trips from the preview
-- Excel (.xlsx) export
-- Multi-rate handling (still single current IRS rate)
+## Verification (to report back after build)
+1. Biweekly selectable in all 4 surfaces.
+2. Anchor picker shows only for biweekly; required to save/continue in all 4.
+3. Saved anchor persists as `YYYY-MM-DD` on `facilities.billing_cycle_anchor_date` via each path.
+4. Daily / weekly / monthly unchanged.
+5. No backend / migration / edge function / `billing_week_end_day` changes.
+6. Files changed = exactly the 4 above.
