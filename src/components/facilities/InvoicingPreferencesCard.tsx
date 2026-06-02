@@ -44,6 +44,7 @@ const CADENCE_LABELS: Record<string, string> = {
 export function InvoicingPreferencesCard({ facility, onUpdate }: InvoicingPreferencesCardProps) {
   const [editing, setEditing] = useState(false);
   const [billingCadence, setBillingCadence] = useState<BillingCadence>(facility.billing_cadence || 'monthly');
+  const [anchorDate, setAnchorDate] = useState<string | null>(facility.billing_cycle_anchor_date || null);
   
   const [dueDays, setDueDays] = useState(facility.invoice_due_days ?? 15);
   const [prefix, setPrefix] = useState(facility.invoice_prefix || 'INV');
