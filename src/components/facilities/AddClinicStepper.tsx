@@ -218,8 +218,9 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
   const canSave = useMemo(() => {
     if (!name.trim()) return false;
     if (engagementType !== 'direct' && !sourceName.trim()) return false;
+    if (directInvoicing && billingCadence === 'biweekly' && !anchorDate) return false;
     return !saving;
-  }, [name, engagementType, sourceName, saving]);
+  }, [name, engagementType, sourceName, saving, directInvoicing, billingCadence, anchorDate]);
 
   const handleSave = async (): Promise<string | null> => {
     if (!name.trim()) {
