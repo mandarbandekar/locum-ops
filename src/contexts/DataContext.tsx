@@ -20,6 +20,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { friendlyDbError } from '@/lib/errorUtils';
 import { posthog } from '@/lib/posthog';
+import { formatYMDInTz } from '@/lib/tzTime';
 
 // Helper for tables not yet in auto-generated types
 const db = (table: string) => supabase.from(table as any);
@@ -63,6 +64,8 @@ interface SuppressedPeriod {
   facility_id: string;
   period_start: string;
   period_end: string;
+  period_start_date: string; // YYYY-MM-DD in facility tz — tz-stable suppression key
+  period_end_date: string;   // YYYY-MM-DD in facility tz — tz-stable suppression key
 }
 
 interface DataContextType {
@@ -557,15 +560,14 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
         if (updateDraftError) throw updateDraftError;
         setInvoices(prev => prev.map(i => i.id === existingDraft.id ? updatedInv : i));
       } else if (facility.auto_generate_invoices) {
-        const isSuppressed = suppressedPeriods.some(sp => {
-          if (sp.facility_id !== facility.id) return false;
-          const spStart = new Date(sp.period_start).toISOString().slice(0, 10);
-          const spEnd = new Date(sp.period_end).toISOString().slice(0, 10);
-          if (spStart !== periodStartStr) return false;
-          if (spEnd === periodEndStr) return true;
-          const diff = Math.abs(new Date(spEnd).getTime() - new Date(periodEndStr).getTime());
-          return diff <= 86400000;
-        });
+        const facilityTz = facility.timezone || 'America/New_York';
+        const periodStartDateLocal = formatYMDInTz(period.start.toISOString(), facilityTz);
+        const periodEndDateLocal = formatYMDInTz(period.end.toISOString(), facilityTz);
+        const isSuppressed = suppressedPeriods.some(sp =>
+          sp.facility_id === facility.id &&
+          sp.period_start_date === periodStartDateLocal &&
+          sp.period_end_date === periodEndDateLocal
+        );
         if (isSuppressed) return;
 
         const invoiceNumber = await reserveInvoiceNumber(invoices, facility.invoice_prefix);
@@ -743,19 +745,15 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
 
             toast.info(`Draft invoice updated for ${facility.name}`);
           } else if (facility.auto_generate_invoices && eligible.length > 0) {
-            // Check suppression before creating new draft
-            const periodStartDate = period.start.toISOString().slice(0, 10);
-            const periodEndDate = period.end.toISOString().slice(0, 10);
-            const isSuppressed = suppressedPeriods.some(sp => {
-              if (sp.facility_id !== facility.id) return false;
-              const spStart = new Date(sp.period_start).toISOString().slice(0, 10);
-              const spEnd = new Date(sp.period_end).toISOString().slice(0, 10);
-              if (spStart !== periodStartDate) return false;
-              // Allow 1-day tolerance on end date for timezone mismatch
-              if (spEnd === periodEndDate) return true;
-              const diff = Math.abs(new Date(spEnd).getTime() - new Date(periodEndDate).getTime());
-              return diff <= 86400000;
-            });
+            // Check suppression before creating new draft (tz-stable on local YMD).
+            const facilityTz = facility.timezone || 'America/New_York';
+            const periodStartDate = formatYMDInTz(period.start.toISOString(), facilityTz);
+            const periodEndDate = formatYMDInTz(period.end.toISOString(), facilityTz);
+            const isSuppressed = suppressedPeriods.some(sp =>
+              sp.facility_id === facility.id &&
+              sp.period_start_date === periodStartDate &&
+              sp.period_end_date === periodEndDate
+            );
             if (isSuppressed) {
               // Period suppressed — skip auto-generation silently
             } else {
@@ -946,12 +944,16 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
   }, [isDemo]);
 
   const suppressInvoicePeriod = useCallback(async (facilityId: string, periodStart: string, periodEnd: string) => {
+    const facility = facilities.find(f => f.id === facilityId);
+    const tz = facility?.timezone || 'America/New_York';
+    const period_start_date = formatYMDInTz(periodStart, tz);
+    const period_end_date = formatYMDInTz(periodEnd, tz);
     if (isDemo) {
-      setSuppressedPeriods(prev => [...prev, { id: generateId(), facility_id: facilityId, period_start: periodStart, period_end: periodEnd }]);
+      setSuppressedPeriods(prev => [...prev, { id: generateId(), facility_id: facilityId, period_start: periodStart, period_end: periodEnd, period_start_date, period_end_date }]);
       return;
     }
     const { data, error } = await db('suppressed_invoice_periods')
-      .insert({ user_id: user!.id, facility_id: facilityId, period_start: periodStart, period_end: periodEnd })
+      .insert({ user_id: user!.id, facility_id: facilityId, period_start: periodStart, period_end: periodEnd, period_start_date, period_end_date })
       .select().single();
     if (error) {
       // Ignore unique constraint violations (already suppressed)
@@ -964,7 +966,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     if (data) {
       setSuppressedPeriods(prev => [...prev, stripDbFields(data) as SuppressedPeriod]);
     }
-  }, [isDemo, user]);
+  }, [isDemo, user, facilities]);
 
   // ─── Line Items ──────────────────────────────────────────
 

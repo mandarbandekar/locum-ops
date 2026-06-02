@@ -2817,7 +2817,9 @@ export type Database = {
           facility_id: string
           id: string
           period_end: string
+          period_end_date: string
           period_start: string
+          period_start_date: string
           user_id: string
         }
         Insert: {
@@ -2825,7 +2827,9 @@ export type Database = {
           facility_id: string
           id?: string
           period_end: string
+          period_end_date: string
           period_start: string
+          period_start_date: string
           user_id?: string
         }
         Update: {
@@ -2833,7 +2837,9 @@ export type Database = {
           facility_id?: string
           id?: string
           period_end?: string
+          period_end_date?: string
           period_start?: string
+          period_start_date?: string
           user_id?: string
         }
         Relationships: []
