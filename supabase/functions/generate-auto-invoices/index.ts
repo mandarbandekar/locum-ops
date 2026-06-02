@@ -313,10 +313,12 @@ Deno.serve(async (req) => {
         const periodEndStr = bucket.endYMD;
         const periodShifts = bucket.shifts;
 
-        // Suppression check — compare on clinic-local YMD, no UTC tolerance hack.
+        // Suppression check — prefer the tz-stable date columns; fall back to
+        // re-projecting the legacy UTC bounds into the facility tz for old rows
+        // that haven't been backfilled.
         const isSuppressed = suppressedPeriods.some((sp) => {
-          const spStartYMD = localYMDInTz(sp.period_start, facilityTz);
-          const spEndYMD = localYMDInTz(sp.period_end, facilityTz);
+          const spStartYMD = sp.period_start_date ?? localYMDInTz(sp.period_start, facilityTz);
+          const spEndYMD = sp.period_end_date ?? localYMDInTz(sp.period_end, facilityTz);
           return spStartYMD === periodStartStr && spEndYMD === periodEndStr;
         });
         if (isSuppressed) {
