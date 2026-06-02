@@ -337,8 +337,15 @@ export function InvoiceOnboardingStepper({ onComplete }: Props) {
             </div>
           )}
 
+          {biweeklyMissingFacility && (
+            <div className="flex items-center gap-2 text-xs text-destructive bg-destructive/10 rounded-md px-3 py-2">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+              Pick a first pay period date for {biweeklyMissingFacility.name} (biweekly) to continue.
+            </div>
+          )}
+
           <div className="flex justify-end pt-2">
-            <Button onClick={() => setStep(1)}>
+            <Button onClick={handleNextFromStep0} disabled={!!biweeklyMissingFacility}>
               Next <ArrowRight className="ml-1 h-4 w-4" />
             </Button>
           </div>
