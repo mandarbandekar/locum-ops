@@ -9,7 +9,9 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, ArrowRight, Check, AlertTriangle, UserPlus, ExternalLink, CheckCircle2 } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { ArrowLeft, ArrowRight, Check, AlertTriangle, UserPlus, ExternalLink, CheckCircle2, CalendarIcon } from 'lucide-react';
 import {
   type BillingCadence,
   type FacilityBillingConfig,
@@ -18,7 +20,19 @@ import {
   validateSenderProfile,
 } from '@/lib/invoiceBillingDefaults';
 import { formatPaymentTerms } from '@/lib/invoiceHelpers';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+
+function parseDateOnly(s: string | null | undefined): Date | undefined {
+  if (!s) return undefined;
+  const [y, m, d] = s.split('-').map(Number);
+  if (!y || !m || !d) return undefined;
+  return new Date(y, m - 1, d);
+}
+function formatDateOnly(d: Date): string {
+  return format(d, 'yyyy-MM-dd');
+}
 
 const ONBOARDING_STEPS = [
   { key: 'facilities', label: 'Facility Billing Setup' },
