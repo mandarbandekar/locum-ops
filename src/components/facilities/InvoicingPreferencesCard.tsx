@@ -289,6 +289,16 @@ export function InvoicingPreferencesCard({ facility, onUpdate }: InvoicingPrefer
               </PopoverContent>
             </Popover>
             <p className="text-[10px] text-muted-foreground mt-0.5">Pick the start date of any one of this clinic's pay periods — invoices repeat every 14 days from this date.</p>
+            {anchorDate && (() => {
+              const w = computeNextBiweeklyWindow(anchorDate);
+              if (!w) return null;
+              return (
+                <div className="mt-2 flex items-center gap-2 rounded-md bg-primary/5 border border-primary/10 px-3 py-2">
+                  <span className="text-[11px] font-medium text-primary">Next pay period:</span>
+                  <span className="text-[11px] text-foreground font-medium">{w.start} – {w.end}</span>
+                </div>
+              );
+            })()}
           </div>
         )}
 
