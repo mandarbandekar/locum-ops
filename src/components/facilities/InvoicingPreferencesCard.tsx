@@ -17,6 +17,7 @@ import { useData } from '@/contexts/DataContext';
 import { formatPaymentTerms } from '@/lib/invoiceHelpers';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { computeNextBiweeklyWindow } from '@/lib/biweeklyHelpers';
 import type { Facility, BillingCadence } from '@/types';
 
 function parseDateOnly(s: string | null | undefined): Date | undefined {
