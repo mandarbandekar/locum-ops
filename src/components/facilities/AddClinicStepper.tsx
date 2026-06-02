@@ -722,12 +722,14 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
                 </Popover>
                 <p className="text-[11px] text-muted-foreground">Pick the start date of any one of this clinic's pay periods — invoices repeat every 14 days from this date.</p>
                 {anchorDate && (() => {
-                  const w = computeNextBiweeklyWindow(anchorDate);
-                  if (!w) return null;
+                  const windows = computeBiweeklyWindows(anchorDate);
+                  if (!windows.length) return null;
                   return (
-                    <div className="mt-2 flex items-center gap-2 rounded-md bg-primary/5 border border-primary/10 px-3 py-2">
-                      <span className="text-[11px] font-medium text-primary">Next pay period:</span>
-                      <span className="text-[11px] text-foreground font-medium">{w.start} – {w.end}</span>
+                    <div className="mt-2 rounded-md bg-primary/5 border border-primary/10 px-3 py-2 space-y-1">
+                      <p className="text-[11px] font-medium text-primary">Upcoming pay periods</p>
+                      {windows.map((w, i) => (
+                        <p key={i} className="text-[11px] text-foreground font-medium">{w.start} – {w.end}</p>
+                      ))}
                     </div>
                   );
                 })()}
