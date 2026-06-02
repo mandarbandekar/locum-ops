@@ -30,6 +30,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { US_TIMEZONES, isSupportedUsTz, coerceToUsTz, labelForTz } from '@/lib/usTimezones';
 import tzlookup from 'tz-lookup';
 import { format, addDays, endOfMonth } from 'date-fns';
+import { computeNextBiweeklyWindow } from '@/lib/biweeklyHelpers';
 
 function parseDateOnly(s: string | null | undefined): Date | undefined {
   if (!s) return undefined;
@@ -720,6 +721,16 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
                   </PopoverContent>
                 </Popover>
                 <p className="text-[11px] text-muted-foreground">Pick the start date of any one of this clinic's pay periods — invoices repeat every 14 days from this date.</p>
+                {anchorDate && (() => {
+                  const w = computeNextBiweeklyWindow(anchorDate);
+                  if (!w) return null;
+                  return (
+                    <div className="mt-2 flex items-center gap-2 rounded-md bg-primary/5 border border-primary/10 px-3 py-2">
+                      <span className="text-[11px] font-medium text-primary">Next pay period:</span>
+                      <span className="text-[11px] text-foreground font-medium">{w.start} – {w.end}</span>
+                    </div>
+                  );
+                })()}
                 {!anchorDate && (
                   <p className="text-[11px] text-destructive">Required for biweekly billing.</p>
                 )}
