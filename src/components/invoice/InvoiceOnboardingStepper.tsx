@@ -229,6 +229,41 @@ export function InvoiceOnboardingStepper({ onComplete }: Props) {
                         {config.billing_cadence === 'weekly' && (
                           <p className="text-[10px] text-muted-foreground mt-1">Weekly invoices default to Saturday billing close.</p>
                         )}
+                        {config.billing_cadence === 'biweekly' && (
+                          <div className="mt-1.5 space-y-1">
+                            <p className="text-[10px] text-muted-foreground">One invoice every two weeks, aligned to the clinic's payroll cycle. Draft generates on the morning of your last scheduled shift in each 14-day period.</p>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  className={cn(
+                                    'h-8 w-[180px] justify-start text-left font-normal text-xs',
+                                    !config.biweekly_anchor_date && 'text-muted-foreground',
+                                  )}
+                                >
+                                  <CalendarIcon className="mr-1.5 h-3 w-3" />
+                                  {config.biweekly_anchor_date
+                                    ? format(parseDateOnly(config.biweekly_anchor_date)!, 'MMM d, yyyy')
+                                    : <span>First pay period…</span>}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                  mode="single"
+                                  selected={parseDateOnly(config.biweekly_anchor_date)}
+                                  onSelect={(d) => updateConfig(fac.id, { biweekly_anchor_date: d ? formatDateOnly(d) : null })}
+                                  initialFocus
+                                  className={cn('p-3 pointer-events-auto')}
+                                />
+                              </PopoverContent>
+                            </Popover>
+                            <p className="text-[10px] text-muted-foreground">First pay period starts on — pick any one of this clinic's pay-period start dates. Invoices repeat every 14 days from this date.</p>
+                            {!config.biweekly_anchor_date && (
+                              <p className="text-[10px] text-destructive">Required for biweekly billing.</p>
+                            )}
+                          </div>
+                        )}
                       </td>
                       <td className="p-3">
                         {isEditing ? (
