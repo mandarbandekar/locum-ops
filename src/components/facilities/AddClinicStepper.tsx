@@ -233,6 +233,11 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
       setStep(2);
       return null;
     }
+    if (directInvoicing && billingCadence === 'biweekly' && !anchorDate) {
+      toast.error('Pick the first pay period start date for biweekly billing.');
+      setStep(4);
+      return null;
+    }
 
     // Duplicate-clinic guard — prevents re-creating a clinic the user already added
     // (e.g. after navigating Back during onboarding and re-submitting the form).
