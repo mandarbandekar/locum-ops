@@ -446,7 +446,7 @@ export function InvoiceOnboardingStepper({ onComplete }: Props) {
             <Button variant="outline" onClick={() => setStep(1)}>
               <ArrowLeft className="mr-1 h-4 w-4" /> Back
             </Button>
-            <Button onClick={handleComplete}>
+            <Button onClick={handleCompleteGuarded} disabled={!!biweeklyMissingFacility}>
               Complete Setup <Check className="ml-1 h-4 w-4" />
             </Button>
           </div>
