@@ -235,6 +235,7 @@ export function InvoicingPreferencesCard({ facility, onUpdate }: InvoicingPrefer
               <SelectContent>
                 <SelectItem value="daily">Daily</SelectItem>
                 <SelectItem value="weekly">Weekly (Mon–Sun)</SelectItem>
+                <SelectItem value="biweekly">Biweekly</SelectItem>
                 <SelectItem value="monthly">Monthly</SelectItem>
               </SelectContent>
             </Select>
@@ -247,6 +248,9 @@ export function InvoicingPreferencesCard({ facility, onUpdate }: InvoicingPrefer
             {billingCadence === 'daily' && (
               <p className="text-[10px] text-muted-foreground mt-0.5">A draft invoice is generated each morning you have a scheduled shift.</p>
             )}
+            {billingCadence === 'biweekly' && (
+              <p className="text-[10px] text-muted-foreground mt-0.5">One invoice every two weeks, aligned to the clinic's payroll cycle. Draft generates on the morning of your last scheduled shift in each 14-day period.</p>
+            )}
           </div>
           <div>
             <Label className="text-xs">Invoice Prefix</Label>
@@ -254,6 +258,38 @@ export function InvoicingPreferencesCard({ facility, onUpdate }: InvoicingPrefer
             <p className="text-[10px] text-muted-foreground mt-0.5">e.g. {prefix}-2026-001</p>
           </div>
         </div>
+
+        {/* Biweekly anchor date */}
+        {billingCadence === 'biweekly' && (
+          <div>
+            <Label className="text-xs">First pay period starts on <span className="text-destructive">*</span></Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={cn(
+                    'h-9 w-full justify-start text-left font-normal mt-1',
+                    !anchorDate && 'text-muted-foreground',
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                  {anchorDate ? format(parseDateOnly(anchorDate)!, 'PPP') : <span>Pick a date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={parseDateOnly(anchorDate)}
+                  onSelect={(d) => setAnchorDate(d ? formatDateOnly(d) : null)}
+                  initialFocus
+                  className={cn('p-3 pointer-events-auto')}
+                />
+              </PopoverContent>
+            </Popover>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Pick the start date of any one of this clinic's pay periods — invoices repeat every 14 days from this date.</p>
+          </div>
+        )}
 
         {/* Payment terms */}
         <div>
