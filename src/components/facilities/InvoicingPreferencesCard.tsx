@@ -9,11 +9,25 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Receipt, Edit2, Save, X, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Receipt, Edit2, Save, X, AlertTriangle, CheckCircle2, CalendarIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { useData } from '@/contexts/DataContext';
 import { formatPaymentTerms } from '@/lib/invoiceHelpers';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 import type { Facility, BillingCadence } from '@/types';
+
+function parseDateOnly(s: string | null | undefined): Date | undefined {
+  if (!s) return undefined;
+  const [y, m, d] = s.split('-').map(Number);
+  if (!y || !m || !d) return undefined;
+  return new Date(y, m - 1, d);
+}
+function formatDateOnly(d: Date): string {
+  return format(d, 'yyyy-MM-dd');
+}
 
 interface InvoicingPreferencesCardProps {
   facility: Facility;
