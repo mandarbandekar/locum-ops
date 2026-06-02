@@ -23,7 +23,7 @@ import { formatPaymentTerms } from '@/lib/invoiceHelpers';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { computeNextBiweeklyWindow } from '@/lib/biweeklyHelpers';
+import { computeBiweeklyWindows } from '@/lib/biweeklyHelpers';
 
 function parseDateOnly(s: string | null | undefined): Date | undefined {
   if (!s) return undefined;
@@ -286,12 +286,14 @@ export function InvoiceOnboardingStepper({ onComplete }: Props) {
                               <p className="text-[10px] text-destructive">Required for biweekly billing.</p>
                             )}
                             {config.biweekly_anchor_date && (() => {
-                              const w = computeNextBiweeklyWindow(config.biweekly_anchor_date);
-                              if (!w) return null;
+                              const windows = computeBiweeklyWindows(config.biweekly_anchor_date);
+                              if (!windows.length) return null;
                               return (
-                                <div className="mt-1.5 flex items-center gap-2 rounded-md bg-primary/5 border border-primary/10 px-2.5 py-1.5">
-                                  <span className="text-[10px] font-medium text-primary">Next pay period:</span>
-                                  <span className="text-[10px] text-foreground font-medium">{w.start} – {w.end}</span>
+                                <div className="mt-1.5 rounded-md bg-primary/5 border border-primary/10 px-2.5 py-1.5 space-y-0.5">
+                                  <p className="text-[10px] font-medium text-primary">Upcoming pay periods</p>
+                                  {windows.map((w, i) => (
+                                    <p key={i} className="text-[10px] text-foreground font-medium">{w.start} – {w.end}</p>
+                                  ))}
                                 </div>
                               );
                             })()}

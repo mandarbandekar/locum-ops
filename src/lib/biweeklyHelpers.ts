@@ -16,9 +16,31 @@ export interface BiweeklyWindow {
   end: string;
 }
 
-export function computeNextBiweeklyWindow(anchorDateStr: string | null | undefined): BiweeklyWindow | null {
+function formatWindow(start: Date, end: Date): BiweeklyWindow {
+  const sameYear = start.getFullYear() === end.getFullYear();
+  const sameMonth = start.getMonth() === end.getMonth();
+
+  if (sameYear && sameMonth) {
+    return {
+      start: format(start, 'MMM d'),
+      end: format(end, 'MMM d, yyyy'),
+    };
+  }
+  if (sameYear) {
+    return {
+      start: format(start, 'MMM d'),
+      end: format(end, 'MMM d, yyyy'),
+    };
+  }
+  return {
+    start: format(start, 'MMM d, yyyy'),
+    end: format(end, 'MMM d, yyyy'),
+  };
+}
+
+export function computeBiweeklyWindows(anchorDateStr: string | null | undefined): BiweeklyWindow[] {
   const anchor = parseDateOnly(anchorDateStr);
-  if (!anchor) return null;
+  if (!anchor) return [];
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -33,25 +55,18 @@ export function computeNextBiweeklyWindow(anchorDateStr: string | null | undefin
     periodStart = addDays(anchor, periodIndex * 14);
   }
 
-  const periodEnd = addDays(periodStart, 13);
-
-  const sameYear = periodStart.getFullYear() === periodEnd.getFullYear();
-  const sameMonth = periodStart.getMonth() === periodEnd.getMonth();
-
-  if (sameYear && sameMonth) {
-    return {
-      start: format(periodStart, 'MMM d'),
-      end: format(periodEnd, 'MMM d, yyyy'),
-    };
+  const windows: BiweeklyWindow[] = [];
+  for (let i = 0; i < 2; i++) {
+    const start = addDays(periodStart, i * 14);
+    const end = addDays(start, 13);
+    windows.push(formatWindow(start, end));
   }
-  if (sameYear) {
-    return {
-      start: format(periodStart, 'MMM d'),
-      end: format(periodEnd, 'MMM d, yyyy'),
-    };
-  }
-  return {
-    start: format(periodStart, 'MMM d, yyyy'),
-    end: format(periodEnd, 'MMM d, yyyy'),
-  };
+
+  return windows;
+}
+
+/** @deprecated Use computeBiweeklyWindows instead */
+export function computeNextBiweeklyWindow(anchorDateStr: string | null | undefined): BiweeklyWindow | null {
+  const windows = computeBiweeklyWindows(anchorDateStr);
+  return windows[0] ?? null;
 }

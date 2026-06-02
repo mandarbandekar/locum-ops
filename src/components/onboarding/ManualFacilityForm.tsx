@@ -16,7 +16,7 @@ import type { EngagementType, TaxFormType } from '@/lib/engagementOptions';
 import type { RateKind } from '@/types';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { computeNextBiweeklyWindow } from '@/lib/biweeklyHelpers';
+import { computeBiweeklyWindows } from '@/lib/biweeklyHelpers';
 import { toast } from 'sonner';
 
 function parseDateOnly(s: string | null | undefined): Date | undefined {
@@ -286,12 +286,14 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
                 </Popover>
                 <p className="text-xs text-muted-foreground mt-1">Pick the start date of any one of this clinic's pay periods — invoices repeat every 14 days from this date.</p>
                 {anchorDate && (() => {
-                  const w = computeNextBiweeklyWindow(anchorDate);
-                  if (!w) return null;
+                  const windows = computeBiweeklyWindows(anchorDate);
+                  if (!windows.length) return null;
                   return (
-                    <div className="mt-2 flex items-center gap-2 rounded-md bg-primary/5 border border-primary/10 px-3 py-2">
-                      <span className="text-xs font-medium text-primary">Next pay period:</span>
-                      <span className="text-xs text-foreground font-medium">{w.start} – {w.end}</span>
+                    <div className="mt-2 rounded-md bg-primary/5 border border-primary/10 px-3 py-2 space-y-1">
+                      <p className="text-xs font-medium text-primary">Upcoming pay periods</p>
+                      {windows.map((w, i) => (
+                        <p key={i} className="text-xs text-foreground font-medium">{w.start} – {w.end}</p>
+                      ))}
                     </div>
                   );
                 })()}
