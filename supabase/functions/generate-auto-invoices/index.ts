@@ -195,10 +195,15 @@ Deno.serve(async (req) => {
       // Load suppressed periods for this facility's user
       const { data: suppressedRows } = await supabase
         .from("suppressed_invoice_periods")
-        .select("period_start, period_end")
+        .select("period_start, period_end, period_start_date, period_end_date")
         .eq("user_id", facility.user_id)
         .eq("facility_id", facility.id);
-      const suppressedPeriods = (suppressedRows || []) as { period_start: string; period_end: string }[];
+      const suppressedPeriods = (suppressedRows || []) as {
+        period_start: string;
+        period_end: string;
+        period_start_date: string | null;
+        period_end_date: string | null;
+      }[];
 
       // Get ALL shifts for this facility. Per product model, shifts no longer
       // carry a status (all shifts are active; cancellation = delete). We keep
