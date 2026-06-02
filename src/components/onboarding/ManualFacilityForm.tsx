@@ -239,6 +239,7 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
                 <SelectContent>
                   <SelectItem value="daily">Daily</SelectItem>
                   <SelectItem value="weekly">Weekly (Mon–Sun)</SelectItem>
+                  <SelectItem value="biweekly">Biweekly</SelectItem>
                   <SelectItem value="monthly">Monthly</SelectItem>
                 </SelectContent>
               </Select>
@@ -251,12 +252,48 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
               {billingCadence === 'daily' && (
                 <p className="text-xs text-muted-foreground mt-1">A draft invoice is generated each morning you have a scheduled shift.</p>
               )}
+              {billingCadence === 'biweekly' && (
+                <p className="text-xs text-muted-foreground mt-1">One invoice every two weeks, aligned to the clinic's payroll cycle. Draft generates on the morning of your last scheduled shift in each 14-day period.</p>
+              )}
             </div>
+            {billingCadence === 'biweekly' && (
+              <div>
+                <Label>First pay period starts on <span className="text-destructive">*</span></Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className={cn(
+                        'w-full justify-start text-left font-normal mt-1',
+                        !anchorDate && 'text-muted-foreground',
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {anchorDate ? format(parseDateOnly(anchorDate)!, 'PPP') : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={parseDateOnly(anchorDate)}
+                      onSelect={(d) => setAnchorDate(d ? formatDateOnly(d) : null)}
+                      initialFocus
+                      className={cn('p-3 pointer-events-auto')}
+                    />
+                  </PopoverContent>
+                </Popover>
+                <p className="text-xs text-muted-foreground mt-1">Pick the start date of any one of this clinic's pay periods — invoices repeat every 14 days from this date.</p>
+                {biweeklyMissingAnchor && (
+                  <p className="text-xs text-destructive mt-1">Required for biweekly billing.</p>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
 
-      <Button onClick={handleSubmit} disabled={!name.trim() || saving} className="w-full" size="lg">
+      <Button onClick={handleSubmit} disabled={!name.trim() || saving || biweeklyMissingAnchor} className="w-full" size="lg">
         {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
         Save and continue <ArrowRight className="ml-2 h-4 w-4" />
       </Button>
