@@ -41,6 +41,7 @@ export function ManualFacilityForm({ onSave, saving }: Props) {
   const [weekdayRate, setWeekdayRate] = useState('');
   const [weekdayRateKind, setWeekdayRateKind] = useState<RateKind>('flat');
   const [billingCadence, setBillingCadence] = useState<BillingCadence>('monthly');
+  const [anchorDate, setAnchorDate] = useState<string | null>(null);
   const [engagementType, setEngagementType] = useState<EngagementType>('direct');
   const [sourceName, setSourceName] = useState('');
   const [taxFormType, setTaxFormType] = useState<TaxFormType>('1099');
