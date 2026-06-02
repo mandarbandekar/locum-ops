@@ -16,7 +16,7 @@ import type { EngagementType, TaxFormType } from '@/lib/engagementOptions';
 import type { RateKind } from '@/types';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { computeNextBiweeklyWindow } from '@/lib/biweeklyHelpers';
+import { computeBiweeklyWindows } from '@/lib/biweeklyHelpers';
 import { toast } from 'sonner';
 
 function parseDateOnly(s: string | null | undefined): Date | undefined {

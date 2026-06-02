@@ -23,7 +23,7 @@ import { formatPaymentTerms } from '@/lib/invoiceHelpers';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { computeNextBiweeklyWindow } from '@/lib/biweeklyHelpers';
+import { computeBiweeklyWindows } from '@/lib/biweeklyHelpers';
 
 function parseDateOnly(s: string | null | undefined): Date | undefined {
   if (!s) return undefined;
