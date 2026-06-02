@@ -669,7 +669,7 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
           {/* Section A — Cadence */}
           <div className="space-y-2">
             <Label className="text-sm font-semibold text-foreground normal-case tracking-normal">Billing cadence — How often do you want to bill this clinic?</Label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {BILLING_CADENCES.map(c => {
                 const selected = billingCadence === c.value;
                 return (
@@ -692,6 +692,39 @@ export const AddClinicStepper = forwardRef<AddClinicStepperHandle, Props>(functi
                 );
               })}
             </div>
+            {billingCadence === 'biweekly' && (
+              <div className="pt-2 space-y-1.5">
+                <Label className="text-xs">First pay period starts on <span className="text-destructive">*</span></Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className={cn(
+                        'w-full justify-start text-left font-normal',
+                        !anchorDate && 'text-muted-foreground',
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {anchorDate ? format(parseDateOnly(anchorDate)!, 'PPP') : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={parseDateOnly(anchorDate)}
+                      onSelect={(d) => setAnchorDate(d ? formatDateOnly(d) : null)}
+                      initialFocus
+                      className={cn('p-3 pointer-events-auto')}
+                    />
+                  </PopoverContent>
+                </Popover>
+                <p className="text-[11px] text-muted-foreground">Pick the start date of any one of this clinic's pay periods — invoices repeat every 14 days from this date.</p>
+                {!anchorDate && (
+                  <p className="text-[11px] text-destructive">Required for biweekly billing.</p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Section B — Net terms */}
