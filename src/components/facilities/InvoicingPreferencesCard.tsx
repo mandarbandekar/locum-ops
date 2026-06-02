@@ -76,7 +76,7 @@ export function InvoicingPreferencesCard({ facility, onUpdate }: InvoicingPrefer
       invoice_due_days: dueDays,
       invoice_prefix: (prefix || 'INV').replace(/\s+/g, '') || 'INV',
       billing_week_end_day: facility.billing_week_end_day,
-      billing_cycle_anchor_date: null,
+      billing_cycle_anchor_date: billingCadence === 'biweekly' ? anchorDate : null,
       invoice_name_to: nameTo.trim(),
       invoice_email_to: emailTo.trim(),
       invoice_name_cc: nameCc.trim(),
@@ -89,6 +89,10 @@ export function InvoicingPreferencesCard({ facility, onUpdate }: InvoicingPrefer
   };
 
   const handleSave = () => {
+    if (billingCadence === 'biweekly' && !anchorDate) {
+      toast.error('Pick the first pay period start date for biweekly billing.');
+      return;
+    }
     if (cadenceChanged && autoDraftCount > 0) {
       setShowCadenceConfirm(true);
       return;
@@ -103,6 +107,7 @@ export function InvoicingPreferencesCard({ facility, onUpdate }: InvoicingPrefer
 
   const handleCancel = () => {
     setBillingCadence(facility.billing_cadence || 'monthly');
+    setAnchorDate(facility.billing_cycle_anchor_date || null);
     
     setDueDays(facility.invoice_due_days ?? 15);
     setPrefix(facility.invoice_prefix || 'INV');
