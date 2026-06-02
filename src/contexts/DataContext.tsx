@@ -949,12 +949,16 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
   }, [isDemo]);
 
   const suppressInvoicePeriod = useCallback(async (facilityId: string, periodStart: string, periodEnd: string) => {
+    const facility = facilities.find(f => f.id === facilityId);
+    const tz = facility?.timezone || 'America/New_York';
+    const period_start_date = formatYMDInTz(periodStart, tz);
+    const period_end_date = formatYMDInTz(periodEnd, tz);
     if (isDemo) {
-      setSuppressedPeriods(prev => [...prev, { id: generateId(), facility_id: facilityId, period_start: periodStart, period_end: periodEnd }]);
+      setSuppressedPeriods(prev => [...prev, { id: generateId(), facility_id: facilityId, period_start: periodStart, period_end: periodEnd, period_start_date, period_end_date }]);
       return;
     }
     const { data, error } = await db('suppressed_invoice_periods')
-      .insert({ user_id: user!.id, facility_id: facilityId, period_start: periodStart, period_end: periodEnd })
+      .insert({ user_id: user!.id, facility_id: facilityId, period_start: periodStart, period_end: periodEnd, period_start_date, period_end_date })
       .select().single();
     if (error) {
       // Ignore unique constraint violations (already suppressed)
@@ -967,7 +971,7 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
     if (data) {
       setSuppressedPeriods(prev => [...prev, stripDbFields(data) as SuppressedPeriod]);
     }
-  }, [isDemo, user]);
+  }, [isDemo, user, facilities]);
 
   // ─── Line Items ──────────────────────────────────────────
 
