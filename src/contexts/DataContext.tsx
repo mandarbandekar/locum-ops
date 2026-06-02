@@ -20,6 +20,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { friendlyDbError } from '@/lib/errorUtils';
 import { posthog } from '@/lib/posthog';
+import { formatYMDInTz } from '@/lib/tzTime';
 
 // Helper for tables not yet in auto-generated types
 const db = (table: string) => supabase.from(table as any);
