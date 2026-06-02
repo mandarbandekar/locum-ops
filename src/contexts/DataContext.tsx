@@ -63,6 +63,8 @@ interface SuppressedPeriod {
   facility_id: string;
   period_start: string;
   period_end: string;
+  period_start_date: string; // YYYY-MM-DD in facility tz — tz-stable suppression key
+  period_end_date: string;   // YYYY-MM-DD in facility tz — tz-stable suppression key
 }
 
 interface DataContextType {
