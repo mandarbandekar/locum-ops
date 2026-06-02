@@ -24,7 +24,7 @@ interface FounderRow {
   credential_count: number;
   expense_count: number;
   last_activity_at: string | null;
-  activation_status: 'active' | 'never';
+  activation_status: 'active' | 'dormant' | 'never';
   last_device: 'mobile' | 'tablet' | 'desktop' | 'unknown' | null;
   desktop_sign_ins: number;
   mobile_sign_ins: number;
