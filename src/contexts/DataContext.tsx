@@ -560,15 +560,14 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
         if (updateDraftError) throw updateDraftError;
         setInvoices(prev => prev.map(i => i.id === existingDraft.id ? updatedInv : i));
       } else if (facility.auto_generate_invoices) {
-        const isSuppressed = suppressedPeriods.some(sp => {
-          if (sp.facility_id !== facility.id) return false;
-          const spStart = new Date(sp.period_start).toISOString().slice(0, 10);
-          const spEnd = new Date(sp.period_end).toISOString().slice(0, 10);
-          if (spStart !== periodStartStr) return false;
-          if (spEnd === periodEndStr) return true;
-          const diff = Math.abs(new Date(spEnd).getTime() - new Date(periodEndStr).getTime());
-          return diff <= 86400000;
-        });
+        const facilityTz = facility.timezone || 'America/New_York';
+        const periodStartDateLocal = formatYMDInTz(period.start.toISOString(), facilityTz);
+        const periodEndDateLocal = formatYMDInTz(period.end.toISOString(), facilityTz);
+        const isSuppressed = suppressedPeriods.some(sp =>
+          sp.facility_id === facility.id &&
+          sp.period_start_date === periodStartDateLocal &&
+          sp.period_end_date === periodEndDateLocal
+        );
         if (isSuppressed) return;
 
         const invoiceNumber = await reserveInvoiceNumber(invoices, facility.invoice_prefix);
