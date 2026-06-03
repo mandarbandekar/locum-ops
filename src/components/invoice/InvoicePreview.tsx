@@ -104,9 +104,34 @@ export function InvoicePreview({
 
   const isOv = (f: PreviewEditableField) => ov[f] != null;
 
+  const totalNum = Number(total) || 0;
+  const balanceNum = Number(balanceDue) || 0;
+  const amountPaid = Math.max(0, totalNum - balanceNum);
+  const showPaymentBreakdown = isPaid || amountPaid > 0;
+
   return (
-    <Card className="bg-card border shadow-sm overflow-hidden">
-      <div className="p-4 sm:p-6 space-y-5 sm:space-y-6" id="invoice-preview">
+    <Card className="bg-card border shadow-sm overflow-hidden relative">
+      {isPaid && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center print:opacity-100"
+          style={{ printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact' } as React.CSSProperties}
+        >
+          <div
+            className="select-none -rotate-12 opacity-80 rounded-md border-4 border-double px-6 py-2 sm:px-10 sm:py-3 text-center"
+            style={{ borderColor: 'hsl(0 75% 45%)', color: 'hsl(0 75% 45%)' }}
+          >
+            <div className="text-4xl sm:text-6xl font-black tracking-[0.2em] leading-none">PAID</div>
+            {paidAt && (
+              <div className="mt-1 text-[10px] sm:text-xs font-semibold tracking-wider uppercase">
+                {formatDateSafe(paidAt)}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      <div className="p-4 sm:p-6 space-y-5 sm:space-y-6 relative" id="invoice-preview">
+
         {/* Header */}
         <div className="flex justify-between items-start gap-3">
           <div className="min-w-0 flex-1 space-y-0.5">
