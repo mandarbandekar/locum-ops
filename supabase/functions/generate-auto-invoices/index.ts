@@ -88,6 +88,14 @@ interface LineItem {
   id: string;
   invoice_id: string;
   shift_id: string | null;
+  line_kind?: string | null;
+  user_edited_at?: string | null;
+  description?: string | null;
+  service_date?: string | null;
+  qty?: number | null;
+  unit_rate?: number | null;
+  line_total?: number | null;
+  user_id?: string;
 }
 
 function startOfDay(d: Date): Date {
