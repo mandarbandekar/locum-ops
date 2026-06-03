@@ -179,6 +179,12 @@ export default function FounderDashboardPage() {
               <ExternalLink className="h-3 w-3 ml-1.5 opacity-60" />
             </a>
           </Button>
+          <Button asChild variant="outline" size="sm">
+            <a href="/founder/invoice-audit">
+              <ShieldAlert className="h-4 w-4 mr-2" />
+              Invoice audit
+            </a>
+          </Button>
           <Button onClick={load} disabled={loading} variant="outline" size="sm">
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
