@@ -316,11 +316,11 @@ export function InvoicePreview({
           <div className="w-full sm:w-48 space-y-1.5 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Subtotal</span>
-              <span>${total.toLocaleString()}</span>
+              <span>${(Number(total) || 0).toLocaleString()}</span>
             </div>
             <div className="flex justify-between font-bold text-base border-t pt-2">
               <span>Amount Due</span>
-              <span className="text-primary">${balanceDue.toLocaleString()}</span>
+              <span className="text-primary">${(Number(balanceDue) || 0).toLocaleString()}</span>
             </div>
           </div>
         </div>
