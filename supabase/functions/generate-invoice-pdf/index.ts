@@ -384,6 +384,79 @@ Deno.serve(async (req) => {
       });
     }
 
+    // === PAID STAMP (drawn last so it sits on top) ===
+    if (isPaid) {
+      const cx = PAGE_W / 2;
+      const cy = PAGE_H / 2 + 20;
+      const angle = degrees(-12);
+      const stampOpacity = 0.7;
+
+      // Double border box (rotated)
+      const boxW = 240;
+      const boxH = 110;
+      const rad = (-12 * Math.PI) / 180;
+      const cos = Math.cos(rad);
+      const sin = Math.sin(rad);
+      // Compute bottom-left from center for a rotated rectangle in pdf-lib
+      // pdf-lib rotates around the (x,y) anchor, so place anchor accordingly.
+      const halfW = boxW / 2;
+      const halfH = boxH / 2;
+      const blX = cx - halfW * cos + halfH * sin;
+      const blY = cy - halfW * sin - halfH * cos;
+
+      firstPage.drawRectangle({
+        x: blX, y: blY, width: boxW, height: boxH,
+        rotate: angle,
+        borderColor: stampRed,
+        borderWidth: 4,
+        opacity: 0,
+        borderOpacity: stampOpacity,
+      });
+      const innerInset = 8;
+      const innerW = boxW - innerInset * 2;
+      const innerH = boxH - innerInset * 2;
+      const ihalfW = innerW / 2;
+      const ihalfH = innerH / 2;
+      const iblX = cx - ihalfW * cos + ihalfH * sin;
+      const iblY = cy - ihalfW * sin - ihalfH * cos;
+      firstPage.drawRectangle({
+        x: iblX, y: iblY, width: innerW, height: innerH,
+        rotate: angle,
+        borderColor: stampRed,
+        borderWidth: 1.5,
+        opacity: 0,
+        borderOpacity: stampOpacity,
+      });
+
+      // "PAID" text
+      const paidText = 'PAID';
+      const paidSize = 64;
+      const paidW = helveticaBold.widthOfTextAtSize(paidText, paidSize);
+      const paidH = paidSize * 0.72;
+      // Anchor for rotated text: bottom-left of pre-rotated glyph at (cx, cy+offset)
+      const tOffY = 6;
+      const txX = cx - (paidW / 2) * cos + (paidH / 2 + tOffY) * sin;
+      const txY = cy - (paidW / 2) * sin - (paidH / 2 + tOffY) * cos;
+      firstPage.drawText(paidText, {
+        x: txX, y: txY, size: paidSize, font: helveticaBold,
+        color: stampRed, rotate: angle, opacity: stampOpacity,
+      });
+
+      // Date below
+      if (invoice.paid_at) {
+        const dateText = formatDate(invoice.paid_at);
+        const dateSize = 11;
+        const dateW = helvetica.widthOfTextAtSize(dateText, dateSize);
+        const dOffY = -28;
+        const dxX = cx - (dateW / 2) * cos + (dateSize / 2 + dOffY) * sin;
+        const dxY = cy - (dateW / 2) * sin - (dateSize / 2 + dOffY) * cos;
+        firstPage.drawText(dateText, {
+          x: dxX, y: dxY, size: dateSize, font: helveticaBold,
+          color: stampRed, rotate: angle, opacity: stampOpacity,
+        });
+      }
+    }
+
     const pdfBytes = await pdfDoc.save();
 
     // Track distinct invoice download for founder dashboard. Failures must not
