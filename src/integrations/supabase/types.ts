@@ -1677,7 +1677,9 @@ export type Database = {
           default_break_minutes: number | null
           engagement_type: string
           experience_notes: string | null
+          experience_positive_tags: string[]
           experience_tags: string[]
+          experience_watchout_tags: string[]
           facility_coordinates: Json | null
           generates_invoices: boolean
           id: string
@@ -1715,7 +1717,9 @@ export type Database = {
           default_break_minutes?: number | null
           engagement_type?: string
           experience_notes?: string | null
+          experience_positive_tags?: string[]
           experience_tags?: string[]
+          experience_watchout_tags?: string[]
           facility_coordinates?: Json | null
           generates_invoices?: boolean
           id?: string
@@ -1753,7 +1757,9 @@ export type Database = {
           default_break_minutes?: number | null
           engagement_type?: string
           experience_notes?: string | null
+          experience_positive_tags?: string[]
           experience_tags?: string[]
+          experience_watchout_tags?: string[]
           facility_coordinates?: Json | null
           generates_invoices?: boolean
           id?: string
