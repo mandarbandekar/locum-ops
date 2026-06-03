@@ -767,12 +767,19 @@ function InvoicesTab({ invoices, onNavigate }: { invoices: any[]; onNavigate: (i
 function MileageOverrideCard({ facility, onUpdate }: { facility: any; onUpdate: any }) {
   const [editing, setEditing] = useState(false);
   const [miles, setMiles] = useState(facility.mileage_override_miles?.toString() || '');
+  const tracking = facility.track_mileage !== false;
 
   const handleSave = () => {
     const val = miles.trim() ? parseFloat(miles) : null;
     onUpdate({ ...facility, mileage_override_miles: val });
     setEditing(false);
     toast.success('Mileage distance saved');
+  };
+
+  const handleToggleTracking = (checked: boolean) => {
+    onUpdate({ ...facility, track_mileage: checked });
+    if (!checked) setEditing(false);
+    toast.success(checked ? 'Mileage tracking enabled' : 'Mileage tracking disabled for this clinic');
   };
 
   return (
@@ -782,17 +789,26 @@ function MileageOverrideCard({ facility, onUpdate }: { facility: any; onUpdate: 
           <Car className="h-4 w-4 text-primary" />
           <CardTitle className="text-base">Mileage from Home</CardTitle>
         </div>
-        {editing ? (
+        {tracking && (editing ? (
           <div className="flex gap-2">
             <Button size="sm" onClick={handleSave}><Save className="mr-1 h-3 w-3" /> Save</Button>
             <Button size="sm" variant="ghost" onClick={() => { setMiles(facility.mileage_override_miles?.toString() || ''); setEditing(false); }}>Cancel</Button>
           </div>
         ) : (
           <Button size="sm" variant="ghost" onClick={() => setEditing(true)}><Edit2 className="mr-1 h-3 w-3" /> Edit</Button>
-        )}
+        ))}
       </CardHeader>
       <CardContent className="space-y-3">
-        {editing ? (
+        <div className="flex items-center justify-between gap-3 pb-3 border-b border-border/40">
+          <div>
+            <p className="text-sm font-medium">Track mileage for this clinic</p>
+            <p className="text-xs text-muted-foreground">Turn off if you don't drive to this clinic (e.g. telehealth or remote work).</p>
+          </div>
+          <Switch checked={tracking} onCheckedChange={handleToggleTracking} />
+        </div>
+        {!tracking ? (
+          <p className="text-sm text-muted-foreground italic">Mileage tracking disabled — auto-mileage and backfill will skip this clinic.</p>
+        ) : editing ? (
           <div>
             <Label className="text-xs text-muted-foreground">One-way distance (miles)</Label>
             <Input
