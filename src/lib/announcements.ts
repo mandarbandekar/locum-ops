@@ -15,7 +15,7 @@
  */
 
 import type { LucideIcon } from 'lucide-react';
-import { CalendarDays, FileText, MessageCircle, Tag, Zap } from 'lucide-react';
+import { CalendarDays, FileText, MessageCircle, NotebookPen, Tag, Zap } from 'lucide-react';
 import type { UserProfile } from '@/contexts/UserProfileContext';
 import type { Shift, Facility } from '@/types';
 

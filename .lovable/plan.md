@@ -1,33 +1,32 @@
-## Custom tags for My Notes
+# Add "My Notes" Announcement
 
-Let vets add their own tags under both "What went well" and "Watch-outs", alongside the curated presets.
+## Goal
+Register a new feature announcement in the What's New registry so users discover the new per-clinic "My Notes" journal with tags and custom tags.
 
-### UX
+## Changes
 
-In edit mode, each tag group gets a small inline "+ Add tag" affordance at the end of the chip row:
+### File: `src/lib/announcements.ts`
 
-- Clicking it reveals a compact input + Enter to confirm (Esc to cancel).
-- New custom tag immediately appears as an active chip in that group, styled identically to presets (emerald for positive, amber for watch-out).
-- Max length ~30 chars, trim whitespace, dedupe case-insensitively against existing tags in that group.
+1. **Import**: Add `NotebookPen` to the existing `lucide-react` import line.
 
-In view mode, custom tags render the same as preset tags. Tone is determined by which group they belong to (not by membership in the preset list).
+2. **New registry entry** (inserted at the top of the `announcements` array, newest-first):
 
-### Data
+```typescript
+  {
+    id: 'clinic-notes-2026-06',
+    title: 'Keep track of clinic impressions',
+    body: 'Each facility now has a "My Notes" section where you can jot down what went well, flag watch-outs, and add free-form notes about your experience. Custom tags are supported too.',
+    publishedAt: '2026-06-03',
+    icon: NotebookPen,
+    cta: { label: 'Open a clinic', to: '/facilities' },
+    audience: ctx => ctx.facilities.length > 0,
+  },
+```
 
-Tags currently live as a flat `experience_tags text[]` and the component infers tone by checking membership in the `POSITIVE_TAGS` preset list. That breaks for custom tags. Switch to two array columns:
+- **Audience**: Only shown to users who have at least one facility (they need a clinic to use the feature).
+- **Priority**: `normal` (no `priority` field) — appears in the dropdown list only, not as a dashboard banner highlight. The existing biweekly-billing highlight stays in the banner slot.
+- **No expiry**: The announcement does not auto-expire.
 
-- `experience_positive_tags text[]`
-- `experience_watchout_tags text[]`
-
-Migration also backfills any existing values from `experience_tags` into the correct bucket based on the current preset lists, then keeps `experience_tags` around (untouched, no longer written) for safety — we can drop it later.
-
-### Files
-
-- New migration: add the two columns, backfill from `experience_tags`.
-- `src/components/facilities/ClinicExperienceCard.tsx`: split state into `positiveTags` / `watchoutTags`, render presets + custom together per group, add inline "Add tag" input per group, save both arrays through `onUpdate`.
-
-### Out of scope
-
-- No tag management UI (rename/delete custom tags globally).
-- No cross-clinic tag reuse / autocomplete.
-- No surfacing of tags in Clinic Scorecard yet.
+## Out of Scope
+- No database migrations needed (read/dismiss state uses existing `profile.dismissed_prompts`).
+- No UI component changes needed (WhatsNewButton and HighlightBanner already consume the registry dynamically).
