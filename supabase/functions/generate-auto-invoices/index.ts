@@ -391,14 +391,62 @@ Deno.serve(async (req) => {
           return `${MONTHS[m - 1]} ${d}, ${y}`;
         };
 
-        const buildLineItem = (s: Shift) => ({
-          shift_id: s.id,
-          description: `${shiftLocalShortDate(s)} — ${coverageLabel(s.shift_type)}`,
-          service_date: shiftLocalYMD(s),
-          qty: 1,
-          unit_rate: s.rate_applied,
-          line_total: s.rate_applied,
-        });
+        // Build line(s) for a shift, mirroring src/lib/invoiceAutoGeneration.ts.
+        // CRITICAL: always set line_kind explicitly. The DB column defaults to
+        // 'regular' (hourly), so a flat-rate shift inserted without line_kind
+        // renders as "Hourly · $X/hr" in the UI. Bug ref: invoice 170e9c16…
+        const buildLineItems = (s: Shift) => {
+          const isHourly = s.rate_kind === 'hourly' && s.hourly_rate != null && Number(s.hourly_rate) > 0;
+          const desc = `${shiftLocalShortDate(s)} — ${coverageLabel(s.shift_type)}`;
+          const serviceDate = shiftLocalYMD(s);
+
+          const base = isHourly
+            ? (() => {
+                const startMs = new Date(s.start_datetime).getTime();
+                const endMs = new Date(s.end_datetime).getTime();
+                const totalMin = Math.max(0, (endMs - startMs) / 60000);
+                const breakMin = !s.worked_through_break ? Number(s.break_minutes || 0) : 0;
+                const billableMin = Math.max(0, totalMin - breakMin);
+                const hours = Math.round((billableMin / 60) * 100) / 100;
+                const hourlyRate = Number(s.hourly_rate);
+                return {
+                  shift_id: s.id,
+                  description: desc,
+                  service_date: serviceDate,
+                  qty: hours,
+                  unit_rate: hourlyRate,
+                  line_total: Math.round(hours * hourlyRate * 100) / 100,
+                  line_kind: 'regular',
+                };
+              })()
+            : {
+                shift_id: s.id,
+                description: desc,
+                service_date: serviceDate,
+                qty: 1,
+                unit_rate: s.rate_applied,
+                line_total: s.rate_applied,
+                line_kind: 'flat',
+              };
+
+          const otHours = Number(s.overtime_hours) || 0;
+          const otRate = Number(s.overtime_rate) || 0;
+          if (otHours > 0 && otRate > 0) {
+            return [base, {
+              shift_id: s.id,
+              description: 'Overtime',
+              service_date: serviceDate,
+              qty: otHours,
+              unit_rate: otRate,
+              line_total: Math.round(otHours * otRate * 100) / 100,
+              line_kind: 'overtime',
+            }];
+          }
+          return [base];
+        };
+        const buildLineItem = (s: Shift) => buildLineItems(s)[0];
+        const buildAllLineItems = (shifts: Shift[]) => shifts.flatMap(buildLineItems);
+
 
         // Invoice date = last shift's clinic-local date at 12:00 in facility tz.
         const lastShift = allEligibleForPeriod[allEligibleForPeriod.length - 1];
