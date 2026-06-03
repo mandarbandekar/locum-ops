@@ -668,6 +668,29 @@ export default function DashboardPage() {
       });
     }
 
+    // Payment confirmations for no-invoice shifts (platform/agency/direct-no-invoice)
+    {
+      const facById = new Map(facilities.map(f => [f.id, f]));
+      const confById = new Map(paymentConfirmations.map(c => [c.shift_id, c]));
+      const awaiting = shifts.filter(s =>
+        isShiftAwaitingConfirmation(s, facById.get(s.facility_id), confById.get(s.id), now),
+      );
+      if (awaiting.length > 0) {
+        const total = awaiting.reduce((sum, s) => sum + defaultExpectedAmount(s), 0);
+        items.push({
+          title: `${awaiting.length} shift${awaiting.length > 1 ? 's' : ''} — did the payment land?`,
+          context: 'Platform, agency, or direct-pay clinics',
+          link: '#',
+          icon: Wallet,
+          urgency: 5,
+          amount: `$${total.toLocaleString()}`,
+          module: 'invoices',
+          onClick: () => setPaymentConfirmOpen(true),
+        });
+      }
+    }
+
+
     checklistItems
       .filter(item => getChecklistBadge(item) === 'due_soon' || getChecklistBadge(item) === 'overdue')
       .forEach(item => {
