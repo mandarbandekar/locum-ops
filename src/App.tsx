@@ -45,6 +45,7 @@ import SettingsBusinessTaxesPage from "@/pages/SettingsBusinessTaxesPage";
 import SettingsSecurityPage from "@/pages/SettingsSecurityPage";
 import SettingsAccountPage from "@/pages/SettingsAccountPage";
 import FounderDashboardPage from "@/pages/FounderDashboardPage";
+import FounderInvoiceAuditPage from "@/pages/FounderInvoiceAuditPage";
 import AdminFeedbackPage from "@/pages/AdminFeedbackPage";
 
 
