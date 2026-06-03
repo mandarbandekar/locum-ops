@@ -128,6 +128,7 @@ Deno.serve(async (req) => {
     for (const shift of eligibleShifts) {
       const facility = facilityMap[shift.facility_id];
       if (!facility) continue;
+      if (facility.track_mileage === false) continue;
 
       if (!(shift.facility_id in distanceCache)) {
         distanceCache[shift.facility_id] = await getOneWayMiles(homeAddr, facility);
