@@ -47,6 +47,37 @@ Deno.serve(async (req) => {
     supabase.from('facility_contacts').select('name, email').eq('facility_id', invoice.facility_id).or('is_primary.eq.true,role.eq.billing').limit(1).single(),
   ]);
 
+  const facility = facRes.data || {};
+  const profile = profileRes.data || {};
+  const contact = contactRes.data || {};
+
+  // Apply per-invoice overrides on top of source values.
+  const resolvedFacility = {
+    ...facility,
+    name: invoice.billto_facility_name_override ?? facility.name,
+    address: invoice.billto_address_override ?? facility.address,
+    invoice_name_to: invoice.billto_contact_name_override ?? facility.invoice_name_to,
+    invoice_email_to: invoice.billto_email_override ?? facility.invoice_email_to,
+  };
+  const resolvedSender = {
+    ...profile,
+    company_name: invoice.sender_company_override ?? profile.company_name,
+    company_address: invoice.sender_address_override ?? profile.company_address,
+    invoice_email: invoice.sender_email_override ?? profile.invoice_email,
+    invoice_phone: invoice.sender_phone_override ?? profile.invoice_phone,
+  };
+  // sender_name override splits across first_name/last_name display — pack the override
+  // into first_name with last_name blank so the client renders it as one string.
+  if (invoice.sender_name_override != null) {
+    resolvedSender.first_name = invoice.sender_name_override;
+    resolvedSender.last_name = '';
+  }
+  const resolvedContact = {
+    ...contact,
+    name: invoice.billto_contact_name_override ?? contact.name,
+    email: invoice.billto_email_override ?? contact.email,
+  };
+
   return new Response(JSON.stringify({
     invoice: {
       invoice_number: invoice.invoice_number,
@@ -58,9 +89,9 @@ Deno.serve(async (req) => {
       status: invoice.status,
     },
     line_items: liRes.data || [],
-    facility: facRes.data,
-    sender: profileRes.data,
-    billing_contact: contactRes.data,
+    facility: resolvedFacility,
+    sender: resolvedSender,
+    billing_contact: resolvedContact,
   }), {
     status: 200,
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
