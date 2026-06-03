@@ -45,6 +45,7 @@ import SettingsBusinessTaxesPage from "@/pages/SettingsBusinessTaxesPage";
 import SettingsSecurityPage from "@/pages/SettingsSecurityPage";
 import SettingsAccountPage from "@/pages/SettingsAccountPage";
 import FounderDashboardPage from "@/pages/FounderDashboardPage";
+import FounderInvoiceAuditPage from "@/pages/FounderInvoiceAuditPage";
 import AdminFeedbackPage from "@/pages/AdminFeedbackPage";
 
 
@@ -142,6 +143,7 @@ function AuthenticatedApp() {
           <Route path="/settings/security" element={<SettingsSecurityPage />} />
           <Route path="/settings/account" element={<SettingsAccountPage />} />
           <Route path="/founder" element={<FounderDashboardPage />} />
+          <Route path="/founder/invoice-audit" element={<FounderInvoiceAuditPage />} />
           <Route path="/admin/feedback" element={<AdminFeedbackPage />} />
           <Route path="/settings/founder" element={<Navigate to="/founder" replace />} />
           {/* Legacy redirects */}

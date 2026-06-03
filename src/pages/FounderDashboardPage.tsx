@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { RefreshCw, Crown, ArrowUpDown, BarChart3, ExternalLink, Smartphone, Monitor, Tablet, HelpCircle } from 'lucide-react';
+import { RefreshCw, Crown, ArrowUpDown, BarChart3, ExternalLink, Smartphone, Monitor, Tablet, HelpCircle, ShieldAlert } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { isFounderAdmin } from '@/lib/founderAccess';
@@ -177,6 +177,12 @@ export default function FounderDashboardPage() {
               <BarChart3 className="h-4 w-4 mr-2" />
               Lovable Analytics
               <ExternalLink className="h-3 w-3 ml-1.5 opacity-60" />
+            </a>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <a href="/founder/invoice-audit">
+              <ShieldAlert className="h-4 w-4 mr-2" />
+              Invoice audit
             </a>
           </Button>
           <Button onClick={load} disabled={loading} variant="outline" size="sm">
