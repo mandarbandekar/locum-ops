@@ -1,36 +1,38 @@
 ## Goal
-When an invoice is fully paid, make it visually unmistakable: stamp the invoice with a red angled "PAID" mark and show a clear payment summary (Subtotal → Amount Paid → Balance Due of $0).
+When a user downloads a paid invoice as a PDF, the downloaded PDF should match the on-screen "paid" treatment: a rotated red **PAID** stamp across the page, and a totals block that shows Subtotal → Amount Paid → Balance Due ($0.00).
+
+The on-screen "Download Invoice PDF" button already exists on paid invoices (`InvoiceActionBar.tsx`), so no UI changes are needed. The fix lives entirely in the PDF edge function, which today still prints "Amount Due" and no stamp.
 
 ## Changes
 
-### 1. `src/components/invoice/InvoicePreview.tsx`
-- Add two optional props: `isPaid?: boolean` and `paidAt?: string | null`.
-- When `isPaid` is true:
-  - Add a `relative` wrapper around the invoice card body and render an absolutely-positioned **PAID stamp** overlay:
-    - Rotated ~-12°, bold red, double-ring border, semi-transparent (`opacity-80`), centered over the line-items area.
-    - Includes "PAID" in large tracking-wider text and the paid date below in smaller text (e.g. "Jun 3, 2026").
-    - `pointer-events-none` so it doesn't block clicks; `print:opacity-100` so it appears in PDFs.
-    - Uses a semantic `--success` / red token (added to `index.css` if not already present) — no raw hex.
-- Update the **Totals block** so it always renders three rows when paid (and keeps current behavior otherwise):
-  - Subtotal
-  - Amount Paid (green, negative or positive convention: show paid amount)
-  - Balance Due (bold; $0.00 when fully paid, highlighted in success color)
-- Non-paid invoices: unchanged — still show Subtotal + Amount Due.
-- Partial payments: show Subtotal, Amount Paid, Balance Due (no stamp).
+### `supabase/functions/generate-invoice-pdf/index.ts`
 
-### 2. `src/components/invoice/InvoiceLivePreview.tsx`
-- Pass `isPaid={computedStatus === 'paid'}` and `paidAt={invoice?.paid_at}` through to `InvoicePreview`.
+1. **Compute paid state** near where invoice/lineItems are loaded:
+   - `const isPaid = invoice.status === 'paid';`
+   - `const amountPaid = Math.max(0, Number(invoice.total_amount) - Number(invoice.balance_due));`
 
-### 3. `src/pages/PublicInvoicePage.tsx`
-- Pass `isPaid={invoice.status === 'paid'}` and `paidAt={invoice.paid_at}` so the public/shared link and PDF download both show the stamp.
+2. **Totals block** (currently lines ~340–352): when `isPaid` or `amountPaid > 0`, render three rows instead of two:
+   - Subtotal
+   - Amount Paid (in success green, prefixed `-`)
+   - Balance Due (bold; green when fully paid, primary blue otherwise)
 
-### 4. `src/components/invoice/InvoicePreview.tsx` — print styles
-- Ensure the stamp uses `print-color-adjust: exact` (Tailwind `print:[color-adjust:exact]`) so the red prints in the PDF.
+   Always use the label "Balance Due" (replaces the existing "Amount Due" label so it matches the React preview).
+
+3. **PAID stamp overlay** when `isPaid`:
+   - Draw after all content is rendered on the first page (so it sits on top).
+   - Use `page.drawRectangle` for a double red border box centered roughly over the line-items area (~middle of page, ~220pt wide × 90pt tall).
+   - Use `page.drawText('PAID', { rotate: degrees(-12), ... })` with a large bold font in red (`rgb(0.8, 0.15, 0.15)`), `opacity: 0.75`.
+   - Below the word PAID, render the `paid_at` date (formatted "MMM d, yyyy") in smaller red text, also rotated -12°.
+   - Use pdf-lib's existing `rgb`, `degrees`, and `helveticaBold` already imported in the file.
+
+4. No DB, no RLS, no other file changes.
 
 ## Out of scope
-- No DB or status logic changes — relies on existing `paid_at` / computed `paid` status.
-- No changes to "Mark Paid" flow itself.
-- PDF edge function (`generate-invoice-pdf`) renders from the same React preview, so the stamp will appear in downloads automatically.
+- No changes to `InvoiceActionBar` (Download PDF button already present for paid invoices).
+- No changes to `InvoicePreview.tsx` (on-screen stamp already added previously).
+- No changes to the public/share-link page or PDF endpoint signature.
 
-## Visual reference
-Matches the user-provided mockup: angled red "PAID" stamp across the middle of the invoice, with the totals area below clearly showing Balance Due = $0.
+## Verification
+- Open a paid invoice in the preview and click Download Invoice PDF; confirm the PDF shows the angled red PAID stamp and a totals block with Subtotal, Amount Paid, Balance Due $0.00.
+- Open a partial-paid invoice and confirm the breakdown shows but the stamp does not.
+- Open a draft/sent invoice and confirm behavior is unchanged.

@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { PDFDocument, rgb, StandardFonts } from 'https://esm.sh/pdf-lib@1.17.1'
+import { PDFDocument, rgb, StandardFonts, degrees } from 'https://esm.sh/pdf-lib@1.17.1'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -163,8 +163,17 @@ Deno.serve(async (req) => {
     const FOOTER_MARGIN = 60;
 
     let page = pdfDoc.addPage([PAGE_W, PAGE_H]);
+    const firstPage = page;
     let y = 742;
     let pageNum = 1;
+
+    const isPaid = invoice.status === 'paid';
+    const totalAmt = Number(invoice.total_amount) || 0;
+    const balanceDue = Number(invoice.balance_due) || 0;
+    const amountPaid = Math.max(0, totalAmt - balanceDue);
+    const showPaymentBreakdown = isPaid || amountPaid > 0;
+    const successColor = rgb(0.13, 0.55, 0.30);
+    const stampRed = rgb(0.80, 0.15, 0.15);
 
     function ensureSpace(needed: number) {
       if (y - needed < FOOTER_MARGIN) {
@@ -338,17 +347,24 @@ Deno.serve(async (req) => {
     y -= 22;
 
     // === TOTALS ===
-    ensureSpace(60);
+    ensureSpace(showPaymentBreakdown ? 90 : 60);
     const totalsLabelX = 380;
 
     drawText('Subtotal', totalsLabelX, y, { size: 10, color: gray });
-    drawTextRight(formatCurrency(invoice.total_amount), colAmt, y, { size: 10 });
+    drawTextRight(formatCurrency(totalAmt), colAmt, y, { size: 10 });
     y -= 22;
 
-    // Amount Due
+    if (showPaymentBreakdown) {
+      drawText('Amount Paid', totalsLabelX, y, { size: 10, color: successColor });
+      drawTextRight(`-${formatCurrency(amountPaid)}`, colAmt, y, { size: 10, color: successColor });
+      y -= 22;
+    }
+
+    // Balance Due
     page.drawLine({ start: { x: totalsLabelX - 10, y: y + 14 }, end: { x: PAGE_W - margin, y: y + 14 }, thickness: 0.5, color: lightGray });
-    drawText('Amount Due', totalsLabelX, y, { font: helveticaBold, size: 13 });
-    drawTextRight(formatCurrency(invoice.balance_due), colAmt, y, { font: helveticaBold, size: 13, color: primary });
+    const balanceColor = isPaid && balanceDue <= 0.005 ? successColor : primary;
+    drawText('Balance Due', totalsLabelX, y, { font: helveticaBold, size: 13 });
+    drawTextRight(formatCurrency(balanceDue), colAmt, y, { font: helveticaBold, size: 13, color: balanceColor });
     y -= 30;
 
     // === NOTES ===
@@ -366,6 +382,79 @@ Deno.serve(async (req) => {
         x: PAGE_W / 2 - helvetica.widthOfTextAtSize(pnText, 8) / 2,
         y: 30, size: 8, font: helvetica, color: gray,
       });
+    }
+
+    // === PAID STAMP (drawn last so it sits on top) ===
+    if (isPaid) {
+      const cx = PAGE_W / 2;
+      const cy = PAGE_H / 2 + 20;
+      const angle = degrees(-12);
+      const stampOpacity = 0.7;
+
+      // Double border box (rotated)
+      const boxW = 240;
+      const boxH = 110;
+      const rad = (-12 * Math.PI) / 180;
+      const cos = Math.cos(rad);
+      const sin = Math.sin(rad);
+      // Compute bottom-left from center for a rotated rectangle in pdf-lib
+      // pdf-lib rotates around the (x,y) anchor, so place anchor accordingly.
+      const halfW = boxW / 2;
+      const halfH = boxH / 2;
+      const blX = cx - halfW * cos + halfH * sin;
+      const blY = cy - halfW * sin - halfH * cos;
+
+      firstPage.drawRectangle({
+        x: blX, y: blY, width: boxW, height: boxH,
+        rotate: angle,
+        borderColor: stampRed,
+        borderWidth: 4,
+        opacity: 0,
+        borderOpacity: stampOpacity,
+      });
+      const innerInset = 8;
+      const innerW = boxW - innerInset * 2;
+      const innerH = boxH - innerInset * 2;
+      const ihalfW = innerW / 2;
+      const ihalfH = innerH / 2;
+      const iblX = cx - ihalfW * cos + ihalfH * sin;
+      const iblY = cy - ihalfW * sin - ihalfH * cos;
+      firstPage.drawRectangle({
+        x: iblX, y: iblY, width: innerW, height: innerH,
+        rotate: angle,
+        borderColor: stampRed,
+        borderWidth: 1.5,
+        opacity: 0,
+        borderOpacity: stampOpacity,
+      });
+
+      // "PAID" text
+      const paidText = 'PAID';
+      const paidSize = 64;
+      const paidW = helveticaBold.widthOfTextAtSize(paidText, paidSize);
+      const paidH = paidSize * 0.72;
+      // Anchor for rotated text: bottom-left of pre-rotated glyph at (cx, cy+offset)
+      const tOffY = 6;
+      const txX = cx - (paidW / 2) * cos + (paidH / 2 + tOffY) * sin;
+      const txY = cy - (paidW / 2) * sin - (paidH / 2 + tOffY) * cos;
+      firstPage.drawText(paidText, {
+        x: txX, y: txY, size: paidSize, font: helveticaBold,
+        color: stampRed, rotate: angle, opacity: stampOpacity,
+      });
+
+      // Date below
+      if (invoice.paid_at) {
+        const dateText = formatDate(invoice.paid_at);
+        const dateSize = 11;
+        const dateW = helvetica.widthOfTextAtSize(dateText, dateSize);
+        const dOffY = 62;
+        const dxX = cx - (dateW / 2) * cos + (dateSize / 2 + dOffY) * sin;
+        const dxY = cy - (dateW / 2) * sin - (dateSize / 2 + dOffY) * cos;
+        firstPage.drawText(dateText, {
+          x: dxX, y: dxY, size: dateSize, font: helveticaBold,
+          color: stampRed, rotate: angle, opacity: stampOpacity,
+        });
+      }
     }
 
     const pdfBytes = await pdfDoc.save();
