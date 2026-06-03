@@ -265,6 +265,8 @@ function ContactsTab({ facilityId, facility, contacts, onAddContact, onUpdateCon
         )}
       </TabSection>
 
+      <ClinicExperienceCard facility={facility} onUpdate={onUpdateFacility} />
+
       <ClinicNotesCard facility={facility} onUpdate={onUpdateFacility} />
 
       {showForm && (
