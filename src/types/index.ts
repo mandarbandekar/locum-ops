@@ -181,6 +181,17 @@ export interface Invoice {
   invoice_type: InvoiceType;
   generation_type: InvoiceGenerationType;
   billing_cadence: BillingCadence | null;
+  // Per-invoice overrides for the visual preview / PDF / public link.
+  // Null means "fall back to profile/facility source".
+  sender_company_override?: string | null;
+  sender_name_override?: string | null;
+  sender_address_override?: string | null;
+  sender_email_override?: string | null;
+  sender_phone_override?: string | null;
+  billto_facility_name_override?: string | null;
+  billto_contact_name_override?: string | null;
+  billto_email_override?: string | null;
+  billto_address_override?: string | null;
 }
 
 export type InvoiceLineKind = 'regular' | 'flat' | 'overtime';
