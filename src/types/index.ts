@@ -195,6 +195,8 @@ export interface InvoiceLineItem {
   line_total: number;
   /** Distinguishes hourly (regular), flat day-rate, and overtime lines. */
   line_kind?: InvoiceLineKind;
+  /** Set when a user manually edits this line; tells the auto-draft rebuilder to leave it alone. */
+  user_edited_at?: string | null;
 }
 
 export interface InvoicePayment {
