@@ -50,6 +50,12 @@ interface Shift {
   end_datetime: string;
   status: string;
   rate_applied: number;
+  rate_kind?: string | null;
+  hourly_rate?: number | null;
+  break_minutes?: number | null;
+  worked_through_break?: boolean | null;
+  overtime_hours?: number | null;
+  overtime_rate?: number | null;
   shift_type?: string | null;
   timezone_at_creation?: string | null;
 }
