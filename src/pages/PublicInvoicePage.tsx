@@ -121,6 +121,8 @@ export default function PublicInvoicePage() {
             total={invoice.total_amount}
             balanceDue={invoice.balance_due}
             notes={invoice.notes}
+            isPaid={invoice.status === 'paid'}
+            paidAt={invoice.paid_at}
           />
         </div>
       </div>
