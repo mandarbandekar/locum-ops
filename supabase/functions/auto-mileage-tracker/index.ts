@@ -85,6 +85,7 @@ Deno.serve(async (req) => {
       const irsMileageRateCents = configMap[shift.user_id] || 70; // default 70 cents/mi (2025)
 
       if (!profile || !facility) continue;
+      if (facility.track_mileage === false) continue;
 
       const homeAddr = profile.home_address || profile.company_address;
       if (!homeAddr) continue;
