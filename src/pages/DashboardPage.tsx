@@ -126,6 +126,8 @@ export default function DashboardPage() {
 
   const [addClinicOpen, setAddClinicOpen] = useState(false);
   const [addShiftOpen, setAddShiftOpen] = useState(false);
+  const [paymentConfirmOpen, setPaymentConfirmOpen] = useState(false);
+  const { confirmations: paymentConfirmations } = useShiftPaymentConfirmations();
 
   const skippedOnboarding = profile && !profile.onboarding_completed_at && profile.has_seen_welcome;
   const showWelcomeBanner = skippedOnboarding && !profile?.dismissed_prompts?.welcome_banner && facilities.length === 0 && shifts.length === 0;
