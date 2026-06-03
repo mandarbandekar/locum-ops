@@ -708,18 +708,26 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
             );
 
             // Preserve manual lines the auto-builder doesn't produce (see
-            // rebuildAutoDraftForPeriod for rationale).
+            // rebuildAutoDraftForPeriod for rationale). Also preserve any line
+            // a user has explicitly edited.
             const builderShiftsWithOvertime = new Set(
               newItems.filter(li => li.line_kind === 'overtime' && li.shift_id).map(li => li.shift_id as string)
             );
             const preserved = facilityLineItems.filter(li => {
               if (li.invoice_id !== existingDraft.id) return false;
+              if ((li as any).user_edited_at) return true;
               if (!li.shift_id) return true;
               if (li.line_kind === 'overtime' && !builderShiftsWithOvertime.has(li.shift_id)) return true;
               return false;
             });
+            const preservedKeys = new Set(
+              preserved.filter(li => li.shift_id).map(li => `${li.shift_id}|${li.line_kind || 'shift'}`)
+            );
+            const filteredBuilder = newItems.filter(item =>
+              !item.shift_id || !preservedKeys.has(`${item.shift_id}|${item.line_kind || 'shift'}`)
+            );
 
-            const builderRows = newItems.map(item => ({ user_id: user!.id, invoice_id: existingDraft.id, ...item }));
+            const builderRows = filteredBuilder.map(item => ({ user_id: user!.id, invoice_id: existingDraft.id, ...item }));
             const preservedRows = preserved.map(({ id: _id, ...rest }: any) => ({ ...rest, user_id: user!.id, invoice_id: existingDraft.id }));
             const toInsert = [...builderRows, ...preservedRows];
             const total = toInsert.reduce((sum, li: any) => sum + (Number(li.line_total) || 0), 0);
