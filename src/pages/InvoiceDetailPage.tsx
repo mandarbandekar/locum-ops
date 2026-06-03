@@ -458,6 +458,30 @@ function InvoiceDetailPageInner() {
   );
 }
 
+export default function InvoiceDetailPage() {
+  const navigate = useNavigate();
+  return (
+    <ErrorBoundary
+      scope="invoice-detail"
+      fallback={(error, reset) => (
+        <div className="p-6 max-w-md space-y-3">
+          <h2 className="text-lg font-semibold">Something went wrong opening this invoice</h2>
+          <p className="text-sm text-muted-foreground">
+            We hit an unexpected error rendering this page. Your data is safe.
+            {error?.message ? <span className="block mt-1 text-xs opacity-75">Details: {error.message}</span> : null}
+          </p>
+          <div className="flex gap-2">
+            <Button onClick={() => { reset(); navigate('/invoices'); }}>Back to invoices</Button>
+            <Button variant="outline" onClick={reset}>Try again</Button>
+          </div>
+        </div>
+      )}
+    >
+      <InvoiceDetailPageInner />
+    </ErrorBoundary>
+  );
+}
+
 // ─── Billing Details Dialog ─────────────────────────────────
 
 function BillingDetailsDialog({ open, onOpenChange, facility, onSave }: { open: boolean; onOpenChange: (open: boolean) => void; facility: any; onSave: (updates: any) => void }) {
