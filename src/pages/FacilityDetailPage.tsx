@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ArrowLeft, Plus, Trash2, Edit2, Save, Pencil, Check, X, Car, Users, FileText, CalendarDays, Receipt, Mail, Phone, CheckSquare } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { FacilityContact, TermsSnapshot } from '@/types';
 import { generateId } from '@/lib/businessLogic';
 import { format } from 'date-fns';
