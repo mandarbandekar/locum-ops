@@ -243,6 +243,9 @@ export function InvoicePreview({
             <ul className="divide-y">
               {lineItems.map((li, i) => {
                 const isHourly = li.line_kind === 'regular' || (!!li.shift_id && li.qty !== 1 && li.line_kind !== 'flat');
+                const lt = Number(li.line_total) || 0;
+                const ur = Number(li.unit_rate) || 0;
+                const qy = Number(li.qty) || 0;
                 return (
                   <li key={i} className="px-4 py-3.5">
                     <div className="flex items-start justify-between gap-3">
@@ -255,11 +258,11 @@ export function InvoicePreview({
                         </p>
                       </div>
                       <p className="text-sm font-semibold tabular-nums shrink-0 text-foreground">
-                        ${li.line_total.toLocaleString()}
+                        ${lt.toLocaleString()}
                       </p>
                     </div>
                     <div className="mt-2 text-xs text-muted-foreground tabular-nums">
-                      {isHourly ? `${li.qty} hrs` : `${li.qty} ×`} <span className="text-foreground/80">${li.unit_rate.toLocaleString()}</span>
+                      {isHourly ? `${qy} hrs` : `${qy} ×`} <span className="text-foreground/80">${ur.toLocaleString()}</span>
                     </div>
                   </li>
                 );
@@ -280,15 +283,18 @@ export function InvoicePreview({
             <tbody>
               {lineItems.map((li, i) => {
                 const isHourly = li.line_kind === 'regular' || (!!li.shift_id && li.qty !== 1 && li.line_kind !== 'flat');
+                const lt = Number(li.line_total) || 0;
+                const ur = Number(li.unit_rate) || 0;
+                const qy = Number(li.qty) || 0;
                 return (
                   <tr key={i} className="border-t">
                     <td className="p-2.5">{li.description}</td>
                     <td className="p-2.5 text-muted-foreground">{formatDateShort(li.service_date)}</td>
-                    <td className="p-2.5 text-right">{isHourly ? `${li.qty}h` : li.qty}</td>
+                    <td className="p-2.5 text-right">{isHourly ? `${qy}h` : qy}</td>
                     <td className="p-2.5 text-right">
-                      ${li.unit_rate.toLocaleString()}{isHourly ? <span className="text-muted-foreground">/hr</span> : null}
+                      ${ur.toLocaleString()}{isHourly ? <span className="text-muted-foreground">/hr</span> : null}
                     </td>
-                    <td className="p-2.5 text-right font-medium">${li.line_total.toLocaleString()}</td>
+                    <td className="p-2.5 text-right font-medium">${lt.toLocaleString()}</td>
                   </tr>
                 );
               })}
