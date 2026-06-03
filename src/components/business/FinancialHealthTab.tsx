@@ -17,7 +17,6 @@ import { useShiftPaymentConfirmations } from '@/hooks/useShiftPaymentConfirmatio
 import {
   isNoInvoiceFacility,
   sumConfirmedPaymentsInRange,
-  sumAnticipatedNoInvoiceInRange,
 } from '@/lib/paymentConfirmations';
 
 const fmtAmount = (n: number) => `$${n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
