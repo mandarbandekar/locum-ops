@@ -30,6 +30,7 @@ import {
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AutoInvoiceDeleteDialog } from '@/components/invoice/AutoInvoiceDeleteDialog';
 import { InvoiceComposeDialog } from '@/components/invoice/InvoiceComposeDialog';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 
 
