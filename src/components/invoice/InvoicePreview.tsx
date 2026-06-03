@@ -342,18 +342,27 @@ export function InvoicePreview({
         )}
 
         {/* Totals */}
-        <div className="flex justify-end">
-          <div className="w-full sm:w-48 space-y-1.5 text-sm">
+        <div className="flex justify-end relative z-20">
+          <div className="w-full sm:w-56 space-y-1.5 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Subtotal</span>
-              <span>${(Number(total) || 0).toLocaleString()}</span>
+              <span className="tabular-nums">${totalNum.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
-            <div className="flex justify-between font-bold text-base border-t pt-2">
-              <span>Amount Due</span>
-              <span className="text-primary">${(Number(balanceDue) || 0).toLocaleString()}</span>
+            {showPaymentBreakdown && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Amount Paid</span>
+                <span className="tabular-nums text-success">-${amountPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </div>
+            )}
+            <div className={`flex justify-between font-bold text-base border-t pt-2 ${isPaid ? 'text-success' : ''}`}>
+              <span>Balance Due</span>
+              <span className={`tabular-nums ${isPaid ? 'text-success' : 'text-primary'}`}>
+                ${balanceNum.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
             </div>
           </div>
         </div>
+
 
         {/* Notes */}
         {(notesVal || editable) && (
