@@ -978,11 +978,14 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
   }, [isDemo, user]);
 
   const updateLineItem = useCallback(async (item: InvoiceLineItem) => {
-    if (isDemo) { setLineItems(prev => prev.map(x => x.id === item.id ? item : x)); return; }
-    const { id, ...rest } = item;
+    // Mark as user-edited so the auto-draft rebuilder (in-app + cron) preserves
+    // this row instead of regenerating it from the shift.
+    const stamped: any = { ...item, user_edited_at: new Date().toISOString() };
+    if (isDemo) { setLineItems(prev => prev.map(x => x.id === item.id ? stamped : x)); return; }
+    const { id, ...rest } = stamped;
     const { error } = await db('invoice_line_items').update(rest).eq('id', id);
     if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
-    setLineItems(prev => prev.map(x => x.id === item.id ? item : x));
+    setLineItems(prev => prev.map(x => x.id === item.id ? stamped : x));
   }, [isDemo]);
 
   const deleteLineItem = useCallback(async (id: string) => {
