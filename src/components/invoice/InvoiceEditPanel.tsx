@@ -600,11 +600,11 @@ export function InvoiceEditPanel({
               </div>
               <div>
                 <Label className="text-xs text-muted-foreground">Issued</Label>
-                <p className="font-medium">{format(new Date(invoice.invoice_date), 'MMM d, yyyy')}</p>
+                <p className="font-medium">{(() => { try { return invoice.invoice_date ? format(new Date(invoice.invoice_date), 'MMM d, yyyy') : '—'; } catch { return '—'; } })()}</p>
               </div>
               <div>
                 <Label className="text-xs text-muted-foreground">Due</Label>
-                <p className="font-medium">{invoice.due_date ? format(new Date(invoice.due_date), 'MMM d, yyyy') : '—'}</p>
+                <p className="font-medium">{(() => { try { return invoice.due_date ? format(new Date(invoice.due_date), 'MMM d, yyyy') : '—'; } catch { return '—'; } })()}</p>
               </div>
             </div>
           ) : (

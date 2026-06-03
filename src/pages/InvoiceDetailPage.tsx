@@ -30,6 +30,7 @@ import {
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AutoInvoiceDeleteDialog } from '@/components/invoice/AutoInvoiceDeleteDialog';
 import { InvoiceComposeDialog } from '@/components/invoice/InvoiceComposeDialog';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 
 
@@ -41,12 +42,12 @@ const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secon
   paid: { label: 'Paid', variant: 'default' },
 };
 
-export default function InvoiceDetailPage() {
+function InvoiceDetailPageInner() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
-  const { invoices, lineItems, facilities, contacts, payments, activities, updateInvoice, deleteInvoice, suppressInvoicePeriod, addLineItem, updateLineItem, deleteLineItem, addPayment, addActivity, updateFacility } = useData();
+  const { invoices, lineItems, facilities, contacts, payments, activities, updateInvoice, deleteInvoice, suppressInvoicePeriod, addLineItem, updateLineItem, deleteLineItem, addPayment, addActivity, updateFacility, dataLoading } = useData();
   const { profile } = useUserProfile();
   const { user } = useAuth();
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -74,7 +75,23 @@ export default function InvoiceDetailPage() {
   const saveRef = useRef<(() => Promise<void>) | null>(null);
 
   const invoice = invoices.find(i => i.id === id);
-  if (!invoice) return <div className="p-6">Invoice not found. <Button variant="link" onClick={() => navigate('/invoices')}>Back</Button></div>;
+  if (!invoice) {
+    // Still loading initial data — show a neutral state instead of "not found".
+    if (dataLoading) {
+      return <div className="p-6 text-sm text-muted-foreground">Loading invoice…</div>;
+    }
+    // Truly gone (deleted, regenerated, or stale link). Don't trap the user.
+    return (
+      <div className="p-6 max-w-md space-y-3">
+        <h2 className="text-lg font-semibold">This invoice is no longer available</h2>
+        <p className="text-sm text-muted-foreground">
+          It may have been deleted or regenerated after a billing-cadence change.
+          You can find your current invoices on the Invoices page.
+        </p>
+        <Button onClick={() => navigate('/invoices')}>Back to invoices</Button>
+      </div>
+    );
+  }
 
   const items = lineItems
     .filter(li => li.invoice_id === id)
@@ -439,6 +456,30 @@ export default function InvoiceDetailPage() {
         }}
       />
     </div>
+  );
+}
+
+export default function InvoiceDetailPage() {
+  const navigate = useNavigate();
+  return (
+    <ErrorBoundary
+      scope="invoice-detail"
+      fallback={(error, reset) => (
+        <div className="p-6 max-w-md space-y-3">
+          <h2 className="text-lg font-semibold">Something went wrong opening this invoice</h2>
+          <p className="text-sm text-muted-foreground">
+            We hit an unexpected error rendering this page. Your data is safe.
+            {error?.message ? <span className="block mt-1 text-xs opacity-75">Details: {error.message}</span> : null}
+          </p>
+          <div className="flex gap-2">
+            <Button onClick={() => { reset(); navigate('/invoices'); }}>Back to invoices</Button>
+            <Button variant="outline" onClick={reset}>Try again</Button>
+          </div>
+        </div>
+      )}
+    >
+      <InvoiceDetailPageInner />
+    </ErrorBoundary>
   );
 }
 
