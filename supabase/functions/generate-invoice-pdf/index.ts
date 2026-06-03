@@ -447,7 +447,7 @@ Deno.serve(async (req) => {
         const dateText = formatDate(invoice.paid_at);
         const dateSize = 11;
         const dateW = helvetica.widthOfTextAtSize(dateText, dateSize);
-        const dOffY = -28;
+        const dOffY = -54;
         const dxX = cx - (dateW / 2) * cos + (dateSize / 2 + dOffY) * sin;
         const dxY = cy - (dateW / 2) * sin - (dateSize / 2 + dOffY) * cos;
         firstPage.drawText(dateText, {
