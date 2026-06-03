@@ -445,7 +445,6 @@ Deno.serve(async (req) => {
           return [base];
         };
         const buildLineItem = (s: Shift) => buildLineItems(s)[0];
-        const buildAllLineItems = (shifts: Shift[]) => shifts.flatMap(buildLineItems);
 
 
         // Invoice date = last shift's clinic-local date at 12:00 in facility tz.
