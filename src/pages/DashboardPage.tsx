@@ -979,6 +979,8 @@ export default function DashboardPage() {
           }}
         />
       )}
+
+      <PaymentConfirmationDialog open={paymentConfirmOpen} onOpenChange={setPaymentConfirmOpen} />
     </div>
   );
 }
