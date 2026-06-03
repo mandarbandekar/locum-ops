@@ -2740,6 +2740,60 @@ export type Database = {
           },
         ]
       }
+      shift_payment_confirmations: {
+        Row: {
+          amount_received: number | null
+          created_at: string
+          id: string
+          note: string | null
+          paid_on: string | null
+          shift_id: string
+          snoozed_until: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_received?: number | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          paid_on?: string | null
+          shift_id: string
+          snoozed_until?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_received?: number | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          paid_on?: string | null
+          shift_id?: string
+          snoozed_until?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shift_payment_confirmations_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: true
+            referencedRelation: "shift_effective_engagement"
+            referencedColumns: ["shift_id"]
+          },
+          {
+            foreignKeyName: "shift_payment_confirmations_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: true
+            referencedRelation: "shifts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shifts: {
         Row: {
           break_minutes: number | null

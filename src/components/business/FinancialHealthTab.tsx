@@ -13,6 +13,11 @@ import { format, parseISO, startOfMonth, eachMonthOfInterval, subMonths, endOfMo
 import { toast } from 'sonner';
 import IncomeBySource from './IncomeBySource';
 import { getShiftTotalRevenue } from '@/types';
+import { useShiftPaymentConfirmations } from '@/hooks/useShiftPaymentConfirmations';
+import {
+  isNoInvoiceFacility,
+  sumConfirmedPaymentsInRange,
+} from '@/lib/paymentConfirmations';
 
 const fmtAmount = (n: number) => `$${n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
@@ -28,6 +33,7 @@ function InsightCallout({ text }: { text: string | null }) {
 export default function FinancialHealthTab() {
   const { invoices, facilities, shifts, lineItems } = useData();
   const { isDemo } = useAuth();
+  const { confirmations: paymentConfirmations } = useShiftPaymentConfirmations();
 
   const [monthRange, setMonthRange] = useState('6');
   const [aiSummary, setAiSummary] = useState<string>('');
@@ -52,29 +58,45 @@ export default function FinancialHealthTab() {
 
   const revenueData = useMemo(() => {
     const now = new Date();
+    const facById = new Map(facilities.map(f => [f.id, f]));
+    const confByShiftId = new Map(paymentConfirmations.map(c => [c.shift_id, c]));
     return months.map(month => {
       const monthEnd = endOfMonth(month);
       const monthInvoices = invoices.filter(inv => {
         const invDate = parseISO(inv.invoice_date);
         return isWithinInterval(invDate, { start: month, end: monthEnd });
       });
-      const collected = monthInvoices.filter(i => i.status === 'paid').reduce((sum, inv) => sum + inv.total_amount, 0);
+      const invoiceCollected = monthInvoices.filter(i => i.status === 'paid').reduce((sum, inv) => sum + inv.total_amount, 0);
+      // Confirmed payouts from no-invoice shifts, bucketed by paid_on
+      const confirmationCollected = sumConfirmedPaymentsInRange(paymentConfirmations, month, monthEnd);
+      const collected = invoiceCollected + confirmationCollected;
+
       const outstanding = monthInvoices
         .filter(i => { const s = computeInvoiceStatus(i); return s === 'sent' || s === 'partial' || s === 'overdue'; })
         .reduce((sum, inv) => sum + (inv.balance_due ?? inv.total_amount), 0);
+
       const isCurrentOrFuture = month >= startOfMonth(now) && month <= endOfMonth(addMonths(now, 3));
       let anticipated = 0;
       if (isCurrentOrFuture) {
         const draftTotal = monthInvoices.filter(i => i.status === 'draft').reduce((sum, inv) => sum + inv.total_amount, 0);
+        // Uninvoiced shifts split by facility type:
+        //  - Invoice-generating facilities → always anticipated (a draft is coming)
+        //  - No-invoice facilities → only anticipated when not yet paid/written-off
         const uninvoicedShiftTotal = shifts.filter(s => {
           const shiftDate = parseISO(s.start_datetime);
-          return isWithinInterval(shiftDate, { start: month, end: monthEnd }) && !invoicedShiftIds.has(s.id);
+          if (!isWithinInterval(shiftDate, { start: month, end: monthEnd })) return false;
+          if (invoicedShiftIds.has(s.id)) return false;
+          if (isNoInvoiceFacility(facById.get(s.facility_id))) {
+            const c = confByShiftId.get(s.id);
+            if (c?.status === 'paid' || c?.status === 'wont_pay') return false;
+          }
+          return true;
         }).reduce((sum, s) => sum + getShiftTotalRevenue(s), 0);
         anticipated = draftTotal + uninvoicedShiftTotal;
       }
       return { month: format(month, 'MMM yyyy'), collected, outstanding, anticipated };
     });
-  }, [months, invoices, shifts, lineItems, invoicedShiftIds]);
+  }, [months, invoices, shifts, lineItems, invoicedShiftIds, facilities, paymentConfirmations]);
 
   const revenueByFacility = useMemo(() => {
     const rangeStart = months[0];

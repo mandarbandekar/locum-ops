@@ -54,6 +54,10 @@ import { OnboardingHandoffBanner } from '@/components/dashboard/OnboardingHandof
 import { MobileQuickActionsFab } from '@/components/dashboard/MobileQuickActionsFab';
 import { HighlightBanner } from '@/components/announcements/HighlightBanner';
 import { generateDashboardBriefing, getNextQuarterlyDeadline, BriefingInput } from '@/lib/dashboardBriefing';
+import { PaymentConfirmationDialog } from '@/components/dashboard/PaymentConfirmationDialog';
+import { useShiftPaymentConfirmations } from '@/hooks/useShiftPaymentConfirmations';
+import { isShiftAwaitingConfirmation, defaultExpectedAmount } from '@/lib/paymentConfirmations';
+import { Wallet } from 'lucide-react';
 
 const TOUR_STEPS: TourStep[] = [
   {
@@ -122,6 +126,8 @@ export default function DashboardPage() {
 
   const [addClinicOpen, setAddClinicOpen] = useState(false);
   const [addShiftOpen, setAddShiftOpen] = useState(false);
+  const [paymentConfirmOpen, setPaymentConfirmOpen] = useState(false);
+  const { confirmations: paymentConfirmations } = useShiftPaymentConfirmations();
 
   const skippedOnboarding = profile && !profile.onboarding_completed_at && profile.has_seen_welcome;
   const showWelcomeBanner = skippedOnboarding && !profile?.dismissed_prompts?.welcome_banner && facilities.length === 0 && shifts.length === 0;
@@ -662,6 +668,29 @@ export default function DashboardPage() {
       });
     }
 
+    // Payment confirmations for no-invoice shifts (platform/agency/direct-no-invoice)
+    {
+      const facById = new Map(facilities.map(f => [f.id, f]));
+      const confById = new Map(paymentConfirmations.map(c => [c.shift_id, c]));
+      const awaiting = shifts.filter(s =>
+        isShiftAwaitingConfirmation(s, facById.get(s.facility_id), confById.get(s.id), now),
+      );
+      if (awaiting.length > 0) {
+        const total = awaiting.reduce((sum, s) => sum + defaultExpectedAmount(s), 0);
+        items.push({
+          title: `${awaiting.length} shift${awaiting.length > 1 ? 's' : ''} — did the payment land?`,
+          context: 'Platform, agency, or direct-pay clinics',
+          link: '#',
+          icon: Wallet,
+          urgency: 5,
+          amount: `$${total.toLocaleString()}`,
+          module: 'invoices',
+          onClick: () => setPaymentConfirmOpen(true),
+        });
+      }
+    }
+
+
     checklistItems
       .filter(item => getChecklistBadge(item) === 'due_soon' || getChecklistBadge(item) === 'overdue')
       .forEach(item => {
@@ -733,7 +762,7 @@ export default function DashboardPage() {
       if (!catSetting) return true;
       return catSetting.enabled && catSetting.in_app_enabled;
     });
-  }, [invoices, summary, checklistItems, confirmationBreakdown, credentialsList, subscriptions, taxQuarters, reminderCategories, shifts, hasTaxProfile, draftMileageExpenses, now]);
+  }, [invoices, summary, checklistItems, confirmationBreakdown, credentialsList, subscriptions, taxQuarters, reminderCategories, shifts, facilities, paymentConfirmations, hasTaxProfile, draftMileageExpenses, now]);
 
   const greeting = (() => {
     const hour = new Date().getHours();
@@ -950,6 +979,8 @@ export default function DashboardPage() {
           }}
         />
       )}
+
+      <PaymentConfirmationDialog open={paymentConfirmOpen} onOpenChange={setPaymentConfirmOpen} />
     </div>
   );
 }
