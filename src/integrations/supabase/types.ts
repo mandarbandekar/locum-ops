@@ -3709,6 +3709,30 @@ export type Database = {
       }
     }
     Functions: {
+      audit_invoice_line_mismatches: {
+        Args: never
+        Returns: {
+          expected_line_total: number
+          generation_type: string
+          invoice_id: string
+          invoice_number: string
+          invoice_status: string
+          line_description: string
+          line_id: string
+          line_kind: string
+          line_qty: number
+          line_total: number
+          line_unit_rate: number
+          mismatch_reasons: string[]
+          shift_hourly_rate: number
+          shift_id: string
+          shift_rate_applied: number
+          shift_rate_kind: string
+          user_edited_at: string
+          user_email: string
+          user_id: string
+        }[]
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
