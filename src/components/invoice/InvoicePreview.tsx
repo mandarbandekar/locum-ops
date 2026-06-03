@@ -1,11 +1,11 @@
 import { Card } from '@/components/ui/card';
+import { EditableField } from './EditableField';
 
 /** Format a date string to 'MMM d, yyyy' without timezone shift.
  *  Handles both 'YYYY-MM-DD' and ISO timestamps safely. */
 function formatDateSafe(dateStr: string | null | undefined): string {
   if (!dateStr) return '—';
   const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  // If date-only string, parse parts directly to avoid UTC shift
   const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (match) {
     const [, y, m, d] = match;
@@ -29,6 +29,19 @@ function formatDateShort(dateStr: string | null | undefined): string {
   return `${MONTHS[dt.getMonth()]} ${dt.getDate()}`;
 }
 
+/** Convert any date-ish input to YYYY-MM-DD for a date input. */
+function toDateInputValue(v: string | null | undefined): string {
+  if (!v) return '';
+  const m = v.match(/^(\d{4}-\d{2}-\d{2})/);
+  return m ? m[1] : '';
+}
+
+/** Every editable field on the preview, keyed for onFieldChange. */
+export type PreviewEditableField =
+  | 'sender_company' | 'sender_name' | 'sender_address' | 'sender_email' | 'sender_phone'
+  | 'billto_facility_name' | 'billto_contact_name' | 'billto_email' | 'billto_address'
+  | 'invoice_number' | 'invoice_date' | 'due_date' | 'notes';
+
 interface PreviewProps {
   sender: {
     firstName: string;
@@ -51,46 +64,165 @@ interface PreviewProps {
   total: number;
   balanceDue: number;
   notes: string;
+  /** Per-invoice override values; key = field name, value = override (or null/undefined for none). */
+  overrides?: Partial<Record<PreviewEditableField, string | null>>;
+  /** When true, fields become click-to-edit. */
+  editable?: boolean;
+  /** Called when an editable field is committed. Pass null to clear the override. */
+  onFieldChange?: (field: PreviewEditableField, value: string | null) => void | Promise<void>;
 }
 
-export function InvoicePreview({ sender, billTo, invoiceNumber, invoiceDate, dueDate, lineItems, total, balanceDue, notes }: PreviewProps) {
+export function InvoicePreview({
+  sender, billTo, invoiceNumber, invoiceDate, dueDate, lineItems, total, balanceDue, notes,
+  overrides, editable = false, onFieldChange,
+}: PreviewProps) {
+  const ov = overrides || {};
+  const change = (f: PreviewEditableField, v: string | null) => onFieldChange?.(f, v);
+
+  // Resolve value = override ?? source
+  const senderName = `${sender.firstName} ${sender.lastName}`.trim();
+  const senderCompany = ov.sender_company ?? sender.company ?? '';
+  const senderNameVal = ov.sender_name ?? senderName;
+  const senderAddr = ov.sender_address ?? sender.address ?? '';
+  const senderEmail = ov.sender_email ?? (sender.email || '');
+  const senderPhone = ov.sender_phone ?? (sender.phone || '');
+
+  const billFacilityName = ov.billto_facility_name ?? billTo.facilityName;
+  const billContact = ov.billto_contact_name ?? (billTo.contactName || '');
+  const billEmail = ov.billto_email ?? (billTo.email || '');
+  const billAddr = ov.billto_address ?? (billTo.address || '');
+
+  const invNum = ov.invoice_number ?? invoiceNumber;
+  const invDate = ov.invoice_date ?? invoiceDate;
+  const due = ov.due_date ?? dueDate ?? '';
+  const notesVal = ov.notes ?? notes;
+
+  const isOv = (f: PreviewEditableField) => ov[f] != null;
+
   return (
     <Card className="bg-card border shadow-sm overflow-hidden">
       <div className="p-4 sm:p-6 space-y-5 sm:space-y-6" id="invoice-preview">
         {/* Header */}
         <div className="flex justify-between items-start gap-3">
-          <div className="min-w-0">
-            <h2 className="text-lg sm:text-xl font-bold text-foreground break-words">{sender.company || 'Your Company'}</h2>
-            <p className="text-sm text-muted-foreground">{sender.firstName} {sender.lastName}</p>
-            {sender.address && (
-              <p className="text-xs text-muted-foreground mt-1 whitespace-pre-line break-words">{sender.address}</p>
-            )}
-            {sender.email && <p className="text-xs text-muted-foreground break-all">{sender.email}</p>}
-            {sender.phone && <p className="text-xs text-muted-foreground">{sender.phone}</p>}
+          <div className="min-w-0 flex-1 space-y-0.5">
+            <h2 className="text-lg sm:text-xl font-bold text-foreground break-words">
+              <EditableField
+                editable={editable} value={senderCompany} sourceValue={sender.company}
+                isOverridden={isOv('sender_company')}
+                onChange={v => change('sender_company', v)}
+                placeholder="Your Company" ariaLabel="Edit company name"
+              />
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              <EditableField
+                editable={editable} value={senderNameVal} sourceValue={senderName}
+                isOverridden={isOv('sender_name')}
+                onChange={v => change('sender_name', v)}
+                placeholder="Your name" ariaLabel="Edit sender name"
+              />
+            </p>
+            <p className="text-xs text-muted-foreground mt-1 whitespace-pre-line break-words">
+              <EditableField
+                editable={editable} value={senderAddr} sourceValue={sender.address}
+                isOverridden={isOv('sender_address')} multiline
+                onChange={v => change('sender_address', v)}
+                placeholder="Add address" ariaLabel="Edit sender address"
+              />
+            </p>
+            <p className="text-xs text-muted-foreground break-all">
+              <EditableField
+                editable={editable} value={senderEmail} sourceValue={sender.email || ''}
+                isOverridden={isOv('sender_email')} inputType="email"
+                onChange={v => change('sender_email', v)}
+                placeholder="Add email" ariaLabel="Edit sender email"
+              />
+            </p>
+            <p className="text-xs text-muted-foreground">
+              <EditableField
+                editable={editable} value={senderPhone} sourceValue={sender.phone || ''}
+                isOverridden={isOv('sender_phone')}
+                onChange={v => change('sender_phone', v)}
+                placeholder="Add phone" ariaLabel="Edit sender phone"
+              />
+            </p>
           </div>
           <div className="text-right shrink-0">
             <p className="text-xl sm:text-2xl font-bold text-primary tracking-tight">INVOICE</p>
-            <p className="text-xs sm:text-sm font-medium text-foreground mt-1 break-all">{invoiceNumber}</p>
+            <p className="text-xs sm:text-sm font-medium text-foreground mt-1 break-all">
+              <EditableField
+                editable={editable} value={invNum} sourceValue={invoiceNumber}
+                isOverridden={isOv('invoice_number')}
+                onChange={v => change('invoice_number', v)}
+                placeholder="Invoice #" ariaLabel="Edit invoice number"
+                className="text-right"
+              />
+            </p>
           </div>
         </div>
 
         {/* Bill-to + dates */}
         <div className="grid grid-cols-2 gap-4 sm:gap-6">
-          <div>
+          <div className="space-y-0.5">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Bill To</p>
-            <p className="text-sm font-medium">{billTo.facilityName}</p>
-            {billTo.contactName && <p className="text-xs text-muted-foreground">{billTo.contactName}</p>}
-            {billTo.email && <p className="text-xs text-muted-foreground">{billTo.email}</p>}
-            {billTo.address && <p className="text-xs text-muted-foreground">{billTo.address}</p>}
+            <p className="text-sm font-medium">
+              <EditableField
+                editable={editable} value={billFacilityName} sourceValue={billTo.facilityName}
+                isOverridden={isOv('billto_facility_name')}
+                onChange={v => change('billto_facility_name', v)}
+                placeholder="Clinic name" ariaLabel="Edit bill-to clinic name"
+              />
+            </p>
+            <p className="text-xs text-muted-foreground">
+              <EditableField
+                editable={editable} value={billContact} sourceValue={billTo.contactName || ''}
+                isOverridden={isOv('billto_contact_name')}
+                onChange={v => change('billto_contact_name', v)}
+                placeholder="Add contact name" ariaLabel="Edit bill-to contact name"
+              />
+            </p>
+            <p className="text-xs text-muted-foreground">
+              <EditableField
+                editable={editable} value={billEmail} sourceValue={billTo.email || ''}
+                isOverridden={isOv('billto_email')} inputType="email"
+                onChange={v => change('billto_email', v)}
+                placeholder="Add billing email" ariaLabel="Edit bill-to email"
+              />
+            </p>
+            <p className="text-xs text-muted-foreground whitespace-pre-line">
+              <EditableField
+                editable={editable} value={billAddr} sourceValue={billTo.address || ''}
+                isOverridden={isOv('billto_address')} multiline
+                onChange={v => change('billto_address', v)}
+                placeholder="Add billing address" ariaLabel="Edit bill-to address"
+              />
+            </p>
           </div>
           <div className="text-right space-y-1">
             <div>
               <p className="text-xs text-muted-foreground">Invoice Date</p>
-              <p className="text-sm font-medium">{formatDateSafe(invoiceDate)}</p>
+              <p className="text-sm font-medium">
+                {editable ? (
+                  <EditableField
+                    editable value={toDateInputValue(invDate)} sourceValue={toDateInputValue(invoiceDate)}
+                    isOverridden={isOv('invoice_date')} inputType="date"
+                    onChange={v => change('invoice_date', v)}
+                    placeholder="—" ariaLabel="Edit invoice date"
+                  />
+                ) : formatDateSafe(invDate)}
+              </p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Due Date</p>
-              <p className="text-sm font-medium">{formatDateSafe(dueDate)}</p>
+              <p className="text-sm font-medium">
+                {editable ? (
+                  <EditableField
+                    editable value={toDateInputValue(due)} sourceValue={toDateInputValue(dueDate)}
+                    isOverridden={isOv('due_date')} inputType="date"
+                    onChange={v => change('due_date', v)}
+                    placeholder="—" ariaLabel="Edit due date"
+                  />
+                ) : formatDateSafe(due)}
+              </p>
             </div>
           </div>
         </div>
@@ -167,6 +299,12 @@ export function InvoicePreview({ sender, billTo, invoiceNumber, invoiceDate, due
           </table>
         </div>
 
+        {editable && (
+          <p className="text-[11px] text-muted-foreground -mt-2">
+            Line items are edited on the left panel.
+          </p>
+        )}
+
         {/* Totals */}
         <div className="flex justify-end">
           <div className="w-full sm:w-48 space-y-1.5 text-sm">
@@ -182,10 +320,17 @@ export function InvoicePreview({ sender, billTo, invoiceNumber, invoiceDate, due
         </div>
 
         {/* Notes */}
-        {notes && (
+        {(notesVal || editable) && (
           <div className="border-t pt-3">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Notes</p>
-            <p className="text-sm text-muted-foreground whitespace-pre-line">{notes}</p>
+            <p className="text-sm text-muted-foreground whitespace-pre-line">
+              <EditableField
+                editable={editable} value={notesVal} sourceValue={notes}
+                isOverridden={isOv('notes')} multiline
+                onChange={v => change('notes', v)}
+                placeholder="Add notes for this invoice" ariaLabel="Edit invoice notes"
+              />
+            </p>
           </div>
         )}
       </div>
