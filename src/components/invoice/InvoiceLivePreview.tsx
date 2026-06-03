@@ -90,6 +90,8 @@ export function InvoiceLivePreview(props: Props) {
           total={previewTotal}
           balanceDue={previewBalanceDue}
           notes={previewNotes}
+          isPaid={computedStatus === 'paid'}
+          paidAt={invoice?.paid_at}
           overrides={overrides}
           editable={editable}
           onFieldChange={onFieldChange}

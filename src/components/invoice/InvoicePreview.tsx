@@ -64,6 +64,10 @@ interface PreviewProps {
   total: number;
   balanceDue: number;
   notes: string;
+  /** When true, render a "PAID" stamp overlay and show explicit Balance Due. */
+  isPaid?: boolean;
+  /** ISO timestamp of when the invoice was paid (for stamp date). */
+  paidAt?: string | null;
   /** Per-invoice override values; key = field name, value = override (or null/undefined for none). */
   overrides?: Partial<Record<PreviewEditableField, string | null>>;
   /** When true, fields become click-to-edit. */
@@ -74,6 +78,7 @@ interface PreviewProps {
 
 export function InvoicePreview({
   sender, billTo, invoiceNumber, invoiceDate, dueDate, lineItems, total, balanceDue, notes,
+  isPaid = false, paidAt,
   overrides, editable = false, onFieldChange,
 }: PreviewProps) {
   const ov = overrides || {};
@@ -99,9 +104,34 @@ export function InvoicePreview({
 
   const isOv = (f: PreviewEditableField) => ov[f] != null;
 
+  const totalNum = Number(total) || 0;
+  const balanceNum = Number(balanceDue) || 0;
+  const amountPaid = Math.max(0, totalNum - balanceNum);
+  const showPaymentBreakdown = isPaid || amountPaid > 0;
+
   return (
-    <Card className="bg-card border shadow-sm overflow-hidden">
-      <div className="p-4 sm:p-6 space-y-5 sm:space-y-6" id="invoice-preview">
+    <Card className="bg-card border shadow-sm overflow-hidden relative">
+      {isPaid && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center print:opacity-100"
+          style={{ printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact' } as React.CSSProperties}
+        >
+          <div
+            className="select-none -rotate-12 opacity-80 rounded-md border-4 border-double px-6 py-2 sm:px-10 sm:py-3 text-center"
+            style={{ borderColor: 'hsl(0 75% 45%)', color: 'hsl(0 75% 45%)' }}
+          >
+            <div className="text-4xl sm:text-6xl font-black tracking-[0.2em] leading-none">PAID</div>
+            {paidAt && (
+              <div className="mt-1 text-[10px] sm:text-xs font-semibold tracking-wider uppercase">
+                {formatDateSafe(paidAt)}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      <div className="p-4 sm:p-6 space-y-5 sm:space-y-6 relative" id="invoice-preview">
+
         {/* Header */}
         <div className="flex justify-between items-start gap-3">
           <div className="min-w-0 flex-1 space-y-0.5">
@@ -312,18 +342,27 @@ export function InvoicePreview({
         )}
 
         {/* Totals */}
-        <div className="flex justify-end">
-          <div className="w-full sm:w-48 space-y-1.5 text-sm">
+        <div className="flex justify-end relative z-20">
+          <div className="w-full sm:w-56 space-y-1.5 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Subtotal</span>
-              <span>${(Number(total) || 0).toLocaleString()}</span>
+              <span className="tabular-nums">${totalNum.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
-            <div className="flex justify-between font-bold text-base border-t pt-2">
-              <span>Amount Due</span>
-              <span className="text-primary">${(Number(balanceDue) || 0).toLocaleString()}</span>
+            {showPaymentBreakdown && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Amount Paid</span>
+                <span className="tabular-nums text-success">-${amountPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </div>
+            )}
+            <div className={`flex justify-between font-bold text-base border-t pt-2 ${isPaid ? 'text-success' : ''}`}>
+              <span>Balance Due</span>
+              <span className={`tabular-nums ${isPaid ? 'text-success' : 'text-primary'}`}>
+                ${balanceNum.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
             </div>
           </div>
         </div>
+
 
         {/* Notes */}
         {(notesVal || editable) && (
