@@ -1,0 +1,1 @@
+ALTER TABLE public.facilities ADD COLUMN IF NOT EXISTS track_mileage boolean NOT NULL DEFAULT true;

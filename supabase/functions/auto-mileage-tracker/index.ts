@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
     // Fetch user profiles (home address) and expense configs
     const [profilesRes, facilitiesRes, configsRes] = await Promise.all([
       supabase.from("user_profiles").select("user_id, home_address, company_address").in("user_id", userIds),
-      supabase.from("facilities").select("id, name, address, mileage_override_miles, facility_coordinates, timezone").in("id", facilityIds),
+      supabase.from("facilities").select("id, name, address, mileage_override_miles, facility_coordinates, timezone, track_mileage").in("id", facilityIds),
       supabase.from("expense_config").select("user_id, irs_mileage_rate_cents").in("user_id", userIds),
     ]);
 
@@ -85,6 +85,7 @@ Deno.serve(async (req) => {
       const irsMileageRateCents = configMap[shift.user_id] || 70; // default 70 cents/mi (2025)
 
       if (!profile || !facility) continue;
+      if (facility.track_mileage === false) continue;
 
       const homeAddr = profile.home_address || profile.company_address;
       if (!homeAddr) continue;

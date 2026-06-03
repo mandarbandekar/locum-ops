@@ -1698,6 +1698,7 @@ export type Database = {
           tech_pims_info: string
           tech_wifi_info: string
           timezone: string
+          track_mileage: boolean
           updated_at: string
           user_id: string
         }
@@ -1733,6 +1734,7 @@ export type Database = {
           tech_pims_info?: string
           tech_wifi_info?: string
           timezone?: string
+          track_mileage?: boolean
           updated_at?: string
           user_id: string
         }
@@ -1768,6 +1770,7 @@ export type Database = {
           tech_pims_info?: string
           tech_wifi_info?: string
           timezone?: string
+          track_mileage?: boolean
           updated_at?: string
           user_id?: string
         }
