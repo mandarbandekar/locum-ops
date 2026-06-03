@@ -518,17 +518,27 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
         //  - custom lines with no shift_id
         //  - overtime lines for a shift, when the builder didn't already emit
         //    one for that shift (manual overtime wins; avoids duplicates).
+        //  - any line a user has explicitly edited (user_edited_at IS NOT NULL).
+        //    For these, drop the builder's regenerated version for the same
+        //    shift+line_kind so the user's edit wins.
         const builderShiftsWithOvertime = new Set(
           newItems.filter(li => li.line_kind === 'overtime' && li.shift_id).map(li => li.shift_id as string)
         );
         const preserved = facilityLineItems.filter(li => {
           if (li.invoice_id !== existingDraft.id) return false;
-          if (!li.shift_id) return true; // custom line
+          if ((li as any).user_edited_at) return true;
+          if (!li.shift_id) return true;
           if (li.line_kind === 'overtime' && !builderShiftsWithOvertime.has(li.shift_id)) return true;
           return false;
         });
+        const preservedKeys = new Set(
+          preserved.filter(li => li.shift_id).map(li => `${li.shift_id}|${li.line_kind || 'shift'}`)
+        );
+        const filteredBuilder = newItems.filter(item =>
+          !item.shift_id || !preservedKeys.has(`${item.shift_id}|${item.line_kind || 'shift'}`)
+        );
 
-        const builderRows = newItems.map(item => ({ user_id: user!.id, invoice_id: existingDraft.id, ...item }));
+        const builderRows = filteredBuilder.map(item => ({ user_id: user!.id, invoice_id: existingDraft.id, ...item }));
         const preservedRows = preserved.map(({ id: _id, ...rest }: any) => ({ ...rest, user_id: user!.id, invoice_id: existingDraft.id }));
         const toInsert = [...builderRows, ...preservedRows];
 
