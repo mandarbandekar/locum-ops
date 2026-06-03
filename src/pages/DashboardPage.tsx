@@ -54,6 +54,10 @@ import { OnboardingHandoffBanner } from '@/components/dashboard/OnboardingHandof
 import { MobileQuickActionsFab } from '@/components/dashboard/MobileQuickActionsFab';
 import { HighlightBanner } from '@/components/announcements/HighlightBanner';
 import { generateDashboardBriefing, getNextQuarterlyDeadline, BriefingInput } from '@/lib/dashboardBriefing';
+import { PaymentConfirmationDialog } from '@/components/dashboard/PaymentConfirmationDialog';
+import { useShiftPaymentConfirmations } from '@/hooks/useShiftPaymentConfirmations';
+import { isShiftAwaitingConfirmation, defaultExpectedAmount } from '@/lib/paymentConfirmations';
+import { Wallet } from 'lucide-react';
 
 const TOUR_STEPS: TourStep[] = [
   {
