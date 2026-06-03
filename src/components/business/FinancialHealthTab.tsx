@@ -13,6 +13,12 @@ import { format, parseISO, startOfMonth, eachMonthOfInterval, subMonths, endOfMo
 import { toast } from 'sonner';
 import IncomeBySource from './IncomeBySource';
 import { getShiftTotalRevenue } from '@/types';
+import { useShiftPaymentConfirmations } from '@/hooks/useShiftPaymentConfirmations';
+import {
+  isNoInvoiceFacility,
+  sumConfirmedPaymentsInRange,
+  sumAnticipatedNoInvoiceInRange,
+} from '@/lib/paymentConfirmations';
 
 const fmtAmount = (n: number) => `$${n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
