@@ -64,6 +64,10 @@ interface PreviewProps {
   total: number;
   balanceDue: number;
   notes: string;
+  /** When true, render a "PAID" stamp overlay and show explicit Balance Due. */
+  isPaid?: boolean;
+  /** ISO timestamp of when the invoice was paid (for stamp date). */
+  paidAt?: string | null;
   /** Per-invoice override values; key = field name, value = override (or null/undefined for none). */
   overrides?: Partial<Record<PreviewEditableField, string | null>>;
   /** When true, fields become click-to-edit. */
