@@ -34,6 +34,7 @@ function InsightCallout({ text }: { text: string | null }) {
 export default function FinancialHealthTab() {
   const { invoices, facilities, shifts, lineItems } = useData();
   const { isDemo } = useAuth();
+  const { confirmations: paymentConfirmations } = useShiftPaymentConfirmations();
 
   const [monthRange, setMonthRange] = useState('6');
   const [aiSummary, setAiSummary] = useState<string>('');
