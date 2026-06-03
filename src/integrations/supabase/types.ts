@@ -2083,6 +2083,7 @@ export type Database = {
           service_date: string | null
           shift_id: string | null
           unit_rate: number
+          user_edited_at: string | null
           user_id: string
         }
         Insert: {
@@ -2096,6 +2097,7 @@ export type Database = {
           service_date?: string | null
           shift_id?: string | null
           unit_rate?: number
+          user_edited_at?: string | null
           user_id: string
         }
         Update: {
@@ -2109,6 +2111,7 @@ export type Database = {
           service_date?: string | null
           shift_id?: string | null
           unit_rate?: number
+          user_edited_at?: string | null
           user_id?: string
         }
         Relationships: [
