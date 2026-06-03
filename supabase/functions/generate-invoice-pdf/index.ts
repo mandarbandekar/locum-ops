@@ -163,8 +163,17 @@ Deno.serve(async (req) => {
     const FOOTER_MARGIN = 60;
 
     let page = pdfDoc.addPage([PAGE_W, PAGE_H]);
+    const firstPage = page;
     let y = 742;
     let pageNum = 1;
+
+    const isPaid = invoice.status === 'paid';
+    const totalAmt = Number(invoice.total_amount) || 0;
+    const balanceDue = Number(invoice.balance_due) || 0;
+    const amountPaid = Math.max(0, totalAmt - balanceDue);
+    const showPaymentBreakdown = isPaid || amountPaid > 0;
+    const successColor = rgb(0.13, 0.55, 0.30);
+    const stampRed = rgb(0.80, 0.15, 0.15);
 
     function ensureSpace(needed: number) {
       if (y - needed < FOOTER_MARGIN) {
