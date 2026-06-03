@@ -48,6 +48,9 @@ export interface Facility {
    *   - >0   → unpaid break length in minutes.
    */
   default_break_minutes?: number | null;
+  mileage_override_miles?: number | null;
+  /** Whether automatic mileage tracking is enabled for this clinic. Defaults to true. */
+  track_mileage?: boolean;
 }
 
 export type ContactRole = string;
