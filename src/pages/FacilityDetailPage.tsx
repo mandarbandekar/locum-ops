@@ -24,6 +24,7 @@ import { ClinicConfirmationsTab } from '@/components/schedule/ClinicConfirmation
 import { useClinicConfirmations } from '@/hooks/useClinicConfirmations';
 import { InvoicingPreferencesCard } from '@/components/facilities/InvoicingPreferencesCard';
 import { ClinicNotesCard } from '@/components/facilities/ClinicNotesCard';
+import { ClinicExperienceCard } from '@/components/facilities/ClinicExperienceCard';
 import { EngagementSelector } from '@/components/facilities/EngagementSelector';
 import { BreakPolicySelector } from '@/components/facilities/BreakPolicySelector';
 import { getBreakPolicyLabel } from '@/lib/shiftBreak';
