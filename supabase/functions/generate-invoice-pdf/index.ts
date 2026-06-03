@@ -347,17 +347,24 @@ Deno.serve(async (req) => {
     y -= 22;
 
     // === TOTALS ===
-    ensureSpace(60);
+    ensureSpace(showPaymentBreakdown ? 90 : 60);
     const totalsLabelX = 380;
 
     drawText('Subtotal', totalsLabelX, y, { size: 10, color: gray });
-    drawTextRight(formatCurrency(invoice.total_amount), colAmt, y, { size: 10 });
+    drawTextRight(formatCurrency(totalAmt), colAmt, y, { size: 10 });
     y -= 22;
 
-    // Amount Due
+    if (showPaymentBreakdown) {
+      drawText('Amount Paid', totalsLabelX, y, { size: 10, color: successColor });
+      drawTextRight(`-${formatCurrency(amountPaid)}`, colAmt, y, { size: 10, color: successColor });
+      y -= 22;
+    }
+
+    // Balance Due
     page.drawLine({ start: { x: totalsLabelX - 10, y: y + 14 }, end: { x: PAGE_W - margin, y: y + 14 }, thickness: 0.5, color: lightGray });
-    drawText('Amount Due', totalsLabelX, y, { font: helveticaBold, size: 13 });
-    drawTextRight(formatCurrency(invoice.balance_due), colAmt, y, { font: helveticaBold, size: 13, color: primary });
+    const balanceColor = isPaid && balanceDue <= 0.005 ? successColor : primary;
+    drawText('Balance Due', totalsLabelX, y, { font: helveticaBold, size: 13 });
+    drawTextRight(formatCurrency(balanceDue), colAmt, y, { font: helveticaBold, size: 13, color: balanceColor });
     y -= 30;
 
     // === NOTES ===
