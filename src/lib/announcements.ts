@@ -64,6 +64,15 @@ export const ANNOUNCEMENT_HIDE_PREFIX = 'announcement-hidden:';
  */
 export const announcements: Announcement[] = [
   {
+    id: 'clinic-notes-2026-06',
+    title: 'Keep track of clinic impressions',
+    body: 'Each facility now has a "My Notes" section where you can jot down what went well, flag watch-outs, and add free-form notes about your experience. Custom tags are supported too.',
+    publishedAt: '2026-06-03',
+    icon: NotebookPen,
+    cta: { label: 'Open a clinic', to: '/facilities' },
+    audience: ctx => ctx.facilities.length > 0,
+  },
+  {
     id: 'biweekly-billing-2026-06',
     title: 'Biweekly billing is here',
     body: 'Set a 14-day billing cycle anchored to any pay-period start date. LocumOps now groups shifts into the correct two-week windows automatically when generating invoice drafts.',
