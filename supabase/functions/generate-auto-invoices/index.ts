@@ -88,6 +88,14 @@ interface LineItem {
   id: string;
   invoice_id: string;
   shift_id: string | null;
+  line_kind?: string | null;
+  user_edited_at?: string | null;
+  description?: string | null;
+  service_date?: string | null;
+  qty?: number | null;
+  unit_rate?: number | null;
+  line_total?: number | null;
+  user_id?: string;
 }
 
 function startOfDay(d: Date): Date {
@@ -393,19 +401,55 @@ Deno.serve(async (req) => {
         const dueDate = addDays(invoiceDate, facility.invoice_due_days || 15);
 
         if (existingDraft) {
+          // Identify lines we must NOT regenerate:
+          //  - user-edited lines (user_edited_at IS NOT NULL)
+          //  - custom lines (no shift_id)
+          //  - manual overtime lines for a shift
+          // Preserve those by re-inserting their column values verbatim, and
+          // skip the builder's output for the same (shift_id, line_kind) key.
+          const draftLines = allLineItems.filter(li => li.invoice_id === existingDraft.id);
+          const preserved = draftLines.filter(li => {
+            if (li.user_edited_at) return true;
+            if (!li.shift_id) return true;
+            if (li.line_kind === 'overtime') return true;
+            return false;
+          });
+          const preservedKeys = new Set(
+            preserved.filter(li => li.shift_id).map(li => `${li.shift_id}|${li.line_kind || 'shift'}`)
+          );
+
+          const builderLines = allEligibleForPeriod
+            .filter(s => !preservedKeys.has(`${s.id}|shift`))
+            .map(s => ({
+              user_id: facility.user_id,
+              invoice_id: existingDraft.id,
+              ...buildLineItem(s),
+            }));
+
+          const preservedRows = preserved.map(li => ({
+            user_id: facility.user_id,
+            invoice_id: existingDraft.id,
+            shift_id: li.shift_id,
+            line_kind: li.line_kind ?? null,
+            description: li.description ?? '',
+            service_date: li.service_date ?? null,
+            qty: li.qty ?? 1,
+            unit_rate: li.unit_rate ?? 0,
+            line_total: li.line_total ?? 0,
+            user_edited_at: li.user_edited_at ?? null,
+          }));
+
+          const newLineItems = [...builderLines, ...preservedRows];
+
           await supabase
             .from("invoice_line_items")
             .delete()
             .eq("invoice_id", existingDraft.id);
 
-          const newLineItems = allEligibleForPeriod.map((s) => ({
-            user_id: facility.user_id,
-            invoice_id: existingDraft.id,
-            ...buildLineItem(s),
-          }));
-
-          await supabase.from("invoice_line_items").insert(newLineItems);
-          const total = newLineItems.reduce((sum, li) => sum + li.line_total, 0);
+          if (newLineItems.length > 0) {
+            await supabase.from("invoice_line_items").insert(newLineItems);
+          }
+          const total = newLineItems.reduce((sum, li: any) => sum + (Number(li.line_total) || 0), 0);
 
           await supabase
             .from("invoices")

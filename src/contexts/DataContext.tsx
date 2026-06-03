@@ -518,17 +518,27 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
         //  - custom lines with no shift_id
         //  - overtime lines for a shift, when the builder didn't already emit
         //    one for that shift (manual overtime wins; avoids duplicates).
+        //  - any line a user has explicitly edited (user_edited_at IS NOT NULL).
+        //    For these, drop the builder's regenerated version for the same
+        //    shift+line_kind so the user's edit wins.
         const builderShiftsWithOvertime = new Set(
           newItems.filter(li => li.line_kind === 'overtime' && li.shift_id).map(li => li.shift_id as string)
         );
         const preserved = facilityLineItems.filter(li => {
           if (li.invoice_id !== existingDraft.id) return false;
-          if (!li.shift_id) return true; // custom line
+          if ((li as any).user_edited_at) return true;
+          if (!li.shift_id) return true;
           if (li.line_kind === 'overtime' && !builderShiftsWithOvertime.has(li.shift_id)) return true;
           return false;
         });
+        const preservedKeys = new Set(
+          preserved.filter(li => li.shift_id).map(li => `${li.shift_id}|${li.line_kind || 'shift'}`)
+        );
+        const filteredBuilder = newItems.filter(item =>
+          !item.shift_id || !preservedKeys.has(`${item.shift_id}|${item.line_kind || 'shift'}`)
+        );
 
-        const builderRows = newItems.map(item => ({ user_id: user!.id, invoice_id: existingDraft.id, ...item }));
+        const builderRows = filteredBuilder.map(item => ({ user_id: user!.id, invoice_id: existingDraft.id, ...item }));
         const preservedRows = preserved.map(({ id: _id, ...rest }: any) => ({ ...rest, user_id: user!.id, invoice_id: existingDraft.id }));
         const toInsert = [...builderRows, ...preservedRows];
 
@@ -698,18 +708,26 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
             );
 
             // Preserve manual lines the auto-builder doesn't produce (see
-            // rebuildAutoDraftForPeriod for rationale).
+            // rebuildAutoDraftForPeriod for rationale). Also preserve any line
+            // a user has explicitly edited.
             const builderShiftsWithOvertime = new Set(
               newItems.filter(li => li.line_kind === 'overtime' && li.shift_id).map(li => li.shift_id as string)
             );
             const preserved = facilityLineItems.filter(li => {
               if (li.invoice_id !== existingDraft.id) return false;
+              if ((li as any).user_edited_at) return true;
               if (!li.shift_id) return true;
               if (li.line_kind === 'overtime' && !builderShiftsWithOvertime.has(li.shift_id)) return true;
               return false;
             });
+            const preservedKeys = new Set(
+              preserved.filter(li => li.shift_id).map(li => `${li.shift_id}|${li.line_kind || 'shift'}`)
+            );
+            const filteredBuilder = newItems.filter(item =>
+              !item.shift_id || !preservedKeys.has(`${item.shift_id}|${item.line_kind || 'shift'}`)
+            );
 
-            const builderRows = newItems.map(item => ({ user_id: user!.id, invoice_id: existingDraft.id, ...item }));
+            const builderRows = filteredBuilder.map(item => ({ user_id: user!.id, invoice_id: existingDraft.id, ...item }));
             const preservedRows = preserved.map(({ id: _id, ...rest }: any) => ({ ...rest, user_id: user!.id, invoice_id: existingDraft.id }));
             const toInsert = [...builderRows, ...preservedRows];
             const total = toInsert.reduce((sum, li: any) => sum + (Number(li.line_total) || 0), 0);
@@ -978,11 +996,14 @@ export function DataProvider({ children, isDemo = false }: { children: ReactNode
   }, [isDemo, user]);
 
   const updateLineItem = useCallback(async (item: InvoiceLineItem) => {
-    if (isDemo) { setLineItems(prev => prev.map(x => x.id === item.id ? item : x)); return; }
-    const { id, ...rest } = item;
+    // Mark as user-edited so the auto-draft rebuilder (in-app + cron) preserves
+    // this row instead of regenerating it from the shift.
+    const stamped: any = { ...item, user_edited_at: new Date().toISOString() };
+    if (isDemo) { setLineItems(prev => prev.map(x => x.id === item.id ? stamped : x)); return; }
+    const { id, ...rest } = stamped;
     const { error } = await db('invoice_line_items').update(rest).eq('id', id);
     if (error) { console.error(error); toast.error(friendlyDbError(error)); return; }
-    setLineItems(prev => prev.map(x => x.id === item.id ? item : x));
+    setLineItems(prev => prev.map(x => x.id === item.id ? stamped : x));
   }, [isDemo]);
 
   const deleteLineItem = useCallback(async (id: string) => {
