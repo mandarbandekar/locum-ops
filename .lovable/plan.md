@@ -1,26 +1,56 @@
-## Fix founder dashboard "last activity" recency
+## Goal
 
-**Problem:** `get_founder_overview()` computes `last_activity_at` as the GREATEST of facility/shift/invoice `created_at` plus `auth.users.last_sign_in_at`. That misses two real signals:
+Turn the right-hand invoice Preview into a click-to-edit surface. On a draft invoice, every visible field — your sender block, the bill-to block, invoice number/dates, line items, notes — can be edited in place. Edits are saved as **overrides on this invoice only**; your profile and the clinic record are not touched.
 
-1. `user_sign_in_events.created_at` — our own per-session log (Kimberly has May 26 here, but `auth.users.last_sign_in_at` is stuck on Apr 27 because Supabase only bumps it on fresh password sign-ins, not refresh-token sessions).
-2. `invoice_pdf_downloads.last_downloaded_at` — proves the user actually used the app (Kimberly downloaded May 26).
+## Behavior
 
-Result: active users like Kimberly look dormant on the founder dashboard.
+- Hovering a field on the preview shows a subtle "click to edit" affordance (light underline + pencil on hover).
+- Click → field becomes an inline input/textarea, autofocused. Enter (or blur) saves; Esc cancels.
+- All overrides persist on the invoice row, so the PDF, the public link, and the email all use the edited values.
+- A small "Reset to clinic / profile" link appears next to any overridden field so you can revert.
+- Editing is **disabled** once the invoice is Sent/Partial/Paid (matches today's "revert to draft to edit" model). Read-only preview in those states.
+- Line items remain editable through the existing line-item controls (already supported) — clicking a line on the preview scrolls/highlights its card in the edit panel rather than duplicating the editor inline, to avoid two competing editors.
 
-## Change
+## Fields that become editable on the preview
 
-Migration that replaces `public.get_founder_overview()` with an updated version that:
+Sender block: company, your name, address, email, phone.
+Bill To block: facility name, contact name, email, address.
+Invoice meta: invoice number, invoice date, due date.
+Notes block: full notes textarea.
+Line items: click any row to jump-focus its existing editor in the left panel.
 
-- Adds a CTE `signin_event_stats` selecting `MAX(created_at)` per user from `user_sign_in_events`.
-- Adds a CTE `download_event_stats` selecting `MAX(last_downloaded_at)` per user from `invoice_pdf_downloads` (and keeps the existing download_count sum).
-- Extends the `last_activity_at` GREATEST() to include those two new timestamps alongside the existing facility/shift/invoice `created_at` and `auth.users.last_sign_in_at`.
-- Also folds `invoices.updated_at` and `shifts.updated_at` into the GREATEST so edits register as activity (currently only `created_at` does).
-- Updates `activation_status`: if `last_activity_at` is within 14 days → `active`; older → `dormant`; never signed in → `never`. (Today it's just `never` vs `active`, which isn't useful.)
+## Technical details
 
-No table schema changes, no frontend code changes — the founder dashboard already reads `last_activity_at` and `activation_status` from this function, so it will just start showing accurate values.
+**Schema (single migration on `public.invoices`)** — add nullable override columns; null = fall back to profile/facility:
 
-## Verification
+```
+sender_company_override        text
+sender_name_override           text
+sender_address_override        text
+sender_email_override          text
+sender_phone_override          text
+billto_facility_name_override  text
+billto_contact_name_override   text
+billto_email_override          text   -- distinct from billing_email_to (which is the send-to)
+billto_address_override        text
+```
 
-After migration:
-- Re-query `get_founder_overview()` for Kimberly and confirm `last_activity_at` = May 26, 2026 (not Apr 27).
-- Spot-check a few other users to make sure no one regresses.
+No new tables, no RLS changes needed (existing "Users can CRUD own invoices" policy covers it). Update `src/integrations/supabase/types.ts` will regenerate automatically.
+
+**Frontend**
+
+- New small component `EditableField` in `src/components/invoice/EditableField.tsx` — handles hover state, click-to-edit, Enter/Esc, single-line vs multi-line, optional "Reset" affordance. Uses existing `Input`/`Textarea` design tokens.
+- Refactor `InvoicePreview.tsx` to:
+  - Accept an `editable: boolean` prop and an `onFieldChange(field, value)` callback.
+  - Wrap each currently-rendered field in `EditableField` when `editable` is true; otherwise render plain text exactly as today.
+  - Resolve display value as `override ?? sourceValue` and expose `isOverridden` to the field for the reset affordance.
+- `InvoiceLivePreview.tsx` — pass through `editable={isDraft}` and an `onFieldChange` that calls `updateInvoice(...)` with the appropriate `*_override` column. Optimistic update via existing `liveFields` pattern so the preview reflects edits instantly.
+- `InvoiceDetailPage.tsx` — extend the `liveFields` state to carry the override values; pass `isDraft` down. No layout change.
+- `PublicInvoicePage.tsx`, `OnboardingInvoiceReveal.tsx`, and the PDF generator already render through `InvoicePreview`. They keep `editable={false}` (default) and continue to consume the resolved values, which the data layer will already serve as `override ?? source`.
+- `supabase/functions/generate-invoice-pdf/index.ts` and `supabase/functions/public-invoice/index.ts` — read the new override columns and apply the same `override ?? source` fallback before rendering, so PDFs and the public link match the in-app preview.
+
+**Out of scope**
+
+- No changes to line item editing logic (works today via the left panel).
+- No changes to profile or facility records — overrides are per-invoice only, per your choice.
+- No edit-after-sent flow — drafts only, per your choice.

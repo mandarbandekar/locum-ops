@@ -2216,6 +2216,10 @@ export type Database = {
           billing_email_bcc: string
           billing_email_cc: string
           billing_email_to: string
+          billto_address_override: string | null
+          billto_contact_name_override: string | null
+          billto_email_override: string | null
+          billto_facility_name_override: string | null
           created_at: string
           due_date: string | null
           facility_id: string
@@ -2228,6 +2232,11 @@ export type Database = {
           paid_at: string | null
           period_end: string
           period_start: string
+          sender_address_override: string | null
+          sender_company_override: string | null
+          sender_email_override: string | null
+          sender_name_override: string | null
+          sender_phone_override: string | null
           sent_at: string | null
           share_token: string | null
           share_token_created_at: string | null
@@ -2243,6 +2252,10 @@ export type Database = {
           billing_email_bcc?: string
           billing_email_cc?: string
           billing_email_to?: string
+          billto_address_override?: string | null
+          billto_contact_name_override?: string | null
+          billto_email_override?: string | null
+          billto_facility_name_override?: string | null
           created_at?: string
           due_date?: string | null
           facility_id: string
@@ -2255,6 +2268,11 @@ export type Database = {
           paid_at?: string | null
           period_end: string
           period_start: string
+          sender_address_override?: string | null
+          sender_company_override?: string | null
+          sender_email_override?: string | null
+          sender_name_override?: string | null
+          sender_phone_override?: string | null
           sent_at?: string | null
           share_token?: string | null
           share_token_created_at?: string | null
@@ -2270,6 +2288,10 @@ export type Database = {
           billing_email_bcc?: string
           billing_email_cc?: string
           billing_email_to?: string
+          billto_address_override?: string | null
+          billto_contact_name_override?: string | null
+          billto_email_override?: string | null
+          billto_facility_name_override?: string | null
           created_at?: string
           due_date?: string | null
           facility_id?: string
@@ -2282,6 +2304,11 @@ export type Database = {
           paid_at?: string | null
           period_end?: string
           period_start?: string
+          sender_address_override?: string | null
+          sender_company_override?: string | null
+          sender_email_override?: string | null
+          sender_name_override?: string | null
+          sender_phone_override?: string | null
           sent_at?: string | null
           share_token?: string | null
           share_token_created_at?: string | null
