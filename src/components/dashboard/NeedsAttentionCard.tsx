@@ -13,6 +13,8 @@ export interface AttentionItem {
   urgency: number;
   amount?: string;
   module?: ReminderModule;
+  /** Optional click override; when set, fires instead of navigating to `link`. */
+  onClick?: () => void;
 }
 
 interface NeedsAttentionCardProps {
