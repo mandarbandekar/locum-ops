@@ -144,6 +144,37 @@ export default function InvoiceDetailPage() {
     onRevertToDraft: handleRevertToDraft,
   };
 
+  // Map preview field -> invoice column. Date fields are stored as YYYY-MM-DD strings;
+  // non-override columns (invoice_number, invoice_date, due_date, notes) are written
+  // directly to the canonical column, others go to *_override columns.
+  const FIELD_TO_COLUMN: Record<string, string> = {
+    sender_company: 'sender_company_override',
+    sender_name: 'sender_name_override',
+    sender_address: 'sender_address_override',
+    sender_email: 'sender_email_override',
+    sender_phone: 'sender_phone_override',
+    billto_facility_name: 'billto_facility_name_override',
+    billto_contact_name: 'billto_contact_name_override',
+    billto_email: 'billto_email_override',
+    billto_address: 'billto_address_override',
+    invoice_number: 'invoice_number',
+    invoice_date: 'invoice_date',
+    due_date: 'due_date',
+    notes: 'notes',
+  };
+
+  const handlePreviewFieldChange = async (field: string, value: string | null) => {
+    const col = FIELD_TO_COLUMN[field];
+    if (!col) return;
+    // Canonical (non-override) columns can't be null; reset == leave as-is.
+    if (!col.endsWith('_override') && value == null) return;
+    const patch: any = { ...invoice, [col]: value };
+    // For canonical text columns ensure we don't set null
+    if (col === 'notes' && value == null) patch.notes = '';
+    if (col === 'invoice_number' && (!value || !value.trim())) return;
+    await updateInvoice(patch);
+  };
+
   const livePreview = (
     <InvoiceLivePreview
       profile={profile}
@@ -159,6 +190,8 @@ export default function InvoiceDetailPage() {
       previewTotal={previewTotal}
       previewBalanceDue={isDraft ? previewTotal : invoice.balance_due}
       computedStatus={computedStatus}
+      editable={isDraft}
+      onFieldChange={handlePreviewFieldChange}
     />
   );
 

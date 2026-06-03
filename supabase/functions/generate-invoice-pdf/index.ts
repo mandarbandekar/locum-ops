@@ -116,9 +116,34 @@ Deno.serve(async (req) => {
     ]);
 
     const lineItems = liRes.data || [];
-    const facility = facRes.data;
-    const sender = profileRes.data;
-    const billingContact = contactRes.data;
+    const baseFacility = facRes.data || {};
+    const baseSender = profileRes.data || {};
+    const baseContact = contactRes.data || {};
+
+    // Apply per-invoice overrides (null/undefined = fall back to source).
+    const facility = {
+      ...baseFacility,
+      name: invoice.billto_facility_name_override ?? baseFacility.name,
+      address: invoice.billto_address_override ?? baseFacility.address,
+      invoice_name_to: invoice.billto_contact_name_override ?? baseFacility.invoice_name_to,
+      invoice_email_to: invoice.billto_email_override ?? baseFacility.invoice_email_to,
+    };
+    const sender: any = {
+      ...baseSender,
+      company_name: invoice.sender_company_override ?? baseSender.company_name,
+      company_address: invoice.sender_address_override ?? baseSender.company_address,
+      invoice_email: invoice.sender_email_override ?? baseSender.invoice_email,
+      invoice_phone: invoice.sender_phone_override ?? baseSender.invoice_phone,
+    };
+    if (invoice.sender_name_override != null) {
+      sender.first_name = invoice.sender_name_override;
+      sender.last_name = '';
+    }
+    const billingContact = {
+      ...baseContact,
+      name: invoice.billto_contact_name_override ?? baseContact.name,
+      email: invoice.billto_email_override ?? baseContact.email,
+    };
 
     // Generate PDF
     const pdfDoc = await PDFDocument.create();

@@ -1,4 +1,4 @@
-import { InvoicePreview } from './InvoicePreview';
+import { InvoicePreview, type PreviewEditableField } from './InvoicePreview';
 import { Badge } from '@/components/ui/badge';
 
 interface Props {
@@ -15,6 +15,10 @@ interface Props {
   previewTotal: number;
   previewBalanceDue: number;
   computedStatus: string;
+  /** When true, fields on the preview become click-to-edit. */
+  editable?: boolean;
+  /** Called when a preview field is committed. Pass null to clear an override. */
+  onFieldChange?: (field: PreviewEditableField, value: string | null) => void | Promise<void>;
 }
 
 const STATUS_TONE: Record<string, string> = {
@@ -27,13 +31,27 @@ const STATUS_TONE: Record<string, string> = {
 
 export function InvoiceLivePreview(props: Props) {
   const {
-    profile, facility, billingNameTo, billingEmailTo,
+    profile, facility, billingNameTo, billingEmailTo, invoice,
     items,
     previewInvoiceNumber, previewInvoiceDate, previewDueDate,
     previewNotes, previewTotal, previewBalanceDue, computedStatus,
+    editable, onFieldChange,
   } = props;
 
   const statusLabel = computedStatus.charAt(0).toUpperCase() + computedStatus.slice(1);
+
+  // Collect override values stored on the invoice row.
+  const overrides: Partial<Record<PreviewEditableField, string | null>> = {
+    sender_company: invoice?.sender_company_override ?? null,
+    sender_name: invoice?.sender_name_override ?? null,
+    sender_address: invoice?.sender_address_override ?? null,
+    sender_email: invoice?.sender_email_override ?? null,
+    sender_phone: invoice?.sender_phone_override ?? null,
+    billto_facility_name: invoice?.billto_facility_name_override ?? null,
+    billto_contact_name: invoice?.billto_contact_name_override ?? null,
+    billto_email: invoice?.billto_email_override ?? null,
+    billto_address: invoice?.billto_address_override ?? null,
+  };
 
   return (
     <div className="rounded-xl border border-border bg-muted/40 p-2 sm:p-4">
@@ -44,7 +62,9 @@ export function InvoiceLivePreview(props: Props) {
             {statusLabel}
           </Badge>
         </div>
-        <span className="hidden sm:inline text-[10px] text-muted-foreground shrink-0">Updates in real-time</span>
+        <span className="hidden sm:inline text-[10px] text-muted-foreground shrink-0">
+          {editable ? 'Click any field to edit' : 'Updates in real-time'}
+        </span>
       </div>
 
       <div className="rounded-lg overflow-hidden">
@@ -70,6 +90,9 @@ export function InvoiceLivePreview(props: Props) {
           total={previewTotal}
           balanceDue={previewBalanceDue}
           notes={previewNotes}
+          overrides={overrides}
+          editable={editable}
+          onFieldChange={onFieldChange}
         />
       </div>
     </div>
