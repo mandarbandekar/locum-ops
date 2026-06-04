@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Save, Plus, Trash2, DollarSign, Clock, AlertCircle, Tag, Sparkles } from 'lucide-react';
+import { Plus, Trash2, DollarSign, Clock, AlertCircle, Tag, Sparkles } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { useUserProfile } from '@/contexts/UserProfileContext';
@@ -27,6 +27,7 @@ import {
   suggestRateName,
 } from '@/lib/onboardingRateMapping';
 import { inferShiftTypeFromName } from '@/lib/shiftTypeInference';
+import { useAutoSave } from '@/hooks/useAutoSave';
 
 const MAX_NAME_LEN = 60;
 const MAX_AMOUNT = 100000;
@@ -100,7 +101,6 @@ export default function SettingsRateCardPage() {
   const { profile, updateProfile, profileLoading } = useUserProfile();
   const [preference, setPreference] = useState<BillingPreference>('per_day');
   const [rates, setRates] = useState<DefaultRate[]>([]);
-  const [saving, setSaving] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const [errors, setErrors] = useState<RateErrors>({});
 
@@ -203,40 +203,36 @@ export default function SettingsRateCardPage() {
     }
   };
 
-  const handleSave = async () => {
-    const scoped = rates.filter(r =>
-      preference === 'per_day' ? r.basis === 'daily' : r.basis === 'hourly',
-    );
-    const { errors: validationErrors, firstMessage } = validateRates(scoped);
-    setErrors(validationErrors);
-    if (Object.keys(validationErrors).length > 0) {
-      toast.error(firstMessage || 'Please fix the highlighted fields');
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const cleaned = rates
-        .filter(r => r.name.trim() && r.amount > 0)
-        .map((r, i) => ({
-          ...r,
-          sort_order: i,
-          name: r.name.trim(),
-          shift_type: r.shift_type?.trim() || undefined,
-        }));
-      await updateProfile({
-        default_rates: cleaned,
-        default_billing_preference: preference,
-      });
-      setRates(cleaned);
-      toast.success('Rate Card saved');
-    } catch (e) {
-      console.error(e);
-      toast.error('Could not save Rate Card');
-    } finally {
-      setSaving(false);
-    }
-  };
+  // Auto-save rate card whenever the user edits rates or preference.
+  // Validates silently and skips saving when there are validation errors;
+  // the field-level error messages remain visible to the user.
+  useAutoSave(
+    { rates, preference },
+    async ({ rates: r, preference: p }) => {
+      const scoped = r.filter(x => (p === 'per_day' ? x.basis === 'daily' : x.basis === 'hourly'));
+      const { errors: validationErrors } = validateRates(scoped);
+      setErrors(validationErrors);
+      if (Object.keys(validationErrors).length > 0) return;
+      try {
+        const cleaned = r
+          .filter(x => x.name.trim() && x.amount > 0)
+          .map((x, i) => ({
+            ...x,
+            sort_order: i,
+            name: x.name.trim(),
+            shift_type: x.shift_type?.trim() || undefined,
+          }));
+        await updateProfile({
+          default_rates: cleaned,
+          default_billing_preference: p,
+        });
+      } catch (e) {
+        console.error(e);
+        toast.error('Could not save Rate Card');
+      }
+    },
+    { enabled: initialized && !!profile, delay: 800 },
+  );
 
   const scopedRates = rates.filter(r =>
     preference === 'per_day' ? r.basis === 'daily' : r.basis === 'hourly',
@@ -251,14 +247,11 @@ export default function SettingsRateCardPage() {
       <SettingsNav />
       <div className="page-header">
         <h1 className="page-title">Rate Card</h1>
-        <Button size="sm" onClick={handleSave} disabled={saving || profileLoading}>
-          <Save className="mr-1 h-4 w-4" /> {saving ? 'Saving…' : 'Save'}
-        </Button>
       </div>
       <p className="text-sm text-muted-foreground mb-6 max-w-2xl">
         Optional. Clinic-specific rates always take priority. If you charge the same rates
         across most clinics, save them here once and they'll show up as quick picks when you
-        add a shift.
+        add a shift. Changes save automatically.
       </p>
 
       <div className="max-w-3xl space-y-6">
