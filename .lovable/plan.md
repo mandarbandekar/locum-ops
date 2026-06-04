@@ -1,47 +1,40 @@
 ## Goal
-Right after a user marks an invoice as paid (via Record Payment → fully paid), give them a clear, prominent **Download Paid Invoice** action so they can immediately save the PDF with the new PAID stamp. Today the only paid-state download lives in the bottom action bar as a secondary outline button — easy to miss right after the success moment.
+
+Expose detailed, filterable, downloadable mileage reports directly inside the Mileage Tracker tab (currently only available inside CPA Prep packet). Rename the tab "Mileage" → "Mileage Tracker".
 
 ## Changes
 
-### 1. `src/components/invoice/InvoiceEditPanel.tsx` — Paid banner becomes actionable
-Currently (lines ~568–573) the "Paid in full" banner is a static green pill. Upgrade it to a row with a primary **Download Paid Invoice** button on the right:
+### 1. Rename tab label
+`src/pages/ExpensesPage.tsx` — Change `<TabsTrigger value="mileage">` label from "Mileage" to "Mileage Tracker". Keep `value="mileage"` unchanged.
 
-```
-[ ✓ Paid in full · Mar 14, 2026 ]                [ ⬇ Download Paid Invoice ]
-```
+### 2. New component: `MileageReportCard.tsx` (in `src/components/expenses/`)
+A collapsible section rendered inside `MileageTrackerTab` (populated state, below "Money claimed"). Provides:
 
-- Reuse the existing `downloadInvoicePdf` helper logic. Easiest path: lift the helper from `InvoiceActionBar.tsx` into a small shared module `src/lib/invoicePdf.ts` (`downloadInvoicePdf(invoiceId, invoiceNumber)`), and import it in both places. No behavior change to the bar.
-- Button: `variant="default"`, `size="sm"`, `Download` icon, loading spinner via local `pdfLoading` state, same `requireBusinessInfo` guard already used in the bar (duplicate the small helper or import it; simplest: inline a minimal check on `profile.company_name`/`company_address` with a toast pointing to Settings → Profile).
-- On success: toast `"Paid invoice downloaded"` with filename.
+**Filters (toolbar at top):**
+- **Date range picker** (matches uploaded screenshot pattern): preset chips (This month, Last month, Last 3 months, Year to date, Last 365 days, Last year) + a "Month" mode (year navigator + 12 month buttons) + "Custom range" mode (two date inputs). Default = This month.
+- **Clinic filter**: multi-select dropdown of clinics that have mileage in the active range (defaults to "All clinics").
+- **Status filter**: All / Confirmed only / Draft only (default Confirmed only — matches CPA semantics).
 
-### 2. `src/components/invoice/InvoiceEditPanel.tsx` — Post-payment success toast
-In `handleRecordPayment` (line ~562) when `isPaidNow` is true, replace the plain `toast.success('Invoice paid in full!')` with a toast that includes an action button:
+**Summary strip** (3 stat tiles): Trips, Total miles, Deduction $ (recomputed at IRS rate of the active year).
 
-```ts
-toast.success('Invoice paid in full!', {
-  description: 'The PDF now shows a PAID stamp and $0.00 balance due.',
-  action: {
-    label: 'Download paid invoice',
-    onClick: () => downloadInvoicePdf(invoice.id, invoice.invoice_number),
-  },
-  duration: 8000,
-});
-```
+**Detail table:** Date · Clinic · Route description · Miles · Deduction. Sorted by date desc. Empty state when no trips in range.
 
-This gives the user a one-tap download at the exact moment of marking paid, without forcing them to scroll to the bottom action bar.
+**Download button** (top-right): "Download CSV" — generates a CSV matching the existing `mileageCsv` style but scoped to current filters. Filename: `mileage-report_{range-label}.csv` (e.g. `mileage-report_2026-06.csv`, `mileage-report_2026-01-01_to_2026-03-31.csv`).
 
-### 3. `src/components/invoice/InvoiceActionBar.tsx` — Promote in paid state
-In the paid-state block (lines ~388–410), change **Download Invoice PDF** from `variant="outline"` to `variant="default"` so it becomes the primary CTA on the bottom bar for paid invoices (parity with how Record Payment is primary for sent invoices). The share link button stays outline. No layout/markup changes beyond the variant.
+### 3. Helper in `src/lib/cpaPrepExports.ts` (or a new sibling `src/lib/mileageReportCsv.ts`)
+Add `buildFilteredMileageCsv(expenses, facilities, { start, end, clinicIds, status }, irsRateCents, rangeLabel)` returning a CSV string. Reuse `toCsv`, `fmt`, `fmtMiles`, `fmtRate` helpers. CSV includes header (range + IRS rate), summary totals, then per-trip rows.
+
+### 4. Wire into `MileageTrackerTab.tsx`
+- Pass through `expenses` (already received), `confirmedMileageExpenses`, `draftMileageExpenses`, `config.irs_mileage_rate_cents`, `facilities` (from `useData()` already there).
+- Insert `<MileageReportCard ... />` between the "Money claimed" section and the dialogs.
 
 ## Out of scope
-- No changes to the PDF edge function (already renders the PAID stamp and Balance Due from the prior change).
-- No changes to `InvoicePreview`, `PublicInvoicePage`, or DB schema.
-- No new download endpoint — reuse the existing `generate-invoice-pdf` function.
+- No backend / schema changes (all client-side filtering and CSV generation).
+- Does not touch the CPA Prep packet flow — that continues to work as-is.
+- No PDF export (CSV only, matching existing pattern).
 
-## Verification
-- Open a sent invoice, click Record Payment, fully pay it.
-  - The success toast appears with a **Download paid invoice** action that downloads the PDF with the PAID stamp.
-  - The "Paid in full" banner at the top of the edit panel now has a **Download Paid Invoice** button on the right; clicking it downloads the same PDF.
-  - The bottom action bar shows **Download Invoice PDF** as the primary (filled) button.
-- Open an already-paid invoice cold: banner + action bar both surface the download prominently; toast does not fire (no payment recorded this session).
-- Open a draft or sent (unpaid) invoice: no behavior change — no paid banner, no toast action, bottom-bar layout unchanged.
+## Technical notes
+- Date filtering uses string comparison on `expense_date` (already 'YYYY-MM-DD' per project memory) to avoid TZ shifts.
+- "Year to date" = Jan 1 of current year → today (clinic-tz unnecessary; expense_date is date-only).
+- Preset chips use existing `Button` + `cn` semantic tokens — no new colors.
+- Picker UI built with existing `Popover` + `Tabs` primitives; no new deps.
