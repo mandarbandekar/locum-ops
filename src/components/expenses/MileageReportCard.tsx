@@ -132,10 +132,13 @@ export default function MileageReportCard({ expenses, facilities, irsRateCents }
             <h3 className="text-sm font-semibold">Mileage Report</h3>
             <p className="text-[11px] text-muted-foreground">Filter, review, and download detailed mileage for any period.</p>
           </div>
-          <Button size="sm" onClick={handleDownload} disabled={trips.length === 0} className="gap-1.5">
-            <Download className="h-3.5 w-3.5" />
-            Download CSV
-          </Button>
+          <SectionExportMenu
+            label="Mileage Report"
+            buildPdf={() => buildFilteredMileagePdf(trips, range.label, irsRateCents)}
+            buildCsv={() => buildFilteredMileageCsv(trips, range.label, irsRateCents)}
+            filename={safeFilename}
+            disabled={trips.length === 0}
+          />
         </div>
 
         {/* Filters */}
