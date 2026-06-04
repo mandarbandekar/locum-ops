@@ -15,7 +15,7 @@
  */
 
 import type { LucideIcon } from 'lucide-react';
-import { CalendarDays, FileText, MessageCircle, NotebookPen, Tag, Zap } from 'lucide-react';
+import { CalendarDays, Car, FileText, MessageCircle, NotebookPen, Tag, Zap } from 'lucide-react';
 import type { UserProfile } from '@/contexts/UserProfileContext';
 import type { Shift, Facility } from '@/types';
 
@@ -63,6 +63,16 @@ export const ANNOUNCEMENT_HIDE_PREFIX = 'announcement-hidden:';
  * Audience predicates are evaluated with the live context object.
  */
 export const announcements: Announcement[] = [
+  {
+    id: 'mileage-tracker-redesign-2026-06',
+    title: 'Mileage Tracker just got sharper',
+    body: 'Your drives are now organized under Business Drives and Mileage Reports. See money found this year at a glance, add miles you tracked elsewhere, and generate cleaner PDF reports with year-to-date totals.',
+    publishedAt: '2026-06-04',
+    icon: Car,
+    cta: { label: 'Open tracker', to: '/expenses?tab=mileage' },
+    priority: 'highlight',
+    audience: 'all',
+  },
   {
     id: 'clinic-notes-2026-06',
     title: 'Keep track of clinic impressions',
