@@ -13,6 +13,9 @@ import MileageReportCard from './MileageReportCard';
 import AddExpenseDialog from './AddExpenseDialog';
 import type { Expense } from '@/hooks/useExpenses';
 
+const MILEAGE_ONBOARDING_KEY = 'locumops_mileage_tab_onboarding_dismissed';
+const STARTING_CHIP_DISMISSED_KEY = 'locumops_mileage_starting_chip_dismissed';
+
 
 interface Props {
   expenses: Expense[];
