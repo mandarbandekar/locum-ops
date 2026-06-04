@@ -80,8 +80,7 @@ export function DashboardPromptCards({
     // Calendar: 3+ shifts logged
     if (!dismissed.calendar && shiftCount >= 3) return PROMPTS[1];
 
-    // Notifications: at least 1 sent invoice
-    if (!dismissed.notifications && hasSentInvoice) return PROMPTS[2];
+    // Notifications prompt hidden — reminders functionality is disabled.
 
     return null;
   }, [gettingStartedDone, dismissed, credentialCount, shiftCount, hasSentInvoice, userCreatedAt]);
