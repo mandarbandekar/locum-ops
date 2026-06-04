@@ -96,86 +96,218 @@ export function buildFilteredMileageCsv(
   return toCsv(rows);
 }
 
+export interface YtdContext {
+  miles: number;
+  deductionCents: number;
+  year: number;
+}
+
 export function buildFilteredMileagePdf(
   trips: FilteredTrip[],
   rangeLabel: string,
   irsRateCents: number,
+  ytd?: YtdContext,
 ): jsPDF {
   const doc = new jsPDF({ unit: 'pt', format: 'letter' });
   const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const marginX = 40;
+  const contentW = pageW - marginX * 2;
   const totalMiles = trips.reduce((s, t) => s + t.miles, 0);
   const totalDeduction = trips.reduce((s, t) => s + t.deductionCents, 0);
 
-  // Header
+  // ───────── Header band ─────────
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.setTextColor(26, 92, 107); // brand teal
+  doc.text('LocumOps', marginX, 50);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(120);
+  doc.text(
+    `Generated ${new Date().toLocaleDateString('en-US', { dateStyle: 'long' })}`,
+    pageW - marginX,
+    50,
+    { align: 'right' }
+  );
+  // Hairline under header
+  doc.setDrawColor(220);
+  doc.setLineWidth(0.5);
+  doc.line(marginX, 60, pageW - marginX, 60);
+
+  // ───────── Title ─────────
+  doc.setTextColor(20);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(18);
-  doc.text('LocumOps', 40, 48);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
-  doc.setTextColor(120);
-  doc.text(`Generated ${new Date().toLocaleDateString('en-US', { dateStyle: 'long' })}`, pageW - 40, 48, { align: 'right' });
-  doc.setTextColor(0);
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(15);
-  doc.text(`Mileage Report — ${rangeLabel}`, 40, 80);
+  doc.text(pdfSafe(`Mileage Report — ${rangeLabel}`), marginX, 88);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
-  doc.setTextColor(100);
-  doc.text(`IRS standard rate applied: ${fmtRate(irsRateCents)} per mile`, 40, 96);
-  doc.setTextColor(0);
+  doc.setTextColor(110);
+  doc.text(
+    `IRS standard rate applied: ${fmtRate(irsRateCents)} per mile`,
+    marginX,
+    104
+  );
+  doc.setTextColor(20);
 
-  // Summary
+  // ───────── Period summary (3 boxes) ─────────
   autoTable(doc, {
-    startY: 112,
+    startY: 120,
     head: [['Trips', 'Total miles', 'Total deduction']],
-    body: [[String(trips.length), fmtMiles(totalMiles), fmt(totalDeduction)]],
+    body: [[
+      String(trips.length),
+      fmtMiles(totalMiles),
+      fmt(totalDeduction),
+    ]],
     theme: 'grid',
-    headStyles: { fillColor: [240, 240, 240], textColor: 40, fontStyle: 'bold' },
-    styles: { fontSize: 10, cellPadding: 6 },
-    margin: { left: 40, right: 40 },
-  });
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const afterSummary = (doc as any).lastAutoTable?.finalY ?? 140;
-
-  // Detail
-  autoTable(doc, {
-    startY: afterSummary + 16,
-    head: [['Date', 'Clinic', 'Route', 'Miles', 'Deduction', 'Status']],
-    body: trips.map(t => [
-      t.date,
-      t.clinic,
-      t.description || '—',
-      fmtMiles(t.miles),
-      fmt(t.deductionCents),
-      t.status,
-    ]),
-    theme: 'striped',
-    headStyles: { fillColor: [33, 37, 41], textColor: 255, fontStyle: 'bold' },
-    styles: { fontSize: 9, cellPadding: 5 },
-    columnStyles: {
-      0: { cellWidth: 70 },
-      3: { halign: 'right', cellWidth: 50 },
-      4: { halign: 'right', cellWidth: 70 },
-      5: { cellWidth: 60 },
+    tableWidth: contentW,
+    headStyles: {
+      fillColor: [243, 244, 246],
+      textColor: 60,
+      fontStyle: 'bold',
+      fontSize: 9,
+      halign: 'left',
     },
-    margin: { left: 40, right: 40 },
+    bodyStyles: { fontSize: 12, fontStyle: 'bold', cellPadding: 8, textColor: 20 },
+    columnStyles: {
+      0: { cellWidth: contentW / 3 },
+      1: { cellWidth: contentW / 3 },
+      2: { cellWidth: contentW / 3 },
+    },
+    margin: { left: marginX, right: marginX },
   });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let cursorY = (doc as any).lastAutoTable?.finalY ?? 160;
 
-  // Footer
+  // ───────── YTD context strip ─────────
+  if (ytd) {
+    cursorY += 14;
+    doc.setFillColor(249, 250, 251);
+    doc.setDrawColor(229, 231, 235);
+    doc.roundedRect(marginX, cursorY, contentW, 38, 4, 4, 'FD');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(110);
+    doc.text(`${ytd.year} YEAR-TO-DATE`, marginX + 12, cursorY + 14);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11);
+    doc.setTextColor(20);
+    doc.text(
+      `${fmtMiles(ytd.miles)} miles tracked`,
+      marginX + 12,
+      cursorY + 30
+    );
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(26, 92, 107);
+    doc.text(
+      `${fmt(ytd.deductionCents)} deduction`,
+      pageW - marginX - 12,
+      cursorY + 30,
+      { align: 'right' }
+    );
+    doc.setTextColor(20);
+    cursorY += 38;
+  }
+
+  // ───────── Trips detail ─────────
+  cursorY += 18;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(20);
+  doc.text('Trip detail', marginX, cursorY);
+  cursorY += 6;
+
+  if (trips.length === 0) {
+    cursorY += 24;
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(10);
+    doc.setTextColor(140);
+    doc.text('No drives in this range.', marginX, cursorY);
+  } else {
+    // Column widths sum to contentW (~ 532pt for letter / 40pt margins)
+    const colDate = 64;
+    const colMiles = 48;
+    const colDeduction = 72;
+    const colStatus = 60;
+    const remaining = contentW - colDate - colMiles - colDeduction - colStatus;
+    const colClinic = Math.round(remaining * 0.42);
+    const colRoute = remaining - colClinic;
+
+    autoTable(doc, {
+      startY: cursorY + 4,
+      head: [['Date', 'Clinic', 'Route', 'Miles', 'Deduction', 'Status']],
+      body: trips.map(t => [
+        t.date,
+        pdfSafe(t.clinic),
+        pdfSafe(t.description) || '—',
+        fmtMiles(t.miles),
+        fmt(t.deductionCents),
+        t.status.charAt(0).toUpperCase() + t.status.slice(1),
+      ]),
+      foot: [[
+        'Totals',
+        '',
+        '',
+        fmtMiles(totalMiles),
+        fmt(totalDeduction),
+        '',
+      ]],
+      theme: 'striped',
+      tableWidth: contentW,
+      headStyles: {
+        fillColor: [33, 37, 41],
+        textColor: 255,
+        fontStyle: 'bold',
+        fontSize: 9,
+      },
+      bodyStyles: {
+        fontSize: 9,
+        cellPadding: 6,
+        textColor: 30,
+        overflow: 'linebreak',
+        valign: 'middle',
+      },
+      footStyles: {
+        fillColor: [243, 244, 246],
+        textColor: 20,
+        fontStyle: 'bold',
+        fontSize: 9,
+      },
+      alternateRowStyles: { fillColor: [250, 250, 252] },
+      columnStyles: {
+        0: { cellWidth: colDate },
+        1: { cellWidth: colClinic },
+        2: { cellWidth: colRoute },
+        3: { cellWidth: colMiles, halign: 'right' },
+        4: { cellWidth: colDeduction, halign: 'right' },
+        5: { cellWidth: colStatus },
+      },
+      margin: { left: marginX, right: marginX, bottom: 50 },
+    });
+  }
+
+  // ───────── Footer (on every page) ─────────
   const disclaimer = 'For planning purposes only. Not tax advice. Confirm all figures with your CPA.';
   const pageCount = doc.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
+    doc.setDrawColor(229, 231, 235);
+    doc.setLineWidth(0.5);
+    doc.line(marginX, pageH - 36, pageW - marginX, pageH - 36);
     doc.setFont('helvetica', 'italic');
     doc.setFontSize(8);
     doc.setTextColor(140);
-    doc.text(disclaimer, 40, doc.internal.pageSize.getHeight() - 24);
-    doc.text(`Page ${i} of ${pageCount}`, pageW - 40, doc.internal.pageSize.getHeight() - 24, { align: 'right' });
+    doc.text(disclaimer, marginX, pageH - 22);
+    doc.text(
+      `Page ${i} of ${pageCount}`,
+      pageW - marginX,
+      pageH - 22,
+      { align: 'right' }
+    );
     doc.setTextColor(0);
   }
 
   return doc;
 }
+
