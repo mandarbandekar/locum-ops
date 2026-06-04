@@ -244,76 +244,69 @@ export default function MileageTrackerTab({
         </CardContent>
       </Card>
 
-      {/* ============================================================
-          CATEGORY · Money Claimed
-          ============================================================ */}
-      <section className="pt-4 border-t border-border/60">
-        <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground mb-3">
-          Money Claimed
-        </p>
-        <div>
-          <h3 className="text-sm font-semibold mb-2 text-foreground">Business Drives</h3>
-          {confirmedMileageExpenses.length === 0 ? (
-            <Card>
-              <CardContent className="py-10 px-6 text-center">
-                <div
-                  className="mx-auto mb-4 flex items-center justify-center rounded-full"
-                  style={{ width: 48, height: 48, background: 'rgba(94, 168, 122, 0.12)' }}
+      {/* Money claimed (formerly Confirmed Mileage Log) */}
+      <div>
+        <h3 className="text-sm font-semibold mb-2 text-muted-foreground">Money claimed</h3>
+        {confirmedMileageExpenses.length === 0 ? (
+          <Card>
+            <CardContent className="py-10 px-6 text-center">
+              <div
+                className="mx-auto mb-4 flex items-center justify-center rounded-full"
+                style={{ width: 48, height: 48, background: 'rgba(94, 168, 122, 0.12)' }}
+              >
+                <Route className="h-5 w-5" style={{ color: '#2D6B4A' }} />
+              </div>
+              <p className="text-[14px] font-medium text-foreground">
+                Find money you've been leaving on the table
+              </p>
+              <p className="mt-1.5 mx-auto max-w-[400px] text-[12px] text-muted-foreground leading-relaxed">
+                Relief vets on Locum Ops typically find <span className="font-medium text-foreground">$4,000–$8,000</span> in mileage deductions per year. Every confirmed trip lands here — money in your pocket at tax time.
+              </p>
+              <div className="mt-5">
+                <Button
+                  onClick={() => navigate('/settings/profile')}
+                  className="bg-[#1A5C6B] text-white hover:bg-[#1A5C6B]/90 text-[14px] font-medium h-10 px-5"
                 >
-                  <Route className="h-5 w-5" style={{ color: '#2D6B4A' }} />
-                </div>
-                <p className="text-[14px] font-medium text-foreground">
-                  Find money you've been leaving on the table
-                </p>
-                <p className="mt-1.5 mx-auto max-w-[400px] text-[12px] text-muted-foreground leading-relaxed">
-                  Relief vets on Locum Ops typically find <span className="font-medium text-foreground">$4,000–$8,000</span> in mileage deductions per year. Every confirmed trip lands here — money in your pocket at tax time.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-2">
-              {confirmedMileageExpenses.map(exp => (
-                <Card key={exp.id} className="hover:shadow-sm transition-shadow">
-                  <CardContent className="py-3 px-4 flex items-center gap-3">
-                    <Car className="h-4 w-4 text-primary shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-medium truncate">
-                          {exp.facility_id && facilityMap[exp.facility_id] ? facilityMap[exp.facility_id] : 'Mileage'}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(exp.expense_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                        </span>
-                        {exp.route_description && (
-                          <span className="text-[10px] text-muted-foreground truncate">· {exp.route_description}</span>
-                        )}
-                      </div>
+                  Set home address →
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-2">
+            {confirmedMileageExpenses.map(exp => (
+              <Card key={exp.id} className="hover:shadow-sm transition-shadow">
+                <CardContent className="py-3 px-4 flex items-center gap-3">
+                  <Car className="h-4 w-4 text-primary shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-medium truncate">
+                        {exp.facility_id && facilityMap[exp.facility_id] ? facilityMap[exp.facility_id] : 'Mileage'}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(exp.expense_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </span>
+                      {exp.route_description && (
+                        <span className="text-[10px] text-muted-foreground truncate">· {exp.route_description}</span>
+                      )}
                     </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-sm font-medium">{exp.mileage_miles ?? 0} mi</p>
-                      <p className="text-[10px] text-muted-foreground">{fmt(exp.amount_cents)}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-sm font-medium">{exp.mileage_miles ?? 0} mi</p>
+                    <p className="text-[10px] text-muted-foreground">{fmt(exp.amount_cents)}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
 
-      {/* ============================================================
-          CATEGORY · Mileage Reports
-          ============================================================ */}
-      <section className="pt-4 border-t border-border/60">
-        <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground mb-3">
-          Mileage Reports
-        </p>
-        <MileageReportCard
-          expenses={expenses}
-          facilities={facilities}
-          irsRateCents={config.irs_mileage_rate_cents}
-        />
-      </section>
+      <MileageReportCard
+        expenses={expenses}
+        facilities={facilities}
+        irsRateCents={config.irs_mileage_rate_cents}
+      />
 
 
 
