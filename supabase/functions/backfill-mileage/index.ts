@@ -118,7 +118,7 @@ Deno.serve(async (req) => {
     const facilityMap: Record<string, any> = {};
     (facilitiesRes.data || []).forEach((f: any) => { facilityMap[f.id] = f; });
 
-    const irsMileageRateCents = configRes.data?.irs_mileage_rate_cents || 70;
+    const irsMileageRateCents = Number(configRes.data?.irs_mileage_rate_cents) || 72.5;
 
     // Calculate distances for eligible shifts
     // Cache distances per facility to avoid redundant API calls

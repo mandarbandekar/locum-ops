@@ -36,7 +36,7 @@ export function useBackfillMileage(onComplete?: () => void) {
         facility_name: facilityMap[s.facility_id] || 'Unknown Clinic',
         shift_date: s.start_datetime.split('T')[0],
         estimated_miles: Math.round((15 + Math.random() * 40) * 10) / 10 * 2,
-        estimated_deduction_cents: Math.round((15 + Math.random() * 40) * 2 * 70),
+        estimated_deduction_cents: Math.round((15 + Math.random() * 40) * 2 * 72.5),
       }));
       setEligible(mock);
       setScanning(false);

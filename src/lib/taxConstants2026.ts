@@ -18,7 +18,7 @@ export const TAX_YEAR_CONFIG = {
   seTaxRate: 0.153,
   additionalMedicareRate: 0.009,
   additionalMedicareThreshold: { single: 200000, married_joint: 250000, head_of_household: 200000 } as Record<string, number>,
-  standardMileageRate: 0.70, // 2026 IRS standard mileage rate (Notice 2025-83)
+  standardMileageRate: 0.725, // 2026 IRS standard mileage rate
 };
 
 // ── Self-Employment ─────────────────────────────
