@@ -36,7 +36,7 @@ const HOW_IT_WORKS_STEPS = [
 ];
 
 const COMMON_CATEGORIES = [
-  { icon: Car, label: 'Mileage', detail: '$0.70/mi IRS rate', color: 'text-blue-600' },
+  { icon: Car, label: 'Mileage', detail: '$0.725/mi IRS rate', color: 'text-blue-600' },
   { icon: GraduationCap, label: 'CE & Licensing', detail: '100% deductible', color: 'text-purple-600' },
   { icon: ShieldCheck, label: 'Insurance', detail: 'Malpractice, health', color: 'text-emerald-600' },
   { icon: Utensils, label: 'Business Meals', detail: '50% deductible', color: 'text-orange-600' },
