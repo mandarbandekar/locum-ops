@@ -5,10 +5,8 @@ import { useUserProfile, type CurrentTool, type FacilitiesCountBand, type Invoic
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Save } from 'lucide-react';
-import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAutoSave } from '@/hooks/useAutoSave';
 
 const TOOL_OPTIONS: { value: CurrentTool; label: string }[] = [
   { value: 'sheets_excel', label: 'Google Sheets / Excel' },
@@ -25,35 +23,30 @@ export default function SettingsBusinessTaxesPage() {
   const [currentTools, setCurrentTools] = useState<CurrentTool[]>(profile?.current_tools || []);
   const [facilitiesBand, setFacilitiesBand] = useState<FacilitiesCountBand>(profile?.facilities_count_band || 'band_1_3');
   const [invoicesBand, setInvoicesBand] = useState<InvoicesPerMonthBand>(profile?.invoices_per_month_band || 'inv_1_3');
-  const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('tracker');
 
   const toggleTool = (tool: CurrentTool) => {
     setCurrentTools(prev => prev.includes(tool) ? prev.filter(t => t !== tool) : [...prev, tool]);
   };
 
-  const handleSave = async () => {
-    setSaving(true);
-    await updateProfile({
+  useAutoSave(
+    {
       current_tools: currentTools,
       facilities_count_band: facilitiesBand,
       invoices_per_month_band: invoicesBand,
-    });
-    setSaving(false);
-    toast.success('Business settings saved');
-  };
+    },
+    (payload) => updateProfile(payload),
+    { enabled: !!profile },
+  );
 
   return (
     <div>
       <SettingsNav />
       <div className="page-header">
         <h1 className="page-title">Business & Taxes</h1>
-        <Button size="sm" onClick={handleSave} disabled={saving}>
-          <Save className="mr-1 h-4 w-4" /> {saving ? 'Saving…' : 'Save'}
-        </Button>
       </div>
       <p className="text-sm text-muted-foreground mb-6">
-        Track income, due dates, and prep details for your accountant.
+        Track income, due dates, and prep details for your accountant. Changes save automatically.
       </p>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="max-w-2xl">

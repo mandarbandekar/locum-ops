@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { SettingsNav } from '@/components/SettingsNav';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,8 +9,8 @@ import { GooglePlacesAutocomplete } from '@/components/GooglePlacesAutocomplete'
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { US_TIMEZONES } from '@/lib/usTimezones';
-import { toast } from 'sonner';
-import { Save, MapPin } from 'lucide-react';
+import { MapPin } from 'lucide-react';
+import { useAutoSave } from '@/hooks/useAutoSave';
 
 const PROFESSIONS: { value: Profession; label: string }[] = [
   { value: 'vet', label: 'Veterinarian' },
@@ -48,11 +47,8 @@ export default function SettingsProfilePage() {
     if (sameAsCompany) setHomeAddress(companyAddress);
   }, [sameAsCompany, companyAddress]);
   
-  const [saving, setSaving] = useState(false);
-
-  const handleSave = async () => {
-    setSaving(true);
-    await updateProfile({
+  useAutoSave(
+    {
       first_name: firstName.trim(),
       last_name: lastName.trim(),
       company_name: companyName.trim(),
@@ -64,23 +60,19 @@ export default function SettingsProfilePage() {
       timezone_pinned: timezonePinned,
       currency,
       profession,
-      
-    });
-    setSaving(false);
-    toast.success('Profile saved');
-  };
+    },
+    (payload) => updateProfile(payload),
+    { enabled: !!profile },
+  );
 
   return (
     <div>
       <SettingsNav />
       <div className="page-header">
         <h1 className="page-title">Profile</h1>
-        <Button size="sm" onClick={handleSave} disabled={saving}>
-          <Save className="mr-1 h-4 w-4" /> {saving ? 'Saving…' : 'Save'}
-        </Button>
       </div>
       <p className="text-sm text-muted-foreground mb-6">
-        Your identity and business details. These act as defaults for invoices, outreach, and exports.
+        Your identity and business details. Changes save automatically.
       </p>
 
       <div className="grid gap-6 max-w-2xl">
