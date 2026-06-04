@@ -101,11 +101,7 @@ export default function MileageReportCard({ expenses, facilities, irsRateCents }
 
   const fmt$ = (c: number) => `$${(c / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-  function handleDownload() {
-    const csv = buildFilteredMileageCsv(trips, range.label, irsRateCents);
-    const safe = range.label.replace(/[^\w-]+/g, '_');
-    downloadBlob(csv, `mileage-report_${safe}.csv`, 'text/csv;charset=utf-8;');
-  }
+  const safeFilename = `mileage-report_${range.label.replace(/[^\w-]+/g, '_')}`;
 
   function toggleClinic(id: string) {
     setClinicIds(prev => {
