@@ -370,9 +370,9 @@ export function InvoiceActionBar({
         {isPaid && (
           <div className="flex w-full sm:w-auto items-center justify-end gap-2">
             {wrapMissing(
-              <Button variant="outline" size="sm" onClick={handleDownloadPdf} disabled={pdfLoading || missingBusinessInfo} className="shrink-0 hidden sm:inline-flex">
+              <Button variant="default" size="sm" onClick={handleDownloadPdf} disabled={pdfLoading || missingBusinessInfo} className="shrink-0 hidden sm:inline-flex">
                 {pdfLoading ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-1.5 h-3.5 w-3.5" />}
-                <span>Download Invoice PDF</span>
+                <span>Download Paid Invoice</span>
               </Button>
             )}
             {hasShareLink ? (
