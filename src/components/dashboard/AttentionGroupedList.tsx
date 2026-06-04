@@ -66,7 +66,7 @@ export function AttentionGroupedList({ items }: Props) {
                 <div
                   key={`${group.key}-${i}`}
                   className="flex items-center gap-3 py-2 px-2 -mx-2 rounded-lg hover:bg-muted/40 transition-colors cursor-pointer group"
-                  onClick={() => navigate(item.link)}
+                  onClick={() => (item.onClick ? item.onClick() : navigate(item.link))}
                 >
                   <div className="p-1.5 rounded-md bg-muted shrink-0">
                     <item.icon className="h-3.5 w-3.5 text-muted-foreground" />
