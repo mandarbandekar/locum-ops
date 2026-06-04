@@ -6,12 +6,12 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Download, Filter, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Calendar, Filter, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Expense } from '@/hooks/useExpenses';
 import type { Facility } from '@/types';
-import { filterMileageTrips, buildFilteredMileageCsv, type MileageFilter } from '@/lib/mileageReportCsv';
-import { downloadBlob } from '@/lib/cpaPrepExports';
+import { filterMileageTrips, buildFilteredMileageCsv, buildFilteredMileagePdf, type MileageFilter } from '@/lib/mileageReportCsv';
+import SectionExportMenu from '@/components/cpa-prep/SectionExportMenu';
 
 interface Props {
   expenses: Expense[];
@@ -101,11 +101,7 @@ export default function MileageReportCard({ expenses, facilities, irsRateCents }
 
   const fmt$ = (c: number) => `$${(c / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-  function handleDownload() {
-    const csv = buildFilteredMileageCsv(trips, range.label, irsRateCents);
-    const safe = range.label.replace(/[^\w-]+/g, '_');
-    downloadBlob(csv, `mileage-report_${safe}.csv`, 'text/csv;charset=utf-8;');
-  }
+  const safeFilename = `mileage-report_${range.label.replace(/[^\w-]+/g, '_')}`;
 
   function toggleClinic(id: string) {
     setClinicIds(prev => {
@@ -136,10 +132,13 @@ export default function MileageReportCard({ expenses, facilities, irsRateCents }
             <h3 className="text-sm font-semibold">Mileage Report</h3>
             <p className="text-[11px] text-muted-foreground">Filter, review, and download detailed mileage for any period.</p>
           </div>
-          <Button size="sm" onClick={handleDownload} disabled={trips.length === 0} className="gap-1.5">
-            <Download className="h-3.5 w-3.5" />
-            Download CSV
-          </Button>
+          <SectionExportMenu
+            label="Mileage Report"
+            buildPdf={() => buildFilteredMileagePdf(trips, range.label, irsRateCents)}
+            buildCsv={() => buildFilteredMileageCsv(trips, range.label, irsRateCents)}
+            filename={safeFilename}
+            disabled={trips.length === 0}
+          />
         </div>
 
         {/* Filters */}
