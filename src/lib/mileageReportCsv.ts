@@ -1,6 +1,8 @@
 import type { Expense } from '@/hooks/useExpenses';
 import type { Facility } from '@/types';
 import { toCsv } from '@/lib/cpaPrepExports';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const fmt = (c: number) => `$${(c / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const fmtMiles = (n: number) => (Math.round(n * 10) / 10).toLocaleString('en-US');
