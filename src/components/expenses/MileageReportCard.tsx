@@ -153,7 +153,7 @@ export default function MileageReportCard({ expenses, facilities, irsRateCents }
           </div>
           <SectionExportMenu
             label="Mileage Report"
-            buildPdf={() => buildFilteredMileagePdf(trips, range.label, irsRateCents)}
+            buildPdf={() => buildFilteredMileagePdf(trips, range.label, irsRateCents, ytdContext)}
             buildCsv={() => buildFilteredMileageCsv(trips, range.label, irsRateCents)}
             filename={safeFilename}
             disabled={trips.length === 0}
