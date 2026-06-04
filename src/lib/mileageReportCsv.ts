@@ -8,6 +8,22 @@ const fmt = (c: number) => `$${(c / 100).toLocaleString('en-US', { minimumFracti
 const fmtMiles = (n: number) => (Math.round(n * 10) / 10).toLocaleString('en-US');
 const fmtRate = (cents: number) => `$${(cents / 100).toFixed(3)}`;
 
+/**
+ * jsPDF default Helvetica uses WinAnsi (CP1252) encoding which cannot render
+ * characters like → (U+2192). When that happens, glyphs render with broken
+ * letter-spacing. Sanitize text before sending it to the PDF.
+ */
+function pdfSafe(s: string | null | undefined): string {
+  if (!s) return '';
+  return s
+    .replace(/[\u2192\u2794\u27A1\u279C\u279D\u279E\u27F6\u2B95]/g, '>') // arrows
+    .replace(/[\u2190\u2B05]/g, '<')                                      // left arrows
+    .replace(/[\u2194\u2B0C]/g, '<>')                                     // double arrows
+    .replace(/\u00A0/g, ' ')                                              // nbsp
+    .replace(/[^\x09\x0A\x0D\x20-\x7E\u00A1-\u00FF\u20AC\u2013\u2014\u2018-\u201D\u2022\u2026]/g, '?');
+}
+
+
 export interface MileageFilter {
   start: string; // YYYY-MM-DD
   end: string;   // YYYY-MM-DD inclusive
