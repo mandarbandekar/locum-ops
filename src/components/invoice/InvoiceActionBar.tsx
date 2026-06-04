@@ -7,9 +7,9 @@ import {
 import { format, differenceInDays } from 'date-fns';
 import { toast } from 'sonner';
 import { buildChecklistItems } from '@/components/invoice/ReadyToSendChecklist';
-import { supabase } from '@/integrations/supabase/client';
 import { computeInvoiceStatus } from '@/lib/businessLogic';
 import { isInvoiceOverdue } from '@/lib/invoiceHelpers';
+import { downloadInvoicePdf } from '@/lib/invoicePdf';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -18,24 +18,6 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-
-async function downloadInvoicePdf(invoiceId: string, invoiceNumber: string) {
-  const { data: { session } } = await supabase.auth.getSession();
-  const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-invoice-pdf?invoice_id=${encodeURIComponent(invoiceId)}`;
-  const res = await fetch(url, {
-    headers: {
-      'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-      'Authorization': `Bearer ${session?.access_token || ''}`,
-    },
-  });
-  if (!res.ok) throw new Error('Failed to generate PDF');
-  const blob = await res.blob();
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = `${invoiceNumber || 'invoice'}.pdf`;
-  link.click();
-  URL.revokeObjectURL(link.href);
-}
 
 interface InvoiceActionBarProps {
   invoice: any;
@@ -388,9 +370,9 @@ export function InvoiceActionBar({
         {isPaid && (
           <div className="flex w-full sm:w-auto items-center justify-end gap-2">
             {wrapMissing(
-              <Button variant="outline" size="sm" onClick={handleDownloadPdf} disabled={pdfLoading || missingBusinessInfo} className="shrink-0 hidden sm:inline-flex">
+              <Button variant="default" size="sm" onClick={handleDownloadPdf} disabled={pdfLoading || missingBusinessInfo} className="shrink-0 hidden sm:inline-flex">
                 {pdfLoading ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-1.5 h-3.5 w-3.5" />}
-                <span>Download Invoice PDF</span>
+                <span>Download Paid Invoice</span>
               </Button>
             )}
             {hasShareLink ? (
