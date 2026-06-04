@@ -9,6 +9,7 @@ import { MileageOnboarding } from './MileageOnboarding';
 import { MileageReviewBanner } from './MileageReviewBanner';
 import MileageBackfillCard from './MileageBackfillCard';
 import MileageStartingBalanceDialog from './MileageStartingBalanceDialog';
+import MileageReportCard from './MileageReportCard';
 import AddExpenseDialog from './AddExpenseDialog';
 import type { Expense } from '@/hooks/useExpenses';
 
@@ -300,6 +301,14 @@ export default function MileageTrackerTab({
           </div>
         )}
       </div>
+
+      <MileageReportCard
+        expenses={expenses}
+        facilities={facilities}
+        irsRateCents={config.irs_mileage_rate_cents}
+      />
+
+
 
       <MileageStartingBalanceDialog
         open={showStartingDialog}

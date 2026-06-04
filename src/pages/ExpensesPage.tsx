@@ -30,7 +30,7 @@ export default function ExpensesPage() {
         <TabsList>
           <TabsTrigger value="expenses">Expenses</TabsTrigger>
           <TabsTrigger value="mileage" className="gap-1.5">
-            Mileage
+            Mileage Tracker
             {draftCount > 0 && (
               <Badge variant="destructive" className="h-5 min-w-[20px] px-1.5 text-[10px] font-bold">
                 {draftCount}
