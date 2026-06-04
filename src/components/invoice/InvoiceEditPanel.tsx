@@ -560,16 +560,53 @@ export function InvoiceEditPanel({
       action: isPaidNow ? 'paid_in_full' : 'payment_recorded',
       description: isPaidNow ? `Paid in full — ${fmtMoney(payment.amount)}` : `Payment recorded — ${fmtMoney(payment.amount)} via ${payment.method}`,
     });
-    toast.success(isPaidNow ? 'Invoice paid in full!' : 'Payment recorded');
+    if (isPaidNow) {
+      toast.success('Invoice paid in full!', {
+        description: 'The PDF now shows a PAID stamp and $0.00 balance due.',
+        action: {
+          label: 'Download paid invoice',
+          onClick: () => {
+            downloadInvoicePdf(invoice.id, invoice.invoice_number).catch(() =>
+              toast.error('PDF generation failed', { description: 'Please try again in a moment.' })
+            );
+          },
+        },
+        duration: 8000,
+      });
+    } else {
+      toast.success('Payment recorded');
+    }
     if (isPaidNow && hasTaxProfile) setShowPayNudge(true);
+  };
+
+  const [paidPdfLoading, setPaidPdfLoading] = useState(false);
+  const handleDownloadPaidPdf = async () => {
+    setPaidPdfLoading(true);
+    try {
+      await downloadInvoicePdf(invoice.id, invoice.invoice_number);
+      toast.success('Paid invoice downloaded', {
+        description: `${invoice.invoice_number}.pdf saved to your Downloads folder.`,
+      });
+    } catch {
+      toast.error('PDF generation failed', { description: 'Please try again in a moment.' });
+    } finally {
+      setPaidPdfLoading(false);
+    }
   };
 
   return (
     <div className="space-y-3">
       {/* Paid banner */}
       {isPaid && (
-        <div className="flex items-center justify-center gap-2 p-3 rounded-lg bg-primary/10 text-primary font-medium">
-          <CheckCircle className="h-5 w-5" /> Paid in full
+        <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg bg-primary/10 text-primary font-medium">
+          <div className="flex items-center gap-2">
+            <CheckCircle className="h-5 w-5" />
+            <span>Paid in full{invoice.paid_at ? ` · ${format(new Date(invoice.paid_at), 'MMM d, yyyy')}` : ''}</span>
+          </div>
+          <Button size="sm" onClick={handleDownloadPaidPdf} disabled={paidPdfLoading}>
+            {paidPdfLoading ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-1.5 h-3.5 w-3.5" />}
+            Download Paid Invoice
+          </Button>
         </div>
       )}
 
