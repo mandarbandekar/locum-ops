@@ -10,7 +10,7 @@ import { Calendar, Filter, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Expense } from '@/hooks/useExpenses';
 import type { Facility } from '@/types';
-import { filterMileageTrips, buildFilteredMileageCsv, buildFilteredMileagePdf, type MileageFilter } from '@/lib/mileageReportCsv';
+import { filterMileageTrips, buildFilteredMileageCsv, buildFilteredMileagePdf, type MileageFilter, type YtdContext } from '@/lib/mileageReportCsv';
 import SectionExportMenu from '@/components/cpa-prep/SectionExportMenu';
 
 interface Props {
