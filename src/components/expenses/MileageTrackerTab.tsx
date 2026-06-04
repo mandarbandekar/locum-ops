@@ -9,6 +9,7 @@ import { MileageOnboarding } from './MileageOnboarding';
 import { MileageReviewBanner } from './MileageReviewBanner';
 import MileageBackfillCard from './MileageBackfillCard';
 import MileageStartingBalanceDialog from './MileageStartingBalanceDialog';
+import MileageReportCard from './MileageReportCard';
 import AddExpenseDialog from './AddExpenseDialog';
 import type { Expense } from '@/hooks/useExpenses';
 
