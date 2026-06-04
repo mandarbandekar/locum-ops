@@ -70,6 +70,9 @@ export const seedShifts: Shift[] = [
   { id: 's7', facility_id: 'c2', start_datetime: fmt(setTime(addDays(today, 5), 7)), end_datetime: fmt(setTime(addDays(today, 5), 19)), rate_applied: 900, notes: 'Full day coverage', color: 'green' },
   { id: 's8', facility_id: 'c4', start_datetime: fmt(setTime(addDays(today, 10), 9)), end_datetime: fmt(setTime(addDays(today, 10), 17)), rate_applied: 800, notes: 'Tentative', color: 'purple' },
   { id: 's9', facility_id: 'c1', start_datetime: fmt(setTime(addDays(today, 14), 8)), end_datetime: fmt(setTime(addDays(today, 14), 18)), rate_applied: 850, notes: '', color: 'teal' },
+  // Past Roo (no-invoice) shifts — should appear in "did the payment land?" nudge
+  { id: 'sroo1', facility_id: 'c6', start_datetime: fmt(setTime(addDays(today, -10), 8)), end_datetime: fmt(setTime(addDays(today, -10), 18)), rate_applied: 950, notes: 'Roo relief shift', color: 'orange' },
+  { id: 'sroo2', facility_id: 'c6', start_datetime: fmt(setTime(addDays(today, -4), 8)), end_datetime: fmt(setTime(addDays(today, -4), 18)), rate_applied: 950, notes: 'Roo relief shift', color: 'orange' },
   // Next month shifts for confirmations
   { id: 'snm1', facility_id: 'c1', start_datetime: fmt(setTime(nmDay(3), 8)), end_datetime: fmt(setTime(nmDay(3), 18)), rate_applied: 850, notes: '', color: 'blue' },
   { id: 'snm2', facility_id: 'c1', start_datetime: fmt(setTime(nmDay(10), 8)), end_datetime: fmt(setTime(nmDay(10), 18)), rate_applied: 850, notes: '', color: 'blue' },
