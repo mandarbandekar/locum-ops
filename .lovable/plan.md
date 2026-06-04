@@ -1,38 +1,47 @@
 ## Goal
-When a user downloads a paid invoice as a PDF, the downloaded PDF should match the on-screen "paid" treatment: a rotated red **PAID** stamp across the page, and a totals block that shows Subtotal → Amount Paid → Balance Due ($0.00).
-
-The on-screen "Download Invoice PDF" button already exists on paid invoices (`InvoiceActionBar.tsx`), so no UI changes are needed. The fix lives entirely in the PDF edge function, which today still prints "Amount Due" and no stamp.
+Right after a user marks an invoice as paid (via Record Payment → fully paid), give them a clear, prominent **Download Paid Invoice** action so they can immediately save the PDF with the new PAID stamp. Today the only paid-state download lives in the bottom action bar as a secondary outline button — easy to miss right after the success moment.
 
 ## Changes
 
-### `supabase/functions/generate-invoice-pdf/index.ts`
+### 1. `src/components/invoice/InvoiceEditPanel.tsx` — Paid banner becomes actionable
+Currently (lines ~568–573) the "Paid in full" banner is a static green pill. Upgrade it to a row with a primary **Download Paid Invoice** button on the right:
 
-1. **Compute paid state** near where invoice/lineItems are loaded:
-   - `const isPaid = invoice.status === 'paid';`
-   - `const amountPaid = Math.max(0, Number(invoice.total_amount) - Number(invoice.balance_due));`
+```
+[ ✓ Paid in full · Mar 14, 2026 ]                [ ⬇ Download Paid Invoice ]
+```
 
-2. **Totals block** (currently lines ~340–352): when `isPaid` or `amountPaid > 0`, render three rows instead of two:
-   - Subtotal
-   - Amount Paid (in success green, prefixed `-`)
-   - Balance Due (bold; green when fully paid, primary blue otherwise)
+- Reuse the existing `downloadInvoicePdf` helper logic. Easiest path: lift the helper from `InvoiceActionBar.tsx` into a small shared module `src/lib/invoicePdf.ts` (`downloadInvoicePdf(invoiceId, invoiceNumber)`), and import it in both places. No behavior change to the bar.
+- Button: `variant="default"`, `size="sm"`, `Download` icon, loading spinner via local `pdfLoading` state, same `requireBusinessInfo` guard already used in the bar (duplicate the small helper or import it; simplest: inline a minimal check on `profile.company_name`/`company_address` with a toast pointing to Settings → Profile).
+- On success: toast `"Paid invoice downloaded"` with filename.
 
-   Always use the label "Balance Due" (replaces the existing "Amount Due" label so it matches the React preview).
+### 2. `src/components/invoice/InvoiceEditPanel.tsx` — Post-payment success toast
+In `handleRecordPayment` (line ~562) when `isPaidNow` is true, replace the plain `toast.success('Invoice paid in full!')` with a toast that includes an action button:
 
-3. **PAID stamp overlay** when `isPaid`:
-   - Draw after all content is rendered on the first page (so it sits on top).
-   - Use `page.drawRectangle` for a double red border box centered roughly over the line-items area (~middle of page, ~220pt wide × 90pt tall).
-   - Use `page.drawText('PAID', { rotate: degrees(-12), ... })` with a large bold font in red (`rgb(0.8, 0.15, 0.15)`), `opacity: 0.75`.
-   - Below the word PAID, render the `paid_at` date (formatted "MMM d, yyyy") in smaller red text, also rotated -12°.
-   - Use pdf-lib's existing `rgb`, `degrees`, and `helveticaBold` already imported in the file.
+```ts
+toast.success('Invoice paid in full!', {
+  description: 'The PDF now shows a PAID stamp and $0.00 balance due.',
+  action: {
+    label: 'Download paid invoice',
+    onClick: () => downloadInvoicePdf(invoice.id, invoice.invoice_number),
+  },
+  duration: 8000,
+});
+```
 
-4. No DB, no RLS, no other file changes.
+This gives the user a one-tap download at the exact moment of marking paid, without forcing them to scroll to the bottom action bar.
+
+### 3. `src/components/invoice/InvoiceActionBar.tsx` — Promote in paid state
+In the paid-state block (lines ~388–410), change **Download Invoice PDF** from `variant="outline"` to `variant="default"` so it becomes the primary CTA on the bottom bar for paid invoices (parity with how Record Payment is primary for sent invoices). The share link button stays outline. No layout/markup changes beyond the variant.
 
 ## Out of scope
-- No changes to `InvoiceActionBar` (Download PDF button already present for paid invoices).
-- No changes to `InvoicePreview.tsx` (on-screen stamp already added previously).
-- No changes to the public/share-link page or PDF endpoint signature.
+- No changes to the PDF edge function (already renders the PAID stamp and Balance Due from the prior change).
+- No changes to `InvoicePreview`, `PublicInvoicePage`, or DB schema.
+- No new download endpoint — reuse the existing `generate-invoice-pdf` function.
 
 ## Verification
-- Open a paid invoice in the preview and click Download Invoice PDF; confirm the PDF shows the angled red PAID stamp and a totals block with Subtotal, Amount Paid, Balance Due $0.00.
-- Open a partial-paid invoice and confirm the breakdown shows but the stamp does not.
-- Open a draft/sent invoice and confirm behavior is unchanged.
+- Open a sent invoice, click Record Payment, fully pay it.
+  - The success toast appears with a **Download paid invoice** action that downloads the PDF with the PAID stamp.
+  - The "Paid in full" banner at the top of the edit panel now has a **Download Paid Invoice** button on the right; clicking it downloads the same PDF.
+  - The bottom action bar shows **Download Invoice PDF** as the primary (filled) button.
+- Open an already-paid invoice cold: banner + action bar both surface the download prominently; toast does not fire (no payment recorded this session).
+- Open a draft or sent (unpaid) invoice: no behavior change — no paid banner, no toast action, bottom-bar layout unchanged.
