@@ -246,9 +246,17 @@ export default function DashboardPage() {
     });
     const dueSoonTotal = dueSoonInvs.reduce((s, i) => s + i.balance_due, 0);
 
-    // Uninvoiced completed shifts
+    // Uninvoiced completed shifts (exclude no-invoice facilities — those are
+    // tracked via payment confirmations, not invoices)
     const invoicedShiftIds = new Set(lineItems.filter(li => li.shift_id).map(li => li.shift_id!));
-    const uninvoicedShifts = shifts.filter(s => parseISO(s.end_datetime) < now && !invoicedShiftIds.has(s.id));
+    const facByIdForUninvoiced = new Map(facilities.map(f => [f.id, f]));
+    const uninvoicedShifts = shifts.filter(s => {
+      if (parseISO(s.end_datetime) >= now) return false;
+      if (invoicedShiftIds.has(s.id)) return false;
+      const f = facByIdForUninvoiced.get(s.facility_id);
+      if (f && f.generates_invoices === false) return false;
+      return true;
+    });
     const uninvoicedTotal = uninvoicedShifts.reduce((sum, s) => sum + (s.rate_applied || 0), 0);
 
     // Collected this month vs last month at same point (day-of-month)
