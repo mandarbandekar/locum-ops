@@ -44,7 +44,7 @@ export interface ExpenseConfig {
 }
 
 const DEFAULT_CONFIG: Omit<ExpenseConfig, 'id' | 'user_id'> = {
-  irs_mileage_rate_cents: 70,
+  irs_mileage_rate_cents: 72.5,
   home_office_rate_cents: 500,
   tax_year: new Date().getFullYear(),
   ytd_starting_miles: 0,
