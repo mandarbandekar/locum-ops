@@ -6,12 +6,12 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Download, Filter, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Calendar, Filter, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Expense } from '@/hooks/useExpenses';
 import type { Facility } from '@/types';
-import { filterMileageTrips, buildFilteredMileageCsv, type MileageFilter } from '@/lib/mileageReportCsv';
-import { downloadBlob } from '@/lib/cpaPrepExports';
+import { filterMileageTrips, buildFilteredMileageCsv, buildFilteredMileagePdf, type MileageFilter } from '@/lib/mileageReportCsv';
+import SectionExportMenu from '@/components/cpa-prep/SectionExportMenu';
 
 interface Props {
   expenses: Expense[];
