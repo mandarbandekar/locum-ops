@@ -16,6 +16,7 @@ import { syncShiftFromLineItems, canSyncShiftForLine } from '@/lib/shiftInvoiceS
 import { termsToRates } from '@/components/facilities/RatesEditor';
 import { resolveShiftTz } from '@/lib/resolveTimezone';
 import { formatYMDInTz } from '@/lib/tzTime';
+import { downloadInvoicePdf } from '@/lib/invoicePdf';
 
 /** Convert any date value to a timezone-safe YYYY-MM-DD string for storage. */
 function toDateOnlyISO(v: string | Date | null | undefined): string {
