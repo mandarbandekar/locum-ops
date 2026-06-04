@@ -193,6 +193,8 @@ export default function MileageTrackerTab({
   // ============================================================
   // POPULATED STATE
   // ============================================================
+  const showStartingChip = startingMiles > 0 || !chipDismissed;
+
   return (
     <div className="space-y-4">
       {/* Onboarding */}
@@ -203,7 +205,7 @@ export default function MileageTrackerTab({
         }} />
       )}
 
-      {/* Hero — Money found this year */}
+      {/* Persistent Hero — Money found this year */}
       <Card>
         <CardContent className="py-5 px-5">
           <p className="text-[12px] text-muted-foreground">Money found this year</p>
@@ -221,107 +223,162 @@ export default function MileageTrackerTab({
         </CardContent>
       </Card>
 
-      {/* Pending Review */}
-      <MileageReviewBanner
-        drafts={draftMileageExpenses}
-        onConfirm={confirmMileage}
-        onDismiss={dismissMileage}
-        onConfirmAll={confirmAllMileage}
-        onEdit={(exp) => setEditingExpense(exp)}
-      />
+      {/* Sub-tab switcher */}
+      <div className="flex gap-2 sm:gap-3 flex-wrap">
+        <button
+          onClick={() => setView('drives')}
+          className={`primary-tab-btn relative ${view === 'drives' ? 'primary-tab-btn--active' : 'primary-tab-btn--inactive'}`}
+        >
+          <Car className="h-4 w-4 sm:h-5 sm:w-5" />
+          <span className="text-xs sm:text-sm">Business Drives</span>
+          {draftMileageExpenses.length > 0 && (
+            <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-destructive" />
+          )}
+        </button>
+        <button
+          onClick={() => setView('reports')}
+          className={`primary-tab-btn ${view === 'reports' ? 'primary-tab-btn--active' : 'primary-tab-btn--inactive'}`}
+        >
+          <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
+          <span className="text-xs sm:text-sm">Mileage Reports</span>
+        </button>
+      </div>
 
-      {/* Backfill Past Shifts */}
-      <MileageBackfillCard onComplete={reload} />
-
-      {/* YTD Starting Balance */}
-      <Card>
-        <CardContent className="py-3 px-4 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <Hash className="h-4 w-4 text-muted-foreground shrink-0" />
-            <div className="min-w-0">
-              <p className="text-sm font-medium">
-                {startingMiles > 0
-                  ? `Starting balance: ${startingMiles.toLocaleString()} mi imported`
-                  : 'Add miles tracked elsewhere this year'}
-              </p>
-              <p className="text-[11px] text-muted-foreground truncate">
-                {startingMiles > 0 && startingMilesNote
-                  ? startingMilesNote
-                  : `Already tracked ${config.tax_year} miles in another app? Add the total so YTD picks up where you left off.`}
-              </p>
-            </div>
-          </div>
-          <Button size="sm" variant="outline" className="text-xs shrink-0" onClick={() => setShowStartingDialog(true)}>
-            {startingMiles > 0 ? 'Edit' : 'Add'}
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Money claimed (formerly Confirmed Mileage Log) */}
-      <div>
-        <h3 className="text-sm font-semibold mb-2 text-muted-foreground">Money claimed</h3>
-        {confirmedMileageExpenses.length === 0 ? (
-          <Card>
-            <CardContent className="py-10 px-6 text-center">
-              <div
-                className="mx-auto mb-4 flex items-center justify-center rounded-full"
-                style={{ width: 48, height: 48, background: 'rgba(94, 168, 122, 0.12)' }}
-              >
-                <Route className="h-5 w-5" style={{ color: '#2D6B4A' }} />
-              </div>
-              <p className="text-[14px] font-medium text-foreground">
-                Find money you've been leaving on the table
-              </p>
-              <p className="mt-1.5 mx-auto max-w-[400px] text-[12px] text-muted-foreground leading-relaxed">
-                Relief vets on Locum Ops typically find <span className="font-medium text-foreground">$4,000–$8,000</span> in mileage deductions per year. Every confirmed trip lands here — money in your pocket at tax time.
-              </p>
-              <div className="mt-5">
-                <Button
-                  onClick={() => navigate('/settings/profile')}
-                  className="bg-[#1A5C6B] text-white hover:bg-[#1A5C6B]/90 text-[14px] font-medium h-10 px-5"
+      {view === 'drives' && (
+        <div className="space-y-4">
+          {/* Top-right starting balance chip */}
+          {showStartingChip && (
+            <div className="flex justify-end">
+              <div className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/40 pl-3 pr-1.5 py-1">
+                <Hash className="h-3.5 w-3.5 text-muted-foreground" />
+                <button
+                  className="text-[12px] font-medium text-foreground hover:underline"
+                  onClick={() => setShowStartingDialog(true)}
                 >
-                  Set home address →
-                </Button>
+                  {startingMiles > 0
+                    ? `Starting balance: ${startingMiles.toLocaleString()} mi · Edit`
+                    : 'Add miles tracked elsewhere'}
+                </button>
+                {startingMiles === 0 && (
+                  <button
+                    aria-label="Dismiss"
+                    className="ml-1 inline-flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
+                    onClick={() => {
+                      setChipDismissed(true);
+                      localStorage.setItem(STARTING_CHIP_DISMISSED_KEY, '1');
+                    }}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
               </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-2">
-            {confirmedMileageExpenses.map(exp => (
-              <Card key={exp.id} className="hover:shadow-sm transition-shadow">
-                <CardContent className="py-3 px-4 flex items-center gap-3">
-                  <Car className="h-4 w-4 text-primary shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-medium truncate">
-                        {exp.facility_id && facilityMap[exp.facility_id] ? facilityMap[exp.facility_id] : 'Mileage'}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(exp.expense_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                      </span>
-                      {exp.route_description && (
-                        <span className="text-[10px] text-muted-foreground truncate">· {exp.route_description}</span>
-                      )}
-                    </div>
+            </div>
+          )}
+
+          {/* Pending Review */}
+          <MileageReviewBanner
+            drafts={draftMileageExpenses}
+            onConfirm={confirmMileage}
+            onDismiss={dismissMileage}
+            onConfirmAll={confirmAllMileage}
+            onEdit={(exp) => setEditingExpense(exp)}
+          />
+
+          {/* Backfill Past Shifts */}
+          <MileageBackfillCard onComplete={reload} />
+
+          {/* Money claimed */}
+          <div>
+            <h3 className="text-sm font-semibold mb-2 text-muted-foreground">Money claimed</h3>
+            {confirmedMileageExpenses.length === 0 ? (
+              <Card>
+                <CardContent className="py-10 px-6 text-center">
+                  <div
+                    className="mx-auto mb-4 flex items-center justify-center rounded-full"
+                    style={{ width: 48, height: 48, background: 'rgba(94, 168, 122, 0.12)' }}
+                  >
+                    <Route className="h-5 w-5" style={{ color: '#2D6B4A' }} />
                   </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-sm font-medium">{exp.mileage_miles ?? 0} mi</p>
-                    <p className="text-[10px] text-muted-foreground">{fmt(exp.amount_cents)}</p>
+                  <p className="text-[14px] font-medium text-foreground">
+                    Find money you've been leaving on the table
+                  </p>
+                  <p className="mt-1.5 mx-auto max-w-[400px] text-[12px] text-muted-foreground leading-relaxed">
+                    Relief vets on Locum Ops typically find <span className="font-medium text-foreground">$4,000–$8,000</span> in mileage deductions per year. Every confirmed trip lands here — money in your pocket at tax time.
+                  </p>
+                  <div className="mt-5">
+                    <Button
+                      onClick={() => navigate('/settings/profile')}
+                      className="bg-[#1A5C6B] text-white hover:bg-[#1A5C6B]/90 text-[14px] font-medium h-10 px-5"
+                    >
+                      Set home address →
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
-            ))}
+            ) : (
+              <div className="space-y-2">
+                {confirmedMileageExpenses.map(exp => (
+                  <Card key={exp.id} className="hover:shadow-sm transition-shadow">
+                    <CardContent className="py-3 px-4 flex items-center gap-3">
+                      <Car className="h-4 w-4 text-primary shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-medium truncate">
+                            {exp.facility_id && facilityMap[exp.facility_id] ? facilityMap[exp.facility_id] : 'Mileage'}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(exp.expense_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </span>
+                          {exp.route_description && (
+                            <span className="text-[10px] text-muted-foreground truncate">· {exp.route_description}</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-sm font-medium">{exp.mileage_miles ?? 0} mi</p>
+                        <p className="text-[10px] text-muted-foreground">{fmt(exp.amount_cents)}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      <MileageReportCard
-        expenses={expenses}
-        facilities={facilities}
-        irsRateCents={config.irs_mileage_rate_cents}
-      />
-
-
+      {view === 'reports' && (
+        <div className="space-y-4">
+          {confirmedMileageExpenses.length === 0 ? (
+            <Card>
+              <CardContent className="py-10 px-6 text-center">
+                <div
+                  className="mx-auto mb-4 flex items-center justify-center rounded-full"
+                  style={{ width: 48, height: 48, background: 'hsl(var(--muted))' }}
+                >
+                  <FileText className="h-5 w-5 text-muted-foreground" />
+                </div>
+                <p className="text-[14px] font-medium text-foreground">No drives to report yet</p>
+                <p className="mt-1.5 mx-auto max-w-[400px] text-[12px] text-muted-foreground leading-relaxed">
+                  Confirm a few drives under Business Drives and your monthly mileage reports will appear here — ready to download as PDF or CSV for your CPA.
+                </p>
+                <div className="mt-5">
+                  <Button variant="outline" onClick={() => setView('drives')} className="gap-1.5">
+                    <Plus className="h-4 w-4" />
+                    Go to Business Drives
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <MileageReportCard
+              expenses={expenses}
+              facilities={facilities}
+              irsRateCents={config.irs_mileage_rate_cents}
+            />
+          )}
+        </div>
+      )}
 
       <MileageStartingBalanceDialog
         open={showStartingDialog}
@@ -349,4 +406,5 @@ export default function MileageTrackerTab({
       />
     </div>
   );
+
 }
