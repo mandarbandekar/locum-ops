@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Pencil, Check, X, Trash2, CheckCircle, PiggyBank, ChevronDown, CalendarClock, FileText, Pencil as PencilIcon, Undo2 } from 'lucide-react';
+import { Plus, Pencil, Check, X, Trash2, CheckCircle, PiggyBank, ChevronDown, CalendarClock, FileText, Pencil as PencilIcon, Undo2, Download, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
