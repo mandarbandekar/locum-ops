@@ -42,18 +42,38 @@ export default function SettingsProfilePage() {
   const initialSame = !!(profile?.home_address && profile?.company_address &&
     profile.home_address.trim() === profile.company_address.trim());
   const [sameAsCompany, setSameAsCompany] = useState(initialSame);
+  const [hydrated, setHydrated] = useState(false);
 
+  // Hydrate local state once the profile finishes loading (useState only runs once).
   useEffect(() => {
-    if (sameAsCompany) setHomeAddress(companyAddress);
-  }, [sameAsCompany, companyAddress]);
-  
+    if (!profile || hydrated) return;
+    setFirstName(profile.first_name || '');
+    setLastName(profile.last_name || '');
+    setCompanyName(profile.company_name || '');
+    setCompanyAddress(profile.company_address || '');
+    setHomeAddress(profile.home_address || '');
+    setInvoiceEmail(profile.invoice_email || '');
+    setInvoicePhone(profile.invoice_phone || '');
+    setTimezone(profile.timezone || '');
+    setTimezonePinned(!!profile.timezone_pinned);
+    setCurrency(profile.currency || 'USD');
+    setProfession(profile.profession || 'other');
+    setSameAsCompany(
+      !!(profile.home_address && profile.company_address &&
+        profile.home_address.trim() === profile.company_address.trim())
+    );
+    setHydrated(true);
+  }, [profile, hydrated]);
+
+  const effectiveHomeAddress = (sameAsCompany ? companyAddress : homeAddress).trim();
+
   useAutoSave(
     {
       first_name: firstName.trim(),
       last_name: lastName.trim(),
       company_name: companyName.trim(),
       company_address: companyAddress.trim(),
-      home_address: homeAddress.trim(),
+      home_address: effectiveHomeAddress,
       invoice_email: invoiceEmail.trim() || null,
       invoice_phone: invoicePhone.trim() || null,
       timezone,
@@ -62,7 +82,7 @@ export default function SettingsProfilePage() {
       profession,
     },
     (payload) => updateProfile(payload),
-    { enabled: !!profile },
+    { enabled: !!profile && hydrated },
   );
 
   return (
