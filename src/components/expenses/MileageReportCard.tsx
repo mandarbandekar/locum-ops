@@ -92,6 +92,25 @@ export default function MileageReportCard({ expenses, facilities, irsRateCents }
   const totalMiles = trips.reduce((s, t) => s + t.miles, 0);
   const totalDeduction = trips.reduce((s, t) => s + t.deductionCents, 0);
 
+  // YTD context (all confirmed mileage in current year, regardless of filter)
+  const ytdContext: YtdContext = useMemo(() => {
+    const year = new Date().getFullYear();
+    const start = `${year}-01-01`;
+    const end = `${year}-12-31`;
+    const yearTrips = filterMileageTrips(
+      expenses,
+      facilities,
+      { start, end, clinicIds: null, status: 'confirmed' },
+      irsRateCents,
+    );
+    return {
+      year,
+      miles: yearTrips.reduce((s, t) => s + t.miles, 0),
+      deductionCents: yearTrips.reduce((s, t) => s + t.deductionCents, 0),
+    };
+  }, [expenses, facilities, irsRateCents]);
+
+
   // Clinics with any mileage (all-time) for filter options
   const clinicOptions = useMemo(() => {
     const ids = new Set<string>();
