@@ -302,6 +302,14 @@ export default function MileageTrackerTab({
         )}
       </div>
 
+      <MileageReportCard
+        expenses={expenses}
+        facilities={facilities}
+        irsRateCents={config.irs_mileage_rate_cents}
+      />
+
+
+
       <MileageStartingBalanceDialog
         open={showStartingDialog}
         onOpenChange={setShowStartingDialog}
