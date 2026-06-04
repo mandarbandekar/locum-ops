@@ -98,7 +98,7 @@ function validateRates(rates: DefaultRate[]): { errors: RateErrors; firstMessage
 }
 
 export default function SettingsRateCardPage() {
-  const { profile, updateProfile, profileLoading } = useUserProfile();
+  const { profile, updateProfile } = useUserProfile();
   const [preference, setPreference] = useState<BillingPreference>('per_day');
   const [rates, setRates] = useState<DefaultRate[]>([]);
   const [initialized, setInitialized] = useState(false);
@@ -197,7 +197,7 @@ export default function SettingsRateCardPage() {
       return { ...r, shift_type: guess };
     }));
     if (touched > 0) {
-      toast.success(`Suggested ${touched} shift type${touched === 1 ? '' : 's'} — review and Save`);
+      toast.success(`Suggested ${touched} shift type${touched === 1 ? '' : 's'}`);
     } else {
       toast.message('No clear suggestions — pick a type from the dropdown for each rate');
     }
