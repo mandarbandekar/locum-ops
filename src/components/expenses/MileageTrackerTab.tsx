@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Car, Route, ShieldCheck, Hash } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Car, Route, ShieldCheck, Hash, FileText, X, Plus } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useData } from '@/contexts/DataContext';
 import { MileageOnboarding } from './MileageOnboarding';
@@ -13,7 +13,6 @@ import MileageReportCard from './MileageReportCard';
 import AddExpenseDialog from './AddExpenseDialog';
 import type { Expense } from '@/hooks/useExpenses';
 
-const MILEAGE_ONBOARDING_KEY = 'locumops_mileage_tab_onboarding_dismissed';
 
 interface Props {
   expenses: Expense[];
