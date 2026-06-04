@@ -53,6 +53,17 @@ export default function MileageTrackerTab({
   const [showOnboarding, setShowOnboarding] = useState(
     () => !localStorage.getItem(MILEAGE_ONBOARDING_KEY)
   );
+  const [chipDismissed, setChipDismissed] = useState(
+    () => !!localStorage.getItem(STARTING_CHIP_DISMISSED_KEY)
+  );
+  const [searchParams, setSearchParams] = useSearchParams();
+  const view = searchParams.get('mileageView') === 'reports' ? 'reports' : 'drives';
+  const setView = (v: 'drives' | 'reports') => {
+    const next = new URLSearchParams(searchParams);
+    next.set('mileageView', v);
+    setSearchParams(next, { replace: true });
+  };
+
 
   const facilityMap = useMemo(() => {
     const m: Record<string, string> = {};
