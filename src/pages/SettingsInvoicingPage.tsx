@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { SettingsNav } from '@/components/SettingsNav';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,8 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useUserProfile, type EmailTone, type TermsFieldsEnabled } from '@/contexts/UserProfileContext';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { toast } from 'sonner';
-import { Save } from 'lucide-react';
+import { useAutoSave } from '@/hooks/useAutoSave';
 
 const TONES: { value: EmailTone; label: string }[] = [
   { value: 'friendly', label: 'Friendly' },
@@ -29,31 +27,26 @@ export default function SettingsInvoicingPage() {
   const [termsFields, setTermsFields] = useState<TermsFieldsEnabled>(
     profile?.terms_fields_enabled || { weekday_rate: true, weekend_rate: true, cancellation_policy: true, overtime_policy: true, late_payment_policy: true, special_notes: true }
   );
-  const [saving, setSaving] = useState(false);
 
-  const handleSave = async () => {
-    setSaving(true);
-    await updateProfile({
-      invoice_prefix: invoicePrefix.trim(),
+  useAutoSave(
+    {
+      invoice_prefix: invoicePrefix.trim() || 'INV',
       invoice_due_default_days: dueDays,
       email_tone: emailTone,
       terms_fields_enabled: termsFields,
-    });
-    setSaving(false);
-    toast.success('Invoicing settings saved');
-  };
+    },
+    (payload) => updateProfile(payload),
+    { enabled: !!profile },
+  );
 
   return (
     <div>
       <SettingsNav />
       <div className="page-header">
         <h1 className="page-title">Invoicing</h1>
-        <Button size="sm" onClick={handleSave} disabled={saving}>
-          <Save className="mr-1 h-4 w-4" /> {saving ? 'Saving…' : 'Save'}
-        </Button>
       </div>
       <p className="text-sm text-muted-foreground mb-6">
-        Defaults for invoice creation and draft behavior. Drafts are saved — never sent until you explicitly send.
+        Defaults for invoice creation and draft behavior. Changes save automatically. Drafts are never sent until you explicitly send.
       </p>
 
       <div className="grid gap-6 max-w-2xl">
