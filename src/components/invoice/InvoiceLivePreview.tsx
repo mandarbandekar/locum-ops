@@ -37,7 +37,7 @@ export function InvoiceLivePreview(props: Props) {
     items,
     previewInvoiceNumber, previewInvoiceDate, previewDueDate,
     previewNotes, previewTotal, previewBalanceDue, computedStatus,
-    editable, onFieldChange,
+    editable, onFieldChange, shiftsById,
   } = props;
 
   const statusLabel = computedStatus.charAt(0).toUpperCase() + computedStatus.slice(1);
