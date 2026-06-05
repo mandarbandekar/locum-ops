@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef, DragEvent } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
