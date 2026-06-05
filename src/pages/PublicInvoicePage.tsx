@@ -10,6 +10,7 @@ export default function PublicInvoicePage() {
   const [facility, setFacility] = useState<any>(null);
   const [senderProfile, setSenderProfile] = useState<any>(null);
   const [billingContact, setBillingContact] = useState<any>(null);
+  const [shiftsById, setShiftsById] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
