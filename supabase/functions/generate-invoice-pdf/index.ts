@@ -371,7 +371,7 @@ Deno.serve(async (req) => {
 
       drawText(desc, colDesc, y, { size: 9 });
       drawText(li.service_date ? formatDate(li.service_date) : '—', colDate, y, { size: 9, color: gray });
-      drawTextRight(String(li.qty), colQty + 20, y, { size: 9 });
+      drawTextRight(lineHoursLabel(li), colQty + 20, y, { size: 9 });
       drawTextRight(formatCurrency(li.unit_rate), colRate + 30, y, { size: 9 });
       drawTextRight(formatCurrency(li.line_total), colAmt, y, { font: helveticaBold, size: 9 });
       y -= 20;
