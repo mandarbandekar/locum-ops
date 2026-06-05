@@ -275,10 +275,9 @@ export function InvoicePreview({
             )}
             <ul className="divide-y">
               {lineItems.map((li, i) => {
-                const isHourly = li.line_kind === 'regular' || (!!li.shift_id && li.qty !== 1 && li.line_kind !== 'flat');
                 const lt = Number(li.line_total) || 0;
                 const ur = Number(li.unit_rate) || 0;
-                const qy = Number(li.qty) || 0;
+                const hoursLabel = formatLineHours(li, shiftsById);
                 return (
                   <li key={i} className="px-4 py-3.5">
                     <div className="flex items-start justify-between gap-3">
@@ -295,7 +294,7 @@ export function InvoicePreview({
                       </p>
                     </div>
                     <div className="mt-2 text-xs text-muted-foreground tabular-nums">
-                      {isHourly ? `${qy} hrs` : `${qy} ×`} <span className="text-foreground/80">${ur.toLocaleString()}</span>
+                      {hoursLabel === '—' ? '—' : `${hoursLabel} hrs`} <span className="text-foreground/80">${ur.toLocaleString()}</span>
                     </div>
                   </li>
                 );
