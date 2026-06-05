@@ -127,6 +127,7 @@ export default function PublicInvoicePage() {
             notes={invoice.notes}
             isPaid={invoice.status === 'paid'}
             paidAt={invoice.paid_at}
+            shiftsById={shiftsById}
           />
         </div>
       </div>
