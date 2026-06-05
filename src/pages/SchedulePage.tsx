@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef, DragEvent } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -112,6 +113,17 @@ export default function SchedulePage() {
   const [lastTimeframe, setLastTimeframe] = useState<'month' | 'week' | 'day' | 'agenda'>('month');
   const [peekShiftId, setPeekShiftId] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Open the Add Shift flow directly when arriving via Quick Add (?new=1).
+  useEffect(() => {
+    if (searchParams.get('new') === '1') {
+      setShowAdd(true);
+      const next = new URLSearchParams(searchParams);
+      next.delete('new');
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
   const [showBlockTime, setShowBlockTime] = useState(false);
   const [editBlock, setEditBlock] = useState<string | null>(null);
   const [addShiftDefaults, setAddShiftDefaults] = useState<{ date?: Date; startTime?: string }>({});
