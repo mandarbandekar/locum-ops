@@ -71,28 +71,42 @@ export default function FinancialHealthTab() {
       const confirmationCollected = sumConfirmedPaymentsInRange(paymentConfirmations, month, monthEnd);
       const collected = invoiceCollected + confirmationCollected;
 
-      const outstanding = monthInvoices
+      const invoiceOutstanding = monthInvoices
         .filter(i => { const s = computeInvoiceStatus(i); return s === 'sent' || s === 'partial' || s === 'overdue'; })
         .reduce((sum, inv) => sum + (inv.balance_due ?? inv.total_amount), 0);
 
+      // No-invoice (platform/agency/direct-no-invoice) shifts bucketed by end_datetime month.
+      //  - confirmation.paid → already in Collected (via paid_on)
+      //  - confirmation.wont_pay → excluded entirely
+      //  - shift ended in the past, unconfirmed/pending → Outstanding
+      //  - shift hasn't ended yet → Anticipated
+      let noInvoiceOutstanding = 0;
+      let noInvoiceAnticipated = 0;
+      shifts.forEach(s => {
+        if (!isNoInvoiceFacility(facById.get(s.facility_id))) return;
+        const end = parseISO(s.end_datetime);
+        if (!isWithinInterval(end, { start: month, end: monthEnd })) return;
+        const c = confByShiftId.get(s.id);
+        if (c?.status === 'paid' || c?.status === 'wont_pay') return;
+        const amt = getShiftTotalRevenue(s);
+        if (end < now) noInvoiceOutstanding += amt;
+        else noInvoiceAnticipated += amt;
+      });
+      const outstanding = invoiceOutstanding + noInvoiceOutstanding;
+
       const isCurrentOrFuture = month >= startOfMonth(now) && month <= endOfMonth(addMonths(now, 3));
-      let anticipated = 0;
+      let anticipated = noInvoiceAnticipated;
       if (isCurrentOrFuture) {
         const draftTotal = monthInvoices.filter(i => i.status === 'draft').reduce((sum, inv) => sum + inv.total_amount, 0);
-        // Uninvoiced shifts split by facility type:
-        //  - Invoice-generating facilities → always anticipated (a draft is coming)
-        //  - No-invoice facilities → only anticipated when not yet paid/written-off
+        // Uninvoiced shifts at invoice-generating facilities → a draft is coming
         const uninvoicedShiftTotal = shifts.filter(s => {
           const shiftDate = parseISO(s.start_datetime);
           if (!isWithinInterval(shiftDate, { start: month, end: monthEnd })) return false;
           if (invoicedShiftIds.has(s.id)) return false;
-          if (isNoInvoiceFacility(facById.get(s.facility_id))) {
-            const c = confByShiftId.get(s.id);
-            if (c?.status === 'paid' || c?.status === 'wont_pay') return false;
-          }
+          if (isNoInvoiceFacility(facById.get(s.facility_id))) return false;
           return true;
         }).reduce((sum, s) => sum + getShiftTotalRevenue(s), 0);
-        anticipated = draftTotal + uninvoicedShiftTotal;
+        anticipated += draftTotal + uninvoicedShiftTotal;
       }
       return { month: format(month, 'MMM yyyy'), collected, outstanding, anticipated };
     });
@@ -101,7 +115,11 @@ export default function FinancialHealthTab() {
   const revenueByFacility = useMemo(() => {
     const rangeStart = months[0];
     const rangeEnd = endOfMonth(months[months.length - 1]);
+    const facById = new Map(facilities.map(f => [f.id, f]));
+    const confByShiftId = new Map(paymentConfirmations.map(c => [c.shift_id, c]));
     const facilityRevenue: Record<string, number> = {};
+
+    // Invoiced facilities: count paid invoices in range
     invoices.forEach(inv => {
       if (inv.status === 'paid') {
         const periodEnd = parseISO(inv.period_end);
@@ -110,13 +128,34 @@ export default function FinancialHealthTab() {
         }
       }
     });
+
+    // No-invoice facilities: count shifts in range (collected + outstanding),
+    // excluding wont_pay. Mirrors the Monthly Revenue rules so platform/agency
+    // income shows up here too.
+    const nowDate = new Date();
+    shifts.forEach(s => {
+      const f = facById.get(s.facility_id);
+      if (!isNoInvoiceFacility(f)) return;
+      const end = parseISO(s.end_datetime);
+      if (!isWithinInterval(end, { start: rangeStart, end: rangeEnd })) return;
+      const c = confByShiftId.get(s.id);
+      if (c?.status === 'wont_pay') return;
+      // Only count realized / expected revenue (past or confirmed-paid), not
+      // future anticipated, to stay consistent with the invoiced side.
+      if (c?.status !== 'paid' && end >= nowDate) return;
+      const amt = c?.status === 'paid' && c.amount_received != null
+        ? Number(c.amount_received) || 0
+        : getShiftTotalRevenue(s);
+      facilityRevenue[s.facility_id] = (facilityRevenue[s.facility_id] || 0) + amt;
+    });
+
     return Object.entries(facilityRevenue)
       .map(([facilityId, revenue]) => {
         const name = facilities.find(c => c.id === facilityId)?.name || 'Unknown';
         return { name: name.length > 18 ? name.slice(0, 17) + '…' : name, revenue: Math.round(revenue * 100) / 100 };
       })
       .sort((a, b) => b.revenue - a.revenue);
-  }, [months, invoices, facilities]);
+  }, [months, invoices, facilities, shifts, paymentConfirmations]);
 
   const totalCollected = revenueData.reduce((s, d) => s + d.collected, 0);
   const totalOutstanding = revenueData.reduce((s, d) => s + d.outstanding, 0);
