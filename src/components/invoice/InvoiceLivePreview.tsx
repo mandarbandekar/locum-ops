@@ -1,4 +1,5 @@
 import { InvoicePreview, type PreviewEditableField } from './InvoicePreview';
+import type { ShiftLike } from '@/lib/lineItemHours';
 import { Badge } from '@/components/ui/badge';
 
 interface Props {
@@ -19,6 +20,7 @@ interface Props {
   editable?: boolean;
   /** Called when a preview field is committed. Pass null to clear an override. */
   onFieldChange?: (field: PreviewEditableField, value: string | null) => void | Promise<void>;
+  shiftsById?: Record<string, ShiftLike | undefined> | null;
 }
 
 const STATUS_TONE: Record<string, string> = {
@@ -35,7 +37,7 @@ export function InvoiceLivePreview(props: Props) {
     items,
     previewInvoiceNumber, previewInvoiceDate, previewDueDate,
     previewNotes, previewTotal, previewBalanceDue, computedStatus,
-    editable, onFieldChange,
+    editable, onFieldChange, shiftsById,
   } = props;
 
   const statusLabel = computedStatus.charAt(0).toUpperCase() + computedStatus.slice(1);
@@ -95,6 +97,7 @@ export function InvoiceLivePreview(props: Props) {
           overrides={overrides}
           editable={editable}
           onFieldChange={onFieldChange}
+          shiftsById={shiftsById}
         />
       </div>
     </div>

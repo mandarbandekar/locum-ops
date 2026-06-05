@@ -10,6 +10,7 @@ export default function PublicInvoicePage() {
   const [facility, setFacility] = useState<any>(null);
   const [senderProfile, setSenderProfile] = useState<any>(null);
   const [billingContact, setBillingContact] = useState<any>(null);
+  const [shiftsById, setShiftsById] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,6 +37,9 @@ export default function PublicInvoicePage() {
       setFacility(data.facility);
       setSenderProfile(data.sender);
       setBillingContact(data.billing_contact);
+      const sm: Record<string, any> = {};
+      for (const s of (data.shifts || [])) sm[s.id] = s;
+      setShiftsById(sm);
     } catch {
       setError('This invoice link is no longer available.');
     } finally {
@@ -123,6 +127,7 @@ export default function PublicInvoicePage() {
             notes={invoice.notes}
             isPaid={invoice.status === 'paid'}
             paidAt={invoice.paid_at}
+            shiftsById={shiftsById}
           />
         </div>
       </div>

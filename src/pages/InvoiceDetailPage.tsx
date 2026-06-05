@@ -47,7 +47,7 @@ function InvoiceDetailPageInner() {
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
-  const { invoices, lineItems, facilities, contacts, payments, activities, updateInvoice, deleteInvoice, suppressInvoicePeriod, addLineItem, updateLineItem, deleteLineItem, addPayment, addActivity, updateFacility, dataLoading } = useData();
+  const { invoices, lineItems, facilities, contacts, payments, activities, shifts, updateInvoice, deleteInvoice, suppressInvoicePeriod, addLineItem, updateLineItem, deleteLineItem, addPayment, addActivity, updateFacility, dataLoading } = useData();
   const { profile } = useUserProfile();
   const { user } = useAuth();
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -192,6 +192,7 @@ function InvoiceDetailPageInner() {
     await updateInvoice(patch);
   };
 
+  const shiftsById = Object.fromEntries(shifts.map(s => [s.id, s]));
   const livePreview = (
     <InvoiceLivePreview
       profile={profile}
@@ -209,6 +210,7 @@ function InvoiceDetailPageInner() {
       computedStatus={computedStatus}
       editable={isDraft}
       onFieldChange={handlePreviewFieldChange}
+      shiftsById={shiftsById}
     />
   );
 

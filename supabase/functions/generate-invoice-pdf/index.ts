@@ -120,6 +120,48 @@ Deno.serve(async (req) => {
     const baseSender = profileRes.data || {};
     const baseContact = contactRes.data || {};
 
+    // Fetch linked shifts so the Hours column reflects real billable time.
+    const shiftIds = Array.from(new Set(lineItems.map((li: any) => li.shift_id).filter(Boolean)));
+    const shiftsById: Record<string, any> = {};
+    if (shiftIds.length > 0) {
+      const { data: shiftRows } = await supabase
+        .from('shifts')
+        .select('id, start_datetime, end_datetime, break_minutes, worked_through_break')
+        .in('id', shiftIds);
+      for (const s of (shiftRows || [])) shiftsById[s.id] = s;
+    }
+
+    const billableMinutes = (s: any): number => {
+      if (!s) return 0;
+      const start = new Date(s.start_datetime).getTime();
+      let end = new Date(s.end_datetime).getTime();
+      if (!Number.isFinite(start) || !Number.isFinite(end)) return 0;
+      if (end <= start) end += 24 * 60 * 60 * 1000;
+      const scheduled = Math.max(0, Math.round((end - start) / 60000));
+      if (s.worked_through_break) return scheduled;
+      const br = s.break_minutes;
+      if (br == null || br <= 0) return scheduled;
+      return Math.max(0, scheduled - br);
+    };
+    const fmtHours = (mins: number): string => {
+      const h = mins / 60;
+      if (Number.isInteger(h)) return String(h);
+      return String(Math.round(h * 10) / 10);
+    };
+    const lineHoursLabel = (li: any): string => {
+      if (li.shift_id && shiftsById[li.shift_id]) {
+        return fmtHours(billableMinutes(shiftsById[li.shift_id]));
+      }
+      if (li.line_kind === 'overtime') {
+        const q = Number(li.qty) || 0;
+        return q > 0 ? fmtHours(q * 60) : '—';
+      }
+      if (!li.shift_id && li.line_kind !== 'flat' && li.qty && Number(li.qty) !== 1) {
+        return fmtHours((Number(li.qty) || 0) * 60);
+      }
+      return '—';
+    };
+
     // Apply per-invoice overrides (null/undefined = fall back to source).
     const facility = {
       ...baseFacility,
@@ -308,7 +350,7 @@ Deno.serve(async (req) => {
 
     drawText('Description', colDesc, y, { font: helveticaBold, size: 8, color: gray });
     drawText('Date', colDate, y, { font: helveticaBold, size: 8, color: gray });
-    drawTextRight('Qty', colQty + 20, y, { font: helveticaBold, size: 8, color: gray });
+    drawTextRight('Hours', colQty + 20, y, { font: helveticaBold, size: 8, color: gray });
     drawTextRight('Rate', colRate + 30, y, { font: helveticaBold, size: 8, color: gray });
     drawTextRight('Amount', colAmt, y, { font: helveticaBold, size: 8, color: gray });
     y -= 22;
@@ -329,7 +371,7 @@ Deno.serve(async (req) => {
 
       drawText(desc, colDesc, y, { size: 9 });
       drawText(li.service_date ? formatDate(li.service_date) : '—', colDate, y, { size: 9, color: gray });
-      drawTextRight(String(li.qty), colQty + 20, y, { size: 9 });
+      drawTextRight(lineHoursLabel(li), colQty + 20, y, { size: 9 });
       drawTextRight(formatCurrency(li.unit_rate), colRate + 30, y, { size: 9 });
       drawTextRight(formatCurrency(li.line_total), colAmt, y, { font: helveticaBold, size: 9 });
       y -= 20;
