@@ -37,6 +37,9 @@ export default function PublicInvoicePage() {
       setFacility(data.facility);
       setSenderProfile(data.sender);
       setBillingContact(data.billing_contact);
+      const sm: Record<string, any> = {};
+      for (const s of (data.shifts || [])) sm[s.id] = s;
+      setShiftsById(sm);
     } catch {
       setError('This invoice link is no longer available.');
     } finally {
