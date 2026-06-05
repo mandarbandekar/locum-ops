@@ -92,7 +92,18 @@ export default function FinancialHealthTab() {
         if (end < now) noInvoiceOutstanding += amt;
         else noInvoiceAnticipated += amt;
       });
-      const outstanding = invoiceOutstanding + noInvoiceOutstanding;
+      // Past uninvoiced shifts at invoice-generating facilities → Outstanding
+      // (a draft hasn't been created yet but the money is still expected)
+      const pastUninvoicedOutstanding = month < startOfMonth(now)
+        ? shifts.filter(s => {
+            const shiftDate = parseISO(s.start_datetime);
+            if (!isWithinInterval(shiftDate, { start: month, end: monthEnd })) return false;
+            if (invoicedShiftIds.has(s.id)) return false;
+            if (isNoInvoiceFacility(facById.get(s.facility_id))) return false;
+            return true;
+          }).reduce((sum, s) => sum + getShiftTotalRevenue(s), 0)
+        : 0;
+      const outstanding = invoiceOutstanding + noInvoiceOutstanding + pastUninvoicedOutstanding;
 
       const isCurrentOrFuture = month >= startOfMonth(now) && month <= endOfMonth(addMonths(now, 3));
       let anticipated = noInvoiceAnticipated;
