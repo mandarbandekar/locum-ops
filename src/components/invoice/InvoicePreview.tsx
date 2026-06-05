@@ -82,7 +82,7 @@ interface PreviewProps {
 export function InvoicePreview({
   sender, billTo, invoiceNumber, invoiceDate, dueDate, lineItems, total, balanceDue, notes,
   isPaid = false, paidAt,
-  overrides, editable = false, onFieldChange,
+  overrides, editable = false, onFieldChange, shiftsById,
 }: PreviewProps) {
   const ov = overrides || {};
   const change = (f: PreviewEditableField, v: string | null) => onFieldChange?.(f, v);
