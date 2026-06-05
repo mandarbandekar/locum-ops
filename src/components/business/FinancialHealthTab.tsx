@@ -179,7 +179,7 @@ export default function FinancialHealthTab() {
         return { name: name.length > 18 ? name.slice(0, 17) + '…' : name, revenue: Math.round(revenue * 100) / 100 };
       })
       .sort((a, b) => b.revenue - a.revenue);
-  }, [months, invoices, facilities, shifts, paymentConfirmations]);
+  }, [months, invoices, facilities, shifts, paymentConfirmations, invoicedShiftIds]);
 
   const totalCollected = revenueData.reduce((s, d) => s + d.collected, 0);
   const totalOutstanding = revenueData.reduce((s, d) => s + d.outstanding, 0);
