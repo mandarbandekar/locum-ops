@@ -41,15 +41,27 @@ Deno.serve(async (req) => {
 
   // Fetch related data
   const [liRes, facRes, profileRes, contactRes] = await Promise.all([
-    supabase.from('invoice_line_items').select('description, service_date, qty, unit_rate, line_total, shift_id').eq('invoice_id', invoice.id).order('service_date', { ascending: true, nullsFirst: false }).order('created_at', { ascending: true }),
+    supabase.from('invoice_line_items').select('description, service_date, qty, unit_rate, line_total, shift_id, line_kind').eq('invoice_id', invoice.id).order('service_date', { ascending: true, nullsFirst: false }).order('created_at', { ascending: true }),
     supabase.from('facilities').select('name, address, invoice_name_to, invoice_email_to').eq('id', invoice.facility_id).single(),
     supabase.from('user_profiles').select('first_name, last_name, company_name, company_address, invoice_email, invoice_phone').eq('user_id', invoice.user_id).single(),
     supabase.from('facility_contacts').select('name, email').eq('facility_id', invoice.facility_id).or('is_primary.eq.true,role.eq.billing').limit(1).single(),
   ]);
 
+  const lineItems = liRes.data || [];
   const facility = facRes.data || {};
   const profile = profileRes.data || {};
   const contact = contactRes.data || {};
+
+  // Fetch linked shifts so the client can display real hours worked.
+  const shiftIds = Array.from(new Set(lineItems.map((li: any) => li.shift_id).filter(Boolean)));
+  let shifts: any[] = [];
+  if (shiftIds.length > 0) {
+    const { data: shiftRows } = await supabase
+      .from('shifts')
+      .select('id, start_datetime, end_datetime, break_minutes, worked_through_break')
+      .in('id', shiftIds);
+    shifts = shiftRows || [];
+  }
 
   // Apply per-invoice overrides on top of source values.
   const resolvedFacility = {
