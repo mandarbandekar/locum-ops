@@ -307,24 +307,23 @@ export function InvoicePreview({
               <tr className="bg-muted/50">
                 <th className="text-left p-2.5 font-medium text-muted-foreground">Description</th>
                 <th className="text-left p-2.5 font-medium text-muted-foreground w-24">Date</th>
-                <th className="text-right p-2.5 font-medium text-muted-foreground w-12">Qty</th>
+                <th className="text-right p-2.5 font-medium text-muted-foreground w-16">Hours</th>
                 <th className="text-right p-2.5 font-medium text-muted-foreground w-20">Rate</th>
                 <th className="text-right p-2.5 font-medium text-muted-foreground w-20">Amount</th>
               </tr>
             </thead>
             <tbody>
               {lineItems.map((li, i) => {
-                const isHourly = li.line_kind === 'regular' || (!!li.shift_id && li.qty !== 1 && li.line_kind !== 'flat');
                 const lt = Number(li.line_total) || 0;
                 const ur = Number(li.unit_rate) || 0;
-                const qy = Number(li.qty) || 0;
+                const hoursLabel = formatLineHours(li, shiftsById);
                 return (
                   <tr key={i} className="border-t">
                     <td className="p-2.5">{li.description}</td>
                     <td className="p-2.5 text-muted-foreground">{formatDateShort(li.service_date)}</td>
-                    <td className="p-2.5 text-right">{isHourly ? `${qy}h` : qy}</td>
+                    <td className="p-2.5 text-right">{hoursLabel === '—' ? '—' : `${hoursLabel}h`}</td>
                     <td className="p-2.5 text-right">
-                      ${ur.toLocaleString()}{isHourly ? <span className="text-muted-foreground">/hr</span> : null}
+                      ${ur.toLocaleString()}
                     </td>
                     <td className="p-2.5 text-right font-medium">${lt.toLocaleString()}</td>
                   </tr>
