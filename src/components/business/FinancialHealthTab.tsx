@@ -92,7 +92,18 @@ export default function FinancialHealthTab() {
         if (end < now) noInvoiceOutstanding += amt;
         else noInvoiceAnticipated += amt;
       });
-      const outstanding = invoiceOutstanding + noInvoiceOutstanding;
+      // Past uninvoiced shifts at invoice-generating facilities → Outstanding
+      // (a draft hasn't been created yet but the money is still expected)
+      const pastUninvoicedOutstanding = month < startOfMonth(now)
+        ? shifts.filter(s => {
+            const shiftDate = parseISO(s.start_datetime);
+            if (!isWithinInterval(shiftDate, { start: month, end: monthEnd })) return false;
+            if (invoicedShiftIds.has(s.id)) return false;
+            if (isNoInvoiceFacility(facById.get(s.facility_id))) return false;
+            return true;
+          }).reduce((sum, s) => sum + getShiftTotalRevenue(s), 0)
+        : 0;
+      const outstanding = invoiceOutstanding + noInvoiceOutstanding + pastUninvoicedOutstanding;
 
       const isCurrentOrFuture = month >= startOfMonth(now) && month <= endOfMonth(addMonths(now, 3));
       let anticipated = noInvoiceAnticipated;
@@ -149,13 +160,26 @@ export default function FinancialHealthTab() {
       facilityRevenue[s.facility_id] = (facilityRevenue[s.facility_id] || 0) + amt;
     });
 
+    // Past uninvoiced shifts at invoice-generating facilities → still count
+    // as expected revenue from that clinic, even if no draft exists yet.
+    const invoicedShiftIdSet = invoicedShiftIds;
+    shifts.forEach(s => {
+      const f = facById.get(s.facility_id);
+      if (!f || isNoInvoiceFacility(f)) return;
+      if (invoicedShiftIdSet.has(s.id)) return;
+      const end = parseISO(s.end_datetime);
+      if (end >= nowDate) return;
+      if (!isWithinInterval(end, { start: rangeStart, end: rangeEnd })) return;
+      facilityRevenue[s.facility_id] = (facilityRevenue[s.facility_id] || 0) + getShiftTotalRevenue(s);
+    });
+
     return Object.entries(facilityRevenue)
       .map(([facilityId, revenue]) => {
         const name = facilities.find(c => c.id === facilityId)?.name || 'Unknown';
         return { name: name.length > 18 ? name.slice(0, 17) + '…' : name, revenue: Math.round(revenue * 100) / 100 };
       })
       .sort((a, b) => b.revenue - a.revenue);
-  }, [months, invoices, facilities, shifts, paymentConfirmations]);
+  }, [months, invoices, facilities, shifts, paymentConfirmations, invoicedShiftIds]);
 
   const totalCollected = revenueData.reduce((s, d) => s + d.collected, 0);
   const totalOutstanding = revenueData.reduce((s, d) => s + d.outstanding, 0);
