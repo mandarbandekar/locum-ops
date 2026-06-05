@@ -120,7 +120,7 @@ export function WhatsNewButton() {
             </button>
           )}
         </div>
-        <ScrollArea className="max-h-[420px]">
+        <ScrollArea className="h-[420px]">
           <ul className="divide-y divide-border">
             {visible.map(a => {
               const Icon = a.icon;
