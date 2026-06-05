@@ -1,22 +1,26 @@
-## Goal
-Make the Expenses page tabs match the visual style of Business Insights (Financial Health / Performance Insights) — replacing the current shadcn `Tabs` row with the same icon-led "pill" buttons (`primary-tab-btn`) used on `/business`.
-
 ## Changes
 
-**`src/pages/ExpensesPage.tsx`**
-- Drop `Tabs`, `TabsList`, `TabsTrigger`, `TabsContent` imports and JSX.
-- Use `useSearchParams` to drive the active tab (`?tab=expenses|mileage|summary`, default `expenses`) — matches BusinessPage pattern and keeps state in URL.
-- Render three `primary-tab-btn` buttons in a `flex gap-2 sm:gap-3 flex-wrap` row, each with a lucide icon + label:
-  - Expenses — `Receipt`
-  - Mileage Tracker — `Car` (keeps the existing red dot badge for `draftCount > 0`, rendered as the absolute-positioned 2.5×2.5 dot used on BusinessPage instead of the current `Badge` number)
-  - Write-Off Summary — `FileSpreadsheet` (or `ClipboardList`)
-- Conditionally render `<ExpenseLogTab />`, `<MileageTrackerTab />`, `<ExpenseSummaryTab />` based on `activeTab` (same conditional pattern as BusinessPage).
-- Keep the existing page-header block unchanged.
+### 1. Compliance Overview (`src/components/compliance/ComplianceOverview.tsx`)
+Strip the page down to just attention items and the setup checklist:
+
+- Remove the 5 summary tiles at the top (Active Credentials, Renewals Due Soon, Missing Documents, CE Incomplete, Ready to Renew).
+- Remove the right sidebar entirely: **Readiness Overview** card and **Suggestions** card.
+- Remove the **Upcoming Renewals** card from Overview (it stays available under the Renewals tab).
+- Keep: empty state, Setup Checklist (when applicable), and the **Attention Needed** card.
+- Drop the now-unused 2-column grid; render Attention Needed full width.
+- Clean up unused imports (`Progress`, `useComplianceData`'s `upcomingRenewals`/`enrichedCredentials`/`summary`, readiness helpers, `CredentialExpirationChip`, `Link2`, `Activity`, `ArrowRight`, `ChevronRight`, `CREDENTIAL_TYPE_LABELS`, etc.).
+
+### 2. CE associations under a credential (`src/components/credentials/AddCredentialDialog.tsx`)
+Replace the "Recent CE Entries" list (currently capped to 4 most recent) with **all linked CE entries grouped by delivery format**:
+
+- Use `ceStats.linkedEntries` (already returned from `getCredentialCEStats`).
+- Group by `entry.delivery_format` (fallback bucket "Other" for empty values).
+- Render each group as a small section: format name + count + total hours, followed by the entry rows (same row style as today: title, hours, cert status icon).
+- Sort groups alphabetically; sort entries within a group by `completion_date` desc.
+- Section header copy: "CE Entries by Format" instead of "Recent CE Entries".
+
+No DB, hook, or routing changes. Renewals tab already shows Upcoming Renewals, so no work needed there.
 
 ## Out of scope
-- No changes to the inner tab components (`ExpenseLogTab`, `MileageTrackerTab`, `ExpenseSummaryTab`) or their content.
-- No changes to the secondary sub-tabs inside Mileage Tracker (Business Drives / Mileage Reports already use `primary-tab-btn`).
-- No routing changes elsewhere.
-
-## Open question
-The current Mileage tab badge shows the **number** of drafts (e.g. "3"). BusinessPage style uses a small **red dot** only. Want me to keep the number (more informative) or switch to the dot (more consistent)? Default: switch to the dot for full visual parity.
+- Readiness engine logic itself (`src/lib/complianceReadiness.ts`) stays — it still drives the credential-level score shown elsewhere.
+- No changes to the tab list on `CredentialsPage`.
