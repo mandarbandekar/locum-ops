@@ -75,6 +75,8 @@ interface PreviewProps {
   editable?: boolean;
   /** Called when an editable field is committed. Pass null to clear the override. */
   onFieldChange?: (field: PreviewEditableField, value: string | null) => void | Promise<void>;
+  /** Map of shift_id -> shift fields, used to render real hours worked in the Hours column. */
+  shiftsById?: Record<string, ShiftLike | undefined> | null;
 }
 
 export function InvoicePreview({
