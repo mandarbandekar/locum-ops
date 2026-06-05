@@ -350,7 +350,7 @@ Deno.serve(async (req) => {
 
     drawText('Description', colDesc, y, { font: helveticaBold, size: 8, color: gray });
     drawText('Date', colDate, y, { font: helveticaBold, size: 8, color: gray });
-    drawTextRight('Qty', colQty + 20, y, { font: helveticaBold, size: 8, color: gray });
+    drawTextRight('Hours', colQty + 20, y, { font: helveticaBold, size: 8, color: gray });
     drawTextRight('Rate', colRate + 30, y, { font: helveticaBold, size: 8, color: gray });
     drawTextRight('Amount', colAmt, y, { font: helveticaBold, size: 8, color: gray });
     y -= 22;
