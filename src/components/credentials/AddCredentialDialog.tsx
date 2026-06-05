@@ -180,26 +180,49 @@ export function AddCredentialDialog({ open, onOpenChange, editingCredential, onA
               </p>
             )}
 
-            {/* Recent linked CE entries */}
+            {/* Linked CE entries grouped by delivery format */}
             {ceStats.linkedEntries.length > 0 ? (
-              <div className="space-y-1.5">
-                <p className="text-xs font-medium text-muted-foreground">Recent CE Entries</p>
-                {ceStats.linkedEntries.slice(0, 4).map(entry => (
-                  <div key={entry.id} className="flex items-center justify-between text-xs p-2 rounded border bg-background">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <BookOpen className="h-3 w-3 text-muted-foreground shrink-0" />
-                      <span className="truncate">{entry.title}</span>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0 ml-2">
-                      <span className="text-muted-foreground">{entry.hours} hrs</span>
-                      {entry.certificate_file_url ? (
-                        <FileCheck className="h-3 w-3 text-emerald-500" />
-                      ) : (
-                        <AlertCircle className="h-3 w-3 text-amber-500" />
-                      )}
-                    </div>
-                  </div>
-                ))}
+              <div className="space-y-3">
+                <p className="text-xs font-medium text-muted-foreground">CE Entries by Format</p>
+                {(() => {
+                  const groups = new Map<string, typeof ceStats.linkedEntries>();
+                  for (const e of ceStats.linkedEntries) {
+                    const key = (e.delivery_format && e.delivery_format.trim()) || 'Other';
+                    if (!groups.has(key)) groups.set(key, [] as any);
+                    groups.get(key)!.push(e);
+                  }
+                  const sortedGroups = Array.from(groups.entries()).sort(([a], [b]) => a.localeCompare(b));
+                  return sortedGroups.map(([formatName, entries]) => {
+                    const totalHours = entries.reduce((sum, e) => sum + Number(e.hours || 0), 0);
+                    const sortedEntries = [...entries].sort((a, b) =>
+                      (b.completion_date || '').localeCompare(a.completion_date || '')
+                    );
+                    return (
+                      <div key={formatName} className="space-y-1.5">
+                        <div className="flex items-center justify-between text-[11px] text-muted-foreground px-0.5">
+                          <span className="font-medium uppercase tracking-wide">{formatName}</span>
+                          <span>{entries.length} {entries.length === 1 ? 'entry' : 'entries'} · {totalHours} hrs</span>
+                        </div>
+                        {sortedEntries.map(entry => (
+                          <div key={entry.id} className="flex items-center justify-between text-xs p-2 rounded border bg-background">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <BookOpen className="h-3 w-3 text-muted-foreground shrink-0" />
+                              <span className="truncate">{entry.title}</span>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0 ml-2">
+                              <span className="text-muted-foreground">{entry.hours} hrs</span>
+                              {entry.certificate_file_url ? (
+                                <FileCheck className="h-3 w-3 text-emerald-500" />
+                              ) : (
+                                <AlertCircle className="h-3 w-3 text-amber-500" />
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  });
+                })()}
               </div>
             ) : (
               <p className="text-xs text-muted-foreground text-center py-2">No CE logged for this credential yet.</p>
