@@ -160,6 +160,19 @@ export default function FinancialHealthTab() {
       facilityRevenue[s.facility_id] = (facilityRevenue[s.facility_id] || 0) + amt;
     });
 
+    // Past uninvoiced shifts at invoice-generating facilities → still count
+    // as expected revenue from that clinic, even if no draft exists yet.
+    const invoicedShiftIdSet = invoicedShiftIds;
+    shifts.forEach(s => {
+      const f = facById.get(s.facility_id);
+      if (!f || isNoInvoiceFacility(f)) return;
+      if (invoicedShiftIdSet.has(s.id)) return;
+      const end = parseISO(s.end_datetime);
+      if (end >= nowDate) return;
+      if (!isWithinInterval(end, { start: rangeStart, end: rangeEnd })) return;
+      facilityRevenue[s.facility_id] = (facilityRevenue[s.facility_id] || 0) + getShiftTotalRevenue(s);
+    });
+
     return Object.entries(facilityRevenue)
       .map(([facilityId, revenue]) => {
         const name = facilities.find(c => c.id === facilityId)?.name || 'Unknown';
