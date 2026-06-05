@@ -16,8 +16,19 @@ import type { Facility } from '@/types';
 export default function FacilitiesPage() {
   const { facilities, deleteFacility } = useData();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [showAdd, setShowAdd] = useState(false);
   const [viewMode, setViewMode] = useState<'cards' | 'list'>('cards');
+
+  // Open the Add Clinic flow directly when arriving via Quick Add (?new=1).
+  useEffect(() => {
+    if (searchParams.get('new') === '1') {
+      setShowAdd(true);
+      const next = new URLSearchParams(searchParams);
+      next.delete('new');
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const cadenceLabel = (c: Facility) => {
     const labels: Record<string, string> = { daily: 'Daily', weekly: 'Weekly', biweekly: 'Bi-weekly', monthly: 'Monthly' };
