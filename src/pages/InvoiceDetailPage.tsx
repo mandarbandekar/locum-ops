@@ -192,6 +192,7 @@ function InvoiceDetailPageInner() {
     await updateInvoice(patch);
   };
 
+  const shiftsById = Object.fromEntries(shifts.map(s => [s.id, s]));
   const livePreview = (
     <InvoiceLivePreview
       profile={profile}
@@ -209,6 +210,7 @@ function InvoiceDetailPageInner() {
       computedStatus={computedStatus}
       editable={isDraft}
       onFieldChange={handlePreviewFieldChange}
+      shiftsById={shiftsById}
     />
   );
 
