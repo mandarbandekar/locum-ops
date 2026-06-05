@@ -47,7 +47,7 @@ function InvoiceDetailPageInner() {
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
-  const { invoices, lineItems, facilities, contacts, payments, activities, updateInvoice, deleteInvoice, suppressInvoicePeriod, addLineItem, updateLineItem, deleteLineItem, addPayment, addActivity, updateFacility, dataLoading } = useData();
+  const { invoices, lineItems, facilities, contacts, payments, activities, shifts, updateInvoice, deleteInvoice, suppressInvoicePeriod, addLineItem, updateLineItem, deleteLineItem, addPayment, addActivity, updateFacility, dataLoading } = useData();
   const { profile } = useUserProfile();
   const { user } = useAuth();
   const [deleteOpen, setDeleteOpen] = useState(false);
