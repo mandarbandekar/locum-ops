@@ -100,10 +100,11 @@ Deno.serve(async (req) => {
       notes: invoice.notes,
       status: invoice.status,
     },
-    line_items: liRes.data || [],
+    line_items: lineItems,
     facility: resolvedFacility,
     sender: resolvedSender,
     billing_contact: resolvedContact,
+    shifts,
   }), {
     status: 200,
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
