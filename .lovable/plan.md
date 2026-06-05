@@ -1,23 +1,22 @@
-Add a What's New announcement for the redesigned Mileage Tracker.
+## Goal
+Make the Expenses page tabs match the visual style of Business Insights (Financial Health / Performance Insights) — replacing the current shadcn `Tabs` row with the same icon-led "pill" buttons (`primary-tab-btn`) used on `/business`.
 
-### Change
+## Changes
 
-Append one new entry to the `announcements` array in `src/lib/announcements.ts`.
+**`src/pages/ExpensesPage.tsx`**
+- Drop `Tabs`, `TabsList`, `TabsTrigger`, `TabsContent` imports and JSX.
+- Use `useSearchParams` to drive the active tab (`?tab=expenses|mileage|summary`, default `expenses`) — matches BusinessPage pattern and keeps state in URL.
+- Render three `primary-tab-btn` buttons in a `flex gap-2 sm:gap-3 flex-wrap` row, each with a lucide icon + label:
+  - Expenses — `Receipt`
+  - Mileage Tracker — `Car` (keeps the existing red dot badge for `draftCount > 0`, rendered as the absolute-positioned 2.5×2.5 dot used on BusinessPage instead of the current `Badge` number)
+  - Write-Off Summary — `FileSpreadsheet` (or `ClipboardList`)
+- Conditionally render `<ExpenseLogTab />`, `<MileageTrackerTab />`, `<ExpenseSummaryTab />` based on `activeTab` (same conditional pattern as BusinessPage).
+- Keep the existing page-header block unchanged.
 
-### Copy
+## Out of scope
+- No changes to the inner tab components (`ExpenseLogTab`, `MileageTrackerTab`, `ExpenseSummaryTab`) or their content.
+- No changes to the secondary sub-tabs inside Mileage Tracker (Business Drives / Mileage Reports already use `primary-tab-btn`).
+- No routing changes elsewhere.
 
-- **Title:** "Mileage Tracker just got sharper"
-- **Body:** "Your drives are now organized under Business Drives and Mileage Reports. See money found this year at a glance, add miles you tracked elsewhere, and generate cleaner PDF reports with your CPA with year-to-date totals."
-- **CTA:** "Open tracker" → `/expenses?tab=mileage`
-- **Icon:** `Car` (lucide-react)
-- **Priority:** `highlight` (renders inline banner on dashboard until dismissed)
-- **Audience:** `all`
-- **Published:** `2026-06-04`
-
-### No other files touched
-
-WhatsNewButton and HighlightBanner already consume the registry automatically.
-
-### Technical note
-
-Import `Car` from lucide-react alongside existing icons.
+## Open question
+The current Mileage tab badge shows the **number** of drafts (e.g. "3"). BusinessPage style uses a small **red dot** only. Want me to keep the number (more informative) or switch to the dot (more consistent)? Default: switch to the dot for full visual parity.
