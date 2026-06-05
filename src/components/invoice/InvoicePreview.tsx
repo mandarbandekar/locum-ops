@@ -1,5 +1,6 @@
 import { Card } from '@/components/ui/card';
 import { EditableField } from './EditableField';
+import { formatLineHours, type ShiftLike } from '@/lib/lineItemHours';
 
 /** Format a date string to 'MMM d, yyyy' without timezone shift.
  *  Handles both 'YYYY-MM-DD' and ISO timestamps safely. */
