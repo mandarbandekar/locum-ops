@@ -285,7 +285,17 @@ export function InvoicePreview({
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1 space-y-1">
                         <p className="text-sm font-medium leading-snug break-words text-foreground">
-                          {li.description}
+                          {editable && li.id && onLineItemDescriptionChange ? (
+                            <EditableField
+                              editable
+                              value={li.description}
+                              sourceValue={li.description}
+                              onChange={(v) => onLineItemDescriptionChange(li.id!, (v ?? '').toString())}
+                              placeholder="Description"
+                              ariaLabel="Edit line item description"
+                              multiline
+                            />
+                          ) : li.description}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {formatDateShort(li.service_date) || '—'}
