@@ -23,35 +23,34 @@ function itemId(item: AttentionItem): string {
   return `${item.module ?? 'misc'}::${item.title}::${item.amount ?? ''}`;
 }
 
-export function AttentionGroupedList({ items }: Props) {
+export function AttentionGroupedList({ items: allItems }: Props) {
   const navigate = useNavigate();
-  const { isDismissed, dismiss, restoreAll, dismissed } = useDismissedAttention();
+  const { isDismissed, dismiss, restoreAll } = useDismissedAttention();
 
   const visibleItems = useMemo(
-    () => items.filter(i => !isDismissed(itemId(i))),
-    [items, isDismissed],
+    () => allItems.filter(i => !isDismissed(itemId(i))),
+    [allItems, isDismissed],
   );
 
-  const hiddenCount = items.length - visibleItems.length;
+  const hiddenCount = allItems.length - visibleItems.length;
 
-  if (items.length === 0) return null;
-  // Use visibleItems below
-  items = visibleItems;
+  if (allItems.length === 0) return null;
 
   const grouped = GROUP_DEFS
     .map(g => ({
       ...g,
-      items: items
+      items: visibleItems
         .filter(i => i.module && g.modules.includes(i.module))
         .sort((a, b) => a.urgency - b.urgency),
     }))
     .filter(g => g.items.length > 0);
 
   // Catch any unmoduled items — append to first group
-  const unmoduled = items.filter(i => !i.module);
+  const unmoduled = visibleItems.filter(i => !i.module);
   if (unmoduled.length > 0 && grouped[0]) {
     grouped[0].items.push(...unmoduled);
   }
+
 
   return (
     <section className="bg-card rounded-lg border border-border-subtle shadow-sm">
