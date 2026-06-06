@@ -61,7 +61,9 @@ interface PreviewProps {
   invoiceNumber: string;
   invoiceDate: string;
   dueDate: string | null;
-  lineItems: { description: string; service_date: string | null; qty: number; unit_rate: number; line_total: number; shift_id?: string | null; line_kind?: 'regular' | 'flat' | 'overtime' }[];
+  lineItems: { id?: string; description: string; service_date: string | null; qty: number; unit_rate: number; line_total: number; shift_id?: string | null; line_kind?: 'regular' | 'flat' | 'overtime' }[];
+  /** Called when a line item's description is edited inline in the preview. */
+  onLineItemDescriptionChange?: (itemId: string, value: string) => void | Promise<void>;
   total: number;
   balanceDue: number;
   notes: string;
