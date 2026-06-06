@@ -99,6 +99,7 @@ export function InvoiceLivePreview(props: Props) {
           editable={editable}
           onFieldChange={onFieldChange}
           shiftsById={shiftsById}
+          onLineItemDescriptionChange={onLineItemDescriptionChange}
         />
       </div>
     </div>
