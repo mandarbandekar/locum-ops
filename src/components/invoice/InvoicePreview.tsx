@@ -362,7 +362,7 @@ export function InvoicePreview({
 
         {editable && (
           <p className="text-[11px] text-muted-foreground -mt-2">
-            Line items are edited on the left panel.
+            {onLineItemDescriptionChange ? 'Click a description to edit. Quantities and rates are edited on the left panel.' : 'Line items are edited on the left panel.'}
           </p>
         )}
 
