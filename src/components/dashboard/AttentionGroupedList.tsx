@@ -1,6 +1,9 @@
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, AlertCircle } from 'lucide-react';
+import { ArrowRight, AlertCircle, X, Undo2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { useDismissedAttention } from '@/hooks/useDismissedAttention';
 import type { AttentionItem, ReminderModule } from './NeedsAttentionCard';
 
 const GROUP_DEFS: { key: string; title: string; modules: ReminderModule[] }[] = [
@@ -14,9 +17,26 @@ interface Props {
   items: AttentionItem[];
 }
 
+// Stable ID per item. Encodes title + amount so the item re-surfaces when the
+// underlying state changes (e.g., a new mileage trip pushes count from 3 → 4).
+function itemId(item: AttentionItem): string {
+  return `${item.module ?? 'misc'}::${item.title}::${item.amount ?? ''}`;
+}
+
 export function AttentionGroupedList({ items }: Props) {
   const navigate = useNavigate();
+  const { isDismissed, dismiss, restoreAll, dismissed } = useDismissedAttention();
+
+  const visibleItems = useMemo(
+    () => items.filter(i => !isDismissed(itemId(i))),
+    [items, isDismissed],
+  );
+
+  const hiddenCount = items.length - visibleItems.length;
+
   if (items.length === 0) return null;
+  // Use visibleItems below
+  items = visibleItems;
 
   const grouped = GROUP_DEFS
     .map(g => ({
