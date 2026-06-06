@@ -331,7 +331,19 @@ export function InvoicePreview({
                 const hoursLabel = formatLineHours(li, shiftsById);
                 return (
                   <tr key={i} className="border-t">
-                    <td className="p-2.5">{li.description}</td>
+                    <td className="p-2.5">
+                      {editable && li.id && onLineItemDescriptionChange ? (
+                        <EditableField
+                          editable
+                          value={li.description}
+                          sourceValue={li.description}
+                          onChange={(v) => onLineItemDescriptionChange(li.id!, (v ?? '').toString())}
+                          placeholder="Description"
+                          ariaLabel="Edit line item description"
+                          multiline
+                        />
+                      ) : li.description}
+                    </td>
                     <td className="p-2.5 text-muted-foreground">{formatDateShort(li.service_date)}</td>
                     <td className="p-2.5 text-right">{hoursLabel === '—' ? '—' : `${hoursLabel}h`}</td>
                     <td className="p-2.5 text-right">
