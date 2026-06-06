@@ -211,6 +211,11 @@ function InvoiceDetailPageInner() {
       editable={isDraft}
       onFieldChange={handlePreviewFieldChange}
       shiftsById={shiftsById}
+      onLineItemDescriptionChange={async (itemId, value) => {
+        const target = items.find((it: any) => it.id === itemId);
+        if (!target) return;
+        await updateLineItem({ ...target, description: value });
+      }}
     />
   );
 

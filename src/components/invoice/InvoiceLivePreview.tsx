@@ -21,6 +21,7 @@ interface Props {
   /** Called when a preview field is committed. Pass null to clear an override. */
   onFieldChange?: (field: PreviewEditableField, value: string | null) => void | Promise<void>;
   shiftsById?: Record<string, ShiftLike | undefined> | null;
+  onLineItemDescriptionChange?: (itemId: string, value: string) => void | Promise<void>;
 }
 
 const STATUS_TONE: Record<string, string> = {
@@ -37,7 +38,7 @@ export function InvoiceLivePreview(props: Props) {
     items,
     previewInvoiceNumber, previewInvoiceDate, previewDueDate,
     previewNotes, previewTotal, previewBalanceDue, computedStatus,
-    editable, onFieldChange, shiftsById,
+    editable, onFieldChange, shiftsById, onLineItemDescriptionChange,
   } = props;
 
   const statusLabel = computedStatus.charAt(0).toUpperCase() + computedStatus.slice(1);
@@ -98,6 +99,7 @@ export function InvoiceLivePreview(props: Props) {
           editable={editable}
           onFieldChange={onFieldChange}
           shiftsById={shiftsById}
+          onLineItemDescriptionChange={onLineItemDescriptionChange}
         />
       </div>
     </div>

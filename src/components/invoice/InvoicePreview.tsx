@@ -61,7 +61,9 @@ interface PreviewProps {
   invoiceNumber: string;
   invoiceDate: string;
   dueDate: string | null;
-  lineItems: { description: string; service_date: string | null; qty: number; unit_rate: number; line_total: number; shift_id?: string | null; line_kind?: 'regular' | 'flat' | 'overtime' }[];
+  lineItems: { id?: string; description: string; service_date: string | null; qty: number; unit_rate: number; line_total: number; shift_id?: string | null; line_kind?: 'regular' | 'flat' | 'overtime' }[];
+  /** Called when a line item's description is edited inline in the preview. */
+  onLineItemDescriptionChange?: (itemId: string, value: string) => void | Promise<void>;
   total: number;
   balanceDue: number;
   notes: string;
@@ -82,7 +84,7 @@ interface PreviewProps {
 export function InvoicePreview({
   sender, billTo, invoiceNumber, invoiceDate, dueDate, lineItems, total, balanceDue, notes,
   isPaid = false, paidAt,
-  overrides, editable = false, onFieldChange, shiftsById,
+  overrides, editable = false, onFieldChange, shiftsById, onLineItemDescriptionChange,
 }: PreviewProps) {
   const ov = overrides || {};
   const change = (f: PreviewEditableField, v: string | null) => onFieldChange?.(f, v);
@@ -283,7 +285,17 @@ export function InvoicePreview({
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1 space-y-1">
                         <p className="text-sm font-medium leading-snug break-words text-foreground">
-                          {li.description}
+                          {editable && li.id && onLineItemDescriptionChange ? (
+                            <EditableField
+                              editable
+                              value={li.description}
+                              sourceValue={li.description}
+                              onChange={(v) => onLineItemDescriptionChange(li.id!, (v ?? '').toString())}
+                              placeholder="Description"
+                              ariaLabel="Edit line item description"
+                              multiline
+                            />
+                          ) : li.description}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {formatDateShort(li.service_date) || '—'}
@@ -319,7 +331,19 @@ export function InvoicePreview({
                 const hoursLabel = formatLineHours(li, shiftsById);
                 return (
                   <tr key={i} className="border-t">
-                    <td className="p-2.5">{li.description}</td>
+                    <td className="p-2.5">
+                      {editable && li.id && onLineItemDescriptionChange ? (
+                        <EditableField
+                          editable
+                          value={li.description}
+                          sourceValue={li.description}
+                          onChange={(v) => onLineItemDescriptionChange(li.id!, (v ?? '').toString())}
+                          placeholder="Description"
+                          ariaLabel="Edit line item description"
+                          multiline
+                        />
+                      ) : li.description}
+                    </td>
                     <td className="p-2.5 text-muted-foreground">{formatDateShort(li.service_date)}</td>
                     <td className="p-2.5 text-right">{hoursLabel === '—' ? '—' : `${hoursLabel}h`}</td>
                     <td className="p-2.5 text-right">
@@ -338,7 +362,7 @@ export function InvoicePreview({
 
         {editable && (
           <p className="text-[11px] text-muted-foreground -mt-2">
-            Line items are edited on the left panel.
+            {onLineItemDescriptionChange ? 'Click a description to edit. Quantities and rates are edited on the left panel.' : 'Line items are edited on the left panel.'}
           </p>
         )}
 
