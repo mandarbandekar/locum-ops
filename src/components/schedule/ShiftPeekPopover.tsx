@@ -53,11 +53,11 @@ export function ShiftPeekPopover({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-sm sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-left">
-            <span className={`h-3 w-3 rounded-full ${colorDef.bg}`} aria-hidden />
-            <span className="truncate">{facility?.name || 'Unknown clinic'}</span>
+          <DialogTitle className="flex items-start gap-2 text-left pr-6">
+            <span className={`h-3 w-3 rounded-full ${colorDef.bg} mt-1.5 shrink-0`} aria-hidden />
+            <span className="break-words min-w-0">{facility?.name || 'Unknown clinic'}</span>
           </DialogTitle>
           <p className="text-[13px] text-muted-foreground text-left">{dateLabel}</p>
         </DialogHeader>
