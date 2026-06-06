@@ -793,7 +793,7 @@ export default function DashboardPage() {
       )}
 
       {/* Single inline highlight slot — only renders for non-onboarding users with an action-required announcement */}
-      {!showOnboardingHandoff && !showWelcomeBanner && (
+      {!showWelcomeBanner && (
         <HighlightBanner
           ctx={{ shifts, facilities, untypedShiftCount }}
         />
