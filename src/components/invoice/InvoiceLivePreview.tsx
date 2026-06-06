@@ -21,6 +21,7 @@ interface Props {
   /** Called when a preview field is committed. Pass null to clear an override. */
   onFieldChange?: (field: PreviewEditableField, value: string | null) => void | Promise<void>;
   shiftsById?: Record<string, ShiftLike | undefined> | null;
+  onLineItemDescriptionChange?: (itemId: string, value: string) => void | Promise<void>;
 }
 
 const STATUS_TONE: Record<string, string> = {
