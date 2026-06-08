@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -39,6 +39,7 @@ import { formatDateInTz, formatTimeInTz, zonedWallClockToUtc, formatYMDInTz, for
 export default function FacilityDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { facilities, contacts, terms, shifts, invoices, updateFacility, addContact, updateContact, deleteContact, updateTerms, addShift, updateShift, deleteShift } = useData();
   const { getSettings, saveSettings } = useClinicConfirmations();
 
@@ -49,6 +50,36 @@ export default function FacilityDetailPage() {
   const facilityTerms = terms.find(c => c.facility_id === id);
   const facilityShifts = shifts.filter(s => s.facility_id === id).sort((a, b) => new Date(b.start_datetime).getTime() - new Date(a.start_datetime).getTime());
   const facilityInvoices = invoices.filter(i => i.facility_id === id);
+
+  // Drives the "Complete your setup" banner shown after Quick Add (?setup=1)
+  // or whenever a clinic is missing core enrichment fields.
+  const setupChecklist = useMemo(() => {
+    const hasRates = !!facilityTerms && (
+      (facilityTerms.weekday_rate || 0) > 0 ||
+      (facilityTerms.weekend_rate || 0) > 0 ||
+      (facilityTerms.holiday_rate || 0) > 0 ||
+      (facilityTerms.partial_day_rate || 0) > 0 ||
+      (facilityTerms.telemedicine_rate || 0) > 0
+    );
+    const isDirect = (facility.engagement_type || 'direct') === 'direct';
+    const hasBilling = !isDirect || !!(facility.invoice_name_to?.trim() && facility.invoice_email_to?.trim());
+    const hasContact = facilityContacts.length > 0;
+    const items = [
+      { key: 'rates', label: 'Rates', done: hasRates },
+      { key: 'billing', label: 'Billing contact', done: hasBilling },
+      { key: 'people', label: 'People & access', done: hasContact },
+    ];
+    const completed = items.filter(i => i.done).length;
+    return { items, completed, total: items.length, isComplete: completed === items.length };
+  }, [facility, facilityTerms, facilityContacts]);
+
+  const setupRequested = searchParams.get('setup') === '1';
+  const showSetupBanner = setupRequested && !setupChecklist.isComplete;
+  const dismissSetupBanner = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete('setup');
+    setSearchParams(next, { replace: true });
+  };
 
   const handleSaveRates = (rateEntries: RateEntry[]) => {
     const fields = ratesToTermsFields(rateEntries);
@@ -87,7 +118,15 @@ export default function FacilityDetailPage() {
         <div className="flex-1" />
       </div>
 
+      {showSetupBanner && (
+        <SetupBanner
+          checklist={setupChecklist}
+          onDismiss={dismissSetupBanner}
+        />
+      )}
+
       <Tabs defaultValue="contract">
+
         <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="contract" className="gap-1.5"><FileText className="h-3.5 w-3.5" /> Clinic Overview</TabsTrigger>
           <TabsTrigger value="people" className="gap-1.5"><Users className="h-3.5 w-3.5" /> People & Access ({facilityContacts.length})</TabsTrigger>
@@ -134,6 +173,50 @@ export default function FacilityDetailPage() {
           <InvoicesTab invoices={facilityInvoices} onNavigate={(iid) => navigate(`/invoices/${iid}`)} />
         </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+// ─── Setup banner shown after Quick Add (?setup=1) ─────────
+
+interface SetupChecklistItem { key: string; label: string; done: boolean }
+
+function SetupBanner({
+  checklist,
+  onDismiss,
+}: {
+  checklist: { items: SetupChecklistItem[]; completed: number; total: number; isComplete: boolean };
+  onDismiss: () => void;
+}) {
+  return (
+    <div className="mb-4 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-foreground">Complete your clinic setup</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {checklist.completed} of {checklist.total} done. Add the rest from the Clinic Overview tab — nothing is required.
+          </p>
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            {checklist.items.map(item => (
+              <span
+                key={item.key}
+                className={
+                  'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium ' +
+                  (item.done
+                    ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+                    : 'border-border bg-background text-muted-foreground')
+                }
+              >
+                {item.done ? <Check className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
+                {item.label}
+              </span>
+            ))}
+          </div>
+        </div>
+        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={onDismiss} aria-label="Dismiss">
+          <X className="h-3.5 w-3.5" />
+        </Button>
+      </div>
     </div>
   );
 }
