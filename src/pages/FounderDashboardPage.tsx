@@ -347,7 +347,7 @@ export default function FounderDashboardPage() {
                     const isExpanded = expandedUserId === r.user_id;
                     const sess = sessions[r.user_id];
                     return (
-                      <>
+                      <React.Fragment key={r.user_id}>
                         <tr
                           key={r.user_id}
                           className="border-t hover:bg-muted/30 cursor-pointer"
