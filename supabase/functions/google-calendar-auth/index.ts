@@ -52,9 +52,20 @@ Deno.serve(async (req) => {
 
       const userId = claimsData.claims.sub;
 
-      // Generate a state token to prevent CSRF and carry user_id
-      const statePayload = JSON.stringify({ user_id: userId, ts: Date.now() });
-      const state = btoa(statePayload);
+      // Generate a cryptographically random nonce; store the {nonce -> user_id} binding
+      // server-side so the callback cannot be forged by attackers who know a victim's UUID.
+      const nonce = crypto.randomUUID();
+      const adminClientInit = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+      const { error: stateInsertErr } = await adminClientInit
+        .from('oauth_state_tokens')
+        .insert({ nonce, user_id: userId, provider: 'google' });
+      if (stateInsertErr) {
+        console.error('Failed to persist OAuth state:', stateInsertErr);
+        return new Response(JSON.stringify({ error: 'Failed to start OAuth flow' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
 
       const scopes = [
         'https://www.googleapis.com/auth/calendar.events',
@@ -69,7 +80,7 @@ Deno.serve(async (req) => {
       googleAuthUrl.searchParams.set('scope', scopes.join(' '));
       googleAuthUrl.searchParams.set('access_type', 'offline');
       googleAuthUrl.searchParams.set('prompt', 'consent');
-      googleAuthUrl.searchParams.set('state', state);
+      googleAuthUrl.searchParams.set('state', nonce);
 
       return new Response(JSON.stringify({ url: googleAuthUrl.toString() }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
