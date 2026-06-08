@@ -22,7 +22,7 @@ export default function MobileInvoicesPage() {
       const s = computeInvoiceStatus(i);
       (map[s] ||= []).push(i);
     });
-    Object.values(map).forEach(list => list.sort((a, b) => (b.issue_date || '').localeCompare(a.issue_date || '')));
+    Object.values(map).forEach(list => list.sort((a, b) => (b.invoice_date || '').localeCompare(a.invoice_date || '')));
     return map;
   }, [invoices]);
 
@@ -52,7 +52,7 @@ export default function MobileInvoicesPage() {
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{f?.name || 'Clinic'}</p>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          {inv.invoice_number} · ${Number(inv.total || 0).toLocaleString()}
+                          {inv.invoice_number} · ${Number(inv.total_amount || 0).toLocaleString()}
                         </p>
                       </div>
                       <Badge
