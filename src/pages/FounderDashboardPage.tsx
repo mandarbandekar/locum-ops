@@ -370,11 +370,11 @@ export default function FounderDashboardPage() {
                 {loading && rows.length === 0 ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <tr key={i} className="border-t">
-                      <td colSpan={11} className="px-4 py-3"><Skeleton className="h-5 w-full" /></td>
+                      <td colSpan={12} className="px-4 py-3"><Skeleton className="h-5 w-full" /></td>
                     </tr>
                   ))
                 ) : sorted.length === 0 ? (
-                  <tr><td colSpan={11} className="px-4 py-10 text-center text-muted-foreground">No users yet.</td></tr>
+                  <tr><td colSpan={12} className="px-4 py-10 text-center text-muted-foreground">No users yet.</td></tr>
                 ) : (
                   sorted.map((r) => {
                     const isExpanded = expandedUserId === r.user_id;
@@ -415,7 +415,7 @@ export default function FounderDashboardPage() {
                         </tr>
                         {isExpanded && (
                           <tr key={r.user_id + ':panel'} className="border-t bg-muted/20">
-                            <td colSpan={11} className="px-6 py-4">
+                            <td colSpan={12} className="px-6 py-4">
                               <SessionPanel state={sess} />
                             </td>
                           </tr>
