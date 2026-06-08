@@ -355,6 +355,7 @@ export default function FounderDashboardPage() {
                   <Th onClick={() => toggleSort('email')}>Email</Th>
                   <Th onClick={() => toggleSort('signed_up_at')}>Signed up</Th>
                   <Th onClick={() => toggleSort('last_sign_in_at')}>Last login</Th>
+                  <Th onClick={() => toggleSort('last_activity_at')}>Last activity</Th>
                   <Th onClick={() => toggleSort('clinic_count')} align="right">Clinics</Th>
                   <Th onClick={() => toggleSort('shift_count')} align="right">Shifts</Th>
                   <Th onClick={() => toggleSort('invoice_count')} align="right">Invoices</Th>
