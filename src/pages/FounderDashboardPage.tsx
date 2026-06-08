@@ -399,6 +399,11 @@ export default function FounderDashboardPage() {
                           </td>
                           <td className="px-4 py-2.5 text-muted-foreground">{formatDate(r.signed_up_at)}</td>
                           <td className="px-4 py-2.5 text-muted-foreground">{formatRelative(r.last_sign_in_at)}</td>
+                          <td className="px-4 py-2.5 text-muted-foreground">
+                            <span className={isActiveWithin(r.last_activity_at, 7) ? 'text-foreground font-medium' : ''}>
+                              {formatRelative(r.last_activity_at)}
+                            </span>
+                          </td>
                           <td className="px-4 py-2.5 text-right tabular-nums">{r.clinic_count}</td>
                           <td className="px-4 py-2.5 text-right tabular-nums">{r.shift_count}</td>
                           <td className="px-4 py-2.5 text-right tabular-nums">{r.invoice_count}</td>
