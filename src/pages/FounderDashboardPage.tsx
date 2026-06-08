@@ -343,26 +343,48 @@ export default function FounderDashboardPage() {
                 ) : sorted.length === 0 ? (
                   <tr><td colSpan={11} className="px-4 py-10 text-center text-muted-foreground">No users yet.</td></tr>
                 ) : (
-                  sorted.map((r) => (
-                    <tr key={r.user_id} className="border-t hover:bg-muted/30">
-                      <td className="px-4 py-2.5">
-                        <div className="font-medium text-foreground">{r.email}</div>
-                        {r.display_name && r.display_name !== r.email && (
-                          <div className="text-xs text-muted-foreground">{r.display_name}</div>
+                  sorted.map((r) => {
+                    const isExpanded = expandedUserId === r.user_id;
+                    const sess = sessions[r.user_id];
+                    return (
+                      <>
+                        <tr
+                          key={r.user_id}
+                          className="border-t hover:bg-muted/30 cursor-pointer"
+                          onClick={() => toggleExpand(r.user_id)}
+                        >
+                          <td className="px-4 py-2.5">
+                            <div className="flex items-center gap-1.5">
+                              <ChevronRight className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                              <div>
+                                <div className="font-medium text-foreground">{r.email}</div>
+                                {r.display_name && r.display_name !== r.email && (
+                                  <div className="text-xs text-muted-foreground">{r.display_name}</div>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-2.5 text-muted-foreground">{formatDate(r.signed_up_at)}</td>
+                          <td className="px-4 py-2.5 text-muted-foreground">{formatRelative(r.last_sign_in_at)}</td>
+                          <td className="px-4 py-2.5 text-right tabular-nums">{r.clinic_count}</td>
+                          <td className="px-4 py-2.5 text-right tabular-nums">{r.shift_count}</td>
+                          <td className="px-4 py-2.5 text-right tabular-nums">{r.invoice_count}</td>
+                          <td className="px-4 py-2.5 text-right tabular-nums">{r.downloaded_invoice_count}</td>
+                          <td className="px-4 py-2.5 text-right tabular-nums">{r.credential_count}</td>
+                          <td className="px-4 py-2.5 text-right tabular-nums">{r.expense_count}</td>
+                          <td className="px-4 py-2.5"><DeviceCell row={r} /></td>
+                          <td className="px-4 py-2.5"><StatusPill status={r.activation_status} /></td>
+                        </tr>
+                        {isExpanded && (
+                          <tr key={r.user_id + ':panel'} className="border-t bg-muted/20">
+                            <td colSpan={11} className="px-6 py-4">
+                              <SessionPanel state={sess} />
+                            </td>
+                          </tr>
                         )}
-                      </td>
-                      <td className="px-4 py-2.5 text-muted-foreground">{formatDate(r.signed_up_at)}</td>
-                      <td className="px-4 py-2.5 text-muted-foreground">{formatRelative(r.last_sign_in_at)}</td>
-                      <td className="px-4 py-2.5 text-right tabular-nums">{r.clinic_count}</td>
-                      <td className="px-4 py-2.5 text-right tabular-nums">{r.shift_count}</td>
-                      <td className="px-4 py-2.5 text-right tabular-nums">{r.invoice_count}</td>
-                      <td className="px-4 py-2.5 text-right tabular-nums">{r.downloaded_invoice_count}</td>
-                      <td className="px-4 py-2.5 text-right tabular-nums">{r.credential_count}</td>
-                      <td className="px-4 py-2.5 text-right tabular-nums">{r.expense_count}</td>
-                      <td className="px-4 py-2.5"><DeviceCell row={r} /></td>
-                      <td className="px-4 py-2.5"><StatusPill status={r.activation_status} /></td>
-                    </tr>
-                  ))
+                      </>
+                    );
+                  })
                 )}
               </tbody>
             </table>
