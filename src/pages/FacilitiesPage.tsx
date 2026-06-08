@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Trash2, MapPin, AlertTriangle, LayoutGrid, List, Mail, CalendarClock, User, Building2 } from 'lucide-react';
+import { Plus, Trash2, MapPin, AlertTriangle, LayoutGrid, List, Mail, CalendarClock, User, Building2, Sparkles } from 'lucide-react';
 import { AddFacilityDialog } from '@/components/AddFacilityDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 import type { Facility } from '@/types';
 
 export default function FacilitiesPage() {
-  const { facilities, deleteFacility } = useData();
+  const { facilities, terms, contacts, deleteFacility } = useData();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [showAdd, setShowAdd] = useState(false);
@@ -37,6 +37,24 @@ export default function FacilitiesPage() {
 
   const hasBillingContact = (c: Facility) =>
     !!(c.invoice_name_to?.trim() && c.invoice_email_to?.trim());
+
+  // A clinic is "setup incomplete" when it's still missing core enrichment.
+  // We only flag direct clinics (third-party clinics don't need billing here)
+  // and require at least one rate, a billing contact, and one person.
+  const isSetupIncomplete = (c: Facility): boolean => {
+    const isDirect = (c.engagement_type || 'direct') === 'direct';
+    const t = terms.find(x => x.facility_id === c.id);
+    const hasRates = !!t && (
+      (t.weekday_rate || 0) > 0 ||
+      (t.weekend_rate || 0) > 0 ||
+      (t.holiday_rate || 0) > 0 ||
+      (t.partial_day_rate || 0) > 0 ||
+      (t.telemedicine_rate || 0) > 0
+    );
+    const hasPeople = contacts.some(p => p.facility_id === c.id);
+    const billingOk = !isDirect || hasBillingContact(c);
+    return !(hasRates && billingOk && hasPeople);
+  };
 
 
 
