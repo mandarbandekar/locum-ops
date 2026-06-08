@@ -2343,6 +2343,33 @@ export type Database = {
           },
         ]
       }
+      oauth_state_tokens: {
+        Row: {
+          consumed_at: string | null
+          created_at: string
+          expires_at: string
+          nonce: string
+          provider: string
+          user_id: string
+        }
+        Insert: {
+          consumed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          nonce: string
+          provider: string
+          user_id: string
+        }
+        Update: {
+          consumed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          nonce?: string
+          provider?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       production_benchmarks: {
         Row: {
           avg_daily_production_cents: number
