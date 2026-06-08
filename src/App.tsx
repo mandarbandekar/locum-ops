@@ -9,6 +9,13 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { UserProfileProvider, useUserProfile } from "@/contexts/UserProfileContext";
 import { DataProvider } from "@/contexts/DataContext";
 import { Layout } from "@/components/Layout";
+import { ResponsiveLayout } from "@/components/mobile/ResponsiveLayout";
+import { useIsMobile } from "@/hooks/use-mobile";
+import MobileHomePage from "@/pages/mobile/MobileHomePage";
+import MobileSchedulePage from "@/pages/mobile/MobileSchedulePage";
+import MobileFacilitiesPage from "@/pages/mobile/MobileFacilitiesPage";
+import MobileInvoicesPage from "@/pages/mobile/MobileInvoicesPage";
+import MobileMorePage from "@/pages/mobile/MobileMorePage";
 
 
 import { useIdleTimeout } from "@/hooks/useIdleTimeout";
@@ -108,16 +115,18 @@ function AuthenticatedApp() {
     );
   }
 
+  const isMobile = useIsMobile();
   return (
     <DataProvider isDemo={isDemo}>
-      <Layout>
+      <ResponsiveLayout>
         <Routes>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/facilities" element={<FacilitiesPage />} />
+          <Route path="/" element={isMobile ? <MobileHomePage /> : <DashboardPage />} />
+          <Route path="/facilities" element={isMobile ? <MobileFacilitiesPage /> : <FacilitiesPage />} />
           <Route path="/facilities/:id" element={<FacilityDetailPage />} />
-          <Route path="/schedule" element={<SchedulePage />} />
-          <Route path="/invoices" element={<InvoicesPage />} />
+          <Route path="/schedule" element={isMobile ? <MobileSchedulePage /> : <SchedulePage />} />
+          <Route path="/invoices" element={isMobile ? <MobileInvoicesPage /> : <InvoicesPage />} />
           <Route path="/invoices/:id" element={<InvoiceDetailPage />} />
+          <Route path="/more" element={isMobile ? <MobileMorePage /> : <Navigate to="/settings/profile" replace />} />
           <Route path="/invoice/public/:token" element={<PublicInvoicePage />} />
           <Route path="/confirmations/public/:token" element={<PublicConfirmationPage />} />
           <Route path="/business" element={<BusinessPage />} />
@@ -156,7 +165,7 @@ function AuthenticatedApp() {
           <Route path="/forgot-password" element={<Navigate to="/settings/security" replace />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </Layout>
+      </ResponsiveLayout>
     </DataProvider>
   );
 }
