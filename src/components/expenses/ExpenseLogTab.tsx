@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, Trash2, Search, Receipt, DollarSign, TrendingUp, CalendarDays, X, Repeat, PiggyBank } from 'lucide-react';
+import { Plus, Trash2, Search, Receipt, DollarSign, TrendingUp, CalendarDays, X, Repeat, PiggyBank, ChevronRight, Car } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
 import { EXPENSE_CATEGORIES, findSubcategory } from '@/lib/expenseCategories';
 import AddExpenseDialog from './AddExpenseDialog';
@@ -235,70 +235,140 @@ export default function ExpenseLogTab({
             </Select>
           </div>
 
-          <div className="space-y-2">
-            {filtered.map(exp => {
+          <div className="border border-border rounded-lg overflow-hidden bg-card">
+            {/* Header row — desktop only */}
+            <div className="hidden sm:grid grid-cols-[80px_90px_110px_1fr_160px_120px_40px] items-center gap-3 px-4 py-2.5 bg-muted/40 border-b border-border text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+              <div>Receipt</div>
+              <div>Date</div>
+              <div>Status</div>
+              <div>Merchant</div>
+              <div>Category</div>
+              <div className="text-right">Amount</div>
+              <div />
+            </div>
+
+            {filtered.map((exp, idx) => {
               const sub = findSubcategory(exp.subcategory);
               const catGroup = EXPENSE_CATEGORIES.find(g => g.key === exp.category);
+              const isRecurring = exp.recurrence_type === 'monthly' || exp.recurrence_type === 'quarterly' || exp.recurrence_type === 'yearly';
+              const isAuto = !!exp.recurrence_parent_id;
+              const isMileage = exp.category === 'vehicle' || exp.subcategory === 'mileage';
+              const isDeductible = exp.deductible_amount_cents > 0;
+              const dateLabel = parseLocalYMD(exp.expense_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+              const merchantLabel = sub?.label || exp.subcategory || 'Expense';
+              const secondaryParts = [
+                exp.description,
+                exp.facility_id ? facilityMap[exp.facility_id] : null,
+              ].filter(Boolean).join(' · ');
+
               return (
-                <Card key={exp.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => openEdit(exp)}>
-                  <CardContent className="py-3 px-4 flex items-center gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium text-sm truncate">
-                          {sub?.label || exp.subcategory || 'Expense'}
+                <div
+                  key={exp.id}
+                  onClick={() => openEdit(exp)}
+                  className={`group cursor-pointer transition-colors hover:bg-muted/40 ${idx !== filtered.length - 1 ? 'border-b border-border/60' : ''}`}
+                >
+                  {/* Desktop row */}
+                  <div className="hidden sm:grid grid-cols-[80px_90px_110px_1fr_160px_120px_40px] items-center gap-3 px-4 py-3">
+                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                      <span className="inline-flex items-center justify-center h-7 w-7 rounded-md bg-muted">
+                        <Receipt className={`h-3.5 w-3.5 ${exp.receipt_url ? 'text-foreground' : 'text-muted-foreground/50'}`} />
+                      </span>
+                      {isMileage && (
+                        <span className="inline-flex items-center justify-center h-7 w-7 rounded-md bg-muted" title="Mileage">
+                          <Car className="h-3.5 w-3.5" />
                         </span>
-                        <Badge variant="secondary" className="text-[10px] shrink-0">
-                          {catGroup?.label || exp.category}
-                        </Badge>
-                        {exp.receipt_url && (
-                          <Badge variant="outline" className="text-[10px] gap-1 text-green-700 border-green-300 bg-green-50 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800 shrink-0">
-                            <Receipt className="h-3 w-3" />
-                            Receipt
-                          </Badge>
-                        )}
-                        {(exp.recurrence_type === 'monthly' || exp.recurrence_type === 'quarterly' || exp.recurrence_type === 'yearly') && (
-                          <Badge variant="outline" className="text-[10px] gap-1 text-blue-700 border-blue-300 bg-blue-50 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800 shrink-0">
-                            <Repeat className="h-3 w-3" />
-                            {exp.recurrence_type === 'monthly' ? 'Monthly' : exp.recurrence_type === 'quarterly' ? 'Quarterly' : 'Yearly'}
-                          </Badge>
-                        )}
-                        {exp.recurrence_parent_id && (
-                          <Badge variant="outline" className="text-[10px] gap-1 text-blue-600 border-blue-200 bg-blue-50/50 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-800 shrink-0">
-                            <Repeat className="h-3 w-3" />
-                            Auto
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                        <span>{parseLocalYMD(exp.expense_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                        {exp.description && <span className="truncate">· {exp.description}</span>}
-                        {exp.facility_id && facilityMap[exp.facility_id] && (
-                          <span className="truncate">· {facilityMap[exp.facility_id]}</span>
-                        )}
-                      </div>
+                      )}
+                      {(isRecurring || isAuto) && (
+                        <span className="inline-flex items-center justify-center h-7 w-7 rounded-md bg-muted" title={isAuto ? 'Auto-generated' : 'Recurring'}>
+                          <Repeat className="h-3.5 w-3.5" />
+                        </span>
+                      )}
                     </div>
-                    <div className="text-right shrink-0">
-                      <p className="font-semibold text-sm">${(exp.amount_cents / 100).toFixed(2)}</p>
+                    <div className="text-sm tabular-nums">{dateLabel}</div>
+                    <div>
+                      <Badge
+                        variant="outline"
+                        className={`text-[10px] font-medium rounded-full px-2 py-0.5 ${
+                          isDeductible
+                            ? 'text-green-700 border-green-300 bg-green-50 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800'
+                            : 'text-muted-foreground border-border bg-muted/50'
+                        }`}
+                      >
+                        {isDeductible ? 'Deductible' : 'Logged'}
+                      </Badge>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{merchantLabel}</p>
+                      {secondaryParts && (
+                        <p className="text-xs text-muted-foreground truncate">{secondaryParts}</p>
+                      )}
+                    </div>
+                    <div className="text-sm text-muted-foreground truncate">{catGroup?.label || exp.category}</div>
+                    <div className="text-right">
+                      <p className="text-sm font-semibold tabular-nums">${(exp.amount_cents / 100).toFixed(2)}</p>
                       {exp.deductible_amount_cents !== exp.amount_cents && (
-                        <p className="text-[10px] text-muted-foreground">
-                          ${(exp.deductible_amount_cents / 100).toFixed(2)} deductible
+                        <p className="text-[10px] text-muted-foreground tabular-nums">
+                          ${(exp.deductible_amount_cents / 100).toFixed(2)} ded.
                         </p>
                       )}
+                    </div>
+                    <div className="flex items-center justify-end text-muted-foreground">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity"
+                        onClick={(e) => { e.stopPropagation(); setDeleteTarget(exp); }}
+                        aria-label="Delete expense"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                      <ChevronRight className="h-4 w-4 group-hover:hidden" />
+                    </div>
+                  </div>
+
+                  {/* Mobile row */}
+                  <div className="sm:hidden flex items-center gap-3 px-3 py-3">
+                    <span className="inline-flex items-center justify-center h-9 w-9 rounded-md bg-muted shrink-0">
+                      <Receipt className={`h-4 w-4 ${exp.receipt_url ? 'text-foreground' : 'text-muted-foreground/50'}`} />
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium truncate">{merchantLabel}</p>
+                        {(isRecurring || isAuto) && <Repeat className="h-3 w-3 text-muted-foreground shrink-0" />}
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {dateLabel} · {catGroup?.label || exp.category}
+                        {secondaryParts ? ` · ${secondaryParts}` : ''}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-sm font-semibold tabular-nums">${(exp.amount_cents / 100).toFixed(2)}</p>
+                      <Badge
+                        variant="outline"
+                        className={`text-[9px] font-medium rounded-full px-1.5 py-0 mt-0.5 ${
+                          isDeductible
+                            ? 'text-green-700 border-green-300 bg-green-50 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800'
+                            : 'text-muted-foreground border-border bg-muted/50'
+                        }`}
+                      >
+                        {isDeductible ? 'Deductible' : 'Logged'}
+                      </Badge>
                     </div>
                     <Button
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
                       onClick={(e) => { e.stopPropagation(); setDeleteTarget(exp); }}
+                      aria-label="Delete expense"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               );
             })}
             {filtered.length === 0 && (
-              <p className="text-center text-muted-foreground text-sm py-8">No expenses match your filters.</p>
+              <p className="text-center text-muted-foreground text-sm py-10">No expenses match your filters.</p>
             )}
           </div>
         </div>
