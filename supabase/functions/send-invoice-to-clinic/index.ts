@@ -71,13 +71,34 @@ Deno.serve(async (req) => {
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!
+
+  // ── Authenticate caller from JWT (do NOT trust user_id from body) ──
+  const authHeader = req.headers.get('Authorization')
+  if (!authHeader?.startsWith('Bearer ')) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
+  const token = authHeader.replace('Bearer ', '')
+  const authClient = createClient(supabaseUrl, anonKey, {
+    global: { headers: { Authorization: authHeader } },
+  })
+  const { data: claimsData, error: claimsErr } = await authClient.auth.getClaims(token)
+  if (claimsErr || !claimsData?.claims?.sub) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
+  const user_id = claimsData.claims.sub as string
 
   const supabase = createClient(supabaseUrl, serviceKey)
 
   // ── Parse + validate body ──
   let body: {
     invoice_id?: string
-    user_id?: string
     custom_subject?: string
     custom_body?: string
     cc_sender?: boolean
@@ -92,12 +113,12 @@ Deno.serve(async (req) => {
     })
   }
 
-  const { invoice_id, user_id, custom_subject, custom_body, cc_sender, mode } = body
+  const { invoice_id, custom_subject, custom_body, cc_sender, mode } = body
   const isFollowup = mode === 'followup'
 
-  if (!invoice_id || !user_id) {
+  if (!invoice_id) {
     return new Response(
-      JSON.stringify({ error: 'invoice_id and user_id are required' }),
+      JSON.stringify({ error: 'invoice_id is required' }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
