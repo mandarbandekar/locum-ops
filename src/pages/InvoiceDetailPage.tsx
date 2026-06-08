@@ -466,7 +466,17 @@ function InvoiceDetailPageInner() {
   );
 }
 
+import { useIsMobileShell } from '@/hooks/useIsMobileShell';
+import { MobileInvoiceDetailPage } from '@/pages/mobile/MobileInvoiceDetailPage';
+
 export default function InvoiceDetailPage() {
+  const isMobile = useIsMobileShell();
+  const [params] = useSearchParams();
+  if (isMobile && params.get('edit') !== '1') return <MobileInvoiceDetailPage />;
+  return <DesktopInvoiceDetailPage />;
+}
+
+function DesktopInvoiceDetailPage() {
   const navigate = useNavigate();
   return (
     <ErrorBoundary

@@ -13,7 +13,16 @@ import { getEngagementPill } from '@/lib/engagementOptions';
 import { cn } from '@/lib/utils';
 import type { Facility } from '@/types';
 
+import { useIsMobileShell } from '@/hooks/useIsMobileShell';
+import { MobileClinicsPage } from '@/pages/mobile/MobileClinicsPage';
+
 export default function FacilitiesPage() {
+  const isMobile = useIsMobileShell();
+  if (isMobile) return <MobileClinicsPage />;
+  return <DesktopFacilitiesPage />;
+}
+
+function DesktopFacilitiesPage() {
   const { facilities, terms, contacts, deleteFacility } = useData();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
