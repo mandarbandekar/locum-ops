@@ -173,7 +173,7 @@ export function MobileMoneyPage() {
       )}
 
       {tab === "invoices" && (
-        <MobileFab label="Create invoice" onClick={() => navigate("/invoices")} />
+        <MobileFab label="Create invoice" onClick={() => navigate("/invoices")} iconOnly />
       )}
 
       <AddExpenseDialog
