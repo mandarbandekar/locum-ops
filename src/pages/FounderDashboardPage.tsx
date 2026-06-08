@@ -103,7 +103,7 @@ function capitalize(s: string) {
 
 type SortKey = keyof Pick<
   FounderRow,
-  'email' | 'signed_up_at' | 'last_sign_in_at' | 'clinic_count' | 'shift_count' | 'invoice_count' | 'downloaded_invoice_count' | 'credential_count' | 'expense_count' | 'activation_status' | 'last_device'
+  'email' | 'signed_up_at' | 'last_sign_in_at' | 'last_activity_at' | 'clinic_count' | 'shift_count' | 'invoice_count' | 'downloaded_invoice_count' | 'credential_count' | 'expense_count' | 'activation_status' | 'last_device'
 >;
 
 function formatDate(d?: string | null) {
@@ -190,9 +190,19 @@ export default function FounderDashboardPage() {
   }, [rows, sortKey, sortDir]);
 
   const total = rows.length;
-  const activeCount = rows.filter((r) => r.activation_status === 'active').length;
+  
   const activatedCount = rows.filter((r) => r.shift_count >= 1).length;
   const invoicingCount = rows.filter((r) => r.invoice_count >= 1).length;
+  const now = Date.now();
+  const isActiveWithin = (d: string | null, days: number) => {
+    if (!d) return false;
+    const t = new Date(d).getTime();
+    if (isNaN(t)) return false;
+    return now - t <= days * 24 * 60 * 60 * 1000;
+  };
+  const wauCount = rows.filter((r) => isActiveWithin(r.last_activity_at, 7)).length;
+  const dauCount = rows.filter((r) => isActiveWithin(r.last_activity_at, 1)).length;
+  const mauCount = rows.filter((r) => isActiveWithin(r.last_activity_at, 30)).length;
 
   // Device totals across all testers
   const deviceTotals = rows.reduce(
@@ -282,9 +292,16 @@ export default function FounderDashboardPage() {
       {/* Hero metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-4">
         <MetricCard label="Total testers" value={total} sub={loading && !total ? 'Loading…' : `${total} total`} />
-        <MetricCard label="Active" value={activeCount} sub={`${pct(activeCount, total)} of testers`} />
+        <MetricCard label="Weekly active" value={wauCount} sub={`${pct(wauCount, total)} active in last 7d`} />
         <MetricCard label="Activated" value={activatedCount} sub={`${pct(activatedCount, total)} have a shift`} />
         <MetricCard label="Invoicing" value={invoicingCount} sub={`${pct(invoicingCount, total)} have an invoice`} />
+      </div>
+
+      {/* Activity breakdown */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4">
+        <MetricCard label="Daily active (24h)" value={dauCount} sub={`${pct(dauCount, total)} of testers`} />
+        <MetricCard label="Weekly active (7d)" value={wauCount} sub={`${pct(wauCount, total)} of testers`} />
+        <MetricCard label="Monthly active (30d)" value={mauCount} sub={`${pct(mauCount, total)} of testers`} />
       </div>
 
       {/* Device usage */}
@@ -338,6 +355,7 @@ export default function FounderDashboardPage() {
                   <Th onClick={() => toggleSort('email')}>Email</Th>
                   <Th onClick={() => toggleSort('signed_up_at')}>Signed up</Th>
                   <Th onClick={() => toggleSort('last_sign_in_at')}>Last login</Th>
+                  <Th onClick={() => toggleSort('last_activity_at')}>Last activity</Th>
                   <Th onClick={() => toggleSort('clinic_count')} align="right">Clinics</Th>
                   <Th onClick={() => toggleSort('shift_count')} align="right">Shifts</Th>
                   <Th onClick={() => toggleSort('invoice_count')} align="right">Invoices</Th>
@@ -352,11 +370,11 @@ export default function FounderDashboardPage() {
                 {loading && rows.length === 0 ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <tr key={i} className="border-t">
-                      <td colSpan={11} className="px-4 py-3"><Skeleton className="h-5 w-full" /></td>
+                      <td colSpan={12} className="px-4 py-3"><Skeleton className="h-5 w-full" /></td>
                     </tr>
                   ))
                 ) : sorted.length === 0 ? (
-                  <tr><td colSpan={11} className="px-4 py-10 text-center text-muted-foreground">No users yet.</td></tr>
+                  <tr><td colSpan={12} className="px-4 py-10 text-center text-muted-foreground">No users yet.</td></tr>
                 ) : (
                   sorted.map((r) => {
                     const isExpanded = expandedUserId === r.user_id;
@@ -381,6 +399,11 @@ export default function FounderDashboardPage() {
                           </td>
                           <td className="px-4 py-2.5 text-muted-foreground">{formatDate(r.signed_up_at)}</td>
                           <td className="px-4 py-2.5 text-muted-foreground">{formatRelative(r.last_sign_in_at)}</td>
+                          <td className="px-4 py-2.5 text-muted-foreground">
+                            <span className={isActiveWithin(r.last_activity_at, 7) ? 'text-foreground font-medium' : ''}>
+                              {formatRelative(r.last_activity_at)}
+                            </span>
+                          </td>
                           <td className="px-4 py-2.5 text-right tabular-nums">{r.clinic_count}</td>
                           <td className="px-4 py-2.5 text-right tabular-nums">{r.shift_count}</td>
                           <td className="px-4 py-2.5 text-right tabular-nums">{r.invoice_count}</td>
@@ -392,7 +415,7 @@ export default function FounderDashboardPage() {
                         </tr>
                         {isExpanded && (
                           <tr key={r.user_id + ':panel'} className="border-t bg-muted/20">
-                            <td colSpan={11} className="px-6 py-4">
+                            <td colSpan={12} className="px-6 py-4">
                               <SessionPanel state={sess} />
                             </td>
                           </tr>
