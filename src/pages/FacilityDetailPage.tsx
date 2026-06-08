@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -39,6 +39,7 @@ import { formatDateInTz, formatTimeInTz, zonedWallClockToUtc, formatYMDInTz, for
 export default function FacilityDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { facilities, contacts, terms, shifts, invoices, updateFacility, addContact, updateContact, deleteContact, updateTerms, addShift, updateShift, deleteShift } = useData();
   const { getSettings, saveSettings } = useClinicConfirmations();
 
@@ -49,6 +50,36 @@ export default function FacilityDetailPage() {
   const facilityTerms = terms.find(c => c.facility_id === id);
   const facilityShifts = shifts.filter(s => s.facility_id === id).sort((a, b) => new Date(b.start_datetime).getTime() - new Date(a.start_datetime).getTime());
   const facilityInvoices = invoices.filter(i => i.facility_id === id);
+
+  // Drives the "Complete your setup" banner shown after Quick Add (?setup=1)
+  // or whenever a clinic is missing core enrichment fields.
+  const setupChecklist = useMemo(() => {
+    const hasRates = !!facilityTerms && (
+      (facilityTerms.weekday_rate || 0) > 0 ||
+      (facilityTerms.weekend_rate || 0) > 0 ||
+      (facilityTerms.holiday_rate || 0) > 0 ||
+      (facilityTerms.partial_day_rate || 0) > 0 ||
+      (facilityTerms.telemedicine_rate || 0) > 0
+    );
+    const isDirect = (facility.engagement_type || 'direct') === 'direct';
+    const hasBilling = !isDirect || !!(facility.invoice_name_to?.trim() && facility.invoice_email_to?.trim());
+    const hasContact = facilityContacts.length > 0;
+    const items = [
+      { key: 'rates', label: 'Rates', done: hasRates },
+      { key: 'billing', label: 'Billing contact', done: hasBilling },
+      { key: 'people', label: 'People & access', done: hasContact },
+    ];
+    const completed = items.filter(i => i.done).length;
+    return { items, completed, total: items.length, isComplete: completed === items.length };
+  }, [facility, facilityTerms, facilityContacts]);
+
+  const setupRequested = searchParams.get('setup') === '1';
+  const showSetupBanner = setupRequested && !setupChecklist.isComplete;
+  const dismissSetupBanner = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete('setup');
+    setSearchParams(next, { replace: true });
+  };
 
   const handleSaveRates = (rateEntries: RateEntry[]) => {
     const fields = ratesToTermsFields(rateEntries);
