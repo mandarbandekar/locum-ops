@@ -151,6 +151,16 @@ export default function FacilitiesPage() {
                       {cadenceLabel(c)}
                     </Badge>
                   )}
+                  {isSetupIncomplete(c) && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); navigate(`/facilities/${c.id}?setup=1`); }}
+                      className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/5 px-2 py-0.5 text-[10px] font-medium text-primary hover:bg-primary/10 transition-colors"
+                    >
+                      <Sparkles className="h-2.5 w-2.5" />
+                      Setup incomplete · Add details
+                    </button>
+                  )}
                 </div>
 
                 <div className="border-t border-border mt-3 pt-3 text-xs">
