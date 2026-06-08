@@ -103,7 +103,7 @@ function capitalize(s: string) {
 
 type SortKey = keyof Pick<
   FounderRow,
-  'email' | 'signed_up_at' | 'last_sign_in_at' | 'clinic_count' | 'shift_count' | 'invoice_count' | 'downloaded_invoice_count' | 'credential_count' | 'expense_count' | 'activation_status' | 'last_device'
+  'email' | 'signed_up_at' | 'last_sign_in_at' | 'last_activity_at' | 'clinic_count' | 'shift_count' | 'invoice_count' | 'downloaded_invoice_count' | 'credential_count' | 'expense_count' | 'activation_status' | 'last_device'
 >;
 
 function formatDate(d?: string | null) {
