@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, Trash2, Search, Receipt, DollarSign, TrendingUp, CalendarDays, X, Repeat, PiggyBank } from 'lucide-react';
+import { Plus, Trash2, Search, Receipt, DollarSign, TrendingUp, CalendarDays, X, Repeat, PiggyBank, ChevronRight, Car } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
 import { EXPENSE_CATEGORIES, findSubcategory } from '@/lib/expenseCategories';
 import AddExpenseDialog from './AddExpenseDialog';
