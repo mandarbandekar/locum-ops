@@ -52,9 +52,20 @@ Deno.serve(async (req) => {
 
       const userId = claimsData.claims.sub;
 
-      // Generate a state token to prevent CSRF and carry user_id
-      const statePayload = JSON.stringify({ user_id: userId, ts: Date.now() });
-      const state = btoa(statePayload);
+      // Generate a cryptographically random nonce; store the {nonce -> user_id} binding
+      // server-side so the callback cannot be forged by attackers who know a victim's UUID.
+      const nonce = crypto.randomUUID();
+      const adminClientInit = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+      const { error: stateInsertErr } = await adminClientInit
+        .from('oauth_state_tokens')
+        .insert({ nonce, user_id: userId, provider: 'google' });
+      if (stateInsertErr) {
+        console.error('Failed to persist OAuth state:', stateInsertErr);
+        return new Response(JSON.stringify({ error: 'Failed to start OAuth flow' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
 
       const scopes = [
         'https://www.googleapis.com/auth/calendar.events',
@@ -69,7 +80,7 @@ Deno.serve(async (req) => {
       googleAuthUrl.searchParams.set('scope', scopes.join(' '));
       googleAuthUrl.searchParams.set('access_type', 'offline');
       googleAuthUrl.searchParams.set('prompt', 'consent');
-      googleAuthUrl.searchParams.set('state', state);
+      googleAuthUrl.searchParams.set('state', nonce);
 
       return new Response(JSON.stringify({ url: googleAuthUrl.toString() }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -94,21 +105,28 @@ Deno.serve(async (req) => {
         });
       }
 
-      let stateData: { user_id: string; ts: number };
-      try {
-        stateData = JSON.parse(atob(state));
-      } catch {
-        return new Response(redirectHtml('error', 'Invalid state parameter'), {
+      // Look up the nonce server-side; reject if missing, used, or expired.
+      const adminLookup = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+      const { data: stateRow, error: stateLookupErr } = await adminLookup
+        .from('oauth_state_tokens')
+        .select('user_id, consumed_at, expires_at')
+        .eq('nonce', state)
+        .eq('provider', 'google')
+        .maybeSingle();
+
+      if (stateLookupErr || !stateRow || stateRow.consumed_at || new Date(stateRow.expires_at).getTime() < Date.now()) {
+        return new Response(redirectHtml('error', 'Invalid or expired authorization state'), {
           headers: { 'Content-Type': 'text/html' },
         });
       }
 
-      // Check state is not too old (10 min)
-      if (Date.now() - stateData.ts > 10 * 60 * 1000) {
-        return new Response(redirectHtml('error', 'Authorization expired, please try again'), {
-          headers: { 'Content-Type': 'text/html' },
-        });
-      }
+      // Mark nonce as consumed so it cannot be replayed.
+      await adminLookup
+        .from('oauth_state_tokens')
+        .update({ consumed_at: new Date().toISOString() })
+        .eq('nonce', state);
+
+      const stateData: { user_id: string } = { user_id: stateRow.user_id };
 
       // Exchange code for tokens
       const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
