@@ -1,89 +1,124 @@
+# Mobile Companion for Locum Ops — Build Plan
+
 ## Goal
+A responsive mobile experience layered on top of the existing app. Desktop is untouched. On phones (< 768px), users see a dedicated mobile shell with bottom nav and focused field workflows (before/during/after shift). Tablets get the existing desktop layout with light spacing tweaks (hybrid).
 
-Make adding a clinic feel instant: save it with just a name (and optionally an address) in seconds, while keeping a clear, low‑friction path to enrich it later with engagement, rates, break policy, billing, and contacts.
+No backend, schema, or business-logic changes. All mobile screens consume the existing hooks (`useCalendarEvents`, `useExpenses`, `useFacilities`, `useInvoices`, etc.) and the existing Supabase client.
 
-Today the Add Clinic flow is a 5+ step stepper that requires the user to walk through engagement, rates, billing, and break policy before they can save. That's the right depth for a "set up properly" mode, but it's heavy when the user just wants to capture a clinic name they're about to work with.
-
-## Proposed experience
-
-### 1. New "Quick Add" as the default entry point
-
-Replace the current stepper dialog's first surface with a single compact form:
+## Architecture
 
 ```text
-┌─ Add Clinic ─────────────────────────────────┐
-│  Clinic name*      [_________________]       │
-│  Address (opt.)    [Google Places search]    │
-│  Timezone          [Auto-detected ▼]         │
-│                                              │
-│  [ Save & close ]   [ Save & add details → ] │
-└──────────────────────────────────────────────┘
+App.tsx
+ └─ AuthenticatedApp
+     └─ ResponsiveLayout            ← NEW: picks shell by viewport
+         ├─ Layout (desktop, existing, unchanged)
+         └─ MobileLayout (NEW)
+             ├─ MobileTopBar (compact: title + theme + feedback)
+             ├─ <main> with safe-area padding
+             └─ MobileBottomNav (Home / Calendar / Clinics / Invoices / More)
 ```
 
-- Only `name` is required. Address and timezone are optional with smart defaults (timezone auto-derived from address, falls back to profile tz).
-- Two primary actions:
-  - **Save & close** — creates the clinic with safe defaults and returns the user to wherever they were.
-  - **Save & add details** — creates the clinic immediately, then opens the enrichment flow (so progress is never lost if they bail).
+Routing strategy:
+- Keep all existing routes.
+- Add 5 mobile-only routes that render inside `MobileLayout` when `useIsMobile()` is true. On desktop the same routes fall back to the existing pages so deep links stay valid.
+- `useIsMobile` already exists at `src/hooks/use-mobile.tsx` — reuse it.
 
-A small "Need engagement type, rates, or billing now? Add details" link sits under the form for users who want to jump straight to the full setup without saving first.
+Bottom nav routes:
+| Tab       | Route        | Mobile screen              | Desktop fallback     |
+|-----------|--------------|----------------------------|----------------------|
+| Home      | `/`          | `MobileHomePage`           | `DashboardPage`      |
+| Calendar  | `/schedule`  | `MobileSchedulePage`       | `SchedulePage`       |
+| Clinics   | `/facilities`| `MobileFacilitiesPage`     | `FacilitiesPage`     |
+| Invoices  | `/invoices`  | `MobileInvoicesPage`       | `InvoicesPage`       |
+| More      | `/more`      | `MobileMorePage` (NEW)     | redirect to `/settings/profile` |
 
-### 2. Enrichment after save — sectioned, not stepped
+Detail routes (`/facilities/:id`, `/invoices/:id`) get mobile variants that share the same URLs.
 
-After "Save & add details" (or when the user opens an existing clinic and clicks "Complete setup"), show a single page with collapsible sections instead of a forced wizard:
+## New files
 
 ```text
-Acme Animal Hospital — Complete setup
-─────────────────────────────────────────────
-▸ How you work together     (engagement type, dates)        [Add]
-▸ Rates                     (day/hourly/overtime)           [Add]
-▸ Break policy              (paid/unpaid, length)           [Add]
-▸ Billing & invoicing       (cadence, net terms)            [Add]
-▸ Billing contact           (name, email, phone)            [Add]
-▸ On-site contact           (manager, scheduler)            [Add]
-▸ Notes / tech access       (free text)                     [Add]
+src/components/mobile/
+  MobileLayout.tsx                 shell, safe-area, sticky bottom nav
+  MobileTopBar.tsx                 title + minimal actions
+  MobileBottomNav.tsx              5-item nav, large tap targets
+  ResponsiveLayout.tsx             chooses Mobile vs desktop Layout
+  cards/
+    NextShiftCard.tsx              hero card on Home
+    ShiftListItem.tsx              shared by Home/Calendar
+    ClinicCard.tsx
+    InvoiceCard.tsx
+    UrgentTaskCard.tsx
+  sheets/
+    QuickActionsSheet.tsx          bottom sheet: directions/contact/notes/expense/complete
+    QuickAddShiftSheet.tsx         simplified shift add (wraps existing creation hook)
+    MarkPaidSheet.tsx
+    SendReminderSheet.tsx
 
-           [ Done — back to clinic ]
+src/pages/mobile/
+  MobileHomePage.tsx
+  MobileSchedulePage.tsx           agenda/list view grouped by date + month selector
+  MobileFacilitiesPage.tsx         searchable list of ClinicCard
+  MobileFacilityDetailPage.tsx     quick-reference card + sticky CTAs
+  MobileInvoicesPage.tsx           grouped by status (Draft/Sent/Overdue/Paid)
+  MobileInvoiceDetailPage.tsx      view + Mark paid / Send reminder / Download
+  MobileMorePage.tsx               links to Credentials/Expenses/Mileage/Settings/Help
 ```
 
-- Each section opens inline, saves independently, and shows a green check when complete.
-- Sections are reorderable in code (not by the user) so the most-used (Rates, Billing) sit on top.
-- A subtle progress meter at the top ("3 of 7 sections completed") nudges, but never blocks.
+## Modified files
 
-### 3. Defaults applied on quick save
+- `src/App.tsx` — wrap routes in `ResponsiveLayout`; add `/more` route; mount mobile detail variants when `useIsMobile()`.
+- `src/index.css` — add safe-area CSS vars + `.mobile-tap-target` utility (44×44 min), `body { overscroll-behavior-y: contain }`.
+- `index.html` — add `<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">` (verify), `theme-color`, `apple-mobile-web-app-capable`, `apple-touch-icon` references.
+- `public/manifest.webmanifest` — name, short_name, theme/background color, `display: "standalone"`, icons (manifest-only per PWA skill; no service worker).
 
-When the user picks **Save & close**, we still create a usable record by applying:
+## Screen contracts
 
-- Engagement: `unspecified` (no terms-snapshot side effects until they fill it in).
-- Rates: prefilled from the user's Rate Card if present, otherwise empty.
-- Billing cadence: pulled from `profile.default_billing_cadence`, else `monthly` / Net 30.
-- Break policy: empty (treated as "not configured" in scheduling).
-- Status: `Active`.
+**Home (`MobileHomePage`)**
+- Pulls next upcoming shift from `useCalendarEvents` (earliest future shift).
+- `NextShiftCard`: clinic name, date, time (clinic tz), address, status pill.
+- Quick actions row → opens `QuickActionsSheet`: Directions (Google Maps deep link), Contact (tel:/mailto: from facility contacts), View notes (sheet), Add expense (prefilled facility/date), Mark complete.
+- Urgent tasks list: overdue invoices, expiring credentials (≤30d), unpaid invoices — reuses existing hooks already feeding dashboard.
+- Month-to-date revenue summary (from existing dashboard data source).
+- Sticky FAB: Quick Add Shift.
 
-These are exactly the defaults the stepper already produces when steps are skipped, so no new business logic is introduced.
+**Calendar (`MobileSchedulePage`)**
+- Default agenda list; month selector at top (chevrons + month label).
+- Shifts grouped by date, each rendered as `ShiftListItem` (clinic, time, rate type, invoice status pill).
+- FAB: Quick Add Shift.
 
-### 4. Surfacing the "incomplete" state
+**Clinics (`MobileFacilitiesPage` / detail)**
+- Search input sticky at top; results as `ClinicCard`.
+- Detail screen: address (tap → maps), primary contact, invoice contact, default rate, parking/entry notes, latest shift notes. Sticky bottom CTAs: Call, Email, Add shift.
 
-- On the Facilities list, a clinic missing rates/billing/engagement gets a soft "Setup incomplete · Add details" chip linking to the enrichment page.
-- The post-save toast keeps its existing "Open clinic" action but adds a second action: **"Add rates & billing"** that deep-links to the Rates section of the enrichment page.
+**Invoices (`MobileInvoicesPage` / detail)**
+- Sectioned by Draft / Sent / Overdue / Paid.
+- `InvoiceCard`: clinic, period, amount, due, status.
+- Detail: line summary + actions: Mark paid (sheet w/ date + method), Send reminder, View/Download PDF (existing edge function). No editing in V1.
 
-### 5. Entry points
+**More (`MobileMorePage`)**
+- Tile list → routes: `/credentials`, `/expenses`, `/expenses?tab=mileage`, `/settings/profile`, `/settings/help` (or external help URL).
 
-The Quick Add dialog replaces the current stepper everywhere it's launched today:
-- Facilities page "Add Clinic"
-- Sidebar Quick Add menu
-- Shift creation "+ Add new clinic" inline
-- Onboarding (onboarding keeps its rate-card-driven path; the dialog respects `hideRatesStep` semantics)
+## Data & business logic
+- All read paths reuse existing hooks; no new queries written from scratch unless an existing hook is missing.
+- All write paths (mark paid, add expense, add shift, send reminder) call the **same mutations the desktop UI already calls**. No duplicated logic.
+- No schema changes. No new RLS, no new migrations.
 
-## Technical notes
+## Responsive rules
+- `< 768px` → MobileLayout + mobile pages.
+- `≥ 768px` → existing Layout + existing pages (unchanged).
+- Tablet hybrid: keep desktop layout; we only adjust paddings via existing Tailwind responsive classes (no new tablet shell in V1).
 
-- Reuse `AddClinicStepper`'s save logic by extracting a `createClinicWithDefaults({ name, address, timezone })` helper from its existing submit path so Quick Add and the full flow share one write code path.
-- Build a new `<ClinicSetupSections />` component that wraps the existing sub-editors already used by the stepper (`RatesEditor`, `BreakPolicySelector`, `EngagementSelector`, billing fields, contacts) — each rendered inside an accordion section that saves on its own.
-- New route segment: `/facilities/:id/setup` for the enrichment page; reachable from the toast, the Facilities list chip, and a "Complete setup" button on the clinic detail header.
-- Keep the existing stepper component but stop mounting it from `AddFacilityDialog`; the stepper becomes the implementation behind `ClinicSetupSections` (sections reuse its field-level components, not its step machine).
-- Telemetry: keep current `trackOnboarding` events for parity, plus add `clinic_quick_add_saved` and `clinic_setup_section_completed` so we can see how often users return to finish details.
+## PWA scope (manifest-only)
+Per project PWA guidance: add manifest + icons + meta tags only. No service worker, no `vite-plugin-pwa`, no offline behavior in V1. Users can "Add to Home Screen".
 
-## Out of scope for this plan
+## Out of scope (V1)
+- Editing invoices on mobile
+- Offline support / background sync
+- Push notifications
+- Mobile-specific tax/CPA/business deep dives (kept under More → existing pages)
+- Tablet-specific layout
 
-- Bulk import of clinics.
-- AI-assisted prefill from a clinic website.
-- Restructuring the clinic detail page itself (only adds a "Complete setup" CTA).
+## Verification
+- Toggle preview between mobile and desktop viewports; confirm desktop pages render unchanged at ≥768px and mobile shell renders at <768px.
+- Manually walk: Home → quick actions → add expense; Calendar → quick add shift; Clinics → detail → call; Invoices → mark paid; More → credentials.
+- Confirm no new migrations were generated.
