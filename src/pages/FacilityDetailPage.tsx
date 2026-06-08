@@ -118,7 +118,15 @@ export default function FacilityDetailPage() {
         <div className="flex-1" />
       </div>
 
+      {showSetupBanner && (
+        <SetupBanner
+          checklist={setupChecklist}
+          onDismiss={dismissSetupBanner}
+        />
+      )}
+
       <Tabs defaultValue="contract">
+
         <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="contract" className="gap-1.5"><FileText className="h-3.5 w-3.5" /> Clinic Overview</TabsTrigger>
           <TabsTrigger value="people" className="gap-1.5"><Users className="h-3.5 w-3.5" /> People & Access ({facilityContacts.length})</TabsTrigger>
