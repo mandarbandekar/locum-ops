@@ -85,9 +85,11 @@ describe('Mobile invoice — line item editing rules', () => {
     expect(recalcLineTotal(NaN as unknown as number, 100)).toBe(0);
   });
 
-  it('rounds half-cents away from zero so totals match displayed currency', () => {
-    // 1.005 → 1.01 (avoid floating-point drift surfacing as $9.99 vs $10.00)
-    expect(recalcLineTotal(1, 1.005)).toBe(1.01);
+  it('rounds to cents so totals match the displayed currency', () => {
+    // 3 × 33.335 = 100.005 → Math.round(10000.5) / 100 = 100.01
+    expect(recalcLineTotal(3, 33.335)).toBe(100.01);
+    // 0.1 + 0.2 style drift collapses to a clean cent value
+    expect(recalcLineTotal(0.1, 0.2)).toBe(0.02);
   });
 });
 
