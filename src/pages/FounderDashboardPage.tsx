@@ -292,9 +292,16 @@ export default function FounderDashboardPage() {
       {/* Hero metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-4">
         <MetricCard label="Total testers" value={total} sub={loading && !total ? 'Loading…' : `${total} total`} />
-        <MetricCard label="Active" value={activeCount} sub={`${pct(activeCount, total)} of testers`} />
+        <MetricCard label="Weekly active" value={wauCount} sub={`${pct(wauCount, total)} active in last 7d`} />
         <MetricCard label="Activated" value={activatedCount} sub={`${pct(activatedCount, total)} have a shift`} />
         <MetricCard label="Invoicing" value={invoicingCount} sub={`${pct(invoicingCount, total)} have an invoice`} />
+      </div>
+
+      {/* Activity breakdown */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4">
+        <MetricCard label="Daily active (24h)" value={dauCount} sub={`${pct(dauCount, total)} of testers`} />
+        <MetricCard label="Weekly active (7d)" value={wauCount} sub={`${pct(wauCount, total)} of testers`} />
+        <MetricCard label="Monthly active (30d)" value={mauCount} sub={`${pct(mauCount, total)} of testers`} />
       </div>
 
       {/* Device usage */}
