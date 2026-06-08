@@ -482,3 +482,34 @@ function DeviceCell({ row }: { row: FounderRow }) {
   );
 }
 
+function SessionPanel({ state }: { state?: SessionState }) {
+  if (!state || state.loading) {
+    return <Skeleton className="h-5 w-2/3" />;
+  }
+  if (state.error) {
+    return <div className="text-sm text-destructive">{state.error}</div>;
+  }
+  if (!state.data) {
+    return <div className="text-sm text-muted-foreground">No session data.</div>;
+  }
+  const a = state.data;
+  const startLabel = a.session_start ? formatRelative(a.session_start) : 'recent activity';
+  const deviceLabel = a.device_type && a.device_type !== 'unknown' ? ` on ${a.device_type}` : '';
+  const sentence = buildSessionSentence(a);
+  const lastActionLabel = a.last_action_table ? LAST_ACTION_LABELS[a.last_action_table] || a.last_action_table : null;
+  return (
+    <div className="space-y-1.5">
+      <div className="text-xs uppercase tracking-wide text-muted-foreground">
+        Latest session — since sign-in {startLabel}{deviceLabel}
+      </div>
+      <div className="text-sm text-foreground">{sentence}</div>
+      {lastActionLabel && a.last_action_at && (
+        <div className="text-xs text-muted-foreground">
+          Last action: touched {lastActionLabel} • {formatRelative(a.last_action_at)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
