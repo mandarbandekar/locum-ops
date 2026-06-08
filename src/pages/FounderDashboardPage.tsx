@@ -190,7 +190,7 @@ export default function FounderDashboardPage() {
   }, [rows, sortKey, sortDir]);
 
   const total = rows.length;
-  const activeCount = rows.filter((r) => r.activation_status === 'active').length;
+  void activeCount;
   const activatedCount = rows.filter((r) => r.shift_count >= 1).length;
   const invoicingCount = rows.filter((r) => r.invoice_count >= 1).length;
   const now = Date.now();
