@@ -3868,6 +3868,15 @@ export type Database = {
         }[]
       }
       get_shift_local_date: { Args: { _shift_id: string }; Returns: string }
+      get_user_last_activity: {
+        Args: { _since?: string; _user_id: string }
+        Returns: {
+          last_activity_at: string
+          last_device: string
+          last_table: string
+          window_start: string
+        }[]
+      }
       get_user_latest_session_activity: {
         Args: { _user_id: string }
         Returns: {
