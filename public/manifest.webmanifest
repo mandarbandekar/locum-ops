@@ -1,0 +1,15 @@
+{
+  "name": "Locum Ops",
+  "short_name": "Locum Ops",
+  "description": "Manage clinics, shifts, invoices, and mileage for relief vets.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FAF7F2",
+  "theme_color": "#0F766E",
+  "icons": [
+    { "src": "/favicon.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/favicon.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
