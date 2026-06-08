@@ -39,8 +39,8 @@ describe("MobileBottomNav", () => {
     expect(screen.getByRole("link", { name: /schedule/i })).toHaveAttribute("aria-current", "page");
   });
 
-  it("marks Money active on /invoices and /expenses", () => {
-    renderAt("/expenses");
+  it("marks Money active on /invoices/:id", () => {
+    renderAt("/invoices/abc");
     expect(screen.getByRole("link", { name: /money/i })).toHaveAttribute("aria-current", "page");
   });
 
