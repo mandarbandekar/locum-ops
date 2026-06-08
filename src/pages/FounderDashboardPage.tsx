@@ -31,6 +31,76 @@ interface FounderRow {
   tablet_sign_ins: number;
 }
 
+interface SessionActivity {
+  session_start: string | null;
+  device_type: string | null;
+  shifts_count: number;
+  invoices_count: number;
+  expenses_count: number;
+  credentials_count: number;
+  credential_documents_count: number;
+  facilities_count: number;
+  contracts_count: number;
+  time_blocks_count: number;
+  reminders_count: number;
+  ce_entries_count: number;
+  tax_payment_logs_count: number;
+  confirmation_records_count: number;
+  invoice_pdf_downloads_count: number;
+  last_action_table: string | null;
+  last_action_at: string | null;
+}
+
+type SessionState = { loading: boolean; data?: SessionActivity; error?: string };
+
+const ENTITY_VERBS: Array<{ key: keyof SessionActivity; singular: string; plural: string; verb: string }> = [
+  { key: 'shifts_count', singular: 'shift', plural: 'shifts', verb: 'logged' },
+  { key: 'invoices_count', singular: 'invoice', plural: 'invoices', verb: 'worked on' },
+  { key: 'expenses_count', singular: 'expense', plural: 'expenses', verb: 'logged' },
+  { key: 'credentials_count', singular: 'credential', plural: 'credentials', verb: 'updated' },
+  { key: 'credential_documents_count', singular: 'document', plural: 'documents', verb: 'uploaded' },
+  { key: 'facilities_count', singular: 'clinic', plural: 'clinics', verb: 'added or edited' },
+  { key: 'contracts_count', singular: 'contract', plural: 'contracts', verb: 'saved' },
+  { key: 'time_blocks_count', singular: 'time block', plural: 'time blocks', verb: 'blocked off' },
+  { key: 'reminders_count', singular: 'reminder', plural: 'reminders', verb: 'set' },
+  { key: 'ce_entries_count', singular: 'CE entry', plural: 'CE entries', verb: 'logged' },
+  { key: 'tax_payment_logs_count', singular: 'tax payment', plural: 'tax payments', verb: 'recorded' },
+  { key: 'confirmation_records_count', singular: 'shift confirmation', plural: 'shift confirmations', verb: 'sent' },
+  { key: 'invoice_pdf_downloads_count', singular: 'invoice PDF', plural: 'invoice PDFs', verb: 'downloaded' },
+];
+
+const LAST_ACTION_LABELS: Record<string, string> = {
+  shifts: 'a shift',
+  invoices: 'an invoice',
+  expenses: 'an expense',
+  credentials: 'a credential',
+  credential_documents: 'a document',
+  facilities: 'a clinic',
+  contracts: 'a contract',
+  time_blocks: 'a time block',
+  reminders: 'a reminder',
+  ce_entries: 'a CE entry',
+  tax_payment_logs: 'a tax payment',
+  confirmation_records: 'a shift confirmation',
+  invoice_pdf_downloads: 'an invoice PDF',
+};
+
+function buildSessionSentence(a: SessionActivity): string {
+  const parts: string[] = [];
+  for (const e of ENTITY_VERBS) {
+    const n = (a[e.key] as number) || 0;
+    if (n > 0) parts.push(`${e.verb} ${n} ${n === 1 ? e.singular : e.plural}`);
+  }
+  if (parts.length === 0) return "Signed in but didn't make any changes.";
+  if (parts.length === 1) return capitalize(parts[0]) + '.';
+  const last = parts.pop();
+  return capitalize(parts.join(', ') + ', and ' + last) + '.';
+}
+
+function capitalize(s: string) {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 type SortKey = keyof Pick<
   FounderRow,
   'email' | 'signed_up_at' | 'last_sign_in_at' | 'clinic_count' | 'shift_count' | 'invoice_count' | 'downloaded_invoice_count' | 'credential_count' | 'expense_count' | 'activation_status' | 'last_device'
