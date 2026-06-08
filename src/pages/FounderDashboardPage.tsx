@@ -150,6 +150,8 @@ export default function FounderDashboardPage() {
   const [refreshedAt, setRefreshedAt] = useState<Date | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>('last_sign_in_at');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+  const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
+  const [sessions, setSessions] = useState<Record<string, SessionState>>({});
 
   const allowed = isFounderAdmin(user?.email);
 
