@@ -6,8 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, MapPin, Phone, FileText, Receipt, CheckCircle2, AlertTriangle, Plus, DollarSign } from 'lucide-react';
 import { formatTimeInTz, formatDateInTz } from '@/lib/tzTime';
-import { computeInvoiceStatus, getShiftTotalRevenue } from '@/lib/businessLogic' as any;
-// fallback shim — getShiftTotalRevenue lives in types
+import { computeInvoiceStatus } from '@/lib/businessLogic';
 import { getShiftTotalRevenue as getShiftTotal } from '@/types';
 
 export default function MobileHomePage() {
