@@ -105,21 +105,28 @@ Deno.serve(async (req) => {
         });
       }
 
-      let stateData: { user_id: string; ts: number };
-      try {
-        stateData = JSON.parse(atob(state));
-      } catch {
-        return new Response(redirectHtml('error', 'Invalid state parameter'), {
+      // Look up the nonce server-side; reject if missing, used, or expired.
+      const adminLookup = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+      const { data: stateRow, error: stateLookupErr } = await adminLookup
+        .from('oauth_state_tokens')
+        .select('user_id, consumed_at, expires_at')
+        .eq('nonce', state)
+        .eq('provider', 'google')
+        .maybeSingle();
+
+      if (stateLookupErr || !stateRow || stateRow.consumed_at || new Date(stateRow.expires_at).getTime() < Date.now()) {
+        return new Response(redirectHtml('error', 'Invalid or expired authorization state'), {
           headers: { 'Content-Type': 'text/html' },
         });
       }
 
-      // Check state is not too old (10 min)
-      if (Date.now() - stateData.ts > 10 * 60 * 1000) {
-        return new Response(redirectHtml('error', 'Authorization expired, please try again'), {
-          headers: { 'Content-Type': 'text/html' },
-        });
-      }
+      // Mark nonce as consumed so it cannot be replayed.
+      await adminLookup
+        .from('oauth_state_tokens')
+        .update({ consumed_at: new Date().toISOString() })
+        .eq('nonce', state);
+
+      const stateData: { user_id: string } = { user_id: stateRow.user_id };
 
       // Exchange code for tokens
       const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
