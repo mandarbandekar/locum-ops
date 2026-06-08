@@ -36,7 +36,18 @@ import { FacilityTimezoneChangeDialog } from '@/components/facilities/FacilityTi
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { formatDateInTz, formatTimeInTz, zonedWallClockToUtc, formatYMDInTz, formatHHMMInTz } from '@/lib/tzTime';
 
+import { useIsMobileShell } from '@/hooks/useIsMobileShell';
+import { MobileClinicDetailPage } from '@/pages/mobile/MobileClinicDetailPage';
+
 export default function FacilityDetailPage() {
+  const isMobile = useIsMobileShell();
+  const [params] = useSearchParams();
+  // When the user explicitly opens the setup/edit view from mobile, fall through to desktop form.
+  if (isMobile && params.get('setup') !== '1') return <MobileClinicDetailPage />;
+  return <DesktopFacilityDetailPage />;
+}
+
+function DesktopFacilityDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();

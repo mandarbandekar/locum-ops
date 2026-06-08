@@ -10,11 +10,25 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { FeedbackButton } from '@/components/feedback/FeedbackButton';
 import { WhatsNewButton } from '@/components/announcements/WhatsNewButton';
 import { TimezoneMismatchDialog } from '@/components/TimezoneMismatchDialog';
+import { useIsMobileShell } from '@/hooks/useIsMobileShell';
+import { MobileAppShell } from '@/components/mobile/MobileAppShell';
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { isDemo } = useAuth();
   const { profile } = useUserProfile();
   const company = isDemo ? 'Demo Practice' : (profile?.company_name || '');
+  const isMobile = useIsMobileShell();
+
+  if (isMobile) {
+    return (
+      <>
+        <MobileAppShell>
+          <ErrorBoundary scope="route">{children}</ErrorBoundary>
+        </MobileAppShell>
+        <TimezoneMismatchDialog />
+      </>
+    );
+  }
 
   const handleStartTour = () => {
     if (window.location.pathname !== '/') {

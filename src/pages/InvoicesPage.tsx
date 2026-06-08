@@ -60,7 +60,16 @@ const INVOICE_TOUR_STEPS: TourStep[] = [
   },
 ];
 
+import { useIsMobileShell } from '@/hooks/useIsMobileShell';
+import { MobileMoneyPage } from '@/pages/mobile/MobileMoneyPage';
+
 export default function InvoicesPage() {
+  const isMobile = useIsMobileShell();
+  if (isMobile) return <MobileMoneyPage />;
+  return <DesktopInvoicesPage />;
+}
+
+function DesktopInvoicesPage() {
   const { invoices, facilities, shifts, addInvoice, deleteInvoice, suppressInvoicePeriod, updateInvoice, addPayment, addActivity, dataLoading } = useData();
   const navigate = useNavigate();
   const invoiceTour = useSpotlightTour('locumops_tour_invoices');

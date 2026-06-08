@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
@@ -466,7 +466,17 @@ function InvoiceDetailPageInner() {
   );
 }
 
+import { useIsMobileShell } from '@/hooks/useIsMobileShell';
+import { MobileInvoiceDetailPage } from '@/pages/mobile/MobileInvoiceDetailPage';
+
 export default function InvoiceDetailPage() {
+  const isMobile = useIsMobileShell();
+  const [params] = useSearchParams();
+  if (isMobile && params.get('edit') !== '1') return <MobileInvoiceDetailPage />;
+  return <DesktopInvoiceDetailPage />;
+}
+
+function DesktopInvoiceDetailPage() {
   const navigate = useNavigate();
   return (
     <ErrorBoundary

@@ -41,7 +41,16 @@ const BUSINESS_TOUR_STEPS: TourStep[] = [
   },
 ];
 
+import { useIsMobileShell } from '@/hooks/useIsMobileShell';
+import { MobileInsightsPage } from '@/pages/mobile/MobileInsightsPage';
+
 export default function BusinessPage() {
+  const isMobile = useIsMobileShell();
+  if (isMobile) return <MobileInsightsPage />;
+  return <DesktopBusinessPage />;
+}
+
+function DesktopBusinessPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'financial-health';
   const { invoices } = useData();

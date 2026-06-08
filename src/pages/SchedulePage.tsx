@@ -74,7 +74,16 @@ const SCHEDULE_TOUR_STEPS: TourStep[] = [
   },
 ];
 
+import { useIsMobileShell } from '@/hooks/useIsMobileShell';
+import { MobileSchedulePage } from '@/pages/mobile/MobileSchedulePage';
+
 export default function SchedulePage() {
+  const isMobile = useIsMobileShell();
+  if (isMobile) return <MobileSchedulePage />;
+  return <DesktopSchedulePage />;
+}
+
+function DesktopSchedulePage() {
   const { shifts, facilities, terms, addShift, updateShift, deleteShift, updateFacility, timeBlocks, addTimeBlock, updateTimeBlock, deleteTimeBlock, invoices, lineItems } = useData();
   const { profile } = useUserProfile();
   const profileTz = profile?.timezone || BROWSER_TZ;

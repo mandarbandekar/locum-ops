@@ -531,3 +531,42 @@ input[type="number"] {
   -moz-appearance: textfield;
   appearance: textfield;
 }
+
+/* ================= Mobile PWA tokens & utilities ================= */
+:root {
+  --m-bg: 36 38% 96%;           /* warm off-white */
+  --m-card: 0 0% 100%;          /* white */
+  --m-primary: 174 72% 26%;     /* deep teal */
+  --m-primary-fg: 0 0% 100%;
+  --m-accent: 168 76% 92%;      /* light mint */
+  --m-text: 222 39% 14%;        /* dark navy */
+  --m-text-muted: 218 11% 45%;  /* muted gray */
+  --m-border: 30 12% 88%;
+  --m-danger: 0 72% 51%;
+  --m-warning: 32 95% 44%;
+  --m-success: 152 56% 36%;
+  --m-radius: 16px;
+  --m-bottom-nav-h: 64px;
+  --m-safe-bottom: env(safe-area-inset-bottom);
+  --m-safe-top: env(safe-area-inset-top);
+}
+
+.mobile-shell {
+  background: hsl(var(--m-bg));
+  color: hsl(var(--m-text));
+  min-height: 100dvh;
+}
+.mobile-card {
+  background: hsl(var(--m-card));
+  border: 1px solid hsl(var(--m-border));
+  border-radius: var(--m-radius);
+}
+.mobile-fab {
+  box-shadow: 0 8px 24px -8px hsl(var(--m-primary) / 0.45);
+}
+.mobile-sticky-cta {
+  box-shadow: 0 -8px 24px -16px hsl(222 39% 14% / 0.15);
+}
+.pb-safe { padding-bottom: calc(var(--m-safe-bottom) + 16px); }
+.pt-safe { padding-top: calc(var(--m-safe-top) + 8px); }
+

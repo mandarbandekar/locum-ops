@@ -112,7 +112,16 @@ const TOUR_STEPS: TourStep[] = [
 
 const dashDb = (table: string) => supabase.from(table as any);
 
+import { useIsMobileShell } from '@/hooks/useIsMobileShell';
+import { MobileTodayPage } from '@/pages/mobile/MobileTodayPage';
+
 export default function DashboardPage() {
+  const isMobile = useIsMobileShell();
+  if (isMobile) return <MobileTodayPage />;
+  return <DesktopDashboardPage />;
+}
+
+function DesktopDashboardPage() {
   const { shifts, invoices, facilities, payments, checklistItems, lineItems, addShift } = useData();
   const { user, isDemo } = useAuth();
   const { profile, updateProfile } = useUserProfile();
