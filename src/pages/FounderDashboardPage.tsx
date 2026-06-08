@@ -213,6 +213,21 @@ export default function FounderDashboardPage() {
     else { setSortKey(k); setSortDir('desc'); }
   };
 
+  const toggleExpand = useCallback(async (userId: string) => {
+    const next = expandedUserId === userId ? null : userId;
+    setExpandedUserId(next);
+    if (next && !sessions[userId]) {
+      setSessions((s) => ({ ...s, [userId]: { loading: true } }));
+      const { data, error } = await (supabase as any).rpc('get_user_latest_session_activity', { _user_id: userId });
+      if (error) {
+        setSessions((s) => ({ ...s, [userId]: { loading: false, error: error.message || 'Failed to load session' } }));
+      } else {
+        const row = Array.isArray(data) ? data[0] : data;
+        setSessions((s) => ({ ...s, [userId]: { loading: false, data: row as SessionActivity } }));
+      }
+    }
+  }, [expandedUserId, sessions]);
+
   if (authLoading) {
     return (
       <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
