@@ -4,6 +4,7 @@ import { Building2, CalendarPlus, Navigation, Phone, FileText, AlertCircle } fro
 import { MobilePageHeader } from "@/components/mobile/MobilePageHeader";
 import { MobileMetricCard } from "@/components/mobile/MobileMetricCard";
 import { useData } from "@/contexts/DataContext";
+import type { Shift } from "@/types";
 import { useExpenses } from "@/hooks/useExpenses";
 import { AddFacilityDialog } from "@/components/AddFacilityDialog";
 import { ShiftFormDialog } from "@/components/schedule/ShiftFormDialog";
@@ -17,7 +18,7 @@ function fmtCurrency(n: number) {
 
 export function MobileTodayPage() {
   const navigate = useNavigate();
-  const { facilities, shifts, invoices, getComputedInvoiceStatus, terms } = useData();
+  const { facilities, shifts, invoices, getComputedInvoiceStatus, terms, addShift: addShiftMut, updateShift, deleteShift } = useData();
   const { expenses } = useExpenses();
   const { profile } = useUserProfile();
   const [addClinic, setAddClinic] = useState(false);
@@ -198,6 +199,10 @@ export function MobileTodayPage() {
         facilities={facilities}
         shifts={shifts}
         terms={terms}
+        onSave={async (s: Omit<Shift, 'id'>) => {
+          await addShiftMut(s);
+          setAddShift(false);
+        }}
       />
     </div>
   );
