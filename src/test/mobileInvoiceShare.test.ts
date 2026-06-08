@@ -52,10 +52,10 @@ describe("shareInvoicePdf", () => {
 
     expect(result).toBe("shared");
     expect(shareSpy).toHaveBeenCalledTimes(1);
-    const call = shareSpy.mock.calls[0][0];
-    expect(call.title).toContain("INV-0001");
-    expect(call.files[0].name).toBe("INV-0001.pdf");
-    expect(call.files[0].type).toBe("application/pdf");
+    const call: any = (shareSpy.mock.calls as any[])[0]?.[0];
+    expect(call?.title).toContain("INV-0001");
+    expect(call?.files?.[0]?.name).toBe("INV-0001.pdf");
+    expect(call?.files?.[0]?.type).toBe("application/pdf");
   });
 
   it("treats a user-cancelled share (AbortError) as a successful share", async () => {
