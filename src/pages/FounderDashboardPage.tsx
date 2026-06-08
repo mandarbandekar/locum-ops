@@ -382,7 +382,7 @@ export default function FounderDashboardPage() {
                             </td>
                           </tr>
                         )}
-                      </>
+                      </React.Fragment>
                     );
                   })
                 )}
