@@ -3841,6 +3841,28 @@ export type Database = {
         }[]
       }
       get_shift_local_date: { Args: { _shift_id: string }; Returns: string }
+      get_user_latest_session_activity: {
+        Args: { _user_id: string }
+        Returns: {
+          ce_entries_count: number
+          confirmation_records_count: number
+          contracts_count: number
+          credential_documents_count: number
+          credentials_count: number
+          device_type: string
+          expenses_count: number
+          facilities_count: number
+          invoice_pdf_downloads_count: number
+          invoices_count: number
+          last_action_at: string
+          last_action_table: string
+          reminders_count: number
+          session_start: string
+          shifts_count: number
+          tax_payment_logs_count: number
+          time_blocks_count: number
+        }[]
+      }
       is_feedback_admin: { Args: never; Returns: boolean }
       move_to_dlq: {
         Args: {

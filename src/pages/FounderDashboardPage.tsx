@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { Navigate } from 'react-router-dom';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { RefreshCw, Crown, ArrowUpDown, BarChart3, ExternalLink, Smartphone, Monitor, Tablet, HelpCircle, ShieldAlert } from 'lucide-react';
+import { RefreshCw, Crown, ArrowUpDown, BarChart3, ExternalLink, Smartphone, Monitor, Tablet, HelpCircle, ShieldAlert, ChevronRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { isFounderAdmin } from '@/lib/founderAccess';
@@ -29,6 +29,76 @@ interface FounderRow {
   desktop_sign_ins: number;
   mobile_sign_ins: number;
   tablet_sign_ins: number;
+}
+
+interface SessionActivity {
+  session_start: string | null;
+  device_type: string | null;
+  shifts_count: number;
+  invoices_count: number;
+  expenses_count: number;
+  credentials_count: number;
+  credential_documents_count: number;
+  facilities_count: number;
+  contracts_count: number;
+  time_blocks_count: number;
+  reminders_count: number;
+  ce_entries_count: number;
+  tax_payment_logs_count: number;
+  confirmation_records_count: number;
+  invoice_pdf_downloads_count: number;
+  last_action_table: string | null;
+  last_action_at: string | null;
+}
+
+type SessionState = { loading: boolean; data?: SessionActivity; error?: string };
+
+const ENTITY_VERBS: Array<{ key: keyof SessionActivity; singular: string; plural: string; verb: string }> = [
+  { key: 'shifts_count', singular: 'shift', plural: 'shifts', verb: 'logged' },
+  { key: 'invoices_count', singular: 'invoice', plural: 'invoices', verb: 'worked on' },
+  { key: 'expenses_count', singular: 'expense', plural: 'expenses', verb: 'logged' },
+  { key: 'credentials_count', singular: 'credential', plural: 'credentials', verb: 'updated' },
+  { key: 'credential_documents_count', singular: 'document', plural: 'documents', verb: 'uploaded' },
+  { key: 'facilities_count', singular: 'clinic', plural: 'clinics', verb: 'added or edited' },
+  { key: 'contracts_count', singular: 'contract', plural: 'contracts', verb: 'saved' },
+  { key: 'time_blocks_count', singular: 'time block', plural: 'time blocks', verb: 'blocked off' },
+  { key: 'reminders_count', singular: 'reminder', plural: 'reminders', verb: 'set' },
+  { key: 'ce_entries_count', singular: 'CE entry', plural: 'CE entries', verb: 'logged' },
+  { key: 'tax_payment_logs_count', singular: 'tax payment', plural: 'tax payments', verb: 'recorded' },
+  { key: 'confirmation_records_count', singular: 'shift confirmation', plural: 'shift confirmations', verb: 'sent' },
+  { key: 'invoice_pdf_downloads_count', singular: 'invoice PDF', plural: 'invoice PDFs', verb: 'downloaded' },
+];
+
+const LAST_ACTION_LABELS: Record<string, string> = {
+  shifts: 'a shift',
+  invoices: 'an invoice',
+  expenses: 'an expense',
+  credentials: 'a credential',
+  credential_documents: 'a document',
+  facilities: 'a clinic',
+  contracts: 'a contract',
+  time_blocks: 'a time block',
+  reminders: 'a reminder',
+  ce_entries: 'a CE entry',
+  tax_payment_logs: 'a tax payment',
+  confirmation_records: 'a shift confirmation',
+  invoice_pdf_downloads: 'an invoice PDF',
+};
+
+function buildSessionSentence(a: SessionActivity): string {
+  const parts: string[] = [];
+  for (const e of ENTITY_VERBS) {
+    const n = (a[e.key] as number) || 0;
+    if (n > 0) parts.push(`${e.verb} ${n} ${n === 1 ? e.singular : e.plural}`);
+  }
+  if (parts.length === 0) return "Signed in but didn't make any changes.";
+  if (parts.length === 1) return capitalize(parts[0]) + '.';
+  const last = parts.pop();
+  return capitalize(parts.join(', ') + ', and ' + last) + '.';
+}
+
+function capitalize(s: string) {
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 type SortKey = keyof Pick<
@@ -80,6 +150,8 @@ export default function FounderDashboardPage() {
   const [refreshedAt, setRefreshedAt] = useState<Date | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>('last_sign_in_at');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+  const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
+  const [sessions, setSessions] = useState<Record<string, SessionState>>({});
 
   const allowed = isFounderAdmin(user?.email);
 
@@ -140,6 +212,21 @@ export default function FounderDashboardPage() {
     if (sortKey === k) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
     else { setSortKey(k); setSortDir('desc'); }
   };
+
+  const toggleExpand = useCallback(async (userId: string) => {
+    const next = expandedUserId === userId ? null : userId;
+    setExpandedUserId(next);
+    if (next && !sessions[userId]) {
+      setSessions((s) => ({ ...s, [userId]: { loading: true } }));
+      const { data, error } = await (supabase as any).rpc('get_user_latest_session_activity', { _user_id: userId });
+      if (error) {
+        setSessions((s) => ({ ...s, [userId]: { loading: false, error: error.message || 'Failed to load session' } }));
+      } else {
+        const row = Array.isArray(data) ? data[0] : data;
+        setSessions((s) => ({ ...s, [userId]: { loading: false, data: row as SessionActivity } }));
+      }
+    }
+  }, [expandedUserId, sessions]);
 
   if (authLoading) {
     return (
@@ -271,26 +358,48 @@ export default function FounderDashboardPage() {
                 ) : sorted.length === 0 ? (
                   <tr><td colSpan={11} className="px-4 py-10 text-center text-muted-foreground">No users yet.</td></tr>
                 ) : (
-                  sorted.map((r) => (
-                    <tr key={r.user_id} className="border-t hover:bg-muted/30">
-                      <td className="px-4 py-2.5">
-                        <div className="font-medium text-foreground">{r.email}</div>
-                        {r.display_name && r.display_name !== r.email && (
-                          <div className="text-xs text-muted-foreground">{r.display_name}</div>
+                  sorted.map((r) => {
+                    const isExpanded = expandedUserId === r.user_id;
+                    const sess = sessions[r.user_id];
+                    return (
+                      <React.Fragment key={r.user_id}>
+                        <tr
+                          key={r.user_id}
+                          className="border-t hover:bg-muted/30 cursor-pointer"
+                          onClick={() => toggleExpand(r.user_id)}
+                        >
+                          <td className="px-4 py-2.5">
+                            <div className="flex items-center gap-1.5">
+                              <ChevronRight className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                              <div>
+                                <div className="font-medium text-foreground">{r.email}</div>
+                                {r.display_name && r.display_name !== r.email && (
+                                  <div className="text-xs text-muted-foreground">{r.display_name}</div>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-2.5 text-muted-foreground">{formatDate(r.signed_up_at)}</td>
+                          <td className="px-4 py-2.5 text-muted-foreground">{formatRelative(r.last_sign_in_at)}</td>
+                          <td className="px-4 py-2.5 text-right tabular-nums">{r.clinic_count}</td>
+                          <td className="px-4 py-2.5 text-right tabular-nums">{r.shift_count}</td>
+                          <td className="px-4 py-2.5 text-right tabular-nums">{r.invoice_count}</td>
+                          <td className="px-4 py-2.5 text-right tabular-nums">{r.downloaded_invoice_count}</td>
+                          <td className="px-4 py-2.5 text-right tabular-nums">{r.credential_count}</td>
+                          <td className="px-4 py-2.5 text-right tabular-nums">{r.expense_count}</td>
+                          <td className="px-4 py-2.5"><DeviceCell row={r} /></td>
+                          <td className="px-4 py-2.5"><StatusPill status={r.activation_status} /></td>
+                        </tr>
+                        {isExpanded && (
+                          <tr key={r.user_id + ':panel'} className="border-t bg-muted/20">
+                            <td colSpan={11} className="px-6 py-4">
+                              <SessionPanel state={sess} />
+                            </td>
+                          </tr>
                         )}
-                      </td>
-                      <td className="px-4 py-2.5 text-muted-foreground">{formatDate(r.signed_up_at)}</td>
-                      <td className="px-4 py-2.5 text-muted-foreground">{formatRelative(r.last_sign_in_at)}</td>
-                      <td className="px-4 py-2.5 text-right tabular-nums">{r.clinic_count}</td>
-                      <td className="px-4 py-2.5 text-right tabular-nums">{r.shift_count}</td>
-                      <td className="px-4 py-2.5 text-right tabular-nums">{r.invoice_count}</td>
-                      <td className="px-4 py-2.5 text-right tabular-nums">{r.downloaded_invoice_count}</td>
-                      <td className="px-4 py-2.5 text-right tabular-nums">{r.credential_count}</td>
-                      <td className="px-4 py-2.5 text-right tabular-nums">{r.expense_count}</td>
-                      <td className="px-4 py-2.5"><DeviceCell row={r} /></td>
-                      <td className="px-4 py-2.5"><StatusPill status={r.activation_status} /></td>
-                    </tr>
-                  ))
+                      </React.Fragment>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -372,4 +481,35 @@ function DeviceCell({ row }: { row: FounderRow }) {
     </div>
   );
 }
+
+function SessionPanel({ state }: { state?: SessionState }) {
+  if (!state || state.loading) {
+    return <Skeleton className="h-5 w-2/3" />;
+  }
+  if (state.error) {
+    return <div className="text-sm text-destructive">{state.error}</div>;
+  }
+  if (!state.data) {
+    return <div className="text-sm text-muted-foreground">No session data.</div>;
+  }
+  const a = state.data;
+  const startLabel = a.session_start ? formatRelative(a.session_start) : 'recent activity';
+  const deviceLabel = a.device_type && a.device_type !== 'unknown' ? ` on ${a.device_type}` : '';
+  const sentence = buildSessionSentence(a);
+  const lastActionLabel = a.last_action_table ? LAST_ACTION_LABELS[a.last_action_table] || a.last_action_table : null;
+  return (
+    <div className="space-y-1.5">
+      <div className="text-xs uppercase tracking-wide text-muted-foreground">
+        Latest session — since sign-in {startLabel}{deviceLabel}
+      </div>
+      <div className="text-sm text-foreground">{sentence}</div>
+      {lastActionLabel && a.last_action_at && (
+        <div className="text-xs text-muted-foreground">
+          Last action: touched {lastActionLabel} • {formatRelative(a.last_action_at)}
+        </div>
+      )}
+    </div>
+  );
+}
+
 
