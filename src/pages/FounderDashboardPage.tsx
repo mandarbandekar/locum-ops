@@ -193,6 +193,16 @@ export default function FounderDashboardPage() {
   const activeCount = rows.filter((r) => r.activation_status === 'active').length;
   const activatedCount = rows.filter((r) => r.shift_count >= 1).length;
   const invoicingCount = rows.filter((r) => r.invoice_count >= 1).length;
+  const now = Date.now();
+  const isActiveWithin = (d: string | null, days: number) => {
+    if (!d) return false;
+    const t = new Date(d).getTime();
+    if (isNaN(t)) return false;
+    return now - t <= days * 24 * 60 * 60 * 1000;
+  };
+  const wauCount = rows.filter((r) => isActiveWithin(r.last_activity_at, 7)).length;
+  const dauCount = rows.filter((r) => isActiveWithin(r.last_activity_at, 1)).length;
+  const mauCount = rows.filter((r) => isActiveWithin(r.last_activity_at, 30)).length;
 
   // Device totals across all testers
   const deviceTotals = rows.reduce(
