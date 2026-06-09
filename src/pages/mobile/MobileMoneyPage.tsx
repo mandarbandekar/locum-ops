@@ -178,8 +178,79 @@ export function MobileMoneyPage() {
     );
   }
 
+  return (
+    <div>
+      <MobilePageHeader title="Money" subtitle="Invoices, expenses, and mileage." />
 
-      {tab === "expenses" && (
+      <div className="px-5 grid grid-cols-3 gap-2">
+        <MobileMetricCard label="Outstanding" value={fmt(outstanding)} tone="warning" />
+        <MobileMetricCard label="Expenses" value={fmt(monthExp)} hint="MTD" />
+        <MobileMetricCard label="Mileage" value={`${Math.round(mileageToConfirm)} mi`} hint="To confirm" />
+      </div>
+
+      <div className="px-5 mt-4">
+        <MobileSegmentedControl
+          value={tab}
+          onChange={switchTab}
+          options={[
+            { value: "invoices", label: "Invoices" },
+            { value: "expenses", label: "Expenses" },
+            { value: "mileage", label: "Mileage" },
+          ]}
+        />
+      </div>
+
+      {tab === "invoices" && (
+        <div className="px-5 mt-4 space-y-5">
+          {invoices.length === 0 && (
+            <div className="mobile-card p-5 text-center text-[14px] text-[hsl(var(--m-text-muted))]">No invoices yet.</div>
+          )}
+          <Section
+            id="overdue"
+            title="Overdue"
+            icon={<AlertTriangle className="h-4 w-4" />}
+            items={groups.overdue}
+            rightLabel={groups.overdue.length ? `${fmt(sumBalance(groups.overdue))} overdue` : undefined}
+            tone="danger"
+          />
+          <Section
+            id="ready"
+            title="Ready to Review"
+            icon={<FileEdit className="h-4 w-4" />}
+            items={groups.ready}
+            rightLabel={groups.ready.length ? fmt(sumTotal(groups.ready)) : undefined}
+            tone="warning"
+          />
+          <Section
+            id="awaiting"
+            title="Sent & Awaiting Payment"
+            icon={<Send className="h-4 w-4" />}
+            items={groups.awaiting}
+            rightLabel={groups.awaiting.length ? `${fmt(sumBalance(groups.awaiting))} outstanding` : undefined}
+            tone="info"
+          />
+          <Section
+            id="upcoming"
+            title="Upcoming (auto-generated)"
+            icon={<Clock className="h-4 w-4" />}
+            items={groups.upcoming}
+            rightLabel={groups.upcoming.length ? `${fmt(sumTotal(groups.upcoming))} upcoming` : undefined}
+            defaultOpen={false}
+            tone="muted"
+          />
+          <Section
+            id="paid"
+            title="Paid"
+            icon={<CheckCircle className="h-4 w-4" />}
+            items={groups.paid}
+            rightLabel={groups.paid.length ? fmt(sumTotal(groups.paid)) : undefined}
+            defaultOpen={false}
+            tone="success"
+          />
+        </div>
+      )}
+
+
         <div className="px-5 mt-4 space-y-2">
           {expenses.slice(0, 50).map((e) => (
             <div key={e.id} className="mobile-card p-4 flex items-start gap-3">
