@@ -250,7 +250,7 @@ export function MobileMoneyPage() {
         </div>
       )}
 
-
+      {tab === "expenses" && (
         <div className="px-5 mt-4 space-y-2">
           {expenses.slice(0, 50).map((e) => (
             <div key={e.id} className="mobile-card p-4 flex items-start gap-3">
