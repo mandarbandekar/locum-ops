@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Plus, Check, Share2 } from "lucide-react";
+import { Check, Share2, AlertTriangle, FileEdit, Send, Clock, CheckCircle, ChevronDown } from "lucide-react";
 import { MobilePageHeader } from "@/components/mobile/MobilePageHeader";
 import { MobileMetricCard } from "@/components/mobile/MobileMetricCard";
 import { MobileSegmentedControl } from "@/components/mobile/MobileSegmentedControl";
@@ -10,6 +10,7 @@ import { useData } from "@/contexts/DataContext";
 import { useExpenses } from "@/hooks/useExpenses";
 import AddExpenseDialog from "@/components/expenses/AddExpenseDialog";
 import { shareInvoicePdf } from "@/lib/mobileInvoiceShare";
+import { isInvoiceOverdue } from "@/lib/invoiceHelpers";
 import { toast } from "sonner";
 
 type Tab = "invoices" | "expenses" | "mileage";
