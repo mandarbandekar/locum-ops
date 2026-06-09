@@ -45,88 +45,139 @@ export function MobileMoneyPage() {
     setParams(next, { replace: true });
   }
 
-  const sortedInvoices = useMemo(
-    () => [...invoices].sort((a, b) => +new Date(b.invoice_date) - +new Date(a.invoice_date)),
-    [invoices]
-  );
+  const groups = useMemo(() => {
+    const withStatus = invoices.map((i) => ({ ...i, _status: getComputedInvoiceStatus(i) as string }));
+    const today = new Date();
+    const endOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+    const parseLocal = (d: string) => {
+      const m = d?.match?.(/^(\d{4})-(\d{2})-(\d{2})/);
+      return m ? new Date(+m[1], +m[2] - 1, +m[3]) : new Date(d);
+    };
+    const overdue = withStatus.filter((i) => isInvoiceOverdue(i as any));
+    const awaiting = withStatus.filter(
+      (i) => (i._status === "sent" || i._status === "partial") && !isInvoiceOverdue(i as any),
+    );
+    const drafts = withStatus.filter((i) => i._status === "draft");
+    const ready = drafts.filter((i) => parseLocal(i.invoice_date || i.period_end) <= endOfToday);
+    const upcoming = drafts.filter((i) => parseLocal(i.invoice_date || i.period_end) > endOfToday);
+    const paid = withStatus.filter((i) => i._status === "paid");
+    const byDateDesc = (a: any, b: any) => +new Date(b.invoice_date) - +new Date(a.invoice_date);
+    const byDateAsc = (a: any, b: any) => +new Date(a.invoice_date) - +new Date(b.invoice_date);
+    return {
+      overdue: overdue.sort(byDateAsc),
+      ready: ready.sort(byDateAsc),
+      awaiting: awaiting.sort(byDateAsc),
+      upcoming: upcoming.sort(byDateAsc),
+      paid: paid.sort(byDateDesc),
+    };
+  }, [invoices, getComputedInvoiceStatus]);
 
-  return (
-    <div>
-      <MobilePageHeader title="Money" subtitle="Invoices, expenses, and mileage." />
+  const sumBalance = (arr: any[]) => arr.reduce((s, i) => s + (Number(i.balance_due) || 0), 0);
+  const sumTotal = (arr: any[]) => arr.reduce((s, i) => s + (Number(i.total_amount) || 0), 0);
 
-      <div className="px-5 grid grid-cols-3 gap-2">
-        <MobileMetricCard label="Outstanding" value={fmt(outstanding)} tone="warning" />
-        <MobileMetricCard label="Expenses" value={fmt(monthExp)} hint="MTD" />
-        <MobileMetricCard label="Mileage" value={`${Math.round(mileageToConfirm)} mi`} hint="To confirm" />
-      </div>
-
-      <div className="px-5 mt-4">
-        <MobileSegmentedControl
-          value={tab}
-          onChange={switchTab}
-          options={[
-            { value: "invoices", label: "Invoices" },
-            { value: "expenses", label: "Expenses" },
-            { value: "mileage", label: "Mileage" },
-          ]}
-        />
-      </div>
-
-      {tab === "invoices" && (
-        <div className="px-5 mt-4 space-y-2">
-          {sortedInvoices.length === 0 && (
-            <div className="mobile-card p-5 text-center text-[14px] text-[hsl(var(--m-text-muted))]">No invoices yet.</div>
-          )}
-          {sortedInvoices.map((inv) => {
-            const fac = facilities.find((f) => f.id === inv.facility_id);
-            const status = getComputedInvoiceStatus(inv) as string;
-            const isPaid = status === "paid";
-            return (
-              <div key={inv.id} className="mobile-card p-4">
-                <button onClick={() => navigate(`/invoices/${inv.id}`)} className="w-full text-left">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="text-[15px] font-semibold truncate">{fac?.name ?? "Clinic"}</div>
-                      <div className="text-[12px] text-[hsl(var(--m-text-muted))]">
-                        {new Date(inv.invoice_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} · {inv.invoice_number}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-[15px] font-semibold">{fmt(inv.total_amount)}</div>
-                      <div className="mt-1"><MobileStatusChip status={status} /></div>
-                    </div>
-                  </div>
-                </button>
-                <div className="mt-3 flex gap-2">
-                  <button
-                    onClick={() => navigate(`/invoices/${inv.id}`)}
-                    className="flex-1 h-9 rounded-full text-[13px] font-semibold bg-[hsl(var(--m-accent))] text-[hsl(var(--m-primary))]"
-                  >
-                    {isPaid ? "View" : "Review"}
-                  </button>
-                  <button
-                    onClick={async () => {
-                      try {
-                        await shareInvoicePdf({
-                          invoiceId: inv.id,
-                          invoiceNumber: inv.invoice_number,
-                          cacheKey: String(inv.balance_due) + (inv.paid_at || ""),
-                          facilityName: fac?.name,
-                        });
-                      } catch {
-                        toast.error("Failed to share PDF");
-                      }
-                    }}
-                    className="flex-1 h-9 inline-flex items-center justify-center gap-1.5 rounded-full text-[13px] font-semibold bg-[hsl(var(--m-primary))] text-[hsl(var(--m-primary-fg))]"
-                  >
-                    <Share2 className="h-3.5 w-3.5" /> Share
-                  </button>
-                </div>
+  function InvoiceRow({ inv }: { inv: any }) {
+    const fac = facilities.find((f) => f.id === inv.facility_id);
+    const status = getComputedInvoiceStatus(inv) as string;
+    const isPaid = status === "paid";
+    return (
+      <div className="mobile-card p-4">
+        <button onClick={() => navigate(`/invoices/${inv.id}`)} className="w-full text-left">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="text-[15px] font-semibold truncate">{fac?.name ?? "Clinic"}</div>
+              <div className="text-[12px] text-[hsl(var(--m-text-muted))]">
+                {new Date(inv.invoice_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} · {inv.invoice_number}
               </div>
-            );
-          })}
+            </div>
+            <div className="text-right">
+              <div className="text-[15px] font-semibold">{fmt(inv.total_amount)}</div>
+              <div className="mt-1"><MobileStatusChip status={status} /></div>
+            </div>
+          </div>
+        </button>
+        <div className="mt-3 flex gap-2">
+          <button
+            onClick={() => navigate(`/invoices/${inv.id}`)}
+            className="flex-1 h-9 rounded-full text-[13px] font-semibold bg-[hsl(var(--m-accent))] text-[hsl(var(--m-primary))]"
+          >
+            {isPaid ? "View" : "Review"}
+          </button>
+          <button
+            onClick={async () => {
+              try {
+                await shareInvoicePdf({
+                  invoiceId: inv.id,
+                  invoiceNumber: inv.invoice_number,
+                  cacheKey: String(inv.balance_due) + (inv.paid_at || ""),
+                  facilityName: fac?.name,
+                });
+              } catch {
+                toast.error("Failed to share PDF");
+              }
+            }}
+            className="flex-1 h-9 inline-flex items-center justify-center gap-1.5 rounded-full text-[13px] font-semibold bg-[hsl(var(--m-primary))] text-[hsl(var(--m-primary-fg))]"
+          >
+            <Share2 className="h-3.5 w-3.5" /> Share
+          </button>
         </div>
-      )}
+      </div>
+    );
+  }
+
+  function Section({
+    id,
+    title,
+    icon,
+    items,
+    rightLabel,
+    defaultOpen = true,
+    tone = "default",
+  }: {
+    id: string;
+    title: string;
+    icon: React.ReactNode;
+    items: any[];
+    rightLabel?: string;
+    defaultOpen?: boolean;
+    tone?: "default" | "danger" | "warning" | "info" | "muted" | "success";
+  }) {
+    const [open, setOpen] = useState(defaultOpen);
+    if (items.length === 0) return null;
+    const toneClass =
+      tone === "danger"
+        ? "text-[hsl(var(--destructive))]"
+        : tone === "warning"
+        ? "text-amber-600 dark:text-amber-400"
+        : tone === "info"
+        ? "text-blue-600 dark:text-blue-400"
+        : tone === "success"
+        ? "text-emerald-600 dark:text-emerald-400"
+        : tone === "muted"
+        ? "text-[hsl(var(--m-text-muted))]"
+        : "text-[hsl(var(--m-text))]";
+    return (
+      <section key={id} className="space-y-2">
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className="w-full flex items-center justify-between px-1 py-1"
+        >
+          <div className={`flex items-center gap-2 text-[13px] font-semibold ${toneClass}`}>
+            {icon}
+            <span>{title}</span>
+            <span className="text-[hsl(var(--m-text-muted))] font-medium">({items.length})</span>
+          </div>
+          <div className="flex items-center gap-2">
+            {rightLabel && (
+              <span className={`text-[12px] font-semibold ${toneClass}`}>{rightLabel}</span>
+            )}
+            <ChevronDown className={`h-4 w-4 text-[hsl(var(--m-text-muted))] transition-transform ${open ? "" : "-rotate-90"}`} />
+          </div>
+        </button>
+        {open && <div className="space-y-2">{items.map((inv) => <InvoiceRow key={inv.id} inv={inv} />)}</div>}
+      </section>
+    );
+  }
+
 
       {tab === "expenses" && (
         <div className="px-5 mt-4 space-y-2">
