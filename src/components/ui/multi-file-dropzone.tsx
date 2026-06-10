@@ -25,6 +25,8 @@ interface MultiFileDropzoneProps {
   existing?: { name: string; id?: string }[];
   /** Should perform the DB/storage deletion. May be async. */
   onRemoveExisting?: (id: string) => void | Promise<void>;
+  /** Open/view an already-uploaded item. */
+  onViewExisting?: (id: string) => void | Promise<void>;
 }
 
 function formatSize(bytes: number) {
