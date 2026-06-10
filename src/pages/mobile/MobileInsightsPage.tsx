@@ -133,13 +133,18 @@ export function MobileInsightsPage() {
           Top clinics
         </div>
         <div className="mobile-card divide-y divide-[hsl(var(--m-border))]">
-          {topClinics.length === 0 && <div className="p-4 text-[13px] text-[hsl(var(--m-text-muted))]">No revenue yet this month.</div>}
-          {topClinics.map(({ facility, total }) => (
-            <div key={facility!.id} className="p-4 flex items-center justify-between">
-              <div className="text-[14px] font-medium truncate pr-3">{facility!.name}</div>
-              <div className="text-[14px] font-semibold">{fmt(total)}</div>
+          {topClinics.length === 0 ? (
+            <div className="p-5 text-center text-[13px] text-[hsl(var(--m-text-muted))]">
+              No revenue yet this month. Completed shifts will show up here.
             </div>
-          ))}
+          ) : (
+            topClinics.map(({ facility, total }) => (
+              <div key={facility!.id} className="p-4 flex items-center justify-between">
+                <div className="text-[14px] font-medium truncate pr-3">{facility!.name}</div>
+                <div className="text-[14px] font-semibold">{fmt(total)}</div>
+              </div>
+            ))
+          )}
         </div>
       </section>
 
