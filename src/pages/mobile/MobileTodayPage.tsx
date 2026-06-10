@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Building2, CalendarPlus, Navigation, Phone, FileText, AlertCircle, CalendarDays } from "lucide-react";
-import { MobilePageHeader } from "@/components/mobile/MobilePageHeader";
 import { MobileMetricCard } from "@/components/mobile/MobileMetricCard";
 import { MobileEmptyState } from "@/components/mobile/MobileEmptyState";
 import { MobileMetricsSkeleton, MobileSectionSkeleton, Skeleton } from "@/components/mobile/MobileSkeleton";
