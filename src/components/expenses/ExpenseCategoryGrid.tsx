@@ -106,6 +106,15 @@ const CATEGORY_CARDS = [
     icon: Utensils,
   },
   {
+    title: 'Taxes',
+    description: 'Federal & state estimated payments, SE tax, business/local taxes',
+    groupKey: 'taxes',
+    defaultSub: 'federal_estimated_tax',
+    badge: 'Tracker',
+    badgeClass: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-700',
+    icon: Landmark,
+  },
+  {
     title: 'Other / Uncategorized',
     description: 'Add a description and manually assign deductibility',
     groupKey: 'uncategorized',
