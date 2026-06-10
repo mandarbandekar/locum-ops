@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Pencil, Share2, Trash2, FileX } from "lucide-react";
+import { Pencil, Share2, Trash2, FileX, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { useData } from "@/contexts/DataContext";
 import { MobilePageHeader } from "@/components/mobile/MobilePageHeader";
