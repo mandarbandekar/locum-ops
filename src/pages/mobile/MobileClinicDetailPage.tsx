@@ -24,11 +24,42 @@ export function MobileClinicDetailPage() {
       .sort((a, b) => +new Date(a.start_datetime) - +new Date(b.start_datetime))[0] ?? null;
   }, [shifts, fac]);
 
+  if (dataLoading && !fac) {
+    return (
+      <div>
+        <MobilePageHeader title="Clinic" onBack={() => navigate(-1)} showProfile={false} compact />
+        <div className="m-gutter mt-2 space-y-3">
+          <div className="mobile-card p-4 space-y-2">
+            <Skeleton h={10} w={70} />
+            <Skeleton h={16} w="60%" />
+            <Skeleton h={12} w="40%" />
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <Skeleton h={64} rounded="rounded-2xl" />
+            <Skeleton h={64} rounded="rounded-2xl" />
+            <Skeleton h={64} rounded="rounded-2xl" />
+          </div>
+          <div className="mobile-card p-4 space-y-2">
+            <Skeleton h={10} w={70} />
+            <Skeleton h={12} w="80%" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!fac) {
     return (
       <div>
         <MobilePageHeader title="Clinic" onBack={() => navigate(-1)} showProfile={false} compact />
-        <div className="m-gutter mt-6 m-body text-[hsl(var(--m-text-muted))]">Clinic not found.</div>
+        <MobileEmptyState
+          icon={Building2}
+          title="Clinic not found"
+          description="This clinic may have been deleted."
+          actionLabel="Back to clinics"
+          onAction={() => navigate("/clinics")}
+          className="mx-4 mt-6"
+        />
       </div>
     );
   }
