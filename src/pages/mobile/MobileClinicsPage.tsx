@@ -61,11 +61,25 @@ export function MobileClinicsPage() {
       </div>
 
       <div className="m-gutter mt-4 space-y-2">
-        {list.length === 0 && (
-          <div className="mobile-card p-5 text-center m-body text-[hsl(var(--m-text-muted))]">
-            No clinics yet. Add your first one.
-          </div>
-        )}
+        {dataLoading ? (
+          <MobileListSkeleton count={5} lines={2} />
+        ) : list.length === 0 ? (
+          q.trim() ? (
+            <MobileEmptyState
+              icon={Search}
+              title="No matches"
+              description={`No clinics match "${q.trim()}".`}
+            />
+          ) : (
+            <MobileEmptyState
+              icon={Building2}
+              title="No clinics yet"
+              description="Add your first clinic to start tracking shifts, contacts, and rates."
+              actionLabel="Add clinic"
+              onAction={() => setAddOpen(true)}
+            />
+          )
+        ) : null}
         {list.map(({ f, refLabel, hasNext }) => (
           <button
             key={f.id}
