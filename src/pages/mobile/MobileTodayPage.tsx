@@ -116,7 +116,7 @@ export function MobileTodayPage() {
       {/* Greeting */}
       <div className="m-gutter -mt-1 mb-1">
         <div className="text-[hsl(var(--m-text-muted))]" style={{ fontSize: "var(--m-text-base)" }}>
-          {getGreeting()}, <span className="font-semibold text-[hsl(var(--m-text))]">{profile?.name?.split(" ")[0] ?? "there"}</span>
+          {getGreeting()}, <span className="font-semibold text-[hsl(var(--m-text))]">{profile?.first_name ?? "there"}</span>
         </div>
       </div>
 
