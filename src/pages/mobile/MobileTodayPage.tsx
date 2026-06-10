@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Building2, CalendarPlus, Navigation, Phone, FileText, AlertCircle, CalendarDays } from "lucide-react";
-import { MobilePageHeader } from "@/components/mobile/MobilePageHeader";
 import { MobileMetricCard } from "@/components/mobile/MobileMetricCard";
 import { MobileEmptyState } from "@/components/mobile/MobileEmptyState";
 import { MobileMetricsSkeleton, MobileSectionSkeleton, Skeleton } from "@/components/mobile/MobileSkeleton";
@@ -94,7 +93,9 @@ export function MobileTodayPage() {
   if (isLoading) {
     return (
       <div>
-        <MobilePageHeader title="Today" subtitle="Your business at a glance." />
+        <div className="m-gutter pt-4 pb-2">
+          <Skeleton h={28} w={180} rounded="rounded-md" />
+        </div>
         <div className="m-gutter grid grid-cols-2 gap-3">
           <Skeleton h={52} rounded="rounded-2xl" />
           <Skeleton h={52} rounded="rounded-2xl" />
@@ -111,13 +112,11 @@ export function MobileTodayPage() {
 
   return (
     <div>
-      <MobilePageHeader title="Today" subtitle="Your business at a glance." />
-
-      {/* Greeting */}
-      <div className="m-gutter -mt-1 mb-1">
-        <div className="text-[hsl(var(--m-text-muted))]" style={{ fontSize: "var(--m-text-base)" }}>
-          {getGreeting()}, <span className="font-semibold text-[hsl(var(--m-text))]">{profile?.first_name ?? "there"}</span>
-        </div>
+      {/* Greeting header */}
+      <div className="m-gutter pt-4 pb-2">
+        <h1 className="font-bold text-[hsl(var(--m-text))]" style={{ fontSize: "var(--m-title)" }}>
+          {getGreeting()}, {profile?.first_name ?? "there"}
+        </h1>
       </div>
 
       {/* Quick actions */}
