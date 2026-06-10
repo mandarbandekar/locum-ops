@@ -127,10 +127,10 @@ export function MobileInvoiceDetailPage() {
         <section className="mobile-card p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <div className="text-[12px] uppercase tracking-wider text-[hsl(var(--m-text-muted))]">
+              <div className="m-eyebrow">
                 {isPaid ? "Paid" : "Balance due"}
               </div>
-              <div className="mt-1 text-[32px] leading-[1.1] font-semibold tracking-tight">
+              <div className="mt-1 font-semibold tracking-tight tabular-nums" style={{ fontSize: "var(--m-text-2xl)", lineHeight: 1.1 }}>
                 {fmtMoney(isPaid ? total : balance)}
               </div>
             </div>

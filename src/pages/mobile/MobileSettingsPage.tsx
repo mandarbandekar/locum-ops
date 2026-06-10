@@ -50,7 +50,7 @@ export default function MobileSettingsPage() {
     <div>
       <MobilePageHeader title="Settings" subtitle={name || undefined} showProfile={false} />
 
-      <div className="px-4 pt-2">
+      <div className="m-gutter pt-2">
         <div className="rounded-2xl border border-[hsl(var(--m-border))] bg-[hsl(var(--m-card))] overflow-hidden">
           {SECTIONS.map((s, i) => {
             const Icon = s.icon;
@@ -60,18 +60,18 @@ export default function MobileSettingsPage() {
                 type="button"
                 onClick={() => navigate(s.to)}
                 className={
-                  "w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-[hsl(var(--m-bg))] transition-colors " +
+                  "m-press w-full flex items-center gap-3 px-4 py-3 text-left active:bg-[hsl(var(--m-bg))] min-h-[var(--m-tap)] " +
                   (i > 0 ? "border-t border-[hsl(var(--m-border))]" : "")
                 }
               >
                 <span className="h-9 w-9 rounded-full bg-[hsl(var(--m-bg))] flex items-center justify-center text-[hsl(var(--m-primary))] shrink-0">
-                  <Icon className="h-4.5 w-4.5" strokeWidth={2} />
+                  <Icon className="h-[18px] w-[18px]" strokeWidth={2} />
                 </span>
                 <span className="flex-1 min-w-0">
-                  <span className="block text-[15px] font-medium text-[hsl(var(--m-text))]">
+                  <span className="block font-medium text-[hsl(var(--m-text))]" style={{ fontSize: "var(--m-text-md)" }}>
                     {s.label}
                   </span>
-                  <span className="block text-[12.5px] text-[hsl(var(--m-text-muted))] truncate">
+                  <span className="block m-caption truncate">
                     {s.sub}
                   </span>
                 </span>
@@ -85,14 +85,15 @@ export default function MobileSettingsPage() {
           <button
             type="button"
             onClick={signOut}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-[hsl(var(--m-border))] bg-[hsl(var(--m-card))] text-[hsl(var(--m-text))] text-[15px] font-medium active:opacity-80"
+            className="m-press w-full flex items-center justify-center gap-2 min-h-[48px] rounded-2xl border border-[hsl(var(--m-border))] bg-[hsl(var(--m-card))] text-[hsl(var(--m-text))] font-medium"
+            style={{ fontSize: "var(--m-text-md)" }}
           >
             <LogOut className="h-4 w-4" />
             Sign out
           </button>
         </div>
 
-        <p className="mt-6 text-center text-[11px] text-[hsl(var(--m-text-muted))]">
+        <p className="mt-6 text-center m-caption">
           LocumOps
         </p>
       </div>
