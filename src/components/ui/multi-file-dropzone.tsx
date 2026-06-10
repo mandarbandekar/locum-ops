@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Upload, X, FileText } from 'lucide-react';
+import { Upload, X, FileText, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   AlertDialog,
