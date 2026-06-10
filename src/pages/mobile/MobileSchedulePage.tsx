@@ -77,11 +77,17 @@ export function MobileSchedulePage() {
       </div>
 
       <div className="px-5 mt-3 space-y-5">
-        {groups.length === 0 && (
-          <div className="mobile-card p-5 text-center text-[14px] text-[hsl(var(--m-text-muted))]">
-            No shifts this month.
-          </div>
-        )}
+        {dataLoading ? (
+          <MobileListSkeleton count={4} lines={2} />
+        ) : groups.length === 0 ? (
+          <MobileEmptyState
+            icon={CalendarPlus}
+            title="No shifts this month"
+            description="Tap below to log a shift for this period."
+            actionLabel="Add shift"
+            onAction={() => setAddOpen(true)}
+          />
+        ) : null}
         {groups.map(([ymd, items]) => {
           const [y, m, d] = ymd.split("-").map(Number);
           const dateLabel = new Date(y, m - 1, d).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
