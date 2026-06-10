@@ -42,9 +42,12 @@ import { MobileClinicDetailPage } from '@/pages/mobile/MobileClinicDetailPage';
 
 export default function FacilityDetailPage() {
   const isMobile = useIsMobileShell();
-  if (isMobile) return <MobileClinicDetailPage />;
+  const [params] = useSearchParams();
+  // When the user explicitly opens the edit view from mobile (?setup=1), fall through to the desktop form.
+  if (isMobile && params.get('setup') !== '1') return <MobileClinicDetailPage />;
   return <DesktopFacilityDetailPage />;
 }
+
 
 function DesktopFacilityDetailPage() {
   const { id } = useParams<{ id: string }>();
