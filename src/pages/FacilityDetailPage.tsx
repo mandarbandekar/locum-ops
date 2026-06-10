@@ -152,49 +152,8 @@ function DesktopFacilityDetailPage() {
   );
 }
 
-// ─── Setup banner shown after Quick Add (?setup=1) ─────────
 
-interface SetupChecklistItem { key: string; label: string; done: boolean }
 
-function SetupBanner({
-  checklist,
-  onDismiss,
-}: {
-  checklist: { items: SetupChecklistItem[]; completed: number; total: number; isComplete: boolean };
-  onDismiss: () => void;
-}) {
-  return (
-    <div className="mb-4 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
-      <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-foreground">Complete your clinic setup</p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {checklist.completed} of {checklist.total} done. Add the rest from the Clinic Overview tab — nothing is required.
-          </p>
-          <div className="flex flex-wrap gap-1.5 mt-2">
-            {checklist.items.map(item => (
-              <span
-                key={item.key}
-                className={
-                  'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium ' +
-                  (item.done
-                    ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
-                    : 'border-border bg-background text-muted-foreground')
-                }
-              >
-                {item.done ? <Check className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
-                {item.label}
-              </span>
-            ))}
-          </div>
-        </div>
-        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={onDismiss} aria-label="Dismiss">
-          <X className="h-3.5 w-3.5" />
-        </Button>
-      </div>
-    </div>
-  );
-}
 
 // ─── Shared empty state ────────────────────────────────────
 
