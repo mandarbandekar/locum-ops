@@ -551,37 +551,29 @@ export function MobileMoneyPage() {
             />
           ) : (
             draftMileageExpenses.map((e) => {
-
-      {tab === "mileage" && (
-        <div className="px-5 mt-4 space-y-2">
-          {draftMileageExpenses.length === 0 && (
-            <div className="mobile-card p-5 text-center text-[14px] text-[hsl(var(--m-text-muted))]">
-              All caught up — no mileage to confirm.
-            </div>
+              const fac = facilities.find((f) => f.id === e.facility_id);
+              return (
+                <div key={e.id} className="mobile-card p-4">
+                  <div className="text-[14px] font-semibold">
+                    {fac?.name ?? "Trip"} → Home
+                  </div>
+                  <div className="text-[12px] text-[hsl(var(--m-text-muted))] mt-0.5">
+                    {Number(e.mileage_miles || 0).toFixed(1)} miles ·{" "}
+                    {new Date(e.expense_date).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </div>
+                  <button
+                    onClick={() => confirmMileage(e.id)}
+                    className="mt-3 w-full h-10 rounded-full bg-[hsl(var(--m-primary))] text-[hsl(var(--m-primary-fg))] font-semibold text-[13px] inline-flex items-center justify-center gap-1.5"
+                  >
+                    <Check className="h-4 w-4" /> Confirm mileage
+                  </button>
+                </div>
+              );
+            })
           )}
-          {draftMileageExpenses.map((e) => {
-            const fac = facilities.find((f) => f.id === e.facility_id);
-            return (
-              <div key={e.id} className="mobile-card p-4">
-                <div className="text-[14px] font-semibold">
-                  {fac?.name ?? "Trip"} → Home
-                </div>
-                <div className="text-[12px] text-[hsl(var(--m-text-muted))] mt-0.5">
-                  {Number(e.mileage_miles || 0).toFixed(1)} miles ·{" "}
-                  {new Date(e.expense_date).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                  })}
-                </div>
-                <button
-                  onClick={() => confirmMileage(e.id)}
-                  className="mt-3 w-full h-10 rounded-full bg-[hsl(var(--m-primary))] text-[hsl(var(--m-primary-fg))] font-semibold text-[13px] inline-flex items-center justify-center gap-1.5"
-                >
-                  <Check className="h-4 w-4" /> Confirm mileage
-                </button>
-              </div>
-            );
-          })}
         </div>
       )}
 
