@@ -40,6 +40,7 @@ interface Props {
 
 export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit, uploadReceipt, config, editingExpense, initialSubcategory, expenses = [] }: Props) {
   const { facilities } = useData();
+  const isMobile = useIsMobile();
   const today = new Date().toISOString().split('T')[0];
   const isEditing = !!editingExpense;
 
