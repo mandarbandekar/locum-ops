@@ -1,73 +1,33 @@
-# Rate Card — Mobile UX Refresh
+## Revert Add Clinic to the previous stepper flow
 
-The Rate Card screen on mobile today stacks four full-width controls per rate (shift type, rate name, amount, trash) with no visual grouping, so even 3 rates fill the screen and feel like a wall of inputs. The "Suggest types" banner, "Overtime rate" card, and "Always use Rate Card" card each live in separate cards, multiplying scroll. This plan tightens the rate rows into compact cards, consolidates preferences, and trims chrome — desktop is unchanged.
+Restore the pre–Jun 8 Add Clinic experience. The multi-step `AddClinicStepper` (Clinic Details → Engagement → Rates → Contacts → Billing) still exists at `src/components/facilities/AddClinicStepper.tsx` and is what onboarding already uses — we'll bring it back to the Facilities / Today / Dashboard entry points and delete the Quick Add surface.
 
-## UX
+### What changes
 
-**Page intro (mobile only)**
-- Keep "Rate Card" title (already provided by `page-title`).
-- Drop the long paragraph; replace with one line: "Defaults for new shifts. Clinic rates always win."
-- Per Day / Per Hour segmented control stays at the top but becomes a true pill segmented control (full width, two segments, active = filled primary).
+1. **Rebuild `src/components/AddFacilityDialog.tsx`** so it mounts `AddClinicStepper` inside a `Dialog` (max-w 680px, single column per design system), with a header + footer wired to the stepper handle (`back`, `next`, `skip`, `primaryLabel`, `step / totalSteps`). On `onSaved` it calls `onCreated(facilityId)` and closes — no `?setup=1` redirect, no toast with "Add details", no "Save & close" / "Save & add details" buttons.
 
-**Rate row → compact rate card**
-Each rate renders as a single card (rounded, themed border, no shadow), two lines:
+2. **Remove the post-creation setup surface** in `src/pages/FacilityDetailPage.tsx`:
+   - Delete the `SetupBanner` component and its imports.
+   - Remove `setupChecklist`, `setupRequested`, `showSetupBanner`, `dismissSetupBanner`, and the `?setup=1` read/strip logic.
+   - Remove the `<SetupBanner …/>` render.
 
-```
-┌─────────────────────────────────────────────┐
-│  Weekend Day                       $ 1,100  │  ← name input (borderless) · amount (right, large)
-│  ────────────────────────────────────────── │
-│  [ Weekend ▾ ]                           🗑  │  ← shift-type pill select · ghost trash
-└─────────────────────────────────────────────┘
-```
+3. **Remove the "Setup incomplete · Add details" chip** in `src/pages/FacilitiesPage.tsx`:
+   - Delete `isSetupIncomplete` and its render branch on each clinic card.
 
-- Name: borderless input, 16px, placeholder "Name this rate".
-- Amount: borderless number input, right-aligned, 18px semibold, `$` prefix, `/day` or `/hr` suffix muted.
-- Shift type: small pill-style Select (auto width, chevron). Untagged renders as muted "Add shift type" pill.
-- Trash: ghost icon, right side, only confirms via swift tap (no extra modal).
-- Inline error appears below the offending field in destructive color (unchanged behavior).
+4. **Drop `?setup=1` deep links** elsewhere:
+   - `src/pages/mobile/MobileClinicDetailPage.tsx` line 116 → navigate to `/facilities/${fac.id}` without the query.
 
-**List**
-- Cards separated by 8px, no outer wrapper card.
-- "+ Add rate" becomes a full-width dashed button at the bottom of the list (primary text, neutral border).
-- Empty state: muted single line "No rates yet — add your first one" above the Add button.
+5. **Preserve mobile shell behavior** — mobile entry points (`MobileTodayPage`, `MobileClinicsPage`) keep using `AddFacilityDialog`, which now hosts the stepper. The stepper is responsive enough for the mobile sheet width; no separate mobile branch is added in this pass.
 
-**Untagged banner**
-- Collapses to a single muted row above the list: small Tag icon · "3 rates missing a shift type" · ghost "Auto-tag" link on the right. No card chrome.
+### Out of scope
 
-**Preferences group (replaces the two trailing cards)**
-A single grouped list (same rounded card pattern as the new Mobile Settings hub) with two rows:
+- Changes to `AddClinicStepper` internals, onboarding, or the `RatesEditor` / `EngagementSelector` it composes.
+- Mobile-specific redesign of the stepper (can be a follow-up if it feels cramped on the mobile shell).
+- Schema, analytics, or telemetry changes.
 
-```
-┌──────────────────────────────────────────────┐
-│  Overtime rate                $ [  85  ] /hr │
-├──────────────────────────────────────────────┤
-│  Default to Rate Card                  [⚪→●] │
-│  Hides clinic rates from the shift picker.    │
-└──────────────────────────────────────────────┘
-```
+### Files touched
 
-- Rows align label left, control right, with the helper text below the label (small muted).
-
-**Footer tip**
-- The "Tip: Shift Type is optional…" paragraph is removed on mobile (covered by the inline empty-state and Auto-tag affordance).
-
-## Desktop
-- No change. The new `RateRowMobile` and `PreferencesGroupMobile` render only when `useIsMobileShell()` is true; the existing `RateSection` grid stays for ≥ md.
-
-## Technical
-
-Edit `src/pages/SettingsRateCardPage.tsx`:
-- Detect `useIsMobileShell()` and branch at the rate-list and preferences sections.
-- New local components in the same file:
-  - `RateCardMobile` — renders the per-rate card described above; reuses existing `onUpdate` / `onRemove` handlers and existing error state. No changes to validation, autosave, or data model.
-  - `PreferencesGroupMobile` — renders Overtime + Default to Rate Card rows using the same `updateProfile` calls that the existing Cards make.
-- Segmented Per Day / Per Hour: keep current `PREF_OPTIONS` data; restyle the buttons into a single 2-segment pill (`grid-cols-2`, rounded-full container, active segment uses `bg-primary text-primary-foreground`).
-- Mobile intro paragraph and footer tip wrapped in `hidden md:block` (or branched on `isMobile`).
-- Untagged banner: when `isMobile`, render the slim variant.
-
-No new files. No schema changes. No changes to `onboardingRateMapping`, autosave timing, or the desktop `RateSection` component.
-
-## Out of scope
-- Desktop Rate Card layout, copy, or behavior.
-- Validation rules, autosave debounce, rate model, shift-type list.
-- Bulk edit, drag-to-reorder, or import/export of rates.
+- `src/components/AddFacilityDialog.tsx` — rewrite to host the stepper.
+- `src/pages/FacilityDetailPage.tsx` — remove `SetupBanner` + checklist logic.
+- `src/pages/FacilitiesPage.tsx` — remove setup-incomplete chip + helper.
+- `src/pages/mobile/MobileClinicDetailPage.tsx` — drop `?setup=1` link.
