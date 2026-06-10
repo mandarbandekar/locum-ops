@@ -400,14 +400,15 @@ export function MobileMoneyPage() {
 
       {tab === "invoices" && (
         <div className="px-5 mt-4 space-y-4">
-          {invoices.length === 0 && (
-            <div className="mobile-card p-6 text-center">
-              <div className="text-[14px] font-semibold">No invoices yet</div>
-              <div className="text-[12px] text-[hsl(var(--m-text-muted))] mt-1">
-                Invoices appear here automatically once shifts are completed.
-              </div>
-            </div>
-          )}
+          {dataLoading ? (
+            <MobileListSkeleton count={4} lines={2} />
+          ) : invoices.length === 0 ? (
+            <MobileEmptyState
+              icon={FileText}
+              title="No invoices yet"
+              description="Invoices appear here automatically once shifts are completed."
+            />
+          ) : null}
 
           {groups.overdue.length > 0 && (
             <button
