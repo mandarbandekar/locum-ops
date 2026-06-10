@@ -172,9 +172,14 @@ export function MobileTodayPage() {
             </div>
           </div>
         ) : (
-          <div className="mobile-card p-4 text-[14px] text-[hsl(var(--m-text-muted))]">
-            No upcoming shifts. Add one to get started.
-          </div>
+          <MobileEmptyState
+            icon={CalendarDays}
+            compact
+            title="No upcoming shifts"
+            description="Add a shift to see it here with directions and clinic notes."
+            actionLabel="Add shift"
+            onAction={() => setAddShift(true)}
+          />
         )}
       </section>
 
