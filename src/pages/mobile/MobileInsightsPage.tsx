@@ -33,8 +33,9 @@ function Sparkline({ values }: { values: number[] }) {
 }
 
 export function MobileInsightsPage() {
-  const { invoices, facilities, shifts, payments, getComputedInvoiceStatus } = useData();
-  const { expenses } = useExpenses();
+  const { invoices, facilities, shifts, payments, getComputedInvoiceStatus, dataLoading } = useData();
+  const { expenses, loading: expensesLoading } = useExpenses();
+  const isLoading = dataLoading || expensesLoading;
 
   const monthKey = new Date().toISOString().slice(0, 7);
   const monthShifts = shifts.filter((s) => s.start_datetime.startsWith(monthKey) && +new Date(s.start_datetime) <= Date.now());
