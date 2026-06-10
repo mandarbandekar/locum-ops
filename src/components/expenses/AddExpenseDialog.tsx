@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,6 +15,7 @@ import { useData } from '@/contexts/DataContext';
 import { MultiFileDropzone } from '@/components/ui/multi-file-dropzone';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 import {
   EXPENSE_CATEGORIES,
   findSubcategory,
@@ -38,6 +40,7 @@ interface Props {
 
 export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit, uploadReceipt, config, editingExpense, initialSubcategory, expenses = [] }: Props) {
   const { facilities } = useData();
+  const isMobile = useIsMobile();
   const today = new Date().toISOString().split('T')[0];
   const isEditing = !!editingExpense;
 
@@ -209,192 +212,213 @@ export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit,
     }
   }
 
+  const formBody = (
+    <>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+        {/* LEFT COLUMN */}
+        <div className="space-y-4">
+          <div>
+            <Label>Date</Label>
+            <Input type="date" value={date} onChange={e => setDate(e.target.value)} />
+          </div>
+
+          <div>
+            <Label>Category</Label>
+            <Select value={subcategoryKey} onValueChange={setSubcategoryKey}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a category…" />
+              </SelectTrigger>
+              <SelectContent className="max-h-[300px]">
+                {EXPENSE_CATEGORIES.map(group => (
+                  <SelectGroup key={group.key}>
+                    <SelectLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      {group.label}
+                    </SelectLabel>
+                    {group.subcategories.map(s => (
+                      <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>
+                    ))}
+                  </SelectGroup>
+                ))}
+              </SelectContent>
+            </Select>
+            {sub && (
+              <div className="flex items-center gap-1.5 mt-1.5">
+                <Badge variant="outline" className="text-[10px]">
+                  {getDeductibilityLabel(sub.deductibilityType)}
+                </Badge>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="max-w-[220px]">
+                      <p className="text-xs">{sub.tooltip}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            )}
+          </div>
+
+          {isMileage && (
+            <div>
+              <Label>Miles Driven</Label>
+              <Input type="number" placeholder="e.g. 45" value={milesStr} onChange={e => setMilesStr(e.target.value)} min={0} step="0.1" />
+              <p className="text-xs text-muted-foreground mt-1">
+                IRS rate: ${(config.irs_mileage_rate_cents / 100).toFixed(2)}/mile
+                {milesStr && ` → $${(calculatedCents! / 100).toFixed(2)}`}
+              </p>
+              {duplicateShiftMileage && (
+                <div className="mt-2 flex gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2.5 text-xs text-amber-900 dark:text-amber-200">
+                  <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium">Possible duplicate</p>
+                    <p className="opacity-90">
+                      A shift-linked mileage entry already exists for {date}
+                      {duplicateShiftMileage.mileage_miles ? ` (${Math.round(duplicateShiftMileage.mileage_miles)} mi, ${duplicateShiftMileage.mileage_status})` : ''}.
+                      Logging this manually may double-count your deduction.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {isHomeOffice && (
+            <div>
+              <Label>Dedicated Office Space (sq ft)</Label>
+              <Input type="number" placeholder="e.g. 150" value={sqftStr} onChange={e => setSqftStr(e.target.value)} min={0} max={300} />
+              <p className="text-xs text-muted-foreground mt-1">
+                Simplified method: ${(config.home_office_rate_cents / 100).toFixed(2)}/sq ft (max 300)
+                {sqftStr && ` → $${(calculatedCents! / 100).toFixed(2)}`}
+              </p>
+            </div>
+          )}
+
+          {isProrate && (
+            <div>
+              <Label>Business Use: {proratePercent}%</Label>
+              <Slider value={[proratePercent]} onValueChange={v => setProratePercent(v[0])} min={0} max={100} step={5} className="mt-2" />
+              {amountStr && calculatedCents !== null && (
+                <p className="text-xs text-muted-foreground mt-1">Deductible portion: ${(calculatedCents / 100).toFixed(2)}</p>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* RIGHT COLUMN */}
+        <div className="space-y-4">
+          <div>
+            <Label>Amount ($)</Label>
+            <Input type="number" placeholder="0.00" value={amountStr} onChange={e => setAmountStr(e.target.value)} min={0} step="0.01" disabled={isMileage || isHomeOffice} />
+            {isMeals && amountStr && (
+              <p className="text-xs text-muted-foreground mt-1">50% deductible: ${((parseFloat(amountStr) || 0) * 0.5).toFixed(2)}</p>
+            )}
+          </div>
+
+          <div>
+            <Label>Description (optional)</Label>
+            <Textarea placeholder="What was this for?" value={description} onChange={e => setDescription(e.target.value)} className="min-h-[60px]" />
+          </div>
+
+          <div>
+            <Label>Clinic (optional)</Label>
+            <Select value={facilityId} onValueChange={setFacilityId}>
+              <SelectTrigger>
+                <SelectValue placeholder="None" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                {facilities.map(f => (
+                  <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label>Receipts (optional)</Label>
+            <MultiFileDropzone
+              files={receiptFiles}
+              onChange={setReceiptFiles}
+              accept="image/*,.pdf"
+              label="Add receipts"
+              hint="Images or PDFs. You can attach multiple."
+              existing={existingAttachments}
+              onRemoveExisting={removeExistingAttachment}
+              className="mt-1"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Recurrence - full width below the grid */}
+      {!isMileage && (
+        <div className="border rounded-lg p-3 space-y-3">
+          <div className="flex items-center gap-2">
+            <Repeat className="h-4 w-4 text-muted-foreground" />
+            <Label className="text-sm font-medium">Recurring Expense</Label>
+          </div>
+          <RadioGroup value={recurrenceType} onValueChange={setRecurrenceType} className="flex flex-wrap gap-x-4 gap-y-2">
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="none" id="rec-none" />
+              <Label htmlFor="rec-none" className="text-sm font-normal cursor-pointer">One-time</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="monthly" id="rec-monthly" />
+              <Label htmlFor="rec-monthly" className="text-sm font-normal cursor-pointer">Monthly</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="quarterly" id="rec-quarterly" />
+              <Label htmlFor="rec-quarterly" className="text-sm font-normal cursor-pointer">Quarterly</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="yearly" id="rec-yearly" />
+              <Label htmlFor="rec-yearly" className="text-sm font-normal cursor-pointer">Yearly</Label>
+            </div>
+          </RadioGroup>
+          {recurrenceType !== 'none' && (
+            <div>
+              <Label className="text-xs text-muted-foreground">End date (optional)</Label>
+              <Input type="date" value={recurrenceEndDate} onChange={e => setRecurrenceEndDate(e.target.value)} className="mt-1" />
+              <p className="text-xs text-muted-foreground mt-1">
+                This expense will automatically repeat {recurrenceType === 'monthly' ? 'every month' : recurrenceType === 'quarterly' ? 'every 3 months' : 'every year'} on the same day. Leave end date blank for indefinite.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Submit - full width below the grid */}
+      <Button className="w-full mt-2" onClick={handleSubmit} disabled={saving || !subcategoryKey || !amountStr}>
+        {saving ? 'Saving…' : isEditing ? 'Save Changes' : 'Log Expense'}
+      </Button>
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <Drawer open={open} onOpenChange={onOpenChange} key={editingExpense?.id || 'new'}>
+        <DrawerContent className="max-h-[92vh] overflow-hidden">
+          <DrawerHeader className="pb-2 shrink-0">
+            <DrawerTitle>{isEditing ? 'Edit Expense' : 'Log Expense'}</DrawerTitle>
+            <DrawerDescription>Enter expense details below</DrawerDescription>
+          </DrawerHeader>
+          <div className="flex-1 overflow-y-auto px-4 pb-6 space-y-4">
+            {formBody}
+          </div>
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange} key={editingExpense?.id || 'new'}>
       <DialogContent className="max-w-[680px]">
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Edit Expense' : 'Log Expense'}</DialogTitle>
         </DialogHeader>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
-          {/* LEFT COLUMN */}
-          <div className="space-y-4">
-            <div>
-              <Label>Date</Label>
-              <Input type="date" value={date} onChange={e => setDate(e.target.value)} />
-            </div>
-
-            <div>
-              <Label>Category</Label>
-              <Select value={subcategoryKey} onValueChange={setSubcategoryKey}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a category…" />
-                </SelectTrigger>
-                <SelectContent className="max-h-[300px]">
-                  {EXPENSE_CATEGORIES.map(group => (
-                    <SelectGroup key={group.key}>
-                      <SelectLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                        {group.label}
-                      </SelectLabel>
-                      {group.subcategories.map(s => (
-                        <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>
-                      ))}
-                    </SelectGroup>
-                  ))}
-                </SelectContent>
-              </Select>
-              {sub && (
-                <div className="flex items-center gap-1.5 mt-1.5">
-                  <Badge variant="outline" className="text-[10px]">
-                    {getDeductibilityLabel(sub.deductibilityType)}
-                  </Badge>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent side="right" className="max-w-[220px]">
-                        <p className="text-xs">{sub.tooltip}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-              )}
-            </div>
-
-            {isMileage && (
-              <div>
-                <Label>Miles Driven</Label>
-                <Input type="number" placeholder="e.g. 45" value={milesStr} onChange={e => setMilesStr(e.target.value)} min={0} step="0.1" />
-                <p className="text-xs text-muted-foreground mt-1">
-                  IRS rate: ${(config.irs_mileage_rate_cents / 100).toFixed(2)}/mile
-                  {milesStr && ` → $${(calculatedCents! / 100).toFixed(2)}`}
-                </p>
-                {duplicateShiftMileage && (
-                  <div className="mt-2 flex gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2.5 text-xs text-amber-900 dark:text-amber-200">
-                    <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-medium">Possible duplicate</p>
-                      <p className="opacity-90">
-                        A shift-linked mileage entry already exists for {date}
-                        {duplicateShiftMileage.mileage_miles ? ` (${Math.round(duplicateShiftMileage.mileage_miles)} mi, ${duplicateShiftMileage.mileage_status})` : ''}.
-                        Logging this manually may double-count your deduction.
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {isHomeOffice && (
-              <div>
-                <Label>Dedicated Office Space (sq ft)</Label>
-                <Input type="number" placeholder="e.g. 150" value={sqftStr} onChange={e => setSqftStr(e.target.value)} min={0} max={300} />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Simplified method: ${(config.home_office_rate_cents / 100).toFixed(2)}/sq ft (max 300)
-                  {sqftStr && ` → $${(calculatedCents! / 100).toFixed(2)}`}
-                </p>
-              </div>
-            )}
-
-            {isProrate && (
-              <div>
-                <Label>Business Use: {proratePercent}%</Label>
-                <Slider value={[proratePercent]} onValueChange={v => setProratePercent(v[0])} min={0} max={100} step={5} className="mt-2" />
-                {amountStr && calculatedCents !== null && (
-                  <p className="text-xs text-muted-foreground mt-1">Deductible portion: ${(calculatedCents / 100).toFixed(2)}</p>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* RIGHT COLUMN */}
-          <div className="space-y-4">
-            <div>
-              <Label>Amount ($)</Label>
-              <Input type="number" placeholder="0.00" value={amountStr} onChange={e => setAmountStr(e.target.value)} min={0} step="0.01" disabled={isMileage || isHomeOffice} />
-              {isMeals && amountStr && (
-                <p className="text-xs text-muted-foreground mt-1">50% deductible: ${((parseFloat(amountStr) || 0) * 0.5).toFixed(2)}</p>
-              )}
-            </div>
-
-            <div>
-              <Label>Description (optional)</Label>
-              <Textarea placeholder="What was this for?" value={description} onChange={e => setDescription(e.target.value)} className="min-h-[60px]" />
-            </div>
-
-            <div>
-              <Label>Clinic (optional)</Label>
-              <Select value={facilityId} onValueChange={setFacilityId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="None" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  {facilities.map(f => (
-                    <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label>Receipts (optional)</Label>
-              <MultiFileDropzone
-                files={receiptFiles}
-                onChange={setReceiptFiles}
-                accept="image/*,.pdf"
-                label="Add receipts"
-                hint="Images or PDFs. You can attach multiple."
-                existing={existingAttachments}
-                onRemoveExisting={removeExistingAttachment}
-                className="mt-1"
-              />
-            </div>
-          </div>
-        </div>
-
-
-        {/* Recurrence - full width below the grid */}
-        {!isMileage && (
-          <div className="border rounded-lg p-3 space-y-3">
-            <div className="flex items-center gap-2">
-              <Repeat className="h-4 w-4 text-muted-foreground" />
-              <Label className="text-sm font-medium">Recurring Expense</Label>
-            </div>
-            <RadioGroup value={recurrenceType} onValueChange={setRecurrenceType} className="flex gap-4">
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="none" id="rec-none" />
-                <Label htmlFor="rec-none" className="text-sm font-normal cursor-pointer">One-time</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="monthly" id="rec-monthly" />
-                <Label htmlFor="rec-monthly" className="text-sm font-normal cursor-pointer">Monthly</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="quarterly" id="rec-quarterly" />
-                <Label htmlFor="rec-quarterly" className="text-sm font-normal cursor-pointer">Quarterly</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="yearly" id="rec-yearly" />
-                <Label htmlFor="rec-yearly" className="text-sm font-normal cursor-pointer">Yearly</Label>
-              </div>
-            </RadioGroup>
-            {recurrenceType !== 'none' && (
-              <div>
-                <Label className="text-xs text-muted-foreground">End date (optional)</Label>
-                <Input type="date" value={recurrenceEndDate} onChange={e => setRecurrenceEndDate(e.target.value)} className="mt-1" />
-                <p className="text-xs text-muted-foreground mt-1">
-                  This expense will automatically repeat {recurrenceType === 'monthly' ? 'every month' : recurrenceType === 'quarterly' ? 'every 3 months' : 'every year'} on the same day. Leave end date blank for indefinite.
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Submit - full width below the grid */}
-        <Button className="w-full mt-2" onClick={handleSubmit} disabled={saving || !subcategoryKey || !amountStr}>
-          {saving ? 'Saving…' : isEditing ? 'Save Changes' : 'Log Expense'}
-        </Button>
+        {formBody}
       </DialogContent>
     </Dialog>
   );
