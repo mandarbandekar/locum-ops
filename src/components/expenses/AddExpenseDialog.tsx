@@ -356,6 +356,7 @@ export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit,
               hint="Images or PDFs. You can attach multiple."
               existing={existingAttachments}
               onRemoveExisting={removeExistingAttachment}
+              onViewExisting={viewExistingAttachment}
               className="mt-1"
             />
           </div>
