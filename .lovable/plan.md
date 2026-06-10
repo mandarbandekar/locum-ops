@@ -1,36 +1,33 @@
-## The bug
+# Mobile Schedule — Calendar View
 
-On Melanie's invoice the "Overtime" row shows **8h** even though she entered **45 min** of overtime. The dollar amount is correct ($150 = 0.75h × $200/hr), so qty is stored correctly — only the **Hours** column is wrong.
+Replace the current month-grouped list on the mobile `/schedule` page with a tappable monthly calendar grid. Days containing shifts/events are highlighted by status. Tapping a date reveals that day's shifts beneath the calendar; tap a shift card to edit.
 
-### Root cause
+## Layout (top → bottom)
 
-Both Hours-column helpers check `shift_id` **before** checking `line_kind === 'overtime'`:
+1. **Header** — "Schedule" (unchanged).
+2. **Status legend** — horizontal row: Confirmed, Completed, Event, Expired. Each = small color dot + label.
+3. **Month navigator** — ‹ Month YYYY › (kept).
+4. **Calendar grid** — Sunday-start 7-column grid, 6 weeks. Each cell:
+   - Day number; out-of-month days dimmed.
+   - Days with shifts/events render the number inside a filled colored circle (Confirmed = primary, Completed = muted gray, Event = teal, Expired = rose).
+   - Today's number is underlined when not otherwise filled.
+   - Selected day gets a focus ring.
+5. **Selected-day panel** — full date label (e.g. "Sat, Jun 13, 2026") on a subtle bar, then shift cards for that day: facility name, time range (clinic tz), total $ amount, invoice status pill, edit pencil → opens existing `ShiftFormDialog`. Empty state with "Add shift" when none.
+6. **FAB** — "Add shift" (kept).
 
-- `src/lib/lineItemHours.ts` → `formatLineHours()` (used by `InvoicePreview` on screen)
-- `supabase/functions/generate-invoice-pdf/index.ts` → `lineHoursLabel()` (used by the downloaded PDF)
+Default selected day = today; switching months auto-selects the first day-with-shift in the new month, else the 1st.
 
-Overtime lines are linked to the parent shift (`shift_id` is set), so the function returns the **shift's billable hours** (8h) and never reaches the overtime branch. The overtime branch is effectively dead code for shift-linked overtime — which is the normal case.
+## Status mapping
 
-## Fix
+Per data model (no shift statuses; all shifts are active):
+- **Confirmed** — shift on a future date.
+- **Completed** — shift on a past date.
+- **Event** — credential renewal / subscription renewal from `useCalendarEvents` that's active or due_soon.
+- **Expired** — credential/subscription event with status `expired`.
 
-Reorder the checks so `line_kind === 'overtime'` wins over `shift_id`, in both helpers. Also improve the sub-hour formatting so 45 min reads as **"45 min"** instead of "0.8h" (which is what `formatBillableHours(45)` would render).
+Priority when a day has multiple: Expired > Confirmed > Event > Completed.
 
-### Files to change
+## Files
 
-1. **`src/lib/lineItemHours.ts`** — move the overtime check above the `shift_id` check. When the overtime qty is `< 1` hour, return `"{N} min"` (e.g. `"45 min"`); otherwise return `formatBillableHours(qty*60)` (e.g. `"1.5"`).
-
-2. **`src/components/invoice/InvoicePreview.tsx`** — when the label already contains `"min"`, don't append the `"h"` / `"hrs"` suffix. (Two spots: mobile list line 309, desktop table line 348.)
-
-3. **`supabase/functions/generate-invoice-pdf/index.ts`** — mirror the same fix in `lineHoursLabel()` so the downloaded PDF matches the on-screen preview. Update the column rendering to skip the `"h"` suffix when the label contains `"min"`.
-
-### Out of scope
-
-- No changes to how overtime qty is stored, calculated, or priced — the underlying numbers are correct.
-- No changes to the editor panel (already correctly edits overtime in minutes).
-- No changes to shift-linked **regular** lines, which should keep showing billable shift hours.
-
-### Verification
-
-- Open Melanie's WAH-2026-005 invoice preview → Overtime row should read **"45 min"** (not "8h"), other rows unchanged at **"8h"**.
-- Download the PDF → same result.
-- Add a 2-hour overtime line on a test shift → should read **"2h"**.
+- **Edit** `src/pages/mobile/MobileSchedulePage.tsx` — replace the grouped list with: legend strip, calendar grid, selected-day panel. Keep month nav, FAB, dialogs, and data hooks. Pull in `useCalendarEvents` for Event/Expired markers. All date bucketing via `formatDateInTz(..., 'yyyy-MM-dd')` (clinic tz, no UTC drift).
+- No new files; no schema or business-logic changes; desktop `/schedule` untouched.
