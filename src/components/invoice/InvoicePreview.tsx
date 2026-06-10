@@ -345,7 +345,7 @@ export function InvoicePreview({
                       ) : li.description}
                     </td>
                     <td className="p-2.5 text-muted-foreground">{formatDateShort(li.service_date)}</td>
-                    <td className="p-2.5 text-right">{hoursLabel === '—' ? '—' : `${hoursLabel}h`}</td>
+                    <td className="p-2.5 text-right">{hoursLabel === '—' ? '—' : (hoursLabel.includes('min') ? hoursLabel : `${hoursLabel}h`)}</td>
                     <td className="p-2.5 text-right">
                       ${ur.toLocaleString()}
                     </td>
