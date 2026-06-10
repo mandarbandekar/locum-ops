@@ -504,33 +504,53 @@ export function MobileMoneyPage() {
 
       {tab === "expenses" && (
         <div className="px-5 mt-4 space-y-2">
-          {expenses.slice(0, 50).map((e) => (
-            <div key={e.id} className="mobile-card p-4 flex items-start gap-3">
-              <div className="min-w-0 flex-1">
-                <div className="text-[14px] font-semibold truncate">
-                  {e.description || e.subcategory || "Expense"}
+          {expensesLoading ? (
+            <MobileListSkeleton count={5} lines={2} />
+          ) : expenses.length === 0 ? (
+            <MobileEmptyState
+              icon={Receipt}
+              title="No expenses yet"
+              description="Track receipts, software, and supplies for clean books at tax time."
+              actionLabel="Add expense"
+              onAction={() => setAddExpOpen(true)}
+            />
+          ) : (
+            expenses.slice(0, 50).map((e) => (
+              <div key={e.id} className="mobile-card p-4 flex items-start gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="text-[14px] font-semibold truncate">
+                    {e.description || e.subcategory || "Expense"}
+                  </div>
+                  <div className="text-[12px] text-[hsl(var(--m-text-muted))]">
+                    {new Date(e.expense_date).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                    })}{" "}
+                    · {e.category || "Uncategorized"}
+                  </div>
                 </div>
-                <div className="text-[12px] text-[hsl(var(--m-text-muted))]">
-                  {new Date(e.expense_date).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                  })}{" "}
-                  · {e.category || "Uncategorized"}
+                <div className="text-[14px] font-semibold">
+                  {fmt(e.amount_cents / 100)}
                 </div>
               </div>
-              <div className="text-[14px] font-semibold">
-                {fmt(e.amount_cents / 100)}
-              </div>
-            </div>
-          ))}
-          {expenses.length === 0 && (
-            <div className="mobile-card p-5 text-center text-[14px] text-[hsl(var(--m-text-muted))]">
-              No expenses yet.
-            </div>
+            ))
           )}
           <MobileFab label="Add expense" onClick={() => setAddExpOpen(true)} />
         </div>
       )}
+
+      {tab === "mileage" && (
+        <div className="px-5 mt-4 space-y-2">
+          {expensesLoading ? (
+            <MobileListSkeleton count={3} lines={2} />
+          ) : draftMileageExpenses.length === 0 ? (
+            <MobileEmptyState
+              icon={Car}
+              title="All caught up"
+              description="No mileage trips need confirmation right now."
+            />
+          ) : (
+            draftMileageExpenses.map((e) => {
 
       {tab === "mileage" && (
         <div className="px-5 mt-4 space-y-2">
