@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search } from "lucide-react";
+import { Search, Building2 } from "lucide-react";
 import { MobilePageHeader } from "@/components/mobile/MobilePageHeader";
 import { MobileFab } from "@/components/mobile/MobileFab";
+import { MobileEmptyState } from "@/components/mobile/MobileEmptyState";
+import { MobileListSkeleton } from "@/components/mobile/MobileSkeleton";
 import { useData } from "@/contexts/DataContext";
 import { AddFacilityDialog } from "@/components/AddFacilityDialog";
 import { useUserProfile } from "@/contexts/UserProfileContext";
@@ -11,7 +13,7 @@ import { formatDateInTz, formatTimeInTz } from "@/lib/tzTime";
 
 export function MobileClinicsPage() {
   const navigate = useNavigate();
-  const { facilities, shifts } = useData();
+  const { facilities, shifts, dataLoading } = useData();
   const { profile } = useUserProfile();
   const [q, setQ] = useState("");
   const [addOpen, setAddOpen] = useState(false);
