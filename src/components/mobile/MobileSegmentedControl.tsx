@@ -28,11 +28,12 @@ export function MobileSegmentedControl<T extends string>({
             aria-selected={active}
             onClick={() => onChange(o.value)}
             className={cn(
-              "flex-1 py-2 text-[13px] font-medium rounded-full transition",
+              "m-press flex-1 min-h-[40px] font-medium rounded-full transition",
               active
                 ? "bg-[hsl(var(--m-primary))] text-[hsl(var(--m-primary-fg))]"
                 : "text-[hsl(var(--m-text-muted))]"
             )}
+            style={{ fontSize: "var(--m-text-sm)" }}
           >
             {o.label}
           </button>

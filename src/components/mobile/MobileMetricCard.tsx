@@ -22,14 +22,15 @@ export function MobileMetricCard({
       ? "text-[hsl(var(--m-danger))]"
       : "text-[hsl(var(--m-text))]";
   return (
-    <div className={cn("mobile-card p-3.5", className)}>
-      <div className="text-[11px] uppercase tracking-wide font-medium text-[hsl(var(--m-text-muted))]">
-        {label}
-      </div>
-      <div className={cn("mt-1 text-[20px] font-semibold leading-tight", toneClass)}>
+    <div className={cn("mobile-card p-3 min-w-0", className)}>
+      <div className="m-eyebrow truncate">{label}</div>
+      <div
+        className={cn("mt-1 font-semibold leading-tight tracking-tight tabular-nums truncate", toneClass)}
+        style={{ fontSize: "var(--m-text-xl)" }}
+      >
         {value}
       </div>
-      {hint && <div className="text-[12px] text-[hsl(var(--m-text-muted))] mt-0.5">{hint}</div>}
+      {hint && <div className="m-caption mt-0.5 truncate">{hint}</div>}
     </div>
   );
 }
