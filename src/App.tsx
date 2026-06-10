@@ -44,6 +44,14 @@ import SettingsRemindersPage from "@/pages/SettingsRemindersPage";
 import SettingsBusinessTaxesPage from "@/pages/SettingsBusinessTaxesPage";
 import SettingsSecurityPage from "@/pages/SettingsSecurityPage";
 import SettingsAccountPage from "@/pages/SettingsAccountPage";
+import MobileSettingsPage from "@/pages/mobile/MobileSettingsPage";
+import { useIsMobileShell } from "@/hooks/useIsMobileShell";
+
+function SettingsIndexRoute() {
+  const isMobile = useIsMobileShell();
+  if (isMobile) return <MobileSettingsPage />;
+  return <Navigate to="/settings/profile" replace />;
+}
 import FounderDashboardPage from "@/pages/FounderDashboardPage";
 import FounderInvoiceAuditPage from "@/pages/FounderInvoiceAuditPage";
 import AdminFeedbackPage from "@/pages/AdminFeedbackPage";
