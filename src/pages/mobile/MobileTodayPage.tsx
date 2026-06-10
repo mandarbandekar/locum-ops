@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Building2, CalendarPlus, Navigation, Phone, FileText, AlertCircle } from "lucide-react";
+import { Building2, CalendarPlus, Navigation, Phone, FileText, AlertCircle, CalendarDays } from "lucide-react";
 import { MobilePageHeader } from "@/components/mobile/MobilePageHeader";
 import { MobileMetricCard } from "@/components/mobile/MobileMetricCard";
+import { MobileEmptyState } from "@/components/mobile/MobileEmptyState";
+import { MobileMetricsSkeleton, MobileSectionSkeleton, Skeleton } from "@/components/mobile/MobileSkeleton";
 import { useData } from "@/contexts/DataContext";
 import type { Shift } from "@/types";
 import { useExpenses } from "@/hooks/useExpenses";
@@ -18,9 +20,10 @@ function fmtCurrency(n: number) {
 
 export function MobileTodayPage() {
   const navigate = useNavigate();
-  const { facilities, shifts, invoices, getComputedInvoiceStatus, terms, addShift: addShiftMut, updateShift, deleteShift } = useData();
-  const { expenses } = useExpenses();
+  const { facilities, shifts, invoices, getComputedInvoiceStatus, terms, addShift: addShiftMut, updateShift, deleteShift, dataLoading } = useData();
+  const { expenses, loading: expensesLoading } = useExpenses();
   const { profile } = useUserProfile();
+  const isLoading = dataLoading || expensesLoading;
   const [addClinic, setAddClinic] = useState(false);
   const [addShift, setAddShift] = useState(false);
 
