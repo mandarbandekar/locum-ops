@@ -1,63 +1,50 @@
-# Mobile Invoices UX redesign
+# Mobile Settings — Hub + Dedicated Screens
 
-The mobile Invoices tab is currently a flat list sorted by date with a generic 3-card metric strip (Outstanding / Expenses / Mileage). The desktop experience is much richer: a summary strip, an overdue alert, a "Ready to review" CTA, and collapsible groups (Overdue, Ready to Review, Sent & Awaiting, Upcoming, Paid). Mobile loses all of that signal.
+Today on mobile, tapping the avatar in the header drops the user directly into the desktop Profile page rendered at mobile width: a horizontal tab bar (Profile / Calendar Sync / Rate Card / Your Account) with desktop‑sized cards. There is no Settings home, no back navigation, and the tab strip is the only way to move between sections.
 
-This plan brings the same mental model to mobile, adapted for a 390px width and thumb-friendly interactions.
+This plan introduces a proper mobile Settings flow: a hub list, and each section as its own full screen with a back button.
 
-## What changes
+## UX
 
-### 1. Invoice-specific summary tiles (replace generic strip when on Invoices tab)
-When the Invoices tab is active, the 3 top metric cards become invoice-focused and tappable as filters/scroll-tos:
-- **Overdue** — balance + count, red tone
-- **Awaiting** — sent + partial balance, blue tone
-- **Ready to review** — draft total, amber tone
+**Settings hub (`/settings`)**
+- Native‑style grouped list. Header: "Settings" + greeting subtitle (name).
+- Rows (icon + label + chevron, tap to push screen):
+  1. Profile
+  2. Calendar Sync
+  3. Rate Card
+  4. Your Account
+- Footer: app version, sign out.
 
-Expenses and Mileage tabs keep their existing relevant tiles.
+**Section screens**
+- Each section becomes its own mobile screen with a sticky top bar: `‹ Settings` back link + section title.
+- Single‑column, mobile‑sized form controls. No tab strip.
+- Auto‑save behavior is preserved (no "Save" button added/removed).
+- Bottom tab bar remains visible (uses existing `MobileAppShell`).
 
-### 2. Overdue alert banner
-If any overdue exists, show a compact red banner above the list:
-"$X overdue across N invoices" with a "Review" link to the first overdue invoice.
+**Entry points**
+- Avatar button in `MobilePageHeader` now routes to `/settings` (instead of `/settings/profile`).
+- Desktop is unchanged — `/settings` redirects to `/settings/profile` on desktop so existing tab nav still works.
 
-### 3. Ready-to-review CTA banner
-If any draft is ready, show an amber banner:
-"N invoices ready to review" + "Review next →" button (jumps into the first one).
+## Technical
 
-### 4. Status-grouped sections (replace flat list)
-Five collapsible sections in this order, hidden when empty:
-1. **Overdue** — open by default, red accent
-2. **Ready to review** — open by default, amber accent
-3. **Sent & awaiting payment** (sent + partial) — open by default, blue accent
-4. **Upcoming auto-generated** — collapsed by default, muted
-5. **Paid** — collapsed by default, green accent; show "Paid this month: $X" in header
+New files
+- `src/pages/mobile/MobileSettingsPage.tsx` — hub list using `MobileAppShell` + grouped rows; sign out + version footer.
+- `src/pages/mobile/settings/MobileSettingsProfilePage.tsx`
+- `src/pages/mobile/settings/MobileSettingsCalendarSyncPage.tsx`
+- `src/pages/mobile/settings/MobileSettingsRateCardPage.tsx`
+- `src/pages/mobile/settings/MobileSettingsAccountPage.tsx`
+- `src/components/mobile/MobileSubPageHeader.tsx` — reusable sticky header with back chevron + title (used by all four section screens; can be reused later).
 
-Each section header shows: icon, title, count chip, total/balance amount, chevron to toggle.
+Edits
+- `src/App.tsx`: add `/settings` route. On mobile render `MobileSettingsPage`; on desktop `<Navigate to="/settings/profile" replace />`.
+- `src/pages/SettingsProfilePage.tsx`, `SettingsCalendarSyncPage.tsx`, `SettingsRateCardPage.tsx`, `SettingsAccountPage.tsx`: at top, `const isMobile = useIsMobileShell(); if (isMobile) return <MobileSettings…Page />;` (mirrors the existing `SchedulePage` pattern).
+- `src/components/mobile/MobilePageHeader.tsx`: avatar `onClick` → `/settings`.
 
-### 5. Invoice row
-Compact card per invoice:
-- Line 1: Facility name (bold) + total amount (right)
-- Line 2: Invoice # · date · status chip
-- Tap card → invoice detail
-- Action row (only where meaningful):
-  - Overdue / Awaiting: **Mark paid** + **Share**
-  - Ready to review: **Review & send** (primary) + **Share**
-  - Paid: **Share** only
-  - Upcoming: no action row (tap-only)
-
-### 6. FAB stays
-Icon-only "Create invoice" FAB remains in the bottom-right corner.
-
-### 7. Empty state
-When no invoices at all, show a single centered card ("No invoices yet. They'll appear here once shifts are completed.") instead of the current bare message.
-
-## Files to touch
-
-- `src/pages/mobile/MobileMoneyPage.tsx` — main rewrite of the `tab === "invoices"` branch and the top metrics strip (conditional per tab).
-- Possibly add `src/components/mobile/MobileInvoiceGroup.tsx` — small collapsible section component reused for each status group.
-
-No changes to desktop, business logic, or data layer. Status derivation reuses `getComputedInvoiceStatus` and `isInvoiceOverdue` already exposed via `DataContext` / `invoiceHelpers`.
+Each mobile section screen
+- Reuses the existing form logic from its desktop counterpart (same hooks: `useUserProfile`, `useAutoSave`, etc.) but re‑rendered with mobile primitives: full‑width inputs, larger tap targets (min‑h 44px), grouped cards using `--m-card` / `--m-border` tokens, no `SettingsNav`.
+- Rate Card screen keeps the existing rate‑card editor logic; trimmed chrome (no desktop side rail), single‑column layout, sections collapsible if total height is excessive (decide during build based on content length).
 
 ## Out of scope
-
-- Mark-paid dialog flow on mobile (will navigate to invoice detail for now; can be added later).
-- Bulk actions and facility grouping inside "Ready to review" (desktop-only complexity).
-- Filters / search bar (can be added in a follow-up).
+- No changes to desktop Settings.
+- No changes to auto‑save, profile context, rate card data model, or calendar sync logic.
+- No new settings sections; only the 4 already in `SettingsNav`.

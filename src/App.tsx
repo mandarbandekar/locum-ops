@@ -44,6 +44,14 @@ import SettingsRemindersPage from "@/pages/SettingsRemindersPage";
 import SettingsBusinessTaxesPage from "@/pages/SettingsBusinessTaxesPage";
 import SettingsSecurityPage from "@/pages/SettingsSecurityPage";
 import SettingsAccountPage from "@/pages/SettingsAccountPage";
+import MobileSettingsPage from "@/pages/mobile/MobileSettingsPage";
+import { useIsMobileShell } from "@/hooks/useIsMobileShell";
+
+function SettingsIndexRoute() {
+  const isMobile = useIsMobileShell();
+  if (isMobile) return <MobileSettingsPage />;
+  return <Navigate to="/settings/profile" replace />;
+}
 import FounderDashboardPage from "@/pages/FounderDashboardPage";
 import FounderInvoiceAuditPage from "@/pages/FounderInvoiceAuditPage";
 import AdminFeedbackPage from "@/pages/AdminFeedbackPage";
@@ -132,6 +140,7 @@ function AuthenticatedApp() {
           <Route path="/tax-strategy" element={<Navigate to="/tax-center" replace />} />
           <Route path="/tax-strategies" element={<Navigate to="/tax-center?tab=tax-strategies" replace />} />
           {/* Settings */}
+          <Route path="/settings" element={<SettingsIndexRoute />} />
           <Route path="/settings/profile" element={<SettingsProfilePage />} />
           <Route path="/settings/scheduling" element={<SettingsSchedulingPage />} />
           <Route path="/settings/calendar-sync" element={<SettingsCalendarSyncPage />} />
