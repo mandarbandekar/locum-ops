@@ -2,7 +2,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
   Car, ShieldCheck, GraduationCap, Heart, Laptop, Briefcase,
-  Home, Wrench, PiggyBank, Utensils, HelpCircle, FileText
+  Home, Wrench, PiggyBank, Utensils, HelpCircle, FileText, Landmark
 } from 'lucide-react';
 
 const CATEGORY_CARDS = [
@@ -104,6 +104,15 @@ const CATEGORY_CARDS = [
     badge: '50% Rule',
     badgeClass: 'bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-700',
     icon: Utensils,
+  },
+  {
+    title: 'Taxes',
+    description: 'Federal & state estimated payments, SE tax, business/local taxes',
+    groupKey: 'taxes',
+    defaultSub: 'federal_estimated_tax',
+    badge: 'Tracker',
+    badgeClass: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-700',
+    icon: Landmark,
   },
   {
     title: 'Other / Uncategorized',
