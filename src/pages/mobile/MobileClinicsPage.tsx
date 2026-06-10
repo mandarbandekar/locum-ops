@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Building2 } from "lucide-react";
 import { MobilePageHeader } from "@/components/mobile/MobilePageHeader";
-import { MobileFab } from "@/components/mobile/MobileFab";
 import { MobileEmptyState } from "@/components/mobile/MobileEmptyState";
 import { MobileListSkeleton } from "@/components/mobile/MobileSkeleton";
 import { useData } from "@/contexts/DataContext";
@@ -97,7 +96,6 @@ export function MobileClinicsPage() {
         ))}
       </div>
 
-      <MobileFab label="Add clinic" onClick={() => setAddOpen(true)} />
       <AddFacilityDialog open={addOpen} onOpenChange={setAddOpen} />
     </div>
   );
