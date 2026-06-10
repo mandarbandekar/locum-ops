@@ -233,6 +233,12 @@ function InvoiceDetailPageInner() {
           )}
         </div>
 
+        {isMobile && (
+          <Badge variant={statusConfig.variant} className="shrink-0 capitalize">
+            {statusConfig.label}
+          </Badge>
+        )}
+
         {invoice.generation_type === 'automatic' && invoice.status === 'draft' ? (
           <>
             <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive shrink-0 h-10 w-10" onClick={() => setAutoDeleteOpen(true)} aria-label={`Delete invoice ${invoice.invoice_number}`}>
@@ -281,13 +287,15 @@ function InvoiceDetailPageInner() {
         )}
       </div>
 
-      {/* Visual status timeline */}
-      <div className="mb-4 max-w-2xl print:hidden">
-        <InvoiceStatusTimeline invoice={invoice} payments={invoicePayments} computedStatus={computedStatus} />
-      </div>
+      {/* Visual status timeline — desktop only; mobile uses the status badge in header */}
+      {!isMobile && (
+        <div className="mb-4 max-w-2xl print:hidden">
+          <InvoiceStatusTimeline invoice={invoice} payments={invoicePayments} computedStatus={computedStatus} />
+        </div>
+      )}
 
       {/* Alerts */}
-      <div className="space-y-2 mb-4 max-w-2xl print:hidden">
+      <div className="space-y-2 mb-3 sm:mb-4 max-w-2xl print:hidden">
         {isDraft && (
           <ReadyToSendChecklist
             items={buildChecklistItems(profile, { ...invoice, due_date: liveFields?.dueDate || invoice.due_date }, items, facility)}
@@ -295,29 +303,31 @@ function InvoiceDetailPageInner() {
           />
         )}
         {computedStatus === 'overdue' && (
-          <div className="rounded-md border border-destructive/50 bg-destructive/5 p-3 flex items-center gap-2">
+          <div className="rounded-md border border-destructive/50 bg-destructive/5 p-2.5 sm:p-3 flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />
-            <p className="text-sm text-destructive font-medium flex-1">
-              This invoice is overdue. Due date was {invoice.due_date ? format(new Date(invoice.due_date), 'MMM d, yyyy') : 'not set'}.
+            <p className="text-[13px] sm:text-sm text-destructive font-medium flex-1">
+              {isMobile
+                ? `Overdue — due ${invoice.due_date ? format(new Date(invoice.due_date), 'MMM d') : '—'}.`
+                : `This invoice is overdue. Due date was ${invoice.due_date ? format(new Date(invoice.due_date), 'MMM d, yyyy') : 'not set'}.`}
             </p>
             <Button
               size="sm"
               variant="destructive"
-              className="shrink-0 gap-1.5"
+              className="shrink-0 gap-1.5 h-8"
               onClick={() => {
                 setComposeMode('followup');
                 setComposeOpen(true);
               }}
             >
               <Mail className="h-3.5 w-3.5" />
-              Send Reminder
+              {isMobile ? 'Remind' : 'Send Reminder'}
             </Button>
           </div>
         )}
         {invoice.generation_type === 'automatic' && (
-          <div className="rounded-md border bg-primary/5 p-2.5 flex items-center gap-2 text-sm">
-            <Layers className="h-4 w-4 text-primary shrink-0" />
-            <span>
+          <div className="rounded-md border bg-primary/5 px-2.5 py-1.5 sm:p-2.5 flex items-center gap-2 text-[12px] sm:text-sm">
+            <Layers className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary shrink-0" />
+            <span className="truncate">
               Auto-generated from{' '}
               <button
                 onClick={() => {
@@ -328,7 +338,7 @@ function InvoiceDetailPageInner() {
               >
                 {items.filter(li => li.shift_id).length} shift{items.filter(li => li.shift_id).length === 1 ? '' : 's'}
               </button>
-              {' '}— review and adjust below before sending.
+              <span className="hidden sm:inline">{' '}— review and adjust below before sending.</span>
             </span>
           </div>
         )}
