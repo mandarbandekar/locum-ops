@@ -616,4 +616,32 @@ input[type="number"] {
 }
 .m-sticky-header.is-scrolled { border-bottom-color: hsl(var(--m-border)); }
 
+/* Skeleton shimmer */
+.m-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: hsl(var(--m-border) / 0.55);
+  isolation: isolate;
+}
+.m-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    hsl(var(--m-card) / 0.6),
+    transparent
+  );
+  transform: translateX(-100%);
+  animation: m-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes m-shimmer {
+  100% { transform: translateX(100%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .m-skeleton::after { animation: none; }
+}
+
+
 
