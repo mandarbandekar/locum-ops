@@ -1,7 +1,9 @@
 import { useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Navigation, Phone, MessageSquare, Pencil } from "lucide-react";
+import { Navigation, Phone, MessageSquare, Pencil, Building2 } from "lucide-react";
 import { MobilePageHeader } from "@/components/mobile/MobilePageHeader";
+import { MobileEmptyState } from "@/components/mobile/MobileEmptyState";
+import { Skeleton } from "@/components/mobile/MobileSkeleton";
 import { useData } from "@/contexts/DataContext";
 import { useUserProfile } from "@/contexts/UserProfileContext";
 import { resolveShiftTz } from "@/lib/resolveTimezone";
@@ -10,7 +12,7 @@ import { formatDateInTz, formatTimeInTz } from "@/lib/tzTime";
 export function MobileClinicDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { facilities, contacts, terms, shifts } = useData();
+  const { facilities, contacts, terms, shifts, dataLoading } = useData();
   const { profile } = useUserProfile();
   const fac = facilities.find((f) => f.id === id);
 
