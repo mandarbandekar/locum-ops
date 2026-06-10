@@ -384,7 +384,7 @@ export function MobileMoneyPage() {
     <div>
       <MobilePageHeader title="Money" subtitle="Invoices, expenses, and mileage." />
 
-      <div className="px-5 grid grid-cols-3 gap-2">{topMetrics}</div>
+      <div className="px-5 grid grid-cols-3 gap-2">{dataLoading ? <div className="col-span-3"><MobileMetricsSkeleton count={3} cols={3} /></div> : topMetrics}</div>
 
       <div className="px-5 mt-4">
         <MobileSegmentedControl
