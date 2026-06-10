@@ -1,50 +1,73 @@
-# Mobile Settings — Hub + Dedicated Screens
+# Rate Card — Mobile UX Refresh
 
-Today on mobile, tapping the avatar in the header drops the user directly into the desktop Profile page rendered at mobile width: a horizontal tab bar (Profile / Calendar Sync / Rate Card / Your Account) with desktop‑sized cards. There is no Settings home, no back navigation, and the tab strip is the only way to move between sections.
-
-This plan introduces a proper mobile Settings flow: a hub list, and each section as its own full screen with a back button.
+The Rate Card screen on mobile today stacks four full-width controls per rate (shift type, rate name, amount, trash) with no visual grouping, so even 3 rates fill the screen and feel like a wall of inputs. The "Suggest types" banner, "Overtime rate" card, and "Always use Rate Card" card each live in separate cards, multiplying scroll. This plan tightens the rate rows into compact cards, consolidates preferences, and trims chrome — desktop is unchanged.
 
 ## UX
 
-**Settings hub (`/settings`)**
-- Native‑style grouped list. Header: "Settings" + greeting subtitle (name).
-- Rows (icon + label + chevron, tap to push screen):
-  1. Profile
-  2. Calendar Sync
-  3. Rate Card
-  4. Your Account
-- Footer: app version, sign out.
+**Page intro (mobile only)**
+- Keep "Rate Card" title (already provided by `page-title`).
+- Drop the long paragraph; replace with one line: "Defaults for new shifts. Clinic rates always win."
+- Per Day / Per Hour segmented control stays at the top but becomes a true pill segmented control (full width, two segments, active = filled primary).
 
-**Section screens**
-- Each section becomes its own mobile screen with a sticky top bar: `‹ Settings` back link + section title.
-- Single‑column, mobile‑sized form controls. No tab strip.
-- Auto‑save behavior is preserved (no "Save" button added/removed).
-- Bottom tab bar remains visible (uses existing `MobileAppShell`).
+**Rate row → compact rate card**
+Each rate renders as a single card (rounded, themed border, no shadow), two lines:
 
-**Entry points**
-- Avatar button in `MobilePageHeader` now routes to `/settings` (instead of `/settings/profile`).
-- Desktop is unchanged — `/settings` redirects to `/settings/profile` on desktop so existing tab nav still works.
+```
+┌─────────────────────────────────────────────┐
+│  Weekend Day                       $ 1,100  │  ← name input (borderless) · amount (right, large)
+│  ────────────────────────────────────────── │
+│  [ Weekend ▾ ]                           🗑  │  ← shift-type pill select · ghost trash
+└─────────────────────────────────────────────┘
+```
+
+- Name: borderless input, 16px, placeholder "Name this rate".
+- Amount: borderless number input, right-aligned, 18px semibold, `$` prefix, `/day` or `/hr` suffix muted.
+- Shift type: small pill-style Select (auto width, chevron). Untagged renders as muted "Add shift type" pill.
+- Trash: ghost icon, right side, only confirms via swift tap (no extra modal).
+- Inline error appears below the offending field in destructive color (unchanged behavior).
+
+**List**
+- Cards separated by 8px, no outer wrapper card.
+- "+ Add rate" becomes a full-width dashed button at the bottom of the list (primary text, neutral border).
+- Empty state: muted single line "No rates yet — add your first one" above the Add button.
+
+**Untagged banner**
+- Collapses to a single muted row above the list: small Tag icon · "3 rates missing a shift type" · ghost "Auto-tag" link on the right. No card chrome.
+
+**Preferences group (replaces the two trailing cards)**
+A single grouped list (same rounded card pattern as the new Mobile Settings hub) with two rows:
+
+```
+┌──────────────────────────────────────────────┐
+│  Overtime rate                $ [  85  ] /hr │
+├──────────────────────────────────────────────┤
+│  Default to Rate Card                  [⚪→●] │
+│  Hides clinic rates from the shift picker.    │
+└──────────────────────────────────────────────┘
+```
+
+- Rows align label left, control right, with the helper text below the label (small muted).
+
+**Footer tip**
+- The "Tip: Shift Type is optional…" paragraph is removed on mobile (covered by the inline empty-state and Auto-tag affordance).
+
+## Desktop
+- No change. The new `RateRowMobile` and `PreferencesGroupMobile` render only when `useIsMobileShell()` is true; the existing `RateSection` grid stays for ≥ md.
 
 ## Technical
 
-New files
-- `src/pages/mobile/MobileSettingsPage.tsx` — hub list using `MobileAppShell` + grouped rows; sign out + version footer.
-- `src/pages/mobile/settings/MobileSettingsProfilePage.tsx`
-- `src/pages/mobile/settings/MobileSettingsCalendarSyncPage.tsx`
-- `src/pages/mobile/settings/MobileSettingsRateCardPage.tsx`
-- `src/pages/mobile/settings/MobileSettingsAccountPage.tsx`
-- `src/components/mobile/MobileSubPageHeader.tsx` — reusable sticky header with back chevron + title (used by all four section screens; can be reused later).
+Edit `src/pages/SettingsRateCardPage.tsx`:
+- Detect `useIsMobileShell()` and branch at the rate-list and preferences sections.
+- New local components in the same file:
+  - `RateCardMobile` — renders the per-rate card described above; reuses existing `onUpdate` / `onRemove` handlers and existing error state. No changes to validation, autosave, or data model.
+  - `PreferencesGroupMobile` — renders Overtime + Default to Rate Card rows using the same `updateProfile` calls that the existing Cards make.
+- Segmented Per Day / Per Hour: keep current `PREF_OPTIONS` data; restyle the buttons into a single 2-segment pill (`grid-cols-2`, rounded-full container, active segment uses `bg-primary text-primary-foreground`).
+- Mobile intro paragraph and footer tip wrapped in `hidden md:block` (or branched on `isMobile`).
+- Untagged banner: when `isMobile`, render the slim variant.
 
-Edits
-- `src/App.tsx`: add `/settings` route. On mobile render `MobileSettingsPage`; on desktop `<Navigate to="/settings/profile" replace />`.
-- `src/pages/SettingsProfilePage.tsx`, `SettingsCalendarSyncPage.tsx`, `SettingsRateCardPage.tsx`, `SettingsAccountPage.tsx`: at top, `const isMobile = useIsMobileShell(); if (isMobile) return <MobileSettings…Page />;` (mirrors the existing `SchedulePage` pattern).
-- `src/components/mobile/MobilePageHeader.tsx`: avatar `onClick` → `/settings`.
-
-Each mobile section screen
-- Reuses the existing form logic from its desktop counterpart (same hooks: `useUserProfile`, `useAutoSave`, etc.) but re‑rendered with mobile primitives: full‑width inputs, larger tap targets (min‑h 44px), grouped cards using `--m-card` / `--m-border` tokens, no `SettingsNav`.
-- Rate Card screen keeps the existing rate‑card editor logic; trimmed chrome (no desktop side rail), single‑column layout, sections collapsible if total height is excessive (decide during build based on content length).
+No new files. No schema changes. No changes to `onboardingRateMapping`, autosave timing, or the desktop `RateSection` component.
 
 ## Out of scope
-- No changes to desktop Settings.
-- No changes to auto‑save, profile context, rate card data model, or calendar sync logic.
-- No new settings sections; only the 4 already in `SettingsNav`.
+- Desktop Rate Card layout, copy, or behavior.
+- Validation rules, autosave debounce, rate model, shift-type list.
+- Bulk edit, drag-to-reorder, or import/export of rates.
