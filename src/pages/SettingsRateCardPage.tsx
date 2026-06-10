@@ -662,3 +662,147 @@ function RateSection({ title, basis, rates, errors, onUpdate, onRemove, onAdd }:
     </div>
   );
 }
+
+interface RateListMobileProps {
+  basis: RateBasis;
+  rates: DefaultRate[];
+  errors: RateErrors;
+  onUpdate: (id: string, patch: Partial<DefaultRate>) => void;
+  onRemove: (id: string) => void;
+  onAdd: () => void;
+}
+
+function RateListMobile({ basis, rates, errors, onUpdate, onRemove, onAdd }: RateListMobileProps) {
+  const unit = basis === 'daily' ? '/day' : '/hr';
+  return (
+    <div className="space-y-2">
+      {rates.length === 0 && (
+        <p className="text-[13px] text-muted-foreground italic px-1">
+          No rates yet — add your first one below.
+        </p>
+      )}
+
+      {rates.map(r => {
+        const rowErr = errors[r.id];
+        const nameErr = rowErr?.name;
+        const amountErr = rowErr?.amount;
+        const isKnownType = !!r.shift_type && SHIFT_TYPE_OPTIONS.some(o => o.value === r.shift_type);
+        const isCustomType = !!r.shift_type && !isKnownType;
+        const selectValue = !r.shift_type
+          ? NONE_TYPE_KEY
+          : isCustomType
+          ? CUSTOM_TYPE_KEY
+          : r.shift_type;
+        return (
+          <div
+            key={r.id}
+            className="rounded-2xl border border-border bg-card px-3.5 py-2.5"
+          >
+            <div className="flex items-center gap-2">
+              <Input
+                value={r.name}
+                maxLength={MAX_NAME_LEN}
+                onChange={e => onUpdate(r.id, { name: e.target.value })}
+                placeholder="Name this rate"
+                aria-label="Rate name"
+                aria-invalid={!!nameErr}
+                className={cn(
+                  'flex-1 h-9 border-0 bg-transparent px-0 text-[15px] font-medium shadow-none focus-visible:ring-0',
+                  nameErr && 'text-destructive',
+                )}
+              />
+              <div className="flex items-baseline gap-0.5 shrink-0">
+                <span className="text-[13px] text-muted-foreground">$</span>
+                <Input
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  max={MAX_AMOUNT}
+                  step={basis === 'daily' ? '10' : '1'}
+                  value={r.amount === 0 ? '' : r.amount}
+                  onChange={e => {
+                    const raw = e.target.value;
+                    const parsed = raw === '' ? 0 : Number(raw);
+                    const safe = Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+                    onUpdate(r.id, { amount: safe });
+                  }}
+                  placeholder="0"
+                  aria-label="Amount"
+                  aria-invalid={!!amountErr}
+                  className={cn(
+                    'w-20 h-9 border-0 bg-transparent px-0 text-[17px] font-semibold text-right tabular-nums shadow-none focus-visible:ring-0',
+                    amountErr && 'text-destructive',
+                  )}
+                />
+                <span className="text-[11px] text-muted-foreground ml-0.5">{unit}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between gap-2 mt-1 pt-1 border-t border-border/60">
+              <div className="min-w-0 flex-1">
+                <Select
+                  value={selectValue}
+                  onValueChange={(v) => {
+                    if (v === NONE_TYPE_KEY) onUpdate(r.id, { shift_type: undefined });
+                    else if (v === CUSTOM_TYPE_KEY) onUpdate(r.id, { shift_type: '' });
+                    else onUpdate(r.id, { shift_type: v });
+                  }}
+                >
+                  <SelectTrigger
+                    className="h-7 w-auto min-w-0 gap-1 px-2.5 rounded-full border-border/70 bg-transparent text-[12px] text-muted-foreground data-[placeholder]:text-muted-foreground"
+                    aria-label="Shift type"
+                  >
+                    <SelectValue placeholder="Add shift type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NONE_TYPE_KEY}>
+                      <span className="text-muted-foreground">No type</span>
+                    </SelectItem>
+                    {SHIFT_TYPE_OPTIONS.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                    <SelectItem value={CUSTOM_TYPE_KEY}>Other (custom)…</SelectItem>
+                  </SelectContent>
+                </Select>
+                {(isCustomType || selectValue === CUSTOM_TYPE_KEY) && (
+                  <Input
+                    value={r.shift_type || ''}
+                    maxLength={40}
+                    onChange={e => onUpdate(r.id, { shift_type: e.target.value })}
+                    placeholder="Custom shift type"
+                    className="h-7 mt-1.5 text-xs"
+                  />
+                )}
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => onRemove(r.id)}
+                aria-label="Remove rate"
+                className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {(nameErr || amountErr) && (
+              <div className="flex items-start gap-1.5 text-[11.5px] text-destructive mt-1.5">
+                <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                <span>{nameErr || amountErr}</span>
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      <button
+        type="button"
+        onClick={onAdd}
+        className="w-full h-11 rounded-2xl border border-dashed border-border text-[14px] font-medium text-primary active:bg-primary/5 transition-colors flex items-center justify-center gap-1.5"
+      >
+        <Plus className="h-4 w-4" /> Add rate
+      </button>
+    </div>
+  );
+}
