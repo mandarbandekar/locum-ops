@@ -74,6 +74,29 @@ export function MobileInsightsPage() {
       .slice(0, 5);
   }, [monthShifts, facilities]);
 
+  if (isLoading) {
+    return (
+      <div>
+        <MobilePageHeader title="Insights" subtitle="See how the business is performing." />
+        <div className="px-5 mt-3">
+          <MobileMetricsSkeleton count={4} />
+        </div>
+        <div className="px-5 mt-5">
+          <Skeleton h={10} w={90} className="mb-2" />
+          <div className="mobile-card p-3"><Skeleton h={80} /></div>
+        </div>
+        <div className="px-5 mt-5">
+          <Skeleton h={10} w={90} className="mb-2" />
+          <div className="mobile-card p-4 space-y-3">
+            <Skeleton h={12} w="70%" />
+            <Skeleton h={12} w="55%" />
+            <Skeleton h={12} w="60%" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <MobilePageHeader title="Insights" subtitle="See how the business is performing." />
