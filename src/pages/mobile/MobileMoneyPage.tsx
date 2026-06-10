@@ -51,7 +51,7 @@ export function MobileMoneyPage() {
   const [params, setParams] = useSearchParams();
   const tabParam = (params.get("tab") as Tab) || "invoices";
   const [tab, setTab] = useState<Tab>(tabParam);
-  const { invoices, facilities, getComputedInvoiceStatus } = useData();
+  const { invoices, facilities, getComputedInvoiceStatus, dataLoading } = useData();
   const {
     expenses,
     addExpense,
@@ -60,6 +60,7 @@ export function MobileMoneyPage() {
     config,
     draftMileageExpenses,
     confirmMileage,
+    loading: expensesLoading,
   } = useExpenses();
   const [addExpOpen, setAddExpOpen] = useState(false);
 
