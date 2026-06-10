@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Trash2, MapPin, AlertTriangle, LayoutGrid, List, Mail, CalendarClock, User, Building2, Sparkles } from 'lucide-react';
+import { Plus, Trash2, MapPin, AlertTriangle, LayoutGrid, List, Mail, CalendarClock, User, Building2 } from 'lucide-react';
 import { AddFacilityDialog } from '@/components/AddFacilityDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
