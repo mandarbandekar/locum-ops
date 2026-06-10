@@ -94,7 +94,9 @@ export function MobileTodayPage() {
   if (isLoading) {
     return (
       <div>
-        <MobilePageHeader title="Today" subtitle="Your business at a glance." />
+        <div className="m-gutter pt-4 pb-2">
+          <Skeleton h={28} w={180} rounded="rounded-md" />
+        </div>
         <div className="m-gutter grid grid-cols-2 gap-3">
           <Skeleton h={52} rounded="rounded-2xl" />
           <Skeleton h={52} rounded="rounded-2xl" />
