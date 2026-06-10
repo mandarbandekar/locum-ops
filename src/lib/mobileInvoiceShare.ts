@@ -100,3 +100,26 @@ export async function shareInvoicePdf(opts: {
   URL.revokeObjectURL(link.href);
   return 'downloaded';
 }
+
+/**
+ * Fetch (or read cached) invoice PDF and open it in a new browser tab for preview.
+ */
+export async function previewInvoicePdf(opts: {
+  invoiceId: string;
+  cacheKey: string;
+}): Promise<void> {
+  const key = `${opts.invoiceId}:${opts.cacheKey}`;
+  let blob = await readCached(key);
+  if (!blob) {
+    blob = await fetchInvoicePdf(opts.invoiceId);
+    await writeCached(key, blob);
+  }
+  const url = URL.createObjectURL(blob);
+  const w = window.open(url, "_blank");
+  // Revoke after a delay to allow the new tab to load
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  if (!w) {
+    // Popup blocked — fall back to navigating in place
+    window.location.href = url;
+  }
+}
