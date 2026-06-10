@@ -49,6 +49,7 @@ export function MultiFileDropzone({
   className,
   existing = [],
   onRemoveExisting,
+  onViewExisting,
 }: MultiFileDropzoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState<PendingRemoval | null>(null);
