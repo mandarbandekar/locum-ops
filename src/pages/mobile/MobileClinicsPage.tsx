@@ -45,21 +45,22 @@ export function MobileClinicsPage() {
     <div>
       <MobilePageHeader title="Clinics" subtitle="Add and manage your clinics." />
 
-      <div className="px-5">
+      <div className="m-gutter">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[hsl(var(--m-text-muted))]" />
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search clinics"
-            className="w-full pl-9 pr-3 py-2.5 rounded-full bg-[hsl(var(--m-card))] border border-[hsl(var(--m-border))] text-[14px] focus:outline-none focus:border-[hsl(var(--m-primary))]"
+            className="w-full pl-9 pr-3 min-h-[44px] rounded-full bg-[hsl(var(--m-card))] border border-[hsl(var(--m-border))] focus:outline-none focus:border-[hsl(var(--m-primary))]"
+            style={{ fontSize: "var(--m-text-md)" }}
           />
         </div>
       </div>
 
-      <div className="px-5 mt-4 space-y-2">
+      <div className="m-gutter mt-4 space-y-2">
         {list.length === 0 && (
-          <div className="mobile-card p-5 text-center text-[14px] text-[hsl(var(--m-text-muted))]">
+          <div className="mobile-card p-5 text-center m-body text-[hsl(var(--m-text-muted))]">
             No clinics yet. Add your first one.
           </div>
         )}
@@ -67,13 +68,13 @@ export function MobileClinicsPage() {
           <button
             key={f.id}
             onClick={() => navigate(`/facilities/${f.id}`)}
-            className="mobile-card w-full text-left p-4"
+            className="mobile-card m-press w-full text-left p-4 min-h-[64px]"
           >
-            <div className="text-[15px] font-semibold text-[hsl(var(--m-text))]">{f.name}</div>
+            <div className="font-semibold text-[hsl(var(--m-text))]" style={{ fontSize: "var(--m-text-md)" }}>{f.name}</div>
             {f.address && (
-              <div className="text-[12px] text-[hsl(var(--m-text-muted))] mt-0.5 truncate">{f.address}</div>
+              <div className="m-caption mt-0.5 truncate">{f.address}</div>
             )}
-            <div className={"text-[12px] mt-1 " + (hasNext ? "text-[hsl(var(--m-primary))]" : "text-[hsl(var(--m-text-muted))]")}>
+            <div className={"mt-1 truncate " + (hasNext ? "text-[hsl(var(--m-primary))]" : "text-[hsl(var(--m-text-muted))]")} style={{ fontSize: "var(--m-text-xs)" }}>
               {refLabel}
             </div>
           </button>

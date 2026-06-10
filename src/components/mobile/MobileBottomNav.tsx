@@ -15,8 +15,11 @@ export function MobileBottomNav() {
   return (
     <nav
       aria-label="Primary"
-      className="fixed bottom-0 inset-x-0 z-40 bg-[hsl(var(--m-card))] border-t border-[hsl(var(--m-border))]"
-      style={{ paddingBottom: "var(--m-safe-bottom)" }}
+      className="fixed bottom-0 inset-x-0 z-40 backdrop-blur-md border-t border-[hsl(var(--m-border))]"
+      style={{
+        paddingBottom: "var(--m-safe-bottom)",
+        background: "hsl(var(--m-card) / 0.92)",
+      }}
     >
       <ul className="grid grid-cols-5">
         {TABS.map((tab) => {
@@ -27,17 +30,18 @@ export function MobileBottomNav() {
               <NavLink
                 to={tab.to}
                 className={cn(
-                  "relative flex flex-col items-center justify-center gap-0.5 py-2.5 min-h-[64px] text-[11px] font-medium transition-colors",
+                  "m-press relative flex flex-col items-center justify-center gap-0.5 py-2 min-h-[var(--m-tap)] font-medium",
                   active
                     ? "text-[hsl(var(--m-primary))]"
-                    : "text-[hsl(var(--m-text-muted))] hover:text-[hsl(var(--m-text))]"
+                    : "text-[hsl(var(--m-text-muted))]"
                 )}
+                style={{ fontSize: "var(--m-text-xs)" }}
                 aria-current={active ? "page" : undefined}
               >
                 {active && (
-                  <span className="absolute top-0 h-[3px] w-8 rounded-b-full bg-[hsl(var(--m-primary))]" />
+                  <span className="absolute top-0 h-[3px] w-7 rounded-b-full bg-[hsl(var(--m-primary))]" />
                 )}
-                <Icon className="h-5 w-5" strokeWidth={active ? 2.4 : 1.8} />
+                <Icon className="h-[22px] w-[22px]" strokeWidth={active ? 2.4 : 1.8} />
                 <span>{tab.label}</span>
               </NavLink>
             </li>

@@ -121,8 +121,8 @@ export function MobileInsightsPage() {
           Mileage
         </div>
         <div className="mobile-card p-4">
-          <div className="text-[24px] font-semibold">{Math.round(monthMiles)} mi</div>
-          <div className="text-[12px] text-[hsl(var(--m-text-muted))] mt-0.5">This month</div>
+          <div className="font-semibold tabular-nums" style={{ fontSize: "var(--m-text-2xl)" }}>{Math.round(monthMiles)} mi</div>
+          <div className="m-caption mt-0.5">This month</div>
         </div>
       </section>
     </div>

@@ -54,19 +54,21 @@ export function MobileSchedulePage() {
     <div>
       <MobilePageHeader title="Schedule" subtitle="See and edit upcoming shifts." />
 
-      <div className="px-5 flex items-center justify-between">
+      <div className="m-gutter flex items-center justify-between">
         <button
           onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}
-          className="px-3 py-1.5 rounded-full text-[13px] text-[hsl(var(--m-text-muted))]"
+          aria-label="Previous month"
+          className="m-tap m-press rounded-full flex items-center justify-center text-[hsl(var(--m-text-muted))]"
         >
           ‹
         </button>
-        <div className="text-[16px] font-semibold text-[hsl(var(--m-text))]">
+        <div className="font-semibold text-[hsl(var(--m-text))]" style={{ fontSize: "var(--m-text-md)" }}>
           {cursor.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
         </div>
         <button
           onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}
-          className="px-3 py-1.5 rounded-full text-[13px] text-[hsl(var(--m-text-muted))]"
+          aria-label="Next month"
+          className="m-tap m-press rounded-full flex items-center justify-center text-[hsl(var(--m-text-muted))]"
         >
           ›
         </button>
@@ -92,10 +94,10 @@ export function MobileSchedulePage() {
                   const tz = resolveShiftTz(s as any, fac as any, profile as any);
                   const status = invoiceStatusFor(s.id);
                   return (
-                    <div key={s.id} className="mobile-card p-4 flex items-start gap-3">
+                    <div key={s.id} className="mobile-card m-press p-4 flex items-start gap-3">
                       <div className="min-w-0 flex-1">
-                        <div className="text-[15px] font-semibold text-[hsl(var(--m-text))] truncate">{fac?.name ?? "Clinic"}</div>
-                        <div className="text-[13px] text-[hsl(var(--m-text-muted))] mt-0.5">
+                        <div className="font-semibold text-[hsl(var(--m-text))] truncate" style={{ fontSize: "var(--m-text-md)" }}>{fac?.name ?? "Clinic"}</div>
+                        <div className="m-caption mt-0.5">
                           {formatTimeInTz(s.start_datetime, tz)} – {formatTimeInTz(s.end_datetime, tz)}
                         </div>
                         {status && (
@@ -108,7 +110,7 @@ export function MobileSchedulePage() {
                         type="button"
                         onClick={() => setEditing(s)}
                         aria-label="Edit shift"
-                        className="h-9 w-9 rounded-full flex items-center justify-center text-[hsl(var(--m-text-muted))] border border-[hsl(var(--m-border))]"
+                        className="m-tap m-press rounded-full flex items-center justify-center text-[hsl(var(--m-text-muted))] border border-[hsl(var(--m-border))]"
                       >
                         <Pencil className="h-4 w-4" />
                       </button>

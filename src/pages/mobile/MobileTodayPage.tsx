@@ -86,17 +86,19 @@ export function MobileTodayPage() {
       <MobilePageHeader title="Today" subtitle="Your business at a glance." />
 
       {/* Quick actions */}
-      <div className="px-5 grid grid-cols-2 gap-3">
+      <div className="m-gutter grid grid-cols-2 gap-3">
         <button
           onClick={() => setAddClinic(true)}
-          className="mobile-card flex items-center gap-2 px-4 py-3.5 text-[14px] font-semibold text-[hsl(var(--m-text))]"
+          className="mobile-card m-press flex items-center gap-2 px-4 min-h-[52px] font-semibold text-[hsl(var(--m-text))]"
+          style={{ fontSize: "var(--m-text-md)" }}
         >
           <Building2 className="h-4 w-4 text-[hsl(var(--m-primary))]" />
           Add clinic
         </button>
         <button
           onClick={() => setAddShift(true)}
-          className="mobile-card flex items-center gap-2 px-4 py-3.5 text-[14px] font-semibold text-[hsl(var(--m-text))]"
+          className="mobile-card m-press flex items-center gap-2 px-4 min-h-[52px] font-semibold text-[hsl(var(--m-text))]"
+          style={{ fontSize: "var(--m-text-md)" }}
         >
           <CalendarPlus className="h-4 w-4 text-[hsl(var(--m-primary))]" />
           Add shift
@@ -166,12 +168,12 @@ export function MobileTodayPage() {
               <button
                 key={a.key}
                 onClick={a.action}
-                className="w-full text-left flex items-start gap-3 p-4"
+                className="m-press w-full text-left flex items-start gap-3 p-4 min-h-[var(--m-tap)]"
               >
                 <AlertCircle className="h-4 w-4 mt-0.5 text-[hsl(var(--m-warning))] shrink-0" />
                 <div className="min-w-0 flex-1">
-                  <div className="text-[14px] font-medium text-[hsl(var(--m-text))]">{a.title}</div>
-                  <div className="text-[12px] text-[hsl(var(--m-text-muted))] mt-0.5 truncate">{a.meta}</div>
+                  <div className="font-medium text-[hsl(var(--m-text))]" style={{ fontSize: "var(--m-text-base)" }}>{a.title}</div>
+                  <div className="m-caption mt-0.5 truncate">{a.meta}</div>
                 </div>
               </button>
             ))}
