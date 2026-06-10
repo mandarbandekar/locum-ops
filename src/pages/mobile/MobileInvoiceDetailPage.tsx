@@ -1,8 +1,9 @@
 import { useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ChevronLeft, Pencil, Share2, Trash2 } from "lucide-react";
+import { Pencil, Share2, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { useData } from "@/contexts/DataContext";
+import { MobilePageHeader } from "@/components/mobile/MobilePageHeader";
 import { MobileStatusChip } from "@/components/mobile/MobileStatusChip";
 import { shareInvoicePdf } from "@/lib/mobileInvoiceShare";
 import { toast } from "sonner";
@@ -49,16 +50,9 @@ export function MobileInvoiceDetailPage() {
 
   if (!inv) {
     return (
-      <div className="p-5">
-        <button
-          onClick={() => navigate(-1)}
-          className="text-[14px] text-[hsl(var(--m-primary))]"
-        >
-          ‹ Back
-        </button>
-        <div className="mt-6 text-[14px] text-[hsl(var(--m-text-muted))]">
-          Invoice not found.
-        </div>
+      <div>
+        <MobilePageHeader title="Invoice" onBack={() => navigate(-1)} showProfile={false} compact />
+        <div className="m-gutter mt-6 m-body text-[hsl(var(--m-text-muted))]">Invoice not found.</div>
       </div>
     );
   }
@@ -91,46 +85,42 @@ export function MobileInvoiceDetailPage() {
 
   return (
     <div className="pb-32">
-      {/* Header */}
-      <header className="px-4 pt-safe pb-1 flex items-center gap-1">
-        <button
-          onClick={() => navigate(-1)}
-          aria-label="Back"
-          className="h-9 w-9 -ml-2 rounded-full flex items-center justify-center text-[hsl(var(--m-text))]"
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </button>
-        <div className="text-[15px] font-medium truncate flex-1 text-[hsl(var(--m-text-muted))]">
-          Invoice {inv.invoice_number}
-        </div>
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <button
-              aria-label="Delete invoice"
-              className="h-9 w-9 -mr-2 rounded-full flex items-center justify-center text-[hsl(var(--m-text-muted))]"
-            >
-              <Trash2 className="h-[18px] w-[18px]" />
-            </button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete invoice {inv.invoice_number}?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This permanently removes the invoice and its line items. This can't be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={onDelete}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+      <MobilePageHeader
+        title={`Invoice ${inv.invoice_number}`}
+        onBack={() => navigate(-1)}
+        showProfile={false}
+        compact
+        right={
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <button
+                aria-label="Delete invoice"
+                className="m-tap m-press rounded-full flex items-center justify-center text-[hsl(var(--m-text-muted))]"
               >
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </header>
+                <Trash2 className="h-[18px] w-[18px]" />
+              </button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete invoice {inv.invoice_number}?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This permanently removes the invoice and its line items. This can't be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={onDelete}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        }
+      />
+
 
       <div className="px-4 mt-1 space-y-3">
         {/* Hero: amount + clinic + status */}
