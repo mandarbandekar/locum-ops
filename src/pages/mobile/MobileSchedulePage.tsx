@@ -1,9 +1,11 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Pencil } from "lucide-react";
+import { Pencil, CalendarPlus } from "lucide-react";
 import { MobilePageHeader } from "@/components/mobile/MobilePageHeader";
 import { MobileFab } from "@/components/mobile/MobileFab";
 import { MobileStatusChip } from "@/components/mobile/MobileStatusChip";
+import { MobileEmptyState } from "@/components/mobile/MobileEmptyState";
+import { MobileListSkeleton } from "@/components/mobile/MobileSkeleton";
 import { useData } from "@/contexts/DataContext";
 import { useUserProfile } from "@/contexts/UserProfileContext";
 import { ShiftFormDialog } from "@/components/schedule/ShiftFormDialog";
@@ -17,7 +19,7 @@ function monthKeyFromDate(d: Date) {
 
 export function MobileSchedulePage() {
   const navigate = useNavigate();
-  const { facilities, shifts, terms, invoices, lineItems, getComputedInvoiceStatus, addShift: addShiftMut, updateShift, deleteShift } = useData();
+  const { facilities, shifts, terms, invoices, lineItems, getComputedInvoiceStatus, addShift: addShiftMut, updateShift, deleteShift, dataLoading } = useData();
   const { profile } = useUserProfile();
   const [cursor, setCursor] = useState(() => new Date());
   const [addOpen, setAddOpen] = useState(false);
@@ -75,11 +77,17 @@ export function MobileSchedulePage() {
       </div>
 
       <div className="px-5 mt-3 space-y-5">
-        {groups.length === 0 && (
-          <div className="mobile-card p-5 text-center text-[14px] text-[hsl(var(--m-text-muted))]">
-            No shifts this month.
-          </div>
-        )}
+        {dataLoading ? (
+          <MobileListSkeleton count={4} lines={2} />
+        ) : groups.length === 0 ? (
+          <MobileEmptyState
+            icon={CalendarPlus}
+            title="No shifts this month"
+            description="Tap below to log a shift for this period."
+            actionLabel="Add shift"
+            onAction={() => setAddOpen(true)}
+          />
+        ) : null}
         {groups.map(([ymd, items]) => {
           const [y, m, d] = ymd.split("-").map(Number);
           const dateLabel = new Date(y, m - 1, d).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });

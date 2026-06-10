@@ -1,6 +1,9 @@
 import { useMemo } from "react";
+import { TrendingUp } from "lucide-react";
 import { MobilePageHeader } from "@/components/mobile/MobilePageHeader";
 import { MobileMetricCard } from "@/components/mobile/MobileMetricCard";
+import { MobileEmptyState } from "@/components/mobile/MobileEmptyState";
+import { MobileMetricsSkeleton, Skeleton } from "@/components/mobile/MobileSkeleton";
 import { useData } from "@/contexts/DataContext";
 import { useExpenses } from "@/hooks/useExpenses";
 
@@ -30,8 +33,9 @@ function Sparkline({ values }: { values: number[] }) {
 }
 
 export function MobileInsightsPage() {
-  const { invoices, facilities, shifts, payments, getComputedInvoiceStatus } = useData();
-  const { expenses } = useExpenses();
+  const { invoices, facilities, shifts, payments, getComputedInvoiceStatus, dataLoading } = useData();
+  const { expenses, loading: expensesLoading } = useExpenses();
+  const isLoading = dataLoading || expensesLoading;
 
   const monthKey = new Date().toISOString().slice(0, 7);
   const monthShifts = shifts.filter((s) => s.start_datetime.startsWith(monthKey) && +new Date(s.start_datetime) <= Date.now());
@@ -70,6 +74,29 @@ export function MobileInsightsPage() {
       .slice(0, 5);
   }, [monthShifts, facilities]);
 
+  if (isLoading) {
+    return (
+      <div>
+        <MobilePageHeader title="Insights" subtitle="See how the business is performing." />
+        <div className="px-5 mt-3">
+          <MobileMetricsSkeleton count={4} />
+        </div>
+        <div className="px-5 mt-5">
+          <Skeleton h={10} w={90} className="mb-2" />
+          <div className="mobile-card p-3"><Skeleton h={80} /></div>
+        </div>
+        <div className="px-5 mt-5">
+          <Skeleton h={10} w={90} className="mb-2" />
+          <div className="mobile-card p-4 space-y-3">
+            <Skeleton h={12} w="70%" />
+            <Skeleton h={12} w="55%" />
+            <Skeleton h={12} w="60%" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <MobilePageHeader title="Insights" subtitle="See how the business is performing." />
@@ -106,13 +133,18 @@ export function MobileInsightsPage() {
           Top clinics
         </div>
         <div className="mobile-card divide-y divide-[hsl(var(--m-border))]">
-          {topClinics.length === 0 && <div className="p-4 text-[13px] text-[hsl(var(--m-text-muted))]">No revenue yet this month.</div>}
-          {topClinics.map(({ facility, total }) => (
-            <div key={facility!.id} className="p-4 flex items-center justify-between">
-              <div className="text-[14px] font-medium truncate pr-3">{facility!.name}</div>
-              <div className="text-[14px] font-semibold">{fmt(total)}</div>
+          {topClinics.length === 0 ? (
+            <div className="p-5 text-center text-[13px] text-[hsl(var(--m-text-muted))]">
+              No revenue yet this month. Completed shifts will show up here.
             </div>
-          ))}
+          ) : (
+            topClinics.map(({ facility, total }) => (
+              <div key={facility!.id} className="p-4 flex items-center justify-between">
+                <div className="text-[14px] font-medium truncate pr-3">{facility!.name}</div>
+                <div className="text-[14px] font-semibold">{fmt(total)}</div>
+              </div>
+            ))
+          )}
         </div>
       </section>
 

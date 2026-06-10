@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search } from "lucide-react";
+import { Search, Building2 } from "lucide-react";
 import { MobilePageHeader } from "@/components/mobile/MobilePageHeader";
 import { MobileFab } from "@/components/mobile/MobileFab";
+import { MobileEmptyState } from "@/components/mobile/MobileEmptyState";
+import { MobileListSkeleton } from "@/components/mobile/MobileSkeleton";
 import { useData } from "@/contexts/DataContext";
 import { AddFacilityDialog } from "@/components/AddFacilityDialog";
 import { useUserProfile } from "@/contexts/UserProfileContext";
@@ -11,7 +13,7 @@ import { formatDateInTz, formatTimeInTz } from "@/lib/tzTime";
 
 export function MobileClinicsPage() {
   const navigate = useNavigate();
-  const { facilities, shifts } = useData();
+  const { facilities, shifts, dataLoading } = useData();
   const { profile } = useUserProfile();
   const [q, setQ] = useState("");
   const [addOpen, setAddOpen] = useState(false);
@@ -59,11 +61,25 @@ export function MobileClinicsPage() {
       </div>
 
       <div className="m-gutter mt-4 space-y-2">
-        {list.length === 0 && (
-          <div className="mobile-card p-5 text-center m-body text-[hsl(var(--m-text-muted))]">
-            No clinics yet. Add your first one.
-          </div>
-        )}
+        {dataLoading ? (
+          <MobileListSkeleton count={5} lines={2} />
+        ) : list.length === 0 ? (
+          q.trim() ? (
+            <MobileEmptyState
+              icon={Search}
+              title="No matches"
+              description={`No clinics match "${q.trim()}".`}
+            />
+          ) : (
+            <MobileEmptyState
+              icon={Building2}
+              title="No clinics yet"
+              description="Add your first clinic to start tracking shifts, contacts, and rates."
+              actionLabel="Add clinic"
+              onAction={() => setAddOpen(true)}
+            />
+          )
+        ) : null}
         {list.map(({ f, refLabel, hasNext }) => (
           <button
             key={f.id}

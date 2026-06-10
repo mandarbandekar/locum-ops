@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Building2, CalendarPlus, Navigation, Phone, FileText, AlertCircle } from "lucide-react";
+import { Building2, CalendarPlus, Navigation, Phone, FileText, AlertCircle, CalendarDays } from "lucide-react";
 import { MobilePageHeader } from "@/components/mobile/MobilePageHeader";
 import { MobileMetricCard } from "@/components/mobile/MobileMetricCard";
+import { MobileEmptyState } from "@/components/mobile/MobileEmptyState";
+import { MobileMetricsSkeleton, MobileSectionSkeleton, Skeleton } from "@/components/mobile/MobileSkeleton";
 import { useData } from "@/contexts/DataContext";
 import type { Shift } from "@/types";
 import { useExpenses } from "@/hooks/useExpenses";
@@ -18,9 +20,10 @@ function fmtCurrency(n: number) {
 
 export function MobileTodayPage() {
   const navigate = useNavigate();
-  const { facilities, shifts, invoices, getComputedInvoiceStatus, terms, addShift: addShiftMut, updateShift, deleteShift } = useData();
-  const { expenses } = useExpenses();
+  const { facilities, shifts, invoices, getComputedInvoiceStatus, terms, addShift: addShiftMut, updateShift, deleteShift, dataLoading } = useData();
+  const { expenses, loading: expensesLoading } = useExpenses();
   const { profile } = useUserProfile();
+  const isLoading = dataLoading || expensesLoading;
   const [addClinic, setAddClinic] = useState(false);
   const [addShift, setAddShift] = useState(false);
 
@@ -80,6 +83,24 @@ export function MobileTodayPage() {
       action: () => navigate("/invoices?tab=expenses"),
     },
   ].filter(Boolean) as { key: string; title: string; meta: string; action: () => void }[];
+
+  if (isLoading) {
+    return (
+      <div>
+        <MobilePageHeader title="Today" subtitle="Your business at a glance." />
+        <div className="m-gutter grid grid-cols-2 gap-3">
+          <Skeleton h={52} rounded="rounded-2xl" />
+          <Skeleton h={52} rounded="rounded-2xl" />
+        </div>
+        <div className="m-gutter">
+          <MobileSectionSkeleton />
+        </div>
+        <div className="m-gutter mt-5">
+          <MobileMetricsSkeleton count={4} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -151,9 +172,14 @@ export function MobileTodayPage() {
             </div>
           </div>
         ) : (
-          <div className="mobile-card p-4 text-[14px] text-[hsl(var(--m-text-muted))]">
-            No upcoming shifts. Add one to get started.
-          </div>
+          <MobileEmptyState
+            icon={CalendarDays}
+            compact
+            title="No upcoming shifts"
+            description="Add a shift to see it here with directions and clinic notes."
+            actionLabel="Add shift"
+            onAction={() => setAddShift(true)}
+          />
         )}
       </section>
 

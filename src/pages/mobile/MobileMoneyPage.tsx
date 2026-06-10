@@ -16,6 +16,9 @@ import { MobileMetricCard } from "@/components/mobile/MobileMetricCard";
 import { MobileSegmentedControl } from "@/components/mobile/MobileSegmentedControl";
 import { MobileStatusChip } from "@/components/mobile/MobileStatusChip";
 import { MobileFab } from "@/components/mobile/MobileFab";
+import { MobileEmptyState } from "@/components/mobile/MobileEmptyState";
+import { MobileListSkeleton, MobileMetricsSkeleton, Skeleton } from "@/components/mobile/MobileSkeleton";
+import { FileText, Receipt, Car } from "lucide-react";
 import { useData } from "@/contexts/DataContext";
 import { useExpenses } from "@/hooks/useExpenses";
 import AddExpenseDialog from "@/components/expenses/AddExpenseDialog";
@@ -48,7 +51,7 @@ export function MobileMoneyPage() {
   const [params, setParams] = useSearchParams();
   const tabParam = (params.get("tab") as Tab) || "invoices";
   const [tab, setTab] = useState<Tab>(tabParam);
-  const { invoices, facilities, getComputedInvoiceStatus } = useData();
+  const { invoices, facilities, getComputedInvoiceStatus, dataLoading } = useData();
   const {
     expenses,
     addExpense,
@@ -57,6 +60,7 @@ export function MobileMoneyPage() {
     config,
     draftMileageExpenses,
     confirmMileage,
+    loading: expensesLoading,
   } = useExpenses();
   const [addExpOpen, setAddExpOpen] = useState(false);
 
@@ -380,7 +384,7 @@ export function MobileMoneyPage() {
     <div>
       <MobilePageHeader title="Money" subtitle="Invoices, expenses, and mileage." />
 
-      <div className="px-5 grid grid-cols-3 gap-2">{topMetrics}</div>
+      <div className="px-5 grid grid-cols-3 gap-2">{dataLoading ? <div className="col-span-3"><MobileMetricsSkeleton count={3} cols={3} /></div> : topMetrics}</div>
 
       <div className="px-5 mt-4">
         <MobileSegmentedControl
@@ -396,14 +400,15 @@ export function MobileMoneyPage() {
 
       {tab === "invoices" && (
         <div className="px-5 mt-4 space-y-4">
-          {invoices.length === 0 && (
-            <div className="mobile-card p-6 text-center">
-              <div className="text-[14px] font-semibold">No invoices yet</div>
-              <div className="text-[12px] text-[hsl(var(--m-text-muted))] mt-1">
-                Invoices appear here automatically once shifts are completed.
-              </div>
-            </div>
-          )}
+          {dataLoading ? (
+            <MobileListSkeleton count={4} lines={2} />
+          ) : invoices.length === 0 ? (
+            <MobileEmptyState
+              icon={FileText}
+              title="No invoices yet"
+              description="Invoices appear here automatically once shifts are completed."
+            />
+          ) : null}
 
           {groups.overdue.length > 0 && (
             <button
@@ -499,29 +504,36 @@ export function MobileMoneyPage() {
 
       {tab === "expenses" && (
         <div className="px-5 mt-4 space-y-2">
-          {expenses.slice(0, 50).map((e) => (
-            <div key={e.id} className="mobile-card p-4 flex items-start gap-3">
-              <div className="min-w-0 flex-1">
-                <div className="text-[14px] font-semibold truncate">
-                  {e.description || e.subcategory || "Expense"}
+          {expensesLoading ? (
+            <MobileListSkeleton count={5} lines={2} />
+          ) : expenses.length === 0 ? (
+            <MobileEmptyState
+              icon={Receipt}
+              title="No expenses yet"
+              description="Track receipts, software, and supplies for clean books at tax time."
+              actionLabel="Add expense"
+              onAction={() => setAddExpOpen(true)}
+            />
+          ) : (
+            expenses.slice(0, 50).map((e) => (
+              <div key={e.id} className="mobile-card p-4 flex items-start gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="text-[14px] font-semibold truncate">
+                    {e.description || e.subcategory || "Expense"}
+                  </div>
+                  <div className="text-[12px] text-[hsl(var(--m-text-muted))]">
+                    {new Date(e.expense_date).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                    })}{" "}
+                    · {e.category || "Uncategorized"}
+                  </div>
                 </div>
-                <div className="text-[12px] text-[hsl(var(--m-text-muted))]">
-                  {new Date(e.expense_date).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                  })}{" "}
-                  · {e.category || "Uncategorized"}
+                <div className="text-[14px] font-semibold">
+                  {fmt(e.amount_cents / 100)}
                 </div>
               </div>
-              <div className="text-[14px] font-semibold">
-                {fmt(e.amount_cents / 100)}
-              </div>
-            </div>
-          ))}
-          {expenses.length === 0 && (
-            <div className="mobile-card p-5 text-center text-[14px] text-[hsl(var(--m-text-muted))]">
-              No expenses yet.
-            </div>
+            ))
           )}
           <MobileFab label="Add expense" onClick={() => setAddExpOpen(true)} />
         </div>
@@ -529,34 +541,39 @@ export function MobileMoneyPage() {
 
       {tab === "mileage" && (
         <div className="px-5 mt-4 space-y-2">
-          {draftMileageExpenses.length === 0 && (
-            <div className="mobile-card p-5 text-center text-[14px] text-[hsl(var(--m-text-muted))]">
-              All caught up — no mileage to confirm.
-            </div>
+          {expensesLoading ? (
+            <MobileListSkeleton count={3} lines={2} />
+          ) : draftMileageExpenses.length === 0 ? (
+            <MobileEmptyState
+              icon={Car}
+              title="All caught up"
+              description="No mileage trips need confirmation right now."
+            />
+          ) : (
+            draftMileageExpenses.map((e) => {
+              const fac = facilities.find((f) => f.id === e.facility_id);
+              return (
+                <div key={e.id} className="mobile-card p-4">
+                  <div className="text-[14px] font-semibold">
+                    {fac?.name ?? "Trip"} → Home
+                  </div>
+                  <div className="text-[12px] text-[hsl(var(--m-text-muted))] mt-0.5">
+                    {Number(e.mileage_miles || 0).toFixed(1)} miles ·{" "}
+                    {new Date(e.expense_date).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </div>
+                  <button
+                    onClick={() => confirmMileage(e.id)}
+                    className="mt-3 w-full h-10 rounded-full bg-[hsl(var(--m-primary))] text-[hsl(var(--m-primary-fg))] font-semibold text-[13px] inline-flex items-center justify-center gap-1.5"
+                  >
+                    <Check className="h-4 w-4" /> Confirm mileage
+                  </button>
+                </div>
+              );
+            })
           )}
-          {draftMileageExpenses.map((e) => {
-            const fac = facilities.find((f) => f.id === e.facility_id);
-            return (
-              <div key={e.id} className="mobile-card p-4">
-                <div className="text-[14px] font-semibold">
-                  {fac?.name ?? "Trip"} → Home
-                </div>
-                <div className="text-[12px] text-[hsl(var(--m-text-muted))] mt-0.5">
-                  {Number(e.mileage_miles || 0).toFixed(1)} miles ·{" "}
-                  {new Date(e.expense_date).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                  })}
-                </div>
-                <button
-                  onClick={() => confirmMileage(e.id)}
-                  className="mt-3 w-full h-10 rounded-full bg-[hsl(var(--m-primary))] text-[hsl(var(--m-primary-fg))] font-semibold text-[13px] inline-flex items-center justify-center gap-1.5"
-                >
-                  <Check className="h-4 w-4" /> Confirm mileage
-                </button>
-              </div>
-            );
-          })}
         </div>
       )}
 
