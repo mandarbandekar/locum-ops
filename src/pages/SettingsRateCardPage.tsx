@@ -28,6 +28,7 @@ import {
 } from '@/lib/onboardingRateMapping';
 import { inferShiftTypeFromName } from '@/lib/shiftTypeInference';
 import { useAutoSave } from '@/hooks/useAutoSave';
+import { useIsMobileShell } from '@/hooks/useIsMobileShell';
 
 const MAX_NAME_LEN = 60;
 const MAX_AMOUNT = 100000;
@@ -98,6 +99,7 @@ function validateRates(rates: DefaultRate[]): { errors: RateErrors; firstMessage
 }
 
 export default function SettingsRateCardPage() {
+  const isMobile = useIsMobileShell();
   const { profile, updateProfile } = useUserProfile();
   const [preference, setPreference] = useState<BillingPreference>('per_day');
   const [rates, setRates] = useState<DefaultRate[]>([]);
@@ -248,100 +250,151 @@ export default function SettingsRateCardPage() {
       <div className="page-header">
         <h1 className="page-title">Rate Card</h1>
       </div>
-      <p className="text-sm text-muted-foreground mb-6 max-w-2xl">
-        Optional. Clinic-specific rates always take priority. If you charge the same rates
-        across most clinics, save them here once and they'll show up as quick picks when you
-        add a shift. Changes save automatically.
-      </p>
+      {isMobile ? (
+        <p className="text-[13px] text-muted-foreground mb-4">
+          Defaults for new shifts. Clinic rates always win.
+        </p>
+      ) : (
+        <p className="text-sm text-muted-foreground mb-6 max-w-2xl">
+          Optional. Clinic-specific rates always take priority. If you charge the same rates
+          across most clinics, save them here once and they'll show up as quick picks when you
+          add a shift. Changes save automatically.
+        </p>
+      )}
 
       <div className="max-w-3xl space-y-6">
-        <div className="grid grid-cols-2 gap-3">
-          {PREF_OPTIONS.map(opt => {
-            const Icon = opt.icon;
-            const selected = preference === opt.value;
-            return (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => handleSelectPreference(opt.value)}
-                className={cn(
-                  'text-left rounded-lg border p-4 transition-all',
-                  selected
-                    ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
-                    : 'border-border hover:border-primary/40 hover:bg-muted/40',
-                )}
-              >
-                <div className="flex items-center gap-2">
-                  <Icon className={cn('h-4 w-4', selected ? 'text-primary' : 'text-muted-foreground')} />
-                  <span className="font-semibold text-sm text-foreground">{opt.label}</span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">{opt.sub}</p>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Review banner: any active rates missing a shift_type */}
-        {untaggedScopedCount > 0 && (
-          <div className="flex items-start gap-3 px-4 py-3 rounded-lg bg-primary/10 border border-primary/20">
-            <Tag className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-            <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-semibold text-foreground mb-0.5">
-                Tag your rates by shift type
-              </p>
-              <p className="text-[12.5px] text-muted-foreground leading-relaxed">
-                {untaggedScopedCount} rate{untaggedScopedCount === 1 ? '' : 's'} {untaggedScopedCount === 1 ? "doesn't" : "don't"} have a shift type yet. Tagging them lets us auto-categorize new shifts and show clearer line items on invoices.
-              </p>
-              <div className="mt-2">
-                <Button type="button" size="sm" variant="ghost" onClick={suggestTypesForUntagged} className="-ml-2">
-                  <Sparkles className="h-3.5 w-3.5 mr-1" /> Suggest types from rate names
-                </Button>
-              </div>
-            </div>
+        {isMobile ? (
+          <div className="grid grid-cols-2 p-1 rounded-full bg-muted/60 border border-border">
+            {PREF_OPTIONS.map(opt => {
+              const selected = preference === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => handleSelectPreference(opt.value)}
+                  className={cn(
+                    'h-9 rounded-full text-[13px] font-medium transition-colors',
+                    selected
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground',
+                  )}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {PREF_OPTIONS.map(opt => {
+              const Icon = opt.icon;
+              const selected = preference === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => handleSelectPreference(opt.value)}
+                  className={cn(
+                    'text-left rounded-lg border p-4 transition-all',
+                    selected
+                      ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
+                      : 'border-border hover:border-primary/40 hover:bg-muted/40',
+                  )}
+                >
+                  <div className="flex items-center gap-2">
+                    <Icon className={cn('h-4 w-4', selected ? 'text-primary' : 'text-muted-foreground')} />
+                    <span className="font-semibold text-sm text-foreground">{opt.label}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">{opt.sub}</p>
+                </button>
+              );
+            })}
           </div>
         )}
 
-
-
-        <Card>
-          <CardContent className="pt-5 space-y-5">
-            {showDaily && (
-              <RateSection
-                title="Daily rates"
-                basis="daily"
-                rates={dailyRates}
-                errors={errors}
-                onUpdate={updateRate}
-                onRemove={removeRate}
-                onAdd={() => addRate('daily')}
-              />
-            )}
-            {showHourly && (
-              <RateSection
-                title="Hourly rates"
-                basis="hourly"
-                rates={hourlyRates}
-                errors={errors}
-                onUpdate={updateRate}
-                onRemove={removeRate}
-                onAdd={() => addRate('hourly')}
-              />
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-5 space-y-2">
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-foreground">Overtime rate</p>
-                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                  Saved hourly rate used as the default when you add an overtime line to an invoice.
-                  You can still override it per shift.
+        {/* Review banner: any active rates missing a shift_type */}
+        {untaggedScopedCount > 0 && (
+          isMobile ? (
+            <div className="flex items-center gap-2 -my-2 px-1">
+              <Tag className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <span className="text-[12.5px] text-muted-foreground flex-1 min-w-0 truncate">
+                {untaggedScopedCount} rate{untaggedScopedCount === 1 ? '' : 's'} missing a shift type
+              </span>
+              <button
+                type="button"
+                onClick={suggestTypesForUntagged}
+                className="text-[12.5px] font-medium text-primary shrink-0"
+              >
+                Auto-tag
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-start gap-3 px-4 py-3 rounded-lg bg-primary/10 border border-primary/20">
+              <Tag className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-semibold text-foreground mb-0.5">
+                  Tag your rates by shift type
                 </p>
+                <p className="text-[12.5px] text-muted-foreground leading-relaxed">
+                  {untaggedScopedCount} rate{untaggedScopedCount === 1 ? '' : 's'} {untaggedScopedCount === 1 ? "doesn't" : "don't"} have a shift type yet. Tagging them lets us auto-categorize new shifts and show clearer line items on invoices.
+                </p>
+                <div className="mt-2">
+                  <Button type="button" size="sm" variant="ghost" onClick={suggestTypesForUntagged} className="-ml-2">
+                    <Sparkles className="h-3.5 w-3.5 mr-1" /> Suggest types from rate names
+                  </Button>
+                </div>
               </div>
-              <div className="relative w-32 shrink-0">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+            </div>
+          )
+        )}
+
+        {isMobile ? (
+          <RateListMobile
+            basis={showDaily ? 'daily' : 'hourly'}
+            rates={showDaily ? dailyRates : hourlyRates}
+            errors={errors}
+            onUpdate={updateRate}
+            onRemove={removeRate}
+            onAdd={() => addRate(showDaily ? 'daily' : 'hourly')}
+          />
+        ) : (
+          <Card>
+            <CardContent className="pt-5 space-y-5">
+              {showDaily && (
+                <RateSection
+                  title="Daily rates"
+                  basis="daily"
+                  rates={dailyRates}
+                  errors={errors}
+                  onUpdate={updateRate}
+                  onRemove={removeRate}
+                  onAdd={() => addRate('daily')}
+                />
+              )}
+              {showHourly && (
+                <RateSection
+                  title="Hourly rates"
+                  basis="hourly"
+                  rates={hourlyRates}
+                  errors={errors}
+                  onUpdate={updateRate}
+                  onRemove={removeRate}
+                  onAdd={() => addRate('hourly')}
+                />
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {isMobile ? (
+          <div className="rounded-2xl border border-border bg-card overflow-hidden">
+            <div className="flex items-start justify-between gap-3 px-4 py-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-[14px] font-medium text-foreground">Overtime rate</p>
+                <p className="text-[12px] text-muted-foreground mt-0.5">Default for overtime invoice lines.</p>
+              </div>
+              <div className="relative w-24 shrink-0">
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
                 <Input
                   type="number"
                   inputMode="decimal"
@@ -354,26 +407,16 @@ export default function SettingsRateCardPage() {
                     await updateProfile({ default_overtime_rate: v != null && Number.isFinite(v) && v >= 0 ? v : null });
                   }}
                   placeholder="0"
-                  className="h-9 pl-7 pr-10 text-right"
+                  className="h-9 pl-6 pr-9 text-right"
                   aria-label="Default overtime hourly rate"
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">/hr</span>
+                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] text-muted-foreground">/hr</span>
               </div>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-5">
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-foreground">
-                  Always use my Rate Card for shift rates
-                </p>
-                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                  When on, new shifts default to your Rate Card and clinic-specific rates are
-                  hidden from the picker. You can still add a custom rate per shift.
-                </p>
+            <div className="border-t border-border flex items-start justify-between gap-3 px-4 py-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-[14px] font-medium text-foreground">Default to Rate Card</p>
+                <p className="text-[12px] text-muted-foreground mt-0.5">Hides clinic rates from the shift picker.</p>
               </div>
               <Switch
                 checked={!!profile?.prefer_rate_card_default}
@@ -388,13 +431,76 @@ export default function SettingsRateCardPage() {
                 aria-label="Always use my Rate Card for shift rates"
               />
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        ) : (
+          <>
+            <Card>
+              <CardContent className="pt-5 space-y-2">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-foreground">Overtime rate</p>
+                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                      Saved hourly rate used as the default when you add an overtime line to an invoice.
+                      You can still override it per shift.
+                    </p>
+                  </div>
+                  <div className="relative w-32 shrink-0">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+                    <Input
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      step="1"
+                      value={profile?.default_overtime_rate ?? ''}
+                      onChange={async (e) => {
+                        const raw = e.target.value;
+                        const v = raw === '' ? null : Number(raw);
+                        await updateProfile({ default_overtime_rate: v != null && Number.isFinite(v) && v >= 0 ? v : null });
+                      }}
+                      placeholder="0"
+                      className="h-9 pl-7 pr-10 text-right"
+                      aria-label="Default overtime hourly rate"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">/hr</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-        <p className="text-xs text-muted-foreground">
-          Tip: Shift Type is optional but recommended — it lets you filter and report by the kind of
-          relief work you take. Pick "Other (custom)…" to type your own.
-        </p>
+            <Card>
+              <CardContent className="pt-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-foreground">
+                      Always use my Rate Card for shift rates
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                      When on, new shifts default to your Rate Card and clinic-specific rates are
+                      hidden from the picker. You can still add a custom rate per shift.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={!!profile?.prefer_rate_card_default}
+                    onCheckedChange={async (v) => {
+                      try {
+                        await updateProfile({ prefer_rate_card_default: !!v });
+                        toast.success(v ? 'Rate Card set as default' : 'Clinic rates re-enabled');
+                      } catch {
+                        toast.error('Could not update preference');
+                      }
+                    }}
+                    aria-label="Always use my Rate Card for shift rates"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <p className="text-xs text-muted-foreground">
+              Tip: Shift Type is optional but recommended — it lets you filter and report by the kind of
+              relief work you take. Pick "Other (custom)…" to type your own.
+            </p>
+          </>
+        )}
       </div>
     </div>
   );
@@ -553,6 +659,150 @@ function RateSection({ title, basis, rates, errors, onUpdate, onRemove, onAdd }:
       >
         <Plus className="h-3.5 w-3.5 mr-1" /> Add custom rate
       </Button>
+    </div>
+  );
+}
+
+interface RateListMobileProps {
+  basis: RateBasis;
+  rates: DefaultRate[];
+  errors: RateErrors;
+  onUpdate: (id: string, patch: Partial<DefaultRate>) => void;
+  onRemove: (id: string) => void;
+  onAdd: () => void;
+}
+
+function RateListMobile({ basis, rates, errors, onUpdate, onRemove, onAdd }: RateListMobileProps) {
+  const unit = basis === 'daily' ? '/day' : '/hr';
+  return (
+    <div className="space-y-2">
+      {rates.length === 0 && (
+        <p className="text-[13px] text-muted-foreground italic px-1">
+          No rates yet — add your first one below.
+        </p>
+      )}
+
+      {rates.map(r => {
+        const rowErr = errors[r.id];
+        const nameErr = rowErr?.name;
+        const amountErr = rowErr?.amount;
+        const isKnownType = !!r.shift_type && SHIFT_TYPE_OPTIONS.some(o => o.value === r.shift_type);
+        const isCustomType = !!r.shift_type && !isKnownType;
+        const selectValue = !r.shift_type
+          ? NONE_TYPE_KEY
+          : isCustomType
+          ? CUSTOM_TYPE_KEY
+          : r.shift_type;
+        return (
+          <div
+            key={r.id}
+            className="rounded-2xl border border-border bg-card px-3.5 py-2.5"
+          >
+            <div className="flex items-center gap-2">
+              <Input
+                value={r.name}
+                maxLength={MAX_NAME_LEN}
+                onChange={e => onUpdate(r.id, { name: e.target.value })}
+                placeholder="Name this rate"
+                aria-label="Rate name"
+                aria-invalid={!!nameErr}
+                className={cn(
+                  'flex-1 h-9 border-0 bg-transparent px-0 text-[15px] font-medium shadow-none focus-visible:ring-0',
+                  nameErr && 'text-destructive',
+                )}
+              />
+              <div className="flex items-baseline gap-0.5 shrink-0">
+                <span className="text-[13px] text-muted-foreground">$</span>
+                <Input
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  max={MAX_AMOUNT}
+                  step={basis === 'daily' ? '10' : '1'}
+                  value={r.amount === 0 ? '' : r.amount}
+                  onChange={e => {
+                    const raw = e.target.value;
+                    const parsed = raw === '' ? 0 : Number(raw);
+                    const safe = Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+                    onUpdate(r.id, { amount: safe });
+                  }}
+                  placeholder="0"
+                  aria-label="Amount"
+                  aria-invalid={!!amountErr}
+                  className={cn(
+                    'w-20 h-9 border-0 bg-transparent px-0 text-[17px] font-semibold text-right tabular-nums shadow-none focus-visible:ring-0',
+                    amountErr && 'text-destructive',
+                  )}
+                />
+                <span className="text-[11px] text-muted-foreground ml-0.5">{unit}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between gap-2 mt-1 pt-1 border-t border-border/60">
+              <div className="min-w-0 flex-1">
+                <Select
+                  value={selectValue}
+                  onValueChange={(v) => {
+                    if (v === NONE_TYPE_KEY) onUpdate(r.id, { shift_type: undefined });
+                    else if (v === CUSTOM_TYPE_KEY) onUpdate(r.id, { shift_type: '' });
+                    else onUpdate(r.id, { shift_type: v });
+                  }}
+                >
+                  <SelectTrigger
+                    className="h-7 w-auto min-w-0 gap-1 px-2.5 rounded-full border-border/70 bg-transparent text-[12px] text-muted-foreground data-[placeholder]:text-muted-foreground"
+                    aria-label="Shift type"
+                  >
+                    <SelectValue placeholder="Add shift type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NONE_TYPE_KEY}>
+                      <span className="text-muted-foreground">No type</span>
+                    </SelectItem>
+                    {SHIFT_TYPE_OPTIONS.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                    <SelectItem value={CUSTOM_TYPE_KEY}>Other (custom)…</SelectItem>
+                  </SelectContent>
+                </Select>
+                {(isCustomType || selectValue === CUSTOM_TYPE_KEY) && (
+                  <Input
+                    value={r.shift_type || ''}
+                    maxLength={40}
+                    onChange={e => onUpdate(r.id, { shift_type: e.target.value })}
+                    placeholder="Custom shift type"
+                    className="h-7 mt-1.5 text-xs"
+                  />
+                )}
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => onRemove(r.id)}
+                aria-label="Remove rate"
+                className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {(nameErr || amountErr) && (
+              <div className="flex items-start gap-1.5 text-[11.5px] text-destructive mt-1.5">
+                <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                <span>{nameErr || amountErr}</span>
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      <button
+        type="button"
+        onClick={onAdd}
+        className="w-full h-11 rounded-2xl border border-dashed border-border text-[14px] font-medium text-primary active:bg-primary/5 transition-colors flex items-center justify-center gap-1.5"
+      >
+        <Plus className="h-4 w-4" /> Add rate
+      </button>
     </div>
   );
 }
