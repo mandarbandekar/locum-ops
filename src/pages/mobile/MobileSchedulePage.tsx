@@ -1,7 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import { Pencil, CalendarPlus } from "lucide-react";
 import { MobilePageHeader } from "@/components/mobile/MobilePageHeader";
-import { MobileFab } from "@/components/mobile/MobileFab";
 import { MobileStatusChip } from "@/components/mobile/MobileStatusChip";
 import { MobileEmptyState } from "@/components/mobile/MobileEmptyState";
 import { MobileListSkeleton } from "@/components/mobile/MobileSkeleton";
@@ -284,8 +283,6 @@ export function MobileSchedulePage() {
           })
         )}
       </div>
-
-      <MobileFab label="Add shift" onClick={() => setAddOpen(true)} />
 
       <ShiftFormDialog
         open={addOpen}
