@@ -306,7 +306,7 @@ export function InvoicePreview({
                       </p>
                     </div>
                     <div className="mt-2 text-xs text-muted-foreground tabular-nums">
-                      {hoursLabel === '—' ? '—' : `${hoursLabel} hrs`} <span className="text-foreground/80">${ur.toLocaleString()}</span>
+                      {hoursLabel === '—' ? '—' : (hoursLabel.includes('min') ? hoursLabel : `${hoursLabel} hrs`)} <span className="text-foreground/80">${ur.toLocaleString()}</span>
                     </div>
                   </li>
                 );
