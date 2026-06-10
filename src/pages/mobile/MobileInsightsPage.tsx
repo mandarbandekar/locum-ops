@@ -1,6 +1,9 @@
 import { useMemo } from "react";
+import { TrendingUp } from "lucide-react";
 import { MobilePageHeader } from "@/components/mobile/MobilePageHeader";
 import { MobileMetricCard } from "@/components/mobile/MobileMetricCard";
+import { MobileEmptyState } from "@/components/mobile/MobileEmptyState";
+import { MobileMetricsSkeleton, Skeleton } from "@/components/mobile/MobileSkeleton";
 import { useData } from "@/contexts/DataContext";
 import { useExpenses } from "@/hooks/useExpenses";
 
