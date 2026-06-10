@@ -92,8 +92,10 @@ export function MobileTodayPage() {
           <Skeleton h={52} rounded="rounded-2xl" />
           <Skeleton h={52} rounded="rounded-2xl" />
         </div>
-        <MobileSectionSkeleton />
-        <div className="mt-5">
+        <div className="m-gutter">
+          <MobileSectionSkeleton />
+        </div>
+        <div className="m-gutter mt-5">
           <MobileMetricsSkeleton count={4} />
         </div>
       </div>
