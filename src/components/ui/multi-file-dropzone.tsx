@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Upload, X, FileText } from 'lucide-react';
+import { Upload, X, FileText, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   AlertDialog,
@@ -25,6 +25,8 @@ interface MultiFileDropzoneProps {
   existing?: { name: string; id?: string }[];
   /** Should perform the DB/storage deletion. May be async. */
   onRemoveExisting?: (id: string) => void | Promise<void>;
+  /** Open/view an already-uploaded item. */
+  onViewExisting?: (id: string) => void | Promise<void>;
 }
 
 function formatSize(bytes: number) {
@@ -47,6 +49,7 @@ export function MultiFileDropzone({
   className,
   existing = [],
   onRemoveExisting,
+  onViewExisting,
 }: MultiFileDropzoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState<PendingRemoval | null>(null);
@@ -114,20 +117,37 @@ export function MultiFileDropzone({
                 <span className="text-xs truncate">{f.name}</span>
                 <span className="text-[10px] text-muted-foreground shrink-0">already uploaded</span>
               </div>
-              {onRemoveExisting && f.id && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 w-6 p-0"
-                  onClick={e => {
-                    e.stopPropagation();
-                    setPending({ kind: 'existing', id: f.id!, name: f.name });
-                  }}
-                >
-                  <X className="h-3.5 w-3.5" />
-                </Button>
-              )}
+              <div className="flex items-center gap-1 shrink-0">
+                {onViewExisting && f.id && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0"
+                    title="View"
+                    onClick={e => {
+                      e.stopPropagation();
+                      onViewExisting(f.id!);
+                    }}
+                  >
+                    <Eye className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+                {onRemoveExisting && f.id && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0"
+                    onClick={e => {
+                      e.stopPropagation();
+                      setPending({ kind: 'existing', id: f.id!, name: f.name });
+                    }}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+              </div>
             </li>
           ))}
           {files.map((f, i) => (

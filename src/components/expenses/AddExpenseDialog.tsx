@@ -152,6 +152,16 @@ export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit,
     setExistingAttachments(prev => prev.filter(a => a.id !== id));
   };
 
+  const viewExistingAttachment = async (id: string) => {
+    const target = existingAttachments.find(a => a.id === id);
+    if (!target?.path) return;
+    const { data, error } = await supabase.storage
+      .from('expense-receipts')
+      .createSignedUrl(target.path, 60 * 10);
+    if (error || !data?.signedUrl) return;
+    window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+  };
+
 
   async function handleSubmit() {
     if (!subcategoryKey || !amountStr) return;
@@ -346,6 +356,7 @@ export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit,
               hint="Images or PDFs. You can attach multiple."
               existing={existingAttachments}
               onRemoveExisting={removeExistingAttachment}
+              onViewExisting={viewExistingAttachment}
               className="mt-1"
             />
           </div>
