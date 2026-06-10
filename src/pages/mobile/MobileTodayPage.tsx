@@ -18,6 +18,13 @@ function fmtCurrency(n: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n || 0);
 }
 
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
+
 export function MobileTodayPage() {
   const navigate = useNavigate();
   const { facilities, shifts, invoices, getComputedInvoiceStatus, terms, addShift: addShiftMut, updateShift, deleteShift, dataLoading } = useData();
@@ -105,6 +112,13 @@ export function MobileTodayPage() {
   return (
     <div>
       <MobilePageHeader title="Today" subtitle="Your business at a glance." />
+
+      {/* Greeting */}
+      <div className="m-gutter -mt-1 mb-1">
+        <div className="text-[hsl(var(--m-text-muted))]" style={{ fontSize: "var(--m-text-base)" }}>
+          {getGreeting()}, <span className="font-semibold text-[hsl(var(--m-text))]">{profile?.first_name ?? "there"}</span>
+        </div>
+      </div>
 
       {/* Quick actions */}
       <div className="m-gutter grid grid-cols-2 gap-3">
