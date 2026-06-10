@@ -24,13 +24,17 @@ export function formatLineHours(
   li: LineItemLike,
   shiftsById?: Record<string, ShiftLike | undefined> | null,
 ): string {
+  // Overtime takes precedence over shift link — qty is the overtime amount, not the shift length.
+  if (li.line_kind === 'overtime') {
+    const q = Number(li.qty) || 0;
+    if (q <= 0) return '—';
+    const mins = Math.round(q * 60);
+    if (mins < 60) return `${mins} min`;
+    return formatBillableHours(mins);
+  }
   if (li.shift_id && shiftsById) {
     const s = shiftsById[li.shift_id];
     if (s) return formatBillableHours(getBillableMinutes(s));
-  }
-  if (li.line_kind === 'overtime') {
-    const q = Number(li.qty) || 0;
-    return q > 0 ? formatBillableHours(q * 60) : '—';
   }
   // Standalone hourly-ish line (qty != 1, not flat): treat qty as hours.
   if (!li.shift_id && li.line_kind !== 'flat' && li.qty && li.qty !== 1) {
