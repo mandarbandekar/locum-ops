@@ -399,12 +399,12 @@ export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit,
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange} key={editingExpense?.id || 'new'}>
-        <DrawerContent className="max-h-[92vh]">
-          <DrawerHeader className="pb-2">
+        <DrawerContent className="max-h-[92vh] overflow-hidden">
+          <DrawerHeader className="pb-2 shrink-0">
             <DrawerTitle>{isEditing ? 'Edit Expense' : 'Log Expense'}</DrawerTitle>
             <DrawerDescription>Enter expense details below</DrawerDescription>
           </DrawerHeader>
-          <div className="px-4 pb-6 overflow-y-auto space-y-4">
+          <div className="flex-1 overflow-y-auto px-4 pb-6 space-y-4">
             {formBody}
           </div>
         </DrawerContent>
