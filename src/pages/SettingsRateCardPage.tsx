@@ -28,6 +28,7 @@ import {
 } from '@/lib/onboardingRateMapping';
 import { inferShiftTypeFromName } from '@/lib/shiftTypeInference';
 import { useAutoSave } from '@/hooks/useAutoSave';
+import { useIsMobileShell } from '@/hooks/useIsMobileShell';
 
 const MAX_NAME_LEN = 60;
 const MAX_AMOUNT = 100000;
@@ -98,6 +99,7 @@ function validateRates(rates: DefaultRate[]): { errors: RateErrors; firstMessage
 }
 
 export default function SettingsRateCardPage() {
+  const isMobile = useIsMobileShell();
   const { profile, updateProfile } = useUserProfile();
   const [preference, setPreference] = useState<BillingPreference>('per_day');
   const [rates, setRates] = useState<DefaultRate[]>([]);
