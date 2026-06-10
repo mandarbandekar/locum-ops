@@ -7,7 +7,7 @@ import { MobilePageHeader } from "@/components/mobile/MobilePageHeader";
 import { MobileStatusChip } from "@/components/mobile/MobileStatusChip";
 import { MobileEmptyState } from "@/components/mobile/MobileEmptyState";
 import { Skeleton } from "@/components/mobile/MobileSkeleton";
-import { shareInvoicePdf } from "@/lib/mobileInvoiceShare";
+import { shareInvoicePdf, previewInvoicePdf } from "@/lib/mobileInvoiceShare";
 import { toast } from "sonner";
 import {
   AlertDialog,
