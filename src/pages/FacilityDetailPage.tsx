@@ -97,12 +97,8 @@ function DesktopFacilityDetailPage() {
         <div className="flex-1" />
       </div>
 
-      {showSetupBanner && (
-        <SetupBanner
-          checklist={setupChecklist}
-          onDismiss={dismissSetupBanner}
-        />
-      )}
+
+
 
       <Tabs defaultValue="contract">
 
