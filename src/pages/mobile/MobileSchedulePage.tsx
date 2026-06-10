@@ -1,9 +1,11 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Pencil } from "lucide-react";
+import { Pencil, CalendarPlus } from "lucide-react";
 import { MobilePageHeader } from "@/components/mobile/MobilePageHeader";
 import { MobileFab } from "@/components/mobile/MobileFab";
 import { MobileStatusChip } from "@/components/mobile/MobileStatusChip";
+import { MobileEmptyState } from "@/components/mobile/MobileEmptyState";
+import { MobileListSkeleton } from "@/components/mobile/MobileSkeleton";
 import { useData } from "@/contexts/DataContext";
 import { useUserProfile } from "@/contexts/UserProfileContext";
 import { ShiftFormDialog } from "@/components/schedule/ShiftFormDialog";
@@ -17,7 +19,7 @@ function monthKeyFromDate(d: Date) {
 
 export function MobileSchedulePage() {
   const navigate = useNavigate();
-  const { facilities, shifts, terms, invoices, lineItems, getComputedInvoiceStatus, addShift: addShiftMut, updateShift, deleteShift } = useData();
+  const { facilities, shifts, terms, invoices, lineItems, getComputedInvoiceStatus, addShift: addShiftMut, updateShift, deleteShift, dataLoading } = useData();
   const { profile } = useUserProfile();
   const [cursor, setCursor] = useState(() => new Date());
   const [addOpen, setAddOpen] = useState(false);
