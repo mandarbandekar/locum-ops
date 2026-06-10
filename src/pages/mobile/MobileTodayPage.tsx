@@ -84,6 +84,22 @@ export function MobileTodayPage() {
     },
   ].filter(Boolean) as { key: string; title: string; meta: string; action: () => void }[];
 
+  if (isLoading) {
+    return (
+      <div>
+        <MobilePageHeader title="Today" subtitle="Your business at a glance." />
+        <div className="m-gutter grid grid-cols-2 gap-3">
+          <Skeleton h={52} rounded="rounded-2xl" />
+          <Skeleton h={52} rounded="rounded-2xl" />
+        </div>
+        <MobileSectionSkeleton />
+        <div className="mt-5">
+          <MobileMetricsSkeleton count={4} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <MobilePageHeader title="Today" subtitle="Your business at a glance." />
