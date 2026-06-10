@@ -113,6 +113,13 @@ export function MobileTodayPage() {
     <div>
       <MobilePageHeader title="Today" subtitle="Your business at a glance." />
 
+      {/* Greeting */}
+      <div className="m-gutter -mt-1 mb-1">
+        <div className="text-[hsl(var(--m-text-muted))]" style={{ fontSize: "var(--m-text-base)" }}>
+          {getGreeting()}, <span className="font-semibold text-[hsl(var(--m-text))]">{profile?.name?.split(" ")[0] ?? "there"}</span>
+        </div>
+      </div>
+
       {/* Quick actions */}
       <div className="m-gutter grid grid-cols-2 gap-3">
         <button
