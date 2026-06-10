@@ -19,7 +19,7 @@ export function Skeleton({ className, w, h, rounded = "rounded-md", style, ...re
 
 export function MobileMetricsSkeleton({ count = 4, cols = 2 }: { count?: number; cols?: 2 | 3 }) {
   return (
-    <div className={cn("m-gutter grid gap-3", cols === 3 ? "grid-cols-3" : "grid-cols-2")}>
+    <div className={cn("grid gap-3", cols === 3 ? "grid-cols-3" : "grid-cols-2")}>
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="mobile-card p-3">
           <Skeleton h={10} w="55%" />
@@ -41,7 +41,7 @@ export function MobileListSkeleton({
   withAvatar?: boolean;
 }) {
   return (
-    <div className="m-gutter space-y-2">
+    <div className="space-y-2">
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="mobile-card p-4 flex items-start gap-3">
           {withAvatar && <Skeleton h={36} w={36} rounded="rounded-full" />}
@@ -59,7 +59,7 @@ export function MobileListSkeleton({
 
 export function MobileSectionSkeleton({ title = true }: { title?: boolean }) {
   return (
-    <div className="m-gutter mt-5">
+    <div className="mt-5">
       {title && <Skeleton h={10} w={90} className="mb-2" />}
       <div className="mobile-card p-4 space-y-2">
         <Skeleton h={14} w="80%" />
@@ -69,3 +69,4 @@ export function MobileSectionSkeleton({ title = true }: { title?: boolean }) {
     </div>
   );
 }
+
