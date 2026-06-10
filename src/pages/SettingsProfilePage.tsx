@@ -86,7 +86,7 @@ export default function SettingsProfilePage() {
   );
 
   return (
-    <div>
+    <div className="px-4 pt-3 md:px-0 md:pt-0">
       <SettingsNav />
       <div className="page-header">
         <h1 className="page-title">Profile</h1>

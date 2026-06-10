@@ -79,7 +79,7 @@ export default function SettingsAccountPage() {
   };
 
   return (
-    <div>
+    <div className="px-4 pt-3 md:px-0 md:pt-0">
       <SettingsNav />
       <div className="page-header">
         <h1 className="page-title">Your Account</h1>
