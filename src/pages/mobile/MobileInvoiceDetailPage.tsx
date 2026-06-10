@@ -111,6 +111,17 @@ export function MobileInvoiceDetailPage() {
     }
   }
 
+  async function onPreview() {
+    try {
+      await previewInvoicePdf({
+        invoiceId: inv!.id,
+        cacheKey: String(inv!.balance_due) + (inv!.paid_at || ""),
+      });
+    } catch {
+      toast.error("Failed to load preview");
+    }
+  }
+
   async function onDelete() {
     await deleteInvoice(inv!.id);
     toast.success("Invoice deleted");
