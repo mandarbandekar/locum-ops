@@ -109,6 +109,16 @@ export const EXPENSE_CATEGORIES: ExpenseCategoryGroup[] = [
     ],
   },
   {
+    key: 'taxes',
+    label: 'Taxes',
+    subcategories: [
+      { key: 'federal_estimated_tax', label: 'Federal Estimated Tax Payment', deductibilityType: 'other', tooltip: 'Quarterly federal income tax payments — tracked for cash-flow, not deductible on Schedule C' },
+      { key: 'state_estimated_tax', label: 'State Estimated Tax Payment', deductibilityType: 'other', tooltip: 'Quarterly state income tax payments — tracked for cash-flow, not deductible on Schedule C' },
+      { key: 'self_employment_tax', label: 'Self-Employment Tax', deductibilityType: 'other', tooltip: 'SE tax paid with your 1040 — half is deducted above-the-line automatically' },
+      { key: 'business_local_tax', label: 'Business / Local Tax', deductibilityType: 'full', tooltip: 'City, county, or state business taxes and licenses — fully deductible on Schedule C' },
+    ],
+  },
+  {
     key: 'uncategorized',
     label: 'Uncategorized',
     subcategories: [
