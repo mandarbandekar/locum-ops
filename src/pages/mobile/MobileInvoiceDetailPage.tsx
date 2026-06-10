@@ -40,7 +40,7 @@ function fmtDate(d?: string | null) {
 export function MobileInvoiceDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { invoices, facilities, lineItems, getComputedInvoiceStatus, deleteInvoice } = useData();
+  const { invoices, facilities, lineItems, getComputedInvoiceStatus, deleteInvoice, dataLoading } = useData();
   const inv = invoices.find((i) => i.id === id);
 
   const items = useMemo(
@@ -48,11 +48,43 @@ export function MobileInvoiceDetailPage() {
     [lineItems, inv]
   );
 
+  if (dataLoading && !inv) {
+    return (
+      <div>
+        <MobilePageHeader title="Invoice" onBack={() => navigate(-1)} showProfile={false} compact />
+        <div className="px-4 mt-2 space-y-3">
+          <div className="mobile-card p-4 space-y-3">
+            <Skeleton h={10} w={80} />
+            <Skeleton h={28} w="60%" />
+            <Skeleton h={14} w="50%" />
+            <div className="grid grid-cols-3 gap-2 pt-3 border-t border-[hsl(var(--m-border))]">
+              <Skeleton h={28} />
+              <Skeleton h={28} />
+              <Skeleton h={28} />
+            </div>
+          </div>
+          <div className="mobile-card p-4 space-y-2">
+            <Skeleton h={12} w="40%" />
+            <Skeleton h={12} w="80%" />
+            <Skeleton h={12} w="70%" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!inv) {
     return (
       <div>
         <MobilePageHeader title="Invoice" onBack={() => navigate(-1)} showProfile={false} compact />
-        <div className="m-gutter mt-6 m-body text-[hsl(var(--m-text-muted))]">Invoice not found.</div>
+        <MobileEmptyState
+          icon={FileX}
+          title="Invoice not found"
+          description="This invoice may have been deleted or doesn't belong to you."
+          actionLabel="Back to invoices"
+          onAction={() => navigate("/invoices")}
+          className="mx-4 mt-6"
+        />
       </div>
     );
   }
