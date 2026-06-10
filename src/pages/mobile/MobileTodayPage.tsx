@@ -113,13 +113,11 @@ export function MobileTodayPage() {
 
   return (
     <div>
-      <MobilePageHeader title="Today" subtitle="Your business at a glance." />
-
-      {/* Greeting */}
-      <div className="m-gutter -mt-1 mb-1">
-        <div className="text-[hsl(var(--m-text-muted))]" style={{ fontSize: "var(--m-text-base)" }}>
-          {getGreeting()}, <span className="font-semibold text-[hsl(var(--m-text))]">{profile?.first_name ?? "there"}</span>
-        </div>
+      {/* Greeting header */}
+      <div className="m-gutter pt-4 pb-2">
+        <h1 className="font-bold text-[hsl(var(--m-text))]" style={{ fontSize: "var(--m-title)" }}>
+          {getGreeting()}, {profile?.first_name ?? "there"}
+        </h1>
       </div>
 
       {/* Quick actions */}
