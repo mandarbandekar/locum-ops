@@ -1,13 +1,13 @@
 import { useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Pencil, Share2, Trash2, FileX } from "lucide-react";
+import { Pencil, Share2, Trash2, FileX, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { useData } from "@/contexts/DataContext";
 import { MobilePageHeader } from "@/components/mobile/MobilePageHeader";
 import { MobileStatusChip } from "@/components/mobile/MobileStatusChip";
 import { MobileEmptyState } from "@/components/mobile/MobileEmptyState";
 import { Skeleton } from "@/components/mobile/MobileSkeleton";
-import { shareInvoicePdf } from "@/lib/mobileInvoiceShare";
+import { shareInvoicePdf, previewInvoicePdf } from "@/lib/mobileInvoiceShare";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -111,6 +111,17 @@ export function MobileInvoiceDetailPage() {
     }
   }
 
+  async function onPreview() {
+    try {
+      await previewInvoicePdf({
+        invoiceId: inv!.id,
+        cacheKey: String(inv!.balance_due) + (inv!.paid_at || ""),
+      });
+    } catch {
+      toast.error("Failed to load preview");
+    }
+  }
+
   async function onDelete() {
     await deleteInvoice(inv!.id);
     toast.success("Invoice deleted");
@@ -125,33 +136,42 @@ export function MobileInvoiceDetailPage() {
         showProfile={false}
         compact
         right={
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <button
-                aria-label="Delete invoice"
-                className="m-tap m-press rounded-full flex items-center justify-center text-[hsl(var(--m-text-muted))]"
-              >
-                <Trash2 className="h-[18px] w-[18px]" />
-              </button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete invoice {inv.invoice_number}?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This permanently removes the invoice and its line items. This can't be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={onDelete}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          <div className="flex items-center gap-1">
+            <button
+              aria-label="Preview invoice"
+              onClick={onPreview}
+              className="m-tap m-press rounded-full flex items-center justify-center text-[hsl(var(--m-text-muted))]"
+            >
+              <Eye className="h-[18px] w-[18px]" />
+            </button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <button
+                  aria-label="Delete invoice"
+                  className="m-tap m-press rounded-full flex items-center justify-center text-[hsl(var(--m-text-muted))]"
                 >
-                  Delete
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+                  <Trash2 className="h-[18px] w-[18px]" />
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete invoice {inv.invoice_number}?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This permanently removes the invoice and its line items. This can't be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={onDelete}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         }
       />
 
