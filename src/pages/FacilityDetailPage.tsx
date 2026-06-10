@@ -41,16 +41,13 @@ import { MobileClinicDetailPage } from '@/pages/mobile/MobileClinicDetailPage';
 
 export default function FacilityDetailPage() {
   const isMobile = useIsMobileShell();
-  const [params] = useSearchParams();
-  // When the user explicitly opens the setup/edit view from mobile, fall through to desktop form.
-  if (isMobile && params.get('setup') !== '1') return <MobileClinicDetailPage />;
+  if (isMobile) return <MobileClinicDetailPage />;
   return <DesktopFacilityDetailPage />;
 }
 
 function DesktopFacilityDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
   const { facilities, contacts, terms, shifts, invoices, updateFacility, addContact, updateContact, deleteContact, updateTerms, addShift, updateShift, deleteShift } = useData();
   const { getSettings, saveSettings } = useClinicConfirmations();
 
@@ -62,35 +59,6 @@ function DesktopFacilityDetailPage() {
   const facilityShifts = shifts.filter(s => s.facility_id === id).sort((a, b) => new Date(b.start_datetime).getTime() - new Date(a.start_datetime).getTime());
   const facilityInvoices = invoices.filter(i => i.facility_id === id);
 
-  // Drives the "Complete your setup" banner shown after Quick Add (?setup=1)
-  // or whenever a clinic is missing core enrichment fields.
-  const setupChecklist = useMemo(() => {
-    const hasRates = !!facilityTerms && (
-      (facilityTerms.weekday_rate || 0) > 0 ||
-      (facilityTerms.weekend_rate || 0) > 0 ||
-      (facilityTerms.holiday_rate || 0) > 0 ||
-      (facilityTerms.partial_day_rate || 0) > 0 ||
-      (facilityTerms.telemedicine_rate || 0) > 0
-    );
-    const isDirect = (facility.engagement_type || 'direct') === 'direct';
-    const hasBilling = !isDirect || !!(facility.invoice_name_to?.trim() && facility.invoice_email_to?.trim());
-    const hasContact = facilityContacts.length > 0;
-    const items = [
-      { key: 'rates', label: 'Rates', done: hasRates },
-      { key: 'billing', label: 'Billing contact', done: hasBilling },
-      { key: 'people', label: 'People & access', done: hasContact },
-    ];
-    const completed = items.filter(i => i.done).length;
-    return { items, completed, total: items.length, isComplete: completed === items.length };
-  }, [facility, facilityTerms, facilityContacts]);
-
-  const setupRequested = searchParams.get('setup') === '1';
-  const showSetupBanner = setupRequested && !setupChecklist.isComplete;
-  const dismissSetupBanner = () => {
-    const next = new URLSearchParams(searchParams);
-    next.delete('setup');
-    setSearchParams(next, { replace: true });
-  };
 
   const handleSaveRates = (rateEntries: RateEntry[]) => {
     const fields = ratesToTermsFields(rateEntries);
