@@ -132,6 +132,7 @@ function AuthenticatedApp() {
           <Route path="/tax-strategy" element={<Navigate to="/tax-center" replace />} />
           <Route path="/tax-strategies" element={<Navigate to="/tax-center?tab=tax-strategies" replace />} />
           {/* Settings */}
+          <Route path="/settings" element={<SettingsIndexRoute />} />
           <Route path="/settings/profile" element={<SettingsProfilePage />} />
           <Route path="/settings/scheduling" element={<SettingsSchedulingPage />} />
           <Route path="/settings/calendar-sync" element={<SettingsCalendarSyncPage />} />

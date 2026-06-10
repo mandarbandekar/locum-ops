@@ -30,7 +30,7 @@ export function MobilePageHeader({
           <button
             type="button"
             aria-label="Open profile"
-            onClick={() => navigate("/settings/profile")}
+            onClick={() => navigate("/settings")}
             className="h-10 w-10 rounded-full bg-[hsl(var(--m-card))] border border-[hsl(var(--m-border))] flex items-center justify-center text-[hsl(var(--m-text-muted))]"
           >
             <UserCircle2 className="h-6 w-6" />
