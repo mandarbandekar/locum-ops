@@ -2,7 +2,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
   Car, ShieldCheck, GraduationCap, Heart, Laptop, Briefcase,
-  Home, Wrench, PiggyBank, Utensils, HelpCircle, FileText
+  Home, Wrench, PiggyBank, Utensils, HelpCircle, FileText, Landmark
 } from 'lucide-react';
 
 const CATEGORY_CARDS = [
