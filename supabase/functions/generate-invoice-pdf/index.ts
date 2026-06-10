@@ -149,12 +149,16 @@ Deno.serve(async (req) => {
       return String(Math.round(h * 10) / 10);
     };
     const lineHoursLabel = (li: any): string => {
-      if (li.shift_id && shiftsById[li.shift_id]) {
-        return fmtHours(billableMinutes(shiftsById[li.shift_id]));
-      }
+      // Overtime takes precedence — qty is the overtime amount, not the shift length.
       if (li.line_kind === 'overtime') {
         const q = Number(li.qty) || 0;
-        return q > 0 ? fmtHours(q * 60) : '—';
+        if (q <= 0) return '—';
+        const mins = Math.round(q * 60);
+        if (mins < 60) return `${mins} min`;
+        return fmtHours(mins);
+      }
+      if (li.shift_id && shiftsById[li.shift_id]) {
+        return fmtHours(billableMinutes(shiftsById[li.shift_id]));
       }
       if (!li.shift_id && li.line_kind !== 'flat' && li.qty && Number(li.qty) !== 1) {
         return fmtHours((Number(li.qty) || 0) * 60);
