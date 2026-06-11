@@ -334,8 +334,12 @@ export function MobileSchedulePage() {
               </div>
             );
           })
-        )}
+          )}
+          </div>
+        </section>
       </div>
+
+
 
       <ShiftFormDialog
         open={addOpen}
