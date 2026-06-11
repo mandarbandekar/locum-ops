@@ -11,25 +11,34 @@ function fmt(n: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n || 0);
 }
 
-function Sparkline({ values }: { values: number[] }) {
-  const w = 320, h = 80, pad = 6;
+function MonthlyRevenueBars({ values }: { values: number[] }) {
+  const w = 320, h = 120, padX = 10, padY = 6;
   const max = Math.max(1, ...values);
-  const min = Math.min(0, ...values);
-  const span = Math.max(1, max - min);
-  const step = values.length > 1 ? (w - pad * 2) / (values.length - 1) : 0;
-  const pts = values.map((v, i) => {
-    const x = pad + i * step;
-    const y = h - pad - ((v - min) / span) * (h - pad * 2);
-    return `${x},${y}`;
-  });
-  const path = `M ${pts.join(" L ")}`;
-  const area = `M ${pad},${h - pad} L ${pts.join(" L ")} L ${pad + step * (values.length - 1)},${h - pad} Z`;
+  const barCount = values.length;
+  const gap = 4;
+  const barW = barCount > 0 ? Math.max(4, (w - padX * 2 - gap * (barCount - 1)) / barCount) : 0;
+
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-20">
-      <path d={area} fill="hsl(var(--m-accent))" opacity={0.6} />
-      <path d={path} fill="none" stroke="hsl(var(--m-primary))" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-[120px]">
+      {/* Grid line */}
+      <line x1={padX} y1={h - padY - (0.5 * (h - padY * 2))} x2={w - padX} y2={h - padY - (0.5 * (h - padY * 2))} stroke="hsl(var(--m-border))" strokeDasharray="2,2" />
+      {values.map((v, i) => {
+        const x = padX + i * (barW + gap);
+        const barH = (v / max) * (h - padY * 2);
+        const y = h - padY - barH;
+        const isMax = v === max && max > 0;
+        return (
+          <g key={i}>
+            <rect x={x} y={y} width={barW} height={barH} rx={3} fill={isMax ? "hsl(var(--m-primary))" : "hsl(var(--m-accent))"} opacity={isMax ? 1 : 0.8} />
+          </g>
+        );
+      })}
     </svg>
   );
+}
+
+function fmt(n: number) {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n || 0);
 }
 
 export function MobileInsightsPage() {
