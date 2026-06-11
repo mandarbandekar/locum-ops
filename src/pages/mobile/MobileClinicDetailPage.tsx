@@ -81,7 +81,8 @@ export function MobileClinicDetailPage() {
         compact
       />
 
-      <div className="m-gutter mt-2 space-y-3">
+      <div className="m-page">
+
         {nextShift && (
           <div className="mobile-card p-4">
             <div className="m-eyebrow">Next shift</div>
