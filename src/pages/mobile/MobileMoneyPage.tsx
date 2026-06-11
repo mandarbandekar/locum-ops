@@ -384,9 +384,9 @@ export function MobileMoneyPage() {
     <div>
       <MobilePageHeader title="Money" subtitle="Invoices, expenses, and mileage." />
 
-      <div className="px-5 grid grid-cols-3 gap-2">{dataLoading ? <div className="col-span-3"><MobileMetricsSkeleton count={3} cols={3} /></div> : topMetrics}</div>
+      <div className="m-page">
+        <div className="grid grid-cols-3 gap-2">{dataLoading ? <div className="col-span-3"><MobileMetricsSkeleton count={3} cols={3} /></div> : topMetrics}</div>
 
-      <div className="px-5 mt-4">
         <MobileSegmentedControl
           value={tab}
           onChange={switchTab}
@@ -396,10 +396,10 @@ export function MobileMoneyPage() {
             { value: "mileage", label: "Mileage" },
           ]}
         />
-      </div>
 
-      {tab === "invoices" && (
-        <div className="px-5 mt-4 space-y-4">
+        {tab === "invoices" && (
+          <div className="flex flex-col gap-4">
+
           {dataLoading ? (
             <MobileListSkeleton count={4} lines={2} />
           ) : invoices.length === 0 ? (
