@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
-import { Pencil, CalendarPlus } from "lucide-react";
+import { Pencil, CalendarPlus, Ban } from "lucide-react";
 import { MobilePageHeader } from "@/components/mobile/MobilePageHeader";
 import { MobileStatusChip } from "@/components/mobile/MobileStatusChip";
 import { MobileEmptyState } from "@/components/mobile/MobileEmptyState";
@@ -11,9 +11,10 @@ import { ShiftFormDialog } from "@/components/schedule/ShiftFormDialog";
 import { resolveShiftTz } from "@/lib/resolveTimezone";
 import { formatDateInTz, formatTimeInTz } from "@/lib/tzTime";
 import { cn } from "@/lib/utils";
-import type { Shift } from "@/types";
+import type { Shift, TimeBlock } from "@/types";
+import { BLOCK_TYPES } from "@/types";
 
-type DayStatus = "confirmed" | "completed" | "event" | "expired";
+type DayStatus = "confirmed" | "completed" | "event" | "expired" | "blocked";
 
 function ymdLocal(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -43,6 +44,7 @@ const DOT_CLASS: Record<DayStatus, string> = {
   completed: "bg-slate-300",
   event: "bg-teal-600",
   expired: "bg-rose-300",
+  blocked: "bg-amber-500",
 };
 
 const FILLED_CLASS: Record<DayStatus, string> = {
@@ -50,6 +52,7 @@ const FILLED_CLASS: Record<DayStatus, string> = {
   completed: "bg-slate-200 text-slate-700",
   event: "bg-teal-600 text-white",
   expired: "bg-rose-100 text-rose-800",
+  blocked: "bg-amber-100 text-amber-900 border border-amber-300",
 };
 
 export function MobileSchedulePage() {
@@ -59,6 +62,7 @@ export function MobileSchedulePage() {
     terms,
     invoices,
     lineItems,
+    timeBlocks,
     getComputedInvoiceStatus,
     addShift: addShiftMut,
     updateShift,
@@ -102,9 +106,30 @@ export function MobileSchedulePage() {
     return map;
   }, [credentialEvents, subscriptionEvents]);
 
-  // Priority: expired > confirmed > event > completed
+  // Bucket time blocks across every day they span
+  const blocksByDay = useMemo(() => {
+    const map = new Map<string, TimeBlock[]>();
+    for (const b of timeBlocks) {
+      const start = new Date(b.start_datetime);
+      const end = new Date(b.end_datetime || b.start_datetime);
+      const cur = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+      const last = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+      while (cur <= last) {
+        const k = ymdLocal(cur);
+        if (!map.has(k)) map.set(k, []);
+        map.get(k)!.push(b);
+        cur.setDate(cur.getDate() + 1);
+      }
+    }
+    return map;
+  }, [timeBlocks]);
+
+  // Priority: expired > confirmed > event > blocked > completed
   const statusByDay = useMemo(() => {
     const map = new Map<string, DayStatus>();
+    for (const [ymd] of blocksByDay.entries()) {
+      map.set(ymd, "blocked");
+    }
     for (const [ymd] of shiftsByDay.entries()) {
       map.set(ymd, ymd < todayYmd ? "completed" : "confirmed");
     }
@@ -112,10 +137,10 @@ export function MobileSchedulePage() {
       const hasExpired = list.some((x) => x.status === "expired");
       const existing = map.get(ymd);
       if (hasExpired) map.set(ymd, "expired");
-      else if (!existing) map.set(ymd, "event");
+      else if (!existing || existing === "blocked") map.set(ymd, existing === "blocked" ? "blocked" : "event");
     }
     return map;
-  }, [shiftsByDay, eventsByDay, todayYmd]);
+  }, [shiftsByDay, eventsByDay, blocksByDay, todayYmd]);
 
   function invoiceStatusFor(shiftId: string): string | null {
     const li = lineItems.find((l) => l.shift_id === shiftId);
@@ -139,6 +164,7 @@ export function MobileSchedulePage() {
   }, [cursor]);
 
   const selectedShifts = shiftsByDay.get(selected) ?? [];
+  const selectedBlocks = blocksByDay.get(selected) ?? [];
   const selectedDate = parseYmd(selected);
   const selectedLabel = selectedDate.toLocaleDateString("en-US", {
     weekday: "short",
@@ -150,6 +176,7 @@ export function MobileSchedulePage() {
   const legend: { label: string; status: DayStatus }[] = [
     { label: "Confirmed", status: "confirmed" },
     { label: "Completed", status: "completed" },
+    { label: "Blocked", status: "blocked" },
     { label: "Event", status: "event" },
     { label: "Expired", status: "expired" },
   ];
@@ -232,9 +259,37 @@ export function MobileSchedulePage() {
       </div>
 
       <div className="px-5 mt-3 space-y-2 pb-28">
+        {selectedBlocks.map((b) => {
+          const meta = BLOCK_TYPES.find((t) => t.value === b.block_type);
+          const startDate = new Date(b.start_datetime);
+          const endDate = new Date(b.end_datetime || b.start_datetime);
+          const sameDay = ymdLocal(startDate) === ymdLocal(endDate);
+          const timeLabel = b.all_day
+            ? "All day"
+            : sameDay
+              ? `${startDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })} – ${endDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`
+              : `${startDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${endDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+          return (
+            <div key={b.id} className="mobile-card p-4 flex items-start gap-3 border-l-2 border-amber-400">
+              <div className="h-9 w-9 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                <Ban className="h-4 w-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="font-semibold text-[hsl(var(--m-text))] truncate" style={{ fontSize: "var(--m-text-md)" }}>
+                  {b.title || meta?.label || "Blocked"}
+                </div>
+                <div className="m-caption mt-0.5">
+                  {meta?.label ?? "Blocked"} · {timeLabel}
+                </div>
+                {b.notes && <div className="m-caption mt-1 line-clamp-3">{b.notes}</div>}
+              </div>
+            </div>
+          );
+        })}
+
         {dataLoading ? (
           <MobileListSkeleton count={2} lines={2} />
-        ) : selectedShifts.length === 0 ? (
+        ) : selectedShifts.length === 0 && selectedBlocks.length === 0 ? (
           <MobileEmptyState
             icon={CalendarPlus}
             title="No shifts on this day"
