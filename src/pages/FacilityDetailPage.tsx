@@ -14,6 +14,7 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { ArrowLeft, Plus, Trash2, Edit2, Save, Pencil, Check, X, Car, Users, FileText, CalendarDays, Receipt, Mail, Phone, CheckSquare, BookOpen, Wallet, ChevronRight, MapPin, Send, Star, MoreHorizontal } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { getEngagementPill } from '@/lib/engagementOptions';
+import { cn } from '@/lib/utils';
 import { useClinicBrief } from '@/components/facilities/brief/useClinicBrief';
 import { NextShiftCard, NeedsAttentionCard, ThingsToRememberCard, PaymentSetupCard, KeyContactCard, RecentActivityCard } from '@/components/facilities/brief/BriefCards';
 import { Switch } from '@/components/ui/switch';
