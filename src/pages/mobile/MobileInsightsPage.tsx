@@ -1,9 +1,10 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { TrendingUp } from "lucide-react";
 import { MobilePageHeader } from "@/components/mobile/MobilePageHeader";
 import { MobileMetricCard } from "@/components/mobile/MobileMetricCard";
 import { MobileEmptyState } from "@/components/mobile/MobileEmptyState";
 import { MobileMetricsSkeleton, Skeleton } from "@/components/mobile/MobileSkeleton";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useData } from "@/contexts/DataContext";
 import { useExpenses } from "@/hooks/useExpenses";
 
@@ -11,7 +12,7 @@ function fmt(n: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n || 0);
 }
 
-function MonthlyRevenueBars({ values }: { values: number[] }) {
+function MonthlyRevenueBars({ values, onSelect, selectedIndex }: { values: number[]; onSelect?: (i: number) => void; selectedIndex?: number | null }) {
   const w = 320, h = 120, padX = 10, padY = 6;
   const max = Math.max(1, ...values);
   const barCount = values.length;
@@ -19,17 +20,29 @@ function MonthlyRevenueBars({ values }: { values: number[] }) {
   const barW = barCount > 0 ? Math.max(4, (w - padX * 2 - gap * (barCount - 1)) / barCount) : 0;
 
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-[120px]">
-      {/* Grid line */}
+    <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-[120px]" preserveAspectRatio="none">
       <line x1={padX} y1={h - padY - (0.5 * (h - padY * 2))} x2={w - padX} y2={h - padY - (0.5 * (h - padY * 2))} stroke="hsl(var(--m-border))" strokeDasharray="2,2" />
       {values.map((v, i) => {
         const x = padX + i * (barW + gap);
         const barH = (v / max) * (h - padY * 2);
         const y = h - padY - barH;
         const isMax = v === max && max > 0;
+        const isSelected = selectedIndex === i;
         return (
-          <g key={i}>
-            <rect x={x} y={y} width={barW} height={barH} rx={3} fill={isMax ? "hsl(var(--m-primary))" : "hsl(var(--m-accent))"} opacity={isMax ? 1 : 0.8} />
+          <g key={i} onClick={() => onSelect?.(i)} style={{ cursor: "pointer" }}>
+            {/* Larger invisible hit area for easier tapping */}
+            <rect x={x - gap / 2} y={padY} width={barW + gap} height={h - padY * 2} fill="transparent" />
+            <rect
+              x={x}
+              y={y}
+              width={barW}
+              height={Math.max(barH, 2)}
+              rx={3}
+              fill={isSelected || isMax ? "hsl(var(--m-primary))" : "hsl(var(--m-accent))"}
+              opacity={isSelected ? 1 : isMax ? 1 : 0.8}
+              stroke={isSelected ? "hsl(var(--m-primary))" : "none"}
+              strokeWidth={isSelected ? 1.5 : 0}
+            />
           </g>
         );
       })}
@@ -37,9 +50,15 @@ function MonthlyRevenueBars({ values }: { values: number[] }) {
   );
 }
 
+function monthLabel(key: string) {
+  const [y, m] = key.split("-").map(Number);
+  return new Date(y, m - 1, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
+}
+
 export function MobileInsightsPage() {
   const { invoices, facilities, shifts, payments, getComputedInvoiceStatus, dataLoading } = useData();
   const { expenses, loading: expensesLoading } = useExpenses();
+  const [selectedMonthIdx, setSelectedMonthIdx] = useState<number | null>(null);
   const isLoading = dataLoading || expensesLoading;
 
   const monthKey = new Date().toISOString().slice(0, 7);
@@ -68,6 +87,27 @@ export function MobileInsightsPage() {
     }
     return months;
   }, [shifts]);
+
+  const selectedMonth = selectedMonthIdx != null ? trend[selectedMonthIdx] : null;
+  const monthDetail = useMemo(() => {
+    if (!selectedMonth) return null;
+    const key = selectedMonth.key;
+    const monthInvoices = invoices
+      .filter((i) => (i.period_start || "").startsWith(key) || (i.invoice_date || "").startsWith(key))
+      .sort((a, b) => (b.invoice_date || "").localeCompare(a.invoice_date || ""));
+    let totalBilled = 0, totalPaid = 0, totalOutstanding = 0;
+    monthInvoices.forEach((i) => {
+      totalBilled += Number(i.total_amount || 0);
+      const bal = Number(i.balance_due || 0);
+      totalOutstanding += bal;
+      totalPaid += Math.max(0, Number(i.total_amount || 0) - bal);
+    });
+    const shiftRevenue = shifts
+      .filter((s) => s.start_datetime.startsWith(key))
+      .reduce((sum, s) => sum + (Number(s.rate_applied) || 0) + Number(s.overtime_hours || 0) * Number(s.overtime_rate || 0), 0);
+    return { key, monthInvoices, totalBilled, totalPaid, totalOutstanding, shiftRevenue };
+  }, [selectedMonth, invoices, shifts]);
+
 
   const topClinics = useMemo(() => {
     const map = new Map<string, number>();
@@ -124,11 +164,25 @@ export function MobileInsightsPage() {
           Monthly revenue
         </div>
         <div className="mobile-card p-3">
-          <MonthlyRevenueBars values={trend.map((t) => t.total)} />
+          <MonthlyRevenueBars
+            values={trend.map((t) => t.total)}
+            selectedIndex={selectedMonthIdx}
+            onSelect={(i) => setSelectedMonthIdx(i)}
+          />
           <div className="mt-2 grid grid-cols-6 gap-1 text-center text-[10px] text-[hsl(var(--m-text-muted))]">
-            {trend.map((t) => (
-              <div key={t.key}>{t.key.slice(5)}</div>
+            {trend.map((t, i) => (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => setSelectedMonthIdx(i)}
+                className={`py-0.5 rounded ${selectedMonthIdx === i ? "text-[hsl(var(--m-primary))] font-semibold" : ""}`}
+              >
+                {t.key.slice(5)}
+              </button>
             ))}
+          </div>
+          <div className="mt-1 text-center text-[10px] text-[hsl(var(--m-text-muted))]">
+            Tap a bar to see that month's invoices
           </div>
         </div>
       </section>
@@ -162,6 +216,68 @@ export function MobileInsightsPage() {
           <div className="m-caption mt-0.5">This month</div>
         </div>
       </section>
+
+      <Sheet open={!!selectedMonth} onOpenChange={(o) => !o && setSelectedMonthIdx(null)}>
+        <SheetContent side="bottom" className="rounded-t-2xl max-h-[85vh] overflow-y-auto p-0 bg-[hsl(var(--m-bg))] border-[hsl(var(--m-border))]">
+          {selectedMonth && monthDetail && (
+            <>
+              <SheetHeader className="px-5 pt-5 pb-3 text-left">
+                <SheetTitle className="text-[hsl(var(--m-text))]">{monthLabel(selectedMonth.key)}</SheetTitle>
+                <div className="text-[12px] text-[hsl(var(--m-text-muted))]">Revenue from completed shifts: {fmt(monthDetail.shiftRevenue)}</div>
+              </SheetHeader>
+
+              <div className="px-5 grid grid-cols-3 gap-2">
+                <div className="mobile-card p-3">
+                  <div className="text-[10px] uppercase tracking-wide text-[hsl(var(--m-text-muted))]">Billed</div>
+                  <div className="text-[15px] font-semibold tabular-nums mt-0.5">{fmt(monthDetail.totalBilled)}</div>
+                </div>
+                <div className="mobile-card p-3">
+                  <div className="text-[10px] uppercase tracking-wide text-[hsl(var(--m-text-muted))]">Paid</div>
+                  <div className="text-[15px] font-semibold tabular-nums mt-0.5">{fmt(monthDetail.totalPaid)}</div>
+                </div>
+                <div className="mobile-card p-3">
+                  <div className="text-[10px] uppercase tracking-wide text-[hsl(var(--m-text-muted))]">Outstanding</div>
+                  <div className="text-[15px] font-semibold tabular-nums mt-0.5">{fmt(monthDetail.totalOutstanding)}</div>
+                </div>
+              </div>
+
+              <div className="px-5 mt-5 pb-8">
+                <div className="text-[11px] uppercase tracking-wide font-semibold text-[hsl(var(--m-text-muted))] mb-2">
+                  Invoices ({monthDetail.monthInvoices.length})
+                </div>
+                {monthDetail.monthInvoices.length === 0 ? (
+                  <div className="mobile-card p-5 text-center text-[13px] text-[hsl(var(--m-text-muted))]">
+                    No invoices in this month yet.
+                  </div>
+                ) : (
+                  <div className="mobile-card divide-y divide-[hsl(var(--m-border))]">
+                    {monthDetail.monthInvoices.map((inv) => {
+                      const facility = facilities.find((f) => f.id === inv.facility_id);
+                      const status = getComputedInvoiceStatus(inv) as string;
+                      return (
+                        <div key={inv.id} className="p-4 flex items-center justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <div className="text-[14px] font-medium truncate">{facility?.name ?? "—"}</div>
+                            <div className="text-[11px] text-[hsl(var(--m-text-muted))] mt-0.5 truncate">
+                              #{inv.invoice_number} · <span className="capitalize">{status}</span>
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <div className="text-[14px] font-semibold tabular-nums">{fmt(Number(inv.total_amount || 0))}</div>
+                            {Number(inv.balance_due || 0) > 0 && (
+                              <div className="text-[11px] text-[hsl(var(--m-text-muted))] tabular-nums">{fmt(Number(inv.balance_due))} due</div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
