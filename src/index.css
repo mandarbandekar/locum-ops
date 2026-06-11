@@ -542,10 +542,12 @@ input[type="number"] {
   --m-text: 222 39% 14%;        /* dark navy */
   --m-text-muted: 218 11% 45%;  /* muted gray */
   --m-border: 30 12% 88%;
+  --m-border-strong: 30 10% 82%;
   --m-danger: 0 72% 51%;
   --m-warning: 32 95% 44%;
   --m-success: 152 56% 36%;
-  --m-radius: 16px;
+  --m-radius: 18px;
+  --m-radius-sm: 12px;
   --m-bottom-nav-h: 64px;
   --m-safe-bottom: env(safe-area-inset-bottom);
   --m-safe-top: env(safe-area-inset-top);
@@ -558,10 +560,18 @@ input[type="number"] {
   --m-text-lg:   clamp(15px,   4vw,   16.5px);
   --m-text-xl:   clamp(17px,   4.6vw, 19px);
   --m-text-2xl:  clamp(20px,   5.8vw, 24px);
-  --m-title:     clamp(19px,   5.2vw, 22px);
+  --m-title:     clamp(22px,   6vw,   27px);
 
   --m-tap: 44px;
-  --m-gutter: clamp(14px, 4vw, 18px);
+  --m-gutter: clamp(18px, 5vw, 22px);
+  --m-content-max: 480px;
+
+  /* Vertical rhythm */
+  --m-stack-xs: 8px;
+  --m-stack-sm: 12px;
+  --m-stack-md: 18px;
+  --m-stack-lg: 28px;
+  --m-stack-xl: 40px;
 }
 
 .mobile-shell {
@@ -569,12 +579,23 @@ input[type="number"] {
   color: hsl(var(--m-text));
   min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 .mobile-shell button,
 .mobile-shell a,
 .mobile-shell [role="button"] {
   -webkit-tap-highlight-color: transparent;
 }
+
+/* Centered content column — keeps things aesthetically aligned on
+   wider phones/tablets without stretching edge-to-edge. */
+.m-container {
+  width: 100%;
+  max-width: var(--m-content-max);
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .mobile-card {
   background: hsl(var(--m-card));
   border: 1px solid hsl(var(--m-border));
@@ -590,11 +611,11 @@ input[type="number"] {
 .pt-safe { padding-top: calc(var(--m-safe-top) + 8px); }
 
 /* Mobile typography utilities */
-.m-title    { font-size: var(--m-title);    line-height: 1.15; font-weight: 600; letter-spacing: -0.01em; }
-.m-subtitle { font-size: var(--m-text-sm);  line-height: 1.35; color: hsl(var(--m-text-muted)); }
-.m-eyebrow  { font-size: var(--m-text-xs);  line-height: 1.2;  font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: hsl(var(--m-text-muted)); }
-.m-body     { font-size: var(--m-text-base); line-height: 1.4; }
-.m-caption  { font-size: var(--m-text-xs);  line-height: 1.3; color: hsl(var(--m-text-muted)); }
+.m-title    { font-size: var(--m-title);    line-height: 1.1;  font-weight: 700; letter-spacing: -0.02em; }
+.m-subtitle { font-size: var(--m-text-sm);  line-height: 1.4;  color: hsl(var(--m-text-muted)); }
+.m-eyebrow  { font-size: var(--m-text-xs);  line-height: 1.2;  font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: hsl(var(--m-text-muted)); }
+.m-body     { font-size: var(--m-text-base); line-height: 1.45; }
+.m-caption  { font-size: var(--m-text-xs);  line-height: 1.35; color: hsl(var(--m-text-muted)); }
 
 /* Tap + press */
 .m-tap   { min-height: var(--m-tap); min-width: var(--m-tap); }
@@ -603,6 +624,41 @@ input[type="number"] {
 
 /* Page gutter */
 .m-gutter { padding-left: var(--m-gutter); padding-right: var(--m-gutter); }
+
+/* Page-level rhythm — use on the outer wrapper of any mobile page.
+   Stacks sections with consistent vertical spacing and applies the
+   horizontal gutter so every page lines up the same way. */
+.m-page {
+  padding-left: var(--m-gutter);
+  padding-right: var(--m-gutter);
+  padding-top: 14px;
+  padding-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-stack-lg);
+}
+
+/* Section block — eyebrow label + content with consistent gap */
+.m-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-stack-sm);
+}
+
+.m-section-label {
+  font-size: var(--m-text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: hsl(var(--m-text-muted));
+}
+
+/* Page header (greeting + optional subtitle) */
+.m-page-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 
 /* Sticky blurred mobile header */
 .m-sticky-header {
@@ -642,6 +698,7 @@ input[type="number"] {
 @media (prefers-reduced-motion: reduce) {
   .m-skeleton::after { animation: none; }
 }
+
 
 
 

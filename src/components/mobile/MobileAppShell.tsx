@@ -32,7 +32,9 @@ export function MobileAppShell({ children }: { children: ReactNode }) {
         className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain touch-pan-y"
         style={{ paddingBottom: "calc(var(--m-bottom-nav-h) + var(--m-safe-bottom) + 8px)" }}
       >
-        {children}
+        <div className="m-container">
+          {children}
+        </div>
       </main>
       <MobileBottomNav />
     </div>
