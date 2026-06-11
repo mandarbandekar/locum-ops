@@ -164,6 +164,7 @@ export function MobileSchedulePage() {
   }, [cursor]);
 
   const selectedShifts = shiftsByDay.get(selected) ?? [];
+  const selectedBlocks = blocksByDay.get(selected) ?? [];
   const selectedDate = parseYmd(selected);
   const selectedLabel = selectedDate.toLocaleDateString("en-US", {
     weekday: "short",
@@ -175,6 +176,7 @@ export function MobileSchedulePage() {
   const legend: { label: string; status: DayStatus }[] = [
     { label: "Confirmed", status: "confirmed" },
     { label: "Completed", status: "completed" },
+    { label: "Blocked", status: "blocked" },
     { label: "Event", status: "event" },
     { label: "Expired", status: "expired" },
   ];
