@@ -115,12 +115,7 @@ function DesktopFacilityDetailPage() {
               }}
             />
           </div>
-          {facility.address && (
-            <p className="text-sm text-muted-foreground mt-1.5 flex items-center gap-1.5">
-              <MapPin className="h-3.5 w-3.5 shrink-0" />
-              <span className="truncate">{facility.address}</span>
-            </p>
-          )}
+
           <div className="flex items-center gap-2 flex-wrap mt-3">
             <span className={cn('inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium', engagementPill.className)}>
               {engagementPill.label}
