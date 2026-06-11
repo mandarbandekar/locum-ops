@@ -177,8 +177,6 @@ export function MobileSchedulePage() {
     { label: "Confirmed", status: "confirmed" },
     { label: "Completed", status: "completed" },
     { label: "Blocked", status: "blocked" },
-    { label: "Event", status: "event" },
-    { label: "Expired", status: "expired" },
   ];
 
   return (
