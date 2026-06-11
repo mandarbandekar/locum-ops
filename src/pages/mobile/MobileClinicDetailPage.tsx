@@ -28,7 +28,7 @@ export function MobileClinicDetailPage() {
     return (
       <div>
         <MobilePageHeader title="Clinic" onBack={() => navigate(-1)} showProfile={false} compact />
-        <div className="m-gutter mt-2 space-y-3">
+        <div className="m-page">
           <div className="mobile-card p-4 space-y-2">
             <Skeleton h={10} w={70} />
             <Skeleton h={16} w="60%" />
