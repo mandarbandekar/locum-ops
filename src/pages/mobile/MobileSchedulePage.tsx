@@ -62,6 +62,7 @@ export function MobileSchedulePage() {
     terms,
     invoices,
     lineItems,
+    timeBlocks,
     getComputedInvoiceStatus,
     addShift: addShiftMut,
     updateShift,
