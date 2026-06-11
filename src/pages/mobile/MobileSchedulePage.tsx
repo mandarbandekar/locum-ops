@@ -259,9 +259,37 @@ export function MobileSchedulePage() {
       </div>
 
       <div className="px-5 mt-3 space-y-2 pb-28">
+        {selectedBlocks.map((b) => {
+          const meta = BLOCK_TYPES.find((t) => t.value === b.block_type);
+          const startDate = new Date(b.start_datetime);
+          const endDate = new Date(b.end_datetime || b.start_datetime);
+          const sameDay = ymdLocal(startDate) === ymdLocal(endDate);
+          const timeLabel = b.all_day
+            ? "All day"
+            : sameDay
+              ? `${startDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })} – ${endDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`
+              : `${startDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${endDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+          return (
+            <div key={b.id} className="mobile-card p-4 flex items-start gap-3 border-l-2 border-amber-400">
+              <div className="h-9 w-9 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                <Ban className="h-4 w-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="font-semibold text-[hsl(var(--m-text))] truncate" style={{ fontSize: "var(--m-text-md)" }}>
+                  {b.title || meta?.label || "Blocked"}
+                </div>
+                <div className="m-caption mt-0.5">
+                  {meta?.label ?? "Blocked"} · {timeLabel}
+                </div>
+                {b.notes && <div className="m-caption mt-1 line-clamp-3">{b.notes}</div>}
+              </div>
+            </div>
+          );
+        })}
+
         {dataLoading ? (
           <MobileListSkeleton count={2} lines={2} />
-        ) : selectedShifts.length === 0 ? (
+        ) : selectedShifts.length === 0 && selectedBlocks.length === 0 ? (
           <MobileEmptyState
             icon={CalendarPlus}
             title="No shifts on this day"
