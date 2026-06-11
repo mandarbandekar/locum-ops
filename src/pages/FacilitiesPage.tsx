@@ -258,6 +258,26 @@ function FilterChip({ label, active, onClick, tone }: { label: string; active: b
   );
 }
 
+function StatTile({ icon: Icon, value, label, tone }: { icon: any; value: number; label: string; tone: 'neutral' | 'success' | 'info' | 'attention' }) {
+  const toneClasses = {
+    neutral: 'bg-muted text-muted-foreground',
+    success: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300',
+    info: 'bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300',
+    attention: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300',
+  }[tone];
+  return (
+    <div className="rounded-lg border bg-card p-3 sm:p-4 flex items-center gap-3">
+      <div className={cn('h-9 w-9 rounded-md flex items-center justify-center shrink-0', toneClasses)}>
+        <Icon className="h-4 w-4" />
+      </div>
+      <div className="min-w-0">
+        <div className="text-xl font-semibold leading-none">{value}</div>
+        <div className="text-[11px] text-muted-foreground mt-1 truncate">{label}</div>
+      </div>
+    </div>
+  );
+}
+
 function ClinicListCard({
   facility,
   isDirect,
@@ -267,6 +287,7 @@ function ClinicListCard({
   billingLabel,
   primaryContactName,
   attention,
+  hasBillingContact,
   onOpen,
   onDelete,
 }: {
@@ -278,17 +299,32 @@ function ClinicListCard({
   billingLabel: string;
   primaryContactName: string | null;
   attention: string[];
+  hasBillingContact: boolean;
   onOpen: () => void;
   onDelete: () => void;
 }) {
   const pill = getEngagementPill(facility);
   const primaryAttention = attention[0];
+
+  // Choose primary CTA based on most urgent gap
+  let cta: { label: string; icon: any } = { label: 'Add Shift', icon: Plus };
+  if (isDirect && facility.generates_invoices !== false && !hasBillingContact) {
+    cta = { label: 'Add Contact', icon: UserPlus };
+  } else if (attention.includes('No rate set')) {
+    cta = { label: 'Set Rate', icon: DollarSign };
+  } else if (!nextDate) {
+    cta = { label: 'Add Shift', icon: Plus };
+  } else {
+    cta = { label: 'Send Confirmation', icon: Send };
+  }
+  const CtaIcon = cta.icon;
+
   return (
     <Card
-      className="cursor-pointer transition-colors hover:border-primary/40 group"
+      className="cursor-pointer transition-colors hover:border-primary/40 group flex flex-col"
       onClick={onOpen}
     >
-      <CardContent className="p-4 sm:p-5">
+      <CardContent className="p-4 sm:p-5 flex flex-col flex-1">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
             <h3 className="font-semibold text-sm sm:text-base truncate">{facility.name}</h3>
@@ -299,22 +335,6 @@ function ClinicListCard({
               </p>
             )}
           </div>
-          <div onClick={(e) => e.stopPropagation()}>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground opacity-60 group-hover:opacity-100">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-44">
-                <DropdownMenuItem onClick={onOpen}>Open clinic</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={onDelete}>
-                  <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
         </div>
 
         <div className="flex items-center gap-1.5 flex-wrap mt-3">
@@ -323,7 +343,7 @@ function ClinicListCard({
           </span>
         </div>
 
-        <dl className="mt-4 space-y-2 text-xs">
+        <dl className="mt-4 space-y-2 text-xs flex-1">
           <Row icon={CalendarDays} label="Next">
             {nextDate ? (
               <span>
@@ -354,11 +374,32 @@ function ClinicListCard({
         </dl>
 
         {primaryAttention && (
-          <div className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-medium text-amber-800 dark:text-amber-200 bg-amber-100/70 dark:bg-amber-950/40 border border-amber-200/70 dark:border-amber-900/50 rounded-full px-2 py-0.5">
-            <AlertTriangle className="h-3 w-3" /> {primaryAttention}
-            {attention.length > 1 && <span className="text-amber-700/70 dark:text-amber-300/70">+{attention.length - 1}</span>}
+          <div className="mt-4 flex items-center gap-2 text-[11px] font-medium text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/50 rounded-md px-2.5 py-1.5">
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">{primaryAttention}</span>
+            {attention.length > 1 && <span className="text-amber-700/70 dark:text-amber-300/70 ml-auto">+{attention.length - 1}</span>}
           </div>
         )}
+
+        <div className="mt-3 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+          <Button size="sm" className="flex-1" onClick={onOpen}>
+            <CtaIcon className="mr-1.5 h-3.5 w-3.5" /> {cta.label}
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="icon" variant="outline" className="h-9 w-9 shrink-0">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuItem onClick={onOpen}>Open clinic</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={onDelete}>
+                <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </CardContent>
     </Card>
   );
@@ -374,3 +415,4 @@ function Row({ icon: Icon, label, children }: { icon?: any; label: string; child
     </div>
   );
 }
+
