@@ -631,10 +631,10 @@ export function InvoiceEditPanel({
         </CardHeader>
         <CardContent className="px-3 pb-3 space-y-2">
           {readOnly ? (
-            <div className="grid grid-cols-3 gap-2 text-sm">
-              <div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm">
+              <div className="col-span-2 sm:col-span-1">
                 <Label className="text-xs text-muted-foreground">Invoice #</Label>
-                <p className="font-medium">{invoice.invoice_number}</p>
+                <p className="font-medium truncate">{invoice.invoice_number}</p>
               </div>
               <div>
                 <Label className="text-xs text-muted-foreground">Issued</Label>
@@ -647,18 +647,18 @@ export function InvoiceEditPanel({
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-3 gap-2">
-                <div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                <div className="col-span-2 sm:col-span-1">
                   <Label className="text-xs text-muted-foreground">Invoice #</Label>
-                  <Input value={invoiceNumber} onChange={e => setInvoiceNumber(e.target.value)} className="h-8 text-sm" />
+                  <Input value={invoiceNumber} onChange={e => setInvoiceNumber(e.target.value)} className="h-9 text-sm" />
                 </div>
                 <div>
                   <Label className="text-xs text-muted-foreground">Issued</Label>
-                  <Input type="date" value={invoiceDate} onChange={e => setInvoiceDate(e.target.value)} className="h-8 text-sm" />
+                  <Input type="date" value={invoiceDate} onChange={e => setInvoiceDate(e.target.value)} className="h-9 text-sm" />
                 </div>
                 <div data-due-date-field>
                   <Label className="text-xs text-muted-foreground">Due</Label>
-                  <Input id="invoice-due-date-input" type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="h-8 text-sm" />
+                  <Input id="invoice-due-date-input" type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="h-9 text-sm" />
                 </div>
               </div>
               {isAuto && (
