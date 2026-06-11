@@ -164,11 +164,25 @@ export function MobileInsightsPage() {
           Monthly revenue
         </div>
         <div className="mobile-card p-3">
-          <MonthlyRevenueBars values={trend.map((t) => t.total)} />
+          <MonthlyRevenueBars
+            values={trend.map((t) => t.total)}
+            selectedIndex={selectedMonthIdx}
+            onSelect={(i) => setSelectedMonthIdx(i)}
+          />
           <div className="mt-2 grid grid-cols-6 gap-1 text-center text-[10px] text-[hsl(var(--m-text-muted))]">
-            {trend.map((t) => (
-              <div key={t.key}>{t.key.slice(5)}</div>
+            {trend.map((t, i) => (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => setSelectedMonthIdx(i)}
+                className={`py-0.5 rounded ${selectedMonthIdx === i ? "text-[hsl(var(--m-primary))] font-semibold" : ""}`}
+              >
+                {t.key.slice(5)}
+              </button>
             ))}
+          </div>
+          <div className="mt-1 text-center text-[10px] text-[hsl(var(--m-text-muted))]">
+            Tap a bar to see that month's invoices
           </div>
         </div>
       </section>
