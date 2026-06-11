@@ -220,7 +220,7 @@ function InvoiceDetailPageInner() {
   );
 
   return (
-    <div className="pb-32 sm:pb-20">
+    <div className="pb-40 sm:pb-20">
       {/* Header */}
       <div className="flex items-center gap-2 sm:gap-3 mb-3 print:hidden">
         <Button variant="ghost" size="icon" onClick={() => navigate('/invoices')} className="shrink-0 h-10 w-10" aria-label="Back to invoices">
