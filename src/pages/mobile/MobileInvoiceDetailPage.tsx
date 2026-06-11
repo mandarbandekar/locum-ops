@@ -176,7 +176,7 @@ export function MobileInvoiceDetailPage() {
       />
 
 
-      <div className="px-4 mt-1 space-y-3">
+      <div className="m-page">
         {/* Hero: amount + clinic + status */}
         <section className="mobile-card p-4">
           <div className="flex items-start justify-between gap-3">
