@@ -5,7 +5,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Plus, MapPin, AlertTriangle, Mail, User, Building2, Search, CalendarDays, MoreVertical, Trash2 } from 'lucide-react';
+import { Plus, MapPin, AlertTriangle, Mail, User, Building2, Search, CalendarDays, MoreVertical, Trash2, Send, FileText, UserPlus, DollarSign } from 'lucide-react';
 import { AddFacilityDialog } from '@/components/AddFacilityDialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
