@@ -18,6 +18,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useIsMobileShell } from '@/hooks/useIsMobileShell';
 
 interface InvoiceActionBarProps {
   invoice: any;
@@ -274,8 +275,12 @@ export function InvoiceActionBar({
     </DropdownMenu>
   );
 
+  const isMobileShell = useIsMobileShell();
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 print:hidden">
+    <div
+      className="fixed left-0 right-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 print:hidden"
+      style={isMobileShell ? { bottom: 'calc(var(--m-bottom-nav-h) + var(--m-safe-bottom))' } : { bottom: 0 }}
+    >
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2 sm:py-3 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 sm:gap-3">
         <div className="w-full sm:w-auto flex items-center min-w-0">
           {renderStatusChip()}
