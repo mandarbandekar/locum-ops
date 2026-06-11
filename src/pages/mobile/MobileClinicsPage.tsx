@@ -46,7 +46,7 @@ export function MobileClinicsPage() {
     <div>
       <MobilePageHeader title="Clinics" subtitle="Add and manage your clinics." />
 
-      <div className="m-gutter">
+      <div className="m-page">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[hsl(var(--m-text-muted))]" />
           <input
@@ -57,43 +57,43 @@ export function MobileClinicsPage() {
             style={{ fontSize: "var(--m-text-md)" }}
           />
         </div>
-      </div>
 
-      <div className="m-gutter mt-4 space-y-2">
-        {dataLoading ? (
-          <MobileListSkeleton count={5} lines={2} />
-        ) : list.length === 0 ? (
-          q.trim() ? (
-            <MobileEmptyState
-              icon={Search}
-              title="No matches"
-              description={`No clinics match "${q.trim()}".`}
-            />
-          ) : (
-            <MobileEmptyState
-              icon={Building2}
-              title="No clinics yet"
-              description="Add your first clinic to start tracking shifts, contacts, and rates."
-              actionLabel="Add clinic"
-              onAction={() => setAddOpen(true)}
-            />
-          )
-        ) : null}
-        {list.map(({ f, refLabel, hasNext }) => (
-          <button
-            key={f.id}
-            onClick={() => navigate(`/facilities/${f.id}`)}
-            className="mobile-card m-press w-full text-left p-4 min-h-[64px]"
-          >
-            <div className="font-semibold text-[hsl(var(--m-text))]" style={{ fontSize: "var(--m-text-md)" }}>{f.name}</div>
-            {f.address && (
-              <div className="m-caption mt-0.5 truncate">{f.address}</div>
-            )}
-            <div className={"mt-1 truncate " + (hasNext ? "text-[hsl(var(--m-primary))]" : "text-[hsl(var(--m-text-muted))]")} style={{ fontSize: "var(--m-text-xs)" }}>
-              {refLabel}
-            </div>
-          </button>
-        ))}
+        <div className="flex flex-col gap-2">
+          {dataLoading ? (
+            <MobileListSkeleton count={5} lines={2} />
+          ) : list.length === 0 ? (
+            q.trim() ? (
+              <MobileEmptyState
+                icon={Search}
+                title="No matches"
+                description={`No clinics match "${q.trim()}".`}
+              />
+            ) : (
+              <MobileEmptyState
+                icon={Building2}
+                title="No clinics yet"
+                description="Add your first clinic to start tracking shifts, contacts, and rates."
+                actionLabel="Add clinic"
+                onAction={() => setAddOpen(true)}
+              />
+            )
+          ) : null}
+          {list.map(({ f, refLabel, hasNext }) => (
+            <button
+              key={f.id}
+              onClick={() => navigate(`/facilities/${f.id}`)}
+              className="mobile-card m-press w-full text-left p-4 min-h-[64px]"
+            >
+              <div className="font-semibold text-[hsl(var(--m-text))]" style={{ fontSize: "var(--m-text-md)" }}>{f.name}</div>
+              {f.address && (
+                <div className="m-caption mt-0.5 truncate">{f.address}</div>
+              )}
+              <div className={"mt-1 truncate " + (hasNext ? "text-[hsl(var(--m-primary))]" : "text-[hsl(var(--m-text-muted))]")} style={{ fontSize: "var(--m-text-xs)" }}>
+                {refLabel}
+              </div>
+            </button>
+          ))}
+        </div>
       </div>
 
       <AddFacilityDialog open={addOpen} onOpenChange={setAddOpen} />
