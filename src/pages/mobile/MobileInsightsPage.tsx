@@ -88,6 +88,27 @@ export function MobileInsightsPage() {
     return months;
   }, [shifts]);
 
+  const selectedMonth = selectedMonthIdx != null ? trend[selectedMonthIdx] : null;
+  const monthDetail = useMemo(() => {
+    if (!selectedMonth) return null;
+    const key = selectedMonth.key;
+    const monthInvoices = invoices
+      .filter((i) => (i.period_start || "").startsWith(key) || (i.invoice_date || "").startsWith(key))
+      .sort((a, b) => (b.invoice_date || "").localeCompare(a.invoice_date || ""));
+    let totalBilled = 0, totalPaid = 0, totalOutstanding = 0;
+    monthInvoices.forEach((i) => {
+      totalBilled += Number(i.total_amount || 0);
+      const bal = Number(i.balance_due || 0);
+      totalOutstanding += bal;
+      totalPaid += Math.max(0, Number(i.total_amount || 0) - bal);
+    });
+    const shiftRevenue = shifts
+      .filter((s) => s.start_datetime.startsWith(key))
+      .reduce((sum, s) => sum + (Number(s.rate_applied) || 0) + Number(s.overtime_hours || 0) * Number(s.overtime_rate || 0), 0);
+    return { key, monthInvoices, totalBilled, totalPaid, totalOutstanding, shiftRevenue };
+  }, [selectedMonth, invoices, shifts]);
+
+
   const topClinics = useMemo(() => {
     const map = new Map<string, number>();
     monthShifts.forEach((s) => map.set(s.facility_id, (map.get(s.facility_id) ?? 0) + (Number(s.rate_applied) || 0)));
