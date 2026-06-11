@@ -37,10 +37,6 @@ function MonthlyRevenueBars({ values }: { values: number[] }) {
   );
 }
 
-function fmt(n: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n || 0);
-}
-
 export function MobileInsightsPage() {
   const { invoices, facilities, shifts, payments, getComputedInvoiceStatus, dataLoading } = useData();
   const { expenses, loading: expensesLoading } = useExpenses();
@@ -125,10 +121,10 @@ export function MobileInsightsPage() {
 
       <section className="px-5 mt-5">
         <div className="text-[11px] uppercase tracking-wide font-semibold text-[hsl(var(--m-text-muted))] mb-2">
-          Revenue trend
+          Monthly revenue
         </div>
         <div className="mobile-card p-3">
-          <Sparkline values={trend.map((t) => t.total)} />
+          <MonthlyRevenueBars values={trend.map((t) => t.total)} />
           <div className="mt-2 grid grid-cols-6 gap-1 text-center text-[10px] text-[hsl(var(--m-text-muted))]">
             {trend.map((t) => (
               <div key={t.key}>{t.key.slice(5)}</div>
