@@ -206,7 +206,7 @@ function RecentList({ facilityId }: { facilityId: string }) {
     .forEach((i) => {
       items.push({
         id: 'i-' + i.id,
-        when: +new Date(i.created_at || Date.now()),
+        when: +new Date(i.invoice_date || i.period_end || Date.now()),
         label: `Invoice ${i.invoice_number || ''}`.trim(),
         sub: i.status,
       });
