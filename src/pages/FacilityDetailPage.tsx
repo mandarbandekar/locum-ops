@@ -199,10 +199,10 @@ function DesktopFacilityDetailPage() {
           open={showShiftDialog}
           onOpenChange={setShowShiftDialog}
           facilities={facilities}
+          shifts={shifts}
           terms={terms}
-          defaultFacilityId={facility.id}
-          allShifts={shifts}
-          onSubmit={(s) => { addShift(s); setShowShiftDialog(false); toast.success('Shift added'); }}
+          lockedFacilityId={facility.id}
+          onSave={(s) => { addShift(s); setShowShiftDialog(false); toast.success('Shift added'); }}
         />
       )}
     </div>
