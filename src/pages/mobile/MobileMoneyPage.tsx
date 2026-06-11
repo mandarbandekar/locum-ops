@@ -384,9 +384,9 @@ export function MobileMoneyPage() {
     <div>
       <MobilePageHeader title="Money" subtitle="Invoices, expenses, and mileage." />
 
-      <div className="px-5 grid grid-cols-3 gap-2">{dataLoading ? <div className="col-span-3"><MobileMetricsSkeleton count={3} cols={3} /></div> : topMetrics}</div>
+      <div className="m-page">
+        <div className="grid grid-cols-3 gap-2">{dataLoading ? <div className="col-span-3"><MobileMetricsSkeleton count={3} cols={3} /></div> : topMetrics}</div>
 
-      <div className="px-5 mt-4">
         <MobileSegmentedControl
           value={tab}
           onChange={switchTab}
@@ -396,10 +396,10 @@ export function MobileMoneyPage() {
             { value: "mileage", label: "Mileage" },
           ]}
         />
-      </div>
 
-      {tab === "invoices" && (
-        <div className="px-5 mt-4 space-y-4">
+        {tab === "invoices" && (
+          <div className="flex flex-col gap-4">
+
           {dataLoading ? (
             <MobileListSkeleton count={4} lines={2} />
           ) : invoices.length === 0 ? (
@@ -502,80 +502,81 @@ export function MobileMoneyPage() {
         </div>
       )}
 
-      {tab === "expenses" && (
-        <div className="px-5 mt-4 space-y-2">
-          {expensesLoading ? (
-            <MobileListSkeleton count={5} lines={2} />
-          ) : expenses.length === 0 ? (
-            <MobileEmptyState
-              icon={Receipt}
-              title="No expenses yet"
-              description="Track receipts, software, and supplies for clean books at tax time."
-              actionLabel="Add expense"
-              onAction={() => setAddExpOpen(true)}
-            />
-          ) : (
-            expenses.slice(0, 50).map((e) => (
-              <div key={e.id} className="mobile-card p-4 flex items-start gap-3">
-                <div className="min-w-0 flex-1">
-                  <div className="text-[14px] font-semibold truncate">
-                    {e.description || e.subcategory || "Expense"}
+        {tab === "expenses" && (
+          <div className="flex flex-col gap-2">
+            {expensesLoading ? (
+              <MobileListSkeleton count={5} lines={2} />
+            ) : expenses.length === 0 ? (
+              <MobileEmptyState
+                icon={Receipt}
+                title="No expenses yet"
+                description="Track receipts, software, and supplies for clean books at tax time."
+                actionLabel="Add expense"
+                onAction={() => setAddExpOpen(true)}
+              />
+            ) : (
+              expenses.slice(0, 50).map((e) => (
+                <div key={e.id} className="mobile-card p-4 flex items-start gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[14px] font-semibold truncate">
+                      {e.description || e.subcategory || "Expense"}
+                    </div>
+                    <div className="text-[12px] text-[hsl(var(--m-text-muted))]">
+                      {new Date(e.expense_date).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      })}{" "}
+                      · {e.category || "Uncategorized"}
+                    </div>
                   </div>
-                  <div className="text-[12px] text-[hsl(var(--m-text-muted))]">
-                    {new Date(e.expense_date).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                    })}{" "}
-                    · {e.category || "Uncategorized"}
-                  </div>
-                </div>
-                <div className="text-[14px] font-semibold">
-                  {fmt(e.amount_cents / 100)}
-                </div>
-              </div>
-            ))
-          )}
-          <MobileFab label="Add expense" onClick={() => setAddExpOpen(true)} />
-        </div>
-      )}
-
-      {tab === "mileage" && (
-        <div className="px-5 mt-4 space-y-2">
-          {expensesLoading ? (
-            <MobileListSkeleton count={3} lines={2} />
-          ) : draftMileageExpenses.length === 0 ? (
-            <MobileEmptyState
-              icon={Car}
-              title="All caught up"
-              description="No mileage trips need confirmation right now."
-            />
-          ) : (
-            draftMileageExpenses.map((e) => {
-              const fac = facilities.find((f) => f.id === e.facility_id);
-              return (
-                <div key={e.id} className="mobile-card p-4">
                   <div className="text-[14px] font-semibold">
-                    {fac?.name ?? "Trip"} → Home
+                    {fmt(e.amount_cents / 100)}
                   </div>
-                  <div className="text-[12px] text-[hsl(var(--m-text-muted))] mt-0.5">
-                    {Number(e.mileage_miles || 0).toFixed(1)} miles ·{" "}
-                    {new Date(e.expense_date).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                    })}
-                  </div>
-                  <button
-                    onClick={() => confirmMileage(e.id)}
-                    className="mt-3 w-full h-10 rounded-full bg-[hsl(var(--m-primary))] text-[hsl(var(--m-primary-fg))] font-semibold text-[13px] inline-flex items-center justify-center gap-1.5"
-                  >
-                    <Check className="h-4 w-4" /> Confirm mileage
-                  </button>
                 </div>
-              );
-            })
-          )}
-        </div>
-      )}
+              ))
+            )}
+            <MobileFab label="Add expense" onClick={() => setAddExpOpen(true)} />
+          </div>
+        )}
+
+        {tab === "mileage" && (
+          <div className="flex flex-col gap-2">
+            {expensesLoading ? (
+              <MobileListSkeleton count={3} lines={2} />
+            ) : draftMileageExpenses.length === 0 ? (
+              <MobileEmptyState
+                icon={Car}
+                title="All caught up"
+                description="No mileage trips need confirmation right now."
+              />
+            ) : (
+              draftMileageExpenses.map((e) => {
+                const fac = facilities.find((f) => f.id === e.facility_id);
+                return (
+                  <div key={e.id} className="mobile-card p-4">
+                    <div className="text-[14px] font-semibold">
+                      {fac?.name ?? "Trip"} → Home
+                    </div>
+                    <div className="text-[12px] text-[hsl(var(--m-text-muted))] mt-0.5">
+                      {Number(e.mileage_miles || 0).toFixed(1)} miles ·{" "}
+                      {new Date(e.expense_date).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </div>
+                    <button
+                      onClick={() => confirmMileage(e.id)}
+                      className="mt-3 w-full h-10 rounded-full bg-[hsl(var(--m-primary))] text-[hsl(var(--m-primary-fg))] font-semibold text-[13px] inline-flex items-center justify-center gap-1.5"
+                    >
+                      <Check className="h-4 w-4" /> Confirm mileage
+                    </button>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
+      </div>
 
       {tab === "invoices" && (
         <MobileFab

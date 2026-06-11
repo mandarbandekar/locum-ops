@@ -54,7 +54,7 @@ export function MobileInvoiceDetailPage() {
     return (
       <div>
         <MobilePageHeader title="Invoice" onBack={() => navigate(-1)} showProfile={false} compact />
-        <div className="px-4 mt-2 space-y-3">
+        <div className="m-page">
           <div className="mobile-card p-4 space-y-3">
             <Skeleton h={10} w={80} />
             <Skeleton h={28} w="60%" />
@@ -176,7 +176,7 @@ export function MobileInvoiceDetailPage() {
       />
 
 
-      <div className="px-4 mt-1 space-y-3">
+      <div className="m-page">
         {/* Hero: amount + clinic + status */}
         <section className="mobile-card p-4">
           <div className="flex items-start justify-between gap-3">

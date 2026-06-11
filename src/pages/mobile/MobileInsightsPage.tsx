@@ -123,20 +123,20 @@ export function MobileInsightsPage() {
     return (
       <div>
         <MobilePageHeader title="Insights" subtitle="See how the business is performing." />
-        <div className="px-5 mt-3">
+        <div className="m-page">
           <MobileMetricsSkeleton count={4} />
-        </div>
-        <div className="px-5 mt-5">
-          <Skeleton h={10} w={90} className="mb-2" />
-          <div className="mobile-card p-3"><Skeleton h={80} /></div>
-        </div>
-        <div className="px-5 mt-5">
-          <Skeleton h={10} w={90} className="mb-2" />
-          <div className="mobile-card p-4 space-y-3">
-            <Skeleton h={12} w="70%" />
-            <Skeleton h={12} w="55%" />
-            <Skeleton h={12} w="60%" />
-          </div>
+          <section className="m-section">
+            <Skeleton h={10} w={90} className="mb-2" />
+            <div className="mobile-card p-3"><Skeleton h={80} /></div>
+          </section>
+          <section className="m-section">
+            <Skeleton h={10} w={90} className="mb-2" />
+            <div className="mobile-card p-4 space-y-3">
+              <Skeleton h={12} w="70%" />
+              <Skeleton h={12} w="55%" />
+              <Skeleton h={12} w="60%" />
+            </div>
+          </section>
         </div>
       </div>
     );
@@ -146,76 +146,73 @@ export function MobileInsightsPage() {
     <div>
       <MobilePageHeader title="Insights" subtitle="See how the business is performing." />
 
-      <div className="px-5">
-        <span className="inline-flex items-center px-3 py-1 rounded-full bg-[hsl(var(--m-card))] border border-[hsl(var(--m-border))] text-[12px] font-medium text-[hsl(var(--m-text-muted))]">
-          This month
-        </span>
-      </div>
-
-      <div className="px-5 mt-3 grid grid-cols-2 gap-3">
-        <MobileMetricCard label="Revenue" value={fmt(revenue)} tone="primary" />
-        <MobileMetricCard label="Paid" value={fmt(paid)} tone="default" />
-        <MobileMetricCard label="Outstanding" value={fmt(outstanding)} tone="warning" />
-        <MobileMetricCard label="Expenses" value={fmt(monthExp)} />
-      </div>
-
-      <section className="px-5 mt-5">
-        <div className="text-[11px] uppercase tracking-wide font-semibold text-[hsl(var(--m-text-muted))] mb-2">
-          Monthly revenue
+      <div className="m-page">
+        <div>
+          <span className="inline-flex items-center px-3 py-1 rounded-full bg-[hsl(var(--m-card))] border border-[hsl(var(--m-border))] text-[12px] font-medium text-[hsl(var(--m-text-muted))]">
+            This month
+          </span>
         </div>
-        <div className="mobile-card p-3">
-          <MonthlyRevenueBars
-            values={trend.map((t) => t.total)}
-            selectedIndex={selectedMonthIdx}
-            onSelect={(i) => setSelectedMonthIdx(i)}
-          />
-          <div className="mt-2 grid grid-cols-6 gap-1 text-center text-[10px] text-[hsl(var(--m-text-muted))]">
-            {trend.map((t, i) => (
-              <button
-                key={t.key}
-                type="button"
-                onClick={() => setSelectedMonthIdx(i)}
-                className={`py-0.5 rounded ${selectedMonthIdx === i ? "text-[hsl(var(--m-primary))] font-semibold" : ""}`}
-              >
-                {t.key.slice(5)}
-              </button>
-            ))}
-          </div>
-          <div className="mt-1 text-center text-[10px] text-[hsl(var(--m-text-muted))]">
-            Tap a bar to see that month's invoices
-          </div>
-        </div>
-      </section>
 
-      <section className="px-5 mt-5">
-        <div className="text-[11px] uppercase tracking-wide font-semibold text-[hsl(var(--m-text-muted))] mb-2">
-          Top clinics
+        <div className="grid grid-cols-2 gap-3">
+          <MobileMetricCard label="Revenue" value={fmt(revenue)} tone="primary" />
+          <MobileMetricCard label="Paid" value={fmt(paid)} tone="default" />
+          <MobileMetricCard label="Outstanding" value={fmt(outstanding)} tone="warning" />
+          <MobileMetricCard label="Expenses" value={fmt(monthExp)} />
         </div>
-        <div className="mobile-card divide-y divide-[hsl(var(--m-border))]">
-          {topClinics.length === 0 ? (
-            <div className="p-5 text-center text-[13px] text-[hsl(var(--m-text-muted))]">
-              No revenue yet this month. Completed shifts will show up here.
+
+        <section className="m-section">
+          <div className="m-section-label">Monthly revenue</div>
+          <div className="mobile-card p-3">
+            <MonthlyRevenueBars
+              values={trend.map((t) => t.total)}
+              selectedIndex={selectedMonthIdx}
+              onSelect={(i) => setSelectedMonthIdx(i)}
+            />
+            <div className="mt-2 grid grid-cols-6 gap-1 text-center text-[10px] text-[hsl(var(--m-text-muted))]">
+              {trend.map((t, i) => (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => setSelectedMonthIdx(i)}
+                  className={`py-0.5 rounded ${selectedMonthIdx === i ? "text-[hsl(var(--m-primary))] font-semibold" : ""}`}
+                >
+                  {t.key.slice(5)}
+                </button>
+              ))}
             </div>
-          ) : (
-            topClinics.map(({ facility, total }) => (
-              <div key={facility!.id} className="p-4 flex items-center justify-between">
-                <div className="text-[14px] font-medium truncate pr-3">{facility!.name}</div>
-                <div className="text-[14px] font-semibold">{fmt(total)}</div>
-              </div>
-            ))
-          )}
-        </div>
-      </section>
+            <div className="mt-1 text-center text-[10px] text-[hsl(var(--m-text-muted))]">
+              Tap a bar to see that month's invoices
+            </div>
+          </div>
+        </section>
 
-      <section className="px-5 mt-5 mb-2">
-        <div className="text-[11px] uppercase tracking-wide font-semibold text-[hsl(var(--m-text-muted))] mb-2">
-          Mileage
-        </div>
-        <div className="mobile-card p-4">
-          <div className="font-semibold tabular-nums" style={{ fontSize: "var(--m-text-2xl)" }}>{Math.round(monthMiles)} mi</div>
-          <div className="m-caption mt-0.5">This month</div>
-        </div>
-      </section>
+        <section className="m-section">
+          <div className="m-section-label">Top clinics</div>
+          <div className="mobile-card divide-y divide-[hsl(var(--m-border))]">
+            {topClinics.length === 0 ? (
+              <div className="p-5 text-center text-[13px] text-[hsl(var(--m-text-muted))]">
+                No revenue yet this month. Completed shifts will show up here.
+              </div>
+            ) : (
+              topClinics.map(({ facility, total }) => (
+                <div key={facility!.id} className="p-4 flex items-center justify-between">
+                  <div className="text-[14px] font-medium truncate pr-3">{facility!.name}</div>
+                  <div className="text-[14px] font-semibold">{fmt(total)}</div>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
+
+        <section className="m-section">
+          <div className="m-section-label">Mileage</div>
+          <div className="mobile-card p-4">
+            <div className="font-semibold tabular-nums" style={{ fontSize: "var(--m-text-2xl)" }}>{Math.round(monthMiles)} mi</div>
+            <div className="m-caption mt-0.5">This month</div>
+          </div>
+        </section>
+      </div>
+
 
       <Sheet open={!!selectedMonth} onOpenChange={(o) => !o && setSelectedMonthIdx(null)}>
         <SheetContent side="bottom" className="rounded-t-2xl max-h-[85vh] overflow-y-auto p-0 bg-[hsl(var(--m-bg))] border-[hsl(var(--m-border))]">

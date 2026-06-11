@@ -183,80 +183,80 @@ export function MobileSchedulePage() {
     <div>
       <MobilePageHeader title="Schedule" subtitle="Tap a date to see that day's shift." />
 
-      {/* Legend */}
-      <div className="px-5 mt-1 flex items-center gap-4 overflow-x-auto no-scrollbar pb-1">
-        {legend.map((l) => (
-          <div key={l.status} className="flex items-center gap-1.5 shrink-0">
-            <span className={cn("h-2.5 w-2.5 rounded-full", DOT_CLASS[l.status])} />
-            <span className="text-[12px] text-[hsl(var(--m-text))]">{l.label}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Month nav */}
-      <div className="m-gutter mt-3 flex items-center justify-between">
-        <button
-          onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}
-          aria-label="Previous month"
-          className="m-tap m-press rounded-full flex items-center justify-center text-[hsl(var(--m-text-muted))]"
-        >
-          ‹
-        </button>
-        <div className="font-semibold text-[hsl(var(--m-text))]" style={{ fontSize: "var(--m-text-md)" }}>
-          {cursor.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
-        </div>
-        <button
-          onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}
-          aria-label="Next month"
-          className="m-tap m-press rounded-full flex items-center justify-center text-[hsl(var(--m-text-muted))]"
-        >
-          ›
-        </button>
-      </div>
-
-      {/* Calendar grid */}
-      <div className="px-3 mt-2">
-        <div className="grid grid-cols-7 text-[11px] font-semibold text-[hsl(var(--m-text-muted))] mb-1">
-          {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
-            <div key={i} className="h-7 flex items-center justify-center">{d}</div>
+      <div className="m-page">
+        {/* Legend */}
+        <div className="flex items-center gap-4 overflow-x-auto no-scrollbar -mx-1 px-1 pb-1">
+          {legend.map((l) => (
+            <div key={l.status} className="flex items-center gap-1.5 shrink-0">
+              <span className={cn("h-2.5 w-2.5 rounded-full", DOT_CLASS[l.status])} />
+              <span className="text-[12px] text-[hsl(var(--m-text))]">{l.label}</span>
+            </div>
           ))}
         </div>
-        <div className="grid grid-cols-7 gap-y-1">
-          {cells.map(({ date, inMonth }) => {
-            const ymd = ymdLocal(date);
-            const status = statusByDay.get(ymd);
-            const isToday = ymd === todayYmd;
-            const isSelected = ymd === selected;
-            return (
-              <button
-                key={ymd}
-                onClick={() => setSelected(ymd)}
-                className={cn("h-11 flex items-center justify-center m-press", !inMonth && "opacity-30")}
-                aria-label={date.toDateString()}
-                aria-pressed={isSelected}
-              >
-                <span
-                  className={cn(
-                    "h-9 w-9 rounded-full inline-flex items-center justify-center text-[14px]",
-                    status ? FILLED_CLASS[status] : "text-[hsl(var(--m-text))]",
-                    isToday && !status && "underline underline-offset-4 decoration-2",
-                    isSelected && "ring-2 ring-offset-2 ring-offset-[hsl(var(--m-bg))] ring-[hsl(var(--m-primary))]"
-                  )}
-                >
-                  {date.getDate()}
-                </span>
-              </button>
-            );
-          })}
+
+        {/* Month nav */}
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}
+            aria-label="Previous month"
+            className="m-tap m-press rounded-full flex items-center justify-center text-[hsl(var(--m-text-muted))]"
+          >
+            ‹
+          </button>
+          <div className="font-semibold text-[hsl(var(--m-text))]" style={{ fontSize: "var(--m-text-md)" }}>
+            {cursor.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+          </div>
+          <button
+            onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}
+            aria-label="Next month"
+            className="m-tap m-press rounded-full flex items-center justify-center text-[hsl(var(--m-text-muted))]"
+          >
+            ›
+          </button>
         </div>
-      </div>
 
-      {/* Selected-day panel header */}
-      <div className="mt-4 border-t border-[hsl(var(--m-border))] bg-[hsl(var(--m-surface-2))]">
-        <div className="px-5 py-3 font-semibold text-[hsl(var(--m-text))]">{selectedLabel}</div>
-      </div>
+        {/* Calendar grid */}
+        <div>
+          <div className="grid grid-cols-7 text-[11px] font-semibold text-[hsl(var(--m-text-muted))] mb-1">
+            {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
+              <div key={i} className="h-7 flex items-center justify-center">{d}</div>
+            ))}
+          </div>
+          <div className="grid grid-cols-7 gap-y-1">
+            {cells.map(({ date, inMonth }) => {
+              const ymd = ymdLocal(date);
+              const status = statusByDay.get(ymd);
+              const isToday = ymd === todayYmd;
+              const isSelected = ymd === selected;
+              return (
+                <button
+                  key={ymd}
+                  onClick={() => setSelected(ymd)}
+                  className={cn("h-11 flex items-center justify-center m-press", !inMonth && "opacity-30")}
+                  aria-label={date.toDateString()}
+                  aria-pressed={isSelected}
+                >
+                  <span
+                    className={cn(
+                      "h-9 w-9 rounded-full inline-flex items-center justify-center text-[14px]",
+                      status ? FILLED_CLASS[status] : "text-[hsl(var(--m-text))]",
+                      isToday && !status && "underline underline-offset-4 decoration-2",
+                      isSelected && "ring-2 ring-offset-2 ring-offset-[hsl(var(--m-bg))] ring-[hsl(var(--m-primary))]"
+                    )}
+                  >
+                    {date.getDate()}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
-      <div className="px-5 mt-3 space-y-2 pb-28">
+        {/* Selected-day section */}
+        <section className="m-section">
+          <div className="m-section-label">{selectedLabel}</div>
+          <div className="flex flex-col gap-2 pb-24">
+
         {selectedBlocks.map((b) => {
           const meta = BLOCK_TYPES.find((t) => t.value === b.block_type);
           const startDate = new Date(b.start_datetime);
@@ -334,8 +334,12 @@ export function MobileSchedulePage() {
               </div>
             );
           })
-        )}
+          )}
+          </div>
+        </section>
       </div>
+
+
 
       <ShiftFormDialog
         open={addOpen}
