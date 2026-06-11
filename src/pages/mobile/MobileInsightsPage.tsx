@@ -58,6 +58,7 @@ function monthLabel(key: string) {
 export function MobileInsightsPage() {
   const { invoices, facilities, shifts, payments, getComputedInvoiceStatus, dataLoading } = useData();
   const { expenses, loading: expensesLoading } = useExpenses();
+  const [selectedMonthIdx, setSelectedMonthIdx] = useState<number | null>(null);
   const isLoading = dataLoading || expensesLoading;
 
   const monthKey = new Date().toISOString().slice(0, 7);
