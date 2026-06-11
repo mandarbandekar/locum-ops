@@ -64,7 +64,10 @@ export function MobileTodayPage() {
   // Needs attention
   const overdueInvoices = invoices.filter((i) => getComputedInvoiceStatus(i) === "overdue");
   const pendingMileage = expenses.filter((e) => e.is_auto_mileage && e.mileage_status === "draft");
-  const uncategorized = expenses.filter((e) => !e.category || e.category === "uncategorized");
+  // Only flag expenses with a truly missing category. "Uncategorized → Other"
+  // is an intentional bucket users can pick (e.g. dues, donations, taxes that
+  // don't fit a Schedule C line), so it shouldn't sit in Needs attention forever.
+  const uncategorized = expenses.filter((e) => !e.category || (e.category as string).trim() === "");
 
   const attention = [
     ...overdueInvoices.slice(0, 2).map((i) => {
