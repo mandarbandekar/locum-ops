@@ -11,7 +11,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge } from '@/components/StatusBadge';
-import { ArrowLeft, Plus, Trash2, Edit2, Save, Pencil, Check, X, Car, Users, FileText, CalendarDays, Receipt, Mail, Phone, CheckSquare } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Edit2, Save, Pencil, Check, X, Car, Users, FileText, CalendarDays, Receipt, Mail, Phone, CheckSquare, BookOpen, Wallet } from 'lucide-react';
+import { useClinicBrief } from '@/components/facilities/brief/useClinicBrief';
+import { NextShiftCard, NeedsAttentionCard, ThingsToRememberCard, PaymentSetupCard, KeyContactCard, RecentActivityCard } from '@/components/facilities/brief/BriefCards';
 import { Switch } from '@/components/ui/switch';
 import { FacilityContact, TermsSnapshot } from '@/types';
 import { generateId } from '@/lib/businessLogic';
@@ -104,15 +106,20 @@ function DesktopFacilityDetailPage() {
 
 
 
-      <Tabs defaultValue="contract">
+      <Tabs defaultValue="brief">
 
         <TabsList className="flex-wrap h-auto gap-1">
-          <TabsTrigger value="contract" className="gap-1.5"><FileText className="h-3.5 w-3.5" /> Clinic Overview</TabsTrigger>
-          <TabsTrigger value="people" className="gap-1.5"><Users className="h-3.5 w-3.5" /> People & Access ({facilityContacts.length})</TabsTrigger>
-          <TabsTrigger value="shifts" className="gap-1.5"><CalendarDays className="h-3.5 w-3.5" /> Shifts ({facilityShifts.length})</TabsTrigger>
+          <TabsTrigger value="brief" className="gap-1.5"><BookOpen className="h-3.5 w-3.5" /> Brief</TabsTrigger>
+          <TabsTrigger value="shifts" className="gap-1.5"><CalendarDays className="h-3.5 w-3.5" /> Schedule ({facilityShifts.length})</TabsTrigger>
+          <TabsTrigger value="invoices" className="gap-1.5"><Wallet className="h-3.5 w-3.5" /> Payment</TabsTrigger>
+          <TabsTrigger value="people" className="gap-1.5"><Users className="h-3.5 w-3.5" /> Notes ({facilityContacts.length})</TabsTrigger>
+          <TabsTrigger value="contract" className="gap-1.5"><FileText className="h-3.5 w-3.5" /> Docs</TabsTrigger>
           <TabsTrigger value="confirmations" className="gap-1.5"><CheckSquare className="h-3.5 w-3.5" /> Confirmations</TabsTrigger>
-          <TabsTrigger value="invoices" className="gap-1.5"><Receipt className="h-3.5 w-3.5" /> Invoices ({facilityInvoices.length})</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="brief" className="mt-4">
+          <BriefTab facilityId={facility.id} />
+        </TabsContent>
 
         <TabsContent value="contract" className="mt-4">
           <ContractTab
@@ -152,6 +159,31 @@ function DesktopFacilityDetailPage() {
           <InvoicesTab invoices={facilityInvoices} onNavigate={(iid) => navigate(`/invoices/${iid}`)} />
         </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+function BriefTab({ facilityId }: { facilityId: string }) {
+  const navigate = useNavigate();
+  const brief = useClinicBrief(facilityId);
+  if (!brief) return null;
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="lg:col-span-2 space-y-4">
+        <NextShiftCard brief={brief} onViewSchedule={() => {
+          const url = new URL(window.location.href);
+          url.searchParams.set('tab', 'shifts');
+          // simple anchor: scroll to top so the rerender shows the tab
+          navigate(`/facilities/${facilityId}`);
+        }} />
+        <NeedsAttentionCard items={brief.attention} />
+        <ThingsToRememberCard brief={brief} />
+        <RecentActivityCard brief={brief} />
+      </div>
+      <div className="space-y-4">
+        <PaymentSetupCard brief={brief} />
+        <KeyContactCard brief={brief} />
+      </div>
     </div>
   );
 }
