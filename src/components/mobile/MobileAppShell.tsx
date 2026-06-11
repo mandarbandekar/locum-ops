@@ -1,6 +1,7 @@
 import { ReactNode, useEffect } from "react";
 import { useTheme } from "next-themes";
 import { MobileBottomNav } from "./MobileBottomNav";
+import { useAutoRefreshOnDeploy } from "@/hooks/useAutoRefreshOnDeploy";
 
 export function MobileAppShell({ children }: { children: ReactNode }) {
   // Mobile app is light-mode only for all users. Force light theme on mount
