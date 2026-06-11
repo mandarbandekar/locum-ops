@@ -408,15 +408,193 @@ export default function AddExpenseDialog({ open, onOpenChange, onSubmit, onEdit,
   );
 
   if (isMobile) {
+    const mobileBody = (
+      <div className="space-y-3.5">
+        {/* Amount – hero field */}
+        <div>
+          <Label className="text-xs font-medium text-muted-foreground">Amount</Label>
+          <div className="relative mt-1">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-2xl font-semibold text-muted-foreground">$</span>
+            <Input
+              type="number"
+              inputMode="decimal"
+              placeholder="0.00"
+              value={amountStr}
+              onChange={e => setAmountStr(e.target.value)}
+              min={0}
+              step="0.01"
+              disabled={isMileage || isHomeOffice}
+              className="h-14 pl-8 text-2xl font-semibold"
+            />
+          </div>
+          {isMeals && amountStr && (
+            <p className="text-xs text-muted-foreground mt-1">50% deductible: ${((parseFloat(amountStr) || 0) * 0.5).toFixed(2)}</p>
+          )}
+        </div>
+
+        {/* Category */}
+        <div>
+          <Label className="text-xs font-medium text-muted-foreground">Category</Label>
+          <Select value={subcategoryKey} onValueChange={setSubcategoryKey}>
+            <SelectTrigger className="h-11 mt-1">
+              <SelectValue placeholder="Select a category…" />
+            </SelectTrigger>
+            <SelectContent className="max-h-[300px]">
+              {EXPENSE_CATEGORIES.map(group => (
+                <SelectGroup key={group.key}>
+                  <SelectLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    {group.label}
+                  </SelectLabel>
+                  {group.subcategories.map(s => (
+                    <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>
+                  ))}
+                </SelectGroup>
+              ))}
+            </SelectContent>
+          </Select>
+          {sub && (
+            <div className="flex items-center gap-1.5 mt-1.5">
+              <Badge variant="outline" className="text-[10px]">
+                {getDeductibilityLabel(sub.deductibilityType)}
+              </Badge>
+              <p className="text-[11px] text-muted-foreground line-clamp-1">{sub.tooltip}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Conditional helpers for mileage / home office / prorate */}
+        {isMileage && (
+          <div>
+            <Label className="text-xs font-medium text-muted-foreground">Miles Driven</Label>
+            <Input type="number" inputMode="decimal" placeholder="e.g. 45" value={milesStr} onChange={e => setMilesStr(e.target.value)} min={0} step="0.1" className="h-11 mt-1" />
+            <p className="text-xs text-muted-foreground mt-1">
+              IRS rate: ${(config.irs_mileage_rate_cents / 100).toFixed(2)}/mile
+              {milesStr && ` → $${(calculatedCents! / 100).toFixed(2)}`}
+            </p>
+            {duplicateShiftMileage && (
+              <div className="mt-2 flex gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2.5 text-xs text-amber-900 dark:text-amber-200">
+                <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium">Possible duplicate</p>
+                  <p className="opacity-90">A shift-linked mileage entry already exists for {date}. Logging this manually may double-count your deduction.</p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        {isHomeOffice && (
+          <div>
+            <Label className="text-xs font-medium text-muted-foreground">Office Space (sq ft)</Label>
+            <Input type="number" inputMode="numeric" placeholder="e.g. 150" value={sqftStr} onChange={e => setSqftStr(e.target.value)} min={0} max={300} className="h-11 mt-1" />
+            <p className="text-xs text-muted-foreground mt-1">
+              ${(config.home_office_rate_cents / 100).toFixed(2)}/sq ft (max 300){sqftStr && ` → $${(calculatedCents! / 100).toFixed(2)}`}
+            </p>
+          </div>
+        )}
+        {isProrate && (
+          <div>
+            <Label className="text-xs font-medium text-muted-foreground">Business Use: {proratePercent}%</Label>
+            <Slider value={[proratePercent]} onValueChange={v => setProratePercent(v[0])} min={0} max={100} step={5} className="mt-3" />
+            {amountStr && calculatedCents !== null && (
+              <p className="text-xs text-muted-foreground mt-1">Deductible: ${(calculatedCents / 100).toFixed(2)}</p>
+            )}
+          </div>
+        )}
+
+        {/* Date + Clinic in two columns */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label className="text-xs font-medium text-muted-foreground">Date</Label>
+            <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="h-11 mt-1" />
+          </div>
+          <div>
+            <Label className="text-xs font-medium text-muted-foreground">Clinic</Label>
+            <Select value={facilityId} onValueChange={setFacilityId}>
+              <SelectTrigger className="h-11 mt-1">
+                <SelectValue placeholder="None" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                {facilities.map(f => (
+                  <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Description */}
+        <div>
+          <Label className="text-xs font-medium text-muted-foreground">Note <span className="opacity-60">(optional)</span></Label>
+          <Textarea placeholder="What was this for?" value={description} onChange={e => setDescription(e.target.value)} className="min-h-[56px] mt-1" />
+        </div>
+
+        {/* Receipts */}
+        <div>
+          <Label className="text-xs font-medium text-muted-foreground">Receipts <span className="opacity-60">(optional)</span></Label>
+          <MultiFileDropzone
+            files={receiptFiles}
+            onChange={setReceiptFiles}
+            accept="image/*,.pdf"
+            label="Add receipts"
+            hint="Images or PDFs"
+            existing={existingAttachments}
+            onRemoveExisting={removeExistingAttachment}
+            onViewExisting={viewExistingAttachment}
+            className="mt-1"
+          />
+        </div>
+
+        {/* Recurrence as segmented pills */}
+        {!isMileage && (
+          <div className="rounded-lg border p-3 space-y-2.5">
+            <div className="flex items-center gap-2">
+              <Repeat className="h-3.5 w-3.5 text-muted-foreground" />
+              <Label className="text-xs font-medium">Repeat</Label>
+            </div>
+            <div className="grid grid-cols-4 gap-1.5">
+              {[
+                { v: 'none', l: 'Once' },
+                { v: 'monthly', l: 'Monthly' },
+                { v: 'quarterly', l: 'Quarterly' },
+                { v: 'yearly', l: 'Yearly' },
+              ].map(opt => (
+                <button
+                  key={opt.v}
+                  type="button"
+                  onClick={() => setRecurrenceType(opt.v)}
+                  className={`h-9 rounded-md text-xs font-medium border transition-colors ${
+                    recurrenceType === opt.v
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-background text-foreground border-border hover:bg-muted'
+                  }`}
+                >
+                  {opt.l}
+                </button>
+              ))}
+            </div>
+            {recurrenceType !== 'none' && (
+              <Input type="date" value={recurrenceEndDate} onChange={e => setRecurrenceEndDate(e.target.value)} className="h-10" placeholder="End date (optional)" />
+            )}
+          </div>
+        )}
+      </div>
+    );
+
     return (
       <Drawer open={open} onOpenChange={onOpenChange} key={editingExpense?.id || 'new'}>
-        <DrawerContent className="max-h-[92vh] overflow-hidden">
-          <DrawerHeader className="pb-2 shrink-0">
-            <DrawerTitle>{isEditing ? 'Edit Expense' : 'Log Expense'}</DrawerTitle>
-            <DrawerDescription>Enter expense details below</DrawerDescription>
+        <DrawerContent className="max-h-[92vh] overflow-hidden flex flex-col">
+          <DrawerHeader className="pb-3 pt-2 shrink-0 text-left">
+            <DrawerTitle className="text-lg">{isEditing ? 'Edit Expense' : 'Log Expense'}</DrawerTitle>
+            <DrawerDescription className="text-xs">Enter expense details below</DrawerDescription>
           </DrawerHeader>
-          <div className="flex-1 overflow-y-auto px-4 pb-6 space-y-4">
-            {formBody}
+          <div className="flex-1 overflow-y-auto px-4 pb-4">
+            {mobileBody}
+          </div>
+          <div className="shrink-0 border-t bg-background px-4 pt-3 pb-[max(env(safe-area-inset-bottom),12px)]">
+            <Button className="w-full h-12 text-base" onClick={handleSubmit} disabled={saving || !subcategoryKey || !amountStr}>
+              {saving ? 'Saving…' : isEditing ? 'Save Changes' : 'Log Expense'}
+            </Button>
           </div>
         </DrawerContent>
       </Drawer>
