@@ -11,7 +11,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge } from '@/components/StatusBadge';
-import { ArrowLeft, Plus, Trash2, Edit2, Save, Pencil, Check, X, Car, Users, FileText, CalendarDays, Receipt, Mail, Phone, CheckSquare, BookOpen, Wallet } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Edit2, Save, Pencil, Check, X, Car, Users, FileText, CalendarDays, Receipt, Mail, Phone, CheckSquare, BookOpen, Wallet, ChevronRight, MapPin, Send, Star, MoreHorizontal } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { getEngagementPill } from '@/lib/engagementOptions';
+import { cn } from '@/lib/utils';
 import { useClinicBrief } from '@/components/facilities/brief/useClinicBrief';
 import { NextShiftCard, NeedsAttentionCard, ThingsToRememberCard, PaymentSetupCard, KeyContactCard, RecentActivityCard } from '@/components/facilities/brief/BriefCards';
 import { Switch } from '@/components/ui/switch';
@@ -80,33 +83,60 @@ function DesktopFacilityDetailPage() {
     toast.success('Rates saved');
   };
 
+  const [activeTab, setActiveTab] = useState('brief');
+  const [showShiftDialog, setShowShiftDialog] = useState(false);
+  const engagementPill = getEngagementPill(facility);
+  const engagementSecondary = (facility as any).source_name?.trim?.() && (facility.engagement_type || 'direct') === 'direct' ? null : null;
+
   return (
     <div>
-      <div className="flex items-center gap-2 sm:gap-3 mb-6 flex-wrap">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/facilities')} className="shrink-0">
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <EditableFacilityName
-          facility={facility}
-          onSave={(newName, newAddress, extras) => {
-            updateFacility({
-              ...facility,
-              name: newName,
-              address: newAddress,
-              ...(extras?.coords ? { facility_coordinates: extras.coords } : {}),
-              ...(extras?.timezone ? { timezone: extras.timezone } : {}),
-            });
-            toast.success(extras?.timezone ? `Clinic updated · timezone set to ${extras.timezone}` : 'Clinic updated');
-          }}
-        />
-        <StatusBadge status={facility.status} className="ml-1 sm:ml-3 shrink-0" />
-        <div className="flex-1" />
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3">
+        <button onClick={() => navigate('/facilities')} className="hover:text-foreground transition-colors">Clinics</button>
+        <ChevronRight className="h-3 w-3" />
+        <span className="text-foreground font-medium truncate">{facility.name}</span>
+      </nav>
+
+      {/* Header */}
+      <div className="flex items-start gap-4 mb-5 flex-wrap">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <EditableFacilityName
+              facility={facility}
+              onSave={(newName, newAddress, extras) => {
+                updateFacility({
+                  ...facility,
+                  name: newName,
+                  address: newAddress,
+                  ...(extras?.coords ? { facility_coordinates: extras.coords } : {}),
+                  ...(extras?.timezone ? { timezone: extras.timezone } : {}),
+                });
+                toast.success(extras?.timezone ? `Clinic updated · timezone set to ${extras.timezone}` : 'Clinic updated');
+              }}
+            />
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap mt-3">
+            <span className={cn('inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium', engagementPill.className)}>
+              {engagementPill.label}
+            </span>
+            {facility.timezone && (
+              <span className="text-[11px] text-muted-foreground">{facility.timezone}</span>
+            )}
+            <StatusBadge status={facility.status} />
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button size="sm" onClick={() => setShowShiftDialog(true)}>
+            <Plus className="mr-1 h-3.5 w-3.5" /> Add Shift
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => setActiveTab('confirmations')}>
+            <Send className="mr-1 h-3.5 w-3.5" /> Send Confirmation
+          </Button>
+        </div>
       </div>
 
-
-
-
-      <Tabs defaultValue="brief">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
 
         <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="brief" className="gap-1.5"><BookOpen className="h-3.5 w-3.5" /> Brief</TabsTrigger>
@@ -118,7 +148,7 @@ function DesktopFacilityDetailPage() {
         </TabsList>
 
         <TabsContent value="brief" className="mt-4">
-          <BriefTab facilityId={facility.id} />
+          <BriefTab facilityId={facility.id} onTab={setActiveTab} />
         </TabsContent>
 
         <TabsContent value="contract" className="mt-4">
@@ -159,34 +189,47 @@ function DesktopFacilityDetailPage() {
           <InvoicesTab invoices={facilityInvoices} onNavigate={(iid) => navigate(`/invoices/${iid}`)} />
         </TabsContent>
       </Tabs>
+
+      {showShiftDialog && (
+        <ShiftFormDialog
+          open={showShiftDialog}
+          onOpenChange={setShowShiftDialog}
+          facilities={facilities}
+          shifts={shifts}
+          terms={terms}
+          lockedFacilityId={facility.id}
+          onSave={(s) => { addShift(s); setShowShiftDialog(false); toast.success('Shift added'); }}
+        />
+      )}
     </div>
   );
 }
 
-function BriefTab({ facilityId }: { facilityId: string }) {
+function BriefTab({ facilityId, onTab }: { facilityId: string; onTab?: (t: string) => void }) {
   const navigate = useNavigate();
   const brief = useClinicBrief(facilityId);
   if (!brief) return null;
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-      <div className="lg:col-span-2 space-y-4">
-        <NextShiftCard brief={brief} onViewSchedule={() => {
-          const url = new URL(window.location.href);
-          url.searchParams.set('tab', 'shifts');
-          // simple anchor: scroll to top so the rerender shows the tab
-          navigate(`/facilities/${facilityId}`);
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <NextShiftCard step={1} brief={brief} onViewSchedule={() => onTab?.('shifts')} />
+        <NeedsAttentionCard step={2} items={brief.attention} onAction={(id) => {
+          if (id === 'billing_contact') onTab?.('invoices');
+          else if (id === 'rate') onTab?.('invoices');
+          else if (id === 'no_shifts') onTab?.('shifts');
         }} />
-        <NeedsAttentionCard items={brief.attention} />
-        <ThingsToRememberCard brief={brief} />
-        <RecentActivityCard brief={brief} />
       </div>
-      <div className="space-y-4">
-        <PaymentSetupCard brief={brief} />
-        <KeyContactCard brief={brief} />
+      <ThingsToRememberCard step={3} brief={brief} onEdit={() => onTab?.('people')} />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <PaymentSetupCard step={4} brief={brief} onEdit={() => onTab?.('invoices')} />
+        <KeyContactCard step={5} brief={brief} onEdit={() => onTab?.('people')} />
       </div>
+      <RecentActivityCard step={6} brief={brief} />
     </div>
   );
 }
+
+
 
 
 
