@@ -106,9 +106,30 @@ export function MobileSchedulePage() {
     return map;
   }, [credentialEvents, subscriptionEvents]);
 
-  // Priority: expired > confirmed > event > completed
+  // Bucket time blocks across every day they span
+  const blocksByDay = useMemo(() => {
+    const map = new Map<string, TimeBlock[]>();
+    for (const b of timeBlocks) {
+      const start = new Date(b.start_datetime);
+      const end = new Date(b.end_datetime || b.start_datetime);
+      const cur = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+      const last = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+      while (cur <= last) {
+        const k = ymdLocal(cur);
+        if (!map.has(k)) map.set(k, []);
+        map.get(k)!.push(b);
+        cur.setDate(cur.getDate() + 1);
+      }
+    }
+    return map;
+  }, [timeBlocks]);
+
+  // Priority: expired > confirmed > event > blocked > completed
   const statusByDay = useMemo(() => {
     const map = new Map<string, DayStatus>();
+    for (const [ymd] of blocksByDay.entries()) {
+      map.set(ymd, "blocked");
+    }
     for (const [ymd] of shiftsByDay.entries()) {
       map.set(ymd, ymd < todayYmd ? "completed" : "confirmed");
     }
@@ -116,10 +137,10 @@ export function MobileSchedulePage() {
       const hasExpired = list.some((x) => x.status === "expired");
       const existing = map.get(ymd);
       if (hasExpired) map.set(ymd, "expired");
-      else if (!existing) map.set(ymd, "event");
+      else if (!existing || existing === "blocked") map.set(ymd, existing === "blocked" ? "blocked" : "event");
     }
     return map;
-  }, [shiftsByDay, eventsByDay, todayYmd]);
+  }, [shiftsByDay, eventsByDay, blocksByDay, todayYmd]);
 
   function invoiceStatusFor(shiftId: string): string | null {
     const li = lineItems.find((l) => l.shift_id === shiftId);
