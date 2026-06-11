@@ -167,12 +167,19 @@ function DesktopFacilitiesPage() {
               />
             </div>
             <div className="flex flex-wrap gap-1.5">
-              <FilterChip label={`All (${stats.total})`} active={filter === 'all'} onClick={() => setFilter('all')} />
-              <FilterChip label={`Direct (${stats.direct})`} active={filter === 'direct'} onClick={() => setFilter('direct')} />
-              <FilterChip label={`Platform (${stats.platform})`} active={filter === 'platform'} onClick={() => setFilter('platform')} />
-              <FilterChip label={`Needs action (${stats.attention})`} active={filter === 'attention'} onClick={() => setFilter('attention')} tone="attention" />
+              <FilterChip label="All" active={filter === 'all'} onClick={() => setFilter('all')} />
+              <FilterChip label="Direct" active={filter === 'direct'} onClick={() => setFilter('direct')} />
+              <FilterChip label="Platform-paid" active={filter === 'platform'} onClick={() => setFilter('platform')} />
+              <FilterChip label="Needs action" active={filter === 'attention'} onClick={() => setFilter('attention')} tone="attention" />
               {hasArchived && <FilterChip label="Archived" active={filter === 'archived'} onClick={() => setFilter('archived')} />}
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+            <StatTile icon={Building2} value={stats.total} label="Total clinics" tone="neutral" />
+            <StatTile icon={DollarSign} value={stats.direct} label="Direct billing" tone="success" />
+            <StatTile icon={Building2} value={stats.platform} label="Platform-paid" tone="info" />
+            <StatTile icon={AlertTriangle} value={stats.attention} label="Need attention" tone="attention" />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -187,6 +194,7 @@ function DesktopFacilitiesPage() {
                 billingLabel={e.billingLabel}
                 primaryContactName={e.primaryContact?.name || (e.hasBillingContact ? e.f.invoice_name_to : null)}
                 attention={e.attention}
+                hasBillingContact={e.hasBillingContact}
                 onOpen={() => navigate(`/facilities/${e.f.id}`)}
                 onDelete={() => setConfirmDelete(e.f)}
               />
@@ -197,6 +205,7 @@ function DesktopFacilitiesPage() {
               </div>
             )}
           </div>
+
         </>
       )}
 
