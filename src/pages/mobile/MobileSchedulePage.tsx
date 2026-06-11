@@ -44,6 +44,7 @@ const DOT_CLASS: Record<DayStatus, string> = {
   completed: "bg-slate-300",
   event: "bg-teal-600",
   expired: "bg-rose-300",
+  blocked: "bg-amber-500",
 };
 
 const FILLED_CLASS: Record<DayStatus, string> = {
@@ -51,6 +52,7 @@ const FILLED_CLASS: Record<DayStatus, string> = {
   completed: "bg-slate-200 text-slate-700",
   event: "bg-teal-600 text-white",
   expired: "bg-rose-100 text-rose-800",
+  blocked: "bg-amber-100 text-amber-900 border border-amber-300",
 };
 
 export function MobileSchedulePage() {
