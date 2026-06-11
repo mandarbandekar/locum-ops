@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
-import { Pencil, CalendarPlus } from "lucide-react";
+import { Pencil, CalendarPlus, Ban } from "lucide-react";
 import { MobilePageHeader } from "@/components/mobile/MobilePageHeader";
 import { MobileStatusChip } from "@/components/mobile/MobileStatusChip";
 import { MobileEmptyState } from "@/components/mobile/MobileEmptyState";
@@ -11,9 +11,10 @@ import { ShiftFormDialog } from "@/components/schedule/ShiftFormDialog";
 import { resolveShiftTz } from "@/lib/resolveTimezone";
 import { formatDateInTz, formatTimeInTz } from "@/lib/tzTime";
 import { cn } from "@/lib/utils";
-import type { Shift } from "@/types";
+import type { Shift, TimeBlock } from "@/types";
+import { BLOCK_TYPES } from "@/types";
 
-type DayStatus = "confirmed" | "completed" | "event" | "expired";
+type DayStatus = "confirmed" | "completed" | "event" | "expired" | "blocked";
 
 function ymdLocal(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
