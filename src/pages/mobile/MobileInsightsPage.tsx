@@ -216,6 +216,68 @@ export function MobileInsightsPage() {
           <div className="m-caption mt-0.5">This month</div>
         </div>
       </section>
+
+      <Sheet open={!!selectedMonth} onOpenChange={(o) => !o && setSelectedMonthIdx(null)}>
+        <SheetContent side="bottom" className="rounded-t-2xl max-h-[85vh] overflow-y-auto p-0 bg-[hsl(var(--m-bg))] border-[hsl(var(--m-border))]">
+          {selectedMonth && monthDetail && (
+            <>
+              <SheetHeader className="px-5 pt-5 pb-3 text-left">
+                <SheetTitle className="text-[hsl(var(--m-text))]">{monthLabel(selectedMonth.key)}</SheetTitle>
+                <div className="text-[12px] text-[hsl(var(--m-text-muted))]">Revenue from completed shifts: {fmt(monthDetail.shiftRevenue)}</div>
+              </SheetHeader>
+
+              <div className="px-5 grid grid-cols-3 gap-2">
+                <div className="mobile-card p-3">
+                  <div className="text-[10px] uppercase tracking-wide text-[hsl(var(--m-text-muted))]">Billed</div>
+                  <div className="text-[15px] font-semibold tabular-nums mt-0.5">{fmt(monthDetail.totalBilled)}</div>
+                </div>
+                <div className="mobile-card p-3">
+                  <div className="text-[10px] uppercase tracking-wide text-[hsl(var(--m-text-muted))]">Paid</div>
+                  <div className="text-[15px] font-semibold tabular-nums mt-0.5">{fmt(monthDetail.totalPaid)}</div>
+                </div>
+                <div className="mobile-card p-3">
+                  <div className="text-[10px] uppercase tracking-wide text-[hsl(var(--m-text-muted))]">Outstanding</div>
+                  <div className="text-[15px] font-semibold tabular-nums mt-0.5">{fmt(monthDetail.totalOutstanding)}</div>
+                </div>
+              </div>
+
+              <div className="px-5 mt-5 pb-8">
+                <div className="text-[11px] uppercase tracking-wide font-semibold text-[hsl(var(--m-text-muted))] mb-2">
+                  Invoices ({monthDetail.monthInvoices.length})
+                </div>
+                {monthDetail.monthInvoices.length === 0 ? (
+                  <div className="mobile-card p-5 text-center text-[13px] text-[hsl(var(--m-text-muted))]">
+                    No invoices in this month yet.
+                  </div>
+                ) : (
+                  <div className="mobile-card divide-y divide-[hsl(var(--m-border))]">
+                    {monthDetail.monthInvoices.map((inv) => {
+                      const facility = facilities.find((f) => f.id === inv.facility_id);
+                      const status = getComputedInvoiceStatus(inv) as string;
+                      return (
+                        <div key={inv.id} className="p-4 flex items-center justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <div className="text-[14px] font-medium truncate">{facility?.name ?? "—"}</div>
+                            <div className="text-[11px] text-[hsl(var(--m-text-muted))] mt-0.5 truncate">
+                              #{inv.invoice_number} · <span className="capitalize">{status}</span>
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <div className="text-[14px] font-semibold tabular-nums">{fmt(Number(inv.total_amount || 0))}</div>
+                            {Number(inv.balance_due || 0) > 0 && (
+                              <div className="text-[11px] text-[hsl(var(--m-text-muted))] tabular-nums">{fmt(Number(inv.balance_due))} due</div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
