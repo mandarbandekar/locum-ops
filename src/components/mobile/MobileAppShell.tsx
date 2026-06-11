@@ -4,6 +4,9 @@ import { MobileBottomNav } from "./MobileBottomNav";
 import { useAutoRefreshOnDeploy } from "@/hooks/useAutoRefreshOnDeploy";
 
 export function MobileAppShell({ children }: { children: ReactNode }) {
+  // Auto-detect new deployments and prompt a refresh.
+  useAutoRefreshOnDeploy();
+
   // Mobile app is light-mode only for all users. Force light theme on mount
   // and keep the documentElement class in sync if anything else flips it.
   const { setTheme } = useTheme();
