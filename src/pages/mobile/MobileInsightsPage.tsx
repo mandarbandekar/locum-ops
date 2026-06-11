@@ -1,9 +1,10 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { TrendingUp } from "lucide-react";
 import { MobilePageHeader } from "@/components/mobile/MobilePageHeader";
 import { MobileMetricCard } from "@/components/mobile/MobileMetricCard";
 import { MobileEmptyState } from "@/components/mobile/MobileEmptyState";
 import { MobileMetricsSkeleton, Skeleton } from "@/components/mobile/MobileSkeleton";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useData } from "@/contexts/DataContext";
 import { useExpenses } from "@/hooks/useExpenses";
 
@@ -11,7 +12,7 @@ function fmt(n: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n || 0);
 }
 
-function MonthlyRevenueBars({ values }: { values: number[] }) {
+function MonthlyRevenueBars({ values, onSelect, selectedIndex }: { values: number[]; onSelect?: (i: number) => void; selectedIndex?: number | null }) {
   const w = 320, h = 120, padX = 10, padY = 6;
   const max = Math.max(1, ...values);
   const barCount = values.length;
@@ -19,22 +20,39 @@ function MonthlyRevenueBars({ values }: { values: number[] }) {
   const barW = barCount > 0 ? Math.max(4, (w - padX * 2 - gap * (barCount - 1)) / barCount) : 0;
 
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-[120px]">
-      {/* Grid line */}
+    <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-[120px]" preserveAspectRatio="none">
       <line x1={padX} y1={h - padY - (0.5 * (h - padY * 2))} x2={w - padX} y2={h - padY - (0.5 * (h - padY * 2))} stroke="hsl(var(--m-border))" strokeDasharray="2,2" />
       {values.map((v, i) => {
         const x = padX + i * (barW + gap);
         const barH = (v / max) * (h - padY * 2);
         const y = h - padY - barH;
         const isMax = v === max && max > 0;
+        const isSelected = selectedIndex === i;
         return (
-          <g key={i}>
-            <rect x={x} y={y} width={barW} height={barH} rx={3} fill={isMax ? "hsl(var(--m-primary))" : "hsl(var(--m-accent))"} opacity={isMax ? 1 : 0.8} />
+          <g key={i} onClick={() => onSelect?.(i)} style={{ cursor: "pointer" }}>
+            {/* Larger invisible hit area for easier tapping */}
+            <rect x={x - gap / 2} y={padY} width={barW + gap} height={h - padY * 2} fill="transparent" />
+            <rect
+              x={x}
+              y={y}
+              width={barW}
+              height={Math.max(barH, 2)}
+              rx={3}
+              fill={isSelected || isMax ? "hsl(var(--m-primary))" : "hsl(var(--m-accent))"}
+              opacity={isSelected ? 1 : isMax ? 1 : 0.8}
+              stroke={isSelected ? "hsl(var(--m-primary))" : "none"}
+              strokeWidth={isSelected ? 1.5 : 0}
+            />
           </g>
         );
       })}
     </svg>
   );
+}
+
+function monthLabel(key: string) {
+  const [y, m] = key.split("-").map(Number);
+  return new Date(y, m - 1, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
 }
 
 export function MobileInsightsPage() {
