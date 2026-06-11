@@ -21,7 +21,7 @@ export function MobileBottomNav() {
         background: "hsl(var(--m-card) / 0.92)",
       }}
     >
-      <ul className="grid grid-cols-5">
+      <ul className="grid grid-cols-5 m-container">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const active = tab.match(pathname);

@@ -95,38 +95,33 @@ export function MobileTodayPage() {
 
   if (isLoading) {
     return (
-      <div>
-        <div className="m-gutter pt-4 pb-2">
-          <Skeleton h={28} w={180} rounded="rounded-md" />
+      <div className="m-page">
+        <Skeleton h={32} w={200} rounded="rounded-md" />
+        <div className="grid grid-cols-2 gap-3">
+          <Skeleton h={56} rounded="rounded-2xl" />
+          <Skeleton h={56} rounded="rounded-2xl" />
         </div>
-        <div className="m-gutter grid grid-cols-2 gap-3">
-          <Skeleton h={52} rounded="rounded-2xl" />
-          <Skeleton h={52} rounded="rounded-2xl" />
-        </div>
-        <div className="m-gutter">
-          <MobileSectionSkeleton />
-        </div>
-        <div className="m-gutter mt-5">
-          <MobileMetricsSkeleton count={4} />
-        </div>
+        <MobileSectionSkeleton />
+        <MobileMetricsSkeleton count={4} />
       </div>
     );
   }
 
   return (
-    <div>
+    <div className="m-page">
       {/* Greeting header */}
-      <div className="m-gutter pt-4 pb-2">
-        <h1 className="font-bold text-[hsl(var(--m-text))]" style={{ fontSize: "var(--m-title)" }}>
+      <header className="m-page-header">
+        <h1 className="m-title text-[hsl(var(--m-text))]">
           {getGreeting()}, {profile?.first_name ?? "there"}
         </h1>
-      </div>
+        <p className="m-subtitle">Here's where things stand today.</p>
+      </header>
 
       {/* Quick actions */}
-      <div className="m-gutter grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3">
         <button
           onClick={() => setAddClinic(true)}
-          className="mobile-card m-press flex items-center gap-2 px-4 min-h-[52px] font-semibold text-[hsl(var(--m-text))]"
+          className="mobile-card m-press flex items-center justify-center gap-2 px-4 min-h-[56px] font-semibold text-[hsl(var(--m-text))]"
           style={{ fontSize: "var(--m-text-md)" }}
         >
           <Building2 className="h-4 w-4 text-[hsl(var(--m-primary))]" />
@@ -134,7 +129,7 @@ export function MobileTodayPage() {
         </button>
         <button
           onClick={() => setAddShift(true)}
-          className="mobile-card m-press flex items-center gap-2 px-4 min-h-[52px] font-semibold text-[hsl(var(--m-text))]"
+          className="mobile-card m-press flex items-center justify-center gap-2 px-4 min-h-[56px] font-semibold text-[hsl(var(--m-text))]"
           style={{ fontSize: "var(--m-text-md)" }}
         >
           <CalendarPlus className="h-4 w-4 text-[hsl(var(--m-primary))]" />
@@ -143,45 +138,38 @@ export function MobileTodayPage() {
       </div>
 
       {/* Next shift */}
-      <section className="px-5 mt-5">
-        <div className="text-[11px] uppercase tracking-wide font-semibold text-[hsl(var(--m-text-muted))] mb-2">
-          Next shift
-        </div>
+      <section className="m-section">
+        <div className="m-section-label">Next shift</div>
         {nextShift && nextFacility ? (
-          <div className="mobile-card p-4">
-            <div className="text-[16px] font-semibold text-[hsl(var(--m-text))]">{nextFacility.name}</div>
-            <div className="text-[13px] text-[hsl(var(--m-text-muted))] mt-0.5">
+          <div className="mobile-card p-5">
+            <div className="text-[16px] font-semibold leading-snug text-[hsl(var(--m-text))]">{nextFacility.name}</div>
+            <div className="text-[13px] text-[hsl(var(--m-text-muted))] mt-1">
               {formatDateInTz(nextShift.start_datetime, nextTz, "EEE, MMM d")} ·{" "}
               {formatTimeInTz(nextShift.start_datetime, nextTz)} – {formatTimeInTz(nextShift.end_datetime, nextTz)}
             </div>
             {nextFacility.address && (
-              <div className="text-[13px] text-[hsl(var(--m-text-muted))] mt-0.5">{nextFacility.address}</div>
+              <div className="text-[13px] text-[hsl(var(--m-text-muted))] mt-1">{nextFacility.address}</div>
             )}
-            <div className="mt-3 grid grid-cols-3 gap-2">
+            <div className="mt-4 grid grid-cols-3 gap-2">
               <a
                 href={nextFacility.address ? `https://maps.google.com/?q=${encodeURIComponent(nextFacility.address)}` : "#"}
                 target="_blank"
                 rel="noreferrer"
-                className="flex flex-col items-center gap-1 py-2 rounded-lg bg-[hsl(var(--m-accent))] text-[hsl(var(--m-primary))] text-[11px] font-medium"
+                className="flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl bg-[hsl(var(--m-accent))] text-[hsl(var(--m-primary))] text-[11px] font-medium"
               >
                 <Navigation className="h-4 w-4" /> Directions
               </a>
-              {(() => {
-                const phone = "";
-                return (
-                  <button
-                    type="button"
-                    onClick={() => navigate(`/facilities/${nextFacility.id}`)}
-                    className="flex flex-col items-center gap-1 py-2 rounded-lg bg-[hsl(var(--m-accent))] text-[hsl(var(--m-primary))] text-[11px] font-medium"
-                  >
-                    <Phone className="h-4 w-4" /> Call
-                  </button>
-                );
-              })()}
               <button
                 type="button"
                 onClick={() => navigate(`/facilities/${nextFacility.id}`)}
-                className="flex flex-col items-center gap-1 py-2 rounded-lg bg-[hsl(var(--m-accent))] text-[hsl(var(--m-primary))] text-[11px] font-medium"
+                className="flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl bg-[hsl(var(--m-accent))] text-[hsl(var(--m-primary))] text-[11px] font-medium"
+              >
+                <Phone className="h-4 w-4" /> Call
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate(`/facilities/${nextFacility.id}`)}
+                className="flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl bg-[hsl(var(--m-accent))] text-[hsl(var(--m-primary))] text-[11px] font-medium"
               >
                 <FileText className="h-4 w-4" /> Notes
               </button>
@@ -201,10 +189,8 @@ export function MobileTodayPage() {
 
       {/* Needs attention */}
       {attention.length > 0 && (
-        <section className="px-5 mt-5">
-          <div className="text-[11px] uppercase tracking-wide font-semibold text-[hsl(var(--m-text-muted))] mb-2">
-            Needs attention
-          </div>
+        <section className="m-section">
+          <div className="m-section-label">Needs attention</div>
           <div className="mobile-card divide-y divide-[hsl(var(--m-border))]">
             {attention.map((a) => (
               <button
@@ -224,10 +210,8 @@ export function MobileTodayPage() {
       )}
 
       {/* Business snapshot */}
-      <section className="px-5 mt-5">
-        <div className="text-[11px] uppercase tracking-wide font-semibold text-[hsl(var(--m-text-muted))] mb-2">
-          Business snapshot
-        </div>
+      <section className="m-section">
+        <div className="m-section-label">Business snapshot</div>
         <div className="grid grid-cols-2 gap-3">
           <MobileMetricCard label="This month" value={fmtCurrency(monthRevenue)} hint="Revenue" tone="primary" />
           <MobileMetricCard label="Outstanding" value={fmtCurrency(outstanding)} hint="To collect" tone="warning" />
@@ -235,6 +219,7 @@ export function MobileTodayPage() {
           <MobileMetricCard label="Mileage" value={`${Math.round(monthMiles)} mi`} hint="This month" />
         </div>
       </section>
+
 
       <AddFacilityDialog open={addClinic} onOpenChange={setAddClinic} />
       <ShiftFormDialog
