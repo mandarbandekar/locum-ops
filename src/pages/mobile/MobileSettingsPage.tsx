@@ -6,10 +6,12 @@ import {
   Settings as SettingsIcon,
   ChevronRight,
   LogOut,
+  Crown,
 } from "lucide-react";
 import { MobilePageHeader } from "@/components/mobile/MobilePageHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserProfile } from "@/contexts/UserProfileContext";
+import { isFounderAdmin } from "@/lib/founderAccess";
 
 const SECTIONS = [
   {
@@ -45,6 +47,17 @@ export default function MobileSettingsPage() {
   const name =
     [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") ||
     (isDemo ? "Demo User" : user?.email || "");
+  const sections = isFounderAdmin(user?.email)
+    ? [
+        ...SECTIONS,
+        {
+          to: "/founder",
+          label: "Founder Dashboard",
+          sub: "Internal admin overview",
+          icon: Crown,
+        },
+      ]
+    : SECTIONS;
 
   return (
     <div>
@@ -52,7 +65,7 @@ export default function MobileSettingsPage() {
 
       <div className="m-gutter pt-2">
         <div className="rounded-2xl border border-[hsl(var(--m-border))] bg-[hsl(var(--m-card))] overflow-hidden">
-          {SECTIONS.map((s, i) => {
+          {sections.map((s, i) => {
             const Icon = s.icon;
             return (
               <button
