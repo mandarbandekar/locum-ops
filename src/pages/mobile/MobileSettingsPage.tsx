@@ -65,7 +65,7 @@ export default function MobileSettingsPage() {
 
       <div className="m-gutter pt-2">
         <div className="rounded-2xl border border-[hsl(var(--m-border))] bg-[hsl(var(--m-card))] overflow-hidden">
-          {SECTIONS.map((s, i) => {
+          {sections.map((s, i) => {
             const Icon = s.icon;
             return (
               <button
